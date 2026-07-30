@@ -29,7 +29,7 @@ export type TaskCollectionSceneInput = {
 	projects?: ProjectOption[]
 	supportsProject: boolean
 	initialShowCompleted?: boolean
-	fallbackSubtitle: string | ((task: { projectId: string | null }) => string)
+	fallbackSubtitle: string | ((task: TaskListItem) => string)
 	activeTaskId: string | null
 	onCreateTask: () => void
 	onOpenTask: (taskId: string) => void
@@ -37,6 +37,8 @@ export type TaskCollectionSceneInput = {
 	projectOptions: ProjectOption[]
 	spaces: Space[]
 	showProjectCellOptions: boolean
+	/** 所有空间：行内固定 Space 名 */
+	showSpaceLabel?: boolean
 	createProjectId?: string | null
 	empty: Pick<TaskBoardProps, 'emptyTitle' | 'emptyDescription' | 'emptyActionLabel'>
 }
@@ -133,6 +135,7 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 			projectOptions: input.projectOptions,
 			selectedTaskIdSet: selection.selectedTaskIdSet,
 			showProjectCellOptions: input.showProjectCellOptions,
+			showSpaceLabel: input.showSpaceLabel ?? false,
 			spaces: input.spaces,
 			status: input.source.status,
 			statusOrder: displayResult.boardPatch.statusOrder,
@@ -155,6 +158,7 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 			input.onPeekTask,
 			input.projectOptions,
 			input.showProjectCellOptions,
+			input.showSpaceLabel,
 			input.source.status,
 			input.spaces,
 			mutations,

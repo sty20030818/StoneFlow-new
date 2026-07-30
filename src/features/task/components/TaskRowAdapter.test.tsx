@@ -75,6 +75,7 @@ function renderTaskRowAdapter({
 	contextMenuActions,
 	contextTasks,
 	visibleProperties,
+	showSpaceLabel = false,
 }: {
 	task?: TaskListItem
 	rowState?: TaskRowAdapterProps['rowState']
@@ -83,6 +84,7 @@ function renderTaskRowAdapter({
 	contextMenuActions?: TaskContextMenuBulkActions
 	contextTasks?: TaskListItem[]
 	visibleProperties?: TaskRowAdapterProps['visibleProperties']
+	showSpaceLabel?: boolean
 } = {}) {
 	render(
 		<DangerConfirmProvider>
@@ -92,6 +94,7 @@ function renderTaskRowAdapter({
 				contextTasks={contextTasks}
 				projectBinding={projectBinding}
 				rowState={rowState}
+				showSpaceLabel={showSpaceLabel}
 				task={task}
 				visibleProperties={visibleProperties}
 			/>
@@ -107,6 +110,32 @@ describe('TaskRowAdapter', () => {
 
 		fireEvent.click(screen.getByRole('button', { name: '打开任务 任务 A' }))
 		expect(actions.onOpenTask).toHaveBeenCalledWith('task-1')
+	})
+
+	it('showSpaceLabel 时固定展示 Space 名', () => {
+		renderTaskRowAdapter({
+			showSpaceLabel: true,
+			task: buildTask({ spaceName: '工作', title: '跨空间任务' }),
+		})
+
+		expect(screen.getByText('工作')).toBeInTheDocument()
+		expect(screen.getByText('跨空间任务')).toBeInTheDocument()
+	})
+
+	it('默认不展示行内 Space 次要标签', () => {
+		renderTaskRowAdapter({
+			showSpaceLabel: false,
+			task: buildTask({
+				spaceName: '独有空间名XYZ',
+				projectId: null,
+				projectName: null,
+				title: '本空间任务',
+			}),
+			projectBinding: createProjectBinding({ showProjectCellOptions: false }),
+		})
+
+		expect(screen.getByText('本空间任务')).toBeInTheDocument()
+		expect(screen.queryByText('独有空间名XYZ')).not.toBeInTheDocument()
 	})
 
 	it('选择框切换触发选择回调', () => {

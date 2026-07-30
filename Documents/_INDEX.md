@@ -38,7 +38,7 @@
 
 ## 当前活跃任务
 
-（无）
+- [所有空间任务执行台落地](./02-开发任务/2026-07-31-all-spaces-task-workspace/SPEC.md)（[PLAN](./02-开发任务/2026-07-31-all-spaces-task-workspace/PLAN.md) · [TASKS](./02-开发任务/2026-07-31-all-spaces-task-workspace/TASKS.md)）
 
 近期归档：
 

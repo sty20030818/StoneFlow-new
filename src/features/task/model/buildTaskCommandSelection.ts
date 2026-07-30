@@ -30,8 +30,9 @@ export function buildTaskCommandSelection({
 				type: 'task' as const,
 				title: task.title,
 				subtitle:
-					task.projectName ??
-					(typeof fallbackSubtitle === 'function' ? fallbackSubtitle(task) : fallbackSubtitle),
+					typeof fallbackSubtitle === 'function'
+						? fallbackSubtitle(task)
+						: (task.projectName ?? fallbackSubtitle),
 				spaceId: task.spaceId,
 				projectId: task.projectId,
 

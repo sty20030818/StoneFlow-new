@@ -4,6 +4,11 @@ import { useNavigate } from '@tanstack/react-router'
 import { openSection, openStartupFallback } from '@/app/navigation'
 import { SHELL_FOOTER_ITEMS, SHELL_NAV_ITEMS, type ShellProjectLink } from '@/layout/config'
 import {
+	isAllScope,
+	isShellMainNavAllowed,
+	shouldShowSidebarProjectSection,
+} from '@/layout/model/scopeNavPolicy'
+import {
 	SIDEBAR_ENTITY_SELECTOR,
 	MainNavSidebarMenuItem,
 	StandaloneNavMenuItem,
@@ -60,7 +65,6 @@ import { useSidebar } from '@/shared/components/base/sidebar-context'
 import {
 	sidebarDropdownItemClass,
 	sidebarFooterContainerClass,
-	sidebarHelperTextClass,
 	sidebarSectionHeaderRowClass,
 	sidebarInlineBadgeClass,
 } from '@/shared/components/patterns/sidebar-item'
@@ -138,22 +142,27 @@ export function ShellSidebar({
 		spaces[0] ??
 		null
 	const canArchiveOrDeleteActiveSpace = Boolean(activeSpace && !activeSpace.isDefault)
-	const scopedProjectLinks = currentScope.type === 'all' ? [] : projects
-	const currentScopeLabel =
-		currentScope.type === 'all' ? '所有空间' : (activeSpace?.name ?? '未选择 Space')
+	const allScope = isAllScope(currentScope)
+	// All 下不承载项目树；单 Space 才展示 projects
+	const scopedProjectLinks = allScope ? [] : projects
+	const currentScopeLabel = allScope ? '所有空间' : (activeSpace?.name ?? '未选择 Space')
+	const showProjectSection = shouldShowSidebarProjectSection(
+		currentScope,
+		settings.projectSection.visible,
+	)
 
-	const mainNavItems = SHELL_NAV_ITEMS.map((item) => ({
-		...item,
-		badge: navBadges[item.section],
-		to: item.to(currentScope, currentSpaceId),
-		settingsKey: item.key === 'tasks' ? 'allTasks' : item.key,
-		visible:
-			settings.mainItems[(item.key === 'tasks' ? 'allTasks' : item.key) as SidebarMainItemKey]
-				.visible,
-		order:
-			settings.mainItems[(item.key === 'tasks' ? 'allTasks' : item.key) as SidebarMainItemKey]
-				.order,
-	})) satisfies MainNavItemViewModel[]
+	const mainNavItems = SHELL_NAV_ITEMS.map((item) => {
+		const settingsKey = (item.key === 'tasks' ? 'allTasks' : item.key) as SidebarMainItemKey
+		const settingsVisible = settings.mainItems[settingsKey].visible
+		return {
+			...item,
+			badge: navBadges[item.section],
+			to: item.to(currentScope, currentSpaceId),
+			settingsKey,
+			visible: settingsVisible && isShellMainNavAllowed(currentScope, item.key),
+			order: settings.mainItems[settingsKey].order,
+		}
+	}) satisfies MainNavItemViewModel[]
 	const visibleNavItems = [...mainNavItems]
 		.filter((item) => item.visible)
 		.sort((left, right) => left.order - right.order)
@@ -329,7 +338,7 @@ export function ShellSidebar({
 														: currentScopeLabel
 												}
 											>
-												{currentScope.type === 'all' ? (
+												{allScope ? (
 													<SpaceIconBadge
 														visual={{
 															label: '所有空间',
@@ -364,7 +373,7 @@ export function ShellSidebar({
 												>
 													<OrbitIcon className='size-3.5 shrink-0 text-[#8b5cf6]' />
 													<span>所有空间</span>
-													{currentScope.type === 'all' ? (
+													{allScope ? (
 														<CheckIcon
 															className={`ml-auto size-3.5 ${shellChromeIconSecondaryClass}`}
 														/>
@@ -556,7 +565,7 @@ export function ShellSidebar({
 								</SidebarGroupContent>
 							</SidebarGroup>
 
-							{settings.projectSection.visible ? (
+							{showProjectSection ? (
 								<SidebarGroup className='group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:hidden group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:hidden'>
 									<div className={sidebarSectionHeaderRowClass}>
 										<SidebarGroupLabel className='px-0'>项目列表</SidebarGroupLabel>
@@ -574,40 +583,34 @@ export function ShellSidebar({
 
 									{!settings.projectSection.collapsed ? (
 										<SidebarGroupContent>
-											{currentScope.type === 'all' ? (
-												<div className={sidebarHelperTextClass}>
-													全局 Scope 下先不展开具体项目，切到单个 Space 后再查看项目列表。
-												</div>
-											) : (
-												<SidebarMenu>
-													<StandaloneNavMenuItem
-														badge={navBadges.standalone}
-														contextMenuContent={
-															<ContextMenuContent className='w-52'>
-																<ContextMenuGroup>
-																	<SidebarCustomizeSubmenu
-																		footerItems={footerCustomizeItems}
-																		navItems={mainNavItems}
-																		onResetMainItemsVisibility={onResetMainItemsVisibility}
-																		onUpdateItemVisibility={onUpdateItemVisibility}
-																		visibleNavItemCount={visibleNavItemCount}
-																	/>
-																</ContextMenuGroup>
-															</ContextMenuContent>
-														}
+											<SidebarMenu>
+												<StandaloneNavMenuItem
+													badge={navBadges.standalone}
+													contextMenuContent={
+														<ContextMenuContent className='w-52'>
+															<ContextMenuGroup>
+																<SidebarCustomizeSubmenu
+																	footerItems={footerCustomizeItems}
+																	navItems={mainNavItems}
+																	onResetMainItemsVisibility={onResetMainItemsVisibility}
+																	onUpdateItemVisibility={onUpdateItemVisibility}
+																	visibleNavItemCount={visibleNavItemCount}
+																/>
+															</ContextMenuGroup>
+														</ContextMenuContent>
+													}
+													currentScope={currentScope}
+													fallbackSpaceId={fallbackSpaceId}
+												/>
+												{projectLinks.map((project) => (
+													<ProjectNavMenuItem
 														currentScope={currentScope}
-														fallbackSpaceId={fallbackSpaceId}
+														currentSpaceId={currentSpaceId}
+														key={project.id}
+														project={project}
 													/>
-													{projectLinks.map((project) => (
-														<ProjectNavMenuItem
-															currentScope={currentScope}
-															currentSpaceId={currentSpaceId}
-															key={project.id}
-															project={project}
-														/>
-													))}
-												</SidebarMenu>
-											)}
+												))}
+											</SidebarMenu>
 										</SidebarGroupContent>
 									) : null}
 								</SidebarGroup>

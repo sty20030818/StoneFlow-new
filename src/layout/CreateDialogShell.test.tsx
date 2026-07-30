@@ -22,14 +22,14 @@ describe('CreateDialogShell', () => {
 		expect(onSelectSpace).toHaveBeenCalledWith('space-b')
 	})
 
-	it('空选中态显示全部 Spaces，且菜单仍只选择具体 Space', async () => {
+	it('空选中态显示选择空间，且菜单仍只选择具体 Space', async () => {
 		const onSelectSpace = vi.fn()
 		renderCreateDialogShell({
 			onSelectSpace,
 			selectedSpaceId: null,
 		})
 
-		expect(screen.getByText('全部 Spaces')).toBeInTheDocument()
+		expect(screen.getByText('选择空间')).toBeInTheDocument()
 		fireEvent.pointerDown(screen.getByRole('button', { name: '空间' }))
 
 		expect(await screen.findByRole('menuitem', { name: /工作/ })).toBeInTheDocument()

@@ -57,6 +57,45 @@ describe('ShellSidebar', () => {
 		expect(screen.queryByRole('link', { name: '设置' })).not.toBeInTheDocument()
 	})
 
+	it('All scope 下隐藏项目总览与项目列表（含独立事项），保留所有任务与视图', () => {
+		renderShellSidebar(
+			{
+				mainItems: {
+					allTasks: { visible: true, order: 200 },
+					views: { visible: true, order: 300 },
+					projectOverview: { visible: true, order: 400 },
+				},
+				projectSection: {
+					visible: true,
+					order: 500,
+					collapsed: false,
+					showCounts: true,
+					showCompleted: true,
+					maxVisible: null,
+				},
+				footerItems: {
+					archive: { visible: true, order: 900 },
+					trash: { visible: true, order: 1000 },
+				},
+				width: 256,
+				desktopPreference: 'expanded',
+			},
+			[{ id: 'project-1', label: 'StoneFlow VNext' }],
+			{
+				currentScope: { type: 'all' },
+				currentSpaceId: null,
+			},
+		)
+
+		expect(screen.getByRole('link', { name: '所有任务' })).toBeInTheDocument()
+		expect(screen.getByRole('link', { name: '视图' })).toBeInTheDocument()
+		expect(screen.queryByRole('link', { name: '项目总览' })).not.toBeInTheDocument()
+		expect(screen.queryByRole('link', { name: '独立事项' })).not.toBeInTheDocument()
+		expect(screen.queryByRole('link', { name: 'StoneFlow VNext' })).not.toBeInTheDocument()
+		expect(screen.getByRole('button', { name: '切换 Space' })).toHaveAccessibleName('切换 Space')
+		expect(screen.getByText('所有空间')).toBeInTheDocument()
+	})
+
 	it('项目 badge 会显示在 sidebar 项目行上', () => {
 		renderShellSidebar(
 			{

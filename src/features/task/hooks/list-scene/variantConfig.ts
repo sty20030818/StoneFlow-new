@@ -3,6 +3,15 @@ import type { TaskPlacement, TaskStatus } from '@/shared/types'
 
 export type TaskListSceneVariant = 'all' | 'standalone'
 
+/** 与单 Space「所有任务」共用的 list viewKey，All scope 只换 scope 不换语义 */
+export const TASK_LIST_PAGE_VIEW_KEY = 'all' as const
+
+export type TaskListSubtitleTask = {
+	projectId: string | null
+	projectName?: string | null
+	spaceName?: string
+}
+
 export type VariantConfig = {
 	displayPageKey: TaskDisplayPageKey
 	placement: { kind: 'all' | 'standalone' }
@@ -15,7 +24,7 @@ export type VariantConfig = {
 	}
 	initialShowCompleted?: boolean
 	supportsProject: boolean
-	fallbackSubtitle: string | ((task: { projectId: string | null }) => string)
+	fallbackSubtitle: string | ((task: TaskListSubtitleTask) => string)
 	showStatusPills: 'all' | 'status-only'
 }
 
@@ -28,7 +37,8 @@ export const VARIANT_CONFIG: Record<TaskListSceneVariant, VariantConfig> = {
 			'这里本来会显示符合当前条件的任务，不过现在还是空的。点「创建任务」先记下一项，后面再慢慢整理也来得及。',
 		createDraft: { status: 'todo' },
 		supportsProject: true,
-		fallbackSubtitle: (task) => (task.projectId ? '项目' : '独立事项'),
+		fallbackSubtitle: (task) =>
+			task.projectName ? task.projectName : task.projectId ? '项目' : '独立事项',
 		showStatusPills: 'all',
 	},
 	standalone: {

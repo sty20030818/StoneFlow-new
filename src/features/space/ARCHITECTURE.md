@@ -16,12 +16,14 @@ Space 实体
   → setActiveScope：把当前 URL Scope 同步给 Rust
   → 调用方仅 ShellRouteLayout（L1）
   → URL 仍是前端 scope 真相
+  → scope=all 表示跨可见 Space 的查询/活动上下文，不是 Space 实体
 
 不负责
   → 命令打开意图队列（→ command · takePendingCommandOpenIntent）
   → URL / path 拼装（→ navigation）
   → workspace invalidate 总线（→ workspace）
-  → 主壳布局（→ layout）
+  → 主壳布局与 All 导航策略（→ layout / scopeNavPolicy）
+  → 所有空间任务列表展示（→ task）
 ```
 
 跨模块 **只** `import { … } from '@/features/space'`。

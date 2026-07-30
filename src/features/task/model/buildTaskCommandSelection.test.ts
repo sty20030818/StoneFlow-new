@@ -45,6 +45,17 @@ describe('buildTaskCommandSelection', () => {
 		expect(selection.focusedType).toBe('task')
 	})
 
+	it('fallbackSubtitle 为函数时优先用于副标题（所有空间露出 Space）', () => {
+		const selection = buildTaskCommandSelection({
+			selectedIds: ['task-a'],
+			tasks: [createTask({ id: 'task-a', title: '任务 A', projectName: '项目 X', spaceName: '工作' })],
+			fallbackSubtitle: (task) =>
+				task.projectName ? `${task.spaceName} · ${task.projectName}` : task.spaceName,
+		})
+
+		expect(selection.entities[0]?.subtitle).toBe('工作 · 项目 X')
+	})
+
 	it('没有有效任务时返回空 selection', () => {
 		const selection = buildTaskCommandSelection({
 			selectedIds: ['missing'],

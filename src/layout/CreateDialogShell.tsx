@@ -57,7 +57,8 @@ export function CreateDialogShell({
 	const currentSpace = selectedSpaceId
 		? (spaces.find((space) => space.id === selectedSpaceId) ?? null)
 		: null
-	const currentSpaceLabel = currentSpace?.name ?? '全部 Spaces'
+	// 创建必须落到具体 Space；空选中态提示选择，而不是伪装成「所有空间」聚合
+	const currentSpaceLabel = currentSpace?.name ?? '选择空间'
 
 	return (
 		<Dialog onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>

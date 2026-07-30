@@ -46,6 +46,8 @@ type TaskRowAdapterProps = {
 		showProjectCellOptions?: boolean
 	}
 	visibleProperties?: readonly TaskDisplayPropertyKey[]
+	/** 跨 Space 列表（所有空间）时固定露出 Space 名，不依赖 display 偏好 */
+	showSpaceLabel?: boolean
 	actions: {
 		onOpenTask: (taskId: string) => void
 		onToggleTaskSelection: (taskId: string) => void
@@ -72,6 +74,7 @@ export function TaskRowAdapter({
 	contextMenuActions,
 	projectBinding,
 	visibleProperties,
+	showSpaceLabel = false,
 	actions,
 }: TaskRowAdapterProps) {
 	const { isActive, isSelected, isPending, isHovered = false, hoverSource = null } = rowState
@@ -251,7 +254,14 @@ export function TaskRowAdapter({
 					</RowShell.Leading>
 
 					<RowShell.Title>
-						<RowTitleCell doneLike={isDoneLike} title={task.title} />
+						<div className='flex min-w-0 flex-col gap-0.5'>
+							<RowTitleCell doneLike={isDoneLike} title={task.title} />
+							{showSpaceLabel && task.spaceName ? (
+								<span className='truncate text-[11px] leading-tight text-sf-text-tertiary'>
+									{task.spaceName}
+								</span>
+							) : null}
+						</div>
 					</RowShell.Title>
 				</RowShell.Left>
 

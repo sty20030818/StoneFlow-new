@@ -9,11 +9,17 @@ import { useTaskPreviewController } from '@/features/task/detail'
 
 import { useTaskListData } from './useTaskData'
 import { useTaskCollectionScene } from './useTaskCollectionScene'
-import { VARIANT_CONFIG, type TaskListSceneVariant } from './list-scene/variantConfig'
+import {
+	TASK_LIST_PAGE_VIEW_KEY,
+	VARIANT_CONFIG,
+	type TaskListSceneVariant,
+	type TaskListSubtitleTask,
+} from './list-scene/variantConfig'
 import { ALL_TASK_FILTERS, STANDALONE_STATUS_FILTERS } from './list-scene/variantConfig'
 import { formatTaskStatusLabel } from '../model/taskStatus'
 
 export type { TaskListSceneVariant } from './list-scene/variantConfig'
+export { TASK_LIST_PAGE_VIEW_KEY } from './list-scene/variantConfig'
 
 /**
  * 任务列表页（all / standalone）的唯一 wiring 入口。
@@ -27,16 +33,18 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 	const config = VARIANT_CONFIG[variant]
 	const shellRoute = useCurrentShellRoute()
 	const scope = resolveShellRouteScope(shellRoute)
+	const isAllScope = scope.type === 'all'
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 	const entityDetailController = useEntityDetailController()
 	const activeDetail = entityDetailController.activeDetail
 	const openEntityDrawer = entityDetailController.openDrawer
 	const taskPreviewController = useTaskPreviewController()
 
+	// All 与单 Space「所有任务」同一 viewKey 语义，仅 scope 不同
 	const listInput = useMemo(
 		() => ({
 			scope,
-			viewKey: 'all' as const,
+			viewKey: TASK_LIST_PAGE_VIEW_KEY,
 			placement: config.placement,
 		}),
 		[config.placement, scope],
@@ -53,13 +61,23 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 	const openCreate = useCallback(() => {
 		openTaskCreateDialog(config.createDraft)
 	}, [config.createDraft, openTaskCreateDialog])
+	const fallbackSubtitle = useMemo(() => {
+		if (!isAllScope) {
+			return config.fallbackSubtitle
+		}
+		// 所有空间：命令板副标题优先露出 Space
+		return (task: TaskListSubtitleTask) => {
+			const spaceLabel = task.spaceName ?? '未命名空间'
+			return task.projectName ? `${spaceLabel} · ${task.projectName}` : spaceLabel
+		}
+	}, [config.fallbackSubtitle, isAllScope])
 	const taskCollection = useTaskCollectionScene({
 		source: { items: taskSourceItems, status: taskBoardStatus },
 		displayPageKey: config.displayPageKey,
 		projects: projectOptions,
 		supportsProject: config.supportsProject,
 		initialShowCompleted: config.initialShowCompleted,
-		fallbackSubtitle: config.fallbackSubtitle,
+		fallbackSubtitle,
 		activeTaskId,
 		onCreateTask: openCreate,
 		onOpenTask: (taskId) => {
@@ -74,6 +92,7 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 		projectOptions,
 		spaces,
 		showProjectCellOptions: config.supportsProject,
+		showSpaceLabel: isAllScope,
 		empty: {
 			emptyActionLabel: '创建任务',
 			emptyDescription: config.emptyDescription,

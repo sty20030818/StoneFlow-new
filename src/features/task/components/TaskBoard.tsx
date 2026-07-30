@@ -82,6 +82,8 @@ export type TaskBoardProps = {
 	spaces?: Array<{ id: string; name: string }>
 	onSelectPlacement?: (task: TaskListItem, target: TaskPlacementTarget) => void
 	showProjectCellOptions?: boolean
+	/** 所有空间列表：行内固定展示 Space 名 */
+	showSpaceLabel?: boolean
 	visibleProperties?: TaskDisplayPropertyKey[]
 }
 
@@ -119,6 +121,7 @@ export function TaskBoard({
 	spaces,
 	onSelectPlacement,
 	showProjectCellOptions = true,
+	showSpaceLabel = false,
 	visibleProperties,
 }: TaskBoardProps) {
 	const openSections = useShellPreferenceStore(selectProjectTaskBoardOpenSections)
@@ -211,6 +214,7 @@ export function TaskBoard({
 							}
 						: undefined
 				}
+				showSpaceLabel={showSpaceLabel}
 				task={task}
 				visibleProperties={visibleProperties}
 			/>

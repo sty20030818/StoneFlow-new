@@ -48,6 +48,24 @@ describe('tasks api', () => {
 		})
 	})
 
+	it('所有空间列表发送 scope=all 且与单 Space 共用 viewKey 语义', async () => {
+		mockedInvoke.mockResolvedValue([])
+
+		await listTasks({
+			scope: { type: 'all' },
+			viewKey: 'all',
+			placement: { kind: 'all' },
+		})
+
+		expect(mockedInvoke).toHaveBeenCalledWith('list_tasks', {
+			input: {
+				scope: { type: 'all' },
+				viewKey: 'all',
+				placement: { kind: 'all', projectId: null },
+			},
+		})
+	})
+
 	it('创建、更新和详情读取保持 camelCase 输入', async () => {
 		mockedInvoke.mockResolvedValue({})
 

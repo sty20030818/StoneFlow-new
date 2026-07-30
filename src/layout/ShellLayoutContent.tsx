@@ -110,7 +110,7 @@ export function ShellLayoutContent({
 
 	const currentSpaceLabel =
 		currentScope.type === 'all'
-			? '全部 Spaces'
+			? '所有空间'
 			: (chrome.spaces.find((space) => space.id === currentSpaceId)?.name ??
 				currentSpaceId ??
 				'未选择 Space')
