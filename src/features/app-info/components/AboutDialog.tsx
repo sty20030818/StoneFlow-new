@@ -96,7 +96,7 @@ export function AboutDialog({ open, onOpenChange, onOpenChangelog }: AboutDialog
 					<div className='grid grid-cols-2 gap-2'>
 						<Button onClick={handleOpenChangelog} size='sm' type='button' variant='outline'>
 							<HistoryIcon aria-hidden className='size-3.5' />
-							更新记录
+							更新日志
 						</Button>
 						<Button disabled={isChecking} onClick={() => void checkNow()} size='sm' type='button'>
 							<RefreshCwIcon aria-hidden className={cn('size-3.5', isChecking && 'animate-spin')} />

@@ -125,13 +125,13 @@ export function UserAppMenu({
 
 				{/* 应用 */}
 				<DropdownMenuGroup>
-					<DropdownMenuItem onSelect={onOpenChangelog}>
-						<HistoryIcon />
-						<span>更新记录</span>
-					</DropdownMenuItem>
 					<DropdownMenuItem disabled={isChecking} onSelect={() => void checkNow()}>
 						<RefreshCwIcon />
 						<span>{isChecking ? '正在检查更新...' : '检查更新'}</span>
+					</DropdownMenuItem>
+					<DropdownMenuItem onSelect={onOpenChangelog}>
+						<HistoryIcon />
+						<span>更新日志</span>
 					</DropdownMenuItem>
 					<DropdownMenuItem onSelect={onOpenAbout}>
 						<InfoIcon />

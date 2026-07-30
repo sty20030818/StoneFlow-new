@@ -36,7 +36,7 @@
   模块：`app-info` 组件与模型、共享 Dialog / Button 测试。
   依赖：T2.1、T1.1。
   对应：AC-3、AC-5、AC-6、AC-7。
-  验证：版本展示与降级、关闭、调用共享检查动作、打开更新记录 intent，以及四个 `null` 链接均不调用 opener 的测试。
+  验证：版本展示与降级、关闭、调用共享检查动作、打开更新日志 intent，以及四个 `null` 链接均不调用 opener 的测试。
 
 - [x] **T2.3 装配菜单、shell intent 与 overlay**
   模块：`UserAppMenu`、`ShellHeader`、`ShellChrome`、`ShellLayoutContent`、`ShellOverlays` 及相关测试。
@@ -88,7 +88,7 @@
 
 - 更新域拆分为事件监听、唯一的手动检查入口及安装动作；设置页、头像菜单和关于窗口复用同一主动检查路径，避免重复请求和第二份检查状态。
 - 新增 `app-info` feature：版本读取、关于窗口和外部资料入口集中在该 feature；官网、反馈、隐私政策、许可证目前均为 `null`，界面显示“待配置”并禁用，不会调用系统 opener。
-- 头像菜单已启用“检查更新”和“关于 StoneFlow”；关于窗口内可转到更新记录，且不改变路由。
+- 头像菜单已启用“检查更新”和“关于 StoneFlow”；关于窗口内可转到更新日志，且不改变路由。
 - 生产 `tauri.conf.json` 已移除 `dangerousInsecureTransportProtocol`；仅 `tauri.dev.conf.json` 为本地 Mock 保留该开关。新增 `tauri:dev` 命令加载开发配置；Mock 服务只监听 `127.0.0.1`。
 - 已通过：`bun run typecheck`、`bun run lint`、`bun run lint:boundaries`、`bun run format:check`、定向 Vitest（7 个文件、35 项测试）以及 `cargo test --manifest-path src-tauri/Cargo.toml -p stoneflow-runtime update::adapter::tests::changelog_url_should_share_release_root_with_update_base_url`。
 - 全量 Vitest 未通过，失败与本任务无关：`src/features/changelog/useChangelog.test.tsx` 仍断言打包 `CHANGELOG.md` 包含已不存在的 `0.1.2`，实际得到空数组。应在独立任务中同步该测试夹具与当前变更记录。

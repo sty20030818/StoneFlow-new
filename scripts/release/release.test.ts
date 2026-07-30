@@ -36,7 +36,7 @@ describe('validateChangelog', () => {
 
 	test('接受空版本集合和有效 beta 标题', async () => {
 		const fixture = await withChangelog(
-			`# StoneFlow 更新记录\n\n## [0.2.0-beta.1] - 2026-07-29\n\n- 测试内容`,
+			`# StoneFlow 更新日志\n\n## [0.2.0-beta.1] - 2026-07-29\n\n- 测试内容`,
 		)
 		try {
 			await expect(validateChangelog(fixture.filePath)).resolves.toBeUndefined()

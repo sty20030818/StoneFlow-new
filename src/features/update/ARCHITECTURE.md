@@ -78,7 +78,7 @@ src/features/update/
 | 位置 | 挂载 |
 |------|------|
 | `layout/ShellLayoutContent.tsx` | `useUpdateEvents()`，消费一次性更新完成确认并发出 changelog 打开意图 |
-| `layout/overlays/ShellOverlays.tsx` | `UpdateDialog` · `SystemStatusChip`；更新记录弹窗由 changelog 模块装配 |
+| `layout/overlays/ShellOverlays.tsx` | `UpdateDialog` · `SystemStatusChip`；更新日志弹窗由 changelog 模块装配 |
 | `layout/ShellFooter.tsx` | `UpdateStatusFooterItem` （版本号属 `@/features/app-info`） |
 | `features/settings` 页（update 分区） | 直接挂 `UpdateSettingsSection` |
 

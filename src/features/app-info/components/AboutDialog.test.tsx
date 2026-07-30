@@ -25,7 +25,7 @@ describe('AboutDialog', () => {
 		expect(openAppInfoUrl).not.toHaveBeenCalled()
 	})
 
-	it('关闭关于窗口并可转到更新记录', async () => {
+	it('关闭关于窗口并可转到更新日志', async () => {
 		const onOpenChange = vi.fn()
 		const onOpenChangelog = vi.fn()
 		render(<AboutDialog onOpenChange={onOpenChange} onOpenChangelog={onOpenChangelog} open />)
@@ -34,7 +34,7 @@ describe('AboutDialog', () => {
 		expect(onOpenChange).toHaveBeenCalledWith(false)
 		expect(screen.queryByRole('button', { name: '关闭' })).not.toBeInTheDocument()
 
-		fireEvent.click(screen.getByRole('button', { name: /更新记录/ }))
+		fireEvent.click(screen.getByRole('button', { name: /更新日志/ }))
 		await waitFor(() => expect(onOpenChangelog).toHaveBeenCalledTimes(1))
 		expect(onOpenChange).toHaveBeenCalledWith(false)
 	})

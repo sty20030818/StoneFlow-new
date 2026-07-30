@@ -1,4 +1,4 @@
-# changelog · 更新记录
+# changelog · 更新日志
 
 唯一内容源是仓库根 `CHANGELOG.md`。模块通过 Tauri 更新边界优先读取发布到 R2 的静态副本，失败时回退到构建时嵌入的同一文件快照。
 

@@ -3,36 +3,53 @@ import type { ReactNode } from 'react'
 export function ChangelogMarkdown({ content }: { content: string }) {
 	const blocks = parseSimpleMarkdown(content)
 	return (
-		<div className='space-y-2.5 text-[13px] leading-6 text-foreground'>
+		<div className='space-y-3.5 text-[13px] leading-6 text-sf-text-secondary'>
 			{blocks.map((block, index) => {
 				if (block.type === 'h2') {
 					return (
-						<h3 className='m-0 text-[14px] font-semibold' key={index}>
+						<h3 className='m-0 pt-1.5 text-[15px] font-semibold text-sf-text-primary' key={index}>
 							{renderInline(block.text)}
 						</h3>
 					)
 				}
 				if (block.type === 'h3') {
 					return (
-						<h4 className='m-0 text-[13px] font-semibold' key={index}>
+						<h4 className='m-0 pt-1.5 text-[14px] font-semibold text-sf-text-primary' key={index}>
 							{renderInline(block.text)}
 						</h4>
 					)
 				}
 				if (block.type === 'list') {
 					return (
-						<ul className='m-0 space-y-1 p-0' key={index}>
+						<ul className='m-0 space-y-1.5 p-0' key={index}>
 							{block.items.map((item, itemIndex) => (
-								<li className='flex items-start gap-2' key={itemIndex}>
-									<span className='mt-2.25 size-1 shrink-0 rounded-full bg-foreground/40' />
-									<span className='text-sf-shell-text-tertiary'>{renderInline(item)}</span>
+								<li
+									className={
+										item.level === 0
+											? itemIndex > 0 && block.items[itemIndex - 1].level > 0
+												? 'mt-2.5 flex items-start gap-2'
+												: 'flex items-start gap-2'
+											: item.level === 1
+												? 'ml-5 flex items-start gap-2'
+												: 'ml-10 flex items-start gap-2'
+									}
+									key={itemIndex}
+								>
+									<span
+										className={
+											item.level === 0
+												? 'mt-2.25 size-1 shrink-0 rounded-full bg-sf-text-tertiary'
+												: 'mt-2.5 h-px w-1.5 shrink-0 bg-sf-text-quaternary'
+										}
+									/>
+									<span className='text-sf-text-secondary'>{renderInline(item.text)}</span>
 								</li>
 							))}
 						</ul>
 					)
 				}
 				return (
-					<p className='m-0 text-sf-shell-text-tertiary' key={index}>
+					<p className='m-0 text-sf-text-secondary' key={index}>
 						{renderInline(block.text)}
 					</p>
 				)
@@ -44,12 +61,17 @@ export function ChangelogMarkdown({ content }: { content: string }) {
 type MarkdownBlock =
 	| { type: 'h2'; text: string }
 	| { type: 'h3'; text: string }
-	| { type: 'list'; items: string[] }
+	| { type: 'list'; items: MarkdownListItem[] }
 	| { type: 'p'; text: string }
+
+type MarkdownListItem = {
+	level: number
+	text: string
+}
 
 function parseSimpleMarkdown(content: string): MarkdownBlock[] {
 	const blocks: MarkdownBlock[] = []
-	let listItems: string[] = []
+	let listItems: MarkdownListItem[] = []
 	let paragraph: string[] = []
 	const flushParagraph = () => {
 		if (paragraph.length) {
@@ -65,6 +87,11 @@ function parseSimpleMarkdown(content: string): MarkdownBlock[] {
 	}
 	for (const rawLine of content.split('\n')) {
 		const line = rawLine.trimEnd()
+		if (/^ {0,3}(-{3,}|_{3,}|\*{3,})\s*$/.test(line)) {
+			flushParagraph()
+			flushList()
+			continue
+		}
 		if (line.startsWith('## ')) {
 			flushParagraph()
 			flushList()
@@ -77,9 +104,13 @@ function parseSimpleMarkdown(content: string): MarkdownBlock[] {
 			blocks.push({ type: 'h3', text: line.slice(4).trim() })
 			continue
 		}
-		if (line.startsWith('- ') || line.startsWith('* ')) {
+		const listMatch = line.match(/^(\s*)[-*]\s+(.+)$/)
+		if (listMatch) {
 			flushParagraph()
-			listItems.push(line.slice(2).trim())
+			listItems.push({
+				level: Math.min(Math.floor(listMatch[1].replaceAll('\t', '  ').length / 2), 2),
+				text: listMatch[2].trim(),
+			})
 			continue
 		}
 		if (!line.trim()) {

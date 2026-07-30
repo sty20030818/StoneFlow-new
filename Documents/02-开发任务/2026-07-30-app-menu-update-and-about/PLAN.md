@@ -57,7 +57,7 @@ src/features/app-info/
 
 ### Shell 与菜单
 
-`UserAppMenu` 自身消费 update feature 的公开主动检查 Hook，并把“关于”作为 shell open intent 向上交给 header。`ShellLayoutContent` 持有关于窗口的瞬时 open state，`ShellOverlays` 是 `AboutDialog` 的唯一挂载点；这与既有更新记录 intent 的职责一致。
+`UserAppMenu` 自身消费 update feature 的公开主动检查 Hook，并把“关于”作为 shell open intent 向上交给 header。`ShellLayoutContent` 持有关于窗口的瞬时 open state，`ShellOverlays` 是 `AboutDialog` 的唯一挂载点；这与既有更新日志 intent 的职责一致。
 
 不为关于窗口建立全局 store，也不让 `app-info` 反向依赖 `layout`。
 
@@ -89,7 +89,7 @@ src/features/app-info/
 
 AboutDialog
   -> “检查更新” -> useManualUpdateCheck
-  -> “查看更新记录” -> shell changelog intent
+  -> “查看更新日志” -> shell changelog intent
   -> 外部链接配置为 null -> 禁用占位，不调用 opener
 ```
 
@@ -119,7 +119,7 @@ AboutDialog
 
 关于窗口沿用当前紧凑 Dialog、语义 token、Lucide outline 图标和系统字体，不引入第二套样式或动画库。应用图标和等宽版本号是唯一视觉焦点；内容按“产品身份、版本、操作、资料入口”排序。
 
-关闭、更新记录、检查更新与每个资料入口都具备清晰文本、键盘焦点和禁用反馈。检查中只做必要的文字与禁用状态变化，不添加高频动画；尊重现有 reduced-motion 约束。
+关闭、更新日志、检查更新与每个资料入口都具备清晰文本、键盘焦点和禁用反馈。检查中只做必要的文字与禁用状态变化，不添加高频动画；尊重现有 reduced-motion 约束。
 
 ## 风险与恢复
 

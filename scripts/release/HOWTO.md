@@ -162,7 +162,7 @@ cp .env.example .env.local
 - 执行 `tauri build`（带签名）
 - 收集当前平台 updater 产物（macOS 为 `.app.tar.gz`，Linux 为 `.AppImage.tar.gz`，Windows 优先 NSIS `.exe`，否则 MSI `.msi`）和对应 `.sig` 签名文件
 - 额外收集当前平台下载包到 `downloads/<channel>/<platform>/`，用于用户手动下载安装
-- 校验并先上传根 `CHANGELOG.md` 作为独立更新记录
+- 校验并先上传根 `CHANGELOG.md` 作为独立更新日志
 - 生成本平台 `platforms/<platform>/latest.json` 与全局 `latest.release.json`（版本分配）
 - 上传 updater 产物到 R2 的 `stoneflow/updates/stable/releases/<version>/platforms/<platform>/`，上传下载包到 `stoneflow/downloads/stable/<platform>/`
 - 只推进当前平台的 pointer，不覆盖其它平台的 latest
@@ -217,7 +217,7 @@ bun run release -- --no-upload
 
 ```
 stoneflow/
-├── CHANGELOG.md                              # 唯一用户更新记录（先于平台 latest 上传）
+├── CHANGELOG.md                              # 唯一用户更新日志（先于平台 latest 上传）
 ├── updates/
 │   ├── stable/
 │   │   ├── latest.release.json                 # 全局：版本分配 / commit 绑定

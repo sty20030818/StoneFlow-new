@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { findChangelogEntry, parseChangelog, visibleChangelogEntries } from './model'
 
-const CONTENT = `# StoneFlow 更新记录
+const CONTENT = `# StoneFlow 更新日志
 
 ## [0.2.0] - 2026-07-30
 
