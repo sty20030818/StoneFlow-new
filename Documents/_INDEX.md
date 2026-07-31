@@ -38,11 +38,7 @@
 
 ## 当前活跃任务
 
-- [所有空间任务执行台落地](./02-开发任务/2026-07-31-all-spaces-task-workspace/SPEC.md)（[PLAN](./02-开发任务/2026-07-31-all-spaces-task-workspace/PLAN.md) · [TASKS](./02-开发任务/2026-07-31-all-spaces-task-workspace/TASKS.md)）
-
-近期归档：
-
-- [本地优先同步平台（单设备主路径完成；P3 双设备延期）](./98-归档/02-已完成重构/2026-07-24-local-first-sync-platform/SPEC.md)
+- [任务集合查询与虚拟列表性能重构](./02-开发任务/2026-07-31-task-collection-query-virtualization/SPEC.md)（[PLAN](./02-开发任务/2026-07-31-task-collection-query-virtualization/PLAN.md) · [TASKS](./02-开发任务/2026-07-31-task-collection-query-virtualization/TASKS.md)）— 实现中
 
 ## 模块文档规则
 
