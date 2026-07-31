@@ -36,13 +36,15 @@ export async function listViews() {
 	return [...SYSTEM_VIEWS, ...custom.map(toCustomView)]
 }
 
-export async function runTaskView(input: RunTaskViewInput) {
+export async function runTaskView(input: RunTaskViewInput): Promise<RunTaskViewResult> {
 	const key =
 		SYSTEM_VIEWS.find((view) => view.id === input.viewId)?.systemKey ?? input.viewKey ?? null
 	const result = await invoke<{
 		view: Record<string, unknown> | null
 		items: Array<Record<string, unknown>>
 		groups: RunTaskViewResult['groups']
+		totalCount?: number
+		nextCursor?: string | null
 	}>('run_task_view', {
 		input: {
 			scope: toScopePayload(input.scope),
@@ -51,14 +53,21 @@ export async function runTaskView(input: RunTaskViewInput) {
 			filters: input.filters,
 			sort: input.sort ? toSortPayload(input.sort) : undefined,
 			groupBy: input.groupBy ?? undefined,
+			limit: input.limit ?? null,
+			cursor: input.cursor ?? null,
 		},
 	})
+	if (typeof result.totalCount !== 'number') {
+		throw new Error('run_task_view 响应缺少 totalCount')
+	}
 	return {
 		view: result.view
 			? toCustomView(result.view)
 			: SYSTEM_VIEWS.find((view) => view.systemKey === key)!,
 		items: result.items.map(toTaskListItem),
 		groups: result.groups,
+		totalCount: result.totalCount,
+		nextCursor: result.nextCursor ?? null,
 	}
 }
 

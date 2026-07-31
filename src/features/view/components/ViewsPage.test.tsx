@@ -153,22 +153,43 @@ vi.mock('@/features/view/hooks/view.queries', () => ({
 			refetch: loadTaskViewsSpy,
 		}
 	},
-	useTaskViewRunQuery: (
+	useTaskViewRunInfiniteQuery: (
 		input: { scope: { type: string }; viewId: string | null; viewKey: string | null } | null,
 	) => {
 		if (input) {
 			runTaskViewSpy(input)
 		}
+		const item = mockViewQueryState.taskRun.item as
+			| { items?: unknown[]; totalCount?: number; nextCursor?: string | null }
+			| null
+			| undefined
+		const pages = item
+			? [
+					{
+						...item,
+						items: item.items ?? [],
+						totalCount: item.totalCount ?? (item.items?.length ?? 0),
+						nextCursor: item.nextCursor ?? null,
+					},
+				]
+			: undefined
 
 		return {
-			data: mockViewQueryState.taskRun.item,
+			data: pages ? { pages, pageParams: [null] } : undefined,
 			isError: mockViewQueryState.taskRun.status === 'error',
 			isLoading: mockViewQueryState.taskRun.status === 'loading',
 			isPending: mockViewQueryState.taskRun.status === 'loading',
 			error: mockViewQueryState.taskRun.error,
 			refetch: refreshTaskRunSpy,
+			hasNextPage: false,
+			isFetchingNextPage: false,
+			fetchNextPage: vi.fn(),
+			isFetchNextPageError: false,
 		}
 	},
+	flattenTaskViewPages: (
+		pages: Array<{ items: unknown[] }> | undefined,
+	) => pages?.flatMap((page) => page.items) ?? [],
 }))
 
 vi.mock('@/features/view/hooks/view.mutations', () => ({

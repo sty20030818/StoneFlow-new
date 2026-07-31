@@ -82,7 +82,7 @@ describe('RowShell', () => {
 })
 
 describe('RowSelectionCell', () => {
-	it('未选中未 visible 时保持占位并隐藏', () => {
+	it('未选中未 visible 时保持占位并隐藏，且支持 group-hover 显示', () => {
 		const onCheckedChange = vi.fn()
 		render(
 			<RowSelectionCell ariaLabel='选择任务 A' checked={false} onCheckedChange={onCheckedChange} />,
@@ -90,6 +90,7 @@ describe('RowSelectionCell', () => {
 
 		const checkbox = screen.getByRole('checkbox', { name: '选择任务 A' })
 		expect(checkbox.className).toContain('opacity-0')
+		expect(checkbox.className).toContain('group-hover/row-shell:opacity-100')
 
 		fireEvent.click(checkbox)
 		expect(onCheckedChange).toHaveBeenCalledTimes(1)

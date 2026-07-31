@@ -54,7 +54,39 @@ describe('TaskBoard', () => {
 		expect(screen.queryByText('empty description')).not.toBeInTheDocument()
 	})
 
-	it('customSections 只有 all 分组时仍显示分组标题', () => {
+	it('显示状态分区 header，并用 totalCount 锁定总高', () => {
+		const { container } = render(
+			<TaskBoard
+				activeTaskId={null}
+				onEmptyAction={() => undefined}
+				onOpenTask={() => undefined}
+				onToggleTaskSelection={() => undefined}
+				onToggleTaskStatus={async () => undefined}
+				onUpdateTaskPriority={async () => undefined}
+				onUpdateTaskStatus={async () => undefined}
+				pendingTaskId={null}
+				selectedTaskIdSet={new Set()}
+				status='ready'
+				hasNextPage
+				loadedCount={1}
+				tasks={[createTask({ id: 'task-1', title: '任务 A', status: 'todo' })]}
+				totalCount={100}
+			/>,
+		)
+
+		expect(screen.getByText('任务 A')).toBeInTheDocument()
+		// scrollTop=0 且首个 header start=0 → stuck，浮层 + 原位（opacity:0）
+		expect(screen.getAllByText('待执行').length).toBeGreaterThanOrEqual(1)
+		expect(container.querySelector('[data-task-board-sticky-header]')).toBeTruthy()
+		const root = container.querySelector('[data-task-board-virtual="sections"]')
+		// 续拉中：flat(1 header + 1 行) + 未加载 99 行占位
+		expect(root).toHaveAttribute('data-task-board-extent')
+		const extent = Number(root?.getAttribute('data-task-board-extent'))
+		expect(extent).toBe(1 * 42 + 1 * 50 + 99 * 50)
+		expect((root as HTMLElement).style.height).toBe(`${extent}px`)
+	})
+
+	it('customSections 显示分组标题', () => {
 		render(
 			<TaskBoard
 				activeTaskId={null}
@@ -75,11 +107,12 @@ describe('TaskBoard', () => {
 				selectedTaskIdSet={new Set()}
 				status='ready'
 				tasks={[createTask({ id: 'task-1', title: '任务 A' })]}
+				totalCount={1}
 			/>,
 		)
 
 		expect(screen.getByText('任务 A')).toBeInTheDocument()
-		expect(screen.getByText('全部任务')).toBeInTheDocument()
+		expect(screen.getAllByText('全部任务').length).toBeGreaterThanOrEqual(1)
 	})
 })
 

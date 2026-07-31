@@ -45,6 +45,7 @@ export async function listTasks(input: ListTasksInput): Promise<ListTasksPage> {
 	const page = await invoke<{
 		items: ListTasksPage['items']
 		nextCursor?: string | null
+		totalCount?: number
 	}>('list_tasks', {
 		input: {
 			scope: toScopePayload(input.scope),
@@ -58,9 +59,14 @@ export async function listTasks(input: ListTasksInput): Promise<ListTasksPage> {
 			cursor: input.cursor ?? null,
 		},
 	})
+	// totalCount 为契约必填；缺省视为实现错误，不回退 items.length（会随续拉假增长拇指）
+	if (typeof page.totalCount !== 'number') {
+		throw new Error('list_tasks 响应缺少 totalCount')
+	}
 	return {
 		items: page.items,
 		nextCursor: page.nextCursor ?? null,
+		totalCount: page.totalCount,
 	}
 }
 

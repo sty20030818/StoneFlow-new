@@ -46,6 +46,10 @@ export type TaskCollectionSceneInput = {
 	isFetchingNextPage?: boolean
 	fetchNextPage?: () => void
 	fetchNextPageError?: string | null
+	/** 过滤后任务总数（首屏定滚动条） */
+	totalCount?: number
+	/** 服务端已拉取条数（pages 展平） */
+	loadedCount?: number
 }
 
 /**
@@ -150,6 +154,8 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 			isFetchingNextPage: input.isFetchingNextPage,
 			onFetchNextPage: input.fetchNextPage,
 			fetchNextPageError: input.fetchNextPageError,
+			totalCount: input.totalCount,
+			loadedCount: input.loadedCount,
 		}),
 		[
 			displayResult.boardPatch.customSections,
@@ -174,6 +180,8 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 			input.showSpaceLabel,
 			input.source.status,
 			input.spaces,
+			input.totalCount,
+			input.loadedCount,
 			mutations,
 			selection,
 		],

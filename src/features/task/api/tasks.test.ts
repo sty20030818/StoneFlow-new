@@ -22,7 +22,7 @@ describe('tasks api', () => {
 	})
 
 	it('读取列表时发送 scope、viewKey 和 placement，并解析分页', async () => {
-		mockedInvoke.mockResolvedValue({ items: [], nextCursor: null })
+		mockedInvoke.mockResolvedValue({ items: [], nextCursor: null, totalCount: 0 })
 
 		const page = await listTasks({
 			scope: { type: 'space', spaceId: 'space-1' },
@@ -33,7 +33,7 @@ describe('tasks api', () => {
 			},
 		})
 
-		expect(page).toEqual({ items: [], nextCursor: null })
+		expect(page).toEqual({ items: [], nextCursor: null, totalCount: 0 })
 		expect(mockedInvoke).toHaveBeenCalledWith('list_tasks', {
 			input: {
 				scope: {
@@ -53,7 +53,7 @@ describe('tasks api', () => {
 	})
 
 	it('所有空间列表发送 scope=all 且与单 Space 共用 viewKey 语义', async () => {
-		mockedInvoke.mockResolvedValue({ items: [], nextCursor: 'c1' })
+		mockedInvoke.mockResolvedValue({ items: [], nextCursor: 'c1', totalCount: 42 })
 
 		const page = await listTasks({
 			scope: { type: 'all' },
@@ -62,6 +62,7 @@ describe('tasks api', () => {
 		})
 
 		expect(page.nextCursor).toBe('c1')
+		expect(page.totalCount).toBe(42)
 		expect(mockedInvoke).toHaveBeenCalledWith('list_tasks', {
 			input: {
 				scope: { type: 'all' },
@@ -75,7 +76,7 @@ describe('tasks api', () => {
 	})
 
 	it('列表可下推 statuses 与 cursor', async () => {
-		mockedInvoke.mockResolvedValue({ items: [], nextCursor: null })
+		mockedInvoke.mockResolvedValue({ items: [], nextCursor: null, totalCount: 0 })
 
 		await listTasks({
 			scope: { type: 'all' },

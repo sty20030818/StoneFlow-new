@@ -9,6 +9,7 @@ import {
 	createTaskPriorityMetadataDropdownProps,
 	createTaskStatusMetadataDropdownProps,
 	MetadataDateDropdown,
+	MetadataFieldButton,
 	MetadataFieldDropdown,
 	MetadataPlacementDropdown,
 	resolveTaskPlacementTarget,
@@ -16,6 +17,7 @@ import {
 	type TaskPlacementGroup,
 	type TaskPlacementTarget,
 } from '@/features/metadata-fields'
+import { getSpaceVisual } from '@/features/space'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
 import {
 	CreatedAtCell,
@@ -44,7 +46,8 @@ export type TaskRowAdapterProps = {
 	contextMenuActions?: TaskContextMenuBulkActions
 	projectBinding?: {
 		projectOptions?: Array<{ id: string; name: string; spaceId: string }>
-		spaces?: Array<{ id: string; name: string }>
+		/** 含 iconKey/colorKey 时可渲染 Space 真实彩色图标 */
+		spaces?: Array<{ id: string; name: string; iconKey?: string; colorKey?: string }>
 		onSelectPlacement?: (task: TaskListItem, target: TaskPlacementTarget) => void
 		showProjectCellOptions?: boolean
 		/** Board 级预计算的 placement groups；有则不再按行 build */
@@ -67,6 +70,45 @@ export type TaskRowAdapterProps = {
 		onArchiveTask?: (task: TaskListItem) => Promise<void>
 		onDeleteTask?: (task: TaskListItem) => Promise<void>
 	}
+}
+
+function taskRowAdapterPropsEqual(
+	prev: TaskRowAdapterProps,
+	next: TaskRowAdapterProps,
+): boolean {
+	// 滚动时父级常新建 rowState / contextTasks 对象；按字段比，避免 memo 失效卡顿
+	if (prev.task !== next.task) return false
+	if (prev.actions !== next.actions) return false
+	if (prev.contextMenuActions !== next.contextMenuActions) return false
+	if (prev.projectBinding !== next.projectBinding) return false
+	if (prev.visibleProperties !== next.visibleProperties) return false
+	if (prev.showSpaceLabel !== next.showSpaceLabel) return false
+	if (prev.selectionGroupPosition !== next.selectionGroupPosition) return false
+	if (
+		prev.rowShortcutHandlers?.onHover !== next.rowShortcutHandlers?.onHover ||
+		prev.rowShortcutHandlers?.onPointerMove !== next.rowShortcutHandlers?.onPointerMove
+	) {
+		return false
+	}
+	const ps = prev.rowState
+	const ns = next.rowState
+	if (
+		ps.isActive !== ns.isActive ||
+		ps.isSelected !== ns.isSelected ||
+		ps.isPending !== ns.isPending ||
+		ps.isHovered !== ns.isHovered ||
+		ps.hoverSource !== ns.hoverSource
+	) {
+		return false
+	}
+	const pc = prev.contextTasks
+	const nc = next.contextTasks
+	if (pc === nc) return true
+	if (!pc || !nc || pc.length !== nc.length) return false
+	for (let i = 0; i < pc.length; i++) {
+		if (pc[i] !== nc[i]) return false
+	}
+	return true
 }
 
 /**
@@ -97,7 +139,8 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 	const priorityDropdownProps = useMemo(() => createTaskPriorityMetadataDropdownProps(), [])
 	const statusDropdownProps = useMemo(() => createTaskStatusMetadataDropdownProps(), [])
 	const placementDropdownProps = useMemo(() => {
-		if (projectBinding?.placementGroups) {
+		// 预计算 groups 仅在非空时采用；空数组会导致 findTaskPlacementGroupItem 失败从而隐藏按钮
+		if (projectBinding?.placementGroups && projectBinding.placementGroups.length > 0) {
 			return {
 				menuLabel: projectBinding.placementMenuLabel ?? '移动到项目...',
 				headerShortcut: projectBinding.placementHeaderShortcut ?? '⇧ P',
@@ -107,6 +150,7 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 		const placementSpaces = projectBinding?.spaces?.some((space) => space.id === task.spaceId)
 			? projectBinding.spaces
 			: [{ id: task.spaceId, name: task.spaceName }, ...(projectBinding?.spaces ?? [])]
+		// 必须用 task.spaceId 作为 currentSpaceId（null 会得到空 groups，归属按钮消失）
 		return createTaskPlacementGroupedDropdownProps({
 			mode: 'local',
 			currentSpaceId: task.spaceId,
@@ -118,6 +162,19 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 		spaceId: task.spaceId,
 		projectId: task.projectId,
 	})
+	// All scope 行右侧 Space 按钮：用该 Space 自己的 iconKey + colorKey
+	const spaceButtonVisual = useMemo(() => {
+		const matched = projectBinding?.spaces?.find((space) => space.id === task.spaceId)
+		const visual = getSpaceVisual({
+			iconKey: matched?.iconKey ?? 'user',
+			colorKey: matched?.colorKey ?? 'blue',
+		})
+		const SpaceIcon = visual.icon
+		return {
+			label: matched?.name ?? task.spaceName,
+			icon: <SpaceIcon className={`size-3.5 shrink-0 ${visual.iconClassName}`} />,
+		}
+	}, [projectBinding?.spaces, task.spaceId, task.spaceName])
 	const visiblePropertySet = useMemo(
 		() =>
 			new Set(
@@ -275,14 +332,7 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 					</RowShell.Leading>
 
 					<RowShell.Title>
-						<div className='flex min-w-0 flex-col gap-0.5'>
-							<RowTitleCell doneLike={isDoneLike} title={task.title} />
-							{showSpaceLabel && task.spaceName ? (
-								<span className='truncate text-[11px] leading-tight text-sf-text-tertiary'>
-									{task.spaceName}
-								</span>
-							) : null}
-						</div>
+						<RowTitleCell doneLike={isDoneLike} title={task.title} />
 					</RowShell.Title>
 				</RowShell.Left>
 
@@ -331,6 +381,21 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 								}
 							/>
 						) : null}
+						{/* All scope：Space 以行右侧按钮形式展示（与归属/日期并列） */}
+						{showSpaceLabel && spaceButtonVisual.label ? (
+							<MetadataFieldButton
+								ariaLabel={`所属空间 ${spaceButtonVisual.label}`}
+								compact
+								icon={spaceButtonVisual.icon}
+								label={spaceButtonVisual.label}
+								stopPropagation
+								// 展示用：点击不打开菜单（改归属走 project 按钮）
+								onClick={(event) => {
+									event.preventDefault()
+									event.stopPropagation()
+								}}
+							/>
+						) : null}
 						{showUpdatedAt ? <UpdatedAtCell value={task.updatedAt} /> : null}
 						{showCreatedAt ? <CreatedAtCell value={task.createdAt} /> : null}
 					</RowShell.Fields>
@@ -338,7 +403,7 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 			</RowShell.Root>
 		</TaskContextMenu>
 	)
-})
+}, taskRowAdapterPropsEqual)
 
 function UpdatedAtCell({ value }: { value: string | null | undefined }) {
 	if (!value) {

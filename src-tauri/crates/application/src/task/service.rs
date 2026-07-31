@@ -78,6 +78,8 @@ pub struct ListTasksInput {
 pub struct ListTasksPageDto {
     pub items: Vec<TaskListItemDto>,
     pub next_cursor: Option<String>,
+    /// 当前过滤条件下的任务总数；首屏即可定死滚动条总高。
+    pub total_count: u64,
 }
 
 /// Task 列表 placement 查询输入。
@@ -253,6 +255,8 @@ pub trait TaskPersistence: Send + Sync {
     async fn commit(&self, connection: Self::Connection) -> Result<(), ApplicationError>;
     async fn get(&self, task_id: &str) -> Result<Option<TaskRecord>, ApplicationError>;
     async fn list(&self, query: TaskListQuery) -> Result<Vec<TaskRecord>, ApplicationError>;
+    /// 与 list 相同过滤条件的任务总数（忽略 cursor/limit）。
+    async fn count(&self, query: TaskListQuery) -> Result<u64, ApplicationError>;
     async fn next_position(
         &self,
         connection: &Self::Connection,
@@ -381,18 +385,28 @@ where
             .as_deref()
             .map(decode_task_list_cursor)
             .transpose()?;
-        let mut tasks = self
+        let list_query = TaskListQuery {
+            space_id: scope.space_id.clone(),
+            placement: placement.clone(),
+            lifecycle: repository_lifecycle_for_preset(view_preset),
+            statuses: statuses.clone(),
+            // 多取 1 条用于判断是否还有下一页；lifecycle 二次滤后可能不足，见下
+            limit: Some(limit.saturating_add(1)),
+            cursor,
+        };
+        // 总数与 list 同过滤、无分页；首屏即可锁定滚动条拇指高度
+        let total_count = self
             .persistence
-            .list(TaskListQuery {
+            .count(TaskListQuery {
                 space_id: scope.space_id,
                 placement,
                 lifecycle: repository_lifecycle_for_preset(view_preset),
                 statuses,
-                // 多取 1 条用于判断是否还有下一页；lifecycle 二次滤后可能不足，见下
-                limit: Some(limit.saturating_add(1)),
-                cursor,
+                limit: None,
+                cursor: None,
             })
             .await?;
+        let mut tasks = self.persistence.list(list_query).await?;
         tasks = apply_view_preset(tasks, view_preset);
 
         let next_cursor = if tasks.len() as u32 > limit {
@@ -405,7 +419,11 @@ where
         };
 
         let items = self.build_task_list(tasks).await?;
-        Ok(ListTasksPageDto { items, next_cursor })
+        Ok(ListTasksPageDto {
+            items,
+            next_cursor,
+            total_count,
+        })
     }
 
     /// 读取 Task 详情。

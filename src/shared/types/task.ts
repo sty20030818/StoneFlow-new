@@ -120,6 +120,8 @@ export type ListTasksInput = {
 export type ListTasksPage = {
 	items: TaskListItem[]
 	nextCursor: string | null
+	/** 当前过滤条件下的任务总数；首屏用于定死滚动条总高 */
+	totalCount: number
 }
 
 export type CreateTaskInput = {

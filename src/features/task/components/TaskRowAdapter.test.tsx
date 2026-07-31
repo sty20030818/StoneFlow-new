@@ -57,8 +57,8 @@ function createProjectBinding(
 			{ id: 'project-3', name: '项目 C', spaceId: 'space-2' },
 		],
 		spaces: [
-			{ id: 'space-1', name: '个人' },
-			{ id: 'space-2', name: '工作' },
+			{ id: 'space-1', name: '个人', iconKey: 'user', colorKey: 'blue' },
+			{ id: 'space-2', name: '工作', iconKey: 'briefcase', colorKey: 'green' },
 		],
 		onSelectPlacement: vi.fn(),
 		showProjectCellOptions: true,
@@ -111,14 +111,23 @@ describe('TaskRowAdapter', () => {
 		expect(actions.onOpenTask).toHaveBeenCalledWith('task-1')
 	})
 
-	it('showSpaceLabel 时固定展示 Space 名', () => {
+	it('showSpaceLabel 时固定展示 Space 名与真实彩色 icon', () => {
 		renderTaskRowAdapter({
 			showSpaceLabel: true,
-			task: buildTask({ spaceName: '工作', title: '跨空间任务' }),
+			task: buildTask({
+				spaceId: 'space-2',
+				spaceName: '工作',
+				title: '跨空间任务',
+			}),
 		})
 
 		expect(screen.getByText('工作')).toBeInTheDocument()
 		expect(screen.getByText('跨空间任务')).toBeInTheDocument()
+		const spaceButton = screen.getByRole('button', { name: '所属空间 工作' })
+		const icon = spaceButton.querySelector('svg')
+		// briefcase + green token（来自 space-2 的 iconKey/colorKey）
+		expect(icon).toBeTruthy()
+		expect(icon?.getAttribute('class') ?? '').toContain('text-[#2da44e]')
 	})
 
 	it('默认不展示行内 Space 次要标签', () => {

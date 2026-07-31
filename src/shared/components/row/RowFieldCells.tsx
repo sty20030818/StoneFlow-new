@@ -47,7 +47,8 @@ export function RowSelectionCell({
 	ariaLabel,
 	onCheckedChange,
 }: RowSelectionCellProps) {
-	const isVisible = checked || visible
+	// checked / visible（键盘 hover）强制显示；指针 hover 用 row-shell group，避免 React 全表 re-render
+	const forceVisible = checked || visible
 
 	return (
 		<button
@@ -55,7 +56,9 @@ export function RowSelectionCell({
 			aria-label={ariaLabel}
 			className={cn(
 				'flex size-5 shrink-0 items-center justify-center rounded-full bg-transparent p-0 outline-none transition-colors disabled:pointer-events-none disabled:opacity-40',
-				isVisible ? 'opacity-100' : 'opacity-0',
+				forceVisible
+					? 'opacity-100'
+					: 'opacity-0 group-hover/row-shell:opacity-100 group-focus-within/row-shell:opacity-100',
 				'focus-visible:border-border focus-visible:ring-0',
 			)}
 			data-checked={checked}

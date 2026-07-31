@@ -134,6 +134,51 @@ impl TaskPersistence for TaskPersistenceAdapter {
         });
         Ok(rows.into_iter().map(map_task).collect())
     }
+    async fn count(
+        &self,
+        query: stoneflow_application::task::TaskListQuery,
+    ) -> Result<u64, ApplicationError> {
+        let placement = match query.placement {
+            stoneflow_application::task::TaskPlacementQuery::All => None,
+            stoneflow_application::task::TaskPlacementQuery::Project(ref id) => {
+                Some(Some(id.as_str()))
+            }
+            stoneflow_application::task::TaskPlacementQuery::Standalone => Some(None),
+        };
+        let include_archived = matches!(query.lifecycle, TaskLifecycleView::Archived);
+        // lifecycle 的 status 约束并入 SQL，使 totalCount 与列表语义一致
+        let mut statuses = query.statuses.clone().unwrap_or_default();
+        match query.lifecycle {
+            TaskLifecycleView::Active if statuses.is_empty() => {
+                statuses = vec![
+                    stoneflow_domain::WorkStatus::Todo,
+                    stoneflow_domain::WorkStatus::Doing,
+                    stoneflow_domain::WorkStatus::Waiting,
+                ];
+            }
+            TaskLifecycleView::Completed if statuses.is_empty() => {
+                statuses = vec![stoneflow_domain::WorkStatus::Done];
+            }
+            TaskLifecycleView::Canceled if statuses.is_empty() => {
+                statuses = vec![stoneflow_domain::WorkStatus::Canceled];
+            }
+            _ => {}
+        }
+        let status_filter = if statuses.is_empty() {
+            None
+        } else {
+            Some(statuses.as_slice())
+        };
+        self.tasks
+            .count_visible(
+                query.space_id.as_deref(),
+                placement,
+                include_archived,
+                status_filter,
+            )
+            .await
+            .map_err(from_storage)
+    }
     async fn next_position(
         &self,
         connection: &Self::Connection,

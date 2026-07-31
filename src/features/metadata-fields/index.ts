@@ -34,6 +34,7 @@ export {
 
 export {
 	MetadataFieldDropdown,
+	MetadataFieldButton,
 	MetadataDateDropdown,
 	MetadataDateButton,
 	CustomDateDialog,

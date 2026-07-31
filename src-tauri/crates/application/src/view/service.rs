@@ -72,6 +72,12 @@ pub struct RunTaskViewInput {
     pub filters: Option<TaskViewFiltersValue>,
     pub sort: Option<Vec<ViewSortRule>>,
     pub group_by: Option<TaskGroupBy>,
+    /// 页大小；省略用默认（与 list_tasks 同量级）。
+    #[serde(default)]
+    pub limit: Option<u32>,
+    /// 上一页最后一条 task id（简单 keyset：排序后的 id 游标）。
+    #[serde(default)]
+    pub cursor: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
@@ -118,6 +124,10 @@ pub struct RunTaskViewOutput {
     pub view: Option<ViewDto>,
     pub items: Vec<TaskViewItemDto>,
     pub groups: Vec<TaskViewGroupDto>,
+    /// 过滤+排序后的总数（窗口前）。
+    pub total_count: u64,
+    /// 下一页游标（本页最后一条 id）；无更多则为 null。
+    pub next_cursor: Option<String>,
 }
 
 pub trait ViewPersistence: Send + Sync {
@@ -379,13 +389,36 @@ where
             matches(task, &filters, today) && system_matches(task, system_key, today)
         });
         sort(&mut tasks, &sort_rules);
-        let space_ids = tasks
+        // 窗口：内存滤排后切片（规模 ≤2k）；total_count 为切片前总数
+        let total_count = tasks.len() as u64;
+        let limit = input
+            .limit
+            .unwrap_or(DEFAULT_VIEW_PAGE_SIZE)
+            .clamp(1, 500) as usize;
+        let start = match input.cursor.as_deref() {
+            Some(cursor_id) => tasks
+                .iter()
+                .position(|task| task.id == cursor_id)
+                .map(|index| index + 1)
+                .unwrap_or(0),
+            None => 0,
+        };
+        let end = (start + limit).min(tasks.len());
+        let has_more = end < tasks.len();
+        let page_tasks = &tasks[start..end];
+        let next_cursor = if has_more {
+            page_tasks.last().map(|task| task.id.clone())
+        } else {
+            None
+        };
+
+        let space_ids = page_tasks
             .iter()
             .map(|task| task.space_id.clone())
             .collect::<HashSet<_>>()
             .into_iter()
             .collect::<Vec<_>>();
-        let project_ids = tasks
+        let project_ids = page_tasks
             .iter()
             .filter_map(|task| task.project_id.clone())
             .collect::<HashSet<_>>()
@@ -405,7 +438,7 @@ where
             .into_iter()
             .map(|project| (project.id, project.name))
             .collect::<HashMap<_, _>>();
-        let items = tasks
+        let items = page_tasks
             .iter()
             .map(|task| {
                 let space = spaces
@@ -434,14 +467,20 @@ where
                 })
             })
             .collect::<Result<Vec<_>, ApplicationError>>()?;
-        let groups = group(&tasks, group_by);
+        // groups 按全量过滤结果算（分组键完整）；task_ids 仅含本页会出现在 items 中的
+        let groups = group(page_tasks, group_by);
         Ok(RunTaskViewOutput {
             view,
             items,
             groups,
+            total_count,
+            next_cursor,
         })
     }
 }
+
+/// 与 list_tasks 默认页大小对齐。
+const DEFAULT_VIEW_PAGE_SIZE: u32 = 150;
 
 fn system_definition(key: SystemViewKey) -> (TaskViewFiltersValue, Vec<ViewSortRule>) {
     let active = vec![WorkStatus::Todo, WorkStatus::Doing, WorkStatus::Waiting];

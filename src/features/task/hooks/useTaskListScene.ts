@@ -127,6 +127,8 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 		isFetchingNextPage: taskList.isFetchingNextPage,
 		fetchNextPage: taskList.fetchNextPage,
 		fetchNextPageError: taskList.fetchNextPageError,
+		totalCount: taskList.totalCount,
+		loadedCount: taskList.loadedCount,
 	})
 
 	const applyStatusMode = useCallback(

@@ -1,7 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
-import { useVirtualizer } from '@tanstack/react-virtual'
+import { defaultRangeExtractor, useVirtualizer, type Range } from '@tanstack/react-virtual'
+import { uniq } from 'es-toolkit/array'
 import { registerTaskBoardScrollToTaskId } from './taskBoardScroll'
-import { groupBy, uniq } from 'es-toolkit/array'
+import { useScrollAreaViewport } from '@/shared/components/AppScrollArea'
+import {
+	TASK_BOARD_HEADER_HEIGHT,
+	TASK_BOARD_HEADER_SIZE,
+	TASK_BOARD_ROW_HEIGHT,
+	TASK_BOARD_ROW_SIZE,
+	buildTaskBoardExtent,
+	buildTaskBoardFlatItems,
+	buildTaskBoardItemOffsets,
+	buildTaskBoardStickyPush,
+	listTaskBoardStickyIndexes,
+	measureTaskBoardFlatSize,
+	type TaskBoardFlatItem,
+} from '@/features/task/model/taskBoardModel'
 
 import {
 	selectProjectTaskBoardOpenSections,
@@ -10,9 +24,9 @@ import {
 import {
 	BoardEmptyState,
 	BoardLoadingState,
-	BoardRoot,
-	BOARD_GROUP_HEADER_CLASS,
+	BoardSectionContextMenu,
 } from '@/shared/components/board'
+import { ROW_SHELL_SECTION_HEADER_CLASS } from '@/shared/components/patterns/row-tokens'
 import { useDialogStore } from '@/features/shell-dialogs'
 import { useSectionSelection } from '@/features/bulk-action'
 import type { TaskDisplayPropertyKey } from '@/features/display-options'
@@ -21,27 +35,30 @@ import {
 	orderTasksByTaskBoardVisualOrder,
 } from '@/features/task/model/taskBoardOrder'
 import { type TaskPriorityValue } from '@/features/task/model/taskPriority'
-import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { TaskRowShortcutScope, type TaskRowShortcutState } from '@/features/task/shortcuts'
 import { TaskRowAdapter, type TaskRowAdapterProps } from '@/features/task/components/TaskRowAdapter'
 import { TaskStatusIndicator } from '@/features/task/model/indicators/TaskStatusIndicator'
 import { useTaskContextMenuBulkActions } from '@/features/task/components/useTaskContextMenuBulkActions'
-import { createTaskPlacementGroupedDropdownProps } from '@/features/metadata-fields'
 import type { TaskPlacementTarget } from '@/features/metadata-fields'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
 import { Button } from '@/shared/components/base/button'
 import { Badge } from '@/shared/components/base/badge'
+import {
+	ContextMenu,
+	ContextMenuTrigger,
+} from '@/shared/components/base/context-menu'
 import { ListTodoIcon, PlusIcon, TriangleIcon } from 'lucide-react'
 import {
 	entityBoardCompactBadgeClass,
 	entityBoardSectionActionButtonClass,
 	entityBoardSectionCountBadgeClass,
+	entityBoardSectionHeadingClass,
+	entityBoardSectionRightSpacerClass,
 	entityBoardSectionSelectedBadgeClass,
 	entityBoardSectionToggleClass,
 } from '@/shared/components/patterns/entity-board'
 import { StatusNotice } from '@/shared/components/StatusNotice'
 import { cn } from '@/shared/lib/utils'
-import { ROW_SHELL_SECTION_HEADER_CLASS } from '@/shared/components/patterns/row-tokens'
 
 export type TaskBoardProps = {
 	tasks: TaskListItem[]
@@ -86,46 +103,30 @@ export type TaskBoardProps = {
 	statusOrder?: readonly TaskStatus[]
 	hideEmptySections?: boolean
 	projectOptions?: Array<{ id: string; name: string; spaceId: string }>
-	spaces?: Array<{ id: string; name: string }>
+	spaces?: Array<{ id: string; name: string; iconKey?: string; colorKey?: string }>
 	onSelectPlacement?: (task: TaskListItem, target: TaskPlacementTarget) => void
 	showProjectCellOptions?: boolean
-	/** 所有空间列表：行内固定展示 Space 名 */
 	showSpaceLabel?: boolean
 	visibleProperties?: TaskDisplayPropertyKey[]
-	/** keyset 续拉 */
 	hasNextPage?: boolean
 	isFetchingNextPage?: boolean
 	onFetchNextPage?: () => void
 	fetchNextPageError?: string | null
+	/**
+	 * 服务端过滤后任务总数（与 list/view 窗口同语义）。
+	 * 续拉中：未加载行占位；已拉完：总高跟 flat（折叠变矮）。
+	 */
+	totalCount?: number
+	/** 服务端已拉取条数（pages 展平，非折叠可见行） */
+	loadedCount?: number
 }
 
-type FlatItem =
-	| {
-			kind: 'header'
-			key: string
-			label: string
-			count: number
-			status?: TaskStatus
-			open: boolean
-	  }
-	| {
-			kind: 'row'
-			key: string
-			task: TaskListItem
-	  }
+export { TASK_BOARD_ROW_SIZE } from '@/features/task/model/taskBoardModel'
 
-const HEADER_SIZE = 36
-const ROW_SIZE = 40
-const ROW_SIZE_WITH_SPACE = 52
-
-function getMainCardScrollElement() {
-	return (
-		document.querySelector<HTMLElement>('[data-scroll-container-role="main-card"]') ??
-		// 测试 / 无壳环境：回退到 documentElement，避免 virtualizer 0 视口
-		document.documentElement
-	)
-}
-
+/**
+ * 任务 Board：状态分区 sticky + 虚拟行。
+ * 几何见 taskBoardModel；滚动容器来自 AppScrollArea context。
+ */
 export function TaskBoard({
 	tasks,
 	status = 'ready',
@@ -155,7 +156,7 @@ export function TaskBoard({
 	onOpenTask,
 	onPeekTask,
 	statusOrder = TASK_BOARD_STATUS_ORDER,
-	hideEmptySections = false,
+	hideEmptySections = true,
 	projectOptions,
 	spaces,
 	onSelectPlacement,
@@ -166,6 +167,8 @@ export function TaskBoard({
 	isFetchingNextPage = false,
 	onFetchNextPage,
 	fetchNextPageError = null,
+	totalCount,
+	loadedCount,
 }: TaskBoardProps) {
 	const openSections = useShellPreferenceStore(selectProjectTaskBoardOpenSections)
 	const setProjectTaskBoardOpenSections = useShellPreferenceStore(
@@ -173,25 +176,47 @@ export function TaskBoard({
 	)
 	const contextMenuActions = useTaskContextMenuBulkActions({ onClearTaskSelection })
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
+	const scrollViewportRef = useScrollAreaViewport()
 	const measureRef = useRef<HTMLDivElement | null>(null)
+	const spacerSizeRef = useRef(0)
+	/** flat / sticky 几何缓存：供 scroll 帧 DOM 写 push，避免 setState 刷整表 */
+	const stickyMetaRef = useRef({ stickyIndexes: [] as number[], itemOffsets: [] as number[] })
 
 	const groupedTasks = useMemo(() => {
-		const tasksByStatus = groupBy(tasks, (task) => task.status)
-
-		return {
-			todo: tasksByStatus.todo ?? [],
-			doing: tasksByStatus.doing ?? [],
-			waiting: tasksByStatus.waiting ?? [],
-			done: tasksByStatus.done ?? [],
-			canceled: tasksByStatus.canceled ?? [],
-		} satisfies Record<TaskStatus, TaskListItem[]>
+		const map: Record<TaskStatus, TaskListItem[]> = {
+			todo: [],
+			doing: [],
+			waiting: [],
+			done: [],
+			canceled: [],
+		}
+		for (const task of tasks) {
+			map[task.status].push(task)
+		}
+		return map
 	}, [tasks])
+
+	const flatItems = useMemo(
+		(): TaskBoardFlatItem[] =>
+			buildTaskBoardFlatItems({
+				tasks,
+				statusOrder,
+				openSections,
+				hideEmptySections,
+				customSections,
+			}),
+		[customSections, hideEmptySections, openSections, statusOrder, tasks],
+	)
+
+	const stickyIndexes = useMemo(() => listTaskBoardStickyIndexes(flatItems), [flatItems])
+	const itemOffsets = useMemo(() => buildTaskBoardItemOffsets(flatItems), [flatItems])
+	const flatSizePx = useMemo(() => measureTaskBoardFlatSize(flatItems), [flatItems])
+	stickyMetaRef.current = { stickyIndexes, itemOffsets }
 
 	const taskShortcutOrder = useMemo(() => {
 		if (customSections && customSections.length > 0) {
 			return orderTasksByTaskBoardVisualOrder(tasks, { statusOrder, customSections })
 		}
-
 		const visibleStatuses = new Set(openSections)
 		return orderTasksByTaskBoardVisualOrder(
 			tasks.filter((task) => visibleStatuses.has(task.status)),
@@ -199,18 +224,17 @@ export function TaskBoard({
 		)
 	}, [customSections, openSections, statusOrder, tasks])
 
-	// Board 级 placement groups：每行复用，避免 O(n) build
-	const placementDropdown = useMemo(() => {
-		if (!projectOptions || !onSelectPlacement) {
-			return null
-		}
-		return createTaskPlacementGroupedDropdownProps({
-			mode: 'local',
-			currentSpaceId: null,
-			spaces: spaces ?? [],
-			projects: projectOptions,
-		})
-	}, [onSelectPlacement, projectOptions, spaces])
+	// 服务端已拉条数；缺省用 tasks.length（无客户端再滤时等价）
+	const serverLoaded = loadedCount ?? tasks.length
+	const knownTotal = typeof totalCount === 'number' && totalCount > 0 ? totalCount : null
+	const { contentHeightPx, spacerSizePx } = buildTaskBoardExtent({
+		flatSizePx,
+		totalCount: knownTotal,
+		loadedServerCount: serverLoaded,
+		hasNextPage,
+	})
+	spacerSizeRef.current = spacerSizePx
+	const virtualCount = flatItems.length + (spacerSizePx > 0 ? 1 : 0)
 
 	const rowActions = useMemo(
 		(): TaskRowAdapterProps['actions'] => ({
@@ -245,84 +269,53 @@ export function TaskBoard({
 			spaces,
 			onSelectPlacement,
 			showProjectCellOptions,
-			placementGroups: placementDropdown?.groups,
-			placementMenuLabel: placementDropdown?.menuLabel,
-			placementHeaderShortcut: placementDropdown?.headerShortcut,
 		}),
-		[
-			onSelectPlacement,
-			placementDropdown?.groups,
-			placementDropdown?.headerShortcut,
-			placementDropdown?.menuLabel,
-			projectOptions,
-			showProjectCellOptions,
-			spaces,
-		],
+		[onSelectPlacement, projectOptions, showProjectCellOptions, spaces],
 	)
 
-	const flatItems = useMemo((): FlatItem[] => {
-		const items: FlatItem[] = []
-		if (customSections && customSections.length > 0) {
-			for (const section of customSections) {
-				items.push({
-					kind: 'header',
-					key: `h:${section.key}`,
-					label: section.label,
-					count: section.tasks.length,
-					open: true,
-				})
-				for (const task of section.tasks) {
-					items.push({ kind: 'row', key: task.id, task })
-				}
-			}
-			return items
-		}
-
-		const openSectionSet = new Set(openSections)
-		for (const status of statusOrder) {
-			const sectionTasks = groupedTasks[status]
-			if (hideEmptySections && sectionTasks.length === 0) {
-				continue
-			}
-			const open = openSectionSet.has(status)
-			items.push({
-				kind: 'header',
-				key: `h:${status}`,
-				label: formatTaskStatusLabel(status),
-				count: sectionTasks.length,
-				status,
-				open,
-			})
-			if (open) {
-				for (const task of sectionTasks) {
-					items.push({ kind: 'row', key: task.id, task })
-				}
-			}
-		}
-		return items
-	}, [customSections, groupedTasks, hideEmptySections, openSections, statusOrder])
-
-	const rowEstimate = showSpaceLabel ? ROW_SIZE_WITH_SPACE : ROW_SIZE
+	const rangeExtractor = useCallback(
+		(range: Range) => {
+			// 强制保留当前 + 下一个分区 header，保证顶替过程中两者同时在 DOM
+			const active =
+				[...stickyIndexes].reverse().find((index) => range.startIndex >= index) ??
+				stickyIndexes[0] ??
+				0
+			const activePos = stickyIndexes.indexOf(active)
+			const nextSticky =
+				activePos >= 0 && activePos < stickyIndexes.length - 1
+					? stickyIndexes[activePos + 1]
+					: undefined
+			const next = new Set(
+				[active, nextSticky, ...defaultRangeExtractor(range)].filter(
+					(index): index is number => typeof index === 'number',
+				),
+			)
+			return [...next].sort((a, b) => a - b)
+		},
+		[stickyIndexes],
+	)
 
 	const virtualizer = useVirtualizer({
-		count: flatItems.length,
-		getScrollElement: getMainCardScrollElement,
-		estimateSize: (index) => (flatItems[index]?.kind === 'header' ? HEADER_SIZE : rowEstimate),
-		overscan: 12,
-		// jsdom / 首帧未量到高度时给合理视口，避免 0 行
+		count: virtualCount,
+		getScrollElement: () => scrollViewportRef?.current ?? null,
+		estimateSize: (index) => {
+			if (index < flatItems.length) {
+				return flatItems[index]?.kind === 'header' ? TASK_BOARD_HEADER_SIZE : TASK_BOARD_ROW_SIZE
+			}
+			return spacerSizeRef.current
+		},
+		getItemKey: (index) => flatItems[index]?.key ?? `spacer:${index}`,
+		measureElement: undefined,
+		overscan: 6,
 		initialRect: { width: 960, height: 720 },
-		// 外部滚动容器时测量挂载节点
-		measureElement:
-			typeof window !== 'undefined' && 'ResizeObserver' in window
-				? (element) => element.getBoundingClientRect().height
-				: undefined,
+		rangeExtractor,
 	})
 
 	const handleSectionOpenChange = useCallback(
-		(status: TaskStatus, open: boolean) => {
+		(sectionStatus: TaskStatus, open: boolean) => {
 			const nextSections = open
-				? uniq([...openSections, status])
-				: openSections.filter((section) => section !== status)
+				? uniq([...openSections, sectionStatus])
+				: openSections.filter((section) => section !== sectionStatus)
 			setProjectTaskBoardOpenSections(nextSections)
 		},
 		[openSections, setProjectTaskBoardOpenSections],
@@ -337,12 +330,19 @@ export function TaskBoard({
 		setProjectTaskBoardOpenSections(allVisible)
 	}, [groupedTasks, setProjectTaskBoardOpenSections, statusOrder])
 
+	// shortcut handlers 稳定引用：避免每帧新建 { onHover } 导致行 memo 失效
+	const shortcutHandlersRef = useRef<TaskRowShortcutState | null>(null)
+
 	const renderTaskRow = useCallback(
 		(task: TaskListItem, rowShortcutState?: TaskRowShortcutState) => {
+			if (rowShortcutState) {
+				shortcutHandlersRef.current = rowShortcutState
+			}
+			const handlers = shortcutHandlersRef.current
+			// 未多选时不传 contextTasks，避免每帧 [task] 新数组打穿 memo
 			const contextTasks = selectedTaskIdSet.has(task.id)
 				? tasks.filter((item) => selectedTaskIdSet.has(item.id))
-				: [task]
-			// 仅键盘 hover 走 React 状态，指针 hover 用 CSS（避免全表 re-render）
+				: undefined
 			const isKeyboardHover =
 				rowShortcutState?.hoverSource === 'keyboard' && rowShortcutState.hoveredId === task.id
 			return (
@@ -352,10 +352,10 @@ export function TaskBoard({
 					contextTasks={contextTasks}
 					projectBinding={projectBinding}
 					rowShortcutHandlers={
-						rowShortcutState
+						handlers
 							? {
-									onHover: rowShortcutState.onRowHover,
-									onPointerMove: rowShortcutState.onRowPointerMove,
+									onHover: handlers.onRowHover,
+									onPointerMove: handlers.onRowPointerMove,
 								}
 							: undefined
 					}
@@ -385,25 +385,22 @@ export function TaskBoard({
 		],
 	)
 
-	// —— 所有 hooks 必须在任何 early return 之前（Rules of Hooks）——
 	const virtualItems = virtualizer.getVirtualItems()
-	const totalSize = virtualizer.getTotalSize()
-	const useVirtualWindow = virtualItems.length > 0
 	const lastVirtualIndex = virtualItems[virtualItems.length - 1]?.index ?? -1
 
-	// 接近末尾续拉
 	useEffect(() => {
 		if (
 			status !== 'ready' ||
 			!hasNextPage ||
 			!onFetchNextPage ||
 			isFetchingNextPage ||
-			lastVirtualIndex < 0 ||
-			lastVirtualIndex < flatItems.length - 8
+			lastVirtualIndex < 0
 		) {
 			return
 		}
-		onFetchNextPage()
+		if (lastVirtualIndex >= flatItems.length - 8 || lastVirtualIndex >= flatItems.length) {
+			onFetchNextPage()
+		}
 	}, [
 		flatItems.length,
 		hasNextPage,
@@ -413,8 +410,19 @@ export function TaskBoard({
 		status,
 	])
 
-	// 键盘导航：先把目标行滚进虚拟窗口
-	useEffect(() => {
+	// sticky：直接用 virtualizer.scrollOffset（virtualizer 本就会因滚动 re-render）
+	// 不再 setBoardScrollTop，避免双倍 React 协调
+	const stickyLayout = buildTaskBoardStickyPush({
+		stickyIndexes,
+		itemOffsets,
+		scrollTop: virtualizer.scrollOffset ?? 0,
+	})
+	const stickyHeaderItem =
+		stickyLayout != null ? flatItems[stickyLayout.activeStickyIndex] : undefined
+	const stickyHeader =
+		stickyHeaderItem?.kind === 'header' ? stickyHeaderItem : null
+
+		useEffect(() => {
 		const indexByTaskId = new Map<string, number>()
 		for (let i = 0; i < flatItems.length; i++) {
 			const item = flatItems[i]
@@ -472,100 +480,169 @@ export function TaskBoard({
 			selectedTaskIdSet={selectedTaskIdSet}
 			tasks={taskShortcutOrder}
 		>
-			{(rowShortcutState) => (
-				<BoardRoot>
-					<div
-						className='relative w-full'
-						data-task-board-virtual={useVirtualWindow ? 'true' : 'fallback'}
-						ref={measureRef}
-						style={useVirtualWindow ? { height: totalSize } : undefined}
-					>
-						{(useVirtualWindow
-							? virtualItems.map((virtualRow) => ({
-									index: virtualRow.index,
-									start: virtualRow.start,
-									key: String(virtualRow.key),
-								}))
-							: flatItems.map((item, index) => ({
-									index,
-									start: 0,
-									key: item.key,
-								}))
-						).map(({ index, start, key }) => {
-							const item = flatItems[index]
-							if (!item) {
-								return null
+			{(rowShortcutState) => {
+				const renderHeader = (item: Extract<TaskBoardFlatItem, { kind: 'header' }>) => (
+					<div style={{ height: TASK_BOARD_HEADER_HEIGHT }}>
+						<StatusSectionHeader
+							count={item.count}
+							createProjectId={createProjectId}
+							label={item.label}
+							onCollapseAll={handleCollapseAll}
+							onExpandAll={handleExpandAll}
+							onOpenChange={
+								item.status
+									? (open) => handleSectionOpenChange(item.status!, open)
+									: undefined
 							}
-
-							return (
-								<div
-									data-index={index}
-									key={key}
-									ref={useVirtualWindow ? virtualizer.measureElement : undefined}
-									style={
-										useVirtualWindow
-											? {
-													position: 'absolute',
-													top: 0,
-													left: 0,
-													width: '100%',
-													transform: `translateY(${start}px)`,
-												}
-											: undefined
-									}
-								>
-									{item.kind === 'header' ? (
-										<VirtualSectionHeader
-											count={item.count}
-											createProjectId={createProjectId}
-											label={item.label}
-											onCollapseAll={handleCollapseAll}
-											onExpandAll={handleExpandAll}
-											onOpenChange={
-												item.status
-													? (open) => handleSectionOpenChange(item.status!, open)
-													: undefined
-											}
-											onToggleTaskSelection={onToggleTaskSelection}
-											open={item.open}
-											openTaskCreateDialog={openTaskCreateDialog}
-											selectedTaskIdSet={selectedTaskIdSet}
-											status={item.status}
-											tasks={item.status ? groupedTasks[item.status] : []}
-										/>
-									) : (
-										<div className='px-0 py-px'>{renderTaskRow(item.task, rowShortcutState)}</div>
-									)}
-								</div>
-							)
-						})}
+							onToggleTaskSelection={onToggleTaskSelection}
+							open={item.open}
+							openTaskCreateDialog={openTaskCreateDialog}
+							selectedTaskIdSet={selectedTaskIdSet}
+							status={item.status}
+							tasks={item.status ? groupedTasks[item.status] : []}
+						/>
 					</div>
-					{isFetchingNextPage ? (
-						<div className='px-2 py-2 text-center text-[12px] text-sf-text-tertiary'>
-							加载更多…
-						</div>
-					) : null}
-					{fetchNextPageError ? (
-						<div className='px-2 py-2 text-center text-[12px] text-destructive'>
-							{fetchNextPageError}
-							{onFetchNextPage ? (
-								<button
-									className='ml-2 underline'
-									onClick={() => onFetchNextPage()}
-									type='button'
+				)
+
+				const activeStickyIndex = stickyLayout?.activeStickyIndex ?? -1
+				// 原位 header 在「已吸顶」时隐藏，顶替过程中由浮层 + 下一个 absolute header 共同完成动画
+				const hideListHeaderIndex =
+					stickyLayout?.stuck === true ? stickyLayout.activeStickyIndex : -1
+
+				return (
+					// 不用 BoardRoot 的 flex-1：虚拟列表必须由内容定高驱动 scrollHeight
+					<div className='relative w-full' data-board-root='true'>
+						{/* 零高度 sticky 浮层 + pushOffset：下一 header 顶上来时把当前标题顶走 */}
+						{stickyLayout?.stuck && stickyHeader ? (
+							<div
+								className='sticky top-0 z-20'
+								data-task-board-sticky-header='true'
+								style={{ height: 0, overflow: 'visible' }}
+							>
+								<div
+									style={{
+										height: TASK_BOARD_HEADER_HEIGHT,
+										transform: `translate3d(0, ${stickyLayout.pushOffset}px, 0)`,
+										willChange: 'transform',
+									}}
 								>
-									重试
-								</button>
-							) : null}
+									{renderHeader(stickyHeader)}
+								</div>
+							</div>
+						) : null}
+						<div
+							className='relative w-full'
+							data-task-board-virtual='sections'
+							data-task-board-extent={contentHeightPx}
+							ref={measureRef}
+							style={{ height: contentHeightPx, minHeight: contentHeightPx }}
+						>
+							{(virtualItems.length > 0
+								? virtualItems.map((row) => ({
+										index: row.index,
+										start: row.start,
+										size: row.size,
+										key: String(row.key),
+									}))
+								: flatItems.map((item, index) => ({
+										index,
+										start: itemOffsets[index] ?? 0,
+										size: item.kind === 'header' ? TASK_BOARD_HEADER_SIZE : TASK_BOARD_ROW_SIZE,
+										key: item.key,
+									}))
+							).map(({ index, start, size, key }) => {
+								const item = flatItems[index]
+								// 尾部 spacer：只占位，不渲染业务 UI
+								if (!item && index >= flatItems.length) {
+									return (
+										<div
+											aria-hidden
+											data-index={index}
+											data-task-board-spacer='true'
+											key={key}
+											style={{
+												position: 'absolute',
+												top: 0,
+												left: 0,
+												width: '100%',
+												height: size,
+												transform: `translateY(${start}px)`,
+												pointerEvents: 'none',
+											}}
+										/>
+									)
+								}
+								const isHiddenStickySource =
+									item?.kind === 'header' && index === hideListHeaderIndex
+								// 下一个即将顶替的 header 提高层级，保证从下方盖过被顶走的浮层
+								const isIncomingSticky =
+									item?.kind === 'header' &&
+									stickyLayout?.nextStickyIndex === index &&
+									stickyLayout.pushOffset < 0
+
+								return (
+									<div
+										data-index={index}
+										data-sticky={index === activeStickyIndex ? 'true' : undefined}
+										key={key}
+										style={{
+											// 全部 absolute：scrollHeight 只由外层 height 决定
+											position: 'absolute',
+											transform: `translateY(${start}px)`,
+											opacity: isHiddenStickySource ? 0 : 1,
+											pointerEvents: isHiddenStickySource ? 'none' : undefined,
+											zIndex: isIncomingSticky ? 3 : item?.kind === 'header' ? 1 : 0,
+											top: 0,
+											left: 0,
+											width: '100%',
+											height: size,
+											// 滚动性能：跳过屏外布局（虚拟窗口内仍可见项）
+											contentVisibility: 'auto',
+											containIntrinsicSize: size,
+										}}
+									>
+										{!item ? null : item.kind === 'header' ? (
+											renderHeader(item)
+										) : (
+											<div style={{ height: TASK_BOARD_ROW_HEIGHT }}>
+												{renderTaskRow(item.task, rowShortcutState)}
+											</div>
+										)}
+									</div>
+								)
+							})}
 						</div>
-					) : null}
-				</BoardRoot>
-			)}
+						{isFetchingNextPage || fetchNextPageError ? (
+							<div className='pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-center'>
+								{isFetchingNextPage ? (
+									<div className='rounded-full bg-card/90 px-3 py-1 text-[12px] text-sf-text-tertiary shadow-sm'>
+										加载更多…
+									</div>
+								) : null}
+								{fetchNextPageError ? (
+									<div className='pointer-events-auto rounded-full bg-card/90 px-3 py-1 text-[12px] text-destructive shadow-sm'>
+										{fetchNextPageError}
+										{onFetchNextPage ? (
+											<button
+												className='ml-2 underline'
+												onClick={() => onFetchNextPage()}
+												type='button'
+											>
+												重试
+											</button>
+										) : null}
+									</div>
+								) : null}
+							</div>
+						) : null}
+					</div>
+				)
+			}}
 		</TaskRowShortcutScope>
 	)
 }
 
-function VirtualSectionHeader({
+function StatusSectionHeader({
 	status,
 	label,
 	count,
@@ -593,43 +670,42 @@ function VirtualSectionHeader({
 	openTaskCreateDialog: (draft?: { projectId?: string | null; status?: TaskStatus }) => void
 }) {
 	const sectionIds = useMemo(() => tasks.map((t) => t.id), [tasks])
-	const { selectedCount } = useSectionSelection({
+	const { selectedCount, handleSelectAll, handleDeselectAll } = useSectionSelection({
 		sectionIds,
 		selectedIdSet: selectedTaskIdSet,
 		onToggleSelection: onToggleTaskSelection,
 	})
 
-	return (
+	// 不用 CSS sticky：虚拟列表的顶替由外层浮层 + pushOffset 负责，这里只保留视觉 surface
+	const header = (
 		<div
-			className={cn(
-				'flex items-center justify-between gap-3 px-1',
-				BOARD_GROUP_HEADER_CLASS,
-				ROW_SHELL_SECTION_HEADER_CLASS,
-			)}
+			className={cn(ROW_SHELL_SECTION_HEADER_CLASS, 'relative z-10')}
 			data-board-section-header='true'
+			onDoubleClick={() => onOpenChange?.(!open)}
 		>
-			<div className='flex min-w-0 items-center gap-2'>
-				{status && onOpenChange ? (
-					<button
-						aria-expanded={open}
-						aria-label={`${open ? '折叠' : '展开'}${label}`}
-						className={entityBoardSectionToggleClass}
-						onClick={() => onOpenChange(!open)}
-						type='button'
-					>
-						<TriangleIcon
-							className={cn('size-3 transition-transform', open ? 'rotate-90' : '')}
-							data-chevron
-						/>
-						<span className='sr-only'>{label}</span>
-					</button>
-				) : null}
-				{status ? <TaskStatusIndicator status={status} /> : null}
-				<span className='truncate text-sm font-semibold text-foreground'>{label}</span>
-				<Badge
-					className={cn(entityBoardSectionCountBadgeClass, entityBoardCompactBadgeClass)}
-					variant='secondary'
+			{status && onOpenChange ? (
+				<button
+					aria-expanded={open}
+					aria-label={`切换 ${label} 分区折叠状态`}
+					className={entityBoardSectionToggleClass}
+					onClick={() => onOpenChange(!open)}
+					type='button'
 				>
+					<span className='inline-flex size-3 shrink-0 items-center justify-center' data-chevron>
+						<TriangleIcon
+							className={cn(
+								'size-1.5 text-sf-icon-subtle transition-transform',
+								open ? 'rotate-180' : 'rotate-90',
+							)}
+							fill='currentColor'
+						/>
+					</span>
+				</button>
+			) : null}
+			<div className={entityBoardSectionHeadingClass}>
+				{status ? <TaskStatusIndicator status={status} /> : null}
+				<span className='truncate'>{label}</span>
+				<Badge className={entityBoardSectionCountBadgeClass} variant='secondary'>
 					{count}
 				</Badge>
 				{selectedCount > 0 ? (
@@ -641,35 +717,14 @@ function VirtualSectionHeader({
 					</Badge>
 				) : null}
 			</div>
-			<div className='flex items-center gap-1'>
-				{onOpenChange ? (
-					<>
-						<button
-							className='px-1 text-[11px] text-sf-text-tertiary hover:text-foreground'
-							onClick={onCollapseAll}
-							type='button'
-						>
-							全部折叠
-						</button>
-						<button
-							className='px-1 text-[11px] text-sf-text-tertiary hover:text-foreground'
-							onClick={onExpandAll}
-							type='button'
-						>
-							全部展开
-						</button>
-					</>
-				) : null}
+			{status ? (
 				<Button
 					aria-label={`在 ${label} 中创建任务`}
 					className={entityBoardSectionActionButtonClass}
 					onClick={(event) => {
 						event.preventDefault()
 						event.stopPropagation()
-						openTaskCreateDialog({
-							projectId: createProjectId,
-							...(status ? { status } : {}),
-						})
+						openTaskCreateDialog({ projectId: createProjectId, status })
 					}}
 					size='icon-xs'
 					type='button'
@@ -677,7 +732,31 @@ function VirtualSectionHeader({
 				>
 					<PlusIcon />
 				</Button>
-			</div>
+			) : (
+				<span className={entityBoardSectionRightSpacerClass} />
+			)}
+		</div>
+	)
+
+	if (!onOpenChange) {
+		return header
+	}
+
+	return (
+		<div data-board-section='true' data-state={open ? 'open' : 'closed'}>
+			<ContextMenu>
+				<ContextMenuTrigger asChild>{header}</ContextMenuTrigger>
+				<BoardSectionContextMenu
+					onCollapse={() => onOpenChange(false)}
+					onCollapseAll={onCollapseAll}
+					onDeselectAll={handleDeselectAll}
+					onExpand={() => onOpenChange(true)}
+					onExpandAll={onExpandAll}
+					onSelectAll={handleSelectAll}
+					open={open}
+					selectedCount={selectedCount}
+				/>
+			</ContextMenu>
 		</div>
 	)
 }

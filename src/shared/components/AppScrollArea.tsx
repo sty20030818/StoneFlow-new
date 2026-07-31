@@ -1,8 +1,24 @@
-import { forwardRef, useImperativeHandle, useRef, type ComponentProps, type ReactNode } from 'react'
+import {
+	createContext,
+	forwardRef,
+	useContext,
+	useImperativeHandle,
+	useRef,
+	type ComponentProps,
+	type ReactNode,
+	type RefObject,
+} from 'react'
 
 import { cn } from '@/shared/lib/utils'
 
 import { OverlayScrollbar } from './OverlayScrollbar'
+
+/** 真实滚动 viewport ref；虚拟列表 / sticky 通过此 context 获取，禁止 querySelector */
+const ScrollAreaViewportContext = createContext<RefObject<HTMLDivElement | null> | null>(null)
+
+export function useScrollAreaViewport(): RefObject<HTMLDivElement | null> | null {
+	return useContext(ScrollAreaViewportContext)
+}
 
 export type AppScrollAreaProps = {
 	className?: string
@@ -24,8 +40,8 @@ export type AppScrollAreaProps = {
 }
 
 /**
- * AppScrollArea 是 StoneFlow 内部统一滚动容器。
- * 它只负责提供稳定的 viewport 协议，并把 OverlayScrollbar 接到真实滚动元素上。
+ * AppScrollArea：统一滚动容器 + OverlayScrollbar。
+ * 通过 ScrollAreaViewportContext 暴露 viewport ref（TaskBoard virtualizer 使用）。
  */
 export const AppScrollArea = forwardRef<HTMLDivElement, AppScrollAreaProps>(
 	(
@@ -52,32 +68,34 @@ export const AppScrollArea = forwardRef<HTMLDivElement, AppScrollAreaProps>(
 		useImperativeHandle(forwardedRef, () => viewportRef.current as HTMLDivElement, [])
 
 		return (
-			<div className={cn('relative flex min-h-0 flex-col overflow-hidden', className)}>
-				<div
-					{...viewportProps}
-					className={cn(
-						'no-scrollbar min-h-0 max-h-full flex-1 overflow-y-auto',
-						viewportClassName,
-					)}
-					data-scroll-container='true'
-					data-scroll-container-role={scrollContainerRole}
-					ref={viewportRef}
-				>
-					{children}
+			<ScrollAreaViewportContext.Provider value={viewportRef}>
+				<div className={cn('relative flex min-h-0 flex-col overflow-hidden', className)}>
+					<div
+						{...viewportProps}
+						className={cn(
+							'no-scrollbar min-h-0 max-h-full flex-1 overflow-y-auto',
+							viewportClassName,
+						)}
+						data-scroll-container='true'
+						data-scroll-container-role={scrollContainerRole}
+						ref={viewportRef}
+					>
+						{children}
+					</div>
+					<OverlayScrollbar
+						activeThumbClassName={activeThumbClassName}
+						className={scrollbarClassName}
+						hoverThumbClassName={hoverThumbClassName}
+						idleThumbClassName={idleThumbClassName}
+						minThumbHeight={minThumbHeight}
+						scrollRef={viewportRef}
+						thumbClassName={thumbClassName}
+						thumbLengthRatio={thumbLengthRatio}
+						trackInsetBottom={trackInsetBottom}
+						trackInsetTop={trackInsetTop}
+					/>
 				</div>
-				<OverlayScrollbar
-					activeThumbClassName={activeThumbClassName}
-					className={scrollbarClassName}
-					hoverThumbClassName={hoverThumbClassName}
-					idleThumbClassName={idleThumbClassName}
-					minThumbHeight={minThumbHeight}
-					scrollRef={viewportRef}
-					thumbClassName={thumbClassName}
-					thumbLengthRatio={thumbLengthRatio}
-					trackInsetBottom={trackInsetBottom}
-					trackInsetTop={trackInsetTop}
-				/>
-			</div>
+			</ScrollAreaViewportContext.Provider>
 		)
 	},
 )

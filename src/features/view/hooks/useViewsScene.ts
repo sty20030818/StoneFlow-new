@@ -22,7 +22,11 @@ import {
 	useDeleteViewMutation,
 	useUpdateViewMutation,
 } from './view.mutations'
-import { useTaskViewRunQuery, useViewsQuery } from './view.queries'
+import {
+	flattenTaskViewPages,
+	useTaskViewRunInfiniteQuery,
+	useViewsQuery,
+} from './view.queries'
 
 const EMPTY_TASK_VIEWS: View[] = []
 
@@ -71,8 +75,12 @@ export function useViewsScene() {
 				groupBy: search.groupBy ?? undefined,
 			}
 		: null
-	const taskRunQuery = useTaskViewRunQuery(taskRunInput)
-	const taskRun = taskRunQuery.data ?? null
+	const taskRunQuery = useTaskViewRunInfiniteQuery(taskRunInput)
+	const viewItems = useMemo(
+		() => flattenTaskViewPages(taskRunQuery.data?.pages),
+		[taskRunQuery.data?.pages],
+	)
+	const viewTotalCount = taskRunQuery.data?.pages[0]?.totalCount ?? 0
 	const boardStatus =
 		taskViewsQuery.isLoading ||
 		taskViewsQuery.isPending ||
@@ -83,7 +91,7 @@ export function useViewsScene() {
 					? 'error'
 					: 'ready'
 				: 'ready'
-	const visibleTasks = useMemo(() => taskRun?.items ?? [], [taskRun?.items])
+	const visibleTasks = viewItems
 	const breadcrumbItems = useMemo(
 		() =>
 			resolveBreadcrumb({
@@ -151,6 +159,20 @@ export function useViewsScene() {
 		projectOptions,
 		spaces,
 		showProjectCellOptions: false,
+		hasNextPage: Boolean(taskRunQuery.hasNextPage),
+		isFetchingNextPage: taskRunQuery.isFetchingNextPage,
+		fetchNextPage: () => {
+			if (taskRunQuery.hasNextPage && !taskRunQuery.isFetchingNextPage) {
+				void taskRunQuery.fetchNextPage()
+			}
+		},
+		fetchNextPageError: taskRunQuery.isFetchNextPageError
+			? taskRunQuery.error instanceof Error
+				? taskRunQuery.error.message
+				: '加载更多失败'
+			: null,
+		totalCount: viewTotalCount,
+		loadedCount: visibleTasks.length,
 		empty: {
 			emptyActionLabel: activeView ? '创建任务' : '创建视图',
 			emptyDescription: activeView
@@ -221,7 +243,9 @@ export function useViewsScene() {
 		breadcrumbItems,
 		taskCollection,
 		displayPageKey,
-		footerDescription: taskRun ? `当前视图共 ${taskRun.items.length} 条任务` : '正在准备视图数据',
+		footerDescription: activeView
+			? `当前视图共 ${viewTotalCount || visibleTasks.length} 条任务`
+			: '正在准备视图数据',
 		bulk: {
 			selectedCount: taskCollection.selectedCount,
 			clearTaskSelection: taskCollection.clearTaskSelection,

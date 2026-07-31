@@ -22,12 +22,14 @@ type OverlayScrollbarProps<TElement extends HTMLElement = HTMLElement> = {
 	trackInsetTop?: number
 }
 
-type ScrollbarGeometry = {
-	height: number
-	top: number
-	visible: boolean
-}
-
+/**
+ * 自定义覆盖滚动条（纯视觉层）。
+ *
+ * 最佳实践：
+ * - 拇指几何只读原生 scrollTop / scrollHeight / clientHeight，不另造 extent
+ * - 滚动帧只写 DOM（transform/height），不 setState，避免重渲抹掉位移
+ * - 列表要「拇指恒定」，应锁内容 DOM 高度，而不是在滚动条里伪造总高
+ */
 export function OverlayScrollbar<TElement extends HTMLElement = HTMLElement>({
 	scrollRef,
 	className,
@@ -40,55 +42,68 @@ export function OverlayScrollbar<TElement extends HTMLElement = HTMLElement>({
 	trackInsetBottom = 0,
 	trackInsetTop = 0,
 }: OverlayScrollbarProps<TElement>) {
-	const [scrollbar, setScrollbar] = useState<ScrollbarGeometry>({
-		height: 0,
-		top: 0,
-		visible: false,
-	})
+	const [visible, setVisible] = useState(false)
 	const [isHoveringThumb, setIsHoveringThumb] = useState(false)
 	const [isDragging, setIsDragging] = useState(false)
-	const dragStateRef = useRef({ startScrollTop: 0, startY: 0 })
+	const dragStateRef = useRef({ startScrollTop: 0, startY: 0, maxThumbTop: 0, maxScrollTop: 0 })
+	const rafRef = useRef(0)
+	const thumbRef = useRef<HTMLDivElement>(null)
+	const lastVisibleRef = useRef(false)
+	const lastHeightRef = useRef(0)
+	const metricsRef = useRef({ maxThumbTop: 0, maxScrollTop: 0 })
 
-	const updateScrollbar = useCallback(() => {
+	const applyGeometry = useCallback(() => {
 		const scrollElement = scrollRef.current
-		if (!scrollElement) {
+		const thumb = thumbRef.current
+		if (!scrollElement || !thumb) {
 			return
 		}
 
+		// 唯一坐标系：原生 scrollTop / scrollHeight / clientHeight。
+		// 拇指长短不匀 = 内容 scrollHeight 在变，应锁列表 DOM 总高，而不是在这里伪造。
 		const { clientHeight, scrollHeight, scrollTop } = scrollElement
-		const visible = scrollHeight > clientHeight + 1
-		if (!visible) {
-			setScrollbar((current) =>
-				current.visible || current.height !== 0 || current.top !== 0
-					? { height: 0, top: 0, visible: false }
-					: current,
-			)
+		const maxScrollTop = Math.max(scrollHeight - clientHeight, 0)
+		const nextVisible = maxScrollTop > 1
+
+		if (!nextVisible) {
+			if (lastVisibleRef.current) {
+				lastVisibleRef.current = false
+				setVisible(false)
+			}
 			return
 		}
 
 		const trackHeight = Math.max(0, clientHeight - trackInsetTop - trackInsetBottom)
-		const proportionalHeight = (clientHeight / scrollHeight) * trackHeight
+		const proportionalHeight = (clientHeight / Math.max(scrollHeight, 1)) * trackHeight
 		const height = Math.max(minThumbHeight, proportionalHeight * thumbLengthRatio)
-		const maxTop = trackHeight - height
-		const maxScrollTop = scrollHeight - clientHeight
-		const top = maxScrollTop > 0 ? (scrollTop / maxScrollTop) * maxTop : 0
+		const maxThumbTop = Math.max(0, trackHeight - height)
+		const clampedScrollTop = Math.min(Math.max(scrollTop, 0), maxScrollTop)
+		const top = maxScrollTop > 0 ? (clampedScrollTop / maxScrollTop) * maxThumbTop : 0
 
-		setScrollbar((current) => {
-			if (
-				current.visible &&
-				Math.abs(current.height - height) < 0.5 &&
-				Math.abs(current.top - top) < 0.5
-			) {
-				return current
-			}
+		metricsRef.current = { maxThumbTop, maxScrollTop }
 
-			return { height, top, visible: true }
-		})
+		// 几何只走 DOM；不把 height/transform 放进 React style（className 重渲会抹掉 transform）
+		if (Math.abs(lastHeightRef.current - height) >= 0.5) {
+			lastHeightRef.current = height
+			thumb.style.height = `${height}px`
+		}
+		thumb.style.transform = `translate3d(0, ${top}px, 0)`
+
+		if (!lastVisibleRef.current) {
+			lastVisibleRef.current = true
+			setVisible(true)
+		}
 	}, [minThumbHeight, scrollRef, thumbLengthRatio, trackInsetBottom, trackInsetTop])
 
-	useEffect(() => {
-		updateScrollbar()
-	})
+	const scheduleApply = useCallback(() => {
+		if (rafRef.current !== 0) {
+			return
+		}
+		rafRef.current = requestAnimationFrame(() => {
+			rafRef.current = 0
+			applyGeometry()
+		})
+	}, [applyGeometry])
 
 	useEffect(() => {
 		const scrollElement = scrollRef.current
@@ -96,9 +111,16 @@ export function OverlayScrollbar<TElement extends HTMLElement = HTMLElement>({
 			return
 		}
 
-		scrollElement.addEventListener('scroll', updateScrollbar)
-		return () => scrollElement.removeEventListener('scroll', updateScrollbar)
-	}, [scrollRef, updateScrollbar])
+		scheduleApply()
+		scrollElement.addEventListener('scroll', scheduleApply, { passive: true })
+		return () => {
+			scrollElement.removeEventListener('scroll', scheduleApply)
+			if (rafRef.current !== 0) {
+				cancelAnimationFrame(rafRef.current)
+				rafRef.current = 0
+			}
+		}
+	}, [scheduleApply, scrollRef])
 
 	useEffect(() => {
 		const scrollElement = scrollRef.current
@@ -106,14 +128,12 @@ export function OverlayScrollbar<TElement extends HTMLElement = HTMLElement>({
 			return
 		}
 
-		const observer = new ResizeObserver(updateScrollbar)
+		const observer = new ResizeObserver(scheduleApply)
+		// 只观察 viewport；内容总高由子树 height 变化反映到 scrollHeight
 		observer.observe(scrollElement)
-		for (const child of Array.from(scrollElement.children)) {
-			observer.observe(child)
-		}
 
 		return () => observer.disconnect()
-	}, [scrollRef, updateScrollbar])
+	}, [scheduleApply, scrollRef])
 
 	const handleThumbPointerDown = useCallback(
 		(event: ReactPointerEvent<HTMLDivElement>) => {
@@ -127,9 +147,12 @@ export function OverlayScrollbar<TElement extends HTMLElement = HTMLElement>({
 			event.currentTarget.setPointerCapture(event.pointerId)
 			setIsDragging(true)
 			setIsHoveringThumb(true)
+			const { maxThumbTop, maxScrollTop } = metricsRef.current
 			dragStateRef.current = {
 				startScrollTop: scrollElement.scrollTop,
 				startY: event.clientY,
+				maxThumbTop,
+				maxScrollTop,
 			}
 		},
 		[scrollRef],
@@ -146,17 +169,14 @@ export function OverlayScrollbar<TElement extends HTMLElement = HTMLElement>({
 				return
 			}
 
-			const { clientHeight, scrollHeight } = scrollElement
-			const maxScrollTop = scrollHeight - clientHeight
-			const maxThumbTop = clientHeight - scrollbar.height
+			const { maxThumbTop, maxScrollTop, startScrollTop, startY } = dragStateRef.current
 			if (maxScrollTop <= 0 || maxThumbTop <= 0) {
 				return
 			}
 
-			const deltaY = event.clientY - dragStateRef.current.startY
-			scrollElement.scrollTop =
-				dragStateRef.current.startScrollTop + (deltaY / maxThumbTop) * maxScrollTop
-			updateScrollbar()
+			const deltaY = event.clientY - startY
+			scrollElement.scrollTop = startScrollTop + (deltaY / maxThumbTop) * maxScrollTop
+			scheduleApply()
 		}
 
 		const handlePointerUp = () => {
@@ -172,21 +192,22 @@ export function OverlayScrollbar<TElement extends HTMLElement = HTMLElement>({
 			window.removeEventListener('pointerup', handlePointerUp)
 			window.removeEventListener('pointercancel', handlePointerUp)
 		}
-	}, [isDragging, scrollRef, scrollbar.height, updateScrollbar])
-
-	if (!scrollbar.visible) {
-		return null
-	}
+	}, [isDragging, scheduleApply, scrollRef])
 
 	return (
 		<div
 			aria-hidden='true'
-			className={cn('pointer-events-none absolute right-0 z-1 w-2', className)}
+			className={cn(
+				'pointer-events-none absolute right-0 z-1 w-2',
+				!visible && 'invisible',
+				className,
+			)}
 			style={{ bottom: trackInsetBottom, top: trackInsetTop }}
 		>
 			<div
+				ref={thumbRef}
 				className={cn(
-					'pointer-events-auto absolute right-0 w-1.5 rounded-full transition-colors',
+					'pointer-events-auto absolute right-0 top-0 w-1.5 rounded-full will-change-transform',
 					isDragging
 						? activeThumbClassName
 						: isHoveringThumb
@@ -197,7 +218,6 @@ export function OverlayScrollbar<TElement extends HTMLElement = HTMLElement>({
 				onPointerDown={handleThumbPointerDown}
 				onPointerEnter={() => setIsHoveringThumb(true)}
 				onPointerLeave={() => setIsHoveringThumb(false)}
-				style={{ height: scrollbar.height, top: scrollbar.top }}
 			/>
 		</div>
 	)

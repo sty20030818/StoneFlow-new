@@ -82,12 +82,18 @@ export type RunTaskViewInput = {
 	filters?: TaskViewFilters
 	sort?: ViewSortRule[]
 	groupBy?: TaskGroupBy | null
+	/** 页大小；省略后端默认 */
+	limit?: number
+	/** 上一页最后一条 id */
+	cursor?: string | null
 }
 
 export type RunTaskViewResult = {
 	view: View
 	items: TaskListItem[]
 	groups: ViewTaskGroup[]
+	totalCount: number
+	nextCursor: string | null
 }
 
 export type CreateViewInput = {

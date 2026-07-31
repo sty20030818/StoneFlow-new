@@ -2,7 +2,7 @@
 
 use sea_orm::{
     ActiveModelTrait, ActiveValue::Set, ColumnTrait, Condition, ConnectionTrait, DatabaseConnection,
-    EntityTrait, QueryFilter, QueryOrder, QuerySelect,
+    EntityTrait, PaginatorTrait, QueryFilter, QueryOrder, QuerySelect,
 };
 use stoneflow_application::view::{
     DateFilterMode, ProjectFilterMode, TaskScopeKind, ViewTaskQuery,
@@ -166,6 +166,36 @@ impl TaskRepository {
             query = query.limit(limit);
         }
         query.all(&self.db).await.map_err(Into::into)
+    }
+
+    /// 与 list_visible_page 相同过滤条件下的总数（无 cursor / limit），供首屏定死滚动条总高。
+    pub async fn count_visible(
+        &self,
+        space_id: Option<&str>,
+        project_id: Option<Option<&str>>,
+        include_archived: bool,
+        statuses: Option<&[WorkStatus]>,
+    ) -> Result<u64, StorageError> {
+        let mut query = Task::find().filter(task::Column::DeletedAt.is_null());
+        if !include_archived {
+            query = query.filter(task::Column::ArchivedAt.is_null());
+        }
+        if let Some(space_id) = space_id {
+            query = query.filter(task::Column::SpaceId.eq(space_id));
+        }
+        if let Some(project_id) = project_id {
+            query = match project_id {
+                Some(project_id) => query.filter(task::Column::ProjectId.eq(project_id)),
+                None => query.filter(task::Column::ProjectId.is_null()),
+            };
+        }
+        if let Some(statuses) = statuses.filter(|items| !items.is_empty()) {
+            query = query.filter(
+                task::Column::Status
+                    .is_in(statuses.iter().copied().map(to_storage_status)),
+            );
+        }
+        query.count(&self.db).await.map_err(Into::into)
     }
 
     /// View 候选集的数据库过滤。排序与本地时区日期语义仍由 application 决定。
