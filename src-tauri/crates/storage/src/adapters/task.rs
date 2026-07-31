@@ -98,9 +98,22 @@ impl TaskPersistence for TaskPersistenceAdapter {
             stoneflow_application::task::TaskPlacementQuery::Standalone => Some(None),
         };
         let include_archived = matches!(query.lifecycle, TaskLifecycleView::Archived);
+        let status_filter = query.statuses.as_ref().filter(|items| !items.is_empty());
+        let cursor = query
+            .cursor
+            .as_ref()
+            .map(|c| (c.position, c.id.as_str()));
+        let limit = query.limit.map(u64::from);
         let mut rows = self
             .tasks
-            .list_visible(query.space_id.as_deref(), placement, include_archived, None)
+            .list_visible_page(
+                query.space_id.as_deref(),
+                placement,
+                include_archived,
+                status_filter.map(|items| items.as_slice()),
+                cursor,
+                limit,
+            )
             .await
             .map_err(from_storage)?;
         rows.retain(|row| match query.lifecycle {
@@ -287,13 +300,20 @@ impl TaskSpaceReader for TaskPersistenceAdapter {
             .map_err(from_storage)
     }
     async fn list_by_ids(&self, ids: &[String]) -> Result<Vec<TaskSpaceRecord>, ApplicationError> {
-        let mut rows = Vec::new();
-        for id in ids {
-            if let Some(row) = TaskSpaceReader::get(self, id).await? {
-                rows.push(row);
-            }
-        }
-        Ok(rows)
+        self.spaces
+            .list_by_ids(ids)
+            .await
+            .map(|rows| {
+                rows.into_iter()
+                    .map(|space| TaskSpaceRecord {
+                        id: space.id,
+                        name: space.name,
+                        archived_at: space.archived_at,
+                        deleted_at: space.deleted_at,
+                    })
+                    .collect()
+            })
+            .map_err(from_storage)
     }
 }
 impl TaskProjectReader for TaskPersistenceAdapter {
@@ -316,13 +336,21 @@ impl TaskProjectReader for TaskPersistenceAdapter {
         &self,
         ids: &[String],
     ) -> Result<Vec<TaskProjectRecord>, ApplicationError> {
-        let mut rows = Vec::new();
-        for id in ids {
-            if let Some(row) = TaskProjectReader::get(self, id).await? {
-                rows.push(row);
-            }
-        }
-        Ok(rows)
+        self.projects
+            .list_by_ids(ids)
+            .await
+            .map(|rows| {
+                rows.into_iter()
+                    .map(|project| TaskProjectRecord {
+                        id: project.id,
+                        name: project.name,
+                        space_id: project.space_id,
+                        archived_at: project.archived_at,
+                        deleted_at: project.deleted_at,
+                    })
+                    .collect()
+            })
+            .map_err(from_storage)
     }
 }
 impl ActivityPersistence for TaskPersistenceAdapter {

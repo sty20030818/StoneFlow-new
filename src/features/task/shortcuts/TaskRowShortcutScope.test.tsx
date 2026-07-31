@@ -944,7 +944,6 @@ function createTask(overrides: Partial<TaskListItem> = {}): TaskListItem {
 		projectId: null,
 		projectName: null,
 		title: '任务 A',
-		note: null,
 		status: 'todo',
 		statusChangedAt: '2026-05-15T00:00:00Z',
 		priority: 2,

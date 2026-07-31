@@ -1,6 +1,7 @@
 import { type ReactNode } from 'react'
 
 import { taskDateMetadataIcons } from '@/features/metadata-fields'
+import { useTaskDetailData } from '@/features/task/hooks/useTaskData'
 import { formatTaskPriorityLabel } from '@/features/task/model/taskPriority'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { PriorityIcon } from '@/features/task/model/indicators/PriorityIcon'
@@ -41,10 +42,14 @@ export function TaskPreview({
 	onPointerEnter,
 	onPointerLeave,
 }: TaskPreviewProps) {
+	// 列表投影不含 note；预览正文走详情查询
+	const detail = useTaskDetailData(task?.id)
+
 	if (!task) {
 		return null
 	}
 
+	const note = detail.item?.note ?? null
 	const placementLabel = task.projectName ?? '独立事项'
 	const breadcrumbLabel = `${task.spaceName} > ${placementLabel}`
 	const dateItems: Array<{ icon: ReactNode; label: string }> = []
@@ -110,11 +115,11 @@ export function TaskPreview({
 				</header>
 
 				<section className={cn(taskPreviewSectionClass, 'pt-3')}>
-					{task.note ? (
-						<p className='line-clamp-5 text-[13px] leading-6 text-sf-text-secondary'>{task.note}</p>
+					{note ? (
+						<p className='line-clamp-5 text-[13px] leading-6 text-sf-text-secondary'>{note}</p>
 					) : (
 						<div className='rounded-md border border-dashed border-sf-border-subtle bg-muted/30 px-3 py-3 text-[12px] leading-5 text-sf-text-tertiary'>
-							暂无备注
+							{detail.status === 'loading' ? '加载备注…' : '暂无备注'}
 						</div>
 					)}
 				</section>

@@ -22,8 +22,9 @@ export function useSidebarNavBadges(currentScope: Scope) {
 
 	return useMemo(() => {
 		const next: Record<string, string | undefined> = {}
-		const allCount = allTasks.data?.length ?? 0
-		const standaloneCount = standaloneTasks.data?.length ?? 0
+		// 分页后 badge 为「当前窗口可见数」近似；精确 count 后续可单独接口
+		const allCount = allTasks.data?.items.length ?? 0
+		const standaloneCount = standaloneTasks.data?.items.length ?? 0
 
 		if (allCount > 0) next.tasks = String(allCount)
 		if (standaloneCount > 0) next.standalone = String(standaloneCount)

@@ -38,7 +38,7 @@
 
 ## 当前活跃任务
 
-- [任务集合查询与虚拟列表性能重构](./02-开发任务/2026-07-31-task-collection-query-virtualization/SPEC.md)（[PLAN](./02-开发任务/2026-07-31-task-collection-query-virtualization/PLAN.md) · [TASKS](./02-开发任务/2026-07-31-task-collection-query-virtualization/TASKS.md)）— 实现中
+- [任务集合查询与虚拟列表性能重构](./02-开发任务/2026-07-31-task-collection-query-virtualization/SPEC.md)（[PLAN](./02-开发任务/2026-07-31-task-collection-query-virtualization/PLAN.md) · [TASKS](./02-开发任务/2026-07-31-task-collection-query-virtualization/TASKS.md)）— 待手工验收
 
 ## 模块文档规则
 

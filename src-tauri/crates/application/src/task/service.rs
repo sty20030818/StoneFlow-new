@@ -51,6 +51,9 @@ pub enum TaskScopeKind {
     Space,
 }
 
+/// 默认列表页大小（首屏 + 续拉窗口）。
+pub const DEFAULT_TASK_LIST_PAGE_SIZE: u32 = 150;
+
 /// Task 列表查询输入。
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -58,6 +61,23 @@ pub struct ListTasksInput {
     pub scope: TaskScopeInput,
     pub view_key: String,
     pub placement: ListTasksPlacementInput,
+    /// 可选 status 白名单；省略或空 = 不限。
+    #[serde(default)]
+    pub statuses: Option<Vec<WorkStatus>>,
+    /// 页大小；省略用默认。
+    #[serde(default)]
+    pub limit: Option<u32>,
+    /// opaque keyset cursor（上一页最后一条的 cursor）。
+    #[serde(default)]
+    pub cursor: Option<String>,
+}
+
+/// 分页列表输出。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListTasksPageDto {
+    pub items: Vec<TaskListItemDto>,
+    pub next_cursor: Option<String>,
 }
 
 /// Task 列表 placement 查询输入。
@@ -89,7 +109,6 @@ pub struct TaskListItemDto {
     pub project_id: Option<String>,
     pub project_name: Option<String>,
     pub title: String,
-    pub note: Option<String>,
     pub status: WorkStatus,
     pub status_changed_at: String,
     pub priority: i32,
@@ -340,25 +359,53 @@ where
         }
     }
 
-    /// 列出 Task 列表。
+    /// 列出 Task 列表（keyset 分页）。
     pub async fn list_tasks(
         &self,
         input: ListTasksInput,
-    ) -> Result<Vec<TaskListItemDto>, ApplicationError> {
+    ) -> Result<ListTasksPageDto, ApplicationError> {
         let scope = normalize_scope(&input.scope)?;
         let view_preset = parse_view_key(&input.view_key)?;
         let placement = normalize_list_placement(&input.placement)?;
-        let tasks = self
+        let statuses = input
+            .statuses
+            .as_ref()
+            .filter(|items| !items.is_empty())
+            .cloned();
+        let limit = input
+            .limit
+            .unwrap_or(DEFAULT_TASK_LIST_PAGE_SIZE)
+            .clamp(1, 500);
+        let cursor = input
+            .cursor
+            .as_deref()
+            .map(decode_task_list_cursor)
+            .transpose()?;
+        let mut tasks = self
             .persistence
             .list(TaskListQuery {
                 space_id: scope.space_id,
                 placement,
                 lifecycle: repository_lifecycle_for_preset(view_preset),
+                statuses,
+                // 多取 1 条用于判断是否还有下一页；lifecycle 二次滤后可能不足，见下
+                limit: Some(limit.saturating_add(1)),
+                cursor,
             })
             .await?;
-        let tasks = apply_view_preset(tasks, view_preset);
+        tasks = apply_view_preset(tasks, view_preset);
 
-        self.build_task_list(tasks).await
+        let next_cursor = if tasks.len() as u32 > limit {
+            let last = &tasks[limit as usize - 1];
+            let cursor = encode_task_list_cursor(last.position, &last.id);
+            tasks.truncate(limit as usize);
+            Some(cursor)
+        } else {
+            None
+        };
+
+        let items = self.build_task_list(tasks).await?;
+        Ok(ListTasksPageDto { items, next_cursor })
     }
 
     /// 读取 Task 详情。
@@ -1141,7 +1188,6 @@ where
                     project_id: item.project_id,
                     project_name,
                     title: item.title,
-                    note: item.note,
                     status: item.status,
                     status_changed_at: item.status_changed_at,
                     priority: item.priority,
@@ -1235,6 +1281,8 @@ where
         let space_ids = tasks
             .iter()
             .map(|item| item.space_id.clone())
+            .collect::<HashSet<_>>()
+            .into_iter()
             .collect::<Vec<_>>();
         let spaces = self.space_reader.list_by_ids(&space_ids).await?;
 
@@ -1251,6 +1299,8 @@ where
         let project_ids = tasks
             .iter()
             .filter_map(|item| item.project_id.clone())
+            .collect::<HashSet<_>>()
+            .into_iter()
             .collect::<Vec<_>>();
         let projects = self.project_reader.list_by_ids(&project_ids).await?;
 
@@ -1464,6 +1514,26 @@ fn normalize_timestamp(
 
 fn normalize_optional_long_text(value: Option<String>) -> Option<String> {
     value.filter(|text| !text.trim().is_empty())
+}
+
+fn encode_task_list_cursor(position: i64, id: &str) -> String {
+    format!("{position}\u{1f}{id}")
+}
+
+fn decode_task_list_cursor(raw: &str) -> Result<crate::task::TaskListCursor, ApplicationError> {
+    let (position_raw, id) = raw.split_once('\u{1f}').ok_or_else(|| {
+        ApplicationError::validation("列表 cursor 无效")
+    })?;
+    let position = position_raw
+        .parse::<i64>()
+        .map_err(|_| ApplicationError::validation("列表 cursor 无效"))?;
+    if id.is_empty() {
+        return Err(ApplicationError::validation("列表 cursor 无效"));
+    }
+    Ok(crate::task::TaskListCursor {
+        position,
+        id: id.to_owned(),
+    })
 }
 
 fn normalize_optional_long_text_option(value: Option<String>) -> Option<String> {

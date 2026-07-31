@@ -1,4 +1,6 @@
-import { useMemo, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useVirtualizer } from '@tanstack/react-virtual'
+import { registerTaskBoardScrollToTaskId } from './taskBoardScroll'
 import { groupBy, uniq } from 'es-toolkit/array'
 
 import {
@@ -6,14 +8,9 @@ import {
 	useShellPreferenceStore,
 } from '@/features/shell-dialogs'
 import {
-	BoardCollapsibleSection,
 	BoardEmptyState,
 	BoardLoadingState,
-	BoardGroup,
-	BoardGroupHeader,
 	BoardRoot,
-	BoardRows,
-	BoardSectionContextMenu,
 	BOARD_GROUP_HEADER_CLASS,
 } from '@/shared/components/board'
 import { useDialogStore } from '@/features/shell-dialogs'
@@ -29,12 +26,22 @@ import { TaskRowShortcutScope, type TaskRowShortcutState } from '@/features/task
 import { TaskRowAdapter, type TaskRowAdapterProps } from '@/features/task/components/TaskRowAdapter'
 import { TaskStatusIndicator } from '@/features/task/model/indicators/TaskStatusIndicator'
 import { useTaskContextMenuBulkActions } from '@/features/task/components/useTaskContextMenuBulkActions'
+import { createTaskPlacementGroupedDropdownProps } from '@/features/metadata-fields'
 import type { TaskPlacementTarget } from '@/features/metadata-fields'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
 import { Button } from '@/shared/components/base/button'
-import { ListTodoIcon, PlusIcon } from 'lucide-react'
-import { entityBoardSectionActionButtonClass } from '@/shared/components/patterns/entity-board'
+import { Badge } from '@/shared/components/base/badge'
+import { ListTodoIcon, PlusIcon, TriangleIcon } from 'lucide-react'
+import {
+	entityBoardCompactBadgeClass,
+	entityBoardSectionActionButtonClass,
+	entityBoardSectionCountBadgeClass,
+	entityBoardSectionSelectedBadgeClass,
+	entityBoardSectionToggleClass,
+} from '@/shared/components/patterns/entity-board'
 import { StatusNotice } from '@/shared/components/StatusNotice'
+import { cn } from '@/shared/lib/utils'
+import { ROW_SHELL_SECTION_HEADER_CLASS } from '@/shared/components/patterns/row-tokens'
 
 export type TaskBoardProps = {
 	tasks: TaskListItem[]
@@ -85,6 +92,38 @@ export type TaskBoardProps = {
 	/** 所有空间列表：行内固定展示 Space 名 */
 	showSpaceLabel?: boolean
 	visibleProperties?: TaskDisplayPropertyKey[]
+	/** keyset 续拉 */
+	hasNextPage?: boolean
+	isFetchingNextPage?: boolean
+	onFetchNextPage?: () => void
+	fetchNextPageError?: string | null
+}
+
+type FlatItem =
+	| {
+			kind: 'header'
+			key: string
+			label: string
+			count: number
+			status?: TaskStatus
+			open: boolean
+	  }
+	| {
+			kind: 'row'
+			key: string
+			task: TaskListItem
+	  }
+
+const HEADER_SIZE = 36
+const ROW_SIZE = 40
+const ROW_SIZE_WITH_SPACE = 52
+
+function getMainCardScrollElement() {
+	return (
+		document.querySelector<HTMLElement>('[data-scroll-container-role="main-card"]') ??
+		// 测试 / 无壳环境：回退到 documentElement，避免 virtualizer 0 视口
+		document.documentElement
+	)
 }
 
 export function TaskBoard({
@@ -123,12 +162,18 @@ export function TaskBoard({
 	showProjectCellOptions = true,
 	showSpaceLabel = false,
 	visibleProperties,
+	hasNextPage = false,
+	isFetchingNextPage = false,
+	onFetchNextPage,
+	fetchNextPageError = null,
 }: TaskBoardProps) {
 	const openSections = useShellPreferenceStore(selectProjectTaskBoardOpenSections)
 	const setProjectTaskBoardOpenSections = useShellPreferenceStore(
 		(state) => state.setProjectTaskBoardOpenSections,
 	)
 	const contextMenuActions = useTaskContextMenuBulkActions({ onClearTaskSelection })
+	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
+	const measureRef = useRef<HTMLDivElement | null>(null)
 
 	const groupedTasks = useMemo(() => {
 		const tasksByStatus = groupBy(tasks, (task) => task.status)
@@ -141,6 +186,7 @@ export function TaskBoard({
 			canceled: tasksByStatus.canceled ?? [],
 		} satisfies Record<TaskStatus, TaskListItem[]>
 	}, [tasks])
+
 	const taskShortcutOrder = useMemo(() => {
 		if (customSections && customSections.length > 0) {
 			return orderTasksByTaskBoardVisualOrder(tasks, { statusOrder, customSections })
@@ -153,27 +199,21 @@ export function TaskBoard({
 		)
 	}, [customSections, openSections, statusOrder, tasks])
 
-	function handleSectionOpenChange(status: TaskStatus, open: boolean) {
-		const nextSections = open
-			? uniq([...openSections, status])
-			: openSections.filter((section) => section !== status)
-		setProjectTaskBoardOpenSections(nextSections)
-	}
+	// Board 级 placement groups：每行复用，避免 O(n) build
+	const placementDropdown = useMemo(() => {
+		if (!projectOptions || !onSelectPlacement) {
+			return null
+		}
+		return createTaskPlacementGroupedDropdownProps({
+			mode: 'local',
+			currentSpaceId: null,
+			spaces: spaces ?? [],
+			projects: projectOptions,
+		})
+	}, [onSelectPlacement, projectOptions, spaces])
 
-	function handleCollapseAll() {
-		setProjectTaskBoardOpenSections([])
-	}
-
-	function handleExpandAll() {
-		const allVisible = statusOrder.filter((status) => groupedTasks[status].length > 0)
-		setProjectTaskBoardOpenSections(allVisible)
-	}
-
-	function renderTaskRow(task: TaskListItem, rowShortcutState?: TaskRowShortcutState) {
-		const contextTasks = selectedTaskIdSet.has(task.id)
-			? tasks.filter((item) => selectedTaskIdSet.has(item.id))
-			: [task]
-		const actions: TaskRowAdapterProps['actions'] = {
+	const rowActions = useMemo(
+		(): TaskRowAdapterProps['actions'] => ({
 			onOpenTask,
 			onToggleTaskSelection,
 			onUpdateTaskPriority,
@@ -184,70 +224,213 @@ export function TaskBoard({
 			onToggleTaskStatus,
 			onArchiveTask,
 			onDeleteTask,
-		}
-		const projectBinding: TaskRowAdapterProps['projectBinding'] = {
+		}),
+		[
+			onArchiveTask,
+			onDeleteTask,
+			onOpenTask,
+			onToggleTaskSelection,
+			onToggleTaskStatus,
+			onUpdateTaskDueDate,
+			onUpdateTaskPriority,
+			onUpdateTaskReminderAt,
+			onUpdateTaskScheduledAt,
+			onUpdateTaskStatus,
+		],
+	)
+
+	const projectBinding = useMemo(
+		(): TaskRowAdapterProps['projectBinding'] => ({
 			projectOptions,
 			spaces,
 			onSelectPlacement,
 			showProjectCellOptions,
-		}
-		return (
-			<TaskRowAdapter
-				key={task.id}
-				actions={actions}
-				contextTasks={contextTasks}
-				contextMenuActions={contextMenuActions}
-				projectBinding={projectBinding}
-				rowState={{
-					isActive: activeTaskId === task.id,
-					isPending: pendingTaskId === task.id,
-					isSelected: selectedTaskIdSet.has(task.id),
-					isHovered: rowShortcutState?.hoveredId === task.id,
-					hoverSource:
-						rowShortcutState?.hoveredId === task.id ? rowShortcutState.hoverSource : null,
-				}}
-				rowShortcutHandlers={
-					rowShortcutState
-						? {
-								onHover: rowShortcutState.onRowHover,
-								onPointerMove: rowShortcutState.onRowPointerMove,
-							}
-						: undefined
-				}
-				showSpaceLabel={showSpaceLabel}
-				task={task}
-				visibleProperties={visibleProperties}
-			/>
-		)
-	}
+			placementGroups: placementDropdown?.groups,
+			placementMenuLabel: placementDropdown?.menuLabel,
+			placementHeaderShortcut: placementDropdown?.headerShortcut,
+		}),
+		[
+			onSelectPlacement,
+			placementDropdown?.groups,
+			placementDropdown?.headerShortcut,
+			placementDropdown?.menuLabel,
+			projectOptions,
+			showProjectCellOptions,
+			spaces,
+		],
+	)
 
-	function renderStatusSections(rowShortcutState?: TaskRowShortcutState) {
-		// 合并 filter + map 为单次遍历；用 Set 承载展开状态，避免循环内重复 array.includes 扫描
+	const flatItems = useMemo((): FlatItem[] => {
+		const items: FlatItem[] = []
+		if (customSections && customSections.length > 0) {
+			for (const section of customSections) {
+				items.push({
+					kind: 'header',
+					key: `h:${section.key}`,
+					label: section.label,
+					count: section.tasks.length,
+					open: true,
+				})
+				for (const task of section.tasks) {
+					items.push({ kind: 'row', key: task.id, task })
+				}
+			}
+			return items
+		}
+
 		const openSectionSet = new Set(openSections)
-		const sections: ReactNode[] = []
 		for (const status of statusOrder) {
-			if (hideEmptySections && groupedTasks[status].length === 0) {
+			const sectionTasks = groupedTasks[status]
+			if (hideEmptySections && sectionTasks.length === 0) {
 				continue
 			}
-			sections.push(
-				<TaskStatusSection
-					createProjectId={createProjectId}
-					key={status}
-					label={formatTaskStatusLabel(status)}
-					onCollapseAll={handleCollapseAll}
-					onExpandAll={handleExpandAll}
-					onOpenChange={(open) => handleSectionOpenChange(status, open)}
-					onToggleTaskSelection={onToggleTaskSelection}
-					open={openSectionSet.has(status)}
-					renderTaskRow={(task) => renderTaskRow(task, rowShortcutState)}
-					selectedTaskIdSet={selectedTaskIdSet}
-					status={status}
-					tasks={groupedTasks[status]}
-				/>,
-			)
+			const open = openSectionSet.has(status)
+			items.push({
+				kind: 'header',
+				key: `h:${status}`,
+				label: formatTaskStatusLabel(status),
+				count: sectionTasks.length,
+				status,
+				open,
+			})
+			if (open) {
+				for (const task of sectionTasks) {
+					items.push({ kind: 'row', key: task.id, task })
+				}
+			}
 		}
-		return sections
-	}
+		return items
+	}, [customSections, groupedTasks, hideEmptySections, openSections, statusOrder])
+
+	const rowEstimate = showSpaceLabel ? ROW_SIZE_WITH_SPACE : ROW_SIZE
+
+	const virtualizer = useVirtualizer({
+		count: flatItems.length,
+		getScrollElement: getMainCardScrollElement,
+		estimateSize: (index) => (flatItems[index]?.kind === 'header' ? HEADER_SIZE : rowEstimate),
+		overscan: 12,
+		// jsdom / 首帧未量到高度时给合理视口，避免 0 行
+		initialRect: { width: 960, height: 720 },
+		// 外部滚动容器时测量挂载节点
+		measureElement:
+			typeof window !== 'undefined' && 'ResizeObserver' in window
+				? (element) => element.getBoundingClientRect().height
+				: undefined,
+	})
+
+	const handleSectionOpenChange = useCallback(
+		(status: TaskStatus, open: boolean) => {
+			const nextSections = open
+				? uniq([...openSections, status])
+				: openSections.filter((section) => section !== status)
+			setProjectTaskBoardOpenSections(nextSections)
+		},
+		[openSections, setProjectTaskBoardOpenSections],
+	)
+
+	const handleCollapseAll = useCallback(() => {
+		setProjectTaskBoardOpenSections([])
+	}, [setProjectTaskBoardOpenSections])
+
+	const handleExpandAll = useCallback(() => {
+		const allVisible = statusOrder.filter((s) => groupedTasks[s].length > 0)
+		setProjectTaskBoardOpenSections(allVisible)
+	}, [groupedTasks, setProjectTaskBoardOpenSections, statusOrder])
+
+	const renderTaskRow = useCallback(
+		(task: TaskListItem, rowShortcutState?: TaskRowShortcutState) => {
+			const contextTasks = selectedTaskIdSet.has(task.id)
+				? tasks.filter((item) => selectedTaskIdSet.has(item.id))
+				: [task]
+			// 仅键盘 hover 走 React 状态，指针 hover 用 CSS（避免全表 re-render）
+			const isKeyboardHover =
+				rowShortcutState?.hoverSource === 'keyboard' && rowShortcutState.hoveredId === task.id
+			return (
+				<TaskRowAdapter
+					actions={rowActions}
+					contextMenuActions={contextMenuActions}
+					contextTasks={contextTasks}
+					projectBinding={projectBinding}
+					rowShortcutHandlers={
+						rowShortcutState
+							? {
+									onHover: rowShortcutState.onRowHover,
+									onPointerMove: rowShortcutState.onRowPointerMove,
+								}
+							: undefined
+					}
+					rowState={{
+						isActive: activeTaskId === task.id,
+						isPending: pendingTaskId === task.id,
+						isSelected: selectedTaskIdSet.has(task.id),
+						isHovered: isKeyboardHover,
+						hoverSource: isKeyboardHover ? 'keyboard' : null,
+					}}
+					showSpaceLabel={showSpaceLabel}
+					task={task}
+					visibleProperties={visibleProperties}
+				/>
+			)
+		},
+		[
+			activeTaskId,
+			contextMenuActions,
+			pendingTaskId,
+			projectBinding,
+			rowActions,
+			selectedTaskIdSet,
+			showSpaceLabel,
+			tasks,
+			visibleProperties,
+		],
+	)
+
+	// —— 所有 hooks 必须在任何 early return 之前（Rules of Hooks）——
+	const virtualItems = virtualizer.getVirtualItems()
+	const totalSize = virtualizer.getTotalSize()
+	const useVirtualWindow = virtualItems.length > 0
+	const lastVirtualIndex = virtualItems[virtualItems.length - 1]?.index ?? -1
+
+	// 接近末尾续拉
+	useEffect(() => {
+		if (
+			status !== 'ready' ||
+			!hasNextPage ||
+			!onFetchNextPage ||
+			isFetchingNextPage ||
+			lastVirtualIndex < 0 ||
+			lastVirtualIndex < flatItems.length - 8
+		) {
+			return
+		}
+		onFetchNextPage()
+	}, [
+		flatItems.length,
+		hasNextPage,
+		isFetchingNextPage,
+		lastVirtualIndex,
+		onFetchNextPage,
+		status,
+	])
+
+	// 键盘导航：先把目标行滚进虚拟窗口
+	useEffect(() => {
+		const indexByTaskId = new Map<string, number>()
+		for (let i = 0; i < flatItems.length; i++) {
+			const item = flatItems[i]
+			if (item?.kind === 'row') {
+				indexByTaskId.set(item.task.id, i)
+			}
+		}
+		registerTaskBoardScrollToTaskId((taskId) => {
+			const index = indexByTaskId.get(taskId)
+			if (index === undefined) {
+				return
+			}
+			virtualizer.scrollToIndex(index, { align: 'auto' })
+		})
+		return () => registerTaskBoardScrollToTaskId(null)
+	}, [flatItems, virtualizer])
 
 	if (status === 'idle' || status === 'loading') {
 		return <BoardLoadingState />
@@ -289,132 +472,194 @@ export function TaskBoard({
 			selectedTaskIdSet={selectedTaskIdSet}
 			tasks={taskShortcutOrder}
 		>
-			{(rowShortcutState) =>
-				customSections && customSections.length > 0 ? (
-					<BoardRoot className='gap-2'>
-						{customSections.map((section) => (
-							<TaskCustomSection
-								createProjectId={createProjectId}
-								key={section.key}
-								label={section.label}
-								renderTaskRow={(task) => renderTaskRow(task, rowShortcutState)}
-								selectedTaskIdSet={selectedTaskIdSet}
-								tasks={section.tasks}
-							/>
-						))}
-					</BoardRoot>
-				) : (
-					<BoardRoot>{renderStatusSections(rowShortcutState)}</BoardRoot>
-				)
-			}
+			{(rowShortcutState) => (
+				<BoardRoot>
+					<div
+						className='relative w-full'
+						data-task-board-virtual={useVirtualWindow ? 'true' : 'fallback'}
+						ref={measureRef}
+						style={useVirtualWindow ? { height: totalSize } : undefined}
+					>
+						{(useVirtualWindow
+							? virtualItems.map((virtualRow) => ({
+									index: virtualRow.index,
+									start: virtualRow.start,
+									key: String(virtualRow.key),
+								}))
+							: flatItems.map((item, index) => ({
+									index,
+									start: 0,
+									key: item.key,
+								}))
+						).map(({ index, start, key }) => {
+							const item = flatItems[index]
+							if (!item) {
+								return null
+							}
+
+							return (
+								<div
+									data-index={index}
+									key={key}
+									ref={useVirtualWindow ? virtualizer.measureElement : undefined}
+									style={
+										useVirtualWindow
+											? {
+													position: 'absolute',
+													top: 0,
+													left: 0,
+													width: '100%',
+													transform: `translateY(${start}px)`,
+												}
+											: undefined
+									}
+								>
+									{item.kind === 'header' ? (
+										<VirtualSectionHeader
+											count={item.count}
+											createProjectId={createProjectId}
+											label={item.label}
+											onCollapseAll={handleCollapseAll}
+											onExpandAll={handleExpandAll}
+											onOpenChange={
+												item.status
+													? (open) => handleSectionOpenChange(item.status!, open)
+													: undefined
+											}
+											onToggleTaskSelection={onToggleTaskSelection}
+											open={item.open}
+											openTaskCreateDialog={openTaskCreateDialog}
+											selectedTaskIdSet={selectedTaskIdSet}
+											status={item.status}
+											tasks={item.status ? groupedTasks[item.status] : []}
+										/>
+									) : (
+										<div className='px-0 py-px'>{renderTaskRow(item.task, rowShortcutState)}</div>
+									)}
+								</div>
+							)
+						})}
+					</div>
+					{isFetchingNextPage ? (
+						<div className='px-2 py-2 text-center text-[12px] text-sf-text-tertiary'>
+							加载更多…
+						</div>
+					) : null}
+					{fetchNextPageError ? (
+						<div className='px-2 py-2 text-center text-[12px] text-destructive'>
+							{fetchNextPageError}
+							{onFetchNextPage ? (
+								<button
+									className='ml-2 underline'
+									onClick={() => onFetchNextPage()}
+									type='button'
+								>
+									重试
+								</button>
+							) : null}
+						</div>
+					) : null}
+				</BoardRoot>
+			)}
 		</TaskRowShortcutScope>
 	)
 }
 
-function TaskCustomSection({
-	label,
-	tasks,
-	createProjectId,
-	renderTaskRow,
-	selectedTaskIdSet,
-}: {
-	label: string
-	tasks: TaskListItem[]
-	createProjectId: string | null
-	renderTaskRow: (task: TaskListItem) => ReactNode
-	selectedTaskIdSet: Set<string>
-}) {
-	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
-
-	return (
-		<BoardGroup>
-			<BoardGroupHeader
-				className={BOARD_GROUP_HEADER_CLASS}
-				count={tasks.length}
-				title={label}
-				trailing={
-					<Button
-						aria-label={`在 ${label} 中创建任务`}
-						className={entityBoardSectionActionButtonClass}
-						onClick={(event) => {
-							event.preventDefault()
-							event.stopPropagation()
-							openTaskCreateDialog({
-								projectId: createProjectId,
-							})
-						}}
-						size='icon-xs'
-						type='button'
-						variant='ghost'
-					>
-						<PlusIcon />
-					</Button>
-				}
-			/>
-			<BoardRows selectedIdSet={selectedTaskIdSet} getItemId={(_child, i) => tasks[i]?.id}>
-				{tasks.map((task) => renderTaskRow(task))}
-			</BoardRows>
-		</BoardGroup>
-	)
-}
-
-function TaskStatusSection({
+function VirtualSectionHeader({
 	status,
 	label,
-	tasks,
+	count,
 	open,
 	createProjectId,
 	onOpenChange,
 	onCollapseAll,
 	onExpandAll,
 	onToggleTaskSelection,
-	renderTaskRow,
 	selectedTaskIdSet,
+	tasks,
+	openTaskCreateDialog,
 }: {
-	status: TaskStatus
+	status?: TaskStatus
 	label: string
-	tasks: TaskListItem[]
+	count: number
 	open: boolean
 	createProjectId: string | null
-	onOpenChange: (open: boolean) => void
+	onOpenChange?: (open: boolean) => void
 	onCollapseAll: () => void
 	onExpandAll: () => void
 	onToggleTaskSelection: (taskId: string) => void
-	renderTaskRow: (task: TaskListItem) => ReactNode
 	selectedTaskIdSet: Set<string>
+	tasks: TaskListItem[]
+	openTaskCreateDialog: (draft?: { projectId?: string | null; status?: TaskStatus }) => void
 }) {
-	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
-
 	const sectionIds = useMemo(() => tasks.map((t) => t.id), [tasks])
-	const { selectedCount, handleSelectAll, handleDeselectAll } = useSectionSelection({
+	const { selectedCount } = useSectionSelection({
 		sectionIds,
 		selectedIdSet: selectedTaskIdSet,
 		onToggleSelection: onToggleTaskSelection,
 	})
 
 	return (
-		<BoardCollapsibleSection
-			contextMenuContent={
-				<BoardSectionContextMenu
-					onCollapse={() => onOpenChange(false)}
-					onCollapseAll={onCollapseAll}
-					onDeselectAll={handleDeselectAll}
-					onExpand={() => onOpenChange(true)}
-					onExpandAll={onExpandAll}
-					onSelectAll={handleSelectAll}
-					open={open}
-					selectedCount={selectedCount}
-				/>
-			}
-			count={tasks.length}
-			getItemId={(_child, i) => tasks[i]?.id}
-			icon={<TaskStatusIndicator status={status} />}
-			label={label}
-			onOpenChange={onOpenChange}
-			open={open}
-			selectedCount={selectedCount}
-			selectedIdSet={selectedTaskIdSet}
-			trailing={
+		<div
+			className={cn(
+				'flex items-center justify-between gap-3 px-1',
+				BOARD_GROUP_HEADER_CLASS,
+				ROW_SHELL_SECTION_HEADER_CLASS,
+			)}
+			data-board-section-header='true'
+		>
+			<div className='flex min-w-0 items-center gap-2'>
+				{status && onOpenChange ? (
+					<button
+						aria-expanded={open}
+						aria-label={`${open ? '折叠' : '展开'}${label}`}
+						className={entityBoardSectionToggleClass}
+						onClick={() => onOpenChange(!open)}
+						type='button'
+					>
+						<TriangleIcon
+							className={cn('size-3 transition-transform', open ? 'rotate-90' : '')}
+							data-chevron
+						/>
+						<span className='sr-only'>{label}</span>
+					</button>
+				) : null}
+				{status ? <TaskStatusIndicator status={status} /> : null}
+				<span className='truncate text-sm font-semibold text-foreground'>{label}</span>
+				<Badge
+					className={cn(entityBoardSectionCountBadgeClass, entityBoardCompactBadgeClass)}
+					variant='secondary'
+				>
+					{count}
+				</Badge>
+				{selectedCount > 0 ? (
+					<Badge
+						className={cn(entityBoardSectionSelectedBadgeClass, entityBoardCompactBadgeClass)}
+						variant='secondary'
+					>
+						已选 {selectedCount}
+					</Badge>
+				) : null}
+			</div>
+			<div className='flex items-center gap-1'>
+				{onOpenChange ? (
+					<>
+						<button
+							className='px-1 text-[11px] text-sf-text-tertiary hover:text-foreground'
+							onClick={onCollapseAll}
+							type='button'
+						>
+							全部折叠
+						</button>
+						<button
+							className='px-1 text-[11px] text-sf-text-tertiary hover:text-foreground'
+							onClick={onExpandAll}
+							type='button'
+						>
+							全部展开
+						</button>
+					</>
+				) : null}
 				<Button
 					aria-label={`在 ${label} 中创建任务`}
 					className={entityBoardSectionActionButtonClass}
@@ -423,7 +668,7 @@ function TaskStatusSection({
 						event.stopPropagation()
 						openTaskCreateDialog({
 							projectId: createProjectId,
-							status,
+							...(status ? { status } : {}),
 						})
 					}}
 					size='icon-xs'
@@ -432,9 +677,7 @@ function TaskStatusSection({
 				>
 					<PlusIcon />
 				</Button>
-			}
-		>
-			{tasks.map((task) => renderTaskRow(task))}
-		</BoardCollapsibleSection>
+			</div>
+		</div>
 	)
 }

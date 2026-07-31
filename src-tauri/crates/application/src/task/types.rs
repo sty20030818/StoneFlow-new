@@ -103,12 +103,25 @@ pub enum TaskPlacementQuery {
     Standalone,
 }
 
+/// 列表 keyset 游标（与 ORDER BY position, id 一致）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TaskListCursor {
+    pub position: i64,
+    pub id: String,
+}
+
 /// Task 列表查询条件。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct TaskListQuery {
     pub space_id: Option<String>,
     pub placement: TaskPlacementQuery,
     pub lifecycle: TaskLifecycleView,
+    /// 可选 status 白名单；`None` 或空表示不限 status（仍受 lifecycle 约束）。
+    pub statuses: Option<Vec<stoneflow_domain::WorkStatus>>,
+    /// 页大小；`None` 表示不限制（兼容旧全量路径，新主路径应始终带 limit）。
+    pub limit: Option<u32>,
+    /// keyset 游标；`None` 表示第一页。
+    pub cursor: Option<TaskListCursor>,
 }
 
 /// 列表 Scope 内部表示。

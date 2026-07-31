@@ -41,6 +41,11 @@ export type TaskCollectionSceneInput = {
 	showSpaceLabel?: boolean
 	createProjectId?: string | null
 	empty: Pick<TaskBoardProps, 'emptyTitle' | 'emptyDescription' | 'emptyActionLabel'>
+	/** keyset 续拉 */
+	hasNextPage?: boolean
+	isFetchingNextPage?: boolean
+	fetchNextPage?: () => void
+	fetchNextPageError?: string | null
 }
 
 /**
@@ -141,6 +146,10 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 			statusOrder: displayResult.boardPatch.statusOrder,
 			tasks: displayResult.orderedItems,
 			visibleProperties: displayResult.visibleProperties,
+			hasNextPage: input.hasNextPage,
+			isFetchingNextPage: input.isFetchingNextPage,
+			onFetchNextPage: input.fetchNextPage,
+			fetchNextPageError: input.fetchNextPageError,
 		}),
 		[
 			displayResult.boardPatch.customSections,
@@ -153,6 +162,10 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 			input.empty.emptyActionLabel,
 			input.empty.emptyDescription,
 			input.empty.emptyTitle,
+			input.fetchNextPage,
+			input.fetchNextPageError,
+			input.hasNextPage,
+			input.isFetchingNextPage,
 			input.onCreateTask,
 			input.onOpenTask,
 			input.onPeekTask,

@@ -1,3 +1,5 @@
+import { memo, useMemo } from 'react'
+
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { TaskContextMenu } from '@/features/task/components/TaskContextMenu'
 import type { TaskContextMenuBulkActions } from '@/features/task/components/useTaskContextMenuBulkActions'
@@ -11,6 +13,7 @@ import {
 	MetadataPlacementDropdown,
 	resolveTaskPlacementTarget,
 	taskDateMetadataIcons,
+	type TaskPlacementGroup,
 	type TaskPlacementTarget,
 } from '@/features/metadata-fields'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
@@ -23,7 +26,7 @@ import {
 } from '@/shared/components/row'
 import { formatShortDate } from '@/shared/lib/date'
 
-type TaskRowAdapterProps = {
+export type TaskRowAdapterProps = {
 	task: TaskListItem
 	contextTasks?: TaskListItem[]
 	rowState: {
@@ -44,6 +47,10 @@ type TaskRowAdapterProps = {
 		spaces?: Array<{ id: string; name: string }>
 		onSelectPlacement?: (task: TaskListItem, target: TaskPlacementTarget) => void
 		showProjectCellOptions?: boolean
+		/** Board 级预计算的 placement groups；有则不再按行 build */
+		placementGroups?: TaskPlacementGroup[]
+		placementMenuLabel?: string
+		placementHeaderShortcut?: string
 	}
 	visibleProperties?: readonly TaskDisplayPropertyKey[]
 	/** 跨 Space 列表（所有空间）时固定露出 Space 名，不依赖 display 偏好 */
@@ -65,7 +72,7 @@ type TaskRowAdapterProps = {
 /**
  * TaskRowAdapter 负责把任务实体语义翻译为统一 RowShell + 功能型 field cells。
  */
-export function TaskRowAdapter({
+export const TaskRowAdapter = memo(function TaskRowAdapter({
 	task,
 	contextTasks,
 	rowState,
@@ -86,23 +93,37 @@ export function TaskRowAdapter({
 	const showProjectCellOptions =
 		hasProjectOptions && projectBinding?.showProjectCellOptions !== false
 	const usesBulkDangerActions = actionTargets.length > 1 && Boolean(contextMenuActions)
-	const priorityDropdownProps = createTaskPriorityMetadataDropdownProps()
-	const statusDropdownProps = createTaskStatusMetadataDropdownProps()
-	const placementSpaces = projectBinding?.spaces?.some((space) => space.id === task.spaceId)
-		? projectBinding.spaces
-		: [{ id: task.spaceId, name: task.spaceName }, ...(projectBinding?.spaces ?? [])]
-	const placementDropdownProps = createTaskPlacementGroupedDropdownProps({
-		mode: 'local',
-		currentSpaceId: task.spaceId,
-		spaces: placementSpaces,
-		projects: projectBinding?.projectOptions ?? [],
-	})
+	// 惰性缓存，避免模块初始化阶段循环依赖
+	const priorityDropdownProps = useMemo(() => createTaskPriorityMetadataDropdownProps(), [])
+	const statusDropdownProps = useMemo(() => createTaskStatusMetadataDropdownProps(), [])
+	const placementDropdownProps = useMemo(() => {
+		if (projectBinding?.placementGroups) {
+			return {
+				menuLabel: projectBinding.placementMenuLabel ?? '移动到项目...',
+				headerShortcut: projectBinding.placementHeaderShortcut ?? '⇧ P',
+				groups: projectBinding.placementGroups,
+			}
+		}
+		const placementSpaces = projectBinding?.spaces?.some((space) => space.id === task.spaceId)
+			? projectBinding.spaces
+			: [{ id: task.spaceId, name: task.spaceName }, ...(projectBinding?.spaces ?? [])]
+		return createTaskPlacementGroupedDropdownProps({
+			mode: 'local',
+			currentSpaceId: task.spaceId,
+			spaces: placementSpaces,
+			projects: projectBinding?.projectOptions ?? [],
+		})
+	}, [projectBinding, task.spaceId, task.spaceName])
 	const projectValue = resolveTaskPlacementTarget({
 		spaceId: task.spaceId,
 		projectId: task.projectId,
 	})
-	const visiblePropertySet = new Set(
-		visibleProperties ?? ['status', 'priority', 'project', 'dueAt', 'plannedAt', 'createdAt'],
+	const visiblePropertySet = useMemo(
+		() =>
+			new Set(
+				visibleProperties ?? ['status', 'priority', 'project', 'dueAt', 'plannedAt', 'createdAt'],
+			),
+		[visibleProperties],
 	)
 	const showStatus = visiblePropertySet.has('status')
 	const showPriority = visiblePropertySet.has('priority')
@@ -317,7 +338,7 @@ export function TaskRowAdapter({
 			</RowShell.Root>
 		</TaskContextMenu>
 	)
-}
+})
 
 function UpdatedAtCell({ value }: { value: string | null | undefined }) {
 	if (!value) {
@@ -372,5 +393,3 @@ function buildTaskContextSelectionValues(tasks: TaskListItem[]) {
 		projectNames: tasks.map((item) => item.projectName ?? null),
 	}
 }
-
-export type { TaskRowAdapterProps }

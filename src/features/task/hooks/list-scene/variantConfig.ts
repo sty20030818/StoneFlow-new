@@ -54,7 +54,14 @@ export const VARIANT_CONFIG: Record<TaskListSceneVariant, VariantConfig> = {
 	},
 }
 
-export const ALL_TASK_FILTERS: Array<'all' | 'standalone' | TaskStatus> = [
+/** 未完成 = 排除 done / canceled */
+export const INCOMPLETE_TASK_STATUSES: TaskStatus[] = ['todo', 'doing', 'waiting']
+
+export type AllTaskFilterPill = 'incomplete' | 'all' | 'standalone' | TaskStatus
+
+/** 顺序：未完成 → 所有任务 → 独立事项 → 各状态 */
+export const ALL_TASK_FILTERS: AllTaskFilterPill[] = [
+	'incomplete',
 	'all',
 	'standalone',
 	'doing',

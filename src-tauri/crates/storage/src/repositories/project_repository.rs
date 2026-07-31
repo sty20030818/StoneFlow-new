@@ -76,6 +76,18 @@ impl ProjectRepository {
         self.get_in_connection(&self.db, project_id).await
     }
 
+    /// 按 id 批量读取 Project；空切片直接返回，避免无效 `IN ()`。
+    pub async fn list_by_ids(&self, ids: &[String]) -> Result<Vec<project::Model>, StorageError> {
+        if ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        Project::find()
+            .filter(project::Column::Id.is_in(ids.iter().cloned()))
+            .all(&self.db)
+            .await
+            .map_err(Into::into)
+    }
+
     pub async fn get_in_connection<C>(
         &self,
         connection: &C,

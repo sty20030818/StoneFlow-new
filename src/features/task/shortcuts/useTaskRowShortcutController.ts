@@ -180,8 +180,14 @@ export function useTaskRowShortcutController({
 		(taskId: string | null, source: HoverSource | null, options: HoverUpdateOptions = {}) => {
 			hoveredIdRef.current = taskId
 			hoverSourceRef.current = source
+			// 指针与键盘都更新目标 id（命令需要）；Board 行 isHovered 仅用 keyboard
 			setHoveredId(taskId)
 			setHoverSource(source)
+
+			if (source === 'pointer' && taskId) {
+				setHoveredTask(taskId, 'pointer')
+				cancelScheduledClose()
+			}
 
 			if (options.syncExternal !== false) {
 				onSetFocusedTask?.(taskId)
@@ -200,7 +206,7 @@ export function useTaskRowShortcutController({
 				})
 			}
 		},
-		[onSetFocusedTask],
+		[cancelScheduledClose, onSetFocusedTask, setHoveredTask],
 	)
 
 	useEffect(() => {

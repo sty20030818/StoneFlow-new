@@ -9,7 +9,6 @@ function createTask(id: string, status: TaskListItem['status']): TaskListItem {
 		spaceName: '默认空间',
 		spaceSlug: 'default',
 		title: id,
-		note: null,
 		status,
 		statusChangedAt: '2026-05-17T00:00:00.000Z',
 		priority: 0,

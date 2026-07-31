@@ -9,8 +9,8 @@ import { invoke } from '@tauri-apps/api/core'
 import type {
 	CreateTaskInput,
 	ListTasksInput,
+	ListTasksPage,
 	TaskDetail,
-	TaskListItem,
 	TaskListViewKey,
 	TaskUpdatePlacementInput,
 	UpdateTaskInput,
@@ -41,8 +41,11 @@ function toScopePayload(scope: Scope): TaskScopePayload {
 	return scope.type === 'all' ? { type: 'all' } : { type: 'space', spaceId: scope.spaceId }
 }
 
-export async function listTasks(input: ListTasksInput) {
-	return invoke<TaskListItem[]>('list_tasks', {
+export async function listTasks(input: ListTasksInput): Promise<ListTasksPage> {
+	const page = await invoke<{
+		items: ListTasksPage['items']
+		nextCursor?: string | null
+	}>('list_tasks', {
 		input: {
 			scope: toScopePayload(input.scope),
 			viewKey: input.viewKey,
@@ -50,8 +53,15 @@ export async function listTasks(input: ListTasksInput) {
 				kind: input.placement.kind,
 				projectId: input.placement.kind === 'project' ? input.placement.projectId : null,
 			},
+			statuses: input.statuses ?? null,
+			limit: input.limit ?? null,
+			cursor: input.cursor ?? null,
 		},
 	})
+	return {
+		items: page.items,
+		nextCursor: page.nextCursor ?? null,
+	}
 }
 
 export async function getTaskDetail(taskId: string) {

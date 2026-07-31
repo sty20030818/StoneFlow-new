@@ -4,11 +4,17 @@
  * Route loader 与组件必须共用同一份 `*QueryOptions`，禁止第二套 fetch。
  */
 
-import { queryOptions, useQuery, useSuspenseQuery } from '@tanstack/react-query'
+import {
+	infiniteQueryOptions,
+	queryOptions,
+	useInfiniteQuery,
+	useQuery,
+	useSuspenseQuery,
+} from '@tanstack/react-query'
 
 import { getDefaultTaskViewKey, getTaskDetail, listTasks } from '@/features/task/api/tasks'
 import { listTaskLinks } from '@/features/task/api/taskLinks'
-import type { ListTasksInput } from '@/shared/types'
+import type { ListTasksInput, TaskListItem } from '@/shared/types'
 
 import { taskKeys } from './task.keys'
 
@@ -19,19 +25,47 @@ function normalizeListTasksInput(input: ListTasksInput): ListTasksInput {
 	}
 }
 
+/** 列表 infinite query：key 不含 cursor，cursor 走 pageParam */
+export function taskListInfiniteQueryOptions(input: ListTasksInput) {
+	const base = normalizeListTasksInput(input)
+	// key 用稳定字段，去掉 cursor/limit 避免每页新 key
+	const keyInput: ListTasksInput = {
+		scope: base.scope,
+		viewKey: base.viewKey,
+		placement: base.placement,
+		...(base.statuses ? { statuses: base.statuses } : {}),
+	}
+
+	return infiniteQueryOptions({
+		queryKey: taskKeys.list(keyInput),
+		queryFn: ({ pageParam }) =>
+			listTasks({
+				...base,
+				cursor: pageParam ?? null,
+			}),
+		initialPageParam: null as string | null,
+		getNextPageParam: (lastPage) => lastPage.nextCursor,
+	})
+}
+
 /**
- * 列表查询配置（与 `useTaskListQuery` / ensureQueryData 共用）。
+ * 列表查询配置（单页；兼容 ensureQueryData 等旧路径）。
  */
 export function taskListQueryOptions(input: ListTasksInput) {
 	const normalizedInput = normalizeListTasksInput(input)
 
 	return queryOptions({
-		queryKey: taskKeys.list(normalizedInput),
+		queryKey: [...taskKeys.list(normalizedInput), 'page', normalizedInput.cursor ?? 'head'] as const,
 		queryFn: () => listTasks(normalizedInput),
 	})
 }
 
-/** 订阅任务列表；key 与 {@link taskListQueryOptions} 一致。 */
+/** 订阅无限列表 */
+export function useTaskListInfiniteQuery(input: ListTasksInput) {
+	return useInfiniteQuery(taskListInfiniteQueryOptions(input))
+}
+
+/** 订阅任务列表（单页）；优先使用 {@link useTaskListInfiniteQuery}。 */
 export function useTaskListQuery(input: ListTasksInput) {
 	return useQuery(taskListQueryOptions(input))
 }
@@ -71,4 +105,18 @@ export function useTaskLinksQuery(taskId: string | null | undefined) {
 		...taskLinksQueryOptions(taskId ?? ''),
 		enabled: Boolean(taskId),
 	})
+}
+
+/** 展平 infinite pages 为列表项 */
+export function flattenTaskListPages(
+	pages: Array<{ items: TaskListItem[] }> | undefined,
+): TaskListItem[] {
+	if (!pages) {
+		return []
+	}
+	const items: TaskListItem[] = []
+	for (const page of pages) {
+		items.push(...page.items)
+	}
+	return items
 }

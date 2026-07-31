@@ -10,7 +10,7 @@ import {
 	type TaskPlacementTarget,
 } from '@/features/metadata-fields'
 import type { TaskStatus } from '@/shared/types'
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import {
 	ContextMenu,
 	ContextMenuContent,
@@ -95,6 +95,8 @@ export function TaskContextMenu({
 	archiveRequiresConfirm = true,
 	dangerEntityLabel,
 }: TaskContextMenuProps) {
+	// 仅打开时挂载 Content，避免每行常驻整棵菜单子树
+	const [menuOpen, setMenuOpen] = useState(false)
 	const { requestDangerConfirm } = useDangerConfirm()
 	const openCustomDateDialog = useDialogStore((state) => state.openCustomDateDialog)
 	const canMoveToTrash = !!onMoveToTrash
@@ -117,13 +119,19 @@ export function TaskContextMenu({
 	const normalizedDueDates = (selectionValues?.dueDates ?? [currentDueDate]).map((value) =>
 		normalizeMetadataDateValue(value),
 	)
-	const statusGroup = mapMetadataActionSpecToTaskContextMenuGroup(createStatusActionSpec())
-	const priorityGroup = mapMetadataActionSpecToTaskContextMenuGroup(createPriorityActionSpec())
-	const dateGroup = mapMetadataActionSpecToTaskContextMenuGroup(
-		createDueDateActionSpec({
-			showClearOption: Array.from(dueDateIndicatorValues).some((value) => value !== null),
-		}),
-	)
+	const statusGroup = menuOpen
+		? mapMetadataActionSpecToTaskContextMenuGroup(createStatusActionSpec())
+		: null
+	const priorityGroup = menuOpen
+		? mapMetadataActionSpecToTaskContextMenuGroup(createPriorityActionSpec())
+		: null
+	const dateGroup = menuOpen
+		? mapMetadataActionSpecToTaskContextMenuGroup(
+				createDueDateActionSpec({
+					showClearOption: Array.from(dueDateIndicatorValues).some((value) => value !== null),
+				}),
+			)
+		: null
 	const placementIndicatorValues = getIndicatorValues(
 		(selectionValues?.placements ?? (placementValue ? [placementValue] : [])).map((value) =>
 			getTaskPlacementTargetValue(value),
@@ -136,10 +144,11 @@ export function TaskContextMenu({
 		uniqueNonEmptyDueDates.length === 1 ? uniqueNonEmptyDueDates[0] : null
 
 	return (
-		<ContextMenu>
+		<ContextMenu onOpenChange={setMenuOpen}>
 			<ContextMenuTrigger asChild onContextMenu={(event) => event.stopPropagation()}>
 				{children}
 			</ContextMenuTrigger>
+			{menuOpen && statusGroup && priorityGroup && dateGroup ? (
 			<ContextMenuContent className='w-56'>
 				<ContextMenuGroup>
 					<ContextMenuSub>
@@ -334,6 +343,7 @@ export function TaskContextMenu({
 					</>
 				) : null}
 			</ContextMenuContent>
+			) : null}
 		</ContextMenu>
 	)
 }

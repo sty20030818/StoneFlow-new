@@ -182,31 +182,36 @@ impl ViewLookupReader for ViewPersistenceAdapter {
         &self,
         ids: &[String],
     ) -> Result<Vec<ViewSpaceLookupRecord>, ApplicationError> {
-        let mut records = Vec::new();
-        for id in ids {
-            if let Some(space) = self.spaces.get(id).await.map_err(from_display)? {
-                records.push(ViewSpaceLookupRecord {
-                    id: space.id.clone(),
-                    name: space.name,
-                    slug: space.id,
-                });
-            }
-        }
-        Ok(records)
+        self.spaces
+            .list_by_ids(ids)
+            .await
+            .map(|rows| {
+                rows.into_iter()
+                    .map(|space| ViewSpaceLookupRecord {
+                        id: space.id.clone(),
+                        name: space.name,
+                        // 与既有行为一致：slug 暂用 id（无独立 slug 列时）
+                        slug: space.id,
+                    })
+                    .collect()
+            })
+            .map_err(from_display)
     }
     async fn list_projects_by_ids(
         &self,
         ids: &[String],
     ) -> Result<Vec<ViewProjectLookupRecord>, ApplicationError> {
-        let mut records = Vec::new();
-        for id in ids {
-            if let Some(project) = self.projects.get(id).await.map_err(from_display)? {
-                records.push(ViewProjectLookupRecord {
-                    id: project.id,
-                    name: project.name,
-                });
-            }
-        }
-        Ok(records)
+        self.projects
+            .list_by_ids(ids)
+            .await
+            .map(|rows| {
+                rows.into_iter()
+                    .map(|project| ViewProjectLookupRecord {
+                        id: project.id,
+                        name: project.name,
+                    })
+                    .collect()
+            })
+            .map_err(from_display)
     }
 }

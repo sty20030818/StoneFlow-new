@@ -82,6 +82,18 @@ impl SpaceRepository {
         self.get_in_connection(self.connection(), space_id).await
     }
 
+    /// 按 id 批量读取 Space；空切片直接返回，避免无效 `IN ()`。
+    pub async fn list_by_ids(&self, ids: &[String]) -> Result<Vec<space::Model>, StorageError> {
+        if ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        Space::find()
+            .filter(space::Column::Id.is_in(ids.iter().cloned()))
+            .all(self.connection())
+            .await
+            .map_err(StorageError::from)
+    }
+
     pub async fn get_in_connection<C>(
         &self,
         connection: &C,

@@ -21,10 +21,10 @@ describe('tasks api', () => {
 		mockedInvoke.mockReset()
 	})
 
-	it('读取列表时发送 scope、viewKey 和 placement', async () => {
-		mockedInvoke.mockResolvedValue([])
+	it('读取列表时发送 scope、viewKey 和 placement，并解析分页', async () => {
+		mockedInvoke.mockResolvedValue({ items: [], nextCursor: null })
 
-		await listTasks({
+		const page = await listTasks({
 			scope: { type: 'space', spaceId: 'space-1' },
 			viewKey: 'completed',
 			placement: {
@@ -33,6 +33,7 @@ describe('tasks api', () => {
 			},
 		})
 
+		expect(page).toEqual({ items: [], nextCursor: null })
 		expect(mockedInvoke).toHaveBeenCalledWith('list_tasks', {
 			input: {
 				scope: {
@@ -44,17 +45,45 @@ describe('tasks api', () => {
 					kind: 'project',
 					projectId: 'project-1',
 				},
+				statuses: null,
+				limit: null,
+				cursor: null,
 			},
 		})
 	})
 
 	it('所有空间列表发送 scope=all 且与单 Space 共用 viewKey 语义', async () => {
-		mockedInvoke.mockResolvedValue([])
+		mockedInvoke.mockResolvedValue({ items: [], nextCursor: 'c1' })
+
+		const page = await listTasks({
+			scope: { type: 'all' },
+			viewKey: 'all',
+			placement: { kind: 'all' },
+		})
+
+		expect(page.nextCursor).toBe('c1')
+		expect(mockedInvoke).toHaveBeenCalledWith('list_tasks', {
+			input: {
+				scope: { type: 'all' },
+				viewKey: 'all',
+				placement: { kind: 'all', projectId: null },
+				statuses: null,
+				limit: null,
+				cursor: null,
+			},
+		})
+	})
+
+	it('列表可下推 statuses 与 cursor', async () => {
+		mockedInvoke.mockResolvedValue({ items: [], nextCursor: null })
 
 		await listTasks({
 			scope: { type: 'all' },
 			viewKey: 'all',
 			placement: { kind: 'all' },
+			statuses: ['todo', 'doing', 'waiting'],
+			cursor: '0\u001ftask-1',
+			limit: 100,
 		})
 
 		expect(mockedInvoke).toHaveBeenCalledWith('list_tasks', {
@@ -62,6 +91,9 @@ describe('tasks api', () => {
 				scope: { type: 'all' },
 				viewKey: 'all',
 				placement: { kind: 'all', projectId: null },
+				statuses: ['todo', 'doing', 'waiting'],
+				limit: 100,
+				cursor: '0\u001ftask-1',
 			},
 		})
 	})

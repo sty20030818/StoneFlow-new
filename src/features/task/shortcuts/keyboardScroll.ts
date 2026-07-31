@@ -1,3 +1,5 @@
+import { scrollTaskBoardToTaskId } from '@/features/task/components/taskBoardScroll'
+
 import type { KeyboardNavigationDirection } from './types'
 
 const MAIN_CARD_SCROLL_SELECTOR =
@@ -28,9 +30,17 @@ export function scrollKeyboardTargetIntoView({
 		return
 	}
 
-	const row = document.querySelector<HTMLElement>(`[data-task-id="${taskId}"]`)
+	// 虚拟列表：先 scrollToIndex 挂载目标行
+	scrollTaskBoardToTaskId(taskId)
+
+	let row = document.querySelector<HTMLElement>(`[data-task-id="${taskId}"]`)
 	if (!row) {
-		return
+		// 同步再读一次；仍无则放弃本轮（下次键盘移动会再试）
+		scrollTaskBoardToTaskId(taskId)
+		row = document.querySelector<HTMLElement>(`[data-task-id="${taskId}"]`)
+		if (!row) {
+			return
+		}
 	}
 
 	const scrollContainer = row.closest<HTMLElement>(MAIN_CARD_SCROLL_SELECTOR)

@@ -94,7 +94,6 @@ function createTask(
 		spaceSlug: overrides.spaceSlug ?? 'work',
 		projectId: overrides.projectId ?? null,
 		projectName: overrides.projectName ?? null,
-		note: overrides.note ?? null,
 		status: overrides.status ?? 'todo',
 		statusChangedAt: overrides.statusChangedAt ?? '2026-06-28T10:00:00.000Z',
 		priority: overrides.priority ?? 0,

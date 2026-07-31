@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 import { useCurrentShellRoute, resolveBreadcrumb, resolveShellRouteScope } from '@/app/navigation'
 import { useDialogStore } from '@/features/shell-dialogs'
@@ -6,20 +6,27 @@ import { useEntityDetailController } from '@/features/entity-detail'
 import { useProjectOptions } from '@/features/project'
 import { useSpaces } from '@/features/space'
 import { useTaskPreviewController } from '@/features/task/detail'
+import type { TaskStatus } from '@/shared/types'
 
 import { useTaskListData } from './useTaskData'
 import { useTaskCollectionScene } from './useTaskCollectionScene'
 import {
+	ALL_TASK_FILTERS,
+	INCOMPLETE_TASK_STATUSES,
+	STANDALONE_STATUS_FILTERS,
 	TASK_LIST_PAGE_VIEW_KEY,
 	VARIANT_CONFIG,
+	type AllTaskFilterPill,
 	type TaskListSceneVariant,
 	type TaskListSubtitleTask,
 } from './list-scene/variantConfig'
-import { ALL_TASK_FILTERS, STANDALONE_STATUS_FILTERS } from './list-scene/variantConfig'
 import { formatTaskStatusLabel } from '../model/taskStatus'
 
 export type { TaskListSceneVariant } from './list-scene/variantConfig'
 export { TASK_LIST_PAGE_VIEW_KEY } from './list-scene/variantConfig'
+
+/** status 维度 pill（不含独立事项） */
+type StatusMode = 'incomplete' | 'all' | TaskStatus
 
 /**
  * 任务列表页（all / standalone）的唯一 wiring 入口。
@@ -40,14 +47,31 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 	const openEntityDrawer = entityDetailController.openDrawer
 	const taskPreviewController = useTaskPreviewController()
 
+	// 默认「未完成」：下推 status 白名单，并与筛选项同步
+	const [statusMode, setStatusMode] = useState<StatusMode>(
+		variant === 'all' ? 'incomplete' : 'all',
+	)
+	const [standaloneOnly, setStandaloneOnly] = useState(false)
+
+	const listStatuses = useMemo(() => {
+		if (statusMode === 'all') {
+			return undefined
+		}
+		if (statusMode === 'incomplete') {
+			return INCOMPLETE_TASK_STATUSES
+		}
+		return [statusMode]
+	}, [statusMode])
+
 	// All 与单 Space「所有任务」同一 viewKey 语义，仅 scope 不同
 	const listInput = useMemo(
 		() => ({
 			scope,
 			viewKey: TASK_LIST_PAGE_VIEW_KEY,
 			placement: config.placement,
+			...(listStatuses ? { statuses: listStatuses } : {}),
 		}),
-		[config.placement, scope],
+		[config.placement, listStatuses, scope],
 	)
 	const taskList = useTaskListData(listInput)
 	const taskBoardStatus = taskList.status
@@ -76,7 +100,8 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 		displayPageKey: config.displayPageKey,
 		projects: projectOptions,
 		supportsProject: config.supportsProject,
-		initialShowCompleted: config.initialShowCompleted,
+		// 未完成默认：隐藏 done/canceled；与 statusMode 一致
+		initialShowCompleted: statusMode !== 'incomplete',
 		fallbackSubtitle,
 		activeTaskId,
 		onCreateTask: openCreate,
@@ -98,58 +123,90 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 			emptyDescription: config.emptyDescription,
 			emptyTitle: config.emptyTitle,
 		},
+		hasNextPage: taskList.hasNextPage,
+		isFetchingNextPage: taskList.isFetchingNextPage,
+		fetchNextPage: taskList.fetchNextPage,
+		fetchNextPageError: taskList.fetchNextPageError,
 	})
+
+	const applyStatusMode = useCallback(
+		(mode: StatusMode, nextStandalone: boolean) => {
+			setStatusMode(mode)
+			setStandaloneOnly(nextStandalone)
+			const actions = taskCollection.controller.actions
+			actions.applyFilter({ kind: 'standaloneOnly', enabled: nextStandalone })
+			if (mode === 'incomplete') {
+				actions.applyFilter({ kind: 'showCompleted', value: false })
+				actions.applyFilter({ kind: 'status', values: [] })
+				return
+			}
+			if (mode === 'all') {
+				actions.applyFilter({ kind: 'showCompleted', value: true })
+				actions.applyFilter({ kind: 'status', values: [] })
+				return
+			}
+			// 单状态：允许看到 done/canceled 行
+			actions.applyFilter({ kind: 'showCompleted', value: true })
+			actions.applyFilter({ kind: 'status', values: [mode] })
+		},
+		[taskCollection.controller.actions],
+	)
+
 	const toolbarPills = useMemo(() => {
 		if (config.showStatusPills === 'status-only') {
 			return STANDALONE_STATUS_FILTERS.map((filter) => ({
 				label: filter === 'all' ? '所有任务' : formatTaskStatusLabel(filter),
 				active:
 					filter === 'all'
-						? taskCollection.controller.state.statusValues.length === 0
-						: taskCollection.controller.state.statusValues.length === 1 &&
-							taskCollection.controller.state.statusValues[0] === filter,
-				onClick: () =>
-					taskCollection.controller.actions.applyFilter({
-						kind: 'status',
-						values: filter === 'all' ? [] : [filter],
-					}),
+						? statusMode === 'all'
+						: statusMode === filter,
+				onClick: () => applyStatusMode(filter === 'all' ? 'all' : filter, false),
 			}))
 		}
 
-		return ALL_TASK_FILTERS.map((filter) => ({
-			label:
-				filter === 'all'
-					? '所有任务'
-					: filter === 'standalone'
-						? '独立事项'
-						: formatTaskStatusLabel(filter),
-			active:
-				filter === 'all'
-					? taskCollection.controller.state.statusValues.length === 0 &&
-						!taskCollection.controller.state.standaloneOnly
-					: filter === 'standalone'
-						? taskCollection.controller.state.standaloneOnly
-						: taskCollection.controller.state.statusValues.length === 1 &&
-							taskCollection.controller.state.statusValues[0] === filter &&
-							!taskCollection.controller.state.standaloneOnly,
-			onClick: () => {
-				if (filter === 'all') {
-					taskCollection.controller.actions.applyFilter({ kind: 'status', values: [] })
-					taskCollection.controller.actions.applyFilter({ kind: 'standaloneOnly', enabled: false })
-					return
-				}
+		return ALL_TASK_FILTERS.map((filter: AllTaskFilterPill) => {
+			const label =
+				filter === 'incomplete'
+					? '未完成任务'
+					: filter === 'all'
+						? '所有任务'
+						: filter === 'standalone'
+							? '独立事项'
+							: formatTaskStatusLabel(filter)
 
-				if (filter === 'standalone') {
-					taskCollection.controller.actions.applyFilter({ kind: 'status', values: [] })
-					taskCollection.controller.actions.applyFilter({ kind: 'standaloneOnly', enabled: true })
-					return
-				}
+			const active =
+				filter === 'standalone'
+					? standaloneOnly
+					: filter === 'incomplete'
+						? statusMode === 'incomplete' && !standaloneOnly
+						: filter === 'all'
+							? statusMode === 'all' && !standaloneOnly
+							: statusMode === filter && !standaloneOnly
 
-				taskCollection.controller.actions.applyFilter({ kind: 'standaloneOnly', enabled: false })
-				taskCollection.controller.actions.applyFilter({ kind: 'status', values: [filter] })
-			},
-		}))
-	}, [config.showStatusPills, taskCollection.controller])
+			return {
+				label,
+				active,
+				onClick: () => {
+					if (filter === 'standalone') {
+						// 独立事项叠加：保持当前 statusMode，只开 standalone
+						setStandaloneOnly(true)
+						taskCollection.controller.actions.applyFilter({
+							kind: 'standaloneOnly',
+							enabled: true,
+						})
+						return
+					}
+					applyStatusMode(filter, false)
+				},
+			}
+		})
+	}, [
+		applyStatusMode,
+		config.showStatusPills,
+		standaloneOnly,
+		statusMode,
+		taskCollection.controller.actions,
+	])
 
 	return {
 		variant,

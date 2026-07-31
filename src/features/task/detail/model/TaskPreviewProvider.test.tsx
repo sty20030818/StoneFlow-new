@@ -108,7 +108,6 @@ function createTask(
 		spaceSlug: 'work',
 		projectId: null,
 		projectName: null,
-		note: null,
 		status: 'todo',
 		statusChangedAt: '2026-05-15T00:00:00Z',
 		priority: 2,

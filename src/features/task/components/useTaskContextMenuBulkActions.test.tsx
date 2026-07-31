@@ -41,7 +41,6 @@ function buildTask(partial: Partial<TaskListItem> = {}): TaskListItem {
 		projectId: 'project-1',
 		projectName: '项目 A',
 		title: '任务 A',
-		note: null,
 		status: 'todo',
 		statusChangedAt: '2026-05-07T08:00:00.000Z',
 		priority: 1,

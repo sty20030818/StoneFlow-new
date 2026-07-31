@@ -94,7 +94,6 @@ pub struct TaskViewItemDto {
     pub project_id: Option<String>,
     pub project_name: Option<String>,
     pub title: String,
-    pub note: Option<String>,
     pub status: WorkStatus,
     pub status_changed_at: String,
     pub priority: i32,
@@ -423,7 +422,6 @@ where
                         .as_ref()
                         .and_then(|id| projects.get(id).cloned()),
                     title: task.title.clone(),
-                    note: task.note.clone(),
                     status: task.status,
                     status_changed_at: task.status_changed_at.clone(),
                     priority: task.priority,

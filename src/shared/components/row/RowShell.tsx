@@ -65,6 +65,10 @@ export function RowShellRoot({
 			className={cn(
 				ROW_SHELL_BASE_CLASS,
 				active ? ROW_SHELL_ACTIVE_CLASS : selectionClass,
+				// 指针 hover 用 CSS，避免父级 React state 刷全表（键盘 hover 仍走 hovered prop）
+				interactive && !hovered && !active && !selected
+					? 'hover:bg-sf-list-row-hover'
+					: null,
 				focusBorderClass,
 				groupedSelected ? ROW_SHELL_GROUP_POSITION_CLASS[selectionGroupPosition] : null,
 				interactive ? 'cursor-pointer' : null,

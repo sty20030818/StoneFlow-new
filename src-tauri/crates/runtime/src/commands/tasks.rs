@@ -7,8 +7,8 @@ use crate::app::error::AppError;
 use crate::app::state::AppState;
 use crate::sync;
 use stoneflow_application::task::{
-    BulkUpdateTasksDto, BulkUpdateTasksInput, CreateTaskInput, ListTasksInput, TaskDetailDto,
-    TaskIdInput, TaskListItemDto, UpdateTaskInput,
+    BulkUpdateTasksDto, BulkUpdateTasksInput, CreateTaskInput, ListTasksInput, ListTasksPageDto,
+    TaskDetailDto, TaskIdInput, UpdateTaskInput,
 };
 use stoneflow_application::task_link::{
     CreateTaskLinkInput, DeleteTaskLinkInput, ListTaskLinksInput, TaskLinkDto, UpdateTaskLinkInput,
@@ -29,7 +29,7 @@ struct TaskChangedPayload {
 pub async fn list_tasks(
     input: ListTasksInput,
     state: State<'_, AppState>,
-) -> Result<Vec<TaskListItemDto>, AppError> {
+) -> Result<ListTasksPageDto, AppError> {
     state.tasks.list_tasks(input).await.map_err(AppError::from)
 }
 
@@ -740,19 +740,31 @@ mod tests {
                     kind: ListTasksPlacementKind::All,
                     project_id: None,
                 },
+                statuses: None,
+                limit: None,
+                cursor: None,
             })
             .await
             .expect("all-space query should succeed");
 
-        assert_eq!(tasks.len(), 2);
-        assert!(tasks.iter().any(|task| task.id == default_task.id));
+        assert_eq!(tasks.items.len(), 2);
+        assert!(tasks.items.iter().any(|task| task.id == default_task.id));
         let listed_second_task = tasks
+            .items
             .iter()
             .find(|task| task.id == second_task.id)
             .expect("second task should be returned");
-        assert_eq!(listed_second_task.note.as_deref(), Some("保留字段"));
+        // 列表投影不含 note；标题/优先级/日期仍应完整
+        assert_eq!(listed_second_task.title, "第二空间任务");
         assert_eq!(listed_second_task.priority, 2);
         assert!(listed_second_task.due_at.is_some());
+        let detail = build_task_service(database.connection().clone())
+            .get_task_detail(TaskIdInput {
+                task_id: second_task.id.clone(),
+            })
+            .await
+            .expect("detail should load note");
+        assert_eq!(detail.note.as_deref(), Some("保留字段"));
     }
 
     #[tokio::test]

@@ -67,6 +67,7 @@ export type TaskView = Task & {
 	viewKeys: string[]
 }
 
+/** 列表投影：不含 note，详情/预览走 TaskDetail */
 export type TaskListItem = {
 	id: string
 	spaceId: string
@@ -75,7 +76,6 @@ export type TaskListItem = {
 	projectId: string | null
 	projectName: string | null
 	title: string
-	note: string | null
 	status: TaskStatus
 	statusChangedAt: string
 	priority: TaskPriority
@@ -90,6 +90,7 @@ export type TaskListItem = {
 }
 
 export type TaskDetail = TaskListItem & {
+	note: string | null
 	position: number
 	deletedAt: string | null
 }
@@ -108,6 +109,17 @@ export type ListTasksInput = {
 	scope: Scope
 	viewKey: TaskListViewKey
 	placement: TaskListPlacementInput
+	/** 可选 status 下推；省略表示不限 status（仍受 lifecycle 约束） */
+	statuses?: TaskStatus[]
+	/** 页大小；省略用后端默认 */
+	limit?: number
+	/** keyset 游标；省略为第一页 */
+	cursor?: string | null
+}
+
+export type ListTasksPage = {
+	items: TaskListItem[]
+	nextCursor: string | null
 }
 
 export type CreateTaskInput = {

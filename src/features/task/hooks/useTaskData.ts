@@ -1,12 +1,22 @@
+import { useMemo } from 'react'
+
 import type { ListTasksInput, TaskListItem } from '@/shared/types'
 import type { QueryLoadStatus } from '@/shared/query/queryStatus'
 
-import { useTaskDetailQuery, useTaskListQuery } from './task.queries'
+import {
+	flattenTaskListPages,
+	useTaskDetailQuery,
+	useTaskListInfiniteQuery,
+} from './task.queries'
 
 const EMPTY_TASK_LIST_ITEMS: TaskListItem[] = []
 
 export function useTaskListData(input: ListTasksInput) {
-	const query = useTaskListQuery(input)
+	const query = useTaskListInfiniteQuery(input)
+	const items = useMemo(
+		() => flattenTaskListPages(query.data?.pages) ?? EMPTY_TASK_LIST_ITEMS,
+		[query.data?.pages],
+	)
 	const status: QueryLoadStatus = query.isError
 		? 'error'
 		: query.isLoading || query.isPending
@@ -14,11 +24,23 @@ export function useTaskListData(input: ListTasksInput) {
 			: 'ready'
 
 	return {
-		items: query.data ?? EMPTY_TASK_LIST_ITEMS,
+		items,
 		status,
 		error: query.error instanceof Error ? query.error.message : null,
 		input,
 		refetch: query.refetch,
+		hasNextPage: Boolean(query.hasNextPage),
+		isFetchingNextPage: query.isFetchingNextPage,
+		fetchNextPage: () => {
+			if (query.hasNextPage && !query.isFetchingNextPage) {
+				void query.fetchNextPage()
+			}
+		},
+		fetchNextPageError: query.isFetchNextPageError
+			? query.error instanceof Error
+				? query.error.message
+				: '加载更多失败'
+			: null,
 	}
 }
 

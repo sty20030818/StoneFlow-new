@@ -138,7 +138,6 @@ function toScope(value: unknown): Scope {
 
 function toTaskListItem(value: Record<string, unknown>): RunTaskViewResult['items'][number] {
 	return {
-		...value,
 		id: String(value.id),
 		spaceId: String(value.spaceId),
 		spaceName: String(value.spaceName),
@@ -146,7 +145,6 @@ function toTaskListItem(value: Record<string, unknown>): RunTaskViewResult['item
 		projectId: value.projectId as string | null,
 		projectName: value.projectName as string | null,
 		title: String(value.title),
-		note: value.note as string | null,
 		status: value.status as RunTaskViewResult['items'][number]['status'],
 		statusChangedAt: String(value.statusChangedAt),
 		priority: Number(value.priority) as RunTaskViewResult['items'][number]['priority'],
@@ -156,7 +154,6 @@ function toTaskListItem(value: Record<string, unknown>): RunTaskViewResult['item
 		completedAt: value.completedAt as string | null,
 		createdAt: String(value.createdAt),
 		updatedAt: String(value.updatedAt),
-
 		canceledAt: null,
 		archivedAt: null,
 	}
