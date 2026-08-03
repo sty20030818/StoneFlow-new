@@ -1,12 +1,20 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { useCurrentShellRoute, resolveBreadcrumb, resolveShellRouteScope } from '@/app/navigation'
 import { useTaskDisplayOptions } from '@/features/display-options'
+import {
+	adaptFilterQueryToListTasks,
+	filterQueriesEqual,
+	isFilterQueryEmpty,
+	pageFilterSliceToFilterQuery,
+	useListFilterSession,
+} from '@/features/filter'
 import { useDialogStore } from '@/features/shell-dialogs'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useProjectOptions } from '@/features/project'
 import { useSpaces } from '@/features/space'
 import { useTaskPreviewController } from '@/features/task/detail'
+import { EMPTY_FILTER_QUERY } from '@/shared/types'
 import type { TaskStatus } from '@/shared/types'
 
 import { useTaskListData } from './useTaskData'
@@ -22,7 +30,6 @@ import {
 	type TaskListSceneVariant,
 	type TaskListSubtitleTask,
 } from './list-scene/variantConfig'
-import { encodeListTasksDateFilter } from '../model/listDateFilter'
 import { formatTaskStatusLabel } from '../model/taskStatus'
 
 const LIST_SERVER_DRIVEN = [
@@ -84,7 +91,10 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 	const projectOptions = useProjectOptions(scope)
 	const { spaces } = useSpaces()
 
-	// filter 状态在 data 之上：querySlice 驱动 listInput，避免二次滤与 totalCount 分叉
+	// P3：URL temp 会话（base 为空；View 页用 view.filters）
+	const filterSession = useListFilterSession({ base: EMPTY_FILTER_QUERY })
+
+	// Command / 旧 picker 仍写扁平 controller；同步到 URL session
 	const listFilter = useTaskPageFilterController({
 		tasks: EMPTY_LIST_FILTER_TASKS,
 		projects: config.supportsProject ? projectOptions : undefined,
@@ -93,7 +103,6 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 			supportsStatus: true,
 			supportsDate: true,
 			supportsProject: config.supportsProject,
-			// 完成可见性归 Display；Command 切换仍可走 filter，P7 再删
 			supportsToggleCompleted: true,
 			supportsClearAll: true,
 		},
@@ -101,32 +110,55 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 		serverDrivenFilters: LIST_SERVER_DRIVEN,
 	})
 
-	// All 与单 Space「所有任务」同一 viewKey；status/standalone/priority/date/project 全下推
+	// Command/picker → URL：有条件则写入；仅在 controller 曾有条件后清空时 clearTemp（不覆盖纯 URL 临时筛选）
+	const hadControllerFiltersRef = useRef(false)
+	useEffect(() => {
+		const fromController = pageFilterSliceToFilterQuery({
+			...listFilter.querySlice,
+			standaloneOnly: listFilter.querySlice.standaloneOnly || standaloneOnly,
+		})
+		if (!isFilterQueryEmpty(fromController)) {
+			hadControllerFiltersRef.current = true
+			if (!filterQueriesEqual(fromController, filterSession.temp)) {
+				filterSession.setTemp(fromController)
+			}
+			return
+		}
+		if (hadControllerFiltersRef.current) {
+			hadControllerFiltersRef.current = false
+			filterSession.clearTemp()
+		}
+	}, [
+		listFilter.querySlice.dateValue,
+		listFilter.querySlice.priorityValues,
+		listFilter.querySlice.projectId,
+		listFilter.querySlice.standaloneOnly,
+		listFilter.querySlice.statusValues,
+		standaloneOnly,
+		filterSession,
+	])
+
+	// listInput：effective → adapt（真源）；pill status 作无 status clause 时的底
 	const listInput = useMemo(() => {
-		const { priorityValues, dateValue, projectId, standaloneOnly: filterStandalone } =
-			listFilter.querySlice
-		const dateFilter = encodeListTasksDateFilter(dateValue)
+		const patch = adaptFilterQueryToListTasks(filterSession.effective)
+		const statuses = patch.statuses ?? listStatuses
 		const placement =
-			filterStandalone || standaloneOnly
+			standaloneOnly || patch.project?.mode === 'none'
 				? ({ kind: 'standalone' } as const)
-				: projectId
-					? ({ kind: 'project' as const, projectId })
+				: patch.project?.mode === 'specific'
+					? ({ kind: 'project' as const, projectId: patch.project.projectId })
 					: config.placement
 		return {
 			scope,
 			viewKey: TASK_LIST_PAGE_VIEW_KEY,
 			placement,
-			...(listStatuses ? { statuses: listStatuses } : {}),
-			...(priorityValues.length > 0 ? { priorities: priorityValues } : {}),
-			...(dateFilter ? { dateFilter } : {}),
+			...(statuses ? { statuses } : {}),
+			...(patch.priorities && patch.priorities.length > 0
+				? { priorities: patch.priorities }
+				: {}),
+			...(patch.dateFilter ? { dateFilter: patch.dateFilter } : {}),
 		}
-	}, [
-		config.placement,
-		listFilter.querySlice,
-		listStatuses,
-		scope,
-		standaloneOnly,
-	])
+	}, [config.placement, filterSession.effective, listStatuses, scope, standaloneOnly])
 	const taskList = useTaskListData(listInput)
 	const taskBoardStatus = taskList.status
 	const taskSourceItems = taskBoardStatus === 'loading' ? [] : taskList.items

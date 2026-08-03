@@ -60,3 +60,17 @@ export { registerFilterCommands } from './commands/registerFilterCommands'
 
 /** 工具条「筛选」按钮（打开 filter-picker；P4 将改为 FilterMenu）。 */
 export { PageFilterButton } from './components/PageFilterButton'
+
+/** 列表筛选会话：base + URL temp → effective */
+export {
+	parseListFilterSearch,
+	useListFilterSession,
+	type ListFilterSession,
+	type UseListFilterSessionOptions,
+} from './model/useListFilterSession'
+
+/** 旧 querySlice → FilterQuery（P7 删除） */
+export {
+	pageFilterSliceToFilterQuery,
+	type PageFilterQuerySlice,
+} from './model/pageFilterSliceBridge'

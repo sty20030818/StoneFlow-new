@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from '@tanstack/react-router'
 
 import {
@@ -8,7 +8,17 @@ import {
 	useCurrentShellRoute,
 } from '@/app/navigation'
 import { useDangerConfirm } from '@/features/danger-confirm'
-import type { TaskDisplayPageKey } from '@/features/display-options'
+import {
+	useTaskDisplayOptions,
+	type TaskDisplayPageKey,
+} from '@/features/display-options'
+import {
+	adaptFilterQueryToListTasks,
+	filterQueriesEqual,
+	isFilterQueryEmpty,
+	pageFilterSliceToFilterQuery,
+	useListFilterSession,
+} from '@/features/filter'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useDialogStore } from '@/features/shell-dialogs'
 import { useSpaces } from '@/features/space'
@@ -19,7 +29,7 @@ import {
 	useTaskPageFilterController,
 	useTaskPreviewController,
 } from '@/features/task'
-import { encodeListTasksDateFilter } from '@/features/task/model/listDateFilter'
+import { EMPTY_FILTER_QUERY } from '@/shared/types'
 import type { Scope, TaskListItem, TaskStatus } from '@/shared/types'
 
 const PROJECT_SERVER_DRIVEN = [
@@ -77,6 +87,9 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 	const deleteProject = useDeleteProjectMutation()
 	const [busyAction, setBusyAction] = useState<string | null>(null)
 
+	const display = useTaskDisplayOptions(PROJECT_DETAIL_DISPLAY_PAGE_KEY)
+	const filterSession = useListFilterSession({ base: EMPTY_FILTER_QUERY })
+
 	const projectFilter = useTaskPageFilterController({
 		tasks: EMPTY_PROJECT_FILTER_TASKS,
 		capabilities: {
@@ -87,16 +100,36 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 			supportsToggleCompleted: true,
 			supportsClearAll: true,
 		},
+		initialShowCompleted: display.options.showCompleted,
 		serverDrivenFilters: PROJECT_SERVER_DRIVEN,
 	})
+
+	const hadControllerFiltersRef = useRef(false)
+	useEffect(() => {
+		const fromController = pageFilterSliceToFilterQuery(projectFilter.querySlice)
+		if (!isFilterQueryEmpty(fromController)) {
+			hadControllerFiltersRef.current = true
+			if (!filterQueriesEqual(fromController, filterSession.temp)) {
+				filterSession.setTemp(fromController)
+			}
+			return
+		}
+		if (hadControllerFiltersRef.current) {
+			hadControllerFiltersRef.current = false
+			filterSession.clearTemp()
+		}
+	}, [
+		projectFilter.querySlice.dateValue,
+		projectFilter.querySlice.priorityValues,
+		projectFilter.querySlice.projectId,
+		projectFilter.querySlice.statusValues,
+		filterSession,
+	])
+
 	const listInput = useMemo(() => {
-		const { priorityValues, dateValue, statusValues, showCompleted } = projectFilter.querySlice
-		const dateFilter = encodeListTasksDateFilter(dateValue)
-		// 项目详情默认 all；statusValues 非空时下推；隐藏完成时用 incomplete 三态
-		let statuses: TaskStatus[] | undefined
-		if (statusValues.length > 0) {
-			statuses = statusValues
-		} else if (!showCompleted) {
+		const patch = adaptFilterQueryToListTasks(filterSession.effective)
+		let statuses = patch.statuses
+		if (!statuses && !display.options.showCompleted) {
 			statuses = ['todo', 'doing', 'waiting']
 		}
 		return {
@@ -104,10 +137,12 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 			viewKey: 'all' as const,
 			placement: { kind: 'project' as const, projectId },
 			...(statuses ? { statuses } : {}),
-			...(priorityValues.length > 0 ? { priorities: priorityValues } : {}),
-			...(dateFilter ? { dateFilter } : {}),
+			...(patch.priorities && patch.priorities.length > 0
+				? { priorities: patch.priorities }
+				: {}),
+			...(patch.dateFilter ? { dateFilter: patch.dateFilter } : {}),
 		}
-	}, [projectFilter.querySlice, projectId, scope])
+	}, [display.options.showCompleted, filterSession.effective, projectId, scope])
 	const taskList = useTaskListData(listInput)
 	const visibleTasks = useMemo(
 		() => taskList.items.filter((task) => task.archivedAt === null),

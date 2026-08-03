@@ -1,6 +1,9 @@
 import {
 	createFilterClause,
+	decodeFilterQueryFromSearchParam,
 	FILTER_PROJECT_NONE_VALUE,
+	FILTER_SEARCH_PARAM_KEY,
+	isFilterQueryEmpty,
 	normalizeFilterQuery,
 	type FilterQuery,
 } from '@/features/filter'
@@ -8,11 +11,15 @@ import type { TaskGroupBy, TaskStatus, ViewSortField, ViewSortRule } from '@/sha
 import { EMPTY_FILTER_QUERY } from '@/shared/types'
 
 export type ViewSearchDefinition = {
-	/** 临时 filters（clause）；可与 URL `f` 并存，后续统一 */
+	/** 旧式 query 键拼出的 filters（兼容） */
 	filters: FilterQuery
+	/** 临时 FilterQuery（URL `f`，优先于 filters） */
+	tempFilters: FilterQuery
 	/** 请求期 sort（Display）；非 View 持久化 */
 	sort: ViewSortRule[]
 	groupBy: TaskGroupBy | null
+	/** 透传 f 供 router 保留 */
+	f?: string
 }
 
 const TASK_STATUSES = ['todo', 'doing', 'waiting', 'done', 'canceled'] as const
@@ -41,6 +48,8 @@ export function parseViewSearch(search: Record<string, unknown>): ViewSearchDefi
 	const planned = getOne(search.planned)
 	const projectMode = getOne(search.projectMode)
 	const projectIds = parseCsv(search.projectIds)
+	const fRaw = typeof search[FILTER_SEARCH_PARAM_KEY] === 'string' ? search[FILTER_SEARCH_PARAM_KEY] : undefined
+	const tempFilters = decodeFilterQueryFromSearchParam(fRaw)
 
 	if (status.length > 0) {
 		clauses.push(createFilterClause('status', 'is', status))
@@ -60,13 +69,18 @@ export function parseViewSearch(search: Record<string, unknown>): ViewSearchDefi
 		clauses.push(createFilterClause('project', 'is', projectIds))
 	}
 
+	const legacyFilters =
+		clauses.length > 0 ? normalizeFilterQuery({ clauses }) : EMPTY_FILTER_QUERY
+
 	return {
-		filters: clauses.length > 0 ? normalizeFilterQuery({ clauses }) : EMPTY_FILTER_QUERY,
+		filters: legacyFilters,
+		tempFilters,
 		sort:
 			isSortField(sortField) && (sortDirection === 'asc' || sortDirection === 'desc')
 				? [{ field: sortField, direction: sortDirection }]
 				: [],
 		groupBy: isGroupBy(groupBy) ? groupBy : null,
+		...(fRaw && !isFilterQueryEmpty(tempFilters) ? { f: fRaw } : {}),
 	}
 }
 

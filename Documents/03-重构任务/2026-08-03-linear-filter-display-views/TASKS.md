@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**P2 完成 → 下一阶段 P3**（列表会话 base / temp / effective）
+**P3 完成 → 下一阶段 P4**（FilterMenu + FilterBar UI）
 
 执行任意 task 前重读 SPEC 对应 AC 与 PLAN 对应章节。
 
@@ -48,14 +48,14 @@
 
 ### P3 · 列表会话：base / temp / effective
 
-- [ ] T10 实现列表筛选会话 hook（如 `useListFilterSession`）：输入 base（view.filters 或 empty）+ 路由 search temp → effective；提供 setTemp/clearTemp/replace 与路由同步  
+- [x] T10 实现列表筛选会话 hook（如 `useListFilterSession`）：输入 base（view.filters 或 empty）+ 路由 search temp → effective；提供 setTemp/clearTemp/replace 与路由同步  
   - 触及：task/project/view 的 scene hooks 将接入  
   - _对应验收标准：AC-1, AC-2, AC-4, AC-5, AC-6_
 
-- [ ] T11 全部任务 / 独立事项 / 项目详情 / Views 的数据请求改为 effectiveFilters → adapt → list/run input；删除对旧 `PageFilterState` 扁平字段驱动查询的路径  
+- [x] T11 全部任务 / 独立事项 / 项目详情 / Views 的数据请求改为 effectiveFilters → adapt → list/run input；删除对旧 `PageFilterState` 扁平字段驱动查询的路径  
   - _对应验收标准：AC-1, AC-14_
 
-- [ ] T12 导航规则：进入自定义 View 默认干净态（不带其它页 temp）；在 View 上首次编辑写入 temp 标记 dirty  
+- [x] T12 导航规则：进入自定义 View 默认干净态（不带其它页 temp）；在 View 上首次编辑写入 temp 标记 dirty  
   - _对应验收标准：AC-5, AC-6_
 
 ### P4 · Filter UI 主路径
@@ -163,3 +163,4 @@
 | 2026-08-03 | **P0 完成**：`src/features/filter/core`（types/normalize/url-codec/adapt）+ 20 tests；公共面导出；ARCHITECTURE 更新 |
 | 2026-08-03 | **P1 完成**：View/Rust filters→FilterQuery；create/update 不写 sort/group；编辑器只存 filters；T6 迁 display + update 清空 |
 | 2026-08-03 | **P2 完成**：showCompleted∈Display；排序方向内嵌；完成按近到远 toggle；设为默认/恢复默认；List 用 display 下推 |
+| 2026-08-03 | **P3 完成**：useListFilterSession + URL `f`；list/project/views effective→adapt；Command 桥不覆盖纯 URL temp |

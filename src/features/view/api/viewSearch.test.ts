@@ -18,6 +18,7 @@ describe('parseViewSearch', () => {
 
 		expect(result.sort).toEqual([{ field: 'dueAt', direction: 'asc' }])
 		expect(result.groupBy).toBe('planned')
+		expect(result.tempFilters.clauses).toEqual([])
 		expect(result.filters.clauses.map((c) => c.field).sort()).toEqual(
 			['due', 'planned', 'project', 'status'].sort(),
 		)

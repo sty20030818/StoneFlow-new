@@ -9,11 +9,17 @@ import {
 } from '@/app/navigation'
 import { useDialogStore } from '@/features/shell-dialogs'
 import { createTaskDisplayViewPageKey } from '@/features/display-options'
+import {
+	adaptFilterQueryToViewFilters,
+	isFilterQueryEmpty,
+	useListFilterSession,
+} from '@/features/filter'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useProjectOptions } from '@/features/project'
 import { useSpaces } from '@/features/space'
 import { useTaskCollectionScene, useTaskPreviewController } from '@/features/task'
 import { useTaskChangedListener } from '@/shared/events'
+import { EMPTY_FILTER_QUERY } from '@/shared/types'
 import type { View } from '@/shared/types'
 
 import type { ViewSearchDefinition } from '../api/viewSearch'
@@ -80,17 +86,24 @@ export function useViewsScene() {
 
 		return taskViews.find((view) => view.id === routeViewId) ?? visibleViews[0] ?? null
 	}, [routeViewId, taskViews, visibleViews])
+
+	// base = View 定义；temp = URL `f`（进 View 默认干净，无 f）
+	const viewFilterBase =
+		activeView?.kind === 'custom' ? (activeView.filters ?? EMPTY_FILTER_QUERY) : EMPTY_FILTER_QUERY
+	const filterSession = useListFilterSession({ base: viewFilterBase })
+
+	// T12：切换 viewId 时若不需要保留 temp，URL 无 f 即干净；有 f 则为临时偏离
 	const taskRunInput = activeView
 		? {
 				scope,
 				viewId: activeView.kind === 'custom' ? activeView.id : null,
 				viewKey: activeView.systemKey,
-				// 临时 filters（clause）；空则用 View 定义
-				filters:
-					search.filters && search.filters.clauses && search.filters.clauses.length > 0
+				// dirty：temp；否则 legacy search.filters 作覆盖（兼容旧键）
+				filters: filterSession.dirty
+					? adaptFilterQueryToViewFilters(filterSession.temp)
+					: search.filters && !isFilterQueryEmpty(search.filters)
 						? search.filters
 						: undefined,
-				// 请求期 sort/group 来自 search（后续应接 Display，不写 View）
 				sort: search.sort && search.sort.length > 0 ? search.sort : undefined,
 				groupBy: search.groupBy ?? undefined,
 			}
