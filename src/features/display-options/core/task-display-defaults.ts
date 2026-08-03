@@ -34,6 +34,7 @@ export const BASE_TASK_DISPLAY_OPTIONS: TaskDisplayOptions = {
 	orderBy: 'smart',
 	orderDirection: 'desc',
 	completedOrder: 'recency',
+	showCompleted: true,
 	showEmptyGroups: false,
 	visibleProperties: [...DEFAULT_VISIBLE_PROPERTIES],
 }

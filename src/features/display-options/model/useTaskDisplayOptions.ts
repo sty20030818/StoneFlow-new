@@ -31,6 +31,8 @@ type UseTaskDisplayOptionsResult = {
 		) => Promise<void>
 		setCompletedOrder: (completedOrder: TaskDisplayCompletedOrder) => Promise<void>
 		setVisibleProperties: (visibleProperties: TaskDisplayPropertyKey[]) => Promise<void>
+		/** 当前 resolved 选项写入 workspace default，并清空 personal */
+		setAsDefault: () => Promise<void>
 		resetToDefault: () => Promise<void>
 		reload: () => Promise<void>
 	}
@@ -93,6 +95,32 @@ export function useTaskDisplayOptions(pageKey: TaskDisplayPageKey): UseTaskDispl
 		[commitDraft, draftOverride, persistedPersonal],
 	)
 
+	const setAsDefault = useCallback(async () => {
+		// 把当前呈现结果固化为页面 default，并清空个人覆盖（对齐 Linear Set as default）
+		const asDefault: TaskDisplayPreferenceRecord = {
+			groupBy: options.groupBy,
+			subGroupBy: options.subGroupBy,
+			orderBy: options.orderBy,
+			orderDirection: options.orderDirection,
+			completedOrder: options.completedOrder,
+			showCompleted: options.showCompleted,
+			showEmptyGroups: options.showEmptyGroups,
+			visibleProperties: [...options.visibleProperties],
+		}
+		setDraftOverride({})
+		try {
+			await updatePreference.mutateAsync({
+				pageKey,
+				personal: null,
+				workspaceDefault: asDefault,
+			})
+			setDraftOverride(null)
+		} catch (error) {
+			setDraftOverride(null)
+			throw error
+		}
+	}, [options, pageKey, updatePreference])
+
 	return {
 		options,
 		status: preferenceQuery.isError
@@ -110,6 +138,7 @@ export function useTaskDisplayOptions(pageKey: TaskDisplayPageKey): UseTaskDispl
 			setOrdering: (orderBy, orderDirection) => applyPartial({ orderBy, orderDirection }),
 			setCompletedOrder: (completedOrder) => applyPartial({ completedOrder }),
 			setVisibleProperties: (visibleProperties) => applyPartial({ visibleProperties }),
+			setAsDefault,
 			resetToDefault: () => commitDraft(null),
 			reload: async () => {
 				setDraftOverride(null)

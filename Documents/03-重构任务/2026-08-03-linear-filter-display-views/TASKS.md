@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**P1 完成 → 下一阶段 P2**（Display 独占呈现）
+**P2 完成 → 下一阶段 P3**（列表会话 base / temp / effective）
 
 执行任意 task 前重读 SPEC 对应 AC 与 PLAN 对应章节。
 
@@ -36,14 +36,14 @@
 
 ### P2 · Display 独占呈现
 
-- [ ] T7 将 completed / 已完成可见性从 page-filter 快捷操作迁入 `DisplayOptionsPanel`；从 filter 能力中删除 showCompleted 筛选语义串味  
+- [x] T7 将 completed / 已完成可见性从 page-filter 快捷操作迁入 `DisplayOptionsPanel`；从 filter 能力中删除 showCompleted 筛选语义串味  
   - 触及：`src/features/display-options/components/DisplayOptionsPanel.tsx`、filter controller 调用方  
   - _对应验收标准：AC-9_
 
-- [ ] T8 收敛 Display UI：Ordering 行内嵌方向；completedOrder 改为 toggle 语义；隐藏 List/Board；确认 Set as default / Reset 只碰 display store  
+- [x] T8 收敛 Display UI：Ordering 行内嵌方向；completedOrder 改为 toggle 语义；隐藏 List/Board；确认 Set as default / Reset 只碰 display store  
   - _对应验收标准：AC-9, AC-10_
 
-- [ ] T9 改 `ViewEditorDialog`（及 form）：删除 sort/group 表单项，仅编辑 name/scope/filters（filters 可先简单或接后续 Filter UI）  
+- [x] T9 改 `ViewEditorDialog`（及 form）：删除 sort/group 表单项，仅编辑 name/scope/filters（filters 可先简单或接后续 Filter UI）  
   - _对应验收标准：AC-10_
 
 ### P3 · 列表会话：base / temp / effective
@@ -162,3 +162,4 @@
 | 2026-08-03 | 审计历史任务债；新增 [优化债台账.md](./优化债台账.md)；TASKS 增加 **P7**（T23–T31）清扫过渡/兼容/双路径 |
 | 2026-08-03 | **P0 完成**：`src/features/filter/core`（types/normalize/url-codec/adapt）+ 20 tests；公共面导出；ARCHITECTURE 更新 |
 | 2026-08-03 | **P1 完成**：View/Rust filters→FilterQuery；create/update 不写 sort/group；编辑器只存 filters；T6 迁 display + update 清空 |
+| 2026-08-03 | **P2 完成**：showCompleted∈Display；排序方向内嵌；完成按近到远 toggle；设为默认/恢复默认；List 用 display 下推 |

@@ -19,7 +19,11 @@ export function applyTaskDisplayOptionsToTasks({
 	options,
 	context,
 }: ApplyTaskDisplayOptionsInput): TaskDisplayApplyResult {
-	const orderedItems = items.toSorted(
+	// Display：隐藏已完成/已取消（非 Filter chip）
+	const visibleItems = options.showCompleted
+		? items
+		: items.filter((task) => task.status !== 'done' && task.status !== 'canceled')
+	const orderedItems = visibleItems.toSorted(
 		createTaskDisplayComparator(options, { pageKey: context.pageKey }),
 	)
 	const sections = buildTaskDisplaySections(orderedItems, options, context)

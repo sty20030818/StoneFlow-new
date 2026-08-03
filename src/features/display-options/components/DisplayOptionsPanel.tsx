@@ -1,10 +1,10 @@
 'use client'
 
 import type { ReactNode } from 'react'
+import { ArrowDownIcon, ArrowUpIcon } from 'lucide-react'
 
 import {
 	getTaskDisplayPageCapabilities,
-	TASK_DISPLAY_COMPLETED_ORDER_VALUES,
 	type ResolvedTaskDisplayOptions,
 	type TaskDisplayPageKey,
 	type TaskDisplayPropertyKey,
@@ -34,6 +34,8 @@ type DisplayOptionsPanelActions = {
 	setCompletedOrder: (completedOrder: ResolvedTaskDisplayOptions['completedOrder']) => Promise<void>
 	applyPartial: (patch: Partial<ResolvedTaskDisplayOptions>) => Promise<void>
 	setVisibleProperties: (visibleProperties: TaskDisplayPropertyKey[]) => Promise<void>
+	/** 将当前呈现设为页面默认（workspace default） */
+	setAsDefault: () => Promise<void>
 	resetToDefault: () => Promise<void>
 }
 
@@ -62,17 +64,11 @@ const ORDER_LABELS: Record<ResolvedTaskDisplayOptions['orderBy'], string> = {
 	status: '状态',
 	dueAt: '截止时间',
 	plannedAt: '计划时间',
-
 	statusChangedAt: '状态更新时间',
 	createdAt: '创建时间',
 	updatedAt: '更新时间',
 	completedAt: '完成时间',
 	canceledAt: '取消时间',
-}
-
-const COMPLETED_ORDER_LABELS: Record<ResolvedTaskDisplayOptions['completedOrder'], string> = {
-	recency: '最近变更优先',
-	natural: '自然顺序',
 }
 
 const PROPERTY_META: Record<TaskDisplayPropertyKey, { label: string }> = {
@@ -109,25 +105,14 @@ export function DisplayOptionsPanel({
 	const supportsSubGrouping = capabilities.allowedSubGroupBy.some((item) => item !== 'none')
 	const canToggleShowEmptyGroups =
 		capabilities.supportsShowEmptyGroups && options.groupBy !== 'none'
-	// 用 Set 承载已显示属性，避免下方 map 循环内重复 array.includes 扫描
+	const canToggleOrderDirection = options.orderBy !== 'manual'
 	const visiblePropertySet = new Set(options.visibleProperties)
-
-	// 合并 filter + map 为单次遍历，并用 Set 承载允许的排序值以避免循环内重复 includes 扫描
-	const allowedCompletedOrderSet = new Set(capabilities.allowedCompletedOrder)
-	const completedOrderItems: ReactNode[] = []
-	for (const value of TASK_DISPLAY_COMPLETED_ORDER_VALUES) {
-		if (!allowedCompletedOrderSet.has(value)) {
-			continue
-		}
-		completedOrderItems.push(
-			<SelectItem key={value} value={value}>
-				{COMPLETED_ORDER_LABELS[value]}
-			</SelectItem>,
-		)
-	}
+	const orderCompletedByRecency = options.completedOrder === 'recency'
 
 	return (
 		<div className={cn('flex w-full min-w-0 flex-col gap-3', className)}>
+			{/* List/Board 占位：无第二布局，不放可点假开关（SPEC） */}
+
 			<div className='flex flex-col gap-2'>
 				<DisplayOptionRow label='主分组'>
 					<Select
@@ -177,79 +162,85 @@ export function DisplayOptionsPanel({
 					</DisplayOptionRow>
 				) : null}
 
-				<DisplayOptionRow label='排序依据'>
-					<Select
-						disabled={isPending}
-						onValueChange={(value) =>
-							void actions.setOrdering(
-								value as ResolvedTaskDisplayOptions['orderBy'],
-								options.orderDirection,
-							)
-						}
-						value={options.orderBy}
-					>
-						<SelectTrigger aria-label='排序依据' className='w-full min-w-0 justify-between'>
-							<SelectValue placeholder='选择排序依据' />
-						</SelectTrigger>
-						<SelectContent position='popper'>
-							<SelectGroup>
-								{capabilities.allowedOrderBy.map((orderBy) => (
-									<SelectItem key={orderBy} value={orderBy}>
-										{ORDER_LABELS[orderBy]}
-									</SelectItem>
-								))}
-							</SelectGroup>
-						</SelectContent>
-					</Select>
-				</DisplayOptionRow>
-
-				<DisplayOptionRow label='排序方向'>
-					<Select
-						disabled={isPending}
-						onValueChange={(value) =>
-							void actions.setOrdering(
-								options.orderBy,
-								value as ResolvedTaskDisplayOptions['orderDirection'],
-							)
-						}
-						value={options.orderDirection}
-					>
-						<SelectTrigger aria-label='排序方向' className='w-full min-w-0 justify-between'>
-							<SelectValue placeholder='选择排序方向' />
-						</SelectTrigger>
-						<SelectContent position='popper'>
-							<SelectGroup>
-								<SelectItem value='asc'>升序</SelectItem>
-								<SelectItem value='desc'>降序</SelectItem>
-							</SelectGroup>
-						</SelectContent>
-					</Select>
-				</DisplayOptionRow>
-
-				{capabilities.allowedCompletedOrder.length > 0 ? (
-					<DisplayOptionRow label='完成项排序'>
+				{/* 排序 + 方向内嵌（对齐 Linear Ordering 行） */}
+				<DisplayOptionRow label='排序'>
+					<div className='flex min-w-0 w-full items-center gap-1.5'>
 						<Select
 							disabled={isPending}
 							onValueChange={(value) =>
-								void actions.setCompletedOrder(
-									value as ResolvedTaskDisplayOptions['completedOrder'],
+								void actions.setOrdering(
+									value as ResolvedTaskDisplayOptions['orderBy'],
+									options.orderDirection,
 								)
 							}
-							value={options.completedOrder}
+							value={options.orderBy}
 						>
-							<SelectTrigger aria-label='已完成任务排序' className='w-full min-w-0 justify-between'>
-								<SelectValue placeholder='选择已完成排序' />
+							<SelectTrigger aria-label='排序依据' className='min-w-0 flex-1 justify-between'>
+								<SelectValue placeholder='选择排序' />
 							</SelectTrigger>
 							<SelectContent position='popper'>
-								<SelectGroup>{completedOrderItems}</SelectGroup>
+								<SelectGroup>
+									{capabilities.allowedOrderBy.map((orderBy) => (
+										<SelectItem key={orderBy} value={orderBy}>
+											{ORDER_LABELS[orderBy]}
+										</SelectItem>
+									))}
+								</SelectGroup>
 							</SelectContent>
 						</Select>
+						{canToggleOrderDirection ? (
+							<Button
+								aria-label={
+									options.orderDirection === 'asc' ? '升序，点击切换为降序' : '降序，点击切换为升序'
+								}
+								className='size-8 shrink-0'
+								disabled={isPending}
+								onClick={() =>
+									void actions.setOrdering(
+										options.orderBy,
+										options.orderDirection === 'asc' ? 'desc' : 'asc',
+									)
+								}
+								size='icon'
+								type='button'
+								variant='outline'
+							>
+								{options.orderDirection === 'asc' ? (
+									<ArrowUpIcon className='size-3.5' />
+								) : (
+									<ArrowDownIcon className='size-3.5' />
+								)}
+							</Button>
+						) : null}
+					</div>
+				</DisplayOptionRow>
+
+				{capabilities.allowedCompletedOrder.length > 0 ? (
+					<DisplayOptionRow label='完成按近到远'>
+						<DisplayInlineSwitch
+							ariaLabel='已完成项按最近变更优先排序'
+							checked={orderCompletedByRecency}
+							disabled={isPending}
+							onCheckedChange={(checked) =>
+								void actions.setCompletedOrder(checked ? 'recency' : 'natural')
+							}
+						/>
 					</DisplayOptionRow>
 				) : null}
+
+				<DisplayOptionRow label='显示已完成'>
+					<DisplayInlineSwitch
+						ariaLabel='显示已完成与已取消任务'
+						checked={options.showCompleted}
+						disabled={isPending}
+						onCheckedChange={(checked) => void actions.applyPartial({ showCompleted: checked })}
+					/>
+				</DisplayOptionRow>
 
 				{canToggleShowEmptyGroups ? (
 					<DisplayOptionRow label='空分组'>
 						<DisplayInlineSwitch
+							ariaLabel='显示空分组'
 							checked={options.showEmptyGroups}
 							disabled={isPending}
 							onCheckedChange={(checked) => void actions.applyPartial({ showEmptyGroups: checked })}
@@ -261,17 +252,28 @@ export function DisplayOptionsPanel({
 			<Separator />
 
 			<div className='flex flex-col gap-2'>
-				<div className='flex items-center justify-between gap-3'>
+				<div className='flex items-center justify-between gap-2'>
 					<p className='text-sm font-medium text-foreground'>显示属性</p>
-					<Button
-						disabled={isPending}
-						onClick={() => void actions.resetToDefault()}
-						size='sm'
-						type='button'
-						variant='secondary'
-					>
-						恢复默认
-					</Button>
+					<div className='flex shrink-0 items-center gap-1.5'>
+						<Button
+							disabled={isPending}
+							onClick={() => void actions.setAsDefault()}
+							size='sm'
+							type='button'
+							variant='ghost'
+						>
+							设为默认
+						</Button>
+						<Button
+							disabled={isPending}
+							onClick={() => void actions.resetToDefault()}
+							size='sm'
+							type='button'
+							variant='secondary'
+						>
+							恢复默认
+						</Button>
+					</div>
 				</div>
 				<PropertyToggleGrid
 					items={capabilities.allowedVisibleProperties.map((key) => ({
@@ -300,7 +302,7 @@ export function DisplayOptionsPanel({
 
 function DisplayOptionRow({ label, children }: { label: string; children: ReactNode }) {
 	return (
-		<div className='grid grid-cols-[68px_minmax(0,1fr)] items-center gap-3'>
+		<div className='grid grid-cols-[88px_minmax(0,1fr)] items-center gap-3'>
 			<span className='shrink-0 text-[12px] font-medium text-foreground'>{label}</span>
 			<div className='flex min-w-0 items-center justify-end gap-2'>{children}</div>
 		</div>
@@ -311,20 +313,20 @@ function DisplayInlineSwitch({
 	checked,
 	disabled,
 	onCheckedChange,
+	ariaLabel,
 }: {
 	checked: boolean
 	disabled?: boolean
 	onCheckedChange: (checked: boolean) => void
+	ariaLabel: string
 }) {
 	return (
-		<>
-			<Switch
-				aria-label='显示空分组'
-				checked={checked}
-				disabled={disabled}
-				onCheckedChange={onCheckedChange}
-			/>
-		</>
+		<Switch
+			aria-label={ariaLabel}
+			checked={checked}
+			disabled={disabled}
+			onCheckedChange={onCheckedChange}
+		/>
 	)
 }
 

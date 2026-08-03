@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 
 import { useCurrentShellRoute, resolveBreadcrumb, resolveShellRouteScope } from '@/app/navigation'
+import { useTaskDisplayOptions } from '@/features/display-options'
 import { useDialogStore } from '@/features/shell-dialogs'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useProjectOptions } from '@/features/project'
@@ -66,15 +67,19 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 	)
 	const [standaloneOnly, setStandaloneOnly] = useState(false)
 
+	// Display 为 showCompleted 真源（P2）；list 下推用其推导 status 白名单
+	const display = useTaskDisplayOptions(config.displayPageKey)
+
 	const listStatuses = useMemo(() => {
-		if (statusMode === 'all') {
-			return undefined
-		}
 		if (statusMode === 'incomplete') {
 			return INCOMPLETE_TASK_STATUSES
 		}
+		if (statusMode === 'all') {
+			// 「所有任务」pill + Display 隐藏已完成 → 仍下推未完成，避免 totalCount 分叉
+			return display.options.showCompleted ? undefined : INCOMPLETE_TASK_STATUSES
+		}
 		return [statusMode]
-	}, [statusMode])
+	}, [display.options.showCompleted, statusMode])
 
 	const projectOptions = useProjectOptions(scope)
 	const { spaces } = useSpaces()
@@ -88,10 +93,11 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 			supportsStatus: true,
 			supportsDate: true,
 			supportsProject: config.supportsProject,
+			// 完成可见性归 Display；Command 切换仍可走 filter，P7 再删
 			supportsToggleCompleted: true,
 			supportsClearAll: true,
 		},
-		initialShowCompleted: statusMode !== 'incomplete',
+		initialShowCompleted: display.options.showCompleted,
 		serverDrivenFilters: LIST_SERVER_DRIVEN,
 	})
 
@@ -186,20 +192,23 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 			const actions = taskCollection.controller.actions
 			actions.applyFilter({ kind: 'standaloneOnly', enabled: nextStandalone })
 			if (mode === 'incomplete') {
+				void display.actions.applyPartial({ showCompleted: false })
 				actions.applyFilter({ kind: 'showCompleted', value: false })
 				actions.applyFilter({ kind: 'status', values: [] })
 				return
 			}
 			if (mode === 'all') {
+				void display.actions.applyPartial({ showCompleted: true })
 				actions.applyFilter({ kind: 'showCompleted', value: true })
 				actions.applyFilter({ kind: 'status', values: [] })
 				return
 			}
 			// 单状态：允许看到 done/canceled 行
+			void display.actions.applyPartial({ showCompleted: true })
 			actions.applyFilter({ kind: 'showCompleted', value: true })
 			actions.applyFilter({ kind: 'status', values: [mode] })
 		},
-		[taskCollection.controller.actions],
+		[display.actions, taskCollection.controller.actions],
 	)
 
 	const toolbarPills = useMemo(() => {
