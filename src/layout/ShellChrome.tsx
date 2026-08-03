@@ -102,6 +102,7 @@ export function ShellChrome({
 				}}
 				onRunCommand={command.runCommand}
 				onSelectFilterKind={(kind) => {
+					// 筛选维度切换：只更新 kind，不再依赖全页 filter-picker 作为主路径
 					command.pageFilter.actions.openFilterPicker(kind)
 					command.setCommandMenuFilterKind(kind)
 				}}

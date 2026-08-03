@@ -3,7 +3,12 @@
 import { CheckCircle2Icon, CircleIcon, Trash2Icon } from 'lucide-react'
 
 import { CommandGroup, CommandItem } from '@/shared/components/base/command'
-import type { PageFilterApplyInput, PageFilterKind } from '@/features/filter'
+import {
+	emitFilterUiEvent,
+	pageFilterKindToField,
+	type PageFilterApplyInput,
+	type PageFilterKind,
+} from '@/features/filter'
 import type { CommandContext } from '@/features/command/core'
 import type { TaskPriority, TaskStatus } from '@/shared/types'
 
@@ -84,11 +89,19 @@ export function FilterPickerCommandGroup({
 
 		return (
 			<>
-				<CommandGroup className='pt-2' heading='筛选维度'>
+				<CommandGroup className='pt-2' heading='筛选（请使用工具条公式条）'>
 					{items.map((item) => (
 						<CommandItem
 							key={item.kind}
-							onSelect={() => onSelectFilterKind(item.kind)}
+							onSelect={() => {
+								// 主路径：关闭 Command，打开锚定 FilterMenu
+								onSelectFilterKind(item.kind)
+								emitFilterUiEvent({
+									type: 'open-menu',
+									field: pageFilterKindToField(item.kind),
+								})
+								onOpenChange(false)
+							}}
 							value={`${item.title} ${item.kind}`}
 						>
 							<CommandRow

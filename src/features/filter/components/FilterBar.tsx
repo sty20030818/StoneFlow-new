@@ -45,6 +45,7 @@ export function FilterBar({ className }: { className?: string }) {
 	const { session, projects, canOverwriteView, onSave, hiddenByFilterCount } = ui
 	const { effective, dirty, isEmpty, clearTemp, replaceEffective } = session
 
+	// 干净空：不渲染；干净非空（View 定义）渲染 chip 且无 Clear；dirty 显示 Clear
 	if (isEmpty && !dirty) {
 		return null
 	}

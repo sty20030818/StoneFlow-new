@@ -3,7 +3,7 @@
 /**
  * 锚定「添加筛选」菜单：字段 → 多选值 → 写入 session temp。
  */
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { CheckIcon, ChevronRightIcon } from 'lucide-react'
 
 import { Button } from '@/shared/components/base/button'
@@ -31,15 +31,32 @@ type FilterMenuProps = {
 	trigger: ReactNode
 	open?: boolean
 	onOpenChange?: (open: boolean) => void
+	/** 打开时预选字段（F 后接 p/s/d/j 等） */
+	initialField?: FilterField | null
 	className?: string
 }
 
-export function FilterMenu({ trigger, open, onOpenChange, className }: FilterMenuProps) {
+export function FilterMenu({
+	trigger,
+	open,
+	onOpenChange,
+	initialField = null,
+	className,
+}: FilterMenuProps) {
 	const ui = useListFilterUi()
 	const [field, setField] = useState<FilterField | null>(null)
 	const [internalOpen, setInternalOpen] = useState(false)
 	const isOpen = open ?? internalOpen
 	const setOpen = onOpenChange ?? setInternalOpen
+
+	useEffect(() => {
+		if (isOpen && initialField) {
+			setField(initialField)
+		}
+		if (!isOpen) {
+			setField(null)
+		}
+	}, [isOpen, initialField])
 
 	if (!ui) {
 		return <>{trigger}</>

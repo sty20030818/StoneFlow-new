@@ -82,3 +82,11 @@ export {
 	pageFilterSliceToFilterQuery,
 	type PageFilterQuerySlice,
 } from './model/pageFilterSliceBridge'
+
+/** 快捷键 / 命令 → Filter 表面 */
+export {
+	emitFilterUiEvent,
+	subscribeFilterUiEvent,
+	pageFilterKindToField,
+	type FilterUiEvent,
+} from './model/filterUiEvents'

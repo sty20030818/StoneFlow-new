@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**P4 完成 → 下一阶段 P5**（Save 收口 / 删旧 Command 主路径 / 槽位）
+**P5 完成 → 下一阶段 P6**（验收与长期文档）
 
 执行任意 task 前重读 SPEC 对应 AC 与 PLAN 对应章节。
 
@@ -75,18 +75,19 @@
 
 ### P5 · Save、删旧、槽位
 
-- [ ] T17 Save 流程：effective 非空可 Save；自定义 View 上下文提供「覆盖当前」与「另存为」；非 View 仅另存为；只写 filters；成功后 clearTemp  
+- [x] T17 Save 流程：effective 非空可 Save；自定义 View 上下文提供「覆盖当前」与「另存为」；非 View 仅另存为；只写 filters；成功后 clearTemp  
   - 触及：`src/features/view/**` dialog/actions  
   - _对应验收标准：AC-7, AC-8_
 
-- [ ] T18 打开已保存 View：base=view.filters，干净态 chip，无 Clear；列表结果与定义一致  
+- [x] T18 打开已保存 View：base=view.filters，干净态 chip，无 Clear；列表结果与定义一致  
   - _对应验收标准：AC-5, AC-7, AC-8_
 
-- [ ] T19 删除或掏空旧路径：`PageFilterState` 扁平真源、`FilterPickerCommandGroup` 作为主实现、register 里仅 filter 的重复逻辑；`F` 改为打开 FilterMenu（可保留 command action 薄封装）  
+- [x] T19 删除或掏空旧路径：`PageFilterState` 扁平真源、`FilterPickerCommandGroup` 作为主实现、register 里仅 filter 的重复逻辑；`F` 改为打开 FilterMenu（可保留 command action 薄封装）  
   - 触及：`src/features/filter/**`、`src/features/command/**`  
   - _对应验收标准：AC-11, AC-12, AC-14_
+  - 注：扁平 controller 仍作 Command 桥/兼容至 P7；主路径已改为 emitFilterUiEvent → FilterMenu，不再 openCommand(filter-picker)
 
-- [ ] T20 修复 ViewsPage 及所有列表页工具条：filterAction / displayAction / 视图操作分离，禁止再占错槽  
+- [x] T20 修复 ViewsPage 及所有列表页工具条：filterAction / displayAction / 视图操作分离，禁止再占错槽  
   - 触及：`ViewsPage.tsx`、`TaskListSceneView.tsx`、`ProjectPage.tsx` 等  
   - _对应验收标准：AC-13_
 
@@ -165,3 +166,4 @@
 | 2026-08-03 | **P2 完成**：showCompleted∈Display；排序方向内嵌；完成按近到远 toggle；设为默认/恢复默认；List 用 display 下推 |
 | 2026-08-03 | **P3 完成**：useListFilterSession + URL `f`；list/project/views effective→adapt；Command 桥不覆盖纯 URL temp |
 | 2026-08-03 | **P4 完成**：FilterMenu/FilterBar/Save 对话框；PageFrame.filterBar；Views 槽位修正；ListFilterUiProvider |
+| 2026-08-03 | **P5 完成**：Save 覆盖/另存；F/命令→FilterMenu 事件；停用 filter-picker 主路径；Views 槽位 |
