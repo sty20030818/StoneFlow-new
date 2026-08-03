@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**P0 待执行**（SPEC/PLAN 已按「长期终态、无过渡」修订；可开始实现）
+**P0 完成 → 下一阶段 P1**（View / Rust filters 契约）
 
 执行任意 task 前重读 SPEC 对应 AC 与 PLAN 对应章节。
 
@@ -10,15 +10,15 @@
 
 ### P0 · 领域核心（无 UI）
 
-- [ ] T1 在 `src/features/filter/core/`（或等价路径）新增 `FilterQuery` / `FilterClause` 类型、`normalizeFilterQuery`、`isFilterQueryEmpty`、`filterQueriesEqual`，并写 vitest  
+- [x] T1 在 `src/features/filter/core/`（或等价路径）新增 `FilterQuery` / `FilterClause` 类型、`normalizeFilterQuery`、`isFilterQueryEmpty`、`filterQueriesEqual`，并写 vitest  
   - _对应验收标准：AC-14_  
   - _测试先行：`src/features/filter/core/*.test.ts`_
 
-- [ ] T2 实现 FilterQuery 的 URL search 编解码（parse 失败 → empty）与 round-trip 单测，约定 search 键名写入 core 或路由旁注释  
+- [x] T2 实现 FilterQuery 的 URL search 编解码（parse 失败 → empty）与 round-trip 单测，约定 search 键名写入 core 或路由旁注释  
   - _对应验收标准：AC-1, AC-2_  
   - _测试先行：同上 codec 测试_
 
-- [ ] T3 实现唯一适配层 `toListTasksInput` / 对 run view 的映射（clause → 现有 statuses/priorities/date/project 等），禁止其它文件复制映射逻辑；单测覆盖 status/priority/project/due  
+- [x] T3 实现唯一适配层 `toListTasksInput` / 对 run view 的映射（clause → 现有 statuses/priorities/date/project 等），禁止其它文件复制映射逻辑；单测覆盖 status/priority/project/due  
   - _对应验收标准：AC-1, AC-14_  
   - _测试先行：`filter/core/adapt*.test.ts`_
 
@@ -160,3 +160,4 @@
 | 2026-08-03 | 对照 Linear 文档补「对齐与偏差」 |
 | 2026-08-03 | 按用户澄清重写：白话照抄表；URL 临时 filter；sort/group 终态进 Display；Clear 仅临时；Save 覆盖\|另存；禁止过渡；TASKS 拆 P0–P6 / T1–T23 |
 | 2026-08-03 | 审计历史任务债；新增 [优化债台账.md](./优化债台账.md)；TASKS 增加 **P7**（T23–T31）清扫过渡/兼容/双路径 |
+| 2026-08-03 | **P0 完成**：`src/features/filter/core`（types/normalize/url-codec/adapt）+ 20 tests；公共面导出；ARCHITECTURE 更新 |
