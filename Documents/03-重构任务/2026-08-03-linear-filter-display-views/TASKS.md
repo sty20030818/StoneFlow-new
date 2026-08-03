@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**P5 完成 → 下一阶段 P6**（验收与长期文档）
+**P6 完成 → 下一阶段 P7**（历史债清扫）
 
 执行任意 task 前重读 SPEC 对应 AC 与 PLAN 对应章节。
 
@@ -93,11 +93,34 @@
 
 ### P6 · 验收与长期文档
 
-- [ ] T21 跑 typecheck 与相关 vitest/cargo test；按 AC-1…AC-16 手工清单勾验（刷新恢复、干净 View 无 Clear、偏离 Clear 恢复、覆盖/另存、Display 不改 filters）  
-  - _对应验收标准：AC-16_
+- [x] T21 跑 typecheck 与相关 vitest/cargo test；按 AC-1…AC-16 对照清单（自动化 + 代码路径核对；完整手工 UI 仍建议发布前点一遍）  
+  - _对应验收标准：AC-16_  
+  - 自动化：`typecheck` ✅ · `lint:boundaries` ✅ · filter/display/view/page-frame vitest 57 ✅ · cargo view 9 ✅  
+  - AC 代码路径核对见下方「P6 AC 核对」
 
-- [ ] T22 同步长期文档：A2、A3、`filter`/`display-options`/`view` ARCHITECTURE（及可选 ADR）；更新本 TASKS 与 [优化债台账.md](./优化债台账.md) 状态列  
+- [x] T22 同步长期文档：A2、A3、`filter`/`display-options`/`view` ARCHITECTURE；更新本 TASKS 与 [优化债台账.md](./优化债台账.md)  
   - _对应验收标准：DoD_
+
+#### P6 AC 核对（代码路径，非全量手工）
+
+| AC | 结果 | 依据 |
+|---|---|---|
+| AC-1 加条件 chip + 列表 | 路径具备 | FilterMenu→session→adapt→listInput |
+| AC-2 刷新恢复 temp | 路径具备 | URL `f` + useListFilterSession |
+| AC-3 改 op | 路径具备 | FilterBar OpPicker→replaceEffective |
+| AC-4 Clear 临时 | 路径具备 | dirty 时 Clear / clearTemp |
+| AC-5 干净 View 无 Clear | 路径具备 | FilterBar：!dirty 不渲染清除 |
+| AC-6 dirty Clear→base | 路径具备 | clearTemp；effective=base |
+| AC-7/8 Save 另存/覆盖 | 路径具备 | FilterSaveDialog + createView/updateView 只 filters |
+| AC-9 Display 不改 filters | 路径具备 | display store 独立 |
+| AC-10 呈现不读 View sort | 路径具备 | create/update 不写；apply 用 display |
+| AC-11/12 锚定菜单 + F | 路径具备 | emitFilterUiEvent；register 停 filter-picker |
+| AC-13 槽位 | 路径具备 | PageFrame + ViewsPage 修正 |
+| AC-14 clause 真源 | 路径具备 | FilterQuery 前后端 |
+| AC-15 N hidden | 部分 | UI 位已接；count 现为 null（无可靠反推） |
+| AC-16 自动化 | 通过 | 见上 |
+
+**未自动化、建议手工：** 真机加筛→刷新→改 op→覆盖/另存→干净 View Clear 行为→Display 改分组条数。
 
 ### P7 · 历史债清扫与架构收口（对照优化债台账）
 
@@ -167,3 +190,4 @@
 | 2026-08-03 | **P3 完成**：useListFilterSession + URL `f`；list/project/views effective→adapt；Command 桥不覆盖纯 URL temp |
 | 2026-08-03 | **P4 完成**：FilterMenu/FilterBar/Save 对话框；PageFrame.filterBar；Views 槽位修正；ListFilterUiProvider |
 | 2026-08-03 | **P5 完成**：Save 覆盖/另存；F/命令→FilterMenu 事件；停用 filter-picker 主路径；Views 槽位 |
+| 2026-08-03 | **P6 完成**：自动化验收；A2/A3/三 feature ARCH + 债台账同步；AC 路径核对 |

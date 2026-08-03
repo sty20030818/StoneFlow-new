@@ -1,6 +1,7 @@
 # view · 自定义视图
 
-> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-07-19
+> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。  
+> 最后更新：2026-08-03（filters = FilterQuery；sort/group 退出产品真源）
 
 ---
 
@@ -8,41 +9,42 @@
 
 ```txt
 routes 薄页
-  → ViewsPage（薄壳）
-  → useViewsScene（视图轨 / run / 编辑器）+ task public 的 useTaskCollectionScene
-  → PageFrame + TaskBoard（组合 task public）
+  → ViewsPage（薄壳 + ListFilterUiProvider）
+  → useViewsScene
+       · base = activeView.filters（FilterQuery）
+       · temp = URL `f`（useListFilterSession）
+       · run_task_view(filters 覆盖 = temp 或 legacy search)
+       · display pageKey = task:view:{id}
+  → PageFrame + FilterBar + TaskBoard
 
-写路径
-  → 视图定义 CRUD：本域 api / mutations
-  → 任务行动作：只调 task public（controller / selection / preview）
-  → 显示选项：display-options public（pageKey = view）
+Save
+  → 只写 filters（覆盖当前自定义 View 或 create）
+  → 不写 Display
 
-不负责
-  → 主壳导航 / layout
-  → 复制 task list-scene
-  → 拆回空壳 features/views
+旧 sort/group
+  → 一次性 migrateViewPresentationToDisplay → display default
+  → update 清空行内 sort/group
 ```
 
-跨模块 **只** `import { … } from '@/features/view'`。
+跨模块 **只** `import { … } from '@/features/view'`。  
 **禁止** `features/view` → `@/layout/**`。
 
 ---
 
-## 2. 目录结构（定稿）
+## 2. 目录结构
 
 ```txt
 src/features/view/
 ├── ARCHITECTURE.md
-├── index.ts                 # 主 public
-├── api/views.ts             # list / run / CRUD invoke
-├── hooks/                   # keys · queries · mutations · useViewsScene
+├── index.ts
+├── api/views.ts · viewSearch.ts
+├── hooks/ … useViewsScene
+├── model/migrateViewPresentationToDisplay.ts
 └── components/
-    ├── ViewsPage            # 页薄壳（槽位 + 编辑器）
+    ├── ViewsPage
     ├── ViewActionsMenu
-    ├── ViewEditorDialog · ViewEditorDialog.form
+    └── ViewEditorDialog · form（仅 name/scope/filters）
 ```
-
-列表与任务板编排在 `hooks/useViewsScene`；`ViewsPage` 只组合页面框架、任务 Board 与编辑器。
 
 ---
 
@@ -51,10 +53,8 @@ src/features/view/
 | 类 | 示例 |
 |----|------|
 | 页面 | `ViewsPage` |
-| 数据 | `useViewsQuery`（project-overview 侧栏等） |
-
-新增导出前确认已有外消费者。导出符合 CONVENTIONS TSDoc L1。
-run query、mutations、编辑器、ActionsMenu、`viewKeys` 默认包内使用，不预防性外放。
+| 数据 | `useViewsQuery`、`createView`、`useCreateViewMutation` |
+| Search | `parseViewSearch`（含 `f` / tempFilters） |
 
 ---
 
@@ -62,11 +62,10 @@ run query、mutations、编辑器、ActionsMenu、`viewKeys` 默认包内使用�
 
 | 协作 | 方向 |
 |------|------|
-| task | 任务板只组合其 public（controller / selection / preview / command selection） |
-| display-options | pageKey = view；应用分组/字段走其 public |
-| page-frame / entity-detail / selection / bulk-action | 页编排消费；禁本域 → layout |
-| project-overview | 只 `useViewsQuery` |
-| routes | 极薄：只挂 `ViewsPage` |
+| filter | session + FilterBar/Menu；filters 同 FilterQuery |
+| display-options | 仅呈现；pageKey = view |
+| task | TaskBoard / collection public |
+| page-frame | Header / Toolbar(filterBar) / Body |
 
 ---
 
