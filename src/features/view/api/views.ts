@@ -1,8 +1,10 @@
 import { invoke } from '@tauri-apps/api/core'
 
+import { normalizeFilterQuery } from '@/features/filter'
 import type { Scope } from '@/shared/types'
 import type {
 	CreateViewInput,
+	FilterQuery,
 	RunTaskViewInput,
 	RunTaskViewResult,
 	SystemViewKey,
@@ -10,6 +12,7 @@ import type {
 	View,
 	ViewSortRule,
 } from '@/shared/types'
+import { EMPTY_FILTER_QUERY } from '@/shared/types'
 
 type ScopePayload =
 	| {
@@ -31,6 +34,10 @@ function toSortPayload(sort: ViewSortRule[]) {
 	}))
 }
 
+function toFiltersPayload(filters: FilterQuery) {
+	return normalizeFilterQuery(filters)
+}
+
 export async function listViews() {
 	const custom = await invoke<Array<Record<string, unknown>>>('list_views', { input: {} })
 	return [...SYSTEM_VIEWS, ...custom.map(toCustomView)]
@@ -50,7 +57,7 @@ export async function runTaskView(input: RunTaskViewInput): Promise<RunTaskViewR
 			scope: toScopePayload(input.scope),
 			viewId: key ? null : (input.viewId ?? null),
 			viewKey: key,
-			filters: input.filters,
+			filters: input.filters ? toFiltersPayload(input.filters) : undefined,
 			sort: input.sort ? toSortPayload(input.sort) : undefined,
 			groupBy: input.groupBy ?? undefined,
 			limit: input.limit ?? null,
@@ -76,9 +83,10 @@ export async function createView(input: CreateViewInput) {
 		input: {
 			name: input.name,
 			scope: toScopePayload(input.scope),
-			filters: input.filters,
-			sort: toSortPayload(input.sort),
-			groupBy: input.groupBy,
+			filters: toFiltersPayload(input.filters),
+			// 后端忽略；显式空避免旧调用方误传
+			sort: [],
+			groupBy: 'none',
 		},
 	})
 	return toCustomView(result)
@@ -90,9 +98,7 @@ export async function updateView(input: UpdateViewInput) {
 			viewId: input.viewId,
 			name: input.name,
 			scope: input.scope ? toScopePayload(input.scope) : undefined,
-			filters: input.filters,
-			sort: input.sort ? toSortPayload(input.sort) : undefined,
-			groupBy: input.groupBy,
+			filters: input.filters ? toFiltersPayload(input.filters) : undefined,
 		},
 	})
 	return toCustomView(result)
@@ -112,11 +118,11 @@ const SYSTEM_VIEWS: View[] = [
 	id: key,
 	systemKey: key as SystemViewKey,
 	name,
-	kind: 'system',
-	scope: { type: 'all' },
-	filters: {},
+	kind: 'system' as const,
+	scope: { type: 'all' as const },
+	filters: EMPTY_FILTER_QUERY,
 	sort: [],
-	groupBy: 'none',
+	groupBy: 'none' as const,
 	position,
 	createdAt: '',
 	updatedAt: '',
@@ -129,7 +135,8 @@ function toCustomView(value: Record<string, unknown>): View {
 		kind: 'custom',
 		systemKey: null,
 		scope: toScope(value.scope),
-		filters: (value.filters ?? {}) as View['filters'],
+		filters: normalizeFilterQuery((value.filters as FilterQuery) ?? EMPTY_FILTER_QUERY),
+		// 旧行可能非空：仅供 migrateViewPresentationToDisplay 消费
 		sort: (value.sort ?? []) as View['sort'],
 		groupBy: (value.groupBy as View['groupBy']) ?? 'none',
 		position: Number(value.position),

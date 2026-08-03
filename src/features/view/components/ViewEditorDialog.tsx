@@ -5,16 +5,7 @@ import type { ProjectOption } from '@/features/project'
 import { useZodForm } from '@/shared/form'
 import { useSubmitTargetFromForm } from '@/features/submit'
 import { cn } from '@/shared/lib/utils'
-import type {
-	CreateViewInput,
-	TaskGroupBy,
-	TaskStatus,
-	TaskViewFilters,
-	UpdateViewInput,
-	View,
-	ViewSortField,
-	ViewSortRule,
-} from '@/shared/types'
+import type { CreateViewInput, TaskStatus, UpdateViewInput, View } from '@/shared/types'
 import { Button } from '@/shared/components/base/button'
 import {
 	Dialog,
@@ -55,25 +46,6 @@ const STATUS_OPTIONS: Array<{ key: TaskStatus; label: string }> = [
 	{ key: 'waiting', label: '等待中' },
 	{ key: 'done', label: '已完成' },
 	{ key: 'canceled', label: '已取消' },
-]
-
-const GROUP_BY_OPTIONS: Array<{ value: TaskGroupBy; label: string }> = [
-	{ value: 'none', label: '不分组' },
-	{ value: 'status', label: '按状态' },
-	{ value: 'priority', label: '按优先级' },
-	{ value: 'project', label: '按项目' },
-	{ value: 'due', label: '按截止时间' },
-	{ value: 'planned', label: '按计划时间' },
-]
-
-const SORT_FIELD_OPTIONS: Array<{ value: ViewSortField; label: string }> = [
-	{ value: 'priority', label: '优先级' },
-	{ value: 'dueAt', label: '截止时间' },
-	{ value: 'plannedAt', label: '计划时间' },
-	{ value: 'createdAt', label: '创建时间' },
-	{ value: 'updatedAt', label: '更新时间' },
-	{ value: 'completedAt', label: '完成时间' },
-	{ value: 'position', label: '原始排序' },
 ]
 
 type ViewEditorDialogProps = {
@@ -121,15 +93,6 @@ export function ViewEditorDialog({
 		control: form.control,
 		name: 'plannedMode',
 	})
-	const { field: groupByField } = useController({ control: form.control, name: 'groupBy' })
-	const { field: sortFieldField } = useController({
-		control: form.control,
-		name: 'sortField',
-	})
-	const { field: sortDirectionField } = useController({
-		control: form.control,
-		name: 'sortDirection',
-	})
 
 	useEffect(() => {
 		if (!open) {
@@ -152,9 +115,6 @@ export function ViewEditorDialog({
 	const specificProjectId = specificProjectIdField.value
 	const dueMode = dueModeField.value
 	const plannedMode = plannedModeField.value
-	const groupBy = groupByField.value as TaskGroupBy
-	const sortField = sortFieldField.value as ViewSortField
-	const sortDirection = sortDirectionField.value as ViewSortRule['direction']
 	const hasSpecificProject = projectMode !== 'specific' || specificProjectId !== 'none'
 	const canSubmit = nameField.value.trim().length > 0 && statusList.length > 0 && hasSpecificProject
 
@@ -201,7 +161,7 @@ export function ViewEditorDialog({
 					<DialogHeader className={dialogShellHeaderClass}>
 						<DialogTitle className={dialogShellTitleClass}>{title}</DialogTitle>
 						<DialogDescription className={`max-w-140 ${dialogShellDescriptionClass}`}>
-							自定义视图只保存筛选、排序与分组规则，不会拥有任务本身。
+							自定义视图只保存筛选条件（Filter）；分组与排序请在「显示」中设置。
 						</DialogDescription>
 					</DialogHeader>
 
@@ -283,57 +243,27 @@ export function ViewEditorDialog({
 							/>
 							<DialogSelect
 								label='截止时间'
-								onValueChange={(value) =>
-									dueModeField.onChange(value as NonNullable<TaskViewFilters['due']>['mode'])
-								}
+								onValueChange={dueModeField.onChange}
 								options={[
 									{ value: 'none', label: '不限' },
 									{ value: 'today', label: '今天' },
 									{ value: 'overdue', label: '已逾期' },
 									{ value: 'future', label: '未来' },
+									{ value: 'hasDate', label: '有日期' },
 								]}
 								value={dueMode}
 							/>
 							<DialogSelect
 								label='计划时间'
-								onValueChange={(value) =>
-									plannedModeField.onChange(
-										value as NonNullable<TaskViewFilters['planned']>['mode'],
-									)
-								}
+								onValueChange={plannedModeField.onChange}
 								options={[
 									{ value: 'none', label: '不限' },
 									{ value: 'today', label: '今天' },
 									{ value: 'future', label: '未来' },
-									{ value: 'past', label: '过去' },
+									{ value: 'overdue', label: '已逾期' },
+									{ value: 'hasDate', label: '有日期' },
 								]}
 								value={plannedMode}
-							/>
-						</section>
-
-						<section className='grid gap-3 md:grid-cols-3'>
-							<DialogSelect
-								label='分组方式'
-								onValueChange={(value) => groupByField.onChange(value as TaskGroupBy)}
-								options={GROUP_BY_OPTIONS}
-								value={groupBy}
-							/>
-							<DialogSelect
-								label='主排序字段'
-								onValueChange={(value) => sortFieldField.onChange(value as ViewSortField)}
-								options={SORT_FIELD_OPTIONS}
-								value={sortField}
-							/>
-							<DialogSelect
-								label='排序方向'
-								onValueChange={(value) =>
-									sortDirectionField.onChange(value as ViewSortRule['direction'])
-								}
-								options={[
-									{ value: 'asc', label: '升序' },
-									{ value: 'desc', label: '降序' },
-								]}
-								value={sortDirection}
 							/>
 						</section>
 					</div>

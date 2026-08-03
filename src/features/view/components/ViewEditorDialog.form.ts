@@ -1,19 +1,19 @@
 import { z } from 'zod'
 
-import type {
-	CreateViewInput,
-	TaskGroupBy,
-	TaskStatus,
-	TaskViewFilters,
-	UpdateViewInput,
-	View,
-	ViewSortField,
-	ViewSortRule,
-} from '@/shared/types'
+import {
+	createFilterClause,
+	FILTER_PROJECT_NONE_VALUE,
+	normalizeFilterQuery,
+	type FilterQuery,
+} from '@/features/filter'
+import type { CreateViewInput, TaskStatus, UpdateViewInput, View } from '@/shared/types'
+import { EMPTY_FILTER_QUERY } from '@/shared/types'
 import { titleString } from '@/shared/validation'
 
 export type PriorityMode = 'any' | 'p4' | 'p3+' | 'p2+' | 'p1+'
 type ProjectMode = 'any' | 'none' | 'specific'
+/** 编辑器日期模式（映射到 FilterDateValue） */
+type EditorDateMode = 'none' | 'today' | 'overdue' | 'future' | 'hasDate'
 
 export const viewEditorSchema = z
 	.object({
@@ -32,46 +32,13 @@ export const viewEditorSchema = z
 		]),
 		projectMode: z.enum(['any', 'none', 'specific'] satisfies [ProjectMode, ...ProjectMode[]]),
 		specificProjectId: z.string().trim(),
-		dueMode: z.enum([
-			'none',
-			'today',
-			'overdue',
-			'future',
-			'past',
-			'between',
-			'not_none',
-		] satisfies [
-			NonNullable<TaskViewFilters['due']>['mode'],
-			...NonNullable<TaskViewFilters['due']>['mode'][],
+		dueMode: z.enum(['none', 'today', 'overdue', 'future', 'hasDate'] satisfies [
+			EditorDateMode,
+			...EditorDateMode[],
 		]),
-		plannedMode: z.enum([
-			'none',
-			'today',
-			'overdue',
-			'future',
-			'past',
-			'between',
-			'not_none',
-		] satisfies [
-			NonNullable<TaskViewFilters['planned']>['mode'],
-			...NonNullable<TaskViewFilters['planned']>['mode'][],
-		]),
-		groupBy: z.enum(['none', 'status', 'priority', 'project', 'due', 'planned'] satisfies [
-			TaskGroupBy,
-			...TaskGroupBy[],
-		]),
-		sortField: z.enum([
-			'position',
-			'priority',
-			'dueAt',
-			'plannedAt',
-			'createdAt',
-			'updatedAt',
-			'completedAt',
-		] satisfies [ViewSortField, ...ViewSortField[]]),
-		sortDirection: z.enum(['asc', 'desc'] satisfies [
-			ViewSortRule['direction'],
-			...ViewSortRule['direction'][],
+		plannedMode: z.enum(['none', 'today', 'overdue', 'future', 'hasDate'] satisfies [
+			EditorDateMode,
+			...EditorDateMode[],
 		]),
 	})
 	.superRefine((values, ctx) => {
@@ -87,20 +54,16 @@ export const viewEditorSchema = z
 export type ViewEditorFormValues = z.infer<typeof viewEditorSchema>
 
 export function buildViewEditorDefaultValues(view: View | null): ViewEditorFormValues {
-	const filters = getInitialFilters(view)
-	const firstSortRule = view?.sort[0] ?? { field: 'updatedAt', direction: 'desc' as const }
+	const filters = normalizeFilterQuery(view?.filters ?? EMPTY_FILTER_QUERY)
 
 	return {
 		name: view?.name ?? '',
-		statusList: filters.status ?? ['todo', 'doing', 'waiting'],
-		priorityMode: getPriorityMode(filters),
-		projectMode: filters.project?.mode ?? 'any',
-		specificProjectId: filters.project?.ids?.[0] ?? 'none',
-		dueMode: filters.due?.mode ?? 'none',
-		plannedMode: filters.planned?.mode ?? 'none',
-		groupBy: view?.groupBy ?? 'none',
-		sortField: firstSortRule.field,
-		sortDirection: firstSortRule.direction,
+		statusList: readStatusList(filters),
+		priorityMode: readPriorityMode(filters),
+		projectMode: readProjectMode(filters).mode,
+		specificProjectId: readProjectMode(filters).projectId,
+		dueMode: readDateMode(filters, 'due'),
+		plannedMode: readDateMode(filters, 'planned'),
 	}
 }
 
@@ -109,8 +72,6 @@ export function toCreateViewInput(values: ViewEditorFormValues): CreateViewInput
 		name: values.name.trim(),
 		scope: { type: 'all' },
 		filters: buildViewFilters(values),
-		sort: [{ field: values.sortField, direction: values.sortDirection }],
-		groupBy: values.groupBy,
 	}
 }
 
@@ -119,64 +80,110 @@ export function toUpdateViewInput(values: ViewEditorFormValues, viewId: string):
 		viewId,
 		name: values.name.trim(),
 		filters: buildViewFilters(values),
-		sort: [{ field: values.sortField, direction: values.sortDirection }],
-		groupBy: values.groupBy,
 	}
 }
 
-function getInitialFilters(view: View | null): TaskViewFilters {
-	const filters = (view?.filters ?? {}) as TaskViewFilters
-	return {
-		status: filters.status ?? ['todo', 'doing', 'waiting'],
-		priority: filters.priority,
-		project: filters.project,
-		due: filters.due,
-		planned: filters.planned,
-		created: filters.created,
-		updated: filters.updated,
-		completed: filters.completed,
+function buildViewFilters(values: ViewEditorFormValues): FilterQuery {
+	const clauses = []
+
+	if (values.statusList.length > 0) {
+		clauses.push(createFilterClause('status', 'is', values.statusList))
 	}
+
+	const priorityValues = priorityModeToValues(values.priorityMode)
+	if (priorityValues) {
+		clauses.push(createFilterClause('priority', 'is', priorityValues))
+	}
+
+	if (values.projectMode === 'none') {
+		clauses.push(createFilterClause('project', 'is', [FILTER_PROJECT_NONE_VALUE]))
+	} else if (values.projectMode === 'specific' && values.specificProjectId !== 'none') {
+		clauses.push(createFilterClause('project', 'is', [values.specificProjectId]))
+	}
+
+	const dueValue = editorDateToFilterValue(values.dueMode)
+	if (dueValue) {
+		clauses.push(createFilterClause('due', 'is', [dueValue]))
+	}
+	const plannedValue = editorDateToFilterValue(values.plannedMode)
+	if (plannedValue) {
+		clauses.push(createFilterClause('planned', 'is', [plannedValue]))
+	}
+
+	return normalizeFilterQuery({ clauses })
 }
 
-function getPriorityMode(filters: TaskViewFilters): PriorityMode {
-	const priority = filters.priority
-	if (!priority) return 'any'
-	if (priority.eq === 4) return 'p4'
-	if (priority.gte === 3) return 'p3+'
-	if (priority.gte === 2) return 'p2+'
-	if (priority.gte === 1) return 'p1+'
+function readStatusList(filters: FilterQuery): TaskStatus[] {
+	const clause = filters.clauses.find((c) => c.field === 'status' && c.op === 'is')
+	if (!clause || clause.values.length === 0) {
+		return ['todo', 'doing', 'waiting']
+	}
+	return clause.values.filter((v): v is TaskStatus =>
+		['todo', 'doing', 'waiting', 'done', 'canceled'].includes(v),
+	)
+}
+
+function readPriorityMode(filters: FilterQuery): PriorityMode {
+	const clause = filters.clauses.find((c) => c.field === 'priority' && c.op === 'is')
+	if (!clause || clause.values.length === 0) return 'any'
+	const nums = new Set(clause.values.map(Number))
+	if (nums.size === 1 && nums.has(4)) return 'p4'
+	if ([3, 4].every((n) => nums.has(n)) && nums.size === 2) return 'p3+'
+	if ([2, 3, 4].every((n) => nums.has(n)) && nums.size === 3) return 'p2+'
+	if ([1, 2, 3, 4].every((n) => nums.has(n))) return 'p1+'
+	if (nums.has(4) && !nums.has(0)) return 'p3+' // 近似
 	return 'any'
 }
 
-function buildPriorityFilter(mode: PriorityMode): TaskViewFilters['priority'] | undefined {
+function priorityModeToValues(mode: PriorityMode): string[] | null {
 	switch (mode) {
 		case 'p4':
-			return { eq: 4 }
+			return ['4']
 		case 'p3+':
-			return { gte: 3 }
+			return ['4', '3']
 		case 'p2+':
-			return { gte: 2 }
+			return ['4', '3', '2']
 		case 'p1+':
-			return { gte: 1 }
+			return ['4', '3', '2', '1']
 		default:
-			return undefined
+			return null
 	}
 }
 
-function buildViewFilters(values: ViewEditorFormValues): TaskViewFilters {
-	return {
-		status: values.statusList,
-		priority: buildPriorityFilter(values.priorityMode),
-		project:
-			values.projectMode === 'any'
-				? undefined
-				: values.projectMode === 'none'
-					? { mode: 'none' }
-					: {
-							mode: 'specific',
-							ids: values.specificProjectId !== 'none' ? [values.specificProjectId] : [],
-						},
-		due: values.dueMode === 'none' ? undefined : { mode: values.dueMode },
-		planned: values.plannedMode === 'none' ? undefined : { mode: values.plannedMode },
+function readProjectMode(filters: FilterQuery): { mode: ProjectMode; projectId: string } {
+	const clause = filters.clauses.find((c) => c.field === 'project' && c.op === 'is')
+	if (!clause) return { mode: 'any', projectId: 'none' }
+	if (clause.values.includes(FILTER_PROJECT_NONE_VALUE)) {
+		return { mode: 'none', projectId: 'none' }
+	}
+	if (clause.values[0]) {
+		return { mode: 'specific', projectId: clause.values[0] }
+	}
+	return { mode: 'any', projectId: 'none' }
+}
+
+function readDateMode(filters: FilterQuery, field: 'due' | 'planned'): EditorDateMode {
+	const clause = filters.clauses.find((c) => c.field === field && c.op === 'is')
+	const v = clause?.values[0]
+	if (!v) return 'none'
+	if (v === 'today') return 'today'
+	if (v === 'overdue') return 'overdue'
+	if (v === 'hasDate') return 'hasDate'
+	if (v === 'tomorrow' || v === 'thisWeek') return 'future'
+	return 'none'
+}
+
+function editorDateToFilterValue(mode: EditorDateMode): string | null {
+	switch (mode) {
+		case 'today':
+			return 'today'
+		case 'overdue':
+			return 'overdue'
+		case 'future':
+			return 'tomorrow'
+		case 'hasDate':
+			return 'hasDate'
+		default:
+			return null
 	}
 }

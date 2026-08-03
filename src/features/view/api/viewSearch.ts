@@ -1,19 +1,21 @@
-import type {
-	TaskGroupBy,
-	TaskStatus,
-	TaskViewFilters,
-	ViewSortField,
-	ViewSortRule,
-} from '@/shared/types'
+import {
+	createFilterClause,
+	FILTER_PROJECT_NONE_VALUE,
+	normalizeFilterQuery,
+	type FilterQuery,
+} from '@/features/filter'
+import type { TaskGroupBy, TaskStatus, ViewSortField, ViewSortRule } from '@/shared/types'
+import { EMPTY_FILTER_QUERY } from '@/shared/types'
 
 export type ViewSearchDefinition = {
-	filters: TaskViewFilters
+	/** 临时 filters（clause）；可与 URL `f` 并存，后续统一 */
+	filters: FilterQuery
+	/** 请求期 sort（Display）；非 View 持久化 */
 	sort: ViewSortRule[]
 	groupBy: TaskGroupBy | null
 }
 
 const TASK_STATUSES = ['todo', 'doing', 'waiting', 'done', 'canceled'] as const
-const DATE_MODES = ['today', 'overdue', 'future', 'past', 'between', 'none', 'not_none'] as const
 const GROUP_BY_VALUES = ['none', 'status', 'priority', 'project', 'due', 'planned'] as const
 const SORT_FIELDS = [
 	'position',
@@ -25,8 +27,12 @@ const SORT_FIELDS = [
 	'completedAt',
 ] as const
 
+/**
+ * 解析旧式 search 键（status/due/…）为 FilterQuery + 请求期 sort/group。
+ * 呈现真源仍以 display 为准；此处 group/sort 仅 run 请求覆盖。
+ */
 export function parseViewSearch(search: Record<string, unknown>): ViewSearchDefinition {
-	const filters: TaskViewFilters = {}
+	const clauses = []
 	const status = parseCsv(search.status).filter(isTaskStatus)
 	const sortField = getOne(search.sortField)
 	const sortDirection = getOne(search.sortDirection)
@@ -36,16 +42,26 @@ export function parseViewSearch(search: Record<string, unknown>): ViewSearchDefi
 	const projectMode = getOne(search.projectMode)
 	const projectIds = parseCsv(search.projectIds)
 
-	if (status.length > 0) filters.status = status
-	if (isDateMode(due)) filters.due = { mode: due }
-	if (isDateMode(planned)) filters.planned = { mode: planned }
-	if (projectMode === 'none') filters.project = { mode: 'none' }
+	if (status.length > 0) {
+		clauses.push(createFilterClause('status', 'is', status))
+	}
+	const dueValue = mapLegacyDateSearch(due)
+	if (dueValue) {
+		clauses.push(createFilterClause('due', 'is', [dueValue]))
+	}
+	const plannedValue = mapLegacyDateSearch(planned)
+	if (plannedValue) {
+		clauses.push(createFilterClause('planned', 'is', [plannedValue]))
+	}
+	if (projectMode === 'none') {
+		clauses.push(createFilterClause('project', 'is', [FILTER_PROJECT_NONE_VALUE]))
+	}
 	if (projectMode === 'specific' && projectIds.length > 0) {
-		filters.project = { mode: 'specific', ids: projectIds }
+		clauses.push(createFilterClause('project', 'is', projectIds))
 	}
 
 	return {
-		filters,
+		filters: clauses.length > 0 ? normalizeFilterQuery({ clauses }) : EMPTY_FILTER_QUERY,
 		sort:
 			isSortField(sortField) && (sortDirection === 'asc' || sortDirection === 'desc')
 				? [{ field: sortField, direction: sortDirection }]
@@ -72,14 +88,22 @@ function isTaskStatus(value: string): value is TaskStatus {
 	return TASK_STATUSES.includes(value as TaskStatus)
 }
 
-function isDateMode(value: string | null): value is NonNullable<TaskViewFilters['due']>['mode'] {
-	return DATE_MODES.includes(value as NonNullable<TaskViewFilters['due']>['mode'])
-}
-
 function isGroupBy(value: string | null): value is TaskGroupBy {
 	return GROUP_BY_VALUES.includes(value as TaskGroupBy)
 }
 
 function isSortField(value: string | null): value is ViewSortField {
 	return SORT_FIELDS.includes(value as ViewSortField)
+}
+
+function mapLegacyDateSearch(value: string | null): string | null {
+	if (!value) return null
+	if (value === 'today' || value === 'overdue' || value === 'hasDate' || value === 'noDate') {
+		return value
+	}
+	if (value === 'not_none') return 'hasDate'
+	if (value === 'none') return 'noDate'
+	if (value === 'future' || value === 'tomorrow' || value === 'thisWeek') return 'tomorrow'
+	if (value === 'past') return 'overdue'
+	return null
 }

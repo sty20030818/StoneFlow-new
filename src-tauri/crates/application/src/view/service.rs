@@ -7,15 +7,18 @@ use crate::{
         changed_outbox_fields, OutboxEnqueueRecord, OutboxOpKind, OutboxPayload, SyncEntityKind,
     },
     view::{
-        executor::{is_active, local_date, matches, sort},
-        CreateViewPersistenceRecord, DateFilterMode, ProjectFilterMode, TaskGroupBy,
-        TaskScopeInput, TaskScopeKind, TaskViewFiltersValue, UpdateViewPatch, ViewListQuery,
-        ViewProjectLookupRecord, ViewRecord, ViewSortRule, ViewSpaceLookupRecord, ViewTaskQuery,
-        ViewTaskRecord,
+        executor::{local_date, matches, sort},
+        filter_query::{
+            filter_query_to_eval, merge_filter_queries, parse_filters_json, validate_filter_query,
+            FilterQueryValue,
+        },
+        CreateViewPersistenceRecord, TaskGroupBy, TaskScopeInput, TaskScopeKind, UpdateViewPatch,
+        ViewListQuery, ViewProjectLookupRecord, ViewRecord, ViewSortRule, ViewSpaceLookupRecord,
+        ViewTaskQuery, ViewTaskRecord,
     },
     ApplicationError,
 };
-use chrono::{Duration, Local, LocalResult, TimeZone, Utc};
+use chrono::{Duration, Local, TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
 use std::collections::{HashMap, HashSet};
@@ -27,8 +30,11 @@ pub struct ViewDto {
     pub id: String,
     pub name: String,
     pub scope: TaskScopeInput,
-    pub filters: TaskViewFiltersValue,
+    /// 筛选真源：FilterQuery（clause 列表）
+    pub filters: FilterQueryValue,
+    /// 仅兼容旧行数据读出；新产品路径不写入、不作为呈现真源（→ display-options）
     pub sort: Vec<ViewSortRule>,
+    /// 同上；呈现分组以 display 为准
     pub group_by: TaskGroupBy,
     pub position: i64,
     pub created_at: String,
@@ -41,9 +47,11 @@ pub struct CreateViewInput {
     pub name: String,
     pub scope: TaskScopeInput,
     #[serde(default)]
-    pub filters: TaskViewFiltersValue,
+    pub filters: FilterQueryValue,
+    /// 忽略持久化：始终存空（display 负责排序）
     #[serde(default)]
     pub sort: Vec<ViewSortRule>,
+    /// 忽略持久化：始终存 none
     #[serde(default)]
     pub group_by: Option<TaskGroupBy>,
 }
@@ -54,8 +62,12 @@ pub struct UpdateViewInput {
     pub view_id: String,
     pub name: Option<String>,
     pub scope: Option<TaskScopeInput>,
-    pub filters: Option<TaskViewFiltersValue>,
+    pub filters: Option<FilterQueryValue>,
+    /// 忽略：不写回产品 sort
+    #[serde(default)]
     pub sort: Option<Vec<ViewSortRule>>,
+    /// 忽略：不写回产品 groupBy
+    #[serde(default)]
     pub group_by: Option<TaskGroupBy>,
 }
 
@@ -69,8 +81,11 @@ pub struct RunTaskViewInput {
     pub scope: TaskScopeInput,
     pub view_id: Option<String>,
     pub view_key: Option<SystemViewKey>,
-    pub filters: Option<TaskViewFiltersValue>,
+    /// 临时覆盖 filters（clause）；与 URL 临时筛选对齐
+    pub filters: Option<FilterQueryValue>,
+    /// 请求期排序（来自 Display，非 View 持久化）
     pub sort: Option<Vec<ViewSortRule>>,
+    /// 请求期分组（来自 Display）
     pub group_by: Option<TaskGroupBy>,
     /// 页大小；省略用默认（与 list_tasks 同量级）。
     #[serde(default)]
@@ -210,7 +225,10 @@ where
             .collect()
     }
     pub async fn create_view(&self, input: CreateViewInput) -> Result<ViewDto, ApplicationError> {
-        validate_definition(&input.scope, &input.filters, &input.sort)?;
+        // sort/group 入参忽略：产品真源在 display-options
+        let _ignored_sort = input.sort;
+        let _ignored_group = input.group_by;
+        validate_definition(&input.scope, &input.filters)?;
         let now = now_utc().to_rfc3339();
         let connection = self.persistence.begin().await?;
         let record = self
@@ -223,8 +241,8 @@ where
                     entity_kind: ViewEntityKind::Task,
                     scope_json: to_json(&input.scope)?,
                     filters_json: to_json(&input.filters)?,
-                    sort_json: to_json(&input.sort)?,
-                    group_by_json: Some(to_json(&input.group_by.unwrap_or(TaskGroupBy::None))?),
+                    sort_json: to_json(&Vec::<ViewSortRule>::new())?,
+                    group_by_json: Some(to_json(&TaskGroupBy::None)?),
                     position: self
                         .persistence
                         .next_position(&connection, ViewEntityKind::Task)
@@ -257,10 +275,12 @@ where
         let current_dto = decode_view(current.clone())?;
         let scope = input.scope.unwrap_or(current_dto.scope);
         let filters = input.filters.unwrap_or(current_dto.filters);
-        let sort_rules = input.sort.unwrap_or(current_dto.sort);
-        validate_definition(&scope, &filters, &sort_rules)?;
+        let _ignored_sort = input.sort;
+        let _ignored_group = input.group_by;
+        validate_definition(&scope, &filters)?;
         let now = now_utc().to_rfc3339();
         let connection = self.persistence.begin().await?;
+        // 写回时清空持久化 sort/group（呈现迁 display）；filters 用 clause 形状
         let record = self
             .persistence
             .update(
@@ -274,10 +294,8 @@ where
                         .transpose()?,
                     scope_json: Some(to_json(&scope)?),
                     filters_json: Some(to_json(&filters)?),
-                    sort_json: Some(to_json(&sort_rules)?),
-                    group_by_json: Some(Some(to_json(
-                        &input.group_by.unwrap_or(current_dto.group_by),
-                    )?)),
+                    sort_json: Some(to_json(&Vec::<ViewSortRule>::new())?),
+                    group_by_json: Some(Some(to_json(&TaskGroupBy::None)?)),
                     position: None,
                     updated_at: Some(now.clone()),
                 },
@@ -330,7 +348,8 @@ where
         let search_filters = input.filters;
         let search_sort = input.sort;
         let search_group_by = input.group_by;
-        let (scope, mut filters, mut sort_rules, mut group_by, view, system_key) =
+        // sort/group 默认不来自 View 持久化；仅请求覆盖（Display）或系统定义默认 sort
+        let (scope, mut filter_query, mut sort_rules, mut group_by, view, system_key) =
             match (input.view_id, input.view_key) {
                 (Some(id), None) => {
                     let dto = decode_view(
@@ -342,8 +361,8 @@ where
                     (
                         dto.scope.clone(),
                         dto.filters.clone(),
-                        dto.sort.clone(),
-                        dto.group_by,
+                        Vec::<ViewSortRule>::new(),
+                        TaskGroupBy::None,
                         Some(dto),
                         None,
                     )
@@ -366,7 +385,7 @@ where
                 }
             };
         if let Some(override_filters) = search_filters {
-            filters = merge_filters(filters, override_filters);
+            filter_query = merge_filter_queries(filter_query, override_filters);
         }
         if let Some(override_sort) = search_sort.filter(|rules| !rules.is_empty()) {
             sort_rules = override_sort;
@@ -374,22 +393,21 @@ where
         if let Some(override_group_by) = search_group_by {
             group_by = override_group_by;
         }
-        validate_definition(&scope, &filters, &sort_rules)?;
+        validate_definition(&scope, &filter_query)?;
         let today = Local::now().date_naive();
+        let eval = filter_query_to_eval(&filter_query);
         // 候选：SQL 先收 status/project/due；其余（priority/多日期字段/system 本地日）内存收口。
-        // 与 list_tasks 同构 keyset 仅在「无额外内存语义 + position 序」时等价；
-        // 复杂 View 保持窗口契约（total_count + next_cursor + limit），规模 ≤2k。
         let mut tasks = self
             .task_reader
             .list_candidates(ViewTaskQuery {
                 scope: scope.clone(),
-                statuses: filters.status.clone(),
-                project: filters.project.clone(),
-                due: filters.due.clone(),
+                statuses: eval.status.clone(),
+                project: eval.project.clone(),
+                due: eval.due.clone(),
             })
             .await?;
         tasks.retain(|task| {
-            matches(task, &filters, today) && system_matches(task, system_key, today)
+            matches(task, &eval, today) && system_matches(task, system_key, today)
         });
         sort(&mut tasks, &sort_rules);
         // 窗口：滤排后切片；total_count 为切片前总数（与 list 契约同形）
@@ -485,45 +503,45 @@ where
 /// 与 list_tasks 默认页大小对齐。
 const DEFAULT_VIEW_PAGE_SIZE: u32 = 150;
 
-fn system_definition(key: SystemViewKey) -> (TaskViewFiltersValue, Vec<ViewSortRule>) {
-    let active = vec![WorkStatus::Todo, WorkStatus::Doing, WorkStatus::Waiting];
-    let mut filters = TaskViewFiltersValue {
-        status: active,
-        ..Default::default()
-    };
+fn system_definition(key: SystemViewKey) -> (FilterQueryValue, Vec<ViewSortRule>) {
+    let active_values = vec![
+        "todo".to_owned(),
+        "doing".to_owned(),
+        "waiting".to_owned(),
+    ];
+    let mut clauses = Vec::new();
     match key {
-        SystemViewKey::All => filters.status.clear(),
-        SystemViewKey::Upcoming => {
-            let today = Local::now().date_naive();
-            let from = today.and_hms_opt(0, 0, 0).and_then(|value| {
-                match Local.from_local_datetime(&value) {
-                    LocalResult::Single(value) => Some(value.with_timezone(&Utc).to_rfc3339()),
-                    _ => None,
-                }
+        SystemViewKey::All => {}
+        SystemViewKey::Active
+        | SystemViewKey::Today
+        | SystemViewKey::Upcoming
+        | SystemViewKey::Overdue => {
+            // 日期细规则仍由 system_matches 收口；此处只收活跃状态
+            clauses.push(crate::view::filter_query::FilterClauseValue {
+                id: format!("system-{}", key_as_str(key)),
+                field: "status".to_owned(),
+                op: "is".to_owned(),
+                values: active_values,
             });
-            let to = (today + Duration::days(7))
-                .and_hms_opt(23, 59, 59)
-                .and_then(|value| match Local.from_local_datetime(&value) {
-                    LocalResult::Single(value) => Some(value.with_timezone(&Utc).to_rfc3339()),
-                    _ => None,
-                });
-            if let (Some(from), Some(to)) = (from, to) {
-                filters.due = Some(crate::view::DateFilter {
-                    mode: DateFilterMode::Between,
-                    from: Some(from),
-                    to: Some(to),
-                });
-            }
         }
-        SystemViewKey::Active | SystemViewKey::Today | SystemViewKey::Overdue => {}
     }
     (
-        filters,
+        FilterQueryValue { clauses },
         vec![ViewSortRule {
             field: crate::view::TaskSortField::DueAt,
             direction: crate::view::SortDirection::Asc,
         }],
     )
+}
+
+fn key_as_str(key: SystemViewKey) -> &'static str {
+    match key {
+        SystemViewKey::All => "all",
+        SystemViewKey::Active => "active",
+        SystemViewKey::Today => "today",
+        SystemViewKey::Upcoming => "upcoming",
+        SystemViewKey::Overdue => "overdue",
+    }
 }
 fn system_matches(
     task: &ViewTaskRecord,
@@ -583,40 +601,9 @@ fn group(tasks: &[ViewTaskRecord], group_by: TaskGroupBy) -> Vec<TaskViewGroupDt
     }
     groups
 }
-fn merge_filters(
-    mut base: TaskViewFiltersValue,
-    overrides: TaskViewFiltersValue,
-) -> TaskViewFiltersValue {
-    if !overrides.status.is_empty() {
-        base.status = overrides.status;
-    }
-    if overrides.priority.is_some() {
-        base.priority = overrides.priority;
-    }
-    if overrides.project.is_some() {
-        base.project = overrides.project;
-    }
-    if overrides.due.is_some() {
-        base.due = overrides.due;
-    }
-    if overrides.planned.is_some() {
-        base.planned = overrides.planned;
-    }
-    if overrides.created.is_some() {
-        base.created = overrides.created;
-    }
-    if overrides.updated.is_some() {
-        base.updated = overrides.updated;
-    }
-    if overrides.completed.is_some() {
-        base.completed = overrides.completed;
-    }
-    base
-}
 fn validate_definition(
     scope: &TaskScopeInput,
-    filters: &TaskViewFiltersValue,
-    sort_rules: &[ViewSortRule],
+    filters: &FilterQueryValue,
 ) -> Result<(), ApplicationError> {
     if matches!(scope.kind, TaskScopeKind::Space)
         && scope.space_id.as_deref().is_none_or(str::is_empty)
@@ -628,43 +615,30 @@ fn validate_definition(
             "全部 Space 范围不能提供 spaceId",
         ));
     }
-    if filters.status.iter().any(|status| {
-        !is_active(*status)
-            && filters
-                .due
-                .as_ref()
-                .is_some_and(|due| matches!(due.mode, DateFilterMode::Overdue))
-    }) {
-        return Err(ApplicationError::validation("逾期 View 只允许进行中任务"));
-    }
-    if filters.project.as_ref().is_some_and(|project| {
-        matches!(project.mode, ProjectFilterMode::Specific) && project.ids.is_empty()
-    }) {
-        return Err(ApplicationError::validation(
-            "指定项目筛选必须提供 project ID",
-        ));
-    }
-    if sort_rules.len() > 3 {
-        return Err(ApplicationError::validation("最多允许三个排序字段"));
-    }
+    validate_filter_query(filters)?;
     Ok(())
 }
 fn decode_view(record: ViewRecord) -> Result<ViewDto, ApplicationError> {
     if record.entity_kind != ViewEntityKind::Task {
         return Err(ApplicationError::validation("仅支持 Task View"));
     }
+    // filters：clause 或旧扁平 → 统一 FilterQueryValue
+    let filters = parse_filters_json(&record.filters_json)?;
+    // sort/group：仍可读出旧行，供前端一次性迁入 display；新产品写入为空
+    let sort = from_json(&record.sort_json).unwrap_or_default();
+    let group_by = record
+        .group_by_json
+        .as_deref()
+        .map(from_json)
+        .transpose()?
+        .unwrap_or(TaskGroupBy::None);
     Ok(ViewDto {
         id: record.id,
         name: record.name,
         scope: from_json(&record.scope_json)?,
-        filters: from_json(&record.filters_json)?,
-        sort: from_json(&record.sort_json)?,
-        group_by: record
-            .group_by_json
-            .as_deref()
-            .map(from_json)
-            .transpose()?
-            .unwrap_or(TaskGroupBy::None),
+        filters,
+        sort,
+        group_by,
         position: record.position,
         created_at: record.created_at,
         updated_at: record.updated_at,

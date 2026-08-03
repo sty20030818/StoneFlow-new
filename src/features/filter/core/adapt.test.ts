@@ -86,23 +86,14 @@ describe('adaptFilterQueryToListTasks', () => {
 })
 
 describe('adaptFilterQueryToViewFilters', () => {
-	it('映射 status / project / due', () => {
+	it('归一化后原样作为 run 覆盖', () => {
 		const filters = adaptFilterQueryToViewFilters({
 			clauses: [
-				createFilterClause('status', 'is', ['doing']),
+				createFilterClause('status', 'is', ['doing', 'todo']),
 				createFilterClause('project', 'is', ['p1']),
-				createFilterClause('due', 'is', ['overdue']),
 			],
 		})
-		expect(filters.status).toEqual(['doing'])
-		expect(filters.project).toEqual({ mode: 'specific', ids: ['p1'] })
-		expect(filters.due).toEqual({ mode: 'overdue' })
-	})
-
-	it('priority 单值 eq', () => {
-		const filters = adaptFilterQueryToViewFilters({
-			clauses: [createFilterClause('priority', 'is', ['4'])],
-		})
-		expect(filters.priority).toEqual({ eq: 4 })
+		expect(filters.clauses.map((c) => c.field)).toEqual(['status', 'project'])
+		expect(filters.clauses.find((c) => c.field === 'status')?.values).toEqual(['todo', 'doing'])
 	})
 })

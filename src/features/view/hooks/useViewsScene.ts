@@ -17,6 +17,7 @@ import { useTaskChangedListener } from '@/shared/events'
 import type { View } from '@/shared/types'
 
 import type { ViewSearchDefinition } from '../api/viewSearch'
+import { migrateViewPresentationToDisplay } from '../model/migrateViewPresentationToDisplay'
 import {
 	useCreateViewMutation,
 	useDeleteViewMutation,
@@ -29,6 +30,7 @@ import {
 } from './view.queries'
 
 const EMPTY_TASK_VIEWS: View[] = []
+let viewPresentationMigrationStarted = false
 
 /**
  * Views 页唯一 wiring：视图轨 / run / 任务板 / 编辑器。
@@ -48,6 +50,19 @@ export function useViewsScene() {
 	const taskPreviewController = useTaskPreviewController()
 	const taskViewsQuery = useViewsQuery()
 	const taskViews = taskViewsQuery.data ?? EMPTY_TASK_VIEWS
+
+	// T6：旧 View.sort/group 一次性迁入 display default 并清空行字段（可重复、已空 skip）
+	useEffect(() => {
+		if (viewPresentationMigrationStarted || !taskViewsQuery.isSuccess || taskViews.length === 0) {
+			return
+		}
+		viewPresentationMigrationStarted = true
+		void migrateViewPresentationToDisplay(taskViews).catch(() => {
+			// 迁移失败不阻断列表；下次进入可再试
+			viewPresentationMigrationStarted = false
+		})
+	}, [taskViews, taskViewsQuery.isSuccess])
+
 	const createTaskView = useCreateViewMutation()
 	const updateTaskView = useUpdateViewMutation()
 	const deleteTaskView = useDeleteViewMutation()
@@ -70,7 +85,12 @@ export function useViewsScene() {
 				scope,
 				viewId: activeView.kind === 'custom' ? activeView.id : null,
 				viewKey: activeView.systemKey,
-				filters: Object.keys(search.filters ?? {}).length > 0 ? search.filters : undefined,
+				// 临时 filters（clause）；空则用 View 定义
+				filters:
+					search.filters && search.filters.clauses && search.filters.clauses.length > 0
+						? search.filters
+						: undefined,
+				// 请求期 sort/group 来自 search（后续应接 Display，不写 View）
 				sort: search.sort && search.sort.length > 0 ? search.sort : undefined,
 				groupBy: search.groupBy ?? undefined,
 			}

@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**P0 完成 → 下一阶段 P1**（View / Rust filters 契约）
+**P1 完成 → 下一阶段 P2**（Display 独占呈现）
 
 执行任意 task 前重读 SPEC 对应 AC 与 PLAN 对应章节。
 
@@ -24,14 +24,14 @@
 
 ### P1 · View / Rust 契约：filters 终态
 
-- [ ] T4 将 `TaskViewFilters` 与后端 `filters_json` 迁移为 `FilterQuery` 形状：读写、create/update/validate；提供旧 JSON → clause 的一次性迁移函数（启动或首次 list 时写回），**不**保留运行时双解析长期分支  
+- [x] T4 将 `TaskViewFilters` 与后端 `filters_json` 迁移为 `FilterQuery` 形状：读写、create/update/validate；提供旧 JSON → clause 的一次性迁移函数（启动或首次 list 时写回），**不**保留运行时双解析长期分支  
   - 触及：`src/shared/types/view.ts`、`src/features/view/**`、`src-tauri/**/view/**`  
   - _对应验收标准：AC-7, AC-8, AC-14_
 
-- [ ] T5 从产品路径移除 View 的 sort/group 真源：前端类型/API/编辑器停止读写；Rust run/create/update 忽略或删除对 sort/group 列的产品依赖；请求侧 sort/group 仅允许来自 **当前 Display 解析结果**  
+- [x] T5 从产品路径移除 View 的 sort/group 真源：前端类型/API/编辑器停止读写；Rust run/create/update 忽略或删除对 sort/group 列的产品依赖；请求侧 sort/group 仅允许来自 **当前 Display 解析结果**  
   - _对应验收标准：AC-9, AC-10_
 
-- [ ] T6 一次性迁移：旧 View 的 sort/group → 对应 `task:view:{id}` 的 display-options 存储（推荐写入 default 槽），并加测试或脚本可重复执行保护  
+- [x] T6 一次性迁移：旧 View 的 sort/group → 对应 `task:view:{id}` 的 display-options 存储（推荐写入 default 槽），并加测试或脚本可重复执行保护  
   - _对应验收标准：AC-10_
 
 ### P2 · Display 独占呈现
@@ -161,3 +161,4 @@
 | 2026-08-03 | 按用户澄清重写：白话照抄表；URL 临时 filter；sort/group 终态进 Display；Clear 仅临时；Save 覆盖\|另存；禁止过渡；TASKS 拆 P0–P6 / T1–T23 |
 | 2026-08-03 | 审计历史任务债；新增 [优化债台账.md](./优化债台账.md)；TASKS 增加 **P7**（T23–T31）清扫过渡/兼容/双路径 |
 | 2026-08-03 | **P0 完成**：`src/features/filter/core`（types/normalize/url-codec/adapt）+ 20 tests；公共面导出；ARCHITECTURE 更新 |
+| 2026-08-03 | **P1 完成**：View/Rust filters→FilterQuery；create/update 不写 sort/group；编辑器只存 filters；T6 迁 display + update 清空 |

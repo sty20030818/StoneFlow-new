@@ -33,8 +33,6 @@ export type {
 export type { SearchEntitiesResult, SearchTaskItem, SearchProjectItem } from './search'
 export type {
 	CreateViewInput,
-	DateFilter,
-	DateFilterMode,
 	RunProjectViewResult,
 	RunTaskViewInput,
 	RunTaskViewResult,
@@ -49,3 +47,17 @@ export type {
 	ViewSortRule,
 	ViewTaskGroup,
 } from './view'
+export type {
+	FilterClause,
+	FilterDateValue,
+	FilterField,
+	FilterOp,
+	FilterQuery,
+} from './filterQuery'
+export {
+	EMPTY_FILTER_QUERY,
+	FILTER_DATE_VALUE_VALUES,
+	FILTER_FIELD_VALUES,
+	FILTER_OP_VALUES,
+	FILTER_PROJECT_NONE_VALUE,
+} from './filterQuery'

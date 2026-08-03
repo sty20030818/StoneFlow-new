@@ -59,7 +59,9 @@ describe('ViewEditorDialog', () => {
 			expect.objectContaining({
 				viewId: 'view-1',
 				name: '重点事项',
-				sort: [{ field: 'priority', direction: 'asc' }],
+				filters: expect.objectContaining({
+					clauses: expect.any(Array),
+				}),
 			}),
 		)
 	})
@@ -86,14 +88,16 @@ function buildView(): View {
 		systemKey: null,
 		scope: { type: 'all' },
 		filters: {
-			status: ['todo', 'doing'],
-			priority: { gte: 3 },
-			project: { mode: 'specific', ids: ['project-a'] },
-			due: { mode: 'today' },
-			planned: { mode: 'future' },
+			clauses: [
+				{ id: '1', field: 'status', op: 'is', values: ['todo', 'doing'] },
+				{ id: '2', field: 'priority', op: 'is', values: ['4', '3'] },
+				{ id: '3', field: 'project', op: 'is', values: ['project-a'] },
+				{ id: '4', field: 'due', op: 'is', values: ['today'] },
+				{ id: '5', field: 'planned', op: 'is', values: ['tomorrow'] },
+			],
 		},
-		sort: [{ field: 'priority', direction: 'asc' }],
-		groupBy: 'project',
+		sort: [],
+		groupBy: 'none',
 		position: 0,
 		createdAt: '2026-06-18T00:00:00.000Z',
 		updatedAt: '2026-06-18T00:00:00.000Z',
