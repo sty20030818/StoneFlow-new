@@ -128,11 +128,80 @@ export function OverlayScrollbar<TElement extends HTMLElement = HTMLElement>({
 			return
 		}
 
+		/**
+		 * 拇指长度依赖 scrollHeight，而 scrollHeight 变化时 viewport 的 border box
+		 * 往往不变（折叠分区、换列表）→ 只 observe viewport 不会触发。
+		 *
+		 * 观察：
+		 * 1. viewport（clientHeight 变化）
+		 * 2. 直接子节点（常见内容根）
+		 * 3. [data-scroll-extent]（虚拟列表等显式定高的内容根；折叠改 height 会触发 RO）
+		 *
+		 * 不 observe 全子树 style：虚拟行每帧改 transform 会刷爆。
+		 */
 		const observer = new ResizeObserver(scheduleApply)
-		// 只观察 viewport；内容总高由子树 height 变化反映到 scrollHeight
-		observer.observe(scrollElement)
+		const syncObserved = () => {
+			observer.observe(scrollElement)
+			for (const child of scrollElement.children) {
+				observer.observe(child)
+			}
+			for (const node of scrollElement.querySelectorAll('[data-scroll-extent]')) {
+				observer.observe(node)
+			}
+		}
+		syncObserved()
+		scheduleApply()
 
-		return () => observer.disconnect()
+		const isExtentRelated = (node: Node) =>
+			node instanceof Element &&
+			(node.hasAttribute('data-scroll-extent') ||
+				Boolean(node.querySelector?.('[data-scroll-extent]')))
+
+		// 只关心：内容根挂载 / data-scroll-extent 变化。
+		// 不因虚拟行 childList 刷 scheduleApply（滚动时每帧挂卸载行）。
+		const mutationObserver = new MutationObserver((records) => {
+			let needResync = false
+			let needApply = false
+			for (const record of records) {
+				if (record.type === 'attributes' && record.attributeName === 'data-scroll-extent') {
+					needResync = true
+					needApply = true
+					continue
+				}
+				if (record.type !== 'childList') {
+					continue
+				}
+				if (record.target === scrollElement) {
+					needResync = true
+					needApply = true
+					continue
+				}
+				for (const node of record.addedNodes) {
+					if (isExtentRelated(node)) {
+						needResync = true
+						needApply = true
+						break
+					}
+				}
+			}
+			if (needResync) {
+				syncObserved()
+			}
+			if (needApply) {
+				scheduleApply()
+			}
+		})
+		mutationObserver.observe(scrollElement, {
+			childList: true,
+			subtree: true,
+			attributes: true,
+			attributeFilter: ['data-scroll-extent'],
+		})
+
+		return () => {
+			observer.disconnect()
+			mutationObserver.disconnect()
+		}
 	}, [scheduleApply, scrollRef])
 
 	const handleThumbPointerDown = useCallback(

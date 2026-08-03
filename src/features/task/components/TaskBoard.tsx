@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { defaultRangeExtractor, useVirtualizer, type Range } from '@tanstack/react-virtual'
 import { uniq } from 'es-toolkit/array'
 import { registerTaskBoardScrollToTaskId } from './taskBoardScroll'
@@ -181,6 +181,16 @@ export function TaskBoard({
 	const spacerSizeRef = useRef(0)
 	/** flat / sticky 几何缓存：供 scroll 帧 DOM 写 push，避免 setState 刷整表 */
 	const stickyMetaRef = useRef({ stickyIndexes: [] as number[], itemOffsets: [] as number[] })
+	const stickyShellRef = useRef<HTMLDivElement | null>(null)
+	const stickyPushLayerRef = useRef<HTMLDivElement | null>(null)
+	/** 期望吸顶的 flat index（scroll 几何） */
+	const stickyActiveIndexRef = useRef(0)
+	/** React 已提交到浮层的 flat index；与期望不一致时禁止写 transform，避免旧标题弹回顶部 */
+	const stickyRenderedIndexRef = useRef(0)
+	const stickyStuckRef = useRef(false)
+	// 首屏默认吸顶（header start=0）；避免 false→true 挂载闪一下
+	const [stickyActiveIndex, setStickyActiveIndex] = useState(0)
+	const [stickyStuck, setStickyStuck] = useState(true)
 
 	const groupedTasks = useMemo(() => {
 		const map: Record<TaskStatus, TaskListItem[]> = {
@@ -410,19 +420,103 @@ export function TaskBoard({
 		status,
 	])
 
-	// sticky：直接用 virtualizer.scrollOffset（virtualizer 本就会因滚动 re-render）
-	// 不再 setBoardScrollTop，避免双倍 React 协调
-	const stickyLayout = buildTaskBoardStickyPush({
-		stickyIndexes,
-		itemOffsets,
-		scrollTop: virtualizer.scrollOffset ?? 0,
-	})
-	const stickyHeaderItem =
-		stickyLayout != null ? flatItems[stickyLayout.activeStickyIndex] : undefined
-	const stickyHeader =
-		stickyHeaderItem?.kind === 'header' ? stickyHeaderItem : null
+	/**
+	 * 把 push/显隐写到 DOM。
+	 * 关键：换分区瞬间若立刻把 transform 写成 0，而 React 仍渲染旧标题，
+	 * 被顶替的那一层会从「已顶出」弹回顶部 → 闪一下。
+	 * 因此仅当浮层内容 index 已与几何 active 对齐时才写 transform。
+	 */
+	const applyStickyDom = useCallback((scrollTop: number, forceTransform = false) => {
+		const layout = buildTaskBoardStickyPush({
+			stickyIndexes: stickyMetaRef.current.stickyIndexes,
+			itemOffsets: stickyMetaRef.current.itemOffsets,
+			scrollTop,
+		})
+		if (!layout) {
+			return null
+		}
+		const contentReady =
+			forceTransform || layout.activeStickyIndex === stickyRenderedIndexRef.current
+		const layer = stickyPushLayerRef.current
+		if (layer && contentReady) {
+			layer.style.transform = `translate3d(0, ${layout.pushOffset}px, 0)`
+		}
+		const shell = stickyShellRef.current
+		if (shell) {
+			// 常挂载，只用 visibility，避免 mount/unmount 闪一下
+			shell.style.visibility = layout.stuck ? 'visible' : 'hidden'
+			shell.style.pointerEvents = layout.stuck ? 'auto' : 'none'
+		}
+		return layout
+	}, [])
 
-		useEffect(() => {
+	// sticky push：scroll 帧只写 DOM；index/stuck 变才 setState（换标题）
+	useEffect(() => {
+		const scrollEl = scrollViewportRef?.current
+		const readTop = () => scrollEl?.scrollTop ?? 0
+		let raf = 0
+		const apply = () => {
+			raf = 0
+			const scrollTop = readTop()
+			const layout = buildTaskBoardStickyPush({
+				stickyIndexes: stickyMetaRef.current.stickyIndexes,
+				itemOffsets: stickyMetaRef.current.itemOffsets,
+				scrollTop,
+			})
+			if (!layout) {
+				return
+			}
+
+			const indexChanged = layout.activeStickyIndex !== stickyActiveIndexRef.current
+			if (indexChanged) {
+				// 先登记期望 index 并触发 React 换标题；
+				// 此帧不写 transform，旧标题保持最后一次 push（通常已顶出视口）
+				stickyActiveIndexRef.current = layout.activeStickyIndex
+				setStickyActiveIndex(layout.activeStickyIndex)
+			} else {
+				applyStickyDom(scrollTop, false)
+			}
+
+			if (layout.stuck !== stickyStuckRef.current) {
+				stickyStuckRef.current = layout.stuck
+				setStickyStuck(layout.stuck)
+				const shell = stickyShellRef.current
+				if (shell) {
+					shell.style.visibility = layout.stuck ? 'visible' : 'hidden'
+					shell.style.pointerEvents = layout.stuck ? 'auto' : 'none'
+				}
+			}
+		}
+		apply()
+		if (!scrollEl) {
+			return
+		}
+		const onScroll = () => {
+			if (raf !== 0) return
+			raf = requestAnimationFrame(apply)
+		}
+		scrollEl.addEventListener('scroll', onScroll, { passive: true })
+		return () => {
+			scrollEl.removeEventListener('scroll', onScroll)
+			if (raf !== 0) cancelAnimationFrame(raf)
+		}
+	}, [applyStickyDom, scrollViewportRef, status, flatItems.length, stickyIndexes, itemOffsets])
+
+	const stickyHeaderItem = flatItems[stickyActiveIndex]
+	const stickyHeader = stickyHeaderItem?.kind === 'header' ? stickyHeaderItem : null
+	const nextStickyIndex = (() => {
+		const pos = stickyIndexes.indexOf(stickyActiveIndex)
+		return pos >= 0 && pos < stickyIndexes.length - 1 ? stickyIndexes[pos + 1]! : null
+	})()
+
+	// React 提交新标题后、浏览器绘制前：标记内容已就绪并写回 transform
+	useLayoutEffect(() => {
+		stickyRenderedIndexRef.current = stickyActiveIndex
+		const scrollTop = scrollViewportRef?.current?.scrollTop ?? 0
+		applyStickyDom(scrollTop, true)
+	}, [applyStickyDom, stickyActiveIndex, stickyStuck, stickyHeader?.key, scrollViewportRef])
+
+	useEffect(() => {
 		const indexByTaskId = new Map<string, number>()
 		for (let i = 0; i < flatItems.length; i++) {
 			const item = flatItems[i]
@@ -504,29 +598,44 @@ export function TaskBoard({
 					</div>
 				)
 
-				const activeStickyIndex = stickyLayout?.activeStickyIndex ?? -1
-				// 原位 header 在「已吸顶」时隐藏，顶替过程中由浮层 + 下一个 absolute header 共同完成动画
-				const hideListHeaderIndex =
-					stickyLayout?.stuck === true ? stickyLayout.activeStickyIndex : -1
+				// 原位 header 在吸顶时隐藏，避免与浮层双影；浮层常挂载（visibility 控显隐）
+				const hideListHeaderIndex = stickyStuck ? stickyActiveIndex : -1
 
 				return (
 					// 不用 BoardRoot 的 flex-1：虚拟列表必须由内容定高驱动 scrollHeight
 					<div className='relative w-full' data-board-root='true'>
-						{/* 零高度 sticky 浮层 + pushOffset：下一 header 顶上来时把当前标题顶走 */}
-						{stickyLayout?.stuck && stickyHeader ? (
+						{/*
+						 * 零高度 sticky 壳（不占文档流高度）+ 定高裁剪层：
+						 * 顶替时 push 负向位移，旧标题在裁剪盒内被顶出，而不是滑到版心上方再闪回。
+						 */}
+						{stickyHeader ? (
 							<div
+								ref={stickyShellRef}
 								className='sticky top-0 z-20'
 								data-task-board-sticky-header='true'
-								style={{ height: 0, overflow: 'visible' }}
+								style={{
+									height: 0,
+									visibility: stickyStuck ? 'visible' : 'hidden',
+									pointerEvents: stickyStuck ? 'auto' : 'none',
+								}}
 							>
 								<div
 									style={{
 										height: TASK_BOARD_HEADER_HEIGHT,
-										transform: `translate3d(0, ${stickyLayout.pushOffset}px, 0)`,
-										willChange: 'transform',
+										overflow: 'hidden',
+										position: 'relative',
 									}}
 								>
-									{renderHeader(stickyHeader)}
+									<div
+										ref={stickyPushLayerRef}
+										style={{
+											height: TASK_BOARD_HEADER_HEIGHT,
+											willChange: 'transform',
+											backfaceVisibility: 'hidden',
+										}}
+									>
+										{renderHeader(stickyHeader)}
+									</div>
 								</div>
 							</div>
 						) : null}
@@ -534,6 +643,8 @@ export function TaskBoard({
 							className='relative w-full'
 							data-task-board-virtual='sections'
 							data-task-board-extent={contentHeightPx}
+							// 供 OverlayScrollbar 观察内容定高变化（折叠立刻改拇指，不必等滚动）
+							data-scroll-extent={contentHeightPx}
 							ref={measureRef}
 							style={{ height: contentHeightPx, minHeight: contentHeightPx }}
 						>
@@ -576,14 +687,14 @@ export function TaskBoard({
 									item?.kind === 'header' && index === hideListHeaderIndex
 								// 下一个即将顶替的 header 提高层级，保证从下方盖过被顶走的浮层
 								const isIncomingSticky =
-									item?.kind === 'header' &&
-									stickyLayout?.nextStickyIndex === index &&
-									stickyLayout.pushOffset < 0
+									item?.kind === 'header' && nextStickyIndex === index && stickyStuck
 
 								return (
 									<div
 										data-index={index}
-										data-sticky={index === activeStickyIndex ? 'true' : undefined}
+										data-sticky={
+											stickyStuck && index === stickyActiveIndex ? 'true' : undefined
+										}
 										key={key}
 										style={{
 											// 全部 absolute：scrollHeight 只由外层 height 决定
@@ -596,9 +707,13 @@ export function TaskBoard({
 											left: 0,
 											width: '100%',
 											height: size,
-											// 滚动性能：跳过屏外布局（虚拟窗口内仍可见项）
-											contentVisibility: 'auto',
-											containIntrinsicSize: size,
+											// header 不用 content-visibility，避免吸顶切换时闪一下
+											...(item?.kind === 'header'
+												? {}
+												: {
+														contentVisibility: 'auto' as const,
+														containIntrinsicSize: size,
+													}),
 										}}
 									>
 										{!item ? null : item.kind === 'header' ? (

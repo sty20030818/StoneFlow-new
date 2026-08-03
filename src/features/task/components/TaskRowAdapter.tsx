@@ -6,8 +6,8 @@ import type { TaskContextMenuBulkActions } from '@/features/task/components/useT
 import type { TaskDisplayPropertyKey } from '@/features/display-options'
 import {
 	createTaskPlacementGroupedDropdownProps,
-	createTaskPriorityMetadataDropdownProps,
-	createTaskStatusMetadataDropdownProps,
+	getTaskPriorityMetadataDropdownProps,
+	getTaskStatusMetadataDropdownProps,
 	MetadataDateDropdown,
 	MetadataFieldButton,
 	MetadataFieldDropdown,
@@ -135,9 +135,9 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 	const showProjectCellOptions =
 		hasProjectOptions && projectBinding?.showProjectCellOptions !== false
 	const usesBulkDangerActions = actionTargets.length > 1 && Boolean(contextMenuActions)
-	// 惰性缓存，避免模块初始化阶段循环依赖
-	const priorityDropdownProps = useMemo(() => createTaskPriorityMetadataDropdownProps(), [])
-	const statusDropdownProps = useMemo(() => createTaskStatusMetadataDropdownProps(), [])
+	// Board 级单例 options（非每行工厂）
+	const priorityDropdownProps = getTaskPriorityMetadataDropdownProps()
+	const statusDropdownProps = getTaskStatusMetadataDropdownProps()
 	const placementDropdownProps = useMemo(() => {
 		// 预计算 groups 仅在非空时采用；空数组会导致 findTaskPlacementGroupItem 失败从而隐藏按钮
 		if (projectBinding?.placementGroups && projectBinding.placementGroups.length > 0) {

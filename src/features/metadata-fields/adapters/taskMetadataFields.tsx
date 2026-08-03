@@ -19,6 +19,20 @@ export function createTaskPriorityMetadataDropdownProps(): MetadataDropdownMappe
 	return mapMetadataActionSpecToDropdownProps(createPriorityActionSpec())
 }
 
+/** Board 行级消费：module 单例，避免每行 useMemo 工厂（滚动性能） */
+let cachedStatusDropdownProps: MetadataDropdownMappedProps<TaskStatus> | null = null
+let cachedPriorityDropdownProps: MetadataDropdownMappedProps<TaskPriorityValue> | null = null
+
+export function getTaskStatusMetadataDropdownProps(): MetadataDropdownMappedProps<TaskStatus> {
+	cachedStatusDropdownProps ??= createTaskStatusMetadataDropdownProps()
+	return cachedStatusDropdownProps
+}
+
+export function getTaskPriorityMetadataDropdownProps(): MetadataDropdownMappedProps<TaskPriorityValue> {
+	cachedPriorityDropdownProps ??= createTaskPriorityMetadataDropdownProps()
+	return cachedPriorityDropdownProps
+}
+
 export function createTaskPlacementGroupedDropdownProps({
 	mode,
 	currentSpaceId,

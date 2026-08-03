@@ -47,6 +47,8 @@ export {
 	createTaskPlacementGroupedDropdownProps,
 	createTaskPriorityMetadataDropdownProps,
 	createTaskStatusMetadataDropdownProps,
+	getTaskPriorityMetadataDropdownProps,
+	getTaskStatusMetadataDropdownProps,
 	taskDateMetadataIcons,
 	createProjectParentMetadataDropdownProps,
 	projectDateMetadataIcons,

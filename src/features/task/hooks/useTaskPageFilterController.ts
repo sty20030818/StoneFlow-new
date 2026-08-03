@@ -17,6 +17,15 @@ import type { TaskPriorityValue } from '../model/taskPriority'
 // 模块级空数组常量，避免调用方未传 projects 时每次渲染都创建新的默认值引用
 const EMPTY_PROJECTS: ProjectOption[] = []
 
+/** 已由 list/view 查询下推的字段，客户端 matches 跳过，避免与 totalCount 双滤 */
+export type TaskPageServerDrivenFilter =
+	| 'status'
+	| 'showCompleted'
+	| 'standalone'
+	| 'project'
+	| 'priority'
+	| 'date'
+
 type UseTaskPageFilterControllerOptions = {
 	tasks: TaskListItem[]
 	projects?: ProjectOption[]
@@ -24,6 +33,8 @@ type UseTaskPageFilterControllerOptions = {
 	initialStandaloneOnly?: boolean
 	initialFilterKind?: PageFilterKind
 	initialShowCompleted?: boolean
+	/** 服务端已保证的过滤；客户端不再套用 */
+	serverDrivenFilters?: readonly TaskPageServerDrivenFilter[]
 }
 
 export function useTaskPageFilterController({
@@ -33,7 +44,9 @@ export function useTaskPageFilterController({
 	initialStandaloneOnly = false,
 	initialFilterKind = 'root',
 	initialShowCompleted = true,
+	serverDrivenFilters = [],
 }: UseTaskPageFilterControllerOptions) {
+	const serverDriven = useMemo(() => new Set(serverDrivenFilters), [serverDrivenFilters])
 	const [priorityValues, setPriorityValues] = useState<TaskPriorityValue[]>([])
 	const [statusValues, setStatusValues] = useState<TaskStatus[]>([])
 	const [dateValue, setDateValue] = useState<PageDateFilterValue>('none')
@@ -51,27 +64,35 @@ export function useTaskPageFilterController({
 		const statusValueSet = new Set(statusValues)
 
 		function matchesFilters(task: TaskListItem) {
-			if (!showCompleted && isTaskCompleted(task.status)) {
+			if (!serverDriven.has('showCompleted') && !showCompleted && isTaskCompleted(task.status)) {
 				return false
 			}
 
-			if (standaloneOnly && task.projectId !== null) {
+			if (!serverDriven.has('standalone') && standaloneOnly && task.projectId !== null) {
 				return false
 			}
 
-			if (projectId && task.projectId !== projectId) {
+			if (!serverDriven.has('project') && projectId && task.projectId !== projectId) {
 				return false
 			}
 
-			if (priorityValueSet.size > 0 && !priorityValueSet.has(task.priority)) {
+			if (
+				!serverDriven.has('priority') &&
+				priorityValueSet.size > 0 &&
+				!priorityValueSet.has(task.priority)
+			) {
 				return false
 			}
 
-			if (statusValueSet.size > 0 && !statusValueSet.has(task.status)) {
+			if (
+				!serverDriven.has('status') &&
+				statusValueSet.size > 0 &&
+				!statusValueSet.has(task.status)
+			) {
 				return false
 			}
 
-			if (dateValue === 'none') {
+			if (serverDriven.has('date') || dateValue === 'none') {
 				return true
 			}
 
@@ -115,7 +136,16 @@ export function useTaskPageFilterController({
 			}
 		}
 		return result
-	}, [dateValue, priorityValues, projectId, standaloneOnly, showCompleted, statusValues, tasks])
+	}, [
+		dateValue,
+		priorityValues,
+		projectId,
+		serverDriven,
+		standaloneOnly,
+		showCompleted,
+		statusValues,
+		tasks,
+	])
 
 	const hasActiveFilters =
 		priorityValues.length > 0 ||

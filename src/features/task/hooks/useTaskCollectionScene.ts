@@ -50,6 +50,8 @@ export type TaskCollectionSceneInput = {
 	totalCount?: number
 	/** 服务端已拉取条数（pages 展平） */
 	loadedCount?: number
+	/** 已由查询下推的 filter，客户端跳过二次过滤 */
+	serverDrivenFilters?: readonly import('./useTaskPageFilterController').TaskPageServerDrivenFilter[]
 }
 
 /**
@@ -70,6 +72,7 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 			supportsClearAll: true,
 		},
 		...(input.initialShowCompleted === false ? { initialShowCompleted: false as const } : {}),
+		...(input.serverDrivenFilters ? { serverDrivenFilters: input.serverDrivenFilters } : {}),
 	})
 	useRegisterPageFilterController(controller)
 

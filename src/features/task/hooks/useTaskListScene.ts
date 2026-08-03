@@ -64,14 +64,17 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 	}, [statusMode])
 
 	// All 与单 Space「所有任务」同一 viewKey 语义，仅 scope 不同
+	// standalone / statuses 下推 SQL，避免前端再滤与 totalCount 冲突
 	const listInput = useMemo(
 		() => ({
 			scope,
 			viewKey: TASK_LIST_PAGE_VIEW_KEY,
-			placement: config.placement,
+			placement: standaloneOnly
+				? ({ kind: 'standalone' } as const)
+				: config.placement,
 			...(listStatuses ? { statuses: listStatuses } : {}),
 		}),
-		[config.placement, listStatuses, scope],
+		[config.placement, listStatuses, scope, standaloneOnly],
 	)
 	const taskList = useTaskListData(listInput)
 	const taskBoardStatus = taskList.status
@@ -129,6 +132,8 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 		fetchNextPageError: taskList.fetchNextPageError,
 		totalCount: taskList.totalCount,
 		loadedCount: taskList.loadedCount,
+		// status/showCompleted/standalone 已在 list_tasks 下推
+		serverDrivenFilters: ['status', 'showCompleted', 'standalone'],
 	})
 
 	const applyStatusMode = useCallback(

@@ -116,6 +116,7 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 		fetchNextPageError: taskList.fetchNextPageError,
 		totalCount: taskList.totalCount,
 		loadedCount: taskList.loadedCount,
+		serverDrivenFilters: ['status', 'showCompleted', 'project'],
 		empty: project
 			? {
 					emptyActionLabel: '创建任务',

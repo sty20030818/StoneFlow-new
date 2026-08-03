@@ -173,6 +173,8 @@ export function useViewsScene() {
 			: null,
 		totalCount: viewTotalCount,
 		loadedCount: visibleTasks.length,
+		// View 查询已按 definition 过滤 status 等；priority/date 仍可能前端补滤
+		serverDrivenFilters: ['status', 'showCompleted'],
 		empty: {
 			emptyActionLabel: activeView ? '创建任务' : '创建视图',
 			emptyDescription: activeView
