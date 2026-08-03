@@ -28,3 +28,6 @@ export type {
 
 /** 页筛选命令 handlers（供壳 compose）。 */
 export { registerFilterCommands } from './commands/registerFilterCommands'
+
+/** 工具条「筛选」按钮（打开 filter-picker）。 */
+export { PageFilterButton } from './components/PageFilterButton'

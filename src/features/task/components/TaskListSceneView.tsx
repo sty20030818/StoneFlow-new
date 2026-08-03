@@ -3,6 +3,7 @@ import { Layers3Icon, PlusIcon } from 'lucide-react'
 import { PageFrame } from '@/shared/components/page-frame'
 import { MainCard } from '@/shared/components/main-card/MainCardLayout'
 import { DisplayOptionsButton } from '@/features/display-options'
+import { PageFilterButton } from '@/features/filter'
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
 import { useTaskListScene, type TaskListSceneVariant } from '@/features/task/hooks/useTaskListScene'
 import { TaskBoard } from './TaskBoard'
@@ -35,6 +36,7 @@ export function TaskListSceneView({ variant }: TaskListSceneViewProps) {
 			/>
 			<PageFrame.Toolbar
 				displayAction={<DisplayOptionsButton pageKey={scene.displayPageKey} />}
+				filterAction={<PageFilterButton />}
 				pills={scene.toolbarPills}
 			/>
 			<PageFrame.Body>

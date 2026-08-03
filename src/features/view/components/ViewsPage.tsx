@@ -2,6 +2,7 @@ import { PlusIcon } from 'lucide-react'
 
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
 import { DisplayOptionsButton } from '@/features/display-options'
+import { PageFilterButton } from '@/features/filter'
 import { MainCard } from '@/shared/components/main-card/MainCardLayout'
 import { AppBreadcrumb } from '@/shared/components/AppBreadcrumb'
 import { PageFrame } from '@/shared/components/page-frame'
@@ -31,7 +32,12 @@ export function ViewsPage() {
 				/>
 				<PageFrame.Toolbar
 					displayAction={
-						scene.activeView ? <DisplayOptionsButton pageKey={scene.displayPageKey} /> : undefined
+						scene.activeView ? (
+							<>
+								<PageFilterButton />
+								<DisplayOptionsButton pageKey={scene.displayPageKey} />
+							</>
+						) : undefined
 					}
 					filterAction={
 						<ViewActionsMenu

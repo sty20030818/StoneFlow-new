@@ -3,6 +3,7 @@ import { FolderIcon } from 'lucide-react'
 import { PageFrame } from '@/shared/components/page-frame'
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
 import { DisplayOptionsButton } from '@/features/display-options'
+import { PageFilterButton } from '@/features/filter'
 import type { Scope } from '@/shared/types'
 import { Button } from '@/shared/components/base/button'
 import { AppBreadcrumb } from '@/shared/components/AppBreadcrumb'
@@ -67,6 +68,7 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 			/>
 			<PageFrame.Toolbar
 				displayAction={<DisplayOptionsButton pageKey={scene.displayPageKey} />}
+				filterAction={<PageFilterButton />}
 				pills={scene.toolbarPills}
 			/>
 			<PageFrame.Body>
