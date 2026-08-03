@@ -63,7 +63,6 @@ export function PageFilterButton({ className }: PageFilterButtonProps) {
 				data-active={hasActive ? 'true' : undefined}
 				onClick={() => {
 					pageFilter.actions.openFilterPicker('root')
-					// 不再 openCommand('filter-picker')
 				}}
 				size='icon-sm'
 				type='button'

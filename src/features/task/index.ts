@@ -41,11 +41,6 @@ export { resolveCommandOpenTargetPath, resolveShellDetailState } from './model/t
 export { taskBulkActions, createTaskBulkAdapter, type TaskBulkAdapter } from './bulk'
 
 /**
- * 任务列表页筛选 controller（平台 filter 只提供 Provider）。
- */
-export { useTaskPageFilterController } from './hooks/useTaskPageFilterController'
-
-/**
  * 列表选中 → 命令板 CommandSelection 快照。
  */
 export { buildTaskCommandSelection } from './model/buildTaskCommandSelection'

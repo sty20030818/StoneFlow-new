@@ -396,7 +396,10 @@ where
         validate_definition(&scope, &filter_query)?;
         let today = Local::now().date_naive();
         let eval = filter_query_to_eval(&filter_query);
-        // 候选：SQL 先收 status/project/due；其余（priority/多日期字段/system 本地日）内存收口。
+        // 查询策略：
+        // 1) SQL 候选：status / project / due（可下推字段）
+        // 2) 内存收口：priority、planned 等 eval 余量 + system_matches（本地日语义）
+        // 3) 内存 sort 后切片窗口（≤2k）；全量 SQL keyset 非本路径目标
         let mut tasks = self
             .task_reader
             .list_candidates(ViewTaskQuery {

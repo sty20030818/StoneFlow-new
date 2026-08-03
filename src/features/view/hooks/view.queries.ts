@@ -15,15 +15,6 @@ export function useViewsQuery() {
 	})
 }
 
-/** 单页 run（兼容旧调用）；新路径优先 useTaskViewRunInfiniteQuery */
-export function useTaskViewRunQuery(input: RunTaskViewInput | null) {
-	return useQuery({
-		queryKey: input ? viewKeys.taskRun(input) : viewKeys.disabledTaskRun(),
-		queryFn: () => runTaskView(input as RunTaskViewInput),
-		enabled: Boolean(input),
-	})
-}
-
 /** View 任务窗口：key 不含 cursor，cursor 走 pageParam */
 export function taskViewRunInfiniteQueryOptions(input: RunTaskViewInput) {
 	const keyInput: RunTaskViewInput = {

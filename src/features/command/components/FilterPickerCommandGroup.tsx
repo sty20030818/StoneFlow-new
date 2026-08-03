@@ -89,12 +89,11 @@ export function FilterPickerCommandGroup({
 
 		return (
 			<>
-				<CommandGroup className='pt-2' heading='筛选（请使用工具条公式条）'>
+				<CommandGroup className='pt-2' heading='筛选维度'>
 					{items.map((item) => (
 						<CommandItem
 							key={item.kind}
 							onSelect={() => {
-								// 主路径：关闭 Command，打开锚定 FilterMenu
 								onSelectFilterKind(item.kind)
 								emitFilterUiEvent({
 									type: 'open-menu',

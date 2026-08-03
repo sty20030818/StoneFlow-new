@@ -1,7 +1,7 @@
 # filter · 筛选平台
 
 > 作用：描述 **当前已落地** 的 `src/features/filter` 边界  
-> 最后更新：2026-08-03（P0–P5：FilterQuery + 会话 + Menu/Bar 主路径）
+> 最后更新：2026-08-03
 
 ---
 
@@ -12,17 +12,18 @@ URL search `f` ──temp──┐
                        ├─► effective ──adapt──► list_tasks / run_view
 View.filters ──base────┘
 
-UI：PageFilterButton → FilterMenu（锚定）
+UI：PageFilterButton → FilterMenu
     FilterBar → chip / Clear(dirty) / Save
-命令 F：emitFilterUiEvent → 打开 FilterMenu（非 filter-picker 全页）
+命令 F：emitFilterUiEvent → FilterMenu
+命令宿主：useRegisterFilterCommandAdapter（FilterQuery 投影）
 ```
 
 | 概念 | 真源 |
 |---|---|
-| 公式形状 | `FilterQuery`（clause 列表） |
-| 临时条件 | 路由 search `f`（`useListFilterSession`） |
-| 持久 View 筛选 | SQLite `filters_json`（同形） |
-| 显示选项 | **不在本包** → `display-options` |
+| 公式 | `FilterQuery`（clause） |
+| 临时 | 路由 search `f` |
+| View 筛选 | SQLite `filters_json` |
+| 显示选项 | `display-options`（含 `showCompleted`） |
 
 ---
 
@@ -30,17 +31,15 @@ UI：PageFilterButton → FilterMenu（锚定）
 
 ```txt
 src/features/filter/
-├── core/                 # 纯领域：types · normalize · url-codec · adapt
+├── core/           # types · normalize · url-codec · adapt
 ├── model/
-│   ├── useListFilterSession.ts   # base/temp/effective
-│   ├── ListFilterUiContext.tsx   # 页级注入 session + Save
-│   ├── filterUiEvents.ts         # 命令 → 打开菜单
-│   ├── pageFilterSliceBridge.ts  # 旧扁平→clause（P7 删）
-│   └── PageFilterProvider.tsx    # 过渡 controller（P7 删）
-├── components/
-│   ├── PageFilterButton · FilterMenu · FilterBar
-│   └── filterLabels.ts
-├── commands/registerFilterCommands.ts
+│   ├── useListFilterSession.ts
+│   ├── ListFilterUiContext.tsx
+│   ├── filterUiEvents.ts
+│   ├── useRegisterFilterCommandAdapter.ts
+│   └── PageFilterProvider.tsx   # 命令宿主注册槽
+├── components/     # PageFilterButton · FilterMenu · FilterBar
+├── commands/
 └── index.ts
 ```
 
@@ -48,18 +47,16 @@ src/features/filter/
 
 ## 3. Public
 
-- 领域：`FilterQuery`、`normalizeFilterQuery`、`adaptFilterQueryToListTasks`、URL codec、`FILTER_SEARCH_PARAM_KEY`
-- 会话：`useListFilterSession`、`parseListFilterSearch`、`ListFilterUiProvider`
+- 领域：`FilterQuery`、`normalize`、`adaptFilterQueryToListTasks`、URL codec
+- 会话：`useListFilterSession`、`ListFilterUiProvider`
+- 命令：`registerFilterCommands`、`useRegisterFilterCommandAdapter`、`emitFilterUiEvent`
 - UI：`PageFilterButton`、`FilterBar`、`FilterMenu`
-- 命令：`registerFilterCommands`、`emitFilterUiEvent`
-
-**不在本包：** `useTaskPageFilterController` → `@/features/task`（过渡桥，P7 删）
 
 ---
 
 ## 4. 禁止
 
-- 外模块深路径 import `core/` / `model/`
+- 外模块深路径 import
 - UI 内复制 adapt 映射
-- display-options import filter 业务状态
-- 以全页 Command `filter-picker` 作为唯一加筛入口
+- 第二套扁平筛选状态驱动 list 查询
+- display-options 与 filter 交叉持有对方业务状态

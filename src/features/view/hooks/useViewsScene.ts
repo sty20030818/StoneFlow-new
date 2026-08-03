@@ -13,7 +13,9 @@ import {
 	adaptFilterQueryToViewFilters,
 	isFilterQueryEmpty,
 	useListFilterSession,
+	useRegisterFilterCommandAdapter,
 } from '@/features/filter'
+import { useTaskDisplayOptions } from '@/features/display-options'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useProjectOptions } from '@/features/project'
 import { useSpaces } from '@/features/space'
@@ -87,18 +89,34 @@ export function useViewsScene() {
 		return taskViews.find((view) => view.id === routeViewId) ?? visibleViews[0] ?? null
 	}, [routeViewId, taskViews, visibleViews])
 
-	// base = View 定义；temp = URL `f`（进 View 默认干净，无 f）
+	const displayPageKey = useMemo(
+		() => createTaskDisplayViewPageKey(activeView?.id ?? 'empty-state'),
+		[activeView?.id],
+	)
+
+	// base = View 定义；temp = URL `f`
 	const viewFilterBase =
 		activeView?.kind === 'custom' ? (activeView.filters ?? EMPTY_FILTER_QUERY) : EMPTY_FILTER_QUERY
 	const filterSession = useListFilterSession({ base: viewFilterBase })
+	const display = useTaskDisplayOptions(displayPageKey)
 
-	// T12：切换 viewId 时若不需要保留 temp，URL 无 f 即干净；有 f 则为临时偏离
+	useRegisterFilterCommandAdapter({
+		session: filterSession,
+		showCompleted: display.options.showCompleted,
+		onToggleCompleted: () => {
+			void display.actions.applyPartial({
+				showCompleted: !display.options.showCompleted,
+			})
+		},
+		supportsProject: true,
+		projects: projectOptions,
+	})
+
 	const taskRunInput = activeView
 		? {
 				scope,
 				viewId: activeView.kind === 'custom' ? activeView.id : null,
 				viewKey: activeView.systemKey,
-				// dirty：temp；否则 legacy search.filters 作覆盖（兼容旧键）
 				filters: filterSession.dirty
 					? adaptFilterQueryToViewFilters(filterSession.temp)
 					: search.filters && !isFilterQueryEmpty(search.filters)
@@ -132,10 +150,6 @@ export function useViewsScene() {
 				viewName: activeView?.name ?? null,
 			}),
 		[activeView?.name, shellRoute],
-	)
-	const displayPageKey = useMemo(
-		() => createTaskDisplayViewPageKey(activeView?.id ?? 'empty-state'),
-		[activeView?.id],
 	)
 	useEffect(() => {
 		if (
@@ -206,8 +220,6 @@ export function useViewsScene() {
 			: null,
 		totalCount: viewTotalCount,
 		loadedCount: visibleTasks.length,
-		// View 查询已按 definition 过滤 status 等；priority/date 仍可能前端补滤
-		serverDrivenFilters: ['status', 'showCompleted'],
 		empty: {
 			emptyActionLabel: activeView ? '创建任务' : '创建视图',
 			emptyDescription: activeView

@@ -7,9 +7,7 @@ import {
 
 /**
  * 向壳命令宿主注册页筛选 handlers。
- * 打开筛选 → 锚定 FilterMenu（不再打开全页 filter-picker）。
- * 清空 → pageFilter.clearAll + 广播 clear-all（session.clearTemp）。
- * 切换已完成 → 仍走 pageFilter（Display 同步由列表桥 / P7 再纯 Display）。
+ * 打开筛选 → 锚定 FilterMenu；清空 → clear-all 事件；切换已完成 → 页 controller（Display 真源经适配器）。
  */
 export function registerFilterCommands(
 	host: Pick<CommandHostContext, 'pageFilter' | 'setCommandMenuFilterKind'>,

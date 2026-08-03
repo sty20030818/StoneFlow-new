@@ -1,4 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+/**
+ * 项目详情场景：项目动作 + FilterQuery 会话 → list + TaskBoard。
+ */
+import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from '@tanstack/react-router'
 
 import {
@@ -14,10 +17,11 @@ import {
 } from '@/features/display-options'
 import {
 	adaptFilterQueryToListTasks,
-	filterQueriesEqual,
-	isFilterQueryEmpty,
-	pageFilterSliceToFilterQuery,
+	createFilterClause,
+	filterQueryToCommandProjection,
+	normalizeFilterQuery,
 	useListFilterSession,
+	useRegisterFilterCommandAdapter,
 } from '@/features/filter'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useDialogStore } from '@/features/shell-dialogs'
@@ -26,22 +30,11 @@ import {
 	formatTaskStatusLabel,
 	useTaskCollectionScene,
 	useTaskListData,
-	useTaskPageFilterController,
 	useTaskPreviewController,
 } from '@/features/task'
 import { createView } from '@/features/view'
 import { EMPTY_FILTER_QUERY } from '@/shared/types'
-import type { Scope, TaskListItem, TaskStatus } from '@/shared/types'
-
-const PROJECT_SERVER_DRIVEN = [
-	'status',
-	'showCompleted',
-	'project',
-	'priority',
-	'date',
-] as const
-
-const EMPTY_PROJECT_FILTER_TASKS: TaskListItem[] = []
+import type { Scope, TaskStatus } from '@/shared/types'
 
 import {
 	useArchiveProjectMutation,
@@ -67,7 +60,6 @@ type UseProjectDetailSceneArgs = {
 	scopeOverride?: Scope
 }
 
-/** 项目详情只组合项目头部与 task 域提供的完整任务集合。 */
 export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneArgs = {}) {
 	const navigate = useNavigate({ from: '/' })
 	const { projectId = '' } = useParams({ strict: false }) as { projectId?: string }
@@ -91,41 +83,17 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 	const display = useTaskDisplayOptions(PROJECT_DETAIL_DISPLAY_PAGE_KEY)
 	const filterSession = useListFilterSession({ base: EMPTY_FILTER_QUERY })
 
-	const projectFilter = useTaskPageFilterController({
-		tasks: EMPTY_PROJECT_FILTER_TASKS,
-		capabilities: {
-			supportsPriority: true,
-			supportsStatus: true,
-			supportsDate: true,
-			supportsProject: false,
-			supportsToggleCompleted: true,
-			supportsClearAll: true,
+	useRegisterFilterCommandAdapter({
+		session: filterSession,
+		showCompleted: display.options.showCompleted,
+		onToggleCompleted: () => {
+			void display.actions.applyPartial({
+				showCompleted: !display.options.showCompleted,
+			})
 		},
-		initialShowCompleted: display.options.showCompleted,
-		serverDrivenFilters: PROJECT_SERVER_DRIVEN,
+		supportsProject: false,
+		projects: projectOptions,
 	})
-
-	const hadControllerFiltersRef = useRef(false)
-	useEffect(() => {
-		const fromController = pageFilterSliceToFilterQuery(projectFilter.querySlice)
-		if (!isFilterQueryEmpty(fromController)) {
-			hadControllerFiltersRef.current = true
-			if (!filterQueriesEqual(fromController, filterSession.temp)) {
-				filterSession.setTemp(fromController)
-			}
-			return
-		}
-		if (hadControllerFiltersRef.current) {
-			hadControllerFiltersRef.current = false
-			filterSession.clearTemp()
-		}
-	}, [
-		projectFilter.querySlice.dateValue,
-		projectFilter.querySlice.priorityValues,
-		projectFilter.querySlice.projectId,
-		projectFilter.querySlice.statusValues,
-		filterSession,
-	])
 
 	const listInput = useMemo(() => {
 		const patch = adaptFilterQueryToListTasks(filterSession.effective)
@@ -144,6 +112,7 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 			...(patch.dateFilter ? { dateFilter: patch.dateFilter } : {}),
 		}
 	}, [display.options.showCompleted, filterSession.effective, projectId, scope])
+
 	const taskList = useTaskListData(listInput)
 	const visibleTasks = useMemo(
 		() => taskList.items.filter((task) => task.archivedAt === null),
@@ -186,8 +155,6 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 		fetchNextPageError: taskList.fetchNextPageError,
 		totalCount: taskList.totalCount,
 		loadedCount: taskList.loadedCount,
-		serverDrivenFilters: PROJECT_SERVER_DRIVEN,
-		externalFilter: projectFilter,
 		empty: project
 			? {
 					emptyActionLabel: '创建任务',
@@ -197,6 +164,36 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 				}
 			: {},
 	})
+
+	const statusProjection = useMemo(
+		() => filterQueryToCommandProjection(filterSession.effective),
+		[filterSession.effective],
+	)
+
+	const toolbarPills = PROJECT_TASK_FILTERS.map((filter) => ({
+		label: filter === 'all' ? '所有任务' : formatTaskStatusLabel(filter),
+		active:
+			filter === 'all'
+				? statusProjection.statusValues.length === 0
+				: statusProjection.statusValues.length === 1 &&
+					statusProjection.statusValues[0] === filter,
+		onClick: () => {
+			if (filter === 'all') {
+				const withoutStatus = filterSession.effective.clauses.filter((c) => c.field !== 'status')
+				filterSession.replaceEffective(normalizeFilterQuery({ clauses: withoutStatus }))
+				return
+			}
+			filterSession.replaceEffective(
+				normalizeFilterQuery({
+					clauses: [
+						...filterSession.effective.clauses.filter((c) => c.field !== 'status'),
+						createFilterClause('status', 'is', [filter]),
+					],
+				}),
+			)
+		},
+	}))
+
 	const breadcrumbItems = useMemo(
 		() =>
 			resolveBreadcrumb({
@@ -209,32 +206,6 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 			}),
 		[project, projectId, shellRoute],
 	)
-	const toolbarPills = PROJECT_TASK_FILTERS.map((filter) => ({
-		label: filter === 'all' ? '所有任务' : formatTaskStatusLabel(filter),
-		active:
-			filter === 'all'
-				? taskCollection.controller.state.statusValues.length === 0
-				: taskCollection.controller.state.statusValues.length === 1 &&
-					taskCollection.controller.state.statusValues[0] === filter,
-		onClick: () =>
-			taskCollection.controller.actions.applyFilter({
-				kind: 'status',
-				values: filter === 'all' ? [] : [filter],
-			}),
-	}))
-
-	function goToProjectsOverview() {
-		void navigate({ to: openSection(scope, 'projects', spaceId) as never })
-	}
-
-	async function runAction(action: string, runner: () => Promise<unknown>) {
-		setBusyAction(action)
-		try {
-			await runner()
-		} finally {
-			setBusyAction(null)
-		}
-	}
 
 	const filterUiValue = useMemo(
 		() => ({
@@ -255,6 +226,19 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 		}),
 		[filterSession, projectOptions, scope],
 	)
+
+	function goToProjectsOverview() {
+		void navigate({ to: openSection(scope, 'projects', spaceId) as never })
+	}
+
+	async function runAction(action: string, runner: () => Promise<unknown>) {
+		setBusyAction(action)
+		try {
+			await runner()
+		} finally {
+			setBusyAction(null)
+		}
+	}
 
 	return {
 		project,

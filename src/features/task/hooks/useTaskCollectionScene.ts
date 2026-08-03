@@ -1,3 +1,7 @@
+/**
+ * 任务集合编排：数据源 + Display 呈现 + 选择/预览/Board。
+ * 筛选会话与查询下推由各列表 scene 持有；本 hook 不维护第二套 filter 状态。
+ */
 import { useMemo } from 'react'
 
 import {
@@ -6,7 +10,6 @@ import {
 	useTaskDisplayOptions,
 	type TaskDisplayPageKey,
 } from '@/features/display-options'
-import { useRegisterPageFilterController } from '@/features/filter'
 import { useEntitySelectionEscape, useRegisterCommandSelection } from '@/features/selection'
 import type { ProjectOption } from '@/features/project'
 import type { Space, TaskListItem } from '@/shared/types'
@@ -15,7 +18,6 @@ import type { TaskBoardProps } from '../components/TaskBoard'
 import { useRegisterTaskPreviewSource } from '../detail/model/TaskPreviewProvider'
 import { buildTaskCommandSelection } from '../model/buildTaskCommandSelection'
 import { useTaskListController } from './useTaskListController'
-import { useTaskPageFilterController } from './useTaskPageFilterController'
 import { useTaskSelection } from './useTaskSelection'
 
 type TaskCollectionSource = {
@@ -28,7 +30,6 @@ export type TaskCollectionSceneInput = {
 	displayPageKey: TaskDisplayPageKey
 	projects?: ProjectOption[]
 	supportsProject: boolean
-	initialShowCompleted?: boolean
 	fallbackSubtitle: string | ((task: TaskListItem) => string)
 	activeTaskId: string | null
 	onCreateTask: () => void
@@ -37,65 +38,32 @@ export type TaskCollectionSceneInput = {
 	projectOptions: ProjectOption[]
 	spaces: Space[]
 	showProjectCellOptions: boolean
-	/** 所有空间：行内固定 Space 名 */
 	showSpaceLabel?: boolean
 	createProjectId?: string | null
 	empty: Pick<TaskBoardProps, 'emptyTitle' | 'emptyDescription' | 'emptyActionLabel'>
-	/** keyset 续拉 */
 	hasNextPage?: boolean
 	isFetchingNextPage?: boolean
 	fetchNextPage?: () => void
 	fetchNextPageError?: string | null
-	/** 过滤后任务总数（首屏定滚动条） */
 	totalCount?: number
-	/** 服务端已拉取条数（pages 展平） */
 	loadedCount?: number
-	/** 已由查询下推的 filter，客户端跳过二次过滤 */
-	serverDrivenFilters?: readonly import('./useTaskPageFilterController').TaskPageServerDrivenFilter[]
-	/**
-	 * 外部 filter（list 场景：filter 状态驱动 listInput，须在 collection 之上创建）。
-	 * 提供时内部仍调用 hook（Rules of Hooks），但交互与 filteredTasks 以外部为准。
-	 */
-	externalFilter?: ReturnType<typeof useTaskPageFilterController>
 }
 
-const EMPTY_TASKS_FOR_EXTERNAL_FILTER: import('@/shared/types').TaskListItem[] = []
-
 /**
- * 任务集合的唯一交互编排。
- * 数据源与页面专属动作由调用方提供；筛选、展示、选择、预览、批量和 Board 接线只在 task 域维护。
+ * 任务集合的交互编排（展示 / 选择 / 预览 / 批量 / Board）。
+ * 调用方负责：查询结果、筛选会话、页面专属动作。
  */
 export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 	const display = useTaskDisplayOptions(input.displayPageKey)
-	const internalFilter = useTaskPageFilterController({
-		// 外部 filter 时内部仅占位，避免双状态源
-		tasks: input.externalFilter ? EMPTY_TASKS_FOR_EXTERNAL_FILTER : input.source.items,
-		projects: input.supportsProject ? input.projects : undefined,
-		capabilities: {
-			supportsPriority: true,
-			supportsStatus: true,
-			supportsDate: true,
-			supportsProject: input.supportsProject,
-			supportsToggleCompleted: true,
-			supportsClearAll: true,
-		},
-		...(input.initialShowCompleted === false ? { initialShowCompleted: false as const } : {}),
-		...(input.serverDrivenFilters ? { serverDrivenFilters: input.serverDrivenFilters } : {}),
-	})
-	const filter = input.externalFilter ?? internalFilter
-	const { controller, filteredTasks, querySlice } = filter
-	// 外部 filter 时任务已下推过滤：直接用 source.items
-	const boardTasks = input.externalFilter ? input.source.items : filteredTasks
-	useRegisterPageFilterController(controller)
 
 	const displayResult = useMemo(
 		() =>
 			applyTaskDisplayOptionsToTasks({
-				items: boardTasks,
+				items: input.source.items,
 				options: display.options,
 				context: createTaskDisplayApplyContext(input.displayPageKey),
 			}),
-		[boardTasks, display.options, input.displayPageKey],
+		[display.options, input.displayPageKey, input.source.items],
 	)
 	const selection = useTaskSelection(displayResult.selectionOrderIds)
 	const mutations = useTaskListController()
@@ -104,14 +72,14 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 		() =>
 			buildTaskCommandSelection({
 				selectedIds: selection.selectionSnapshot.ids,
-				tasks: boardTasks,
+				tasks: input.source.items,
 				fallbackSubtitle: input.fallbackSubtitle,
 				focusedTaskId: selection.focusedTaskId,
 				clearSelection: selection.clearTaskSelection,
 			}),
 		[
-			boardTasks,
 			input.fallbackSubtitle,
+			input.source.items,
 			selection.clearTaskSelection,
 			selection.focusedTaskId,
 			selection.selectionSnapshot.ids,
@@ -119,7 +87,7 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 	)
 	useRegisterCommandSelection(commandSelection)
 	useRegisterTaskPreviewSource({
-		tasks: boardTasks,
+		tasks: input.source.items,
 		focusedTaskId: selection.focusedTaskId,
 		activeTaskId: input.activeTaskId,
 	})
@@ -204,9 +172,7 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 
 	return {
 		boardProps,
-		controller,
-		/** filter 查询切片：list 场景用于驱动 listInput 下推 */
-		filterQuerySlice: querySlice,
+		display,
 		displayPageKey: input.displayPageKey,
 		selectedCount: selection.selectedCount,
 		clearTaskSelection: selection.clearTaskSelection,

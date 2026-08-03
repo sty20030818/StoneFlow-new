@@ -1,6 +1,6 @@
 /**
- * 将 page filter 的日期枚举编码为 list_tasks 下推载荷。
- * 边界按本地日，与 useTaskPageFilterController 历史语义一致。
+ * 将日期模式枚举编码为 list_tasks 下推载荷（本地日边界）。
+ * 与 `adaptFilterQueryToListTasks` 的日期语义一致。
  */
 import type { PageDateFilterValue } from '@/features/filter'
 import type { ListTasksDateFilter } from '@/shared/types'
