@@ -3,7 +3,7 @@ import { Layers3Icon, PlusIcon } from 'lucide-react'
 import { PageFrame } from '@/shared/components/page-frame'
 import { MainCard } from '@/shared/components/main-card/MainCardLayout'
 import { DisplayOptionsButton } from '@/features/display-options'
-import { PageFilterButton } from '@/features/filter'
+import { FilterBar, ListFilterUiProvider, PageFilterButton } from '@/features/filter'
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
 import { useTaskListScene, type TaskListSceneVariant } from '@/features/task/hooks/useTaskListScene'
 import { TaskBoard } from './TaskBoard'
@@ -25,36 +25,39 @@ export function TaskListSceneView({ variant }: TaskListSceneViewProps) {
 	const scene = useTaskListScene(variant)
 
 	return (
-		<PageFrame.Root>
-			<PageFrame.Header
-				actions={
-					<MainCard.GhostAction aria-label='创建任务' onClick={scene.openCreate}>
-						<PlusIcon />
-					</MainCard.GhostAction>
-				}
-				breadcrumb={<AppBreadcrumb items={scene.breadcrumbItems} />}
-			/>
-			<PageFrame.Toolbar
-				displayAction={<DisplayOptionsButton pageKey={scene.displayPageKey} />}
-				filterAction={<PageFilterButton />}
-				pills={scene.toolbarPills}
-			/>
-			<PageFrame.Body>
-				<TaskBoard {...scene.taskCollection.boardProps} />
-				{scene.showStandaloneHint ? (
-					<div className='mt-auto flex items-center gap-2 px-1 text-[12px] text-sf-text-tertiary'>
-						<Layers3Icon className='size-3.5' />
-						这些是当前 Space 下尚未归属到任何 Project 的独立事项。
-					</div>
-				) : null}
-			</PageFrame.Body>
-			<PageFrame.BulkBar>
-				<BulkActionBar
-					action={<BulkCommandMenuAction />}
-					onClear={scene.bulk.clearTaskSelection}
-					selectedCount={scene.bulk.selectedCount}
+		<ListFilterUiProvider value={scene.filterUiValue}>
+			<PageFrame.Root>
+				<PageFrame.Header
+					actions={
+						<MainCard.GhostAction aria-label='创建任务' onClick={scene.openCreate}>
+							<PlusIcon />
+						</MainCard.GhostAction>
+					}
+					breadcrumb={<AppBreadcrumb items={scene.breadcrumbItems} />}
 				/>
-			</PageFrame.BulkBar>
-		</PageFrame.Root>
+				<PageFrame.Toolbar
+					displayAction={<DisplayOptionsButton pageKey={scene.displayPageKey} />}
+					filterAction={<PageFilterButton />}
+					filterBar={<FilterBar />}
+					pills={scene.toolbarPills}
+				/>
+				<PageFrame.Body>
+					<TaskBoard {...scene.taskCollection.boardProps} />
+					{scene.showStandaloneHint ? (
+						<div className='mt-auto flex items-center gap-2 px-1 text-[12px] text-sf-text-tertiary'>
+							<Layers3Icon className='size-3.5' />
+							这些是当前 Space 下尚未归属到任何 Project 的独立事项。
+						</div>
+					) : null}
+				</PageFrame.Body>
+				<PageFrame.BulkBar>
+					<BulkActionBar
+						action={<BulkCommandMenuAction />}
+						onClear={scene.bulk.clearTaskSelection}
+						selectedCount={scene.bulk.selectedCount}
+					/>
+				</PageFrame.BulkBar>
+			</PageFrame.Root>
+		</ListFilterUiProvider>
 	)
 }

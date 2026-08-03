@@ -2,9 +2,12 @@
  * T6：把 View 行上残留的 sort/group 一次性写入 display-options default，
  * 再 updateView 清空持久化（后端 update 本就会写空 sort/group）。
  */
-import { updateTaskDisplayPreference } from '@/features/display-options/api/displayOptions'
-import { createTaskDisplayViewPageKey } from '@/features/display-options/core'
-import type { TaskDisplayOrderBy, TaskDisplayPreferenceRecord } from '@/features/display-options/core'
+import {
+	createTaskDisplayViewPageKey,
+	updateTaskDisplayPreference,
+	type TaskDisplayOrderBy,
+	type TaskDisplayPreferenceRecord,
+} from '@/features/display-options'
 import type { View, ViewSortField } from '@/shared/types'
 
 import { updateView } from '../api/views'

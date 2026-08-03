@@ -2,7 +2,7 @@ import { PlusIcon } from 'lucide-react'
 
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
 import { DisplayOptionsButton } from '@/features/display-options'
-import { PageFilterButton } from '@/features/filter'
+import { FilterBar, ListFilterUiProvider, PageFilterButton } from '@/features/filter'
 import { MainCard } from '@/shared/components/main-card/MainCardLayout'
 import { AppBreadcrumb } from '@/shared/components/AppBreadcrumb'
 import { PageFrame } from '@/shared/components/page-frame'
@@ -20,7 +20,7 @@ export function ViewsPage() {
 	const scene = useViewsScene()
 
 	return (
-		<>
+		<ListFilterUiProvider value={scene.filterUiValue}>
 			<PageFrame.Root>
 				<PageFrame.Header
 					actions={
@@ -33,20 +33,30 @@ export function ViewsPage() {
 				<PageFrame.Toolbar
 					displayAction={
 						scene.activeView ? (
-							<>
-								<PageFilterButton />
-								<DisplayOptionsButton pageKey={scene.displayPageKey} />
-							</>
+							<DisplayOptionsButton pageKey={scene.displayPageKey} />
 						) : undefined
 					}
 					filterAction={
-						<ViewActionsMenu
-							activeView={scene.activeView}
-							onCreate={scene.openCreateEditor}
-							onDelete={scene.actions.onDelete}
-							onEdit={scene.openEditEditor}
-						/>
+						scene.activeView ? (
+							<div className='flex items-center gap-1'>
+								<PageFilterButton />
+								<ViewActionsMenu
+									activeView={scene.activeView}
+									onCreate={scene.openCreateEditor}
+									onDelete={scene.actions.onDelete}
+									onEdit={scene.openEditEditor}
+								/>
+							</div>
+						) : (
+							<ViewActionsMenu
+								activeView={scene.activeView}
+								onCreate={scene.openCreateEditor}
+								onDelete={scene.actions.onDelete}
+								onEdit={scene.openEditEditor}
+							/>
+						)
 					}
+					filterBar={scene.activeView ? <FilterBar /> : null}
 					pills={scene.visibleViews.map((view) => ({
 						label: view.name,
 						active: view.id === scene.activeView?.id,
@@ -78,6 +88,6 @@ export function ViewsPage() {
 				projects={scene.editor.projects}
 				view={scene.editor.view}
 			/>
-		</>
+		</ListFilterUiProvider>
 	)
 }

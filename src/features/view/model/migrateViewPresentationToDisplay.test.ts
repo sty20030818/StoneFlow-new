@@ -6,9 +6,13 @@ import { EMPTY_FILTER_QUERY } from '@/shared/types'
 const updateTaskDisplayPreference = vi.fn()
 const updateView = vi.fn()
 
-vi.mock('@/features/display-options/api/displayOptions', () => ({
-	updateTaskDisplayPreference: (...args: unknown[]) => updateTaskDisplayPreference(...args),
-}))
+vi.mock('@/features/display-options', async (importOriginal) => {
+	const actual = await importOriginal<typeof import('@/features/display-options')>()
+	return {
+		...actual,
+		updateTaskDisplayPreference: (...args: unknown[]) => updateTaskDisplayPreference(...args),
+	}
+})
 
 vi.mock('../api/views', () => ({
 	updateView: (...args: unknown[]) => updateView(...args),

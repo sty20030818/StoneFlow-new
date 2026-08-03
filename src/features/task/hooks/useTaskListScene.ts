@@ -14,6 +14,7 @@ import { useEntityDetailController } from '@/features/entity-detail'
 import { useProjectOptions } from '@/features/project'
 import { useSpaces } from '@/features/space'
 import { useTaskPreviewController } from '@/features/task/detail'
+import { createView } from '@/features/view'
 import { EMPTY_FILTER_QUERY } from '@/shared/types'
 import type { TaskStatus } from '@/shared/types'
 
@@ -299,12 +300,34 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 		taskCollection.controller.actions,
 	])
 
+	const filterUiValue = useMemo(
+		() => ({
+			session: filterSession,
+			projects: projectOptions.map((project) => ({ id: project.id, name: project.name })),
+			onSave: async (input: { mode: 'create' | 'overwrite'; name?: string }) => {
+				if (input.mode !== 'create' || !input.name?.trim()) {
+					return
+				}
+				await createView({
+					name: input.name.trim(),
+					scope,
+					filters: filterSession.effective,
+				})
+				filterSession.clearTemp()
+			},
+			// total 已是筛选后语义时无法可靠算「隐藏数」；有 temp 且 total 就绪时暂不伪造
+			hiddenByFilterCount: null as number | null,
+		}),
+		[filterSession, projectOptions, scope],
+	)
+
 	return {
 		variant,
 		displayPageKey: config.displayPageKey,
 		breadcrumbItems,
 		taskCollection,
 		toolbarPills,
+		filterUiValue,
 		bulk: {
 			selectedCount: taskCollection.selectedCount,
 			clearTaskSelection: taskCollection.clearTaskSelection,

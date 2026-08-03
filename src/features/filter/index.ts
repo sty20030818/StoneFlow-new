@@ -58,8 +58,16 @@ export type {
 /** 页筛选命令 handlers（供壳 compose）。 */
 export { registerFilterCommands } from './commands/registerFilterCommands'
 
-/** 工具条「筛选」按钮（打开 filter-picker；P4 将改为 FilterMenu）。 */
+/** 工具条「筛选」按钮（锚定 FilterMenu / 兼容 Command）。 */
 export { PageFilterButton } from './components/PageFilterButton'
+export { FilterBar } from './components/FilterBar'
+export { FilterMenu } from './components/FilterMenu'
+export {
+	ListFilterUiProvider,
+	useListFilterUi,
+	type FilterProjectOption,
+	type ListFilterUiValue,
+} from './model/ListFilterUiContext'
 
 /** 列表筛选会话：base + URL temp → effective */
 export {

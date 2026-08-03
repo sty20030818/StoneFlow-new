@@ -15,6 +15,12 @@ export { useViewsQuery } from './hooks'
 /** URL search → 受限 View 查询定义。 */
 export { parseViewSearch } from './api/viewSearch'
 
+/** 创建自定义 View（FilterBar Save 等）。 */
+export { createView } from './api/views'
+
+/** View 变更 mutations。 */
+export { useCreateViewMutation, useUpdateViewMutation } from './hooks/view.mutations'
+
 // ── UI ──────────────────────────────────────────────────────────────────────
 
 /** 自定义视图页（routes `/views`、`/views/$viewId`）。 */

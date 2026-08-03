@@ -29,6 +29,7 @@ import {
 	useTaskPageFilterController,
 	useTaskPreviewController,
 } from '@/features/task'
+import { createView } from '@/features/view'
 import { EMPTY_FILTER_QUERY } from '@/shared/types'
 import type { Scope, TaskListItem, TaskStatus } from '@/shared/types'
 
@@ -235,6 +236,26 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 		}
 	}
 
+	const filterUiValue = useMemo(
+		() => ({
+			session: filterSession,
+			projects: projectOptions.map((option) => ({ id: option.id, name: option.name })),
+			onSave: async (input: { mode: 'create' | 'overwrite'; name?: string }) => {
+				if (input.mode !== 'create' || !input.name?.trim()) {
+					return
+				}
+				await createView({
+					name: input.name.trim(),
+					scope,
+					filters: filterSession.effective,
+				})
+				filterSession.clearTemp()
+			},
+			hiddenByFilterCount: null as number | null,
+		}),
+		[filterSession, projectOptions, scope],
+	)
+
 	return {
 		project,
 		busyAction,
@@ -242,6 +263,7 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 		taskCollection,
 		displayPageKey: PROJECT_DETAIL_DISPLAY_PAGE_KEY,
 		toolbarPills,
+		filterUiValue,
 		bulk: {
 			selectedCount: taskCollection.selectedCount,
 			clearTaskSelection: taskCollection.clearTaskSelection,

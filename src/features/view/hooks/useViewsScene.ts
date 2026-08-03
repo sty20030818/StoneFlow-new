@@ -271,6 +271,44 @@ export function useViewsScene() {
 		}
 	}
 
+	const filterUiValue = useMemo(
+		() => ({
+			session: filterSession,
+			projects: projectOptions.map((project) => ({ id: project.id, name: project.name })),
+			canOverwriteView: activeView?.kind === 'custom',
+			onSave: async (input: { mode: 'create' | 'overwrite'; name?: string }) => {
+				if (input.mode === 'overwrite' && activeView?.kind === 'custom') {
+					await updateTaskView.mutateAsync({
+						viewId: activeView.id,
+						filters: filterSession.effective,
+					})
+					filterSession.clearTemp()
+					return
+				}
+				if (input.mode === 'create' && input.name?.trim()) {
+					const created = await createTaskView.mutateAsync({
+						name: input.name.trim(),
+						scope,
+						filters: filterSession.effective,
+					})
+					filterSession.clearTemp()
+					void navigate({ to: openView(scope, created.id, spaceId) as never })
+				}
+			},
+			hiddenByFilterCount: null as number | null,
+		}),
+		[
+			activeView,
+			createTaskView,
+			filterSession,
+			navigate,
+			projectOptions,
+			scope,
+			spaceId,
+			updateTaskView,
+		],
+	)
+
 	return {
 		activeView,
 		taskViews,
@@ -278,6 +316,7 @@ export function useViewsScene() {
 		breadcrumbItems,
 		taskCollection,
 		displayPageKey,
+		filterUiValue,
 		footerDescription: activeView
 			? `当前视图共 ${viewTotalCount || visibleTasks.length} 条任务`
 			: '正在准备视图数据',

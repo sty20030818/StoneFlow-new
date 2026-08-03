@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**P3 完成 → 下一阶段 P4**（FilterMenu + FilterBar UI）
+**P4 完成 → 下一阶段 P5**（Save 收口 / 删旧 Command 主路径 / 槽位）
 
 执行任意 task 前重读 SPEC 对应 AC 与 PLAN 对应章节。
 
@@ -60,17 +60,17 @@
 
 ### P4 · Filter UI 主路径
 
-- [ ] T13 实现锚定 `FilterMenu`（字段 → 值 → 生成/合并 clause），由 `PageFilterButton` 打开；**不以**全页 Command 为唯一 UI  
+- [x] T13 实现锚定 `FilterMenu`（字段 → 值 → 生成/合并 clause），由 `PageFilterButton` 打开；**不以**全页 Command 为唯一 UI  
   - 触及：`src/features/filter/components/**`  
   - _对应验收标准：AC-11, AC-12_
 
-- [ ] T14 实现 `FilterBar`：chip（field 不可改类型；op/values 可点）、`+`、按 SPEC 显示 Clear、Save 入口；点 op/values 写回 temp/URL  
+- [x] T14 实现 `FilterBar`：chip（field 不可改类型；op/values 可点）、`+`、按 SPEC 显示 Clear、Save 入口；点 op/values 写回 temp/URL  
   - _对应验收标准：AC-1, AC-3, AC-4, AC-5, AC-6_
 
-- [ ] T15 PageFrame 或列表 scene 增加 toolbar 下方 FilterBar 插槽；全部任务/独立事项/项目/Views 接线  
+- [x] T15 PageFrame 或列表 scene 增加 toolbar 下方 FilterBar 插槽；全部任务/独立事项/项目/Views 接线  
   - _对应验收标准：AC-13_
 
-- [ ] T16 「N 条被筛选隐藏」反馈（有 total 时）；Clear 与 Bar 规则一致  
+- [x] T16 「N 条被筛选隐藏」反馈（有 total 时）；Clear 与 Bar 规则一致  
   - _对应验收标准：AC-15_
 
 ### P5 · Save、删旧、槽位
@@ -164,3 +164,4 @@
 | 2026-08-03 | **P1 完成**：View/Rust filters→FilterQuery；create/update 不写 sort/group；编辑器只存 filters；T6 迁 display + update 清空 |
 | 2026-08-03 | **P2 完成**：showCompleted∈Display；排序方向内嵌；完成按近到远 toggle；设为默认/恢复默认；List 用 display 下推 |
 | 2026-08-03 | **P3 完成**：useListFilterSession + URL `f`；list/project/views effective→adapt；Command 桥不覆盖纯 URL temp |
+| 2026-08-03 | **P4 完成**：FilterMenu/FilterBar/Save 对话框；PageFrame.filterBar；Views 槽位修正；ListFilterUiProvider |

@@ -14,6 +14,8 @@ type PageFrameToolbarProps = {
 	left?: ReactNode
 	filterAction?: ReactNode
 	displayAction?: ReactNode
+	/** 工具条下方筛选公式条（FilterBar） */
+	filterBar?: ReactNode
 }
 
 type PageFrameBodyProps = {
@@ -38,19 +40,28 @@ function PageFrameHeader({ breadcrumb, actions, className }: PageFrameHeaderProp
 	return <MainCard.Header action={actions} breadcrumb={breadcrumb} className={className} />
 }
 
-function PageFrameToolbar({ pills, left, filterAction, displayAction }: PageFrameToolbarProps) {
-	if (!pills && !left && !filterAction && !displayAction) {
+function PageFrameToolbar({
+	pills,
+	left,
+	filterAction,
+	displayAction,
+	filterBar,
+}: PageFrameToolbarProps) {
+	if (!pills && !left && !filterAction && !displayAction && !filterBar) {
 		return null
 	}
 
 	return (
-		<div className='px-2'>
-			<MainCard.Toolbar
-				displayAction={displayAction}
-				filterAction={filterAction}
-				left={left}
-				pills={pills}
-			/>
+		<div className='flex flex-col gap-1.5 px-2'>
+			{pills || left || filterAction || displayAction ? (
+				<MainCard.Toolbar
+					displayAction={displayAction}
+					filterAction={filterAction}
+					left={left}
+					pills={pills}
+				/>
+			) : null}
+			{filterBar ? <div className='min-w-0'>{filterBar}</div> : null}
 		</div>
 	)
 }

@@ -9,13 +9,21 @@
 
 // ── Core keys / types ───────────────────────────────────────────────────────
 
-export type { TaskDisplayPageKey, TaskDisplayPropertyKey } from './core'
+export type {
+	TaskDisplayOrderBy,
+	TaskDisplayPageKey,
+	TaskDisplayPreferenceRecord,
+	TaskDisplayPropertyKey,
+} from './core'
 
 export { createTaskDisplayViewPageKey } from './core'
 
 // ── Model hooks ─────────────────────────────────────────────────────────────
 
 export { useTaskDisplayOptions } from './model'
+
+/** 偏好读写（View 呈现迁移等） */
+export { updateTaskDisplayPreference } from './api/displayOptions'
 
 // ── Task adapter（列表页 apply） ────────────────────────────────────────────
 
