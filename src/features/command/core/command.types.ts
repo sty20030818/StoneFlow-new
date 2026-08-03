@@ -47,12 +47,9 @@ export const COMMAND_IDS = {
 	projectArchive: 'project.archive',
 	projectDelete: 'project.delete',
 	filterAdd: 'filter.add',
-	filterByPriority: 'filter.byPriority',
-	filterByStatus: 'filter.byStatus',
-	filterByDate: 'filter.byDate',
-	filterByProject: 'filter.byProject',
 	filterToggleCompleted: 'filter.toggleCompleted',
 	filterClearAll: 'filter.clearAll',
+	displayOpenOptions: 'display.openOptions',
 	layoutToggleSidebar: 'layout.toggleSidebar',
 	layoutTogglePreview: 'layout.togglePreview',
 	systemOpenDataFolder: 'system.openDataFolder',
@@ -162,27 +159,15 @@ export type CommandProjectContext = {
 	currentProjectId?: string
 }
 
-import type { TaskPriority, TaskStatus } from '@/shared/types'
-
+/** 列表页筛选/显示投影（命令启用态用）；公式真源在 FilterQuery */
 export type CommandViewContext = {
 	currentViewId?: string
 	hasActiveFilters: boolean
 	showCompleted: boolean
-	/** 与 task public 的 TaskPriorityValue 同构（shared TaskPriority） */
-	priorityFilterValues: TaskPriority[]
-	statusFilterValues: TaskStatus[]
-	dateFilterValue: string
-	projectFilterId: string | null
-	standaloneOnly: boolean
 	filterCapabilities: {
-		supportsPriority: boolean
-		supportsStatus: boolean
-		supportsDate: boolean
-		supportsProject: boolean
 		supportsToggleCompleted: boolean
 		supportsClearAll: boolean
 	}
-	filterKind?: 'root' | 'priority' | 'status' | 'date' | 'project'
 }
 
 export type CommandSubmitContext = {

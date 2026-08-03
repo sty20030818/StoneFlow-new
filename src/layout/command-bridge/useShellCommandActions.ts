@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 
 import type { ShellCommandAdapter } from '@/features/command'
+import { registerDisplayCommands } from '@/features/display-options'
 import { registerFilterCommands } from '@/features/filter'
 import { registerLifecycleCommands } from '@/features/lifecycle'
 import { registerProjectCommands } from '@/features/project'
@@ -29,6 +30,7 @@ export function useShellCommandActions(deps: ShellCommandBridgeDeps): ShellComma
 				registerProjectCommands(deps),
 				registerLifecycleCommands(deps),
 				registerFilterCommands(deps),
+				registerDisplayCommands(),
 				registerSubmitCommands(deps),
 			),
 		// eslint-disable-next-line react-hooks/exhaustive-deps -- bridge deps 袋由上层组装
@@ -53,7 +55,6 @@ export function useShellCommandActions(deps: ShellCommandBridgeDeps): ShellComma
 			deps.pageFilter,
 			deps.requestSearchFocus,
 			deps.runEntityBulkActionFromCommand,
-			deps.setCommandMenuFilterKind,
 			deps.settingsReturnPath,
 			deps.submitRegistryActions,
 			deps.taskPreviewController,

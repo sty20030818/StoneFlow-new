@@ -32,7 +32,7 @@ describe('DisplayOptionsButton', () => {
 	it('点击后会打开 display options 面板', async () => {
 		renderWithQueryClient(<DisplayOptionsButton pageKey='task:all' />)
 
-		fireEvent.click(screen.getByRole('button', { name: '视图选项' }))
+		fireEvent.click(screen.getByRole('button', { name: '显示选项' }))
 
 		expect(await screen.findByText('主分组')).toBeInTheDocument()
 		expect(screen.getByLabelText('主分组')).toBeInTheDocument()
@@ -41,7 +41,7 @@ describe('DisplayOptionsButton', () => {
 	it('切换显示属性会持久化 personal override', async () => {
 		renderWithQueryClient(<DisplayOptionsButton pageKey='task:all' />)
 
-		fireEvent.click(screen.getByRole('button', { name: '视图选项' }))
+		fireEvent.click(screen.getByRole('button', { name: '显示选项' }))
 		await waitFor(() => expect(screen.queryByText('正在读取显示偏好…')).not.toBeInTheDocument())
 		fireEvent.click(await screen.findByRole('button', { name: /截止时间/ }))
 
@@ -59,7 +59,7 @@ describe('DisplayOptionsButton', () => {
 	it('V1 面板不再暴露 links 显示属性', async () => {
 		renderWithQueryClient(<DisplayOptionsButton pageKey='task:all' />)
 
-		fireEvent.click(screen.getByRole('button', { name: '视图选项' }))
+		fireEvent.click(screen.getByRole('button', { name: '显示选项' }))
 
 		await screen.findByText('显示属性')
 		expect(screen.queryByRole('button', { name: /链接/ })).not.toBeInTheDocument()

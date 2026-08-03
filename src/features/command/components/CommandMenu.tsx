@@ -8,7 +8,6 @@ import {
 } from '@/shared/components/base/command'
 import { useGlobalSearch } from '@/features/global-search'
 import { useDialogStore } from '@/features/shell-dialogs'
-import type { PageFilterApplyInput, PageFilterKind } from '@/features/filter'
 import type {
 	CommandContext,
 	CommandId,
@@ -52,20 +51,15 @@ type CommandMenuProps = {
 	className?: string
 	context: CommandContext
 	description: string
-	filterKind: PageFilterKind
 	mode: CommandMenuMode
-	onApplyFilter: (input: PageFilterApplyInput) => void
-	onClearAllFilters: () => void
 	onNavigateProject: (projectId: string) => void
 	onOpenChange: (open: boolean) => void
-	onSelectFilterKind: (kind: PageFilterKind) => void
 	onSelectProject: (project: SearchProjectItem) => void
 	onSelectTaskPlacement: (target: TaskPlacementTarget) => void
 	onSelectTask: (task: SearchTaskItem) => void
 	onSelectTaskDate: (dueAt: string | null) => void
 	onSelectTaskPriority: (priority: TaskPriority) => void
 	onSelectTaskStatus: (status: TaskStatus) => void
-	onToggleCompletedFilter: () => void
 	onRunCommand: (id: CommandId) => void
 	open: boolean
 	projects: CommandMenuProject[]
@@ -78,20 +72,15 @@ export function CommandMenu({
 	className,
 	context,
 	description,
-	filterKind,
 	mode,
-	onApplyFilter,
-	onClearAllFilters,
 	onNavigateProject,
 	onOpenChange,
-	onSelectFilterKind,
 	onSelectProject,
 	onSelectTaskPlacement,
 	onSelectTask,
 	onSelectTaskDate,
 	onSelectTaskPriority,
 	onSelectTaskStatus,
-	onToggleCompletedFilter,
 	onRunCommand,
 	open,
 	projects: projectLinks,
@@ -167,7 +156,7 @@ export function CommandMenu({
 					<CommandMenuSelectionChips entities={context.selection.entities} />
 					<CommandInput
 						ref={inputRef}
-						placeholder={getCommandMenuPlaceholder(mode, filterKind)}
+						placeholder={getCommandMenuPlaceholder(mode)}
 						value={query}
 						wrapperClassName='pr-2 pl-4 py-3'
 						onValueChange={setQuery}
@@ -179,21 +168,15 @@ export function CommandMenu({
 						<ScopedPickerCommandGroup
 							context={context}
 							mode={mode}
-							filterKind={filterKind}
-							onApplyFilter={onApplyFilter}
-							onClearAllFilters={onClearAllFilters}
 							onOpenChange={onOpenChange}
-							onSelectFilterKind={onSelectFilterKind}
 							onSelectProject={onSelectProject}
 							onSelectTaskPlacement={onSelectTaskPlacement}
 							onSelectTask={onSelectTask}
 							onSelectTaskDate={onSelectTaskDate}
 							onSelectTaskPriority={onSelectTaskPriority}
 							onSelectTaskStatus={onSelectTaskStatus}
-							onToggleCompletedFilter={onToggleCompletedFilter}
 							onOpenCustomDateDialog={openCustomDateDialog}
 							projectLinks={projectLinks}
-							query={query}
 							result={scopedSearch.result}
 							spaces={spaces}
 						/>

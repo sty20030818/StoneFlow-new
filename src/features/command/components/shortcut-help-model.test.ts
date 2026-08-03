@@ -59,9 +59,10 @@ function createActions(): ShellCommandActions {
 		submitAndOpen: vi.fn(),
 		toggleSidebar: vi.fn(),
 		togglePreview: vi.fn(),
-		openFilterPicker: vi.fn(),
+		openFilterMenu: vi.fn(),
 		toggleCompletedFilter: vi.fn(),
 		clearAllFilters: vi.fn(),
+		openDisplayOptions: vi.fn(),
 		goBack: vi.fn(),
 		goForward: vi.fn(),
 	}

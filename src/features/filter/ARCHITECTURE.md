@@ -14,16 +14,18 @@ View.filters ──base────┘
 
 UI：PageFilterButton → FilterMenu
     FilterBar → chip / Clear(dirty) / Save
-命令 F：emitFilterUiEvent → FilterMenu
-命令宿主：useRegisterFilterCommandAdapter（FilterQuery 投影）
+F → emitFilterUiEvent → FilterMenu
+Shift+F → Display 面板（display-options）
+命令宿主：useRegisterFilterCommandAdapter（最小投影：hasActive / showCompleted / 能力位）
 ```
 
 | 概念 | 真源 |
 |---|---|
 | 公式 | `FilterQuery`（clause） |
-| 临时 | 路由 search `f` |
+| 临时 | 路由 search `f`（唯一 URL 筛选键） |
 | View 筛选 | SQLite `filters_json` |
 | 显示选项 | `display-options`（含 `showCompleted`） |
+| 命令投影 | `PageFilterProvider`（最小只读投影，非第二真源） |
 
 ---
 

@@ -5,6 +5,8 @@ import {
 	filterQueriesEqual,
 	isFilterQueryEmpty,
 	normalizeFilterQuery,
+	removeFilterField,
+	setFilterFieldClause,
 } from './normalize'
 import { EMPTY_FILTER_QUERY } from './types'
 
@@ -13,9 +15,9 @@ describe('normalizeFilterQuery', () => {
 		expect(normalizeFilterQuery(null)).toEqual(EMPTY_FILTER_QUERY)
 		expect(normalizeFilterQuery(undefined)).toEqual(EMPTY_FILTER_QUERY)
 		expect(normalizeFilterQuery({ clauses: [] })).toEqual(EMPTY_FILTER_QUERY)
-		expect(normalizeFilterQuery({ clauses: [{ id: '1', field: 'status', op: 'is', values: [] }] })).toEqual(
-			EMPTY_FILTER_QUERY,
-		)
+		expect(
+			normalizeFilterQuery({ clauses: [{ id: '1', field: 'status', op: 'is', values: [] }] }),
+		).toEqual(EMPTY_FILTER_QUERY)
 	})
 
 	it('丢弃非法 field / op / value', () => {
@@ -80,5 +82,27 @@ describe('isFilterQueryEmpty / filterQueriesEqual', () => {
 		expect(
 			filterQueriesEqual(a, { clauses: [createFilterClause('status', 'is', ['todo'], 'x')] }),
 		).toBe(false)
+	})
+})
+
+describe('setFilterFieldClause / removeFilterField', () => {
+	it('写入并替换同 field', () => {
+		const base = { clauses: [createFilterClause('status', 'is', ['todo'], 's1')] }
+		const next = setFilterFieldClause(base, 'status', 'is', ['doing'])
+		expect(next.clauses).toHaveLength(1)
+		expect(next.clauses[0]?.values).toEqual(['doing'])
+	})
+
+	it('values 空则删除 field', () => {
+		const base = {
+			clauses: [
+				createFilterClause('status', 'is', ['todo'], 's1'),
+				createFilterClause('priority', 'is', ['4'], 'p1'),
+			],
+		}
+		expect(setFilterFieldClause(base, 'status', 'is', []).clauses.map((c) => c.field)).toEqual([
+			'priority',
+		])
+		expect(removeFilterField(base, 'priority').clauses.map((c) => c.field)).toEqual(['status'])
 	})
 })

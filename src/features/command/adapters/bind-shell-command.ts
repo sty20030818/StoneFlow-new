@@ -3,7 +3,7 @@ import { COMMAND_IDS } from '@/features/command/core'
 
 import {
 	bindDeleteSelectionCommand,
-	bindFilterPickerCommand,
+	bindOpenFilterMenuCommand,
 	bindSelectionLifecycleCommand,
 	bindSelectionProjectCommand,
 	bindSelectionTaskCommand,
@@ -115,24 +115,8 @@ export function bindShellCommand(command: Command, adapter: ShellCommandAdapter)
 				(run) => bindSelectionLifecycleCommand(command, run),
 			)
 		case COMMAND_IDS.filterAdd:
-			return withDomainHandler(command, adapter.openFilterPicker, () =>
-				bindFilterPickerCommand(command, adapter, 'root'),
-			)
-		case COMMAND_IDS.filterByPriority:
-			return withDomainHandler(command, adapter.openFilterPicker, () =>
-				bindFilterPickerCommand(command, adapter, 'priority'),
-			)
-		case COMMAND_IDS.filterByStatus:
-			return withDomainHandler(command, adapter.openFilterPicker, () =>
-				bindFilterPickerCommand(command, adapter, 'status'),
-			)
-		case COMMAND_IDS.filterByDate:
-			return withDomainHandler(command, adapter.openFilterPicker, () =>
-				bindFilterPickerCommand(command, adapter, 'date'),
-			)
-		case COMMAND_IDS.filterByProject:
-			return withDomainHandler(command, adapter.openFilterPicker, () =>
-				bindFilterPickerCommand(command, adapter, 'project'),
+			return withDomainHandler(command, adapter.openFilterMenu, () =>
+				bindOpenFilterMenuCommand(command, adapter),
 			)
 		case COMMAND_IDS.filterToggleCompleted:
 			return withDomainHandler(command, adapter.toggleCompletedFilter, (run) => ({
@@ -150,6 +134,11 @@ export function bindShellCommand(command: Command, adapter: ShellCommandAdapter)
 				isEnabled: (ctx) => ctx.view.filterCapabilities.supportsClearAll,
 				getDisabledReason: (ctx) =>
 					ctx.view.filterCapabilities.supportsClearAll ? undefined : '当前页面没有可清除的筛选',
+				run,
+			}))
+		case COMMAND_IDS.displayOpenOptions:
+			return withDomainHandler(command, adapter.openDisplayOptions, (run) => ({
+				...command,
 				run,
 			}))
 		case COMMAND_IDS.layoutToggleSidebar:

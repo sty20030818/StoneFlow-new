@@ -25,17 +25,15 @@ import {
 	resolveTaskPlacementTarget,
 	type TaskPlacementGroup,
 } from '@/features/metadata-fields'
-import type { PageDateFilterValue, PageFilterKind } from '@/features/filter'
 import type { CommandContext, CommandId } from '@/features/command/core'
 import type { SearchProjectItem, Space } from '@/shared/types'
 
 import { getCommandMenuPlacementLeading } from './command-menu-option-visuals'
 import { isCommandMenuTaskPropertyMode, type CommandMenuMode } from './command-menu-types'
-import type { CommandMenuProject } from './CommandMenu'
 
 export type CommandRowSelectionIndicator = 'checked' | 'mixed' | null
 
-export function getCommandMenuPlaceholder(mode: CommandMenuMode, filterKind: PageFilterKind) {
+export function getCommandMenuPlaceholder(mode: CommandMenuMode) {
 	switch (mode) {
 		case 'task-picker':
 			return '搜索任务…'
@@ -49,18 +47,12 @@ export function getCommandMenuPlaceholder(mode: CommandMenuMode, filterKind: Pag
 			return '选择状态…'
 		case 'task-date-picker':
 			return '选择截止时间…'
-		case 'filter-picker':
-			return getFilterPickerPlaceholder(mode, filterKind)
 		default:
 			return '输入命令 或 搜索 …'
 	}
 }
 
 export function getCommandMenuEmptyText(mode: CommandMenuMode, query: string) {
-	if (mode === 'filter-picker') {
-		return query.trim() ? '没有匹配的筛选项' : '没有可用筛选项'
-	}
-
 	if (isCommandMenuTaskPropertyMode(mode)) {
 		return '没有可用选项'
 	}
@@ -131,62 +123,6 @@ export function getSelectionIndicatorForValue(
 		return null
 	}
 	return values.size === 1 ? 'checked' : 'mixed'
-}
-
-export function getFilterPickerPlaceholder(mode: CommandMenuMode, filterKind: PageFilterKind) {
-	if (mode !== 'filter-picker') {
-		return '输入命令 或 搜索 …'
-	}
-
-	switch (filterKind) {
-		case 'priority':
-			return '筛选优先级…'
-		case 'status':
-			return '筛选状态…'
-		case 'date':
-			return '筛选截止时间…'
-		case 'project':
-			return '搜索项目筛选…'
-		default:
-			return '选择筛选维度…'
-	}
-}
-
-export function getFilterDateOptions(): Array<{ label: string; value: PageDateFilterValue }> {
-	return [
-		{ label: '不过滤截止时间', value: 'none' },
-		{ label: '今天', value: 'today' },
-		{ label: '明天', value: 'tomorrow' },
-		{ label: '本周', value: 'thisWeek' },
-		{ label: '已逾期', value: 'overdue' },
-		{ label: '有截止时间', value: 'hasDate' },
-		{ label: '无截止时间', value: 'noDate' },
-	]
-}
-
-export function formatPriorityMeta(context: CommandContext) {
-	return context.view.priorityFilterValues.length > 0
-		? `已选 P${context.view.priorityFilterValues.join(', P')}`
-		: '未筛选'
-}
-
-export function formatStatusMeta(context: CommandContext) {
-	return context.view.statusFilterValues.length > 0
-		? `已选 ${context.view.statusFilterValues.join(' / ')}`
-		: '未筛选'
-}
-
-export function formatDateMeta(context: CommandContext) {
-	return context.view.dateFilterValue === 'none' ? '未筛选' : context.view.dateFilterValue
-}
-
-export function formatProjectMeta(context: CommandContext, projects: CommandMenuProject[]) {
-	if (!context.view.projectFilterId) {
-		return context.view.standaloneOnly ? '仅独立事项' : '未筛选'
-	}
-
-	const project = projects.find((item) => item.id === context.view.projectFilterId)
-	return project?.label ?? '已选项目'
 }
 
 export function resolveTaskPlacementCurrentSpaceId(context: CommandContext) {

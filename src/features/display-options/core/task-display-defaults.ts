@@ -42,6 +42,8 @@ export const BASE_TASK_DISPLAY_OPTIONS: TaskDisplayOptions = {
 const TASK_DISPLAY_PAGE_DEFAULTS: Record<TaskDisplayPageKind, TaskDisplayOptions> = {
 	'task:all': {
 		...BASE_TASK_DISPLAY_OPTIONS,
+		// 全部任务页默认隐藏已完成（与 Linear 列表默认一致；改 pill 只动 Display/FilterQuery）
+		showCompleted: false,
 		visibleProperties: [...DEFAULT_VISIBLE_PROPERTIES],
 	},
 	'task:standalone': {

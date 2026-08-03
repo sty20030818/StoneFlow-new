@@ -7,7 +7,6 @@ import type {
 	BulkActionResultMessageLabels,
 	BulkEntityType,
 } from '@/features/bulk-action'
-import type { PageFilterKind } from '@/features/filter'
 import type { Scope } from '@/shared/types'
 
 /**
@@ -28,12 +27,11 @@ export type CommandHostContext = {
 
 	pageFilter: {
 		actions: {
-			openFilterPicker: (kind?: PageFilterKind) => void
+			openFilterMenu: () => void
 			toggleCompleted: () => void
 			clearAll: () => void
 		}
 	}
-	setCommandMenuFilterKind: (kind: PageFilterKind) => void
 
 	submitRegistryActions: {
 		submitActiveTarget: (intent?: 'default' | 'continue' | 'open') => Promise<unknown>

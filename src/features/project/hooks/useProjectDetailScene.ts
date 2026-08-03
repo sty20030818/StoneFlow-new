@@ -11,15 +11,12 @@ import {
 	useCurrentShellRoute,
 } from '@/app/navigation'
 import { useDangerConfirm } from '@/features/danger-confirm'
-import {
-	useTaskDisplayOptions,
-	type TaskDisplayPageKey,
-} from '@/features/display-options'
+import { useTaskDisplayOptions, type TaskDisplayPageKey } from '@/features/display-options'
 import {
 	adaptFilterQueryToListTasks,
-	createFilterClause,
 	filterQueryToCommandProjection,
-	normalizeFilterQuery,
+	removeFilterField,
+	setFilterFieldClause,
 	useListFilterSession,
 	useRegisterFilterCommandAdapter,
 } from '@/features/filter'
@@ -91,8 +88,6 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 				showCompleted: !display.options.showCompleted,
 			})
 		},
-		supportsProject: false,
-		projects: projectOptions,
 	})
 
 	const listInput = useMemo(() => {
@@ -106,9 +101,7 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 			viewKey: 'all' as const,
 			placement: { kind: 'project' as const, projectId },
 			...(statuses ? { statuses } : {}),
-			...(patch.priorities && patch.priorities.length > 0
-				? { priorities: patch.priorities }
-				: {}),
+			...(patch.priorities && patch.priorities.length > 0 ? { priorities: patch.priorities } : {}),
 			...(patch.dateFilter ? { dateFilter: patch.dateFilter } : {}),
 		}
 	}, [display.options.showCompleted, filterSession.effective, projectId, scope])
@@ -132,6 +125,7 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 			status: project ? taskList.status : 'ready',
 		},
 		displayPageKey: PROJECT_DETAIL_DISPLAY_PAGE_KEY,
+		display,
 		supportsProject: false,
 		fallbackSubtitle: project?.name ?? '当前项目',
 		activeTaskId,
@@ -175,21 +169,14 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 		active:
 			filter === 'all'
 				? statusProjection.statusValues.length === 0
-				: statusProjection.statusValues.length === 1 &&
-					statusProjection.statusValues[0] === filter,
+				: statusProjection.statusValues.length === 1 && statusProjection.statusValues[0] === filter,
 		onClick: () => {
 			if (filter === 'all') {
-				const withoutStatus = filterSession.effective.clauses.filter((c) => c.field !== 'status')
-				filterSession.replaceEffective(normalizeFilterQuery({ clauses: withoutStatus }))
+				filterSession.replaceEffective(removeFilterField(filterSession.effective, 'status'))
 				return
 			}
 			filterSession.replaceEffective(
-				normalizeFilterQuery({
-					clauses: [
-						...filterSession.effective.clauses.filter((c) => c.field !== 'status'),
-						createFilterClause('status', 'is', [filter]),
-					],
-				}),
+				setFilterFieldClause(filterSession.effective, 'status', 'is', [filter]),
 			)
 		},
 	}))
@@ -222,7 +209,6 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 				})
 				filterSession.clearTemp()
 			},
-			hiddenByFilterCount: null as number | null,
 		}),
 		[filterSession, projectOptions, scope],
 	)

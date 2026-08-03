@@ -12,7 +12,9 @@ export const FILTER_SEARCH_PARAM_KEY = 'f' as const
 /**
  * 编码为 search 参数值；空查询返回 null（调用方应删除该 key）。
  */
-export function encodeFilterQueryToSearchParam(query: FilterQuery | null | undefined): string | null {
+export function encodeFilterQueryToSearchParam(
+	query: FilterQuery | null | undefined,
+): string | null {
 	const normalized = normalizeFilterQuery(query)
 	if (isFilterQueryEmpty(normalized)) {
 		return null
@@ -33,9 +35,7 @@ export function encodeFilterQueryToSearchParam(query: FilterQuery | null | undef
 /**
  * 解码 search 参数；非法 / 空 → empty（安全降级）。
  */
-export function decodeFilterQueryFromSearchParam(
-	value: string | null | undefined,
-): FilterQuery {
+export function decodeFilterQueryFromSearchParam(value: string | null | undefined): FilterQuery {
 	if (value == null || value === '') {
 		return EMPTY_FILTER_QUERY
 	}
@@ -68,7 +68,9 @@ export function mergeFilterQueryIntoSearch(
 /**
  * 从 search 对象读取临时 FilterQuery。
  */
-export function readFilterQueryFromSearch(search: Record<string, unknown> | null | undefined): FilterQuery {
+export function readFilterQueryFromSearch(
+	search: Record<string, unknown> | null | undefined,
+): FilterQuery {
 	if (!search) {
 		return EMPTY_FILTER_QUERY
 	}

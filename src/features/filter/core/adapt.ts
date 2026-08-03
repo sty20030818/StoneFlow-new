@@ -6,11 +6,7 @@
 import type { FilterQuery, ListTasksDateFilter, TaskStatus } from '@/shared/types'
 
 import { isFilterDateValue, normalizeFilterQuery } from './normalize'
-import {
-	FILTER_PROJECT_NONE_VALUE,
-	type FilterClause,
-	type FilterDateValue,
-} from './types'
+import { FILTER_PROJECT_NONE_VALUE, type FilterClause, type FilterDateValue } from './types'
 
 const ALL_TASK_STATUSES: TaskStatus[] = ['todo', 'doing', 'waiting', 'done', 'canceled']
 const ALL_PRIORITIES = [0, 1, 2, 3, 4] as const
@@ -114,9 +110,7 @@ function resolveStatusValues(clause: FilterClause): TaskStatus[] | undefined {
 }
 
 function resolvePriorityValues(clause: FilterClause): number[] | undefined {
-	const selected = clause.values
-		.map(Number)
-		.filter((n) => n >= 0 && n <= 4)
+	const selected = clause.values.map(Number).filter((n) => n >= 0 && n <= 4)
 	if (selected.length === 0) {
 		return undefined
 	}

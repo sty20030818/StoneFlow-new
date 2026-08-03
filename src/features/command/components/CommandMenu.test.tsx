@@ -12,7 +12,7 @@ import {
 	type TaskPlacementTarget,
 } from '@/features/command/core'
 import type { ShellCommandActions } from '@/features/command/adapters'
-import type { PageFilterApplyInput, PageFilterKind } from '@/features/filter'
+
 import type { SearchEntitiesResult, SearchProjectItem, SearchTaskItem } from '@/shared/types'
 import { CommandMenu } from './CommandMenu'
 import type { CommandMenuMode } from './command-menu-types'
@@ -99,7 +99,8 @@ describe('CommandMenu', () => {
 
 		expect(screen.getByText('完成任务')).toBeInTheDocument()
 		expect(screen.getByText('重命名任务')).toBeInTheDocument()
-		expect(screen.getByText('按项目筛选')).toBeInTheDocument()
+		expect(screen.getByText('添加筛选')).toBeInTheDocument()
+		expect(screen.getByText('显示选项')).toBeInTheDocument()
 		expect(screen.getByText('切换侧边栏')).toBeInTheDocument()
 		expect(screen.getByText('打开数据文件夹')).toBeInTheDocument()
 	})
@@ -555,32 +556,22 @@ function renderCommandMenu({
 	onNavigateProject = vi.fn(),
 	onOpenChange = vi.fn(),
 	onRunCommand = vi.fn(),
-	onApplyFilter = vi.fn(),
-	onClearAllFilters = vi.fn(),
 	onSelectTaskDate = vi.fn(),
-	onSelectFilterKind = vi.fn(),
 	onSelectTaskPriority = vi.fn(),
 	onSelectTaskStatus = vi.fn(),
-	onToggleCompletedFilter = vi.fn(),
 	onSelectProject = vi.fn(),
 	onSelectTaskPlacement = vi.fn(),
 	onSelectTask = vi.fn(),
 	context = createEmptyCommandContext(),
-	filterKind = 'root',
 }: Partial<{
 	mode: CommandMenuMode
 	context: CommandContext
-	filterKind: PageFilterKind
 	onNavigateProject: (projectId: string) => void
 	onOpenChange: (open: boolean) => void
 	onRunCommand: (id: CommandId) => void
-	onApplyFilter: (input: PageFilterApplyInput) => void
-	onClearAllFilters: () => void
 	onSelectTaskDate: (dueAt: string | null) => void
-	onSelectFilterKind: (kind: PageFilterKind) => void
 	onSelectTaskPriority: (priority: number) => void
 	onSelectTaskStatus: (status: string) => void
-	onToggleCompletedFilter: () => void
 	onSelectProject: (project: SearchProjectItem) => void
 	onSelectTaskPlacement: (target: TaskPlacementTarget) => void
 	onSelectTask: (task: SearchTaskItem) => void
@@ -589,17 +580,12 @@ function renderCommandMenu({
 		<QueryClientProvider client={createTestQueryClient()}>
 			{createCommandMenuElement({
 				mode,
-				filterKind,
 				onNavigateProject,
 				onOpenChange,
 				onRunCommand,
-				onApplyFilter,
-				onClearAllFilters,
 				onSelectTaskDate,
-				onSelectFilterKind,
 				onSelectTaskPriority,
 				onSelectTaskStatus,
-				onToggleCompletedFilter,
 				onSelectProject,
 				onSelectTaskPlacement,
 				onSelectTask,
@@ -623,32 +609,22 @@ function createCommandMenuElement({
 	onNavigateProject = vi.fn(),
 	onOpenChange = vi.fn(),
 	onRunCommand = vi.fn(),
-	onApplyFilter = vi.fn(),
-	onClearAllFilters = vi.fn(),
 	onSelectTaskDate = vi.fn(),
-	onSelectFilterKind = vi.fn(),
 	onSelectTaskPriority = vi.fn(),
 	onSelectTaskStatus = vi.fn(),
-	onToggleCompletedFilter = vi.fn(),
 	onSelectProject = vi.fn(),
 	onSelectTaskPlacement = vi.fn(),
 	onSelectTask = vi.fn(),
 	context = createEmptyCommandContext(),
-	filterKind = 'root',
 }: Partial<{
 	mode: CommandMenuMode
 	context: CommandContext
-	filterKind: PageFilterKind
 	onNavigateProject: (projectId: string) => void
 	onOpenChange: (open: boolean) => void
 	onRunCommand: (id: CommandId) => void
-	onApplyFilter: (input: PageFilterApplyInput) => void
-	onClearAllFilters: () => void
 	onSelectTaskDate: (dueAt: string | null) => void
-	onSelectFilterKind: (kind: PageFilterKind) => void
 	onSelectTaskPriority: (priority: number) => void
 	onSelectTaskStatus: (status: string) => void
-	onToggleCompletedFilter: () => void
 	onSelectProject: (project: SearchProjectItem) => void
 	onSelectTaskPlacement: (target: TaskPlacementTarget) => void
 	onSelectTask: (task: SearchTaskItem) => void
@@ -657,18 +633,13 @@ function createCommandMenuElement({
 		<CommandMenu
 			context={context}
 			description='测试'
-			filterKind={filterKind}
 			mode={mode}
-			onApplyFilter={onApplyFilter}
-			onClearAllFilters={onClearAllFilters}
 			onNavigateProject={onNavigateProject}
 			onOpenChange={onOpenChange}
-			onSelectFilterKind={onSelectFilterKind}
 			onRunCommand={onRunCommand}
 			onSelectTaskDate={onSelectTaskDate}
 			onSelectTaskPriority={onSelectTaskPriority}
 			onSelectTaskStatus={onSelectTaskStatus}
-			onToggleCompletedFilter={onToggleCompletedFilter}
 			onSelectProject={onSelectProject}
 			onSelectTaskPlacement={onSelectTaskPlacement}
 			onSelectTask={onSelectTask}
@@ -744,9 +715,10 @@ function createActions(): ShellCommandActions {
 		submitAndOpen: vi.fn(),
 		toggleSidebar: vi.fn(),
 		togglePreview: vi.fn(),
-		openFilterPicker: vi.fn(),
+		openFilterMenu: vi.fn(),
 		toggleCompletedFilter: vi.fn(),
 		clearAllFilters: vi.fn(),
+		openDisplayOptions: vi.fn(),
 		goBack: vi.fn(),
 		goForward: vi.fn(),
 	}

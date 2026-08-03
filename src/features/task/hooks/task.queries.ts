@@ -51,13 +51,17 @@ export function taskListInfiniteQueryOptions(input: ListTasksInput) {
 }
 
 /**
- * 列表查询配置（单页；兼容 ensureQueryData 等旧路径）。
+ * 列表查询配置（单页；优先用 infinite）。
  */
 export function taskListQueryOptions(input: ListTasksInput) {
 	const normalizedInput = normalizeListTasksInput(input)
 
 	return queryOptions({
-		queryKey: [...taskKeys.list(normalizedInput), 'page', normalizedInput.cursor ?? 'head'] as const,
+		queryKey: [
+			...taskKeys.list(normalizedInput),
+			'page',
+			normalizedInput.cursor ?? 'head',
+		] as const,
 		queryFn: () => listTasks(normalizedInput),
 	})
 }

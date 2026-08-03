@@ -42,7 +42,7 @@ export function FilterBar({ className }: { className?: string }) {
 
 	if (!ui) return null
 
-	const { session, projects, canOverwriteView, onSave, hiddenByFilterCount } = ui
+	const { session, projects, canOverwriteView, onSave } = ui
 	const { effective, dirty, isEmpty, clearTemp, replaceEffective } = session
 
 	// 干净空：不渲染；干净非空（View 定义）渲染 chip 且无 Clear；dirty 显示 Clear
@@ -94,12 +94,7 @@ export function FilterBar({ className }: { className?: string }) {
 					/>
 					<div className='ml-auto flex items-center gap-1.5'>
 						{dirty ? (
-							<Button
-								onClick={() => clearTemp()}
-								size='sm'
-								type='button'
-								variant='ghost'
-							>
+							<Button onClick={() => clearTemp()} size='sm' type='button' variant='ghost'>
 								清除
 							</Button>
 						) : null}
@@ -109,21 +104,6 @@ export function FilterBar({ className }: { className?: string }) {
 							</Button>
 						) : null}
 					</div>
-				</div>
-			) : null}
-
-			{typeof hiddenByFilterCount === 'number' && hiddenByFilterCount > 0 ? (
-				<div className='flex items-center gap-2 px-1 text-[12px] text-sf-text-tertiary'>
-					<span>{hiddenByFilterCount} 条被筛选隐藏</span>
-					{dirty ? (
-						<button
-							className='underline-offset-2 hover:underline'
-							onClick={() => clearTemp()}
-							type='button'
-						>
-							清除筛选
-						</button>
-					) : null}
 				</div>
 			) : null}
 
@@ -156,11 +136,7 @@ function FilterChip({
 			<span className='shrink-0 px-0.5 font-medium text-sf-text-secondary'>
 				{formatFilterFieldLabel(clause.field)}
 			</span>
-			<OpPicker
-				multi={multi}
-				op={clause.op}
-				onChange={(op) => onUpdate({ ...clause, op })}
-			/>
+			<OpPicker multi={multi} op={clause.op} onChange={(op) => onUpdate({ ...clause, op })} />
 			<ValuesPicker
 				clause={clause}
 				onChange={(values) =>
@@ -336,7 +312,12 @@ function FilterSaveDialog({
 						取消
 					</Button>
 					{canOverwrite ? (
-						<Button disabled={busy} onClick={() => void run('overwrite')} type='button' variant='secondary'>
+						<Button
+							disabled={busy}
+							onClick={() => void run('overwrite')}
+							type='button'
+							variant='secondary'
+						>
 							覆盖当前
 						</Button>
 					) : null}

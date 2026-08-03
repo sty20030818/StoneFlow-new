@@ -1,5 +1,5 @@
 /**
- * 列表页注入筛选会话 + Save/隐藏数，供 FilterMenu / FilterBar / 按钮消费。
+ * 列表页注入筛选会话 + Save，供 FilterMenu / FilterBar / 按钮消费。
  */
 import { createContext, useContext, type PropsWithChildren, type ReactNode } from 'react'
 
@@ -17,8 +17,6 @@ export type ListFilterUiValue = {
 	canOverwriteView?: boolean
 	/** Save：create 需 name；overwrite 可无 name */
 	onSave?: (input: { mode: 'create' | 'overwrite'; name?: string }) => Promise<void>
-	/** 被筛选隐藏条数；null/undefined 不展示 */
-	hiddenByFilterCount?: number | null
 }
 
 const ListFilterUiContext = createContext<ListFilterUiValue | null>(null)

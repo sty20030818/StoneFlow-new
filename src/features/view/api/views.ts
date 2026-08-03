@@ -1,3 +1,7 @@
+/**
+ * View IPC：list / run / create / update / delete。
+ * 产品真源：filters = FilterQuery；呈现 → display-options。
+ */
 import { invoke } from '@tauri-apps/api/core'
 
 import { normalizeFilterQuery } from '@/features/filter'
@@ -10,7 +14,6 @@ import type {
 	SystemViewKey,
 	UpdateViewInput,
 	View,
-	ViewSortRule,
 } from '@/shared/types'
 import { EMPTY_FILTER_QUERY } from '@/shared/types'
 
@@ -27,13 +30,6 @@ function toScopePayload(scope: Scope): ScopePayload {
 	return scope.type === 'all' ? { type: 'all' } : { type: 'space', spaceId: scope.spaceId }
 }
 
-function toSortPayload(sort: ViewSortRule[]) {
-	return sort.map((rule) => ({
-		field: rule.field,
-		direction: rule.direction,
-	}))
-}
-
 function toFiltersPayload(filters: FilterQuery) {
 	return normalizeFilterQuery(filters)
 }
@@ -41,6 +37,13 @@ function toFiltersPayload(filters: FilterQuery) {
 export async function listViews() {
 	const custom = await invoke<Array<Record<string, unknown>>>('list_views', { input: {} })
 	return [...SYSTEM_VIEWS, ...custom.map(toCustomView)]
+}
+
+/**
+ * 列出自定义 View 的 raw 行（含可能残留的 sort/group），仅 migrate 使用。
+ */
+export async function listCustomViewRawRecords(): Promise<Array<Record<string, unknown>>> {
+	return invoke<Array<Record<string, unknown>>>('list_views', { input: {} })
 }
 
 export async function runTaskView(input: RunTaskViewInput): Promise<RunTaskViewResult> {
@@ -58,8 +61,6 @@ export async function runTaskView(input: RunTaskViewInput): Promise<RunTaskViewR
 			viewId: key ? null : (input.viewId ?? null),
 			viewKey: key,
 			filters: input.filters ? toFiltersPayload(input.filters) : undefined,
-			sort: input.sort ? toSortPayload(input.sort) : undefined,
-			groupBy: input.groupBy ?? undefined,
 			limit: input.limit ?? null,
 			cursor: input.cursor ?? null,
 		},
@@ -84,9 +85,6 @@ export async function createView(input: CreateViewInput) {
 			name: input.name,
 			scope: toScopePayload(input.scope),
 			filters: toFiltersPayload(input.filters),
-			// 后端忽略；显式空避免旧调用方误传
-			sort: [],
-			groupBy: 'none',
 		},
 	})
 	return toCustomView(result)
@@ -121,13 +119,12 @@ const SYSTEM_VIEWS: View[] = [
 	kind: 'system' as const,
 	scope: { type: 'all' as const },
 	filters: EMPTY_FILTER_QUERY,
-	sort: [],
-	groupBy: 'none' as const,
 	position,
 	createdAt: '',
 	updatedAt: '',
 }))
 
+/** DTO → 产品 View（不带 sort/group） */
 function toCustomView(value: Record<string, unknown>): View {
 	return {
 		id: String(value.id),
@@ -136,9 +133,6 @@ function toCustomView(value: Record<string, unknown>): View {
 		systemKey: null,
 		scope: toScope(value.scope),
 		filters: normalizeFilterQuery((value.filters as FilterQuery) ?? EMPTY_FILTER_QUERY),
-		// 旧行可能非空：仅供 migrateViewPresentationToDisplay 消费
-		sort: (value.sort ?? []) as View['sort'],
-		groupBy: (value.groupBy as View['groupBy']) ?? 'none',
 		position: Number(value.position),
 		createdAt: String(value.createdAt ?? ''),
 		updatedAt: String(value.updatedAt ?? ''),

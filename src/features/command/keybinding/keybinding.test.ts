@@ -203,7 +203,7 @@ describe('keybinding', () => {
 		)
 	})
 
-	it('支持 [ / ] / Escape / 提交快捷键 / Ctrl+[ / Ctrl+] / F 组筛选命令', () => {
+	it('支持 [ / ] / Escape / 提交快捷键 / Ctrl+[ / Ctrl+] / F 筛选 / Shift+F 显示', () => {
 		expect(matchCommand('[')).toBe(COMMAND_IDS.layoutToggleSidebar)
 		expect(matchCommand(']')).toBe(COMMAND_IDS.layoutTogglePreview)
 		expect(matchCommand('Escape')).toBe(COMMAND_IDS.close)
@@ -223,12 +223,9 @@ describe('keybinding', () => {
 		expect(matchCommand('[', null, 100, { ctrlKey: true })).toBe(COMMAND_IDS.goBack)
 		expect(matchCommand(']', null, 100, { ctrlKey: true })).toBe(COMMAND_IDS.goForward)
 
-		const filterChordState = { prefix: { key: 'f' }, scope: 'global' as const, startedAt: 100 }
-		expect(matchCommand('p', filterChordState, 200)).toBe(COMMAND_IDS.filterByPriority)
-		expect(matchCommand('s', filterChordState, 200)).toBe(COMMAND_IDS.filterByStatus)
-		expect(matchCommand('d', filterChordState, 200)).toBe(COMMAND_IDS.filterByDate)
-		expect(matchCommand('j', filterChordState, 200)).toBe(COMMAND_IDS.filterByProject)
-		expect(matchCommand('c', filterChordState, 200)).toBe(COMMAND_IDS.filterToggleCompleted)
+		// Linear：F 直接开筛选，Shift+F 开显示；无 F 二次 chord
+		expect(matchCommand('f')).toBe(COMMAND_IDS.filterAdd)
+		expect(matchCommand('f', null, 100, { shiftKey: true })).toBe(COMMAND_IDS.displayOpenOptions)
 	})
 })
 

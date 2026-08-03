@@ -10,7 +10,6 @@ import { UserAppMenu } from '@/layout/header/UserAppMenu'
 import type { ShellSectionKey } from '@/layout/types'
 import { GlobalSearchInput } from '@/features/global-search'
 import { resolveProjectSearchTargetPath } from '@/features/global-search'
-import type { PageFilterApplyInput, PageFilterKind } from '@/features/filter'
 import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
 import type { Scope, Space, TaskStatus } from '@/shared/types'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/base/avatar'
@@ -69,14 +68,9 @@ type ShellHeaderProps = {
 	onCloseDrawer: () => void
 	onOpenTaskPage: (task: SearchTaskItem) => void
 	onSelectTaskDate: (dueAt: string | null) => void
-	onSelectFilterKind: (kind: PageFilterKind) => void
-	onApplyFilter: (input: PageFilterApplyInput) => void
-	onToggleCompletedFilter: () => void
-	onClearAllFilters: () => void
 	onSelectTaskPlacement: (target: TaskPlacementTarget) => void
 	onSelectTaskPriority: (priority: TaskPriorityValue) => void
 	onSelectTaskStatus: (status: TaskStatus) => void
-	commandMenuFilterKind: PageFilterKind
 }
 
 export function ShellHeader({
@@ -100,17 +94,12 @@ export function ShellHeader({
 	onNavigateToHistoryEntry,
 	onCloseDrawer,
 	onOpenTaskPage,
-	onApplyFilter,
-	onClearAllFilters,
 	onSelectTaskDate,
-	onSelectFilterKind,
 	onSelectTaskPlacement,
 	onSelectTaskPriority,
 	onSelectTaskStatus,
-	onToggleCompletedFilter,
 	projects,
 	spaces,
-	commandMenuFilterKind,
 }: ShellHeaderProps) {
 	const navigate = useNavigate({ from: '/' })
 	const [isMaximized, setIsMaximized] = useState(false)
@@ -410,10 +399,7 @@ export function ShellHeader({
 				className={shellChromeCommandDialogClass}
 				context={commandContext}
 				description={`${getScopeLabel(currentScope, spaces)} · ${getSectionLabel(activeSection)}`}
-				filterKind={commandMenuFilterKind}
 				mode={commandMenuMode}
-				onApplyFilter={onApplyFilter}
-				onClearAllFilters={onClearAllFilters}
 				onOpenChange={onCommandOpenChange}
 				onNavigateProject={(projectId) => {
 					handleNavigate(
@@ -423,13 +409,11 @@ export function ShellHeader({
 						}),
 					)
 				}}
-				onSelectFilterKind={onSelectFilterKind}
 				onRunCommand={onRunCommand}
 				onSelectTaskDate={onSelectTaskDate}
 				onSelectTaskPlacement={onSelectTaskPlacement}
 				onSelectTaskPriority={onSelectTaskPriority}
 				onSelectTaskStatus={onSelectTaskStatus}
-				onToggleCompletedFilter={onToggleCompletedFilter}
 				onSelectProject={handleOpenProjectFromSearch}
 				onSelectTask={handleOpenTaskFromSearch}
 				open={isCommandOpen}

@@ -130,14 +130,14 @@ describe('TaskRowShortcutScope', () => {
 		expect(useDialogStore.getState().commandSelectionOverride?.ids).toEqual(['task-a'])
 	})
 
-	it('全局 chord 进行中时 Row 单键命令不触发（防止 f→p 同时触发 filterByPriority 和 taskSetPriority）', () => {
+	it('全局 chord 进行中时 Row 单键命令不触发（防止 g→p 等与 row p 冲突）', () => {
 		const actions = createActions()
 		const bulkCalls: BulkActionCall[] = []
 		renderScope({ actions, bulkCalls })
 
 		fireEvent.mouseMove(screen.getByTestId('row-task-a'))
 
-		// 模拟全局 chord 进入 pending（例如用户按下了 f、g、n 等前缀键）
+		// 模拟全局 chord 进入 pending（例如用户按下了 g、n 等前缀键）
 		setGlobalChordPending(true)
 
 		// chord 进行中时，p / s / d 等 Row 单键命令不应触发

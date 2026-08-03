@@ -36,9 +36,7 @@ export type ListFilterSession = {
 	replaceEffective: (query: FilterQuery) => void
 }
 
-export function useListFilterSession(
-	options: UseListFilterSessionOptions = {},
-): ListFilterSession {
+export function useListFilterSession(options: UseListFilterSessionOptions = {}): ListFilterSession {
 	const base = useMemo(
 		() => normalizeFilterQuery(options.base ?? EMPTY_FILTER_QUERY),
 		[options.base],
@@ -47,9 +45,7 @@ export function useListFilterSession(
 	const searchStr = useRouterState({ select: (state) => state.location.searchStr })
 
 	const temp = useMemo(() => {
-		const params = new URLSearchParams(
-			searchStr.startsWith('?') ? searchStr.slice(1) : searchStr,
-		)
+		const params = new URLSearchParams(searchStr.startsWith('?') ? searchStr.slice(1) : searchStr)
 		return decodeFilterQueryFromSearchParam(params.get(FILTER_SEARCH_PARAM_KEY))
 	}, [searchStr])
 

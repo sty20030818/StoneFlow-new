@@ -15,7 +15,7 @@ import {
 import { useTaskDisplayPreferenceQuery } from './taskDisplayOptions.queries'
 import { useUpdateTaskDisplayPreferenceMutation } from './taskDisplayOptions.mutations'
 
-type UseTaskDisplayOptionsResult = {
+export type UseTaskDisplayOptionsResult = {
 	options: ResolvedTaskDisplayOptions
 	status: 'loading' | 'ready' | 'error'
 	error: string | null

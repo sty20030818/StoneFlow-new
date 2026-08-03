@@ -112,6 +112,32 @@ export function createFilterClause(
 	}
 }
 
+/**
+ * 写入/替换某一 field 的 clause（同 field 其它 op 一并去掉）。
+ * values 为空则删除该 field。
+ */
+export function setFilterFieldClause(
+	query: FilterQuery,
+	field: FilterField,
+	op: FilterOp,
+	values: readonly string[],
+): FilterQuery {
+	const rest = query.clauses.filter((clause) => clause.field !== field)
+	if (values.length === 0) {
+		return normalizeFilterQuery({ clauses: rest })
+	}
+	return normalizeFilterQuery({
+		clauses: [...rest, createFilterClause(field, op, values)],
+	})
+}
+
+/** 去掉某一 field 的全部 clause */
+export function removeFilterField(query: FilterQuery, field: FilterField): FilterQuery {
+	return normalizeFilterQuery({
+		clauses: query.clauses.filter((clause) => clause.field !== field),
+	})
+}
+
 function normalizeClause(raw: unknown): FilterClause | null {
 	if (!raw || typeof raw !== 'object') {
 		return null

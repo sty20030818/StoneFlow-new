@@ -1,5 +1,4 @@
 import type { Command, CommandContext, TaskPlacementTarget } from '@/features/command/core'
-import type { PageFilterKind } from '@/features/filter'
 import type { ShellNavigationTarget } from '@/shared/types'
 
 /**
@@ -44,9 +43,12 @@ export type ShellDomainCommandActions = {
 	submitAndContinue: (ctx: CommandContext) => void | Promise<void>
 	submitAndOpen: (ctx: CommandContext) => void | Promise<void>
 	togglePreview: (ctx: CommandContext) => void | Promise<void>
-	openFilterPicker: (kind: PageFilterKind, ctx: CommandContext) => void
+	/** 打开锚定 FilterMenu */
+	openFilterMenu: (ctx: CommandContext) => void
 	toggleCompletedFilter: (ctx: CommandContext) => void
 	clearAllFilters: (ctx: CommandContext) => void
+	/** 打开锚定 Display 面板 */
+	openDisplayOptions: (ctx: CommandContext) => void
 }
 
 /** 全量装配形状（chrome ∪ domain）；域 register 用 Pick 从此取键 */

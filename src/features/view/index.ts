@@ -12,7 +12,7 @@
 /** 视图列表 Query（project-overview 侧栏等）。 */
 export { useViewsQuery } from './hooks'
 
-/** URL search → 受限 View 查询定义。 */
+/** URL search → 仅 `f`（临时 FilterQuery）。 */
 export { parseViewSearch } from './api/viewSearch'
 
 /** 创建自定义 View（FilterBar Save 等）。 */

@@ -75,13 +75,7 @@ export function formatClauseValuesSummary(
 		.join('、')
 }
 
-export const FILTER_MENU_FIELDS: FilterField[] = [
-	'status',
-	'priority',
-	'project',
-	'due',
-	'planned',
-]
+export const FILTER_MENU_FIELDS: FilterField[] = ['status', 'priority', 'project', 'due', 'planned']
 
 export const STATUS_OPTIONS = Object.entries(STATUS_LABELS).map(([value, label]) => ({
 	value,

@@ -32,9 +32,9 @@ pub struct ViewDto {
     pub scope: TaskScopeInput,
     /// 筛选真源：FilterQuery（clause 列表）
     pub filters: FilterQueryValue,
-    /// 仅兼容旧行数据读出；新产品路径不写入、不作为呈现真源（→ display-options）
+    /// 仅迁移读出；产品路径不写入、呈现真源 → display-options
     pub sort: Vec<ViewSortRule>,
-    /// 同上；呈现分组以 display 为准
+    /// 仅迁移读出；呈现分组以 display 为准
     pub group_by: TaskGroupBy,
     pub position: i64,
     pub created_at: String,
@@ -48,12 +48,6 @@ pub struct CreateViewInput {
     pub scope: TaskScopeInput,
     #[serde(default)]
     pub filters: FilterQueryValue,
-    /// 忽略持久化：始终存空（display 负责排序）
-    #[serde(default)]
-    pub sort: Vec<ViewSortRule>,
-    /// 忽略持久化：始终存 none
-    #[serde(default)]
-    pub group_by: Option<TaskGroupBy>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -63,12 +57,6 @@ pub struct UpdateViewInput {
     pub name: Option<String>,
     pub scope: Option<TaskScopeInput>,
     pub filters: Option<FilterQueryValue>,
-    /// 忽略：不写回产品 sort
-    #[serde(default)]
-    pub sort: Option<Vec<ViewSortRule>>,
-    /// 忽略：不写回产品 groupBy
-    #[serde(default)]
-    pub group_by: Option<TaskGroupBy>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -81,12 +69,8 @@ pub struct RunTaskViewInput {
     pub scope: TaskScopeInput,
     pub view_id: Option<String>,
     pub view_key: Option<SystemViewKey>,
-    /// 临时覆盖 filters（clause）；与 URL 临时筛选对齐
+    /// 临时覆盖 filters（clause）；与 URL `f` 对齐
     pub filters: Option<FilterQueryValue>,
-    /// 请求期排序（来自 Display，非 View 持久化）
-    pub sort: Option<Vec<ViewSortRule>>,
-    /// 请求期分组（来自 Display）
-    pub group_by: Option<TaskGroupBy>,
     /// 页大小；省略用默认（与 list_tasks 同量级）。
     #[serde(default)]
     pub limit: Option<u32>,
@@ -225,9 +209,6 @@ where
             .collect()
     }
     pub async fn create_view(&self, input: CreateViewInput) -> Result<ViewDto, ApplicationError> {
-        // sort/group 入参忽略：产品真源在 display-options
-        let _ignored_sort = input.sort;
-        let _ignored_group = input.group_by;
         validate_definition(&input.scope, &input.filters)?;
         let now = now_utc().to_rfc3339();
         let connection = self.persistence.begin().await?;
@@ -275,12 +256,10 @@ where
         let current_dto = decode_view(current.clone())?;
         let scope = input.scope.unwrap_or(current_dto.scope);
         let filters = input.filters.unwrap_or(current_dto.filters);
-        let _ignored_sort = input.sort;
-        let _ignored_group = input.group_by;
         validate_definition(&scope, &filters)?;
         let now = now_utc().to_rfc3339();
         let connection = self.persistence.begin().await?;
-        // 写回时清空持久化 sort/group（呈现迁 display）；filters 用 clause 形状
+        // 写回时清空 sort/group 列；filters 用 clause 形状
         let record = self
             .persistence
             .update(
@@ -346,10 +325,8 @@ where
         input: RunTaskViewInput,
     ) -> Result<RunTaskViewOutput, ApplicationError> {
         let search_filters = input.filters;
-        let search_sort = input.sort;
-        let search_group_by = input.group_by;
-        // sort/group 默认不来自 View 持久化；仅请求覆盖（Display）或系统定义默认 sort
-        let (scope, mut filter_query, mut sort_rules, mut group_by, view, system_key) =
+        // sort：系统 View 用内置默认；自定义 View 空 sort，呈现由客户端 display-options 负责
+        let (scope, mut filter_query, sort_rules, group_by, view, system_key) =
             match (input.view_id, input.view_key) {
                 (Some(id), None) => {
                     let dto = decode_view(
@@ -386,12 +363,6 @@ where
             };
         if let Some(override_filters) = search_filters {
             filter_query = merge_filter_queries(filter_query, override_filters);
-        }
-        if let Some(override_sort) = search_sort.filter(|rules| !rules.is_empty()) {
-            sort_rules = override_sort;
-        }
-        if let Some(override_group_by) = search_group_by {
-            group_by = override_group_by;
         }
         validate_definition(&scope, &filter_query)?;
         let today = Local::now().date_naive();
@@ -727,16 +698,22 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    fn create_view_input_should_reject_legacy_description_field() {
-        let input = json!({
+    fn create_view_input_should_reject_unknown_fields() {
+        let with_description = json!({
             "name": "Legacy",
             "description": "旧字段",
             "scope": { "type": "all" },
-            "filters": {},
+            "filters": { "clauses": [] }
+        });
+        assert!(serde_json::from_value::<CreateViewInput>(with_description).is_err());
+
+        let with_sort = json!({
+            "name": "NoSort",
+            "scope": { "type": "all" },
+            "filters": { "clauses": [] },
             "sort": []
         });
-
-        assert!(serde_json::from_value::<CreateViewInput>(input).is_err());
+        assert!(serde_json::from_value::<CreateViewInput>(with_sort).is_err());
     }
 
     #[test]

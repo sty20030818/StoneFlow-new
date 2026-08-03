@@ -1,5 +1,4 @@
 import type { Command, CommandContext } from '@/features/command/core'
-import type { PageFilterKind } from '@/features/filter'
 
 import {
 	createDisabledCommand,
@@ -160,47 +159,16 @@ function hasProjectSelection(ctx: CommandContext) {
 	return ctx.selection.type === 'project' && ctx.selection.ids.length > 0
 }
 
-export function bindFilterPickerCommand(
-	command: Command,
-	adapter: ShellCommandAdapter,
-	kind: PageFilterKind,
-): Command {
-	const openFilterPicker = adapter.openFilterPicker
-	if (typeof openFilterPicker !== 'function') {
+/** F：打开锚定筛选菜单 */
+export function bindOpenFilterMenuCommand(command: Command, adapter: ShellCommandAdapter): Command {
+	const openFilterMenu = adapter.openFilterMenu
+	if (typeof openFilterMenu !== 'function') {
 		return createDisabledCommand(command, UNREGISTERED_HANDLER_REASON)
 	}
 
 	return {
 		...command,
-		isEnabled: (ctx) => getFilterPickerDisabledReason(ctx, kind) === undefined,
-		getDisabledReason: (ctx) => getFilterPickerDisabledReason(ctx, kind),
-		run: (ctx) => openFilterPicker(kind, ctx),
-	}
-}
-
-function getFilterPickerDisabledReason(ctx: CommandContext, kind: PageFilterKind) {
-	const capabilities = ctx.view.filterCapabilities
-
-	switch (kind) {
-		case 'root':
-			return capabilities.supportsClearAll ||
-				capabilities.supportsDate ||
-				capabilities.supportsPriority ||
-				capabilities.supportsProject ||
-				capabilities.supportsStatus ||
-				capabilities.supportsToggleCompleted
-				? undefined
-				: '当前页面暂未接入筛选'
-		case 'priority':
-			return capabilities.supportsPriority ? undefined : '当前页面不支持优先级筛选'
-		case 'status':
-			return capabilities.supportsStatus ? undefined : '当前页面不支持状态筛选'
-		case 'date':
-			return capabilities.supportsDate ? undefined : '当前页面不支持日期筛选'
-		case 'project':
-			return capabilities.supportsProject ? undefined : '当前页面不支持项目筛选'
-		default:
-			return '当前页面暂未接入筛选'
+		run: (ctx) => openFilterMenu(ctx),
 	}
 }
 

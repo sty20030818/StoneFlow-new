@@ -79,19 +79,12 @@ export function ShellChrome({
 				canGoForward={routeHistory.canGoForward}
 				chordSession={command.chordSession}
 				commandContext={command.commandContext}
-				commandMenuFilterKind={command.commandMenuFilterKind}
 				commandMenuMode={command.commandMenuMode}
 				commandRuntime={command.commandRuntime}
 				currentScope={currentScope}
 				currentSpaceId={currentSpaceId}
 				isCommandOpen={command.isCommandOpen}
 				isShortcutHelpOpen={command.isShortcutHelpOpen}
-				onApplyFilter={(input) => {
-					command.pageFilter.actions.applyFilter(input)
-				}}
-				onClearAllFilters={() => {
-					command.pageFilter.actions.clearAll()
-				}}
 				onCloseDrawer={command.closeEntityDrawer}
 				onCommandOpenChange={command.setCommandOpen}
 				onNavigateToHistoryEntry={routeHistory.navigateToHistoryEntry}
@@ -101,19 +94,11 @@ export function ShellChrome({
 					command.openTaskPage({ taskId: task.id, spaceId: task.spaceId })
 				}}
 				onRunCommand={command.runCommand}
-				onSelectFilterKind={(kind) => {
-					// 筛选维度切换：只更新 kind，不再依赖全页 filter-picker 作为主路径
-					command.pageFilter.actions.openFilterPicker(kind)
-					command.setCommandMenuFilterKind(kind)
-				}}
 				onSelectTaskDate={command.onSelectTaskDate}
 				onSelectTaskPlacement={command.onSelectTaskPlacement}
 				onSelectTaskPriority={command.onSelectTaskPriority}
 				onSelectTaskStatus={command.onSelectTaskStatus}
 				onShortcutHelpOpenChange={command.setShortcutHelpOpen}
-				onToggleCompletedFilter={() => {
-					command.pageFilter.actions.toggleCompleted()
-				}}
 				projects={headerProjects}
 				routeHistoryEntries={routeHistory.entries}
 				spaces={chrome.spaces}

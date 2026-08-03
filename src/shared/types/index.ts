@@ -37,14 +37,10 @@ export type {
 	RunTaskViewInput,
 	RunTaskViewResult,
 	SystemViewKey,
-	TaskGroupBy,
 	TaskViewFilters,
 	UpdateViewInput,
 	View,
 	ViewKind,
-	ViewSortDirection,
-	ViewSortField,
-	ViewSortRule,
 	ViewTaskGroup,
 } from './view'
 export type {

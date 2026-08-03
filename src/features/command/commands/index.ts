@@ -1,6 +1,7 @@
 import { CommandRegistry } from '@/features/command/core'
 import { bindShellCommand, type ShellCommandAdapter } from '@/features/command/adapters'
 
+import { displayCommands } from './display.commands'
 import { filterCommands } from './filter.commands'
 import { generalCommands } from './general.commands'
 
@@ -22,6 +23,7 @@ export const allCommands = [
 	...taskCommands,
 	...projectCommands,
 	...filterCommands,
+	...displayCommands,
 	...layoutCommands,
 	...lifecycleCommands,
 	...systemCommands,
@@ -32,6 +34,7 @@ export function createShellCommandRegistry(adapter: ShellCommandAdapter) {
 	return new CommandRegistry(allCommands.map((command) => bindShellCommand(command, adapter)))
 }
 
+export { displayCommands } from './display.commands'
 export { filterCommands } from './filter.commands'
 export { generalCommands } from './general.commands'
 export { layoutCommands } from './layout.commands'

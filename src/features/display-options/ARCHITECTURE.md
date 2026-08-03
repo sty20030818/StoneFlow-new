@@ -1,7 +1,7 @@
 # display-options · 任务列表显示选项
 
 > 作用：描述 **当前已落地** 的 `src/features/display-options` 边界  
-> 最后更新：2026-08-03（P2：showCompleted / 设为默认 / 排序方向内嵌）
+> 最后更新：2026-08-03
 
 ---
 

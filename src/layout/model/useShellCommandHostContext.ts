@@ -6,7 +6,6 @@ import { resolveCommandActivePanel } from '@/layout/shellCommandRouteHelpers'
 import { resolveShellDetailState } from '@/features/task'
 import type { EntityDetailRouteState } from '@/features/entity-detail'
 import { useCommandContext, type CommandSelectionContext } from '@/features/command'
-import type { PageFilterKind } from '@/features/filter'
 import type { usePageFilterContext } from '@/features/filter'
 import type { useSubmitRegistryContext } from '@/features/submit'
 import type { useTaskPreviewController } from '@/features/task'
@@ -23,7 +22,6 @@ type UseShellCommandHostContextArgs = {
 	isCommandOpen: boolean
 	isShortcutHelpOpen: boolean
 	createDialogType: 'task' | 'project' | null
-	commandMenuFilterKind: PageFilterKind
 	commandSelection: CommandSelectionContext
 	pageFilter: PageFilter
 	submitRegistry: SubmitRegistry
@@ -41,7 +39,6 @@ export function useShellCommandHostContext({
 	isCommandOpen,
 	isShortcutHelpOpen,
 	createDialogType,
-	commandMenuFilterKind,
 	commandSelection,
 	pageFilter,
 	submitRegistry,
@@ -120,24 +117,12 @@ export function useShellCommandHostContext({
 		() => ({
 			hasActiveFilters: pageFilter.state.hasActiveFilters,
 			showCompleted: pageFilter.state.showCompleted,
-			priorityFilterValues: pageFilter.state.priorityValues,
-			statusFilterValues: pageFilter.state.statusValues,
-			dateFilterValue: pageFilter.state.dateValue,
-			projectFilterId: pageFilter.state.projectId,
-			standaloneOnly: pageFilter.state.standaloneOnly,
 			filterCapabilities: pageFilter.capabilities,
-			filterKind: commandMenuFilterKind,
 		}),
 		[
-			commandMenuFilterKind,
 			pageFilter.capabilities,
-			pageFilter.state.dateValue,
 			pageFilter.state.hasActiveFilters,
-			pageFilter.state.priorityValues,
-			pageFilter.state.projectId,
-			pageFilter.state.standaloneOnly,
 			pageFilter.state.showCompleted,
-			pageFilter.state.statusValues,
 		],
 	)
 

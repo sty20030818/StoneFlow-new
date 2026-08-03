@@ -7,8 +7,8 @@ import { useMemo } from 'react'
 import {
 	applyTaskDisplayOptionsToTasks,
 	createTaskDisplayApplyContext,
-	useTaskDisplayOptions,
 	type TaskDisplayPageKey,
+	type UseTaskDisplayOptionsResult,
 } from '@/features/display-options'
 import { useEntitySelectionEscape, useRegisterCommandSelection } from '@/features/selection'
 import type { ProjectOption } from '@/features/project'
@@ -28,6 +28,8 @@ type TaskCollectionSource = {
 export type TaskCollectionSceneInput = {
 	source: TaskCollectionSource
 	displayPageKey: TaskDisplayPageKey
+	/** scene 已订阅的 display；避免 collection 再 hook 一次 */
+	display: UseTaskDisplayOptionsResult
 	projects?: ProjectOption[]
 	supportsProject: boolean
 	fallbackSubtitle: string | ((task: TaskListItem) => string)
@@ -51,10 +53,10 @@ export type TaskCollectionSceneInput = {
 
 /**
  * 任务集合的交互编排（展示 / 选择 / 预览 / 批量 / Board）。
- * 调用方负责：查询结果、筛选会话、页面专属动作。
+ * 调用方负责：查询结果、筛选会话、display 订阅、页面专属动作。
  */
 export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
-	const display = useTaskDisplayOptions(input.displayPageKey)
+	const display = input.display
 
 	const displayResult = useMemo(
 		() =>

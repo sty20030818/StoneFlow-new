@@ -50,16 +50,7 @@ export function createEmptyCommandContext(): CommandContext {
 		view: {
 			hasActiveFilters: false,
 			showCompleted: true,
-			priorityFilterValues: [],
-			statusFilterValues: [],
-			dateFilterValue: 'none',
-			projectFilterId: null,
-			standaloneOnly: false,
 			filterCapabilities: {
-				supportsPriority: false,
-				supportsStatus: false,
-				supportsDate: false,
-				supportsProject: false,
 				supportsToggleCompleted: false,
 				supportsClearAll: false,
 			},

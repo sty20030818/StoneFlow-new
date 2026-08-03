@@ -13,10 +13,9 @@ import { cn } from '@/shared/lib/utils'
 import {
 	createFilterClause,
 	createFilterClauseId,
-	normalizeFilterQuery,
+	setFilterFieldClause,
 	type FilterClause,
 	type FilterField,
-	type FilterQuery,
 } from '../core'
 import { useListFilterUi } from '../model/ListFilterUiContext'
 import {
@@ -31,8 +30,6 @@ type FilterMenuProps = {
 	trigger: ReactNode
 	open?: boolean
 	onOpenChange?: (open: boolean) => void
-	/** 打开时预选字段（F 后接 p/s/d/j 等） */
-	initialField?: FilterField | null
 	className?: string
 }
 
@@ -40,7 +37,6 @@ export function FilterMenu({
 	trigger,
 	open,
 	onOpenChange,
-	initialField = null,
 	className,
 }: FilterMenuProps) {
 	const ui = useListFilterUi()
@@ -50,13 +46,10 @@ export function FilterMenu({
 	const setOpen = onOpenChange ?? setInternalOpen
 
 	useEffect(() => {
-		if (isOpen && initialField) {
-			setField(initialField)
-		}
 		if (!isOpen) {
 			setField(null)
 		}
-	}, [isOpen, initialField])
+	}, [isOpen])
 
 	if (!ui) {
 		return <>{trigger}</>
@@ -72,11 +65,9 @@ export function FilterMenu({
 	}
 
 	function applyClause(nextClause: FilterClause) {
-		const withoutField = session.effective.clauses.filter((c) => c.field !== nextClause.field)
-		const next: FilterQuery = normalizeFilterQuery({
-			clauses: [...withoutField, nextClause],
-		})
-		session.replaceEffective(next)
+		session.replaceEffective(
+			setFilterFieldClause(session.effective, nextClause.field, nextClause.op, nextClause.values),
+		)
 		handleOpenChange(false)
 	}
 
@@ -216,9 +207,7 @@ function FieldValuePicker({
 					className='w-full'
 					disabled={selected.length === 0}
 					onClick={() =>
-						onApply(
-							createFilterClause(field, op, selected, existing?.id ?? createFilterClauseId()),
-						)
+						onApply(createFilterClause(field, op, selected, existing?.id ?? createFilterClauseId()))
 					}
 					size='sm'
 					type='button'

@@ -14,7 +14,6 @@ import {
 } from '@/features/metadata-fields'
 import { useGlobalSearch } from '@/features/global-search'
 import type { CustomDateDialogState } from '@/features/shell-dialogs'
-import type { PageFilterApplyInput, PageFilterKind } from '@/features/filter'
 import type { CommandContext, TaskPlacementTarget } from '@/features/command/core'
 import type {
 	SearchProjectItem,
@@ -24,7 +23,6 @@ import type {
 	TaskStatus,
 } from '@/shared/types'
 
-import { FilterPickerCommandGroup } from './FilterPickerCommandGroup'
 import {
 	CommandRow,
 	CommandRowDigitHint,
@@ -46,61 +44,33 @@ import type { CommandMenuProject } from './CommandMenu'
 
 export function ScopedPickerCommandGroup({
 	context,
-	filterKind,
 	mode,
-	onApplyFilter,
-	onClearAllFilters,
 	onOpenChange,
-	onSelectFilterKind,
 	onSelectProject,
 	onSelectTaskPlacement,
 	onSelectTask,
 	onSelectTaskDate,
 	onSelectTaskPriority,
 	onSelectTaskStatus,
-	onToggleCompletedFilter,
 	onOpenCustomDateDialog,
 	projectLinks,
-	query,
 	result,
 	spaces,
 }: {
 	context: CommandContext
 	mode: Exclude<CommandMenuMode, 'default'>
-	filterKind: PageFilterKind
-	onApplyFilter: (input: PageFilterApplyInput) => void
-	onClearAllFilters: () => void
 	onOpenChange: (open: boolean) => void
-	onSelectFilterKind: (kind: PageFilterKind) => void
 	onSelectProject: (project: SearchProjectItem) => void
 	onSelectTaskPlacement: (target: TaskPlacementTarget) => void
 	onSelectTask: (task: SearchTaskItem) => void
 	onSelectTaskDate: (dueAt: string | null) => void
 	onSelectTaskPriority: (priority: TaskPriority) => void
 	onSelectTaskStatus: (status: TaskStatus) => void
-	onToggleCompletedFilter: () => void
 	onOpenCustomDateDialog: (state: CustomDateDialogState) => void
 	projectLinks: CommandMenuProject[]
-	query: string
 	result: ReturnType<typeof useGlobalSearch>['result']
 	spaces: Space[]
 }) {
-	if (mode === 'filter-picker') {
-		return (
-			<FilterPickerCommandGroup
-				context={context}
-				filterKind={filterKind}
-				onApplyFilter={onApplyFilter}
-				onClearAllFilters={onClearAllFilters}
-				onOpenChange={onOpenChange}
-				onSelectFilterKind={onSelectFilterKind}
-				onToggleCompletedFilter={onToggleCompletedFilter}
-				projects={projectLinks}
-				query={query}
-			/>
-		)
-	}
-
 	if (mode === 'task-priority-picker') {
 		const group = mapMetadataActionSpecToCommandMenuGroup(createPriorityActionSpec())
 		const options = group.options

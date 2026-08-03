@@ -10,7 +10,6 @@ import type {
 	BulkActionResultMessageLabels,
 	BulkEntityType,
 } from '@/features/bulk-action'
-import type { PageFilterKind } from '@/features/filter'
 import type { usePageFilterContext } from '@/features/filter'
 import type { useSubmitRegistryActions } from '@/features/submit'
 import type { useTaskPreviewController } from '@/features/task'
@@ -52,7 +51,6 @@ export type ShellCommandBridgeDeps = {
 		labels: BulkActionResultMessageLabels,
 		payload?: BulkActionPayload,
 	) => Promise<void>
-	setCommandMenuFilterKind: (kind: PageFilterKind) => void
 	/** Settings Mode 下 Esc 关层最终出口 */
 	isSettingsMode?: boolean
 	settingsReturnPath?: string

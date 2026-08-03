@@ -1,13 +1,12 @@
 /**
- * 工具条「筛选」入口：锚定 FilterMenu；订阅 F / 命令 open-menu 事件。
- * 无 ListFilterUi 时仅广播事件（无全页 Command picker）。
+ * 工具条「筛选」入口：锚定 FilterMenu；订阅 F / 命令 open-menu。
+ * 无 ListFilterUi 时仅按钮占位。
  */
 import { useEffect, useState } from 'react'
 import { ListFilterIcon } from 'lucide-react'
 
 import { Button } from '@/shared/components/base/button'
 
-import type { FilterField } from '../core'
 import { subscribeFilterUiEvent } from '../model/filterUiEvents'
 import { useListFilterUi } from '../model/ListFilterUiContext'
 import { usePageFilterContext } from '../model/PageFilterProvider'
@@ -21,12 +20,10 @@ export function PageFilterButton({ className }: PageFilterButtonProps) {
 	const filterUi = useListFilterUi()
 	const pageFilter = usePageFilterContext()
 	const [menuOpen, setMenuOpen] = useState(false)
-	const [initialField, setInitialField] = useState<FilterField | null>(null)
 
 	useEffect(() => {
 		return subscribeFilterUiEvent((event) => {
 			if (event.type === 'open-menu') {
-				setInitialField(event.field ?? null)
 				setMenuOpen(true)
 				return
 			}
@@ -55,14 +52,13 @@ export function PageFilterButton({ className }: PageFilterButtonProps) {
 	)
 
 	if (!filterUi) {
-		// 无列表会话：仍渲染按钮，点击发 open-menu（无订阅则无 UI）
 		return (
 			<Button
 				aria-label={hasActive ? '筛选（已启用）' : '筛选'}
 				className={className}
 				data-active={hasActive ? 'true' : undefined}
 				onClick={() => {
-					pageFilter.actions.openFilterPicker('root')
+					pageFilter.actions.openFilterMenu()
 				}}
 				size='icon-sm'
 				type='button'
@@ -75,13 +71,7 @@ export function PageFilterButton({ className }: PageFilterButtonProps) {
 
 	return (
 		<FilterMenu
-			initialField={initialField}
-			onOpenChange={(open) => {
-				setMenuOpen(open)
-				if (!open) {
-					setInitialField(null)
-				}
-			}}
+			onOpenChange={setMenuOpen}
 			open={menuOpen}
 			trigger={trigger}
 		/>

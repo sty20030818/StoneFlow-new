@@ -22,8 +22,6 @@ export function taskViewRunInfiniteQueryOptions(input: RunTaskViewInput) {
 		viewId: input.viewId,
 		viewKey: input.viewKey,
 		...(input.filters ? { filters: input.filters } : {}),
-		...(input.sort ? { sort: input.sort } : {}),
-		...(input.groupBy != null ? { groupBy: input.groupBy } : {}),
 	}
 	return infiniteQueryOptions({
 		queryKey: viewKeys.taskRun(keyInput),

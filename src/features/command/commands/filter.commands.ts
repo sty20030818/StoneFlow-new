@@ -1,54 +1,18 @@
 import { COMMAND_IDS, type Command } from '@/features/command/core'
 
+/**
+ * 筛选命令：F 打开锚定 FilterMenu；清除/切换完成仍可走命令板。
+ * 不再有 F→p/s/d/j 两段 chord（对齐 Linear：F 直接开菜单）。
+ */
 export const filterCommands: Command[] = [
 	{
 		id: COMMAND_IDS.filterAdd,
 		title: '添加筛选',
 		category: 'filter',
 		scope: ['app'],
-		description: '添加一个新的筛选条件。',
-		keywords: ['filter', 'add', '筛选'],
+		description: '打开筛选菜单，添加或编辑筛选条件。',
+		keywords: ['filter', 'add', '筛选', 'F'],
 		getPriority: () => 50,
-		run: () => {},
-	},
-	{
-		id: COMMAND_IDS.filterByPriority,
-		title: '按优先级筛选',
-		category: 'filter',
-		scope: ['app'],
-		description: '按任务优先级筛选当前列表。',
-		keywords: ['filter', 'priority', '筛选', '优先级'],
-		getPriority: () => 40,
-		run: () => {},
-	},
-	{
-		id: COMMAND_IDS.filterByStatus,
-		title: '按状态筛选',
-		category: 'filter',
-		scope: ['app'],
-		description: '按任务状态筛选当前列表。',
-		keywords: ['filter', 'status', '筛选', '状态'],
-		getPriority: () => 40,
-		run: () => {},
-	},
-	{
-		id: COMMAND_IDS.filterByDate,
-		title: '按日期筛选',
-		category: 'filter',
-		scope: ['app'],
-		description: '按日期筛选当前列表。',
-		keywords: ['filter', 'date', '筛选', '日期'],
-		getPriority: () => 40,
-		run: () => {},
-	},
-	{
-		id: COMMAND_IDS.filterByProject,
-		title: '按项目筛选',
-		category: 'filter',
-		scope: ['app'],
-		description: '按项目筛选当前列表。',
-		keywords: ['filter', 'project', '筛选', '项目'],
-		getPriority: () => 40,
 		run: () => {},
 	},
 	{
@@ -66,7 +30,7 @@ export const filterCommands: Command[] = [
 		title: '清除全部筛选',
 		category: 'filter',
 		scope: ['app'],
-		description: '清除当前列表的所有筛选条件。',
+		description: '清除当前列表的临时筛选条件。',
 		keywords: ['filter', 'clear', 'reset', '清除筛选'],
 		getPriority: () => 30,
 		run: () => {},

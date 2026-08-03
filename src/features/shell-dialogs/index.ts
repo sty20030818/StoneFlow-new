@@ -9,7 +9,6 @@ export {
 	selectIsCommandOpen,
 	selectCommandMenuMode,
 	selectCommandSelectionOverride,
-	selectCommandMenuFilterKind,
 	selectIsShortcutHelpOpen,
 	selectCreateDialogType,
 	selectTaskCreateDraft,

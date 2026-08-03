@@ -29,7 +29,7 @@ describe('resolveTaskDisplayOptions', () => {
 			orderBy: 'smart',
 			orderDirection: 'desc',
 			completedOrder: 'recency',
-			showCompleted: true,
+			showCompleted: false,
 			showEmptyGroups: false,
 			visibleProperties: ['status', 'priority', 'project', 'dueAt'],
 		})

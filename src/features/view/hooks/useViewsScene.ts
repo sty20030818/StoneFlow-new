@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
+import { useNavigate, useParams } from '@tanstack/react-router'
 
 import {
 	openView,
@@ -8,14 +8,12 @@ import {
 	useCurrentShellRoute,
 } from '@/app/navigation'
 import { useDialogStore } from '@/features/shell-dialogs'
-import { createTaskDisplayViewPageKey } from '@/features/display-options'
+import { createTaskDisplayViewPageKey, useTaskDisplayOptions } from '@/features/display-options'
 import {
 	adaptFilterQueryToViewFilters,
-	isFilterQueryEmpty,
 	useListFilterSession,
 	useRegisterFilterCommandAdapter,
 } from '@/features/filter'
-import { useTaskDisplayOptions } from '@/features/display-options'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useProjectOptions } from '@/features/project'
 import { useSpaces } from '@/features/space'
@@ -24,18 +22,13 @@ import { useTaskChangedListener } from '@/shared/events'
 import { EMPTY_FILTER_QUERY } from '@/shared/types'
 import type { View } from '@/shared/types'
 
-import type { ViewSearchDefinition } from '../api/viewSearch'
 import { migrateViewPresentationToDisplay } from '../model/migrateViewPresentationToDisplay'
 import {
 	useCreateViewMutation,
 	useDeleteViewMutation,
 	useUpdateViewMutation,
 } from './view.mutations'
-import {
-	flattenTaskViewPages,
-	useTaskViewRunInfiniteQuery,
-	useViewsQuery,
-} from './view.queries'
+import { flattenTaskViewPages, useTaskViewRunInfiniteQuery, useViewsQuery } from './view.queries'
 
 const EMPTY_TASK_VIEWS: View[] = []
 let viewPresentationMigrationStarted = false
@@ -50,7 +43,6 @@ export function useViewsScene() {
 	const spaceId = shellRoute.spaceId
 	const navigate = useNavigate({ from: '/' })
 	const { viewId: routeViewId } = useParams({ strict: false }) as { viewId?: string }
-	const search = useSearch({ strict: false }) as Partial<ViewSearchDefinition>
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 	const entityDetailController = useEntityDetailController()
 	const activeDetail = entityDetailController.activeDetail
@@ -59,17 +51,16 @@ export function useViewsScene() {
 	const taskViewsQuery = useViewsQuery()
 	const taskViews = taskViewsQuery.data ?? EMPTY_TASK_VIEWS
 
-	// T6：旧 View.sort/group 一次性迁入 display default 并清空行字段（可重复、已空 skip）
+	// 一次性数据清洗：raw 行 sort/group → display（自包含，不污染产品 View）
 	useEffect(() => {
-		if (viewPresentationMigrationStarted || !taskViewsQuery.isSuccess || taskViews.length === 0) {
+		if (viewPresentationMigrationStarted || !taskViewsQuery.isSuccess) {
 			return
 		}
 		viewPresentationMigrationStarted = true
-		void migrateViewPresentationToDisplay(taskViews).catch(() => {
-			// 迁移失败不阻断列表；下次进入可再试
+		void migrateViewPresentationToDisplay().catch(() => {
 			viewPresentationMigrationStarted = false
 		})
-	}, [taskViews, taskViewsQuery.isSuccess])
+	}, [taskViewsQuery.isSuccess])
 
 	const createTaskView = useCreateViewMutation()
 	const updateTaskView = useUpdateViewMutation()
@@ -108,22 +99,17 @@ export function useViewsScene() {
 				showCompleted: !display.options.showCompleted,
 			})
 		},
-		supportsProject: true,
-		projects: projectOptions,
 	})
 
+	// 仅 dirty 时用 temp 覆盖 View.filters；sort/group 只走 Display 客户端呈现
 	const taskRunInput = activeView
 		? {
 				scope,
 				viewId: activeView.kind === 'custom' ? activeView.id : null,
 				viewKey: activeView.systemKey,
-				filters: filterSession.dirty
-					? adaptFilterQueryToViewFilters(filterSession.temp)
-					: search.filters && !isFilterQueryEmpty(search.filters)
-						? search.filters
-						: undefined,
-				sort: search.sort && search.sort.length > 0 ? search.sort : undefined,
-				groupBy: search.groupBy ?? undefined,
+				...(filterSession.dirty
+					? { filters: adaptFilterQueryToViewFilters(filterSession.temp) }
+					: {}),
 			}
 		: null
 	const taskRunQuery = useTaskViewRunInfiniteQuery(taskRunInput)
@@ -184,6 +170,7 @@ export function useViewsScene() {
 	const taskCollection = useTaskCollectionScene({
 		source: { items: visibleTasks, status: boardStatus },
 		displayPageKey,
+		display,
 		supportsProject: false,
 		fallbackSubtitle: activeView?.name ?? '当前视图',
 		activeTaskId: activeDetail?.kind === 'task' ? activeDetail.id : null,
@@ -307,7 +294,6 @@ export function useViewsScene() {
 					void navigate({ to: openView(scope, created.id, spaceId) as never })
 				}
 			},
-			hiddenByFilterCount: null as number | null,
 		}),
 		[
 			activeView,

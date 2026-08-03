@@ -5,7 +5,6 @@ import type { Scope } from '@/shared/types'
 import type { ShellSectionKey } from '@/layout/types'
 import { useShellCommandActions } from '@/layout/command-bridge/useShellCommandActions'
 import {
-	selectCommandMenuFilterKind,
 	selectCommandMenuMode,
 	selectCommandSelectionOverride,
 	selectCreateDialogType,
@@ -78,12 +77,10 @@ export function useShellCommandSystem({
 }) {
 	const isCommandOpen = useDialogStore(selectIsCommandOpen)
 	const commandMenuMode = useDialogStore(selectCommandMenuMode)
-	const commandMenuFilterKind = useDialogStore(selectCommandMenuFilterKind)
 	const commandSelectionOverride = useDialogStore(selectCommandSelectionOverride)
 	const isShortcutHelpOpen = useDialogStore(selectIsShortcutHelpOpen)
 	const createDialogType = useDialogStore(selectCreateDialogType)
 	const setCommandOpen = useDialogStore((state) => state.setCommandOpen)
-	const setCommandMenuFilterKind = useDialogStore((state) => state.setCommandMenuFilterKind)
 	const setShortcutHelpOpen = useDialogStore((state) => state.setShortcutHelpOpen)
 	const toggleShortcutHelp = useDialogStore((state) => state.toggleShortcutHelp)
 
@@ -141,7 +138,6 @@ export function useShellCommandSystem({
 		pageFilter,
 		requestSearchFocus,
 		runEntityBulkActionFromCommand,
-		setCommandMenuFilterKind,
 		settingsReturnPath,
 		submitRegistryActions,
 		taskPreviewController,
@@ -157,7 +153,6 @@ export function useShellCommandSystem({
 		isCommandOpen,
 		isShortcutHelpOpen,
 		createDialogType,
-		commandMenuFilterKind,
 		commandSelection,
 		pageFilter,
 		submitRegistry,
@@ -206,10 +201,8 @@ export function useShellCommandSystem({
 		setChordSession,
 		isCommandOpen,
 		commandMenuMode,
-		commandMenuFilterKind,
 		isShortcutHelpOpen,
 		setCommandOpen,
-		setCommandMenuFilterKind,
 		setShortcutHelpOpen,
 		activeDetail,
 		isDrawerOpen,

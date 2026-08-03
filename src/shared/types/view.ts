@@ -5,30 +5,14 @@ import type { TaskListItem } from './task'
 
 export type ViewKind = 'system' | 'custom'
 export type SystemViewKey = 'all' | 'active' | 'today' | 'upcoming' | 'overdue'
-export type ViewSortDirection = 'asc' | 'desc'
-export type ViewSortField =
-	| 'position'
-	| 'priority'
-	| 'dueAt'
-	| 'plannedAt'
-	| 'createdAt'
-	| 'updatedAt'
-	| 'completedAt'
 
-/** @deprecated 呈现分组已迁 display-options；仅 Run 请求 / 旧数据迁移残留 */
-export type TaskGroupBy = 'none' | 'status' | 'priority' | 'project' | 'due' | 'planned'
-
-/**
- * View 筛选真源 = FilterQuery（clause 列表）。
- * 旧扁平 TaskViewFilters 已废弃；后端 decode 时一次性迁入 clause。
- */
+/** View 筛选真源 = FilterQuery（clause 列表）。 */
 export type TaskViewFilters = FilterQuery
 
-export type ViewSortRule = {
-	field: ViewSortField
-	direction: ViewSortDirection
-}
-
+/**
+ * 产品域 View：只含定义与元数据。
+ * 呈现（sort/group/showCompleted）在 display-options，不进本类型。
+ */
 export type View = {
 	id: string
 	name: string
@@ -36,16 +20,6 @@ export type View = {
 	systemKey: SystemViewKey | null
 	scope: Scope
 	filters: FilterQuery
-	/**
-	 * 旧行可能非空；产品呈现勿读。迁移到 display 后应为空。
-	 * @deprecated
-	 */
-	sort: ViewSortRule[]
-	/**
-	 * 旧行可能非 none；产品呈现勿读。
-	 * @deprecated
-	 */
-	groupBy: TaskGroupBy
 	position: number
 	createdAt: string
 	updatedAt: string
@@ -61,12 +35,8 @@ export type RunTaskViewInput = {
 	scope: Scope
 	viewId?: string | null
 	viewKey?: SystemViewKey | null
-	/** 临时覆盖 filters（URL）；clause 形状 */
+	/** dirty 时 URL temp 覆盖 View.filters */
 	filters?: FilterQuery
-	/** 请求期排序（Display），非 View 持久化 */
-	sort?: ViewSortRule[]
-	/** 请求期分组（Display） */
-	groupBy?: TaskGroupBy | null
 	limit?: number
 	cursor?: string | null
 }

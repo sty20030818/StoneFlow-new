@@ -25,6 +25,8 @@ export {
 	mergeFilterQueryIntoSearch,
 	normalizeFilterQuery,
 	readFilterQueryFromSearch,
+	removeFilterField,
+	setFilterFieldClause,
 	type FilterClause,
 	type FilterDateValue,
 	type FilterField,
@@ -33,22 +35,16 @@ export {
 	type ListTasksFilterPatch,
 } from './core'
 
-// ── 命令宿主注册槽 ────────────────────────────────────────
+// ── 命令宿主注册槽（投影，非 Filter 真源） ────────────────
 export {
 	PageFilterProvider,
 	usePageFilterContext,
 	useRegisterPageFilterController,
-	hasTaskDate,
-	isTaskCompleted,
-	resolveTaskDateValue,
 } from './model/PageFilterProvider'
 
 export type {
-	PageDateFilterValue,
-	PageFilterApplyInput,
 	PageFilterCapabilities,
 	PageFilterController,
-	PageFilterKind,
 	PageFilterState,
 } from './model/PageFilterProvider'
 
@@ -80,6 +76,5 @@ export {
 export {
 	emitFilterUiEvent,
 	subscribeFilterUiEvent,
-	pageFilterKindToField,
 	type FilterUiEvent,
 } from './model/filterUiEvents'

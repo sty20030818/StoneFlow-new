@@ -22,7 +22,6 @@ export type VariantConfig = {
 		status?: TaskStatus
 		placement?: TaskPlacement
 	}
-	initialShowCompleted?: boolean
 	supportsProject: boolean
 	fallbackSubtitle: string | ((task: TaskListSubtitleTask) => string)
 	showStatusPills: 'all' | 'status-only'

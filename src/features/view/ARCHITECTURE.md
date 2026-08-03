@@ -13,17 +13,17 @@ routes 薄页
   → useViewsScene
        · base = activeView.filters（FilterQuery）
        · temp = URL `f`（useListFilterSession）
-       · run_task_view(filters 覆盖 = temp 或 legacy search)
-       · display pageKey = task:view:{id}
+       · run_task_view：仅 dirty 时用 temp 覆盖 filters
+       · display pageKey = task:view:{id}（sort/group 只在此呈现）
   → PageFrame + FilterBar + TaskBoard
 
 Save
   → 只写 filters（覆盖当前自定义 View 或 create）
   → 不写 Display
 
-旧 sort/group
-  → 一次性 migrateViewPresentationToDisplay → display default
-  → update 清空行内 sort/group
+DB 行残留 sort/group
+  → migrate 自读 raw list_views（不进产品 View 类型）
+  → 写入 display default 并 update 清空列
 ```
 
 跨模块 **只** `import { … } from '@/features/view'`。  
@@ -54,7 +54,7 @@ src/features/view/
 |----|------|
 | 页面 | `ViewsPage` |
 | 数据 | `useViewsQuery`、`createView`、`useCreateViewMutation` |
-| Search | `parseViewSearch`（含 `f` / tempFilters） |
+| Search | `parseViewSearch`（仅 `f`） |
 
 ---
 

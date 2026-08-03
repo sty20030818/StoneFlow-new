@@ -20,7 +20,7 @@ export { createTaskDisplayViewPageKey } from './core'
 
 // ── Model hooks ─────────────────────────────────────────────────────────────
 
-export { useTaskDisplayOptions } from './model'
+export { useTaskDisplayOptions, type UseTaskDisplayOptionsResult } from './model'
 
 /** 偏好读写（View 呈现迁移等） */
 export { updateTaskDisplayPreference } from './api/displayOptions'
@@ -33,3 +33,10 @@ export { applyTaskDisplayOptionsToTasks, createTaskDisplayApplyContext } from '.
 
 /** 工具条「显示」按钮。 */
 export { DisplayOptionsButton } from './components'
+
+// ── 命令 ────────────────────────────────────────────────────────────────────
+
+/** 壳宿主注册：Shift+F 打开显示面板。 */
+export { registerDisplayCommands } from './commands/registerDisplayCommands'
+
+export { emitDisplayUiEvent, subscribeDisplayUiEvent } from './model/displayUiEvents'

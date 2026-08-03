@@ -1,13 +1,18 @@
 /**
  * 全部任务 / 独立事项列表场景：
  * Display + FilterQuery 会话 → adapt → list_tasks；集合编排走 useTaskCollectionScene。
+ * 工具条 pills 只改 FilterQuery / showCompleted，不另起本地筛选状态。
  */
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 
 import { useCurrentShellRoute, resolveBreadcrumb, resolveShellRouteScope } from '@/app/navigation'
 import { useTaskDisplayOptions } from '@/features/display-options'
 import {
 	adaptFilterQueryToListTasks,
+	FILTER_PROJECT_NONE_VALUE,
+	filterQueryToCommandProjection,
+	removeFilterField,
+	setFilterFieldClause,
 	useListFilterSession,
 	useRegisterFilterCommandAdapter,
 } from '@/features/filter'
@@ -37,8 +42,6 @@ import { formatTaskStatusLabel } from '../model/taskStatus'
 export type { TaskListSceneVariant } from './list-scene/variantConfig'
 export { TASK_LIST_PAGE_VIEW_KEY } from './list-scene/variantConfig'
 
-type StatusMode = 'incomplete' | 'all' | TaskStatus
-
 export function useTaskListScene(variant: TaskListSceneVariant) {
 	const config = VARIANT_CONFIG[variant]
 	const shellRoute = useCurrentShellRoute()
@@ -49,11 +52,6 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 	const activeDetail = entityDetailController.activeDetail
 	const openEntityDrawer = entityDetailController.openDrawer
 	const taskPreviewController = useTaskPreviewController()
-
-	const [statusMode, setStatusMode] = useState<StatusMode>(
-		variant === 'all' ? 'incomplete' : 'all',
-	)
-	const [standaloneOnly, setStandaloneOnly] = useState(false)
 
 	const display = useTaskDisplayOptions(config.displayPageKey)
 	const filterSession = useListFilterSession({ base: EMPTY_FILTER_QUERY })
@@ -68,40 +66,29 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 				showCompleted: !display.options.showCompleted,
 			})
 		},
-		supportsProject: config.supportsProject,
-		projects: projectOptions,
 	})
-
-	const listStatuses = useMemo(() => {
-		if (statusMode === 'incomplete') {
-			return INCOMPLETE_TASK_STATUSES
-		}
-		if (statusMode === 'all') {
-			return display.options.showCompleted ? undefined : INCOMPLETE_TASK_STATUSES
-		}
-		return [statusMode]
-	}, [display.options.showCompleted, statusMode])
 
 	const listInput = useMemo(() => {
 		const patch = adaptFilterQueryToListTasks(filterSession.effective)
-		const statuses = patch.statuses ?? listStatuses
+		let statuses = patch.statuses
+		if (!statuses && !display.options.showCompleted) {
+			statuses = INCOMPLETE_TASK_STATUSES
+		}
 		const placement =
-			standaloneOnly || patch.project?.mode === 'none'
+			patch.project?.mode === 'none'
 				? ({ kind: 'standalone' } as const)
 				: patch.project?.mode === 'specific'
-					? ({ kind: 'project' as const, projectId: patch.project.projectId })
+					? { kind: 'project' as const, projectId: patch.project.projectId }
 					: config.placement
 		return {
 			scope,
 			viewKey: TASK_LIST_PAGE_VIEW_KEY,
 			placement,
 			...(statuses ? { statuses } : {}),
-			...(patch.priorities && patch.priorities.length > 0
-				? { priorities: patch.priorities }
-				: {}),
+			...(patch.priorities && patch.priorities.length > 0 ? { priorities: patch.priorities } : {}),
 			...(patch.dateFilter ? { dateFilter: patch.dateFilter } : {}),
 		}
-	}, [config.placement, filterSession.effective, listStatuses, scope, standaloneOnly])
+	}, [config.placement, display.options.showCompleted, filterSession.effective, scope])
 
 	const taskList = useTaskListData(listInput)
 	const taskBoardStatus = taskList.status
@@ -125,6 +112,7 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 	const taskCollection = useTaskCollectionScene({
 		source: { items: taskSourceItems, status: taskBoardStatus },
 		displayPageKey: config.displayPageKey,
+		display,
 		projects: projectOptions,
 		supportsProject: config.supportsProject,
 		fallbackSubtitle,
@@ -157,25 +145,36 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 		loadedCount: taskList.loadedCount,
 	})
 
-	const applyStatusMode = useCallback(
-		(mode: StatusMode, nextStandalone: boolean) => {
-			setStatusMode(mode)
-			setStandaloneOnly(nextStandalone)
-			if (mode === 'incomplete') {
-				void display.actions.applyPartial({ showCompleted: false })
-				return
-			}
-			void display.actions.applyPartial({ showCompleted: true })
-		},
-		[display.actions],
+	const projection = useMemo(
+		() => filterQueryToCommandProjection(filterSession.effective),
+		[filterSession.effective],
 	)
 
 	const toolbarPills = useMemo(() => {
+		const noStatus = projection.statusValues.length === 0
+		const isStandalonePill = projection.standaloneOnly
+
 		if (config.showStatusPills === 'status-only') {
 			return STANDALONE_STATUS_FILTERS.map((filter) => ({
 				label: filter === 'all' ? '所有任务' : formatTaskStatusLabel(filter),
-				active: filter === 'all' ? statusMode === 'all' : statusMode === filter,
-				onClick: () => applyStatusMode(filter === 'all' ? 'all' : filter, false),
+				active:
+					filter === 'all'
+						? noStatus
+						: projection.statusValues.length === 1 && projection.statusValues[0] === filter,
+				onClick: () => {
+					if (filter === 'all') {
+						filterSession.replaceEffective(removeFilterField(filterSession.effective, 'status'))
+						void display.actions.applyPartial({ showCompleted: true })
+						return
+					}
+					filterSession.replaceEffective(
+						setFilterFieldClause(filterSession.effective, 'status', 'is', [filter]),
+					)
+					void display.actions.applyPartial({
+						showCompleted:
+							filter === 'done' || filter === 'canceled' ? true : display.options.showCompleted,
+					})
+				},
 			}))
 		}
 
@@ -191,26 +190,67 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 
 			const active =
 				filter === 'standalone'
-					? standaloneOnly
+					? isStandalonePill && noStatus
 					: filter === 'incomplete'
-						? statusMode === 'incomplete' && !standaloneOnly
+						? !display.options.showCompleted && noStatus && !isStandalonePill
 						: filter === 'all'
-							? statusMode === 'all' && !standaloneOnly
-							: statusMode === filter && !standaloneOnly
+							? display.options.showCompleted && noStatus && !isStandalonePill
+							: !isStandalonePill &&
+								projection.statusValues.length === 1 &&
+								projection.statusValues[0] === filter
 
 			return {
 				label,
 				active,
 				onClick: () => {
 					if (filter === 'standalone') {
-						setStandaloneOnly(true)
+						filterSession.replaceEffective(
+							setFilterFieldClause(
+								removeFilterField(filterSession.effective, 'status'),
+								'project',
+								'is',
+								[FILTER_PROJECT_NONE_VALUE],
+							),
+						)
 						return
 					}
-					applyStatusMode(filter, false)
+					if (filter === 'incomplete') {
+						filterSession.replaceEffective(
+							removeFilterField(removeFilterField(filterSession.effective, 'status'), 'project'),
+						)
+						void display.actions.applyPartial({ showCompleted: false })
+						return
+					}
+					if (filter === 'all') {
+						filterSession.replaceEffective(
+							removeFilterField(removeFilterField(filterSession.effective, 'status'), 'project'),
+						)
+						void display.actions.applyPartial({ showCompleted: true })
+						return
+					}
+					// 具体状态
+					const next = setFilterFieldClause(
+						removeFilterField(filterSession.effective, 'project'),
+						'status',
+						'is',
+						[filter as TaskStatus],
+					)
+					filterSession.replaceEffective(next)
+					void display.actions.applyPartial({
+						showCompleted:
+							filter === 'done' || filter === 'canceled' ? true : display.options.showCompleted,
+					})
 				},
 			}
 		})
-	}, [applyStatusMode, config.showStatusPills, standaloneOnly, statusMode])
+	}, [
+		config.showStatusPills,
+		display.actions,
+		display.options.showCompleted,
+		filterSession,
+		projection.standaloneOnly,
+		projection.statusValues,
+	])
 
 	const filterUiValue = useMemo(
 		() => ({
@@ -227,7 +267,6 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 				})
 				filterSession.clearTemp()
 			},
-			hiddenByFilterCount: null as number | null,
 		}),
 		[filterSession, projectOptions, scope],
 	)

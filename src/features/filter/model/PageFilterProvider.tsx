@@ -1,3 +1,10 @@
+/**
+ * 命令宿主的页筛选 **投影槽**（非 Filter 领域真源）。
+ *
+ * - 真源：ListFilterSession（FilterQuery）+ Display.showCompleted
+ * - 本文件：壳层 / 命令板读取的最小投影（启用态、完成可见、能力位）
+ * - 打开菜单 / 清除 / 切换完成：经 useRegisterFilterCommandAdapter 写回真源
+ */
 import {
 	createContext,
 	useContext,
@@ -8,97 +15,50 @@ import {
 	type PropsWithChildren,
 } from 'react'
 
-import type { ProjectOption } from '@/features/project'
-import type { TaskPriorityValue } from '@/features/task'
-import type { TaskListItem, TaskStatus } from '@/shared/types'
-
-export type PageFilterKind = 'root' | 'priority' | 'status' | 'date' | 'project'
-
-export type PageDateFilterValue =
-	| 'none'
-	| 'today'
-	| 'tomorrow'
-	| 'thisWeek'
-	| 'overdue'
-	| 'hasDate'
-	| 'noDate'
-
+/** 命令/快捷键所需的最小投影；勿当作第二套筛选状态 */
 export type PageFilterState = {
-	priorityValues: TaskPriorityValue[]
-	statusValues: TaskStatus[]
-	dateValue: PageDateFilterValue
-	projectId: string | null
-	standaloneOnly: boolean
-	showCompleted: boolean
 	hasActiveFilters: boolean
+	showCompleted: boolean
 }
 
 export type PageFilterCapabilities = {
-	supportsPriority: boolean
-	supportsStatus: boolean
-	supportsDate: boolean
-	supportsProject: boolean
 	supportsToggleCompleted: boolean
 	supportsClearAll: boolean
 }
 
-export type PageFilterApplyInput =
-	| { kind: 'priority'; values: TaskPriorityValue[] }
-	| { kind: 'status'; values: TaskStatus[] }
-	| { kind: 'date'; value: PageDateFilterValue }
-	| { kind: 'project'; projectId: string | null }
-	| { kind: 'standaloneOnly'; enabled: boolean }
-	| { kind: 'showCompleted'; value: boolean }
-
 export type PageFilterController = {
 	state: PageFilterState
 	capabilities: PageFilterCapabilities
-	currentFilterKind: PageFilterKind
-	availableProjects: ProjectOption[]
 	actions: {
-		openFilterPicker: (kind?: PageFilterKind) => void
-		applyFilter: (input: PageFilterApplyInput) => void
+		/** 打开锚定 FilterMenu */
+		openFilterMenu: () => void
 		toggleCompleted: () => void
 		clearAll: () => void
 	}
 }
 
 const EMPTY_CAPABILITIES: PageFilterCapabilities = {
-	supportsPriority: false,
-	supportsStatus: false,
-	supportsDate: false,
-	supportsProject: false,
 	supportsToggleCompleted: false,
 	supportsClearAll: false,
 }
 
 const EMPTY_STATE: PageFilterState = {
-	priorityValues: [],
-	statusValues: [],
-	dateValue: 'none',
-	projectId: null,
-	standaloneOnly: false,
-	showCompleted: true,
 	hasActiveFilters: false,
+	showCompleted: true,
 }
 
 const EMPTY_CONTROLLER: PageFilterController = {
 	state: EMPTY_STATE,
 	capabilities: EMPTY_CAPABILITIES,
-	currentFilterKind: 'root',
-	availableProjects: [],
 	actions: {
-		openFilterPicker: () => {},
-		applyFilter: () => {},
+		openFilterMenu: () => {},
 		toggleCompleted: () => {},
 		clearAll: () => {},
 	},
 }
 
-type PageFilterRegistration = PageFilterController
-
 type PageFilterActions = {
-	registerController: (token: symbol, controller: PageFilterRegistration) => void
+	registerController: (token: symbol, controller: PageFilterController) => void
 	clearControllerRegistration: (token: symbol) => void
 }
 
@@ -140,7 +100,7 @@ export function usePageFilterContext() {
 	return useContext(PageFilterStateContext) ?? EMPTY_CONTROLLER
 }
 
-export function useRegisterPageFilterController(controller: PageFilterRegistration) {
+export function useRegisterPageFilterController(controller: PageFilterController) {
 	const actions = useContext(PageFilterActionsContext)
 	const [token] = useState(() => Symbol('page-filter-registration'))
 
@@ -154,16 +114,4 @@ export function useRegisterPageFilterController(controller: PageFilterRegistrati
 			actions.clearControllerRegistration(token)
 		}
 	}, [actions, controller, token])
-}
-
-export function isTaskCompleted(status: TaskStatus) {
-	return status === 'done' || status === 'canceled'
-}
-
-export function hasTaskDate(task: TaskListItem) {
-	return Boolean(task.dueAt || task.plannedAt || task.remindAt)
-}
-
-export function resolveTaskDateValue(task: TaskListItem) {
-	return task.dueAt ?? task.plannedAt ?? task.remindAt
 }
