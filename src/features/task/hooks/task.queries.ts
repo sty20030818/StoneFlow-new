@@ -28,12 +28,14 @@ function normalizeListTasksInput(input: ListTasksInput): ListTasksInput {
 /** 列表 infinite query：key 不含 cursor，cursor 走 pageParam */
 export function taskListInfiniteQueryOptions(input: ListTasksInput) {
 	const base = normalizeListTasksInput(input)
-	// key 用稳定字段，去掉 cursor/limit 避免每页新 key
+	// key 用稳定字段，去掉 cursor/limit 避免每页新 key；下推筛选必须进 key
 	const keyInput: ListTasksInput = {
 		scope: base.scope,
 		viewKey: base.viewKey,
 		placement: base.placement,
 		...(base.statuses ? { statuses: base.statuses } : {}),
+		...(base.priorities?.length ? { priorities: base.priorities } : {}),
+		...(base.dateFilter ? { dateFilter: base.dateFilter } : {}),
 	}
 
 	return infiniteQueryOptions({

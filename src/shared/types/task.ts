@@ -105,12 +105,22 @@ export type TaskLink = {
 	updatedAt: string
 }
 
+/** 列表日期筛选（与 page filter 对齐；后端按 COALESCE(due,planned,remind)） */
+export type ListTasksDateFilter =
+	| { mode: 'hasDate' }
+	| { mode: 'noDate' }
+	| { mode: 'range'; from?: string | null; to?: string | null }
+
 export type ListTasksInput = {
 	scope: Scope
 	viewKey: TaskListViewKey
 	placement: TaskListPlacementInput
 	/** 可选 status 下推；省略表示不限 status（仍受 lifecycle 约束） */
 	statuses?: TaskStatus[]
+	/** 可选 priority 白名单下推；省略或空 = 不限 */
+	priorities?: number[]
+	/** 可选日期筛选下推 */
+	dateFilter?: ListTasksDateFilter | null
 	/** 页大小；省略用后端默认 */
 	limit?: number
 	/** keyset 游标；省略为第一页 */

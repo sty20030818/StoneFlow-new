@@ -229,6 +229,15 @@ export function useTaskPageFilterController({
 	return {
 		controller,
 		filteredTasks,
+		/** 供 listInput 下推：与 controller.state 同步的查询切片 */
+		querySlice: {
+			priorityValues,
+			statusValues,
+			dateValue,
+			projectId,
+			standaloneOnly,
+			showCompleted,
+		},
 	}
 }
 

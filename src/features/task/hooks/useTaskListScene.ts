@@ -10,6 +10,7 @@ import type { TaskStatus } from '@/shared/types'
 
 import { useTaskListData } from './useTaskData'
 import { useTaskCollectionScene } from './useTaskCollectionScene'
+import { useTaskPageFilterController } from './useTaskPageFilterController'
 import {
 	ALL_TASK_FILTERS,
 	INCOMPLETE_TASK_STATUSES,
@@ -20,7 +21,19 @@ import {
 	type TaskListSceneVariant,
 	type TaskListSubtitleTask,
 } from './list-scene/variantConfig'
+import { encodeListTasksDateFilter } from '../model/listDateFilter'
 import { formatTaskStatusLabel } from '../model/taskStatus'
+
+const LIST_SERVER_DRIVEN = [
+	'status',
+	'showCompleted',
+	'standalone',
+	'priority',
+	'date',
+	'project',
+] as const
+
+const EMPTY_LIST_FILTER_TASKS: import('@/shared/types').TaskListItem[] = []
 
 export type { TaskListSceneVariant } from './list-scene/variantConfig'
 export { TASK_LIST_PAGE_VIEW_KEY } from './list-scene/variantConfig'
@@ -63,25 +76,54 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 		return [statusMode]
 	}, [statusMode])
 
-	// All 与单 Space「所有任务」同一 viewKey 语义，仅 scope 不同
-	// standalone / statuses 下推 SQL，避免前端再滤与 totalCount 冲突
-	const listInput = useMemo(
-		() => ({
+	const projectOptions = useProjectOptions(scope)
+	const { spaces } = useSpaces()
+
+	// filter 状态在 data 之上：querySlice 驱动 listInput，避免二次滤与 totalCount 分叉
+	const listFilter = useTaskPageFilterController({
+		tasks: EMPTY_LIST_FILTER_TASKS,
+		projects: config.supportsProject ? projectOptions : undefined,
+		capabilities: {
+			supportsPriority: true,
+			supportsStatus: true,
+			supportsDate: true,
+			supportsProject: config.supportsProject,
+			supportsToggleCompleted: true,
+			supportsClearAll: true,
+		},
+		initialShowCompleted: statusMode !== 'incomplete',
+		serverDrivenFilters: LIST_SERVER_DRIVEN,
+	})
+
+	// All 与单 Space「所有任务」同一 viewKey；status/standalone/priority/date/project 全下推
+	const listInput = useMemo(() => {
+		const { priorityValues, dateValue, projectId, standaloneOnly: filterStandalone } =
+			listFilter.querySlice
+		const dateFilter = encodeListTasksDateFilter(dateValue)
+		const placement =
+			filterStandalone || standaloneOnly
+				? ({ kind: 'standalone' } as const)
+				: projectId
+					? ({ kind: 'project' as const, projectId })
+					: config.placement
+		return {
 			scope,
 			viewKey: TASK_LIST_PAGE_VIEW_KEY,
-			placement: standaloneOnly
-				? ({ kind: 'standalone' } as const)
-				: config.placement,
+			placement,
 			...(listStatuses ? { statuses: listStatuses } : {}),
-		}),
-		[config.placement, listStatuses, scope, standaloneOnly],
-	)
+			...(priorityValues.length > 0 ? { priorities: priorityValues } : {}),
+			...(dateFilter ? { dateFilter } : {}),
+		}
+	}, [
+		config.placement,
+		listFilter.querySlice,
+		listStatuses,
+		scope,
+		standaloneOnly,
+	])
 	const taskList = useTaskListData(listInput)
 	const taskBoardStatus = taskList.status
 	const taskSourceItems = taskBoardStatus === 'loading' ? [] : taskList.items
-
-	const projectOptions = useProjectOptions(scope)
-	const { spaces } = useSpaces()
 
 	const breadcrumbItems = useMemo(() => resolveBreadcrumb({ route: shellRoute }), [shellRoute])
 	const activeTaskId = activeDetail?.kind === 'task' ? activeDetail.id : null
@@ -113,9 +155,10 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 			openEntityDrawer({ kind: 'task', id: taskId })
 		},
 		onPeekTask: (taskId, source) => {
-			if (activeDetail?.kind !== 'task') {
-				taskPreviewController.openPreview(taskId, source)
+			if (activeDetail?.kind === 'task') {
+				return
 			}
+			taskPreviewController.openPreview(taskId, source)
 		},
 		projectOptions,
 		spaces,
@@ -132,8 +175,8 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 		fetchNextPageError: taskList.fetchNextPageError,
 		totalCount: taskList.totalCount,
 		loadedCount: taskList.loadedCount,
-		// status/showCompleted/standalone 已在 list_tasks 下推
-		serverDrivenFilters: ['status', 'showCompleted', 'standalone'],
+		serverDrivenFilters: LIST_SERVER_DRIVEN,
+		externalFilter: listFilter,
 	})
 
 	const applyStatusMode = useCallback(

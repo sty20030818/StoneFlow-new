@@ -27,8 +27,9 @@ use crate::{
             repository_lifecycle_for_preset, select_update_action, status_key,
         },
         types::{
-            CreatePlacement, CreateTaskPersistenceRecord, TaskListQuery, TaskPlacementQuery,
-            TaskProjectRecord, TaskRecord, TaskScope, TaskSpaceRecord, UpdateTaskPatch,
+            CreatePlacement, CreateTaskPersistenceRecord, TaskListDateFilter, TaskListQuery,
+            TaskPlacementQuery, TaskProjectRecord, TaskRecord, TaskScope, TaskSpaceRecord,
+            UpdateTaskPatch,
         },
     },
     ApplicationError,
@@ -54,6 +55,18 @@ pub enum TaskScopeKind {
 /// 默认列表页大小（首屏 + 续拉窗口）。
 pub const DEFAULT_TASK_LIST_PAGE_SIZE: u32 = 150;
 
+/// 列表日期筛选输入（与 page filter 对齐）。
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListTasksDateFilterInput {
+    /// hasDate | noDate | range
+    pub mode: String,
+    #[serde(default)]
+    pub from: Option<String>,
+    #[serde(default)]
+    pub to: Option<String>,
+}
+
 /// Task 列表查询输入。
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -64,6 +77,12 @@ pub struct ListTasksInput {
     /// 可选 status 白名单；省略或空 = 不限。
     #[serde(default)]
     pub statuses: Option<Vec<WorkStatus>>,
+    /// 可选 priority 白名单；省略或空 = 不限。
+    #[serde(default)]
+    pub priorities: Option<Vec<i32>>,
+    /// 可选日期筛选。
+    #[serde(default)]
+    pub date_filter: Option<ListTasksDateFilterInput>,
     /// 页大小；省略用默认。
     #[serde(default)]
     pub limit: Option<u32>,
@@ -385,11 +404,19 @@ where
             .as_deref()
             .map(decode_task_list_cursor)
             .transpose()?;
+        let priorities = input
+            .priorities
+            .as_ref()
+            .filter(|items| !items.is_empty())
+            .cloned();
+        let date_filter = normalize_list_date_filter(input.date_filter.as_ref())?;
         let list_query = TaskListQuery {
             space_id: scope.space_id.clone(),
             placement: placement.clone(),
             lifecycle: repository_lifecycle_for_preset(view_preset),
             statuses: statuses.clone(),
+            priorities: priorities.clone(),
+            date_filter: date_filter.clone(),
             // 多取 1 条用于判断是否还有下一页；lifecycle 二次滤后可能不足，见下
             limit: Some(limit.saturating_add(1)),
             cursor,
@@ -402,6 +429,8 @@ where
                 placement,
                 lifecycle: repository_lifecycle_for_preset(view_preset),
                 statuses,
+                priorities,
+                date_filter,
                 limit: None,
                 cursor: None,
             })
@@ -1487,6 +1516,25 @@ fn normalize_list_placement(
                 project_id,
             )?))
         }
+    }
+}
+
+fn normalize_list_date_filter(
+    input: Option<&ListTasksDateFilterInput>,
+) -> Result<Option<TaskListDateFilter>, ApplicationError> {
+    let Some(input) = input else {
+        return Ok(None);
+    };
+    match input.mode.as_str() {
+        "hasDate" => Ok(Some(TaskListDateFilter::HasDate)),
+        "noDate" => Ok(Some(TaskListDateFilter::NoDate)),
+        "range" => Ok(Some(TaskListDateFilter::Range {
+            from: input.from.clone(),
+            to: input.to.clone(),
+        })),
+        other => Err(ApplicationError::validation(format!(
+            "未知 dateFilter.mode: {other}"
+        ))),
     }
 }
 

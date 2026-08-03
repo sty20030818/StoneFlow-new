@@ -5,6 +5,7 @@ export type {
 	CreateTaskLinkInput,
 	DeleteTaskLinkInput,
 	ListTaskLinksInput,
+	ListTasksDateFilter,
 	ListTasksInput,
 	ListTasksPage,
 	TaskStatus,

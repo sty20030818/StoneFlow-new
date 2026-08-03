@@ -171,7 +171,8 @@ export function buildTaskBoardExtent({
 	loadedServerCount,
 	hasNextPage,
 }: BuildTaskBoardExtentInput): TaskBoardExtent {
-	const knownTotal = typeof totalCount === 'number' && totalCount > 0 ? totalCount : null
+	// totalCount 仅在 number 时可信（含 0）；undefined/null = 未就绪，不占位
+	const knownTotal = typeof totalCount === 'number' ? totalCount : null
 	const unloadedRowCount =
 		hasNextPage && knownTotal != null
 			? Math.max(0, knownTotal - Math.max(0, loadedServerCount))

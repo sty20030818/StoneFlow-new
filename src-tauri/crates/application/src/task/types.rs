@@ -110,6 +110,20 @@ pub struct TaskListCursor {
     pub id: String,
 }
 
+/// 列表日期筛选（与前端 page filter 对齐；有效日期 = COALESCE(due, planned, remind)）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TaskListDateFilter {
+    /// 任一日期字段非空
+    HasDate,
+    /// 全部日期字段为空
+    NoDate,
+    /// 有效日期落在 [from, to]（RFC3339，闭区间语义由调用方定边界）
+    Range {
+        from: Option<String>,
+        to: Option<String>,
+    },
+}
+
 /// Task 列表查询条件。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct TaskListQuery {
@@ -118,6 +132,10 @@ pub struct TaskListQuery {
     pub lifecycle: TaskLifecycleView,
     /// 可选 status 白名单；`None` 或空表示不限 status（仍受 lifecycle 约束）。
     pub statuses: Option<Vec<stoneflow_domain::WorkStatus>>,
+    /// 可选 priority 白名单；`None` 或空 = 不限。
+    pub priorities: Option<Vec<i32>>,
+    /// 可选日期筛选。
+    pub date_filter: Option<TaskListDateFilter>,
     /// 页大小；`None` 表示不限制（兼容旧全量路径，新主路径应始终带 limit）。
     pub limit: Option<u32>,
     /// keyset 游标；`None` 表示第一页。

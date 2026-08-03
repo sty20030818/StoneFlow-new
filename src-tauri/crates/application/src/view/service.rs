@@ -376,6 +376,9 @@ where
         }
         validate_definition(&scope, &filters, &sort_rules)?;
         let today = Local::now().date_naive();
+        // 候选：SQL 先收 status/project/due；其余（priority/多日期字段/system 本地日）内存收口。
+        // 与 list_tasks 同构 keyset 仅在「无额外内存语义 + position 序」时等价；
+        // 复杂 View 保持窗口契约（total_count + next_cursor + limit），规模 ≤2k。
         let mut tasks = self
             .task_reader
             .list_candidates(ViewTaskQuery {
@@ -389,7 +392,7 @@ where
             matches(task, &filters, today) && system_matches(task, system_key, today)
         });
         sort(&mut tasks, &sort_rules);
-        // 窗口：内存滤排后切片（规模 ≤2k）；total_count 为切片前总数
+        // 窗口：滤排后切片；total_count 为切片前总数（与 list 契约同形）
         let total_count = tasks.len() as u64;
         let limit = input
             .limit

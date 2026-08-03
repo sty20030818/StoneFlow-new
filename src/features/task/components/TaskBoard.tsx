@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { defaultRangeExtractor, useVirtualizer, type Range } from '@tanstack/react-virtual'
 import { uniq } from 'es-toolkit/array'
 import { registerTaskBoardScrollToTaskId } from './taskBoardScroll'
@@ -11,11 +11,11 @@ import {
 	buildTaskBoardExtent,
 	buildTaskBoardFlatItems,
 	buildTaskBoardItemOffsets,
-	buildTaskBoardStickyPush,
 	listTaskBoardStickyIndexes,
 	measureTaskBoardFlatSize,
 	type TaskBoardFlatItem,
 } from '@/features/task/model/taskBoardModel'
+import { useTaskBoardSticky } from '@/features/task/hooks/useTaskBoardSticky'
 
 import {
 	selectProjectTaskBoardOpenSections,
@@ -179,18 +179,6 @@ export function TaskBoard({
 	const scrollViewportRef = useScrollAreaViewport()
 	const measureRef = useRef<HTMLDivElement | null>(null)
 	const spacerSizeRef = useRef(0)
-	/** flat / sticky 几何缓存：供 scroll 帧 DOM 写 push，避免 setState 刷整表 */
-	const stickyMetaRef = useRef({ stickyIndexes: [] as number[], itemOffsets: [] as number[] })
-	const stickyShellRef = useRef<HTMLDivElement | null>(null)
-	const stickyPushLayerRef = useRef<HTMLDivElement | null>(null)
-	/** 期望吸顶的 flat index（scroll 几何） */
-	const stickyActiveIndexRef = useRef(0)
-	/** React 已提交到浮层的 flat index；与期望不一致时禁止写 transform，避免旧标题弹回顶部 */
-	const stickyRenderedIndexRef = useRef(0)
-	const stickyStuckRef = useRef(false)
-	// 首屏默认吸顶（header start=0）；避免 false→true 挂载闪一下
-	const [stickyActiveIndex, setStickyActiveIndex] = useState(0)
-	const [stickyStuck, setStickyStuck] = useState(true)
 
 	const groupedTasks = useMemo(() => {
 		const map: Record<TaskStatus, TaskListItem[]> = {
@@ -221,7 +209,19 @@ export function TaskBoard({
 	const stickyIndexes = useMemo(() => listTaskBoardStickyIndexes(flatItems), [flatItems])
 	const itemOffsets = useMemo(() => buildTaskBoardItemOffsets(flatItems), [flatItems])
 	const flatSizePx = useMemo(() => measureTaskBoardFlatSize(flatItems), [flatItems])
-	stickyMetaRef.current = { stickyIndexes, itemOffsets }
+
+	const {
+		stickyShellRef,
+		stickyPushLayerRef,
+		stickyActiveIndex,
+		stickyStuck,
+		nextStickyIndex,
+	} = useTaskBoardSticky({
+		scrollViewportRef,
+		stickyIndexes,
+		itemOffsets,
+		enabled: status === 'ready',
+	})
 
 	const taskShortcutOrder = useMemo(() => {
 		if (customSections && customSections.length > 0) {
@@ -236,7 +236,8 @@ export function TaskBoard({
 
 	// 服务端已拉条数；缺省用 tasks.length（无客户端再滤时等价）
 	const serverLoaded = loadedCount ?? tasks.length
-	const knownTotal = typeof totalCount === 'number' && totalCount > 0 ? totalCount : null
+	// totalCount 未就绪（undefined）时不锁占位；0 是合法总数
+	const knownTotal = typeof totalCount === 'number' ? totalCount : null
 	const { contentHeightPx, spacerSizePx } = buildTaskBoardExtent({
 		flatSizePx,
 		totalCount: knownTotal,
@@ -420,101 +421,8 @@ export function TaskBoard({
 		status,
 	])
 
-	/**
-	 * 把 push/显隐写到 DOM。
-	 * 关键：换分区瞬间若立刻把 transform 写成 0，而 React 仍渲染旧标题，
-	 * 被顶替的那一层会从「已顶出」弹回顶部 → 闪一下。
-	 * 因此仅当浮层内容 index 已与几何 active 对齐时才写 transform。
-	 */
-	const applyStickyDom = useCallback((scrollTop: number, forceTransform = false) => {
-		const layout = buildTaskBoardStickyPush({
-			stickyIndexes: stickyMetaRef.current.stickyIndexes,
-			itemOffsets: stickyMetaRef.current.itemOffsets,
-			scrollTop,
-		})
-		if (!layout) {
-			return null
-		}
-		const contentReady =
-			forceTransform || layout.activeStickyIndex === stickyRenderedIndexRef.current
-		const layer = stickyPushLayerRef.current
-		if (layer && contentReady) {
-			layer.style.transform = `translate3d(0, ${layout.pushOffset}px, 0)`
-		}
-		const shell = stickyShellRef.current
-		if (shell) {
-			// 常挂载，只用 visibility，避免 mount/unmount 闪一下
-			shell.style.visibility = layout.stuck ? 'visible' : 'hidden'
-			shell.style.pointerEvents = layout.stuck ? 'auto' : 'none'
-		}
-		return layout
-	}, [])
-
-	// sticky push：scroll 帧只写 DOM；index/stuck 变才 setState（换标题）
-	useEffect(() => {
-		const scrollEl = scrollViewportRef?.current
-		const readTop = () => scrollEl?.scrollTop ?? 0
-		let raf = 0
-		const apply = () => {
-			raf = 0
-			const scrollTop = readTop()
-			const layout = buildTaskBoardStickyPush({
-				stickyIndexes: stickyMetaRef.current.stickyIndexes,
-				itemOffsets: stickyMetaRef.current.itemOffsets,
-				scrollTop,
-			})
-			if (!layout) {
-				return
-			}
-
-			const indexChanged = layout.activeStickyIndex !== stickyActiveIndexRef.current
-			if (indexChanged) {
-				// 先登记期望 index 并触发 React 换标题；
-				// 此帧不写 transform，旧标题保持最后一次 push（通常已顶出视口）
-				stickyActiveIndexRef.current = layout.activeStickyIndex
-				setStickyActiveIndex(layout.activeStickyIndex)
-			} else {
-				applyStickyDom(scrollTop, false)
-			}
-
-			if (layout.stuck !== stickyStuckRef.current) {
-				stickyStuckRef.current = layout.stuck
-				setStickyStuck(layout.stuck)
-				const shell = stickyShellRef.current
-				if (shell) {
-					shell.style.visibility = layout.stuck ? 'visible' : 'hidden'
-					shell.style.pointerEvents = layout.stuck ? 'auto' : 'none'
-				}
-			}
-		}
-		apply()
-		if (!scrollEl) {
-			return
-		}
-		const onScroll = () => {
-			if (raf !== 0) return
-			raf = requestAnimationFrame(apply)
-		}
-		scrollEl.addEventListener('scroll', onScroll, { passive: true })
-		return () => {
-			scrollEl.removeEventListener('scroll', onScroll)
-			if (raf !== 0) cancelAnimationFrame(raf)
-		}
-	}, [applyStickyDom, scrollViewportRef, status, flatItems.length, stickyIndexes, itemOffsets])
-
 	const stickyHeaderItem = flatItems[stickyActiveIndex]
 	const stickyHeader = stickyHeaderItem?.kind === 'header' ? stickyHeaderItem : null
-	const nextStickyIndex = (() => {
-		const pos = stickyIndexes.indexOf(stickyActiveIndex)
-		return pos >= 0 && pos < stickyIndexes.length - 1 ? stickyIndexes[pos + 1]! : null
-	})()
-
-	// React 提交新标题后、浏览器绘制前：标记内容已就绪并写回 transform
-	useLayoutEffect(() => {
-		stickyRenderedIndexRef.current = stickyActiveIndex
-		const scrollTop = scrollViewportRef?.current?.scrollTop ?? 0
-		applyStickyDom(scrollTop, true)
-	}, [applyStickyDom, stickyActiveIndex, stickyStuck, stickyHeader?.key, scrollViewportRef])
 
 	useEffect(() => {
 		const indexByTaskId = new Map<string, number>()

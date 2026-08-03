@@ -16,9 +16,21 @@ import {
 	formatTaskStatusLabel,
 	useTaskCollectionScene,
 	useTaskListData,
+	useTaskPageFilterController,
 	useTaskPreviewController,
 } from '@/features/task'
-import type { Scope, TaskStatus } from '@/shared/types'
+import { encodeListTasksDateFilter } from '@/features/task/model/listDateFilter'
+import type { Scope, TaskListItem, TaskStatus } from '@/shared/types'
+
+const PROJECT_SERVER_DRIVEN = [
+	'status',
+	'showCompleted',
+	'project',
+	'priority',
+	'date',
+] as const
+
+const EMPTY_PROJECT_FILTER_TASKS: TaskListItem[] = []
 
 import {
 	useArchiveProjectMutation,
@@ -65,16 +77,38 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 	const deleteProject = useDeleteProjectMutation()
 	const [busyAction, setBusyAction] = useState<string | null>(null)
 
-	const taskList = useTaskListData(
-		useMemo(
-			() => ({
-				scope,
-				viewKey: 'all' as const,
-				placement: { kind: 'project' as const, projectId },
-			}),
-			[projectId, scope],
-		),
-	)
+	const projectFilter = useTaskPageFilterController({
+		tasks: EMPTY_PROJECT_FILTER_TASKS,
+		capabilities: {
+			supportsPriority: true,
+			supportsStatus: true,
+			supportsDate: true,
+			supportsProject: false,
+			supportsToggleCompleted: true,
+			supportsClearAll: true,
+		},
+		serverDrivenFilters: PROJECT_SERVER_DRIVEN,
+	})
+	const listInput = useMemo(() => {
+		const { priorityValues, dateValue, statusValues, showCompleted } = projectFilter.querySlice
+		const dateFilter = encodeListTasksDateFilter(dateValue)
+		// 项目详情默认 all；statusValues 非空时下推；隐藏完成时用 incomplete 三态
+		let statuses: TaskStatus[] | undefined
+		if (statusValues.length > 0) {
+			statuses = statusValues
+		} else if (!showCompleted) {
+			statuses = ['todo', 'doing', 'waiting']
+		}
+		return {
+			scope,
+			viewKey: 'all' as const,
+			placement: { kind: 'project' as const, projectId },
+			...(statuses ? { statuses } : {}),
+			...(priorityValues.length > 0 ? { priorities: priorityValues } : {}),
+			...(dateFilter ? { dateFilter } : {}),
+		}
+	}, [projectFilter.querySlice, projectId, scope])
+	const taskList = useTaskListData(listInput)
 	const visibleTasks = useMemo(
 		() => taskList.items.filter((task) => task.archivedAt === null),
 		[taskList.items],
@@ -116,7 +150,8 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 		fetchNextPageError: taskList.fetchNextPageError,
 		totalCount: taskList.totalCount,
 		loadedCount: taskList.loadedCount,
-		serverDrivenFilters: ['status', 'showCompleted', 'project'],
+		serverDrivenFilters: PROJECT_SERVER_DRIVEN,
+		externalFilter: projectFilter,
 		empty: project
 			? {
 					emptyActionLabel: '创建任务',

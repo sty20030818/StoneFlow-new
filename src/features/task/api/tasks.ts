@@ -55,6 +55,8 @@ export async function listTasks(input: ListTasksInput): Promise<ListTasksPage> {
 				projectId: input.placement.kind === 'project' ? input.placement.projectId : null,
 			},
 			statuses: input.statuses ?? null,
+			priorities: input.priorities?.length ? input.priorities : null,
+			dateFilter: input.dateFilter ?? null,
 			limit: input.limit ?? null,
 			cursor: input.cursor ?? null,
 		},

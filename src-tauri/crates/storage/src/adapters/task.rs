@@ -99,6 +99,7 @@ impl TaskPersistence for TaskPersistenceAdapter {
         };
         let include_archived = matches!(query.lifecycle, TaskLifecycleView::Archived);
         let status_filter = query.statuses.as_ref().filter(|items| !items.is_empty());
+        let priority_filter = query.priorities.as_ref().filter(|items| !items.is_empty());
         let cursor = query
             .cursor
             .as_ref()
@@ -111,6 +112,8 @@ impl TaskPersistence for TaskPersistenceAdapter {
                 placement,
                 include_archived,
                 status_filter.map(|items| items.as_slice()),
+                priority_filter.map(|items| items.as_slice()),
+                query.date_filter.as_ref(),
                 cursor,
                 limit,
             )
@@ -169,12 +172,15 @@ impl TaskPersistence for TaskPersistenceAdapter {
         } else {
             Some(statuses.as_slice())
         };
+        let priority_filter = query.priorities.as_ref().filter(|items| !items.is_empty());
         self.tasks
             .count_visible(
                 query.space_id.as_deref(),
                 placement,
                 include_archived,
                 status_filter,
+                priority_filter.map(|items| items.as_slice()),
+                query.date_filter.as_ref(),
             )
             .await
             .map_err(from_storage)
