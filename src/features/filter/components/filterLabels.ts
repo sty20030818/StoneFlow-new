@@ -1,21 +1,7 @@
+import { TASK_PRIORITY_OPTIONS, TASK_STATUS_OPTIONS } from '@/features/task/presentation'
+
 import type { FilterClause, FilterDateValue, FilterField, FilterOp } from '../core'
 import { FILTER_PROJECT_NONE_VALUE } from '../core'
-
-const STATUS_LABELS: Record<string, string> = {
-	todo: '待执行',
-	doing: '进行中',
-	waiting: '等待中',
-	done: '已完成',
-	canceled: '已取消',
-}
-
-const PRIORITY_LABELS: Record<string, string> = {
-	'0': '无优先级',
-	'1': 'P1',
-	'2': 'P2',
-	'3': 'P3',
-	'4': 'P4',
-}
 
 const DATE_LABELS: Record<FilterDateValue, string> = {
 	today: '今天',
@@ -52,9 +38,9 @@ export function formatFilterValueLabel(
 ): string {
 	switch (field) {
 		case 'status':
-			return STATUS_LABELS[value] ?? value
+			return TASK_STATUS_OPTIONS.find((option) => option.value === value)?.label ?? value
 		case 'priority':
-			return PRIORITY_LABELS[value] ?? `P${value}`
+			return TASK_PRIORITY_OPTIONS.find((option) => String(option.value) === value)?.label ?? value
 		case 'project':
 			if (value === FILTER_PROJECT_NONE_VALUE) return '独立事项'
 			return projects?.find((p) => p.id === value)?.name ?? value
@@ -76,20 +62,3 @@ export function formatClauseValuesSummary(
 }
 
 export const FILTER_MENU_FIELDS: FilterField[] = ['status', 'priority', 'project', 'due', 'planned']
-
-export const STATUS_OPTIONS = Object.entries(STATUS_LABELS).map(([value, label]) => ({
-	value,
-	label,
-}))
-
-export const PRIORITY_OPTIONS = ['4', '3', '2', '1', '0'].map((value) => ({
-	value,
-	label: PRIORITY_LABELS[value] ?? value,
-}))
-
-export const DATE_OPTIONS = (
-	['today', 'tomorrow', 'thisWeek', 'overdue', 'hasDate', 'noDate'] as const
-).map((value) => ({
-	value,
-	label: DATE_LABELS[value],
-}))

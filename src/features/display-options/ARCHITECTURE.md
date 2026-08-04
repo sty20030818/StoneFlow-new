@@ -1,7 +1,7 @@
 # display-options · 任务列表显示选项
 
 > 作用：描述 **当前已落地** 的 `src/features/display-options` 边界  
-> 最后更新：2026-08-03
+> 最后更新：2026-08-04
 
 ---
 
@@ -14,6 +14,7 @@
 - 偏好读写（workspace default + personal override，Tauri store）
 - `applyTaskDisplayOptionsToTasks`（含 `showCompleted === false` 时隐藏 done/canceled）
 - 工具条「显示」入口（`DisplayOptionsButton`）与面板（方向内嵌、设为默认 / 恢复默认）
+- 面板表面固定为紧凑的左标签、右控件行；属性使用 pill，底栏只保留重置与设为默认
 
 **不负责：**
 

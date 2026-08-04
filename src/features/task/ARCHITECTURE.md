@@ -1,6 +1,6 @@
 # task · 任务域
 
-> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-07-19
+> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-08-04
 
 ---
 
@@ -27,7 +27,7 @@
   → commands/registerTaskCommands · runTaskRowBulkCommand
 ```
 
-跨模块 **只** `import { … } from '@/features/task'`（placement 窄契约可用 `@/features/task/contract`）。
+跨模块只使用稳定入口：完整 facade 走 `@/features/task`，placement 纯契约走 `@/features/task/contract`，文案与指示器走 `@/features/task/presentation`。
 **禁止** `features/task` → `@/layout/**`。
 
 ---
@@ -39,6 +39,7 @@ src/features/task/
 ├── ARCHITECTURE.md
 ├── index.ts                 # 主 public
 ├── contract.ts              # placement 窄契约（避主 barrel 环）
+├── presentation.ts          # 文案与纯展示指示器窄契约
 ├── api/                     # IO only（唯一 invoke）
 ├── hooks/
 │   ├── task.keys|queries|mutations
@@ -67,6 +68,7 @@ src/features/task/
 | 筛选 | `useTaskPageFilterController` |
 | 命令选中 | `buildTaskCommandSelection` |
 | placement | 类型 + `buildTaskPlacementGroups` · `./contract` |
+| 展示 | status / priority 文案与指示器 · `./presentation` |
 | 批量 | `taskBulkActions` · `createTaskBulkAdapter` |
 | 命令 | `registerTaskCommands`（行快捷键包内调 handlers） |
 | 详情 | `TaskPage` · `TaskDrawer` · `TaskPreview` · Preview Provider/controller |

@@ -3,6 +3,7 @@ import type { ComponentProps, ReactNode } from 'react'
 
 import { cn } from '@/shared/lib/utils'
 import { Button, buttonVariants } from '@/shared/components/base/button'
+import { Checkbox } from '@/shared/components/base/checkbox'
 import type { VariantProps } from 'class-variance-authority'
 
 type StopEvent = {
@@ -38,7 +39,7 @@ export type RowMetaButtonProps = Omit<ComponentProps<'button'>, 'children'> &
 export type RowActionButtonProps = ComponentProps<typeof Button>
 
 /**
- * 行级选择框：保持固定 20x20 触发区域，未选中时只通过透明度变化，不改变占位。
+ * 行级选择框：保持固定 20x20 布局占位；命中区域由基础 Checkbox 扩展。
  */
 export function RowSelectionCell({
 	checked,
@@ -51,47 +52,25 @@ export function RowSelectionCell({
 	const forceVisible = checked || visible
 
 	return (
-		<button
-			aria-checked={checked}
-			aria-label={ariaLabel}
+		<span
 			className={cn(
-				'flex size-5 shrink-0 items-center justify-center rounded-full bg-transparent p-0 outline-none transition-colors disabled:pointer-events-none disabled:opacity-40',
+				'flex size-5 shrink-0 items-center justify-center transition-opacity',
 				forceVisible
 					? 'opacity-100'
 					: 'opacity-0 group-hover/row-shell:opacity-100 group-focus-within/row-shell:opacity-100',
-				'focus-visible:border-border focus-visible:ring-0',
 			)}
-			data-checked={checked}
-			disabled={disabled}
-			onClick={(event) => {
-				stopRowEventPropagation(event)
-				onCheckedChange()
-			}}
-			onKeyDownCapture={stopRowEventPropagation}
-			onPointerDownCapture={stopRowEventPropagation}
-			role='checkbox'
-			type='button'
+			data-slot='row-selection-cell'
 		>
-			<span
-				className={cn(
-					'flex size-4 items-center justify-center rounded-[5px] border transition-colors',
-					checked
-						? 'border-primary bg-primary text-primary-foreground'
-						: 'border-sf-border-strong bg-transparent text-transparent hover:border-sf-icon-secondary',
-				)}
-			>
-				<svg
-					aria-hidden
-					className='size-3'
-					fill='none'
-					stroke='currentColor'
-					strokeWidth='2.5'
-					viewBox='0 0 24 24'
-				>
-					<path d='M5 12.5L9.5 17L19 7.5' />
-				</svg>
-			</span>
-		</button>
+			<Checkbox
+				aria-label={ariaLabel}
+				checked={checked}
+				disabled={disabled}
+				onCheckedChange={() => onCheckedChange()}
+				onClick={stopRowEventPropagation}
+				onKeyDownCapture={stopRowEventPropagation}
+				onPointerDownCapture={stopRowEventPropagation}
+			/>
+		</span>
 	)
 }
 

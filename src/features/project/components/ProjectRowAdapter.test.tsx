@@ -130,9 +130,11 @@ describe('ProjectRowAdapter', () => {
 			rowState: { isPending: false, isHovered: true, hoverSource: 'keyboard' },
 		})
 
-		expect(screen.getByRole('checkbox', { name: '选择项目 项目 A' }).className).toContain(
-			'opacity-100',
-		)
+		expect(
+			screen
+				.getByRole('checkbox', { name: '选择项目 项目 A' })
+				.closest('[data-slot="row-selection-cell"]')?.className,
+		).toContain('opacity-100')
 	})
 
 	it('hover 会更新 row shortcut hover', () => {

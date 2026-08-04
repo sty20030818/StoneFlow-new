@@ -30,10 +30,8 @@ import {
 	formatClauseValuesSummary,
 	formatFilterFieldLabel,
 	formatFilterOpLabel,
-	STATUS_OPTIONS,
-	PRIORITY_OPTIONS,
-	DATE_OPTIONS,
 } from './filterLabels'
+import { getFilterValueOptions } from './filterOptionCatalog'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/base/popover'
 
 export function FilterBar({ className }: { className?: string }) {
@@ -208,19 +206,7 @@ function ValuesPicker({
 	projects?: Array<{ id: string; name: string }>
 }) {
 	const [open, setOpen] = useState(false)
-	const options =
-		clause.field === 'status'
-			? STATUS_OPTIONS
-			: clause.field === 'priority'
-				? PRIORITY_OPTIONS
-				: clause.field === 'due' || clause.field === 'planned'
-					? DATE_OPTIONS
-					: clause.field === 'project'
-						? [
-								{ value: '__none__', label: '独立事项' },
-								...(projects ?? []).map((p) => ({ value: p.id, label: p.name })),
-							]
-						: []
+	const options = getFilterValueOptions(clause.field, projects)
 
 	function toggle(value: string) {
 		const next = clause.values.includes(value)
@@ -254,6 +240,11 @@ function ValuesPicker({
 							onClick={() => toggle(option.value)}
 							type='button'
 						>
+							{option.leading ? (
+								<span className='flex size-4 shrink-0 items-center justify-center' aria-hidden>
+									{option.leading}
+								</span>
+							) : null}
 							<span className='truncate'>{option.label}</span>
 						</button>
 					)

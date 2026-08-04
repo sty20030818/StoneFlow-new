@@ -1,7 +1,7 @@
 # filter · 筛选平台
 
 > 作用：描述 **当前已落地** 的 `src/features/filter` 边界  
-> 最后更新：2026-08-03
+> 最后更新：2026-08-04
 
 ---
 
@@ -12,7 +12,7 @@ URL search `f` ──temp──┐
                        ├─► effective ──adapt──► list_tasks / run_view
 View.filters ──base────┘
 
-UI：PageFilterButton → FilterMenu
+UI：PageFilterButton → FilterMenu → FilterValueSubMenu → FilterValueOption
     FilterBar → chip / Clear(dirty) / Save
 F → emitFilterUiEvent → FilterMenu
 Shift+F → Display 面板（display-options）
@@ -40,7 +40,12 @@ src/features/filter/
 │   ├── filterUiEvents.ts
 │   ├── useRegisterFilterCommandAdapter.ts
 │   └── PageFilterProvider.tsx   # 命令宿主注册槽
-├── components/     # PageFilterButton · FilterMenu · FilterBar
+├── components/
+│   ├── FilterMenu.tsx              # 一级菜单壳与 session 接线
+│   ├── FilterValueSubMenu.tsx      # 二级搜索与值列表
+│   ├── FilterValueOption.tsx       # 左勾选 · icon · 文案 · 可选 count
+│   ├── filterOptionCatalog.tsx     # 字段值目录与 task 指示器接线
+│   └── FilterBar.tsx
 ├── commands/
 └── index.ts
 ```
@@ -53,6 +58,8 @@ src/features/filter/
 - 会话：`useListFilterSession`、`ListFilterUiProvider`
 - 命令：`registerFilterCommands`、`useRegisterFilterCommandAdapter`、`emitFilterUiEvent`
 - UI：`PageFilterButton`、`FilterBar`、`FilterMenu`
+
+Filter 二级值行使用纯视觉 `SelectionIndicator`，交互语义由外层 `menuitemcheckbox` 持有；status / priority 的文案与图标只从 `@/features/task/presentation` 读取，不在 filter 内维护第二套定义。菜单选择即时写入 `session.replaceEffective`，并保持一级、二级菜单打开。
 
 ---
 

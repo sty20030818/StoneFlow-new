@@ -141,28 +141,17 @@ export { taskDetailQueryOptions } from './hooks/task.queries'
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * 优先级选项与展示标签。
+ * 主 facade 汇总展示契约；跨 feature 的纯展示消费应直连 `./presentation`。
  */
 export {
+	PriorityIcon,
 	TASK_PRIORITY_OPTIONS,
+	TASK_STATUS_OPTIONS,
+	TaskStatusIndicator,
 	type TaskPriorityValue,
 	formatTaskPriorityLabel,
-} from './model/taskPriority'
-
-/**
- * 状态选项与展示标签。
- */
-export { TASK_STATUS_OPTIONS, formatTaskStatusLabel } from './model/taskStatus'
-
-/**
- * 纯展示优先级图标。
- */
-export { PriorityIcon } from './model/indicators/PriorityIcon'
-
-/**
- * 纯展示状态指示器。
- */
-export { TaskStatusIndicator } from './model/indicators/TaskStatusIndicator'
+	formatTaskStatusLabel,
+} from './presentation'
 
 /**
  * 选择算法纯函数（带状态请用 {@link useTaskSelection}）。

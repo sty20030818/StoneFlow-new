@@ -4,7 +4,7 @@
  * Linear 式显示选项面板：紧凑行（左标签 + 右控件）+ 属性 pill + 底栏 Reset / 设为默认。
  */
 import type { ReactNode } from 'react'
-import { ArrowDownUpIcon, ArrowUpIcon, ArrowDownIcon } from 'lucide-react'
+import { ArrowUpIcon, ArrowDownIcon } from 'lucide-react'
 
 import {
 	getTaskDisplayPageCapabilities,
@@ -114,16 +114,7 @@ export function DisplayOptionsPanel({
 		<div className={cn('flex w-full min-w-0 flex-col', className)}>
 			{/* 分组 / 排序区 — 对齐 Linear 行布局 */}
 			<div className='flex flex-col gap-0.5 px-1 pb-2'>
-				<DisplayOptionRow
-					label='分组'
-					leading={
-						canToggleOrderDirection ? (
-							<span className='text-sf-text-tertiary' aria-hidden>
-								<ArrowDownUpIcon className='size-3.5' />
-							</span>
-						) : null
-					}
-				>
+				<DisplayOptionRow label='分组'>
 					<div className='flex min-w-0 items-center gap-1'>
 						<CompactSelect
 							ariaLabel='分组'
@@ -165,7 +156,7 @@ export function DisplayOptionsPanel({
 								aria-label={
 									options.orderDirection === 'asc' ? '升序，点击切换为降序' : '降序，点击切换为升序'
 								}
-								className='flex size-6 items-center justify-center rounded-md text-sf-text-tertiary hover:bg-muted hover:text-foreground'
+								className='flex size-8 items-center justify-center rounded-md text-sf-text-tertiary transition-[color,background-color,transform] hover:bg-muted hover:text-foreground active:scale-[0.96]'
 								disabled={isPending}
 								onClick={() =>
 									void actions.setOrdering(
@@ -274,7 +265,7 @@ export function DisplayOptionsPanel({
 			{/* 底栏：Reset 左 · 设为默认 右 */}
 			<div className='flex items-center justify-between gap-2 px-2 py-2'>
 				<button
-					className='text-[13px] text-sf-text-secondary hover:text-foreground disabled:opacity-50'
+					className='text-[13px] text-sf-text-secondary transition-[color,transform] hover:text-foreground active:scale-[0.96] disabled:opacity-50'
 					disabled={isPending}
 					onClick={() => void actions.resetToDefault()}
 					type='button'
@@ -282,7 +273,7 @@ export function DisplayOptionsPanel({
 					重置
 				</button>
 				<button
-					className='text-[13px] font-medium text-primary hover:underline disabled:opacity-50'
+					className='text-[13px] font-medium text-primary transition-transform hover:underline active:scale-[0.96] disabled:opacity-50'
 					disabled={isPending}
 					onClick={() => void actions.setAsDefault()}
 					type='button'

@@ -89,8 +89,11 @@ describe('RowSelectionCell', () => {
 		)
 
 		const checkbox = screen.getByRole('checkbox', { name: '选择任务 A' })
-		expect(checkbox.className).toContain('opacity-0')
-		expect(checkbox.className).toContain('group-hover/row-shell:opacity-100')
+		const cell = checkbox.closest('[data-slot="row-selection-cell"]')
+		expect(cell?.className).toContain('opacity-0')
+		expect(cell?.className).toContain('group-hover/row-shell:opacity-100')
+		expect(checkbox).toHaveAttribute('data-slot', 'checkbox')
+		expect(checkbox).toHaveAttribute('data-state', 'unchecked')
 
 		fireEvent.click(checkbox)
 		expect(onCheckedChange).toHaveBeenCalledTimes(1)
@@ -107,9 +110,15 @@ describe('RowSelectionCell', () => {
 			/>,
 		)
 
-		expect(screen.getByRole('checkbox', { name: '选择任务 A' }).className).toContain('opacity-100')
+		expect(
+			screen
+				.getByRole('checkbox', { name: '选择任务 A' })
+				.closest('[data-slot="row-selection-cell"]')?.className,
+		).toContain('opacity-100')
 
 		rerender(<RowSelectionCell ariaLabel='选择任务 A' checked onCheckedChange={onCheckedChange} />)
-		expect(screen.getByRole('checkbox', { name: '选择任务 A' }).className).toContain('opacity-100')
+		const checked = screen.getByRole('checkbox', { name: '选择任务 A' })
+		expect(checked.closest('[data-slot="row-selection-cell"]')?.className).toContain('opacity-100')
+		expect(checked).toHaveAttribute('data-state', 'checked')
 	})
 })
