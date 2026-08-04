@@ -1,7 +1,6 @@
 'use client'
 
 import { cn } from '@/shared/lib/utils'
-import { Button } from '@/shared/components/base/button'
 
 type PropertyToggleItem = {
 	key: string
@@ -17,31 +16,32 @@ type PropertyToggleGridProps = {
 }
 
 /**
- * 显示属性保持轻量 toggle 语义，不再额外承载说明卡片。
+ * Linear 式显示属性 pill：选中实心灰底，未选中描边。
  */
 export function PropertyToggleGrid({ items, className }: PropertyToggleGridProps) {
 	return (
 		<div
 			aria-label='显示属性'
-			className={cn('flex flex-wrap items-center gap-2', className)}
+			className={cn('flex flex-wrap items-center gap-1.5', className)}
 			role='group'
 		>
 			{items.map((item) => (
-				<Button
+				<button
 					aria-pressed={item.checked}
 					className={cn(
-						'h-8 rounded-full px-3',
-						item.checked ? undefined : 'text-sf-text-secondary',
+						'h-7 rounded-full px-2.5 text-[12px] font-medium transition-colors',
+						item.checked
+							? 'bg-muted text-foreground'
+							: 'border border-border/80 bg-transparent text-sf-text-secondary hover:bg-muted/50',
+						item.disabled && 'pointer-events-none opacity-50',
 					)}
 					disabled={item.disabled}
 					key={item.key}
 					onClick={item.onToggle}
-					size='sm'
 					type='button'
-					variant={item.checked ? 'outline' : 'ghost'}
 				>
 					{item.label}
-				</Button>
+				</button>
 			))}
 		</div>
 	)

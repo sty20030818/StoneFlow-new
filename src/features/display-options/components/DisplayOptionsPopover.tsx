@@ -39,7 +39,7 @@ export function DisplayOptionsPopover({
 			<PopoverTrigger asChild>{trigger}</PopoverTrigger>
 			<PopoverContent
 				align='end'
-				className={cn('w-[min(360px,calc(100vw-24px))] p-3', className)}
+				className={cn('w-[min(320px,calc(100vw-24px))] p-2', className)}
 				sideOffset={8}
 			>
 				<DisplayOptionsPanel

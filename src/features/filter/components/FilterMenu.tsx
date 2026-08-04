@@ -1,22 +1,34 @@
 'use client'
 
 /**
- * 锚定「添加筛选」菜单：字段 → 多选值 → 写入 session temp。
+ * Linear 式筛选菜单：一级字段列表 + 侧向 Sub 二级值列表。
+ * 勾选即写入 FilterQuery；无 drill-in、无「应用」按钮。
  */
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { CheckIcon, ChevronRightIcon } from 'lucide-react'
+import { useMemo, useState, type ReactNode } from 'react'
+import {
+	CalendarClockIcon,
+	CalendarIcon,
+	CircleDotIcon,
+	FolderIcon,
+	SignalHighIcon,
+} from 'lucide-react'
 
-import { Button } from '@/shared/components/base/button'
-import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/base/popover'
+import { Input } from '@/shared/components/base/input'
+import { Kbd } from '@/shared/components/base/kbd'
+import {
+	DropdownMenu,
+	DropdownMenuCheckboxItem,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSub,
+	DropdownMenuSubContent,
+	DropdownMenuSubTrigger,
+	DropdownMenuTrigger,
+} from '@/shared/components/base/dropdown-menu'
 import { cn } from '@/shared/lib/utils'
 
-import {
-	createFilterClause,
-	createFilterClauseId,
-	setFilterFieldClause,
-	type FilterClause,
-	type FilterField,
-} from '../core'
+import { setFilterFieldClause, type FilterField, type FilterQuery } from '../core'
 import { useListFilterUi } from '../model/ListFilterUiContext'
 import {
 	DATE_OPTIONS,
@@ -33,90 +45,114 @@ type FilterMenuProps = {
 	className?: string
 }
 
-export function FilterMenu({
-	trigger,
-	open,
-	onOpenChange,
-	className,
-}: FilterMenuProps) {
+const FIELD_ICONS: Record<FilterField, ReactNode> = {
+	status: <CircleDotIcon className='size-4 text-sf-text-tertiary' />,
+	priority: <SignalHighIcon className='size-4 text-sf-text-tertiary' />,
+	project: <FolderIcon className='size-4 text-sf-text-tertiary' />,
+	due: <CalendarIcon className='size-4 text-sf-text-tertiary' />,
+	planned: <CalendarClockIcon className='size-4 text-sf-text-tertiary' />,
+}
+
+export function FilterMenu({ trigger, open, onOpenChange, className }: FilterMenuProps) {
 	const ui = useListFilterUi()
-	const [field, setField] = useState<FilterField | null>(null)
 	const [internalOpen, setInternalOpen] = useState(false)
+	const [query, setQuery] = useState('')
 	const isOpen = open ?? internalOpen
 	const setOpen = onOpenChange ?? setInternalOpen
-
-	useEffect(() => {
-		if (!isOpen) {
-			setField(null)
-		}
-	}, [isOpen])
 
 	if (!ui) {
 		return <>{trigger}</>
 	}
 
 	const { session, projects } = ui
+	const normalizedQuery = query.trim().toLowerCase()
+	const visibleFields = FILTER_MENU_FIELDS.filter((field) =>
+		normalizedQuery.length === 0
+			? true
+			: formatFilterFieldLabel(field).toLowerCase().includes(normalizedQuery),
+	)
 
 	function handleOpenChange(next: boolean) {
 		setOpen(next)
 		if (!next) {
-			setField(null)
+			setQuery('')
 		}
 	}
 
-	function applyClause(nextClause: FilterClause) {
-		session.replaceEffective(
-			setFilterFieldClause(session.effective, nextClause.field, nextClause.op, nextClause.values),
-		)
-		handleOpenChange(false)
+	function toggleValue(field: FilterField, value: string) {
+		const existing = session.effective.clauses.find((c) => c.field === field && c.op === 'is')
+		const current = existing?.values ?? []
+		const nextValues = current.includes(value)
+			? current.filter((item) => item !== value)
+			: [...current, value]
+		const next: FilterQuery = setFilterFieldClause(session.effective, field, 'is', nextValues)
+		session.replaceEffective(next)
+	}
+
+	function isChecked(field: FilterField, value: string) {
+		const existing = session.effective.clauses.find((c) => c.field === field && c.op === 'is')
+		return existing?.values.includes(value) ?? false
 	}
 
 	return (
-		<Popover onOpenChange={handleOpenChange} open={isOpen}>
-			<PopoverTrigger asChild>{trigger}</PopoverTrigger>
-			<PopoverContent align='end' className={cn('w-64 p-1', className)} sideOffset={6}>
-				{field == null ? (
-					<div className='flex flex-col py-1' role='menu'>
-						<p className='px-2 py-1.5 text-[11px] font-medium text-sf-text-tertiary'>添加筛选</p>
-						{FILTER_MENU_FIELDS.map((item) => (
-							<button
-								className='flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted'
-								key={item}
-								onClick={() => setField(item)}
-								type='button'
-							>
-								<span>{formatFilterFieldLabel(item)}</span>
-								<ChevronRightIcon className='size-3.5 text-sf-text-tertiary' />
-							</button>
-						))}
-					</div>
-				) : (
-					<FieldValuePicker
-						existing={session.effective.clauses.find((c) => c.field === field)}
-						field={field}
-						onApply={applyClause}
-						onBack={() => setField(null)}
-						projects={projects}
+		<DropdownMenu onOpenChange={handleOpenChange} open={isOpen}>
+			<DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
+			<DropdownMenuContent align='end' className={cn('w-60 min-w-60', className)} sideOffset={6}>
+				{/* Linear: 顶部搜索 + F 快捷键提示 */}
+				<div className='flex items-center gap-2 border-b border-border px-2 py-1.5'>
+					<Input
+						aria-label='筛选字段'
+						className='h-7 border-0 bg-transparent px-1 shadow-none focus-visible:ring-0'
+						onChange={(event) => setQuery(event.target.value)}
+						onKeyDown={(event) => event.stopPropagation()}
+						placeholder='添加筛选…'
+						value={query}
 					/>
-				)}
-			</PopoverContent>
-		</Popover>
+					<Kbd className='shrink-0'>F</Kbd>
+				</div>
+
+				<DropdownMenuGroupSection>
+					{visibleFields.map((field) => (
+						<DropdownMenuSub key={field}>
+							<DropdownMenuSubTrigger className='gap-2'>
+								{FIELD_ICONS[field]}
+								<span className='flex-1'>{formatFilterFieldLabel(field)}</span>
+							</DropdownMenuSubTrigger>
+							<DropdownMenuSubContent className='w-56 max-h-72 overflow-y-auto p-0'>
+								<FieldValueSubMenu
+									field={field}
+									isChecked={(value) => isChecked(field, value)}
+									onToggle={(value) => toggleValue(field, value)}
+									projects={projects}
+								/>
+							</DropdownMenuSubContent>
+						</DropdownMenuSub>
+					))}
+					{visibleFields.length === 0 ? (
+						<DropdownMenuItem disabled>无匹配字段</DropdownMenuItem>
+					) : null}
+				</DropdownMenuGroupSection>
+			</DropdownMenuContent>
+		</DropdownMenu>
 	)
 }
 
-function FieldValuePicker({
+function DropdownMenuGroupSection({ children }: { children: ReactNode }) {
+	return <div className='p-1'>{children}</div>
+}
+
+function FieldValueSubMenu({
 	field,
-	existing,
-	onApply,
-	onBack,
+	isChecked,
+	onToggle,
 	projects,
 }: {
 	field: FilterField
-	existing?: FilterClause
-	onApply: (clause: FilterClause) => void
-	onBack: () => void
+	isChecked: (value: string) => boolean
+	onToggle: (value: string) => void
 	projects?: Array<{ id: string; name: string }>
 }) {
+	const [subQuery, setSubQuery] = useState('')
 	const options = useMemo(() => {
 		switch (field) {
 			case 'status':
@@ -129,92 +165,55 @@ function FieldValuePicker({
 			case 'project':
 				return [
 					{ value: '__none__', label: '独立事项' },
-					...(projects ?? []).map((p) => ({ value: p.id, label: p.name })),
+					...(projects ?? []).map((project) => ({
+						value: project.id,
+						label: project.name,
+					})),
 				]
 			default:
 				return []
 		}
 	}, [field, projects])
 
-	const [selected, setSelected] = useState<string[]>(() => existing?.values ?? [])
-	const [op, setOp] = useState<'is' | 'is_not'>(existing?.op === 'is_not' ? 'is_not' : 'is')
-
-	function toggle(value: string) {
-		setSelected((current) =>
-			current.includes(value) ? current.filter((item) => item !== value) : [...current, value],
-		)
-	}
+	const filtered = useMemo(() => {
+		const q = subQuery.trim().toLowerCase()
+		if (!q) return options
+		return options.filter((option) => option.label.toLowerCase().includes(q))
+	}, [options, subQuery])
 
 	return (
-		<div className='flex flex-col py-1'>
-			<div className='flex items-center justify-between gap-2 px-2 py-1.5'>
-				<button
-					className='text-[12px] text-sf-text-tertiary hover:text-foreground'
-					onClick={onBack}
-					type='button'
-				>
-					← 返回
-				</button>
-				<span className='text-[12px] font-medium'>{formatFilterFieldLabel(field)}</span>
-				<div className='flex gap-1'>
-					<button
-						className={cn(
-							'rounded px-1.5 py-0.5 text-[11px]',
-							op === 'is' ? 'bg-muted font-medium' : 'text-sf-text-tertiary',
-						)}
-						onClick={() => setOp('is')}
-						type='button'
+		<>
+			<div className='border-b border-border px-2 py-1.5'>
+				<Input
+					aria-label={`${formatFilterFieldLabel(field)} 筛选`}
+					className='h-7 border-0 bg-transparent px-1 shadow-none focus-visible:ring-0'
+					onChange={(event) => setSubQuery(event.target.value)}
+					onKeyDown={(event) => event.stopPropagation()}
+					placeholder='筛选…'
+					value={subQuery}
+				/>
+			</div>
+			<div className='p-1'>
+				{filtered.map((option) => (
+					<DropdownMenuCheckboxItem
+						checked={isChecked(option.value)}
+						className='pr-2 pl-2'
+						key={option.value}
+						onCheckedChange={() => onToggle(option.value)}
+						// 多选时保持菜单打开
+						onSelect={(event) => event.preventDefault()}
 					>
-						是
-					</button>
-					<button
-						className={cn(
-							'rounded px-1.5 py-0.5 text-[11px]',
-							op === 'is_not' ? 'bg-muted font-medium' : 'text-sf-text-tertiary',
-						)}
-						onClick={() => setOp('is_not')}
-						type='button'
-					>
-						不是
-					</button>
-				</div>
+						<span className='flex min-w-0 flex-1 items-center gap-2'>
+							<span className='truncate'>{option.label}</span>
+						</span>
+					</DropdownMenuCheckboxItem>
+				))}
+				{filtered.length === 0 ? (
+					<DropdownMenuLabel className='normal-case tracking-normal text-sf-text-tertiary'>
+						无匹配项
+					</DropdownMenuLabel>
+				) : null}
 			</div>
-			<div className='max-h-56 overflow-y-auto'>
-				{options.map((option) => {
-					const checked = selected.includes(option.value)
-					return (
-						<button
-							className='flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted'
-							key={option.value}
-							onClick={() => toggle(option.value)}
-							type='button'
-						>
-							<span
-								className={cn(
-									'flex size-4 items-center justify-center rounded border',
-									checked ? 'border-primary bg-primary text-primary-foreground' : 'border-border',
-								)}
-							>
-								{checked ? <CheckIcon className='size-3' /> : null}
-							</span>
-							{option.label}
-						</button>
-					)
-				})}
-			</div>
-			<div className='border-t border-border px-2 py-1.5'>
-				<Button
-					className='w-full'
-					disabled={selected.length === 0}
-					onClick={() =>
-						onApply(createFilterClause(field, op, selected, existing?.id ?? createFilterClauseId()))
-					}
-					size='sm'
-					type='button'
-				>
-					应用
-				</Button>
-			</div>
-		</div>
+		</>
 	)
 }

@@ -34,8 +34,8 @@ describe('DisplayOptionsButton', () => {
 
 		fireEvent.click(screen.getByRole('button', { name: '显示选项' }))
 
-		expect(await screen.findByText('主分组')).toBeInTheDocument()
-		expect(screen.getByLabelText('主分组')).toBeInTheDocument()
+		expect(await screen.findByText('分组')).toBeInTheDocument()
+		expect(screen.getByLabelText('分组')).toBeInTheDocument()
 	})
 
 	it('切换显示属性会持久化 personal override', async () => {

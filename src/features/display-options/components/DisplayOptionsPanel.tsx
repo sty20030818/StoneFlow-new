@@ -1,7 +1,10 @@
 'use client'
 
+/**
+ * Linear 式显示选项面板：紧凑行（左标签 + 右控件）+ 属性 pill + 底栏 Reset / 设为默认。
+ */
 import type { ReactNode } from 'react'
-import { ArrowDownIcon, ArrowUpIcon } from 'lucide-react'
+import { ArrowDownUpIcon, ArrowUpIcon, ArrowDownIcon } from 'lucide-react'
 
 import {
 	getTaskDisplayPageCapabilities,
@@ -10,7 +13,6 @@ import {
 	type TaskDisplayPropertyKey,
 } from '@/features/display-options/core'
 import { cn } from '@/shared/lib/utils'
-import { Button } from '@/shared/components/base/button'
 import { Separator } from '@/shared/components/base/separator'
 import {
 	Select,
@@ -34,7 +36,6 @@ type DisplayOptionsPanelActions = {
 	setCompletedOrder: (completedOrder: ResolvedTaskDisplayOptions['completedOrder']) => Promise<void>
 	applyPartial: (patch: Partial<ResolvedTaskDisplayOptions>) => Promise<void>
 	setVisibleProperties: (visibleProperties: TaskDisplayPropertyKey[]) => Promise<void>
-	/** 将当前呈现设为页面默认（workspace default） */
 	setAsDefault: () => Promise<void>
 	resetToDefault: () => Promise<void>
 }
@@ -110,90 +111,61 @@ export function DisplayOptionsPanel({
 	const orderCompletedByRecency = options.completedOrder === 'recency'
 
 	return (
-		<div className={cn('flex w-full min-w-0 flex-col gap-3', className)}>
-			{/* List/Board 占位：无第二布局，不放可点假开关（SPEC） */}
-
-			<div className='flex flex-col gap-2'>
-				<DisplayOptionRow label='主分组'>
-					<Select
-						disabled={isPending}
-						onValueChange={(value) =>
-							void actions.setGrouping(value as ResolvedTaskDisplayOptions['groupBy'])
-						}
-						value={options.groupBy}
-					>
-						<SelectTrigger aria-label='主分组' className='w-full min-w-0 justify-between'>
-							<SelectValue placeholder='选择主分组' />
-						</SelectTrigger>
-						<SelectContent position='popper'>
-							<SelectGroup>
-								{capabilities.allowedGroupBy.map((groupBy) => (
-									<SelectItem key={groupBy} value={groupBy}>
-										{GROUP_LABELS[groupBy]}
-									</SelectItem>
-								))}
-							</SelectGroup>
-						</SelectContent>
-					</Select>
+		<div className={cn('flex w-full min-w-0 flex-col', className)}>
+			{/* 分组 / 排序区 — 对齐 Linear 行布局 */}
+			<div className='flex flex-col gap-0.5 px-1 pb-2'>
+				<DisplayOptionRow
+					label='分组'
+					leading={
+						canToggleOrderDirection ? (
+							<span className='text-sf-text-tertiary' aria-hidden>
+								<ArrowDownUpIcon className='size-3.5' />
+							</span>
+						) : null
+					}
+				>
+					<div className='flex min-w-0 items-center gap-1'>
+						<CompactSelect
+							ariaLabel='分组'
+							disabled={isPending}
+							onValueChange={(value) =>
+								void actions.setGrouping(value as ResolvedTaskDisplayOptions['groupBy'])
+							}
+							options={capabilities.allowedGroupBy.map((groupBy) => ({
+								value: groupBy,
+								label: GROUP_LABELS[groupBy],
+							}))}
+							value={options.groupBy}
+						/>
+					</div>
 				</DisplayOptionRow>
 
 				{supportsSubGrouping ? (
 					<DisplayOptionRow label='子分组'>
-						<Select
+						<CompactSelect
+							ariaLabel='子分组'
 							disabled={isPending}
 							onValueChange={(value) =>
 								void actions.setSubGrouping(value as ResolvedTaskDisplayOptions['subGroupBy'])
 							}
+							options={capabilities.allowedSubGroupBy.map((groupBy) => ({
+								value: groupBy,
+								label: GROUP_LABELS[groupBy],
+							}))}
 							value={options.subGroupBy}
-						>
-							<SelectTrigger aria-label='子分组' className='w-full min-w-0 justify-between'>
-								<SelectValue placeholder='选择子分组' />
-							</SelectTrigger>
-							<SelectContent position='popper'>
-								<SelectGroup>
-									{capabilities.allowedSubGroupBy.map((groupBy) => (
-										<SelectItem key={groupBy} value={groupBy}>
-											{GROUP_LABELS[groupBy]}
-										</SelectItem>
-									))}
-								</SelectGroup>
-							</SelectContent>
-						</Select>
+						/>
 					</DisplayOptionRow>
 				) : null}
 
-				{/* 排序 + 方向内嵌（对齐 Linear Ordering 行） */}
-				<DisplayOptionRow label='排序'>
-					<div className='flex min-w-0 w-full items-center gap-1.5'>
-						<Select
-							disabled={isPending}
-							onValueChange={(value) =>
-								void actions.setOrdering(
-									value as ResolvedTaskDisplayOptions['orderBy'],
-									options.orderDirection,
-								)
-							}
-							value={options.orderBy}
-						>
-							<SelectTrigger aria-label='排序依据' className='min-w-0 flex-1 justify-between'>
-								<SelectValue placeholder='选择排序' />
-							</SelectTrigger>
-							<SelectContent position='popper'>
-								<SelectGroup>
-									{capabilities.allowedOrderBy.map((orderBy) => (
-										<SelectItem key={orderBy} value={orderBy}>
-											{ORDER_LABELS[orderBy]}
-										</SelectItem>
-									))}
-								</SelectGroup>
-							</SelectContent>
-						</Select>
-						{canToggleOrderDirection ? (
-							<Button
+				<DisplayOptionRow
+					label='排序'
+					leading={
+						canToggleOrderDirection ? (
+							<button
 								aria-label={
 									options.orderDirection === 'asc' ? '升序，点击切换为降序' : '降序，点击切换为升序'
 								}
-								className='size-8 shrink-0'
+								className='flex size-6 items-center justify-center rounded-md text-sf-text-tertiary hover:bg-muted hover:text-foreground'
 								disabled={isPending}
 								onClick={() =>
 									void actions.setOrdering(
@@ -201,24 +173,38 @@ export function DisplayOptionsPanel({
 										options.orderDirection === 'asc' ? 'desc' : 'asc',
 									)
 								}
-								size='icon'
 								type='button'
-								variant='outline'
 							>
 								{options.orderDirection === 'asc' ? (
 									<ArrowUpIcon className='size-3.5' />
 								) : (
 									<ArrowDownIcon className='size-3.5' />
 								)}
-							</Button>
-						) : null}
-					</div>
+							</button>
+						) : null
+					}
+				>
+					<CompactSelect
+						ariaLabel='排序'
+						disabled={isPending}
+						onValueChange={(value) =>
+							void actions.setOrdering(
+								value as ResolvedTaskDisplayOptions['orderBy'],
+								options.orderDirection,
+							)
+						}
+						options={capabilities.allowedOrderBy.map((orderBy) => ({
+							value: orderBy,
+							label: ORDER_LABELS[orderBy],
+						}))}
+						value={options.orderBy}
+					/>
 				</DisplayOptionRow>
 
 				{capabilities.allowedCompletedOrder.length > 0 ? (
 					<DisplayOptionRow label='完成按近到远'>
-						<DisplayInlineSwitch
-							ariaLabel='已完成项按最近变更优先排序'
+						<Switch
+							aria-label='已完成项按最近变更优先排序'
 							checked={orderCompletedByRecency}
 							disabled={isPending}
 							onCheckedChange={(checked) =>
@@ -227,20 +213,35 @@ export function DisplayOptionsPanel({
 						/>
 					</DisplayOptionRow>
 				) : null}
+			</div>
 
-				<DisplayOptionRow label='显示已完成'>
-					<DisplayInlineSwitch
-						ariaLabel='显示已完成与已取消任务'
-						checked={options.showCompleted}
+			<Separator />
+
+			{/* 完成可见性 */}
+			<div className='flex flex-col gap-0.5 px-1 py-2'>
+				<DisplayOptionRow label='已完成'>
+					<CompactSelect
+						ariaLabel='已完成可见性'
 						disabled={isPending}
-						onCheckedChange={(checked) => void actions.applyPartial({ showCompleted: checked })}
+						onValueChange={(value) => void actions.applyPartial({ showCompleted: value === 'all' })}
+						options={[
+							{ value: 'all', label: '全部' },
+							{ value: 'hide', label: '隐藏' },
+						]}
+						value={options.showCompleted ? 'all' : 'hide'}
 					/>
 				</DisplayOptionRow>
+			</div>
 
+			<Separator />
+
+			{/* 列表选项 */}
+			<div className='flex flex-col gap-0.5 px-1 py-2'>
+				<p className='px-1 pb-1 text-[12px] font-medium text-sf-text-secondary'>列表选项</p>
 				{canToggleShowEmptyGroups ? (
-					<DisplayOptionRow label='空分组'>
-						<DisplayInlineSwitch
-							ariaLabel='显示空分组'
+					<DisplayOptionRow label='显示空分组'>
+						<Switch
+							aria-label='显示空分组'
 							checked={options.showEmptyGroups}
 							disabled={isPending}
 							onCheckedChange={(checked) => void actions.applyPartial({ showEmptyGroups: checked })}
@@ -251,30 +252,9 @@ export function DisplayOptionsPanel({
 
 			<Separator />
 
-			<div className='flex flex-col gap-2'>
-				<div className='flex items-center justify-between gap-2'>
-					<p className='text-sm font-medium text-foreground'>显示属性</p>
-					<div className='flex shrink-0 items-center gap-1.5'>
-						<Button
-							disabled={isPending}
-							onClick={() => void actions.setAsDefault()}
-							size='sm'
-							type='button'
-							variant='ghost'
-						>
-							设为默认
-						</Button>
-						<Button
-							disabled={isPending}
-							onClick={() => void actions.resetToDefault()}
-							size='sm'
-							type='button'
-							variant='secondary'
-						>
-							恢复默认
-						</Button>
-					</div>
-				</div>
+			{/* 显示属性 pills — Linear 风格 */}
+			<div className='flex flex-col gap-2 px-2 py-2'>
+				<p className='text-[12px] font-medium text-sf-text-secondary'>显示属性</p>
 				<PropertyToggleGrid
 					items={capabilities.allowedVisibleProperties.map((key) => ({
 						key,
@@ -289,44 +269,86 @@ export function DisplayOptionsPanel({
 				/>
 			</div>
 
-			<div className='min-h-5'>
-				{isErrored && error ? (
-					<p className='text-[12px] leading-5 text-destructive'>{error}</p>
-				) : isPending ? (
-					<p className='text-[12px] leading-5 text-sf-shell-text-tertiary'>正在读取显示偏好…</p>
-				) : null}
+			<Separator />
+
+			{/* 底栏：Reset 左 · 设为默认 右 */}
+			<div className='flex items-center justify-between gap-2 px-2 py-2'>
+				<button
+					className='text-[13px] text-sf-text-secondary hover:text-foreground disabled:opacity-50'
+					disabled={isPending}
+					onClick={() => void actions.resetToDefault()}
+					type='button'
+				>
+					重置
+				</button>
+				<button
+					className='text-[13px] font-medium text-primary hover:underline disabled:opacity-50'
+					disabled={isPending}
+					onClick={() => void actions.setAsDefault()}
+					type='button'
+				>
+					设为默认
+				</button>
 			</div>
+
+			{isErrored && error ? (
+				<p className='px-2 pb-2 text-[12px] text-destructive'>{error}</p>
+			) : isPending ? (
+				<p className='px-2 pb-2 text-[12px] text-sf-text-tertiary'>正在读取显示偏好…</p>
+			) : null}
 		</div>
 	)
 }
 
-function DisplayOptionRow({ label, children }: { label: string; children: ReactNode }) {
+function DisplayOptionRow({
+	label,
+	leading,
+	children,
+}: {
+	label: string
+	leading?: ReactNode
+	children: ReactNode
+}) {
 	return (
-		<div className='grid grid-cols-[88px_minmax(0,1fr)] items-center gap-3'>
-			<span className='shrink-0 text-[12px] font-medium text-foreground'>{label}</span>
-			<div className='flex min-w-0 items-center justify-end gap-2'>{children}</div>
+		<div className='flex min-h-9 items-center gap-2 px-1'>
+			<span className='min-w-0 flex-1 text-[13px] text-sf-text-secondary'>{label}</span>
+			{leading}
+			<div className='flex shrink-0 items-center justify-end'>{children}</div>
 		</div>
 	)
 }
 
-function DisplayInlineSwitch({
-	checked,
+function CompactSelect({
+	value,
+	options,
+	onValueChange,
 	disabled,
-	onCheckedChange,
 	ariaLabel,
 }: {
-	checked: boolean
+	value: string
+	options: Array<{ value: string; label: string }>
+	onValueChange: (value: string) => void
 	disabled?: boolean
-	onCheckedChange: (checked: boolean) => void
 	ariaLabel: string
 }) {
 	return (
-		<Switch
-			aria-label={ariaLabel}
-			checked={checked}
-			disabled={disabled}
-			onCheckedChange={onCheckedChange}
-		/>
+		<Select disabled={disabled} onValueChange={onValueChange} value={value}>
+			<SelectTrigger
+				aria-label={ariaLabel}
+				className='h-8 w-auto min-w-30 max-w-40 justify-between rounded-full border-border/80 bg-muted/40 px-3 text-[13px] shadow-none'
+			>
+				<SelectValue />
+			</SelectTrigger>
+			<SelectContent position='popper'>
+				<SelectGroup>
+					{options.map((option) => (
+						<SelectItem key={option.value} value={option.value}>
+							{option.label}
+						</SelectItem>
+					))}
+				</SelectGroup>
+			</SelectContent>
+		</Select>
 	)
 }
 
