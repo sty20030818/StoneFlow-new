@@ -6,6 +6,7 @@ import { useScrollAreaViewport } from '@/shared/components/AppScrollArea'
 import {
 	TASK_BOARD_HEADER_HEIGHT,
 	TASK_BOARD_HEADER_SIZE,
+	TASK_BOARD_ITEM_GAP,
 	TASK_BOARD_ROW_HEIGHT,
 	TASK_BOARD_ROW_SIZE,
 	buildTaskBoardExtent,
@@ -26,7 +27,11 @@ import {
 	BoardLoadingState,
 	BoardSectionContextMenu,
 } from '@/shared/components/board'
-import { ROW_SHELL_SECTION_HEADER_CLASS } from '@/shared/components/patterns/row-tokens'
+import {
+	ROW_SHELL_GROUP_POSITION_CLASS,
+	ROW_SHELL_SECTION_HEADER_CLASS,
+	type RowSelectionGroupPosition,
+} from '@/shared/components/patterns/row-tokens'
 import { useDialogStore } from '@/features/shell-dialogs'
 import { useSectionSelection } from '@/features/bulk-action'
 import type { TaskDisplayPropertyKey } from '@/features/display-options'
@@ -345,7 +350,11 @@ export function TaskBoard({
 	const shortcutHandlersRef = useRef<TaskRowShortcutState | null>(null)
 
 	const renderTaskRow = useCallback(
-		(task: TaskListItem, rowShortcutState?: TaskRowShortcutState) => {
+		(
+			task: TaskListItem,
+			rowShortcutState?: TaskRowShortcutState,
+			selectionGroupPosition?: RowSelectionGroupPosition,
+		) => {
 			if (rowShortcutState) {
 				shortcutHandlersRef.current = rowShortcutState
 			}
@@ -377,6 +386,7 @@ export function TaskBoard({
 						isHovered: isKeyboardHover,
 						hoverSource: isKeyboardHover ? 'keyboard' : null,
 					}}
+					selectionGroupPosition={selectionGroupPosition}
 					showSpaceLabel={showSpaceLabel}
 					task={task}
 					visibleProperties={visibleProperties}
@@ -596,6 +606,11 @@ export function TaskBoard({
 								// 下一个即将顶替的 header 提高层级，保证从下方盖过被顶走的浮层
 								const isIncomingSticky =
 									item?.kind === 'header' && nextStickyIndex === index && stickyStuck
+								const selectionGroupPosition = getTaskBoardSelectionGroupPosition(
+									flatItems,
+									index,
+									selectedTaskIdSet,
+								)
 
 								return (
 									<div
@@ -627,8 +642,23 @@ export function TaskBoard({
 										{!item ? null : item.kind === 'header' ? (
 											renderHeader(item)
 										) : (
-											<div style={{ height: TASK_BOARD_ROW_HEIGHT }}>
-												{renderTaskRow(item.task, rowShortcutState)}
+											<div
+												className={cn(
+													selectionGroupPosition && 'overflow-hidden bg-sf-selection-surface',
+													selectionGroupPosition &&
+														ROW_SHELL_GROUP_POSITION_CLASS[selectionGroupPosition],
+												)}
+												data-task-board-selection-group={selectionGroupPosition}
+												style={{
+													height:
+														TASK_BOARD_ROW_HEIGHT +
+														(selectionGroupPosition === 'first' ||
+														selectionGroupPosition === 'middle'
+															? TASK_BOARD_ITEM_GAP
+															: 0),
+												}}
+											>
+												{renderTaskRow(item.task, rowShortcutState, selectionGroupPosition)}
 											</div>
 										)}
 									</div>
@@ -663,6 +693,25 @@ export function TaskBoard({
 			}}
 		</TaskRowShortcutScope>
 	)
+}
+
+function getTaskBoardSelectionGroupPosition(
+	items: readonly TaskBoardFlatItem[],
+	index: number,
+	selectedIdSet: Set<string>,
+): RowSelectionGroupPosition | undefined {
+	const item = items[index]
+	if (item?.kind !== 'row' || !selectedIdSet.has(item.task.id)) {
+		return undefined
+	}
+
+	const previous = items[index - 1]
+	const next = items[index + 1]
+	const joinsPrevious = previous?.kind === 'row' && selectedIdSet.has(previous.task.id)
+	const joinsNext = next?.kind === 'row' && selectedIdSet.has(next.task.id)
+
+	if (joinsPrevious) return joinsNext ? 'middle' : 'last'
+	return joinsNext ? 'first' : 'single'
 }
 
 function StatusSectionHeader({

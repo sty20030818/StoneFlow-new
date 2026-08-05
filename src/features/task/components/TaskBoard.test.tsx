@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 
 import { TaskBoard } from '@/features/task/components/TaskBoard'
+import type { RowSelectionGroupPosition } from '@/shared/components/patterns/row-tokens'
 import type { TaskListItem } from '@/shared/types'
 
 vi.mock('@/features/task/components/useTaskContextMenuBulkActions', () => ({
@@ -27,7 +28,13 @@ vi.mock('@/features/task/shortcuts', () => ({
 }))
 
 vi.mock('@/features/task/components/TaskRowAdapter', () => ({
-	TaskRowAdapter: ({ task }: { task: TaskListItem }) => <div>{task.title}</div>,
+	TaskRowAdapter: ({
+		task,
+		selectionGroupPosition,
+	}: {
+		task: TaskListItem
+		selectionGroupPosition?: RowSelectionGroupPosition
+	}) => <div data-selection-group-position={selectionGroupPosition}>{task.title}</div>,
 }))
 
 describe('TaskBoard', () => {
@@ -113,6 +120,46 @@ describe('TaskBoard', () => {
 
 		expect(screen.getByText('任务 A')).toBeInTheDocument()
 		expect(screen.getAllByText('全部任务').length).toBeGreaterThanOrEqual(1)
+	})
+
+	it('虚拟列表为连续选中行恢复分组位置和连续背景', () => {
+		const tasks = [
+			createTask({ id: 'task-1', title: '任务 A' }),
+			createTask({ id: 'task-2', title: '任务 B' }),
+			createTask({ id: 'task-3', title: '任务 C' }),
+			createTask({ id: 'task-4', title: '任务 D', status: 'doing' }),
+		]
+		const { container } = render(
+			<TaskBoard
+				activeTaskId={null}
+				customSections={[
+					{ key: 'first', label: '第一组', tasks: tasks.slice(0, 3) },
+					{ key: 'second', label: '第二组', tasks: tasks.slice(3) },
+				]}
+				onEmptyAction={() => undefined}
+				onOpenTask={() => undefined}
+				onToggleTaskSelection={() => undefined}
+				onToggleTaskStatus={async () => undefined}
+				onUpdateTaskPriority={async () => undefined}
+				onUpdateTaskStatus={async () => undefined}
+				pendingTaskId={null}
+				selectedTaskIdSet={new Set(tasks.map((task) => task.id))}
+				status='ready'
+				tasks={tasks}
+				totalCount={tasks.length}
+			/>,
+		)
+
+		expect(screen.getByText('任务 A')).toHaveAttribute('data-selection-group-position', 'first')
+		expect(screen.getByText('任务 B')).toHaveAttribute('data-selection-group-position', 'middle')
+		expect(screen.getByText('任务 C')).toHaveAttribute('data-selection-group-position', 'last')
+		expect(screen.getByText('任务 D')).toHaveAttribute('data-selection-group-position', 'single')
+		expect(container.querySelector('[data-task-board-selection-group="middle"]')).toHaveStyle({
+			height: '50px',
+		})
+		expect(container.querySelector('[data-task-board-selection-group="last"]')).toHaveStyle({
+			height: '48px',
+		})
 	})
 })
 

@@ -91,6 +91,7 @@ describe('RowSelectionCell', () => {
 		const checkbox = screen.getByRole('checkbox', { name: '选择任务 A' })
 		const cell = checkbox.closest('[data-slot="row-selection-cell"]')
 		expect(cell?.className).toContain('opacity-0')
+		expect(cell?.className).toContain('group-has-[:focus-visible]/row-shell:opacity-100')
 		expect(cell?.className).toContain('group-hover/row-shell:opacity-100')
 		expect(checkbox).toHaveAttribute('data-slot', 'checkbox')
 		expect(checkbox).toHaveAttribute('data-state', 'unchecked')

@@ -57,7 +57,7 @@ export function RowSelectionCell({
 				'flex size-5 shrink-0 items-center justify-center transition-opacity',
 				forceVisible
 					? 'opacity-100'
-					: 'opacity-0 group-hover/row-shell:opacity-100 group-focus-within/row-shell:opacity-100',
+					: 'opacity-0 group-hover/row-shell:opacity-100 group-has-focus-visible/row-shell:opacity-100',
 			)}
 			data-slot='row-selection-cell'
 		>
