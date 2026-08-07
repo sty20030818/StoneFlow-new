@@ -6,7 +6,7 @@
 
 - 工作区必须完整、干净，`HEAD` 已提交且可从发布 remote 的公开分支或 Tag 到达。
 - `package.json` 与 `src-tauri/tauri.conf.json` 使用相同的 Stable SemVer。
-- 根 `CHANGELOG.md` 符合项目契约，并包含本次目标版本的非空条目。
+- 根 `CHANGELOG.md` 符合项目契约；第一个正式版本条目就是本次目标版本，版本后缀自动决定 Stable/Beta 渠道。
 - Tauri updater 公钥已写入 `src-tauri/tauri.conf.json`，签名私钥安全保存在仓库外。
 - 真实发布配置以下环境变量：
 
@@ -32,15 +32,11 @@ bunx tauri signer generate -w ~/.tauri/stoneflow.key
 ## 命令
 
 ```bash
-# Stable：发布配置文件中的版本
-bun run release:stable
-
-# Beta：由远端全局 Beta Tag 序列计算 beta.N
-bun run release:beta
+# 发布；渠道取自 CHANGELOG.md 当前目标版本
+bun release
 
 # 仅在本机完成预检、构建与产物收集
-bun run release:stable -- --no-upload
-bun run release:beta -- --no-upload
+bun release --no-upload
 ```
 
 `--no-upload` 仍会只读访问共享 Git remote 以计算候选版本，但不会创建 Tag、推进 ledger 或访问 R2；本地产物保留在本轮唯一的 `.release-tmp/<run-id>/staged/`，命令结束时会打印精确路径。它不是手工上传方案，正式发布必须由主脚本保持条件写与 Pointer-last 顺序。

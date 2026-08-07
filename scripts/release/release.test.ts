@@ -199,20 +199,17 @@ describe('runReleaseWorkflow', () => {
 })
 
 describe('parseReleaseArguments', () => {
-	test('只接受一个渠道和可选的 --no-upload', () => {
-		expect(parseReleaseArguments(['beta', '--no-upload'])).toEqual({
-			channel: 'beta',
-			noUpload: true,
-		})
-		expect(parseReleaseArguments(['stable'])).toEqual({ channel: 'stable', noUpload: false })
+	test('无参数发布，可选 --no-upload', () => {
+		expect(parseReleaseArguments([])).toEqual({ noUpload: false })
+		expect(parseReleaseArguments(['--no-upload'])).toEqual({ noUpload: true })
 	})
 
-	test('删除 --version 逃生口并拒绝歧义参数', () => {
-		expect(() => parseReleaseArguments(['beta', '--version', '0.1.4-beta.4'])).toThrow(
+	test('拒绝渠道、版本和重复参数', () => {
+		expect(() => parseReleaseArguments(['beta'])).toThrow('未知发布参数：beta')
+		expect(() => parseReleaseArguments(['--version', '0.1.4-beta.4'])).toThrow(
 			'未知发布参数：--version',
 		)
-		expect(() => parseReleaseArguments(['stable', 'beta'])).toThrow('请且仅指定一个发布渠道')
-		expect(() => parseReleaseArguments(['beta', '--no-upload', '--no-upload'])).toThrow(
+		expect(() => parseReleaseArguments(['--no-upload', '--no-upload'])).toThrow(
 			'--no-upload 不得重复',
 		)
 	})

@@ -283,10 +283,10 @@ describe('release preflight', () => {
 		await withFixture(async (fixture) => {
 			const snapshot = await runReleasePreflight({
 				repoRoot: fixture.publisher,
-				channel: 'stable',
 			})
 			expect(snapshot.remoteName).toBe('origin')
 			expect(snapshot.remoteEndpoint).toBe(fixture.remote)
+			expect(snapshot.channel).toBe('stable')
 
 			expect(await revalidateReleasePreflight(snapshot)).toEqual({
 				kind: 'claim',
@@ -301,15 +301,11 @@ describe('release preflight', () => {
 	test('tracked dirty 与 untracked 文件都会在构建前阻断', async () => {
 		await withFixture(async (fixture) => {
 			await writeFile(path.join(fixture.publisher, 'README.md'), 'dirty\n')
-			await expect(
-				runReleasePreflight({ repoRoot: fixture.publisher, channel: 'stable' }),
-			).rejects.toThrow()
+			await expect(runReleasePreflight({ repoRoot: fixture.publisher })).rejects.toThrow()
 
 			await writeFile(path.join(fixture.publisher, 'README.md'), 'fixture\n')
 			await writeFile(path.join(fixture.publisher, 'untracked.txt'), 'untracked\n')
-			await expect(
-				runReleasePreflight({ repoRoot: fixture.publisher, channel: 'stable' }),
-			).rejects.toThrow()
+			await expect(runReleasePreflight({ repoRoot: fixture.publisher })).rejects.toThrow()
 		})
 	})
 
@@ -356,7 +352,6 @@ describe('release preflight', () => {
 
 			const snapshot = await runReleasePreflight({
 				repoRoot: fixture.publisher,
-				channel: 'stable',
 			})
 			expect(snapshot.sourceVersion).toBe('0.1.3')
 			expect(snapshot.plan.version).toBe('0.1.3')
@@ -374,9 +369,9 @@ describe('release preflight', () => {
 			await commitAll(fixture, fixture.publisher, 'invalid utf8 changelog')
 			await pushMain(fixture)
 
-			await expect(
-				runReleasePreflight({ repoRoot: fixture.publisher, channel: 'stable' }),
-			).rejects.toThrow('不是合法 UTF-8')
+			await expect(runReleasePreflight({ repoRoot: fixture.publisher })).rejects.toThrow(
+				'不是合法 UTF-8',
+			)
 		})
 	})
 
@@ -414,9 +409,7 @@ describe('release preflight', () => {
 			await runGit(fixture.publisher, fixture.globalConfig, ['update-index', flag, '--', file])
 			await write(fixture.publisher)
 
-			await expect(
-				runReleasePreflight({ repoRoot: fixture.publisher, channel: 'stable' }),
-			).rejects.toThrow()
+			await expect(runReleasePreflight({ repoRoot: fixture.publisher })).rejects.toThrow()
 		})
 	})
 
@@ -425,34 +418,28 @@ describe('release preflight', () => {
 			await writeVersionFiles(fixture.publisher, '0.1.3', '0.1.4')
 			await commitAll(fixture, fixture.publisher, 'mismatched versions')
 			await pushMain(fixture)
-			await expect(
-				runReleasePreflight({ repoRoot: fixture.publisher, channel: 'stable' }),
-			).rejects.toThrow()
+			await expect(runReleasePreflight({ repoRoot: fixture.publisher })).rejects.toThrow()
 
 			await writeVersionFiles(fixture.publisher, '01.2.3', '01.2.3')
 			await commitAll(fixture, fixture.publisher, 'invalid versions')
 			await pushMain(fixture)
-			await expect(
-				runReleasePreflight({ repoRoot: fixture.publisher, channel: 'stable' }),
-			).rejects.toThrow()
+			await expect(runReleasePreflight({ repoRoot: fixture.publisher })).rejects.toThrow()
 		})
 	})
 
-	test('目标 Changelog 条目缺失或已撤回时阻断', async () => {
+	test('Changelog 当前目标与发布计划不一致或已撤回时阻断', async () => {
 		await withFixture(async (fixture) => {
 			await writeFile(path.join(fixture.publisher, 'CHANGELOG.md'), BASE_CHANGELOG)
 			await commitAll(fixture, fixture.publisher, 'missing changelog target')
 			await pushMain(fixture)
-			await expect(
-				runReleasePreflight({ repoRoot: fixture.publisher, channel: 'stable' }),
-			).rejects.toThrow('不存在')
+			await expect(runReleasePreflight({ repoRoot: fixture.publisher })).rejects.toThrow(
+				'当前目标版本 0.1.2 与发布计划 0.1.3 不一致',
+			)
 
 			await writeFile(path.join(fixture.publisher, 'CHANGELOG.md'), RETRACTED_CHANGELOG)
 			await commitAll(fixture, fixture.publisher, 'yanked changelog target')
 			await pushMain(fixture)
-			await expect(
-				runReleasePreflight({ repoRoot: fixture.publisher, channel: 'stable' }),
-			).rejects.toThrow('已撤回')
+			await expect(runReleasePreflight({ repoRoot: fixture.publisher })).rejects.toThrow('已撤回')
 		})
 	})
 
@@ -474,9 +461,9 @@ describe('release preflight', () => {
 			await commitAll(fixture, fixture.publisher, 'successor missing claimed history')
 			await pushMain(fixture)
 
-			await expect(
-				runReleasePreflight({ repoRoot: fixture.publisher, channel: 'stable' }),
-			).rejects.toThrow('缺少已认领版本 0.1.3')
+			await expect(runReleasePreflight({ repoRoot: fixture.publisher })).rejects.toThrow(
+				'缺少已认领版本 0.1.3',
+			)
 		})
 	})
 
@@ -485,9 +472,7 @@ describe('release preflight', () => {
 			await writeFile(path.join(fixture.publisher, 'local-only.txt'), 'local only\n')
 			await commitAll(fixture, fixture.publisher, 'local only')
 
-			await expect(
-				runReleasePreflight({ repoRoot: fixture.publisher, channel: 'stable' }),
-			).rejects.toThrow()
+			await expect(runReleasePreflight({ repoRoot: fixture.publisher })).rejects.toThrow()
 		})
 	})
 
@@ -501,9 +486,7 @@ describe('release preflight', () => {
 				pushRemote,
 			])
 
-			await expect(
-				runReleasePreflight({ repoRoot: fixture.publisher, channel: 'stable' }),
-			).rejects.toThrow()
+			await expect(runReleasePreflight({ repoRoot: fixture.publisher })).rejects.toThrow()
 		})
 	})
 
@@ -511,7 +494,6 @@ describe('release preflight', () => {
 		await withFixture(async (fixture) => {
 			const snapshot = await runReleasePreflight({
 				repoRoot: fixture.publisher,
-				channel: 'stable',
 			})
 			const driftRemote = path.join(fixture.root, 'drift-remote.git')
 			await runGit(fixture.root, fixture.globalConfig, ['init', '--bare', driftRemote])
@@ -544,9 +526,7 @@ describe('release preflight', () => {
 				'refs/tags/v0.1.1:refs/tags/v0.1.1',
 			])
 
-			await expect(
-				runReleasePreflight({ repoRoot: fixture.publisher, channel: 'stable' }),
-			).rejects.toThrow()
+			await expect(runReleasePreflight({ repoRoot: fixture.publisher })).rejects.toThrow()
 		})
 	})
 
@@ -605,9 +585,7 @@ describe('release preflight', () => {
 				`${divergentCandidate}:refs/heads/beta-candidate`,
 			])
 
-			await expect(
-				runReleasePreflight({ repoRoot: fixture.publisher, channel: 'beta' }),
-			).rejects.toThrow()
+			await expect(runReleasePreflight({ repoRoot: fixture.publisher })).rejects.toThrow()
 
 			await runGit(fixture.publisher, fixture.globalConfig, [
 				'switch',
@@ -623,9 +601,8 @@ describe('release preflight', () => {
 				`${validCandidate}:refs/heads/valid-beta-candidate`,
 			])
 
-			await expect(
-				runReleasePreflight({ repoRoot: fixture.publisher, channel: 'beta' }),
-			).resolves.toMatchObject({
+			await expect(runReleasePreflight({ repoRoot: fixture.publisher })).resolves.toMatchObject({
+				channel: 'beta',
 				plan: {
 					kind: 'claim',
 					version: '0.1.4-beta.1',
@@ -642,7 +619,6 @@ describe('release preflight', () => {
 			await withFixture(async (fixture) => {
 				const snapshot = await runReleasePreflight({
 					repoRoot: fixture.publisher,
-					channel: 'stable',
 				})
 
 				if (drift === 'head') {
@@ -671,7 +647,6 @@ describe('release preflight', () => {
 		await withFixture(async (fixture) => {
 			const snapshot = await runReleasePreflight({
 				repoRoot: fixture.publisher,
-				channel: 'stable',
 			})
 			await createAnnotatedTag(fixture, fixture.publisher, 'v0.1.3', fixture.candidateCommit)
 			await runGit(fixture.publisher, fixture.globalConfig, [
@@ -731,7 +706,6 @@ describe('release preflight', () => {
 
 				const snapshot = await runReleasePreflight({
 					repoRoot: fixture.publisher,
-					channel: 'stable',
 				})
 				expect(await revalidateReleasePreflight(snapshot)).toEqual({
 					kind: 'reuse',

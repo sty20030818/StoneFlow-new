@@ -22,12 +22,7 @@ import {
 } from './platform-release'
 import { revalidateReleasePreflight, runReleasePreflight } from './preflight'
 import { assertR2Config, createS3Client, type ReleaseRemoteConfig } from './remote'
-import type {
-	ImmutableArtifactUpload,
-	PlatformReleaseRecord,
-	ReleaseChannel,
-	ReleasePlan,
-} from './types'
+import type { ImmutableArtifactUpload, PlatformReleaseRecord, ReleasePlan } from './types'
 import { withReleaseBuildWorkspace } from './workspace'
 
 export interface PreparedPlatformRelease {
@@ -72,17 +67,13 @@ export async function runReleaseWorkflow<T>(
 }
 
 export function parseReleaseArguments(args: readonly string[]) {
-	const allowed = new Set(['stable', 'beta', '--no-upload'])
+	const allowed = new Set(['--no-upload'])
 	const unknown = args.find((arg) => !allowed.has(arg))
 	if (unknown) throw new Error(`未知发布参数：${unknown}`)
-	const channels = args.filter(
-		(argument): argument is ReleaseChannel => argument === 'stable' || argument === 'beta',
-	)
-	if (channels.length !== 1) throw new Error('请且仅指定一个发布渠道：stable 或 beta')
 	if (args.filter((argument) => argument === '--no-upload').length > 1) {
 		throw new Error('--no-upload 不得重复')
 	}
-	return { channel: channels[0]!, noUpload: args.includes('--no-upload') }
+	return { noUpload: args.includes('--no-upload') }
 }
 
 function createRemoteConfig(env: NodeJS.ProcessEnv): ReleaseRemoteConfig {
@@ -95,15 +86,17 @@ function createRemoteConfig(env: NodeJS.ProcessEnv): ReleaseRemoteConfig {
 
 export async function runReleaseCommand(args: readonly string[] = argv.slice(2)) {
 	const env = process.env
-	const { channel, noUpload } = parseReleaseArguments(args)
+	const { noUpload } = parseReleaseArguments(args)
 	const platformKey = resolvePlatformKey()
+	const repoRoot = path.resolve(import.meta.dir, '../..')
+	const preflight = await runReleasePreflight({ repoRoot })
+	const { channel } = preflight
 	const paths = createReleasePaths({ channel, platformKey, scriptDir: import.meta.dir })
 	const remoteConfig = createRemoteConfig(env)
 
 	try {
 		console.log(chalk.blue(`\n🚀 开始发布 ${channel} 渠道更新...\n`))
 		console.log(chalk.gray(`   发布平台: ${platformKey}`))
-		const preflight = await runReleasePreflight({ repoRoot: paths.repoRoot, channel })
 		const { sourceVersion, releaseCommit: commit, plan } = preflight
 		const { version } = plan
 		console.log(chalk.gray(`   配置版本: ${sourceVersion}`))

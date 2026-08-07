@@ -21,7 +21,6 @@ const COMMIT_SHA_PATTERN = /^[0-9a-f]{40}$/i
 
 export interface ReleasePreflightInput {
 	readonly repoRoot: string
-	readonly channel: ReleaseChannel
 	readonly remoteName?: string
 }
 
@@ -182,12 +181,10 @@ function canonicalPlan(plan: ReleasePlan) {
 
 async function collectReleasePreflight({
 	repoRoot,
-	channel,
 	remoteName,
 	remoteEndpoint,
 }: {
 	repoRoot: string
-	channel: ReleaseChannel
 	remoteName: string
 	remoteEndpoint: string
 }): Promise<ReleasePreflightSnapshot> {
@@ -209,6 +206,10 @@ async function collectReleasePreflight({
 		)
 	}
 	const changelogDocument = parseChangelogDocument(changelogSource)
+	const targetRelease = changelogDocument.releases[0]
+	if (!targetRelease) throw new Error('CHANGELOG.md 缺少当前发布版本')
+	getPublishableRelease(changelogDocument, targetRelease.version)
+	const channel: ReleaseChannel = targetRelease.version.includes('-beta.') ? 'beta' : 'stable'
 	const releaseRefs = await refreshReleaseRefs({ cwd: repoRoot, remoteEndpoint, channel })
 	const plan = resolveReleasePlan({
 		channel,
@@ -217,7 +218,11 @@ async function collectReleasePreflight({
 		tags: releaseRefs.tags,
 		ledger: releaseRefs.ledger,
 	})
-	getPublishableRelease(changelogDocument, plan.version)
+	if (plan.version !== targetRelease.version) {
+		throw new Error(
+			`CHANGELOG.md 当前目标版本 ${targetRelease.version} 与发布计划 ${plan.version} 不一致`,
+		)
+	}
 	if (plan.kind === 'claim') {
 		const localVersions = new Set(changelogDocument.releases.map((release) => release.version))
 		const missingTag = releaseRefs.tags.find(
@@ -252,11 +257,10 @@ async function collectReleasePreflight({
 
 export async function runReleasePreflight({
 	repoRoot,
-	channel,
 	remoteName = 'origin',
 }: ReleasePreflightInput): Promise<ReleasePreflightSnapshot> {
 	const remoteEndpoint = await resolveReleaseRemoteEndpoint({ cwd: repoRoot, remoteName })
-	return collectReleasePreflight({ repoRoot, channel, remoteName, remoteEndpoint })
+	return collectReleasePreflight({ repoRoot, remoteName, remoteEndpoint })
 }
 
 export async function revalidateReleasePreflight(expected: ReleasePreflightSnapshot) {
@@ -269,7 +273,6 @@ export async function revalidateReleasePreflight(expected: ReleasePreflightSnaps
 	}
 	const current = await collectReleasePreflight({
 		repoRoot: expected.repoRoot,
-		channel: expected.channel,
 		remoteName: expected.remoteName,
 		remoteEndpoint: expected.remoteEndpoint,
 	})

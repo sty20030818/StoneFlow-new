@@ -20,9 +20,7 @@
 		"test:coverage": "vitest run --coverage",
 		"test:rust": "cargo test --manifest-path src-tauri/Cargo.toml --workspace",
 		"check": "bun run typecheck && bun run lint && bun run lint:boundaries && bun run format:check && bun run test:run && bun run test:release && bun run test:rust",
-		"release": "bun run scripts/release/release.ts stable",
-		"release:stable": "bun run scripts/release/release.ts stable",
-		"release:beta": "bun run scripts/release/release.ts beta",
+		"release": "bun run scripts/release/release.ts",
 		"mock:updates": "bun run scripts/release/mock-server.ts",
 		"mock:updates:beta": "bun run scripts/release/mock-server.ts -- --beta"
 	},
