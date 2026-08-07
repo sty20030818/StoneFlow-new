@@ -18,7 +18,7 @@ use crate::{
     },
     ApplicationError,
 };
-use chrono::{Duration, Local, TimeZone, Utc};
+use chrono::{Duration, Local};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
 use std::collections::{HashMap, HashSet};
@@ -694,7 +694,7 @@ fn view_fields(record: &ViewRecord) -> Result<Map<String, Value>, ApplicationErr
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::NaiveDate;
+    use chrono::{NaiveDate, TimeZone, Utc};
     use serde_json::json;
 
     #[test]

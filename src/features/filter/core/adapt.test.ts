@@ -39,11 +39,11 @@ describe('adaptFilterQueryToListTasks', () => {
 		const patch = adaptFilterQueryToListTasks({
 			clauses: [createFilterClause('due', 'is', ['today'])],
 		})
-		expect(patch.dateFilter?.mode).toBe('range')
-		if (patch.dateFilter?.mode === 'range') {
-			expect(new Date(patch.dateFilter.from!).getDate()).toBe(3)
-			expect(new Date(patch.dateFilter.to!).getDate()).toBe(3)
-		}
+		expect(patch.dateFilter).toEqual({
+			mode: 'range',
+			from: new Date(2026, 7, 3).toISOString(),
+			to: new Date(2026, 7, 3, 23, 59, 59, 999).toISOString(),
+		})
 		vi.useRealTimers()
 	})
 

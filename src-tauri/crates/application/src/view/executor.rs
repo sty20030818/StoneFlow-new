@@ -6,11 +6,6 @@ use crate::view::{
 };
 use chrono::{DateTime, Local, NaiveDate, Utc};
 use std::cmp::Ordering;
-use stoneflow_domain::WorkStatus;
-
-pub(crate) fn is_active(status: WorkStatus) -> bool {
-    !matches!(status, WorkStatus::Done | WorkStatus::Canceled)
-}
 
 pub(crate) fn matches(
     task: &ViewTaskRecord,
@@ -119,6 +114,7 @@ pub(crate) fn sort(tasks: &mut [ViewTaskRecord], rules: &[ViewSortRule]) {
 mod tests {
     use super::*;
     use crate::view::{SortDirection, TaskSortField, ViewSortRule};
+    use stoneflow_domain::WorkStatus;
 
     fn task(id: &str, status: WorkStatus, due_at: Option<&str>) -> ViewTaskRecord {
         ViewTaskRecord {
