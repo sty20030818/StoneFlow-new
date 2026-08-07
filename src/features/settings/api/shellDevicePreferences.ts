@@ -1,4 +1,3 @@
-import { LazyStore } from '@tauri-apps/plugin-store'
 import { clamp } from 'es-toolkit/math'
 
 import {
@@ -10,15 +9,13 @@ import type {
 	SidebarPreferenceSettings,
 	SidebarProjectSectionPreferenceConfig,
 } from './sidebarSettings'
+import { readLocalStorageValue, writeLocalStorageValue } from '@/shared/lib/localStorageValue'
 
-const SHELL_DEVICE_STORE_PATH = 'shell-device-preferences.json'
-const SIDEBAR_DEVICE_KEY = 'shell.sidebar.device'
-const UI_DEVICE_KEY = 'shell.ui.device'
+const SIDEBAR_DEVICE_KEY = 'stoneflow.shell.sidebar.device'
+const UI_DEVICE_KEY = 'stoneflow.shell.ui.device'
 const DEFAULT_TASK_DRAWER_WIDTH = 420
 
 export { DEFAULT_SIDEBAR_WIDTH } from '@/shared/lib/shellSidebarGeometry'
-
-const shellDeviceStore = new LazyStore(SHELL_DEVICE_STORE_PATH)
 
 export type SidebarDesktopPreference = 'expanded' | 'collapsed'
 
@@ -51,8 +48,8 @@ export type ShellDeviceState = {
 
 export async function loadShellDeviceState(): Promise<ShellDeviceState> {
 	const [sidebar, ui] = await Promise.all([
-		shellDeviceStore.get<ShellSidebarDevicePreferences>(SIDEBAR_DEVICE_KEY),
-		shellDeviceStore.get<ShellUiDevicePreferences>(UI_DEVICE_KEY),
+		readLocalStorageValue<ShellSidebarDevicePreferences>(SIDEBAR_DEVICE_KEY),
+		readLocalStorageValue<ShellUiDevicePreferences>(UI_DEVICE_KEY),
 	])
 
 	return {
@@ -80,9 +77,7 @@ export function buildShellSidebarSettings(
 export async function updateShellSidebarDevicePreferences(
 	patch: Partial<ShellSidebarDevicePreferences>,
 ): Promise<ShellSidebarDevicePreferences> {
-	const current = (await shellDeviceStore.get<ShellSidebarDevicePreferences>(
-		SIDEBAR_DEVICE_KEY,
-	)) ?? {
+	const current = readLocalStorageValue<ShellSidebarDevicePreferences>(SIDEBAR_DEVICE_KEY) ?? {
 		...defaultShellSidebarDevicePreferences(),
 	}
 	const next = normalizeSidebarDevicePreferences({
@@ -90,15 +85,14 @@ export async function updateShellSidebarDevicePreferences(
 		...patch,
 	})
 
-	await shellDeviceStore.set(SIDEBAR_DEVICE_KEY, next)
-	await shellDeviceStore.save()
+	writeLocalStorageValue(SIDEBAR_DEVICE_KEY, next)
 	return next
 }
 
 export async function updateShellUiDevicePreferences(
 	patch: Partial<ShellUiDevicePreferences>,
 ): Promise<ShellUiDevicePreferences> {
-	const current = (await shellDeviceStore.get<ShellUiDevicePreferences>(UI_DEVICE_KEY)) ?? {
+	const current = readLocalStorageValue<ShellUiDevicePreferences>(UI_DEVICE_KEY) ?? {
 		...defaultShellUiDevicePreferences(),
 	}
 	const next = normalizeUiDevicePreferences({
@@ -106,8 +100,7 @@ export async function updateShellUiDevicePreferences(
 		...patch,
 	})
 
-	await shellDeviceStore.set(UI_DEVICE_KEY, next)
-	await shellDeviceStore.save()
+	writeLocalStorageValue(UI_DEVICE_KEY, next)
 	return next
 }
 

@@ -30,6 +30,6 @@ pub use operation::{
     OutboxOpKind, OutboxWriter, SyncEntityKind, TombstoneRecord, TombstoneWriter, UnitOfWork,
 };
 pub use update::{
-    DownloadOutcome, UpdateCheckKind, UpdateInfo, UpdatePort, UpdateService, UpdateSessionPhase,
-    UpdateSessionSnapshot, UpdateSettingsPort,
+    DownloadOutcome, UpdateCheckKind, UpdateCheckOutcome, UpdateInfo, UpdatePort, UpdateService,
+    UpdateSessionPhase, UpdateSessionSnapshot, UpdateSettingsPort,
 };

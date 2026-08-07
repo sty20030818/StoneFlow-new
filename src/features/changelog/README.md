@@ -1,10 +1,33 @@
-# changelog · 更新日志
+# changelog
 
-唯一内容源是仓库根 `CHANGELOG.md`。模块通过 Tauri 更新边界优先读取发布到 R2 的静态副本，失败时回退到构建时嵌入的同一文件快照。
+> 读取、校验、筛选并展示 StoneFlow 更新日志。
 
-- `model.ts`：解析、语义版本排序、渠道过滤与目标版本定位。
-- `useChangelog.ts`：单进程缓存与远端/本地回退。
-- `ChangelogDialog.tsx`：头像菜单和更新完成 Toast 打开的宽版记录弹窗。
-- `ChangelogMarkdown.tsx`：仅渲染标题、列表、段落、加粗与 Unicode 图标。
+内容源是仓库根 [CHANGELOG.md](../../../CHANGELOG.md)。运行时优先读取发布根目录的远端副本，失败时回退到最近一次有效远端文档或构建时内置快照。
 
-更新模块只能按版本消费内容，不能反向拥有或写入 changelog 状态。
+## 公开入口
+
+- `ChangelogDialog`：按渠道展示完整发布历史，可定位指定版本。
+- `ChangelogRelease`：渲染单个已解析版本。
+- `useChangelog`、`ChangelogQuery`：查询完整历史或版本区间。
+
+## 最小使用示例
+
+```tsx
+<ChangelogDialog
+	open={open}
+	channel='stable'
+	onOpenChange={setOpen}
+/>
+```
+
+跨模块只从 `@/features/changelog` 导入。发布脚本只复用无 React、无 I/O 的 `contract.ts`。
+
+## 源码位置
+
+`src/features/changelog/`
+
+## 相关文档
+
+- [模块架构](./ARCHITECTURE.md)
+- [语法、区间与回退设计](./DESIGN.md)
+- [Update 模块](../update/README.md)

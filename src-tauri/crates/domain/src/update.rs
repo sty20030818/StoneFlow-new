@@ -17,28 +17,6 @@ pub enum UpdateCheckMode {
     AutoDownload,
 }
 
-/// 从持久化字符串解析检查模式。
-///
-/// - `"manual"` / `"notifyOnly"` / `"autoDownload"` → 对应变体
-/// - 未知、空、历史脏值 → 默认 [`UpdateCheckMode::NotifyOnly`]
-pub fn parse_check_mode(raw: &str) -> UpdateCheckMode {
-    match raw {
-        "manual" => UpdateCheckMode::Manual,
-        "notifyOnly" => UpdateCheckMode::NotifyOnly,
-        "autoDownload" => UpdateCheckMode::AutoDownload,
-        _ => UpdateCheckMode::NotifyOnly,
-    }
-}
-
-/// 序列化为 store 使用的 camelCase 字符串。
-pub fn check_mode_to_stored(mode: UpdateCheckMode) -> &'static str {
-    match mode {
-        UpdateCheckMode::Manual => "manual",
-        UpdateCheckMode::NotifyOnly => "notifyOnly",
-        UpdateCheckMode::AutoDownload => "autoDownload",
-    }
-}
-
 /// 更新渠道。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -155,43 +133,12 @@ mod tests {
         assert_eq!(settings.channel, UpdateChannel::Stable);
         assert!(settings.skipped_version.is_none());
         assert!(settings.last_checked_at.is_none());
-		assert!(settings.pending_restart_version.is_none());
+        assert!(settings.pending_restart_version.is_none());
     }
 
     #[test]
     fn default_check_mode_is_notify_only() {
         assert_eq!(UpdateCheckMode::default(), UpdateCheckMode::NotifyOnly);
-    }
-
-    #[test]
-    fn parse_check_mode_known_values() {
-        assert_eq!(parse_check_mode("manual"), UpdateCheckMode::Manual);
-        assert_eq!(parse_check_mode("notifyOnly"), UpdateCheckMode::NotifyOnly);
-        assert_eq!(
-            parse_check_mode("autoDownload"),
-            UpdateCheckMode::AutoDownload
-        );
-    }
-
-    #[test]
-    fn parse_check_mode_unknown_defaults_to_notify_only() {
-        assert_eq!(parse_check_mode("autoInstall"), UpdateCheckMode::NotifyOnly);
-        assert_eq!(
-            parse_check_mode("somethingElse"),
-            UpdateCheckMode::NotifyOnly
-        );
-        assert_eq!(parse_check_mode(""), UpdateCheckMode::NotifyOnly);
-    }
-
-    #[test]
-    fn check_mode_to_stored_roundtrip() {
-        for mode in [
-            UpdateCheckMode::Manual,
-            UpdateCheckMode::NotifyOnly,
-            UpdateCheckMode::AutoDownload,
-        ] {
-            assert_eq!(parse_check_mode(check_mode_to_stored(mode)), mode);
-        }
     }
 
     #[test]

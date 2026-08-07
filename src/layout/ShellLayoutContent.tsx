@@ -12,6 +12,7 @@ import { ShellOverlays } from '@/layout/overlays/ShellOverlays'
 import { SidebarProvider } from '@/shared/components/base/sidebar'
 import { SyncStatusProvider } from '@/features/sync'
 import { useUpdateEvents } from '@/features/update'
+import { getUpdateSettings, type UpdateChannel } from '@/features/update/contract'
 import { dismissBootShell } from '@/shared/lib/bootShell'
 import { notifyMainSurfaceReady } from '@/app/lifecycle/mainSurface'
 
@@ -31,17 +32,38 @@ export function ShellLayoutContent({
 	activeSection,
 	shellRoute,
 }: AppLayoutProps) {
-	const [changelogIntent, setChangelogIntent] = useState<{ open: boolean; version: string | null }>(
-		{
-			open: false,
-			version: null,
-		},
-	)
+	const [changelogIntent, setChangelogIntent] = useState<{
+		open: boolean
+		focusVersion: string | null
+		channel: UpdateChannel
+	}>({ open: false, focusVersion: null, channel: 'stable' })
 	const [isAboutOpen, setIsAboutOpen] = useState(false)
-	const openChangelog = useCallback((version: string | null = null) => {
-		setChangelogIntent({ open: true, version })
-	}, [])
+	const openChangelog = useCallback(
+		(focusVersion: string | null = null, channel?: UpdateChannel) => {
+			setChangelogIntent((current) => ({
+				...current,
+				open: true,
+				focusVersion,
+				channel: channel ?? current.channel,
+			}))
+		},
+		[],
+	)
 	useUpdateEvents(openChangelog)
+	useEffect(() => {
+		if (!changelogIntent.open || changelogIntent.focusVersion) return
+		let active = true
+		void getUpdateSettings()
+			.then((settings) => {
+				if (active) {
+					setChangelogIntent((current) => ({ ...current, channel: settings.channel }))
+				}
+			})
+			.catch(() => undefined)
+		return () => {
+			active = false
+		}
+	}, [changelogIntent.focusVersion, changelogIntent.open])
 
 	const isSettingsMode = shellRoute.isSettingsPath
 	/** 进入设置前的工作路径（边沿捕获）；供「返回应用」与 Esc 关层 */
@@ -157,7 +179,8 @@ export function ShellLayoutContent({
 					closeProjectCreateDialog={createDialog.closeProjectCreateDialog}
 					closeTaskCreateDialog={createDialog.closeTaskCreateDialog}
 					changelogOpen={changelogIntent.open}
-					changelogVersion={changelogIntent.version}
+					changelogChannel={changelogIntent.channel}
+					changelogFocusVersion={changelogIntent.focusVersion}
 					aboutOpen={isAboutOpen}
 					createDialogType={createDialog.createDialogType}
 					currentScope={currentScope}

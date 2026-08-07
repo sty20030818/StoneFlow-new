@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
 	downloadProgressBarValue,
 	footerUpdateLabel,
+	footerUpdateTitle,
 	formatBytes,
 	formatDownloadBytesLine,
 	formatDownloadPercent,
@@ -81,6 +82,19 @@ describe('footerUpdateLabel', () => {
 				errorMessage: null,
 			}),
 		).toBe('v0.2.0 就绪')
+	})
+
+	it('keeps Ready identity while presenting an install error', () => {
+		const input = {
+			phase: 'ready' as const,
+			version: '0.2.0',
+			downloaded: 0,
+			total: null,
+			errorMessage: '安装器失败',
+		}
+
+		expect(footerUpdateLabel(input)).toBe('v0.2.0 安装失败')
+		expect(footerUpdateTitle(input)).toContain('安装器失败')
 	})
 })
 

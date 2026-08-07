@@ -6,22 +6,19 @@
  */
 
 import { deriveUpdateFooterView } from '../model/deriveUpdateFooterView'
-import { useUpdateStore } from '../model/useUpdateStore'
+import { selectUpdateSnapshot, useUpdateStore } from '../model/useUpdateStore'
 import { UpdateFooterChip } from './UpdateFooterChip'
 
 export function UpdateStatusFooterItem() {
-	const phase = useUpdateStore((s) => s.phase)
-	const progress = useUpdateStore((s) => s.progress)
-	const updateInfo = useUpdateStore((s) => s.updateInfo)
-	const errorMessage = useUpdateStore((s) => s.errorMessage)
+	const snapshot = useUpdateStore(selectUpdateSnapshot)
 	const openDialog = useUpdateStore((s) => s.openDialog)
 
 	const view = deriveUpdateFooterView({
-		phase,
-		version: updateInfo?.version ?? null,
-		downloaded: progress?.downloaded ?? 0,
-		total: progress?.total ?? null,
-		errorMessage,
+		phase: snapshot.phase,
+		version: snapshot.update?.version ?? null,
+		downloaded: snapshot.progress?.downloaded ?? 0,
+		total: snapshot.progress?.total ?? null,
+		errorMessage: snapshot.errorMessage,
 	})
 
 	if (!view) return null

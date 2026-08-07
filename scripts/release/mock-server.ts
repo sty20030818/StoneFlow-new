@@ -50,46 +50,26 @@ const CURRENT_APP_VERSION = '0.1.2'
 
 // ─── 构建响应数据 ─────────────────────────────────────────
 
-function buildPlatforms(baseUrl: string, version: string) {
-	const platforms: Record<string, { signature: string; url: string }> = {}
-	platforms['darwin-x86_64'] = {
+function buildPlatform(baseUrl: string, version: string, platform: string) {
+	const fileName = platform.startsWith('darwin-')
+		? `StoneFlow_${version}_${platform.slice('darwin-'.length)}.app.tar.gz`
+		: platform.startsWith('windows-')
+			? `StoneFlow_${version}_x64-setup.exe`
+			: platform.startsWith('linux-')
+				? `StoneFlow_${version}_x64.AppImage.tar.gz`
+				: `StoneFlow_${version}_${platform}`
+	return {
 		signature: 'mock-signature-for-testing-only',
-		url: `${baseUrl}/mock/StoneFlow_${version}_x64.dmg`,
+		url: `${baseUrl}/mock/${fileName}`,
 	}
-	platforms['darwin-aarch64'] = {
-		signature: 'mock-signature-for-testing-only',
-		url: `${baseUrl}/mock/StoneFlow_${version}_aarch64.dmg`,
-	}
-	platforms['windows-x86_64'] = {
-		signature: 'mock-signature-for-testing-only',
-		url: `${baseUrl}/mock/StoneFlow_${version}_x64-setup.exe`,
-	}
-	platforms['linux-x86_64'] = {
-		signature: 'mock-signature-for-testing-only',
-		url: `${baseUrl}/mock/StoneFlow_${version}_x64.AppImage.tar.gz`,
-	}
-	return platforms
 }
 
-function buildLatestJson(baseUrl: string, platform?: string) {
-	if (SCENARIO === 'error') return null
-
-	const isNoUpdate = SCENARIO === 'noUpdate'
-	const version = isNoUpdate ? '0.0.1' : MOCK_VERSION
+function buildLatestJson(baseUrl: string, platform: string, forcedVersion?: string) {
+	const version = forcedVersion ?? (SCENARIO === 'noUpdate' ? '0.0.1' : MOCK_VERSION)
 
 	return {
 		version,
-		pub_date: new Date().toISOString(),
-		platforms: isNoUpdate
-			? {}
-			: platform
-				? {
-						[platform]: buildPlatforms(baseUrl, version)[platform] ?? {
-							signature: 'mock-signature-for-testing-only',
-							url: `${baseUrl}/mock/StoneFlow_${version}_${platform}`,
-						},
-					}
-				: buildPlatforms(baseUrl, version),
+		platforms: { [platform]: buildPlatform(baseUrl, version, platform) },
 	}
 }
 
@@ -115,7 +95,7 @@ const server = serve({
 
 		if (url.pathname === '/stoneflow/CHANGELOG.md') {
 			return new Response(
-				`# StoneFlow 更新日志\n\n## [${MOCK_VERSION}] - 2026-07-29\n\n### ✨ 新功能\n- Mock 更新日志。`,
+				`# StoneFlow 更新日志\n\n## [Unreleased]\n\n## [${MOCK_VERSION}] - 2026-07-29\n\n### Added\n\n- Mock 更新日志。`,
 				{ headers: { ...corsHeaders, 'Content-Type': 'text/markdown; charset=utf-8' } },
 			)
 		}
@@ -131,28 +111,24 @@ const server = serve({
 
 		// ── 更新端点（按平台独立指针）──
 		const updateMatch =
-			/^\/stoneflow\/updates\/(stable|beta)\/platforms\/([^/]+)\/latest\.json$/.exec(
-				url.pathname,
-			)
+			/^\/stoneflow\/updates\/(stable|beta)\/platforms\/([^/]+)\/latest\.json$/.exec(url.pathname)
 		const isStable = updateMatch?.[1] === 'stable'
 		const isBeta = updateMatch?.[1] === 'beta'
 
 		if (isStable || isBeta) {
 			const channel = isStable ? 'stable' : 'beta'
-			const platform = updateMatch?.[2]
+			const platform = updateMatch![2]!
+			if (SCENARIO === 'error') {
+				return new Response('Internal Server Error', {
+					status: 500,
+					headers: corsHeaders,
+				})
+			}
 
 			// beta 路径下，如果当前 mock 是 beta 模式，返回 beta 更新；否则返回低版本
 			if (channel === 'beta' && CHANNEL !== 'beta') {
 				// 非 beta 模式下 beta 端点返回低版本
-				const body = JSON.stringify(
-					{
-						version: '0.0.1',
-						pub_date: new Date().toISOString(),
-						platforms: {},
-					},
-					null,
-					2,
-				)
+				const body = JSON.stringify(buildLatestJson(baseUrl, platform, '0.0.1'), null, 2)
 				return new Response(body, {
 					headers: {
 						...corsHeaders,
@@ -164,15 +140,7 @@ const server = serve({
 
 			if (channel === 'stable' && CHANNEL === 'beta') {
 				// beta 模式下 stable 端点返回低版本
-				const body = JSON.stringify(
-					{
-						version: '0.0.1',
-						pub_date: new Date().toISOString(),
-						platforms: {},
-					},
-					null,
-					2,
-				)
+				const body = JSON.stringify(buildLatestJson(baseUrl, platform, '0.0.1'), null, 2)
 				return new Response(body, {
 					headers: {
 						...corsHeaders,
@@ -182,17 +150,7 @@ const server = serve({
 				})
 			}
 
-			if (SCENARIO === 'error') {
-				return new Response('Internal Server Error', {
-					status: 500,
-					headers: corsHeaders,
-				})
-			}
-
 			const json = buildLatestJson(baseUrl, platform)
-			if (!json) {
-				return new Response('Internal Server Error', { status: 500, headers: corsHeaders })
-			}
 
 			return new Response(JSON.stringify(json, null, 2), {
 				headers: {

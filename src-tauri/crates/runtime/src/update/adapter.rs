@@ -5,21 +5,11 @@ use std::sync::Arc;
 
 use tauri_plugin_updater::UpdaterExt;
 
-use stoneflow_application::update::{UpdateInfo, UpdatePort};
+use stoneflow_application::update::{CheckedUpdate, UpdatePort};
 use stoneflow_application::ApplicationError;
 use stoneflow_domain::UpdateChannel;
 
-/// 生产环境 CDN 更新基础 URL。
-const PROD_UPDATES_BASE_URL: &str = "https://release.sty20030818.space/stoneflow/updates";
-
-/// 本地 Mock 服务器默认地址（配合 `bun run mock:updates` 使用）。
-const MOCK_UPDATES_BASE_URL: &str = "http://localhost:1420/stoneflow/updates";
-
-/// 环境变量名：设置后覆盖更新基础 URL（用于开发/测试）。
-const ENV_UPDATES_BASE_URL: &str = "STONEFLOW_UPDATES_BASE_URL";
-
-/// 环境变量名：设置为任意值时，自动使用本地 Mock 服务器地址。
-const ENV_USE_MOCK: &str = "STONEFLOW_USE_MOCK_UPDATES";
+use crate::release_endpoint::resolve_release_base_url;
 
 /// Tauri 实现的更新端口。
 #[derive(Clone)]
@@ -32,51 +22,14 @@ impl TauriUpdateAdapter {
         Self { app }
     }
 
-    /// 解析当前应使用的更新基础 URL。
-    ///
-    /// 优先级：
-    /// 1. `STONEFLOW_UPDATES_BASE_URL` 环境变量（最高优先级）
-    /// 2. `STONEFLOW_USE_MOCK_UPDATES=1` 环境变量 → 使用本地 Mock 地址
-    /// 3. debug 编译且 Mock 端口（1420）可访问 → 自动使用 Mock（仅 debug）
-    /// 4. 默认使用生产地址
-    pub(crate) fn resolve_base_url() -> String {
-        // 1. 显式指定基础 URL
-        if let Ok(url) = std::env::var(ENV_UPDATES_BASE_URL) {
-            if !url.is_empty() {
-                log::info!(target: "updater", "使用自定义更新地址: {url}");
-                return url;
-            }
-        }
-
-        // 2. 显式开启 Mock
-        if let Ok(val) = std::env::var(ENV_USE_MOCK) {
-            if val == "1" || val == "true" {
-                log::info!(target: "updater", "使用本地 Mock 更新服务器: {MOCK_UPDATES_BASE_URL}");
-                return MOCK_UPDATES_BASE_URL.to_string();
-            }
-        }
-
-        // 3. Debug 模式下尝试自动检测 Mock 服务器（TCP 连接检测，200ms 超时）
-        #[cfg(debug_assertions)]
-        {
-            if is_mock_server_reachable() {
-                log::info!(target: "updater", "检测到本地 Mock 服务器，自动切换到: {MOCK_UPDATES_BASE_URL}");
-                return MOCK_UPDATES_BASE_URL.to_string();
-            }
-        }
-
-        // 4. 默认生产地址
-        PROD_UPDATES_BASE_URL.to_string()
-    }
-
     /// 根据渠道构造远端 endpoint URL（各平台独立指针）。
     ///
     /// Tauri 会替换 `{{target}}` / `{{arch}}`，例如：
     /// `.../beta/platforms/darwin-aarch64/latest.json`
-    pub(crate) fn endpoint_url(channel: UpdateChannel, base_url: &str) -> String {
-        let base = base_url.trim_end_matches('/');
+    pub(crate) fn endpoint_url(channel: UpdateChannel, release_base_url: &str) -> String {
+        let base = release_base_url.trim_end_matches('/');
         format!(
-            "{}/{}/platforms/{{{{target}}}}-{{{{arch}}}}/latest.json",
+            "{}/updates/{}/platforms/{{{{target}}}}-{{{{arch}}}}/latest.json",
             base,
             channel.path_segment()
         )
@@ -91,19 +44,13 @@ impl TauriUpdateAdapter {
             || (lower.contains("status code") && lower.contains("404"))
     }
 
-    /// 从 updater 的同一基础地址推导独立的 changelog 静态文件地址。
-    pub(crate) fn changelog_url(base_url: &str) -> String {
-        let release_base_url = base_url.strip_suffix("/updates").unwrap_or(base_url);
-        format!("{release_base_url}/CHANGELOG.md")
-    }
-
     /// 根据渠道构建 UpdaterBuilder（配置 endpoint 和版本比较器）。
     fn build_updater(
         &self,
         channel: UpdateChannel,
     ) -> Result<tauri_plugin_updater::Updater, ApplicationError> {
-        let base_url = Self::resolve_base_url();
-        let url = Self::endpoint_url(channel, &base_url);
+        let release_base_url = resolve_release_base_url();
+        let url = Self::endpoint_url(channel, &release_base_url);
         let parsed_url: url::Url = url.parse().map_err(|e: url::ParseError| {
             ApplicationError::update(format!("endpoint URL 无效: {e}"))
         })?;
@@ -140,22 +87,13 @@ impl TauriUpdateAdapter {
     }
 }
 
-/// Debug 模式下快速检测 Mock 服务器是否运行（TCP 连接，超时 200ms）。
-#[cfg(debug_assertions)]
-fn is_mock_server_reachable() -> bool {
-    use std::net::TcpStream;
-    use std::time::Duration;
-
-    // 用 TCP 连接检测 1420 端口是否开放，不依赖额外 HTTP 客户端
-    TcpStream::connect_timeout(
-        &"127.0.0.1:1420".parse().unwrap(),
-        Duration::from_millis(200),
-    )
-    .is_ok()
-}
-
 impl UpdatePort for TauriUpdateAdapter {
-    async fn check(&self, channel: UpdateChannel) -> Result<Option<UpdateInfo>, ApplicationError> {
+    type Handle = tauri_plugin_updater::Update;
+
+    async fn check(
+        &self,
+        channel: UpdateChannel,
+    ) -> Result<Option<CheckedUpdate<Self::Handle>>, ApplicationError> {
         let updater = self.build_updater(channel)?;
 
         let update = match updater.check().await {
@@ -173,33 +111,25 @@ impl UpdatePort for TauriUpdateAdapter {
             }
         };
 
-        Ok(update.map(|u| UpdateInfo {
-            version: u.version.to_string(),
+        Ok(update.map(|handle| CheckedUpdate {
+            version: handle.version.to_string(),
+            channel,
+            handle,
         }))
     }
 
     async fn download_package(
         &self,
-        channel: UpdateChannel,
+        checked: Arc<CheckedUpdate<Self::Handle>>,
         on_progress: impl Fn(u64, Option<u64>) + Send + Sync + 'static,
-    ) -> Result<(String, Vec<u8>), ApplicationError> {
-        let updater = self.build_updater(channel)?;
-
-        // 仅在此处 check 一次，拿到可下载的 Update 句柄（Tauri API 要求）。
-        let update = updater
-            .check()
-            .await
-            .map_err(|e| ApplicationError::update(format!("检查更新失败: {e}")))?
-            .ok_or_else(|| ApplicationError::update("当前没有可用更新"))?;
-
-        let version = update.version.to_string();
-
+    ) -> Result<Vec<u8>, ApplicationError> {
         // 只 download，不 install。
         // Windows 上 install() 会启动 NSIS 并 process::exit，等同「自动安装」；
         // 必须等用户点「重启」再 install。
         let downloaded = Arc::new(AtomicU64::new(0));
         let downloaded_clone = downloaded.clone();
-        let bytes = update
+        let bytes = checked
+            .handle
             .download(
                 move |chunk_length, content_length| {
                     downloaded_clone.fetch_add(chunk_length as u64, Ordering::SeqCst);
@@ -213,37 +143,28 @@ impl UpdatePort for TauriUpdateAdapter {
 
         log::info!(
             target: "updater",
-            "更新包已下载并暂存 v{version}（{} bytes），等待用户确认安装",
+            "更新包已下载并暂存 v{}（{} bytes），等待用户确认安装",
+            checked.version,
             bytes.len()
         );
 
-        Ok((version, bytes))
+        Ok(bytes)
     }
 
     async fn install_package(
         &self,
-        channel: UpdateChannel,
+        checked: Arc<CheckedUpdate<Self::Handle>>,
         bytes: Vec<u8>,
     ) -> Result<(), ApplicationError> {
-        let updater = self.build_updater(channel)?;
-
-        // install 需要 Update 句柄（路径/配置）；再 check 一次拿句柄，安装内容用已暂存的 bytes。
-        let update = updater
-            .check()
-            .await
-            .map_err(|e| ApplicationError::update(format!("安装前检查更新失败: {e}")))?
-            .ok_or_else(|| {
-                ApplicationError::update("安装失败：远端已无此更新，请重新检查并下载".to_string())
-            })?;
-
         log::info!(
             target: "updater",
             "开始安装更新 v{}（Windows 上将退出进程）",
-            update.version
+            checked.version
         );
 
         // Windows：内部 ShellExecute 安装器后 process::exit(0)，不会返回。
-        update
+        checked
+            .handle
             .install(bytes)
             .map_err(|e| ApplicationError::update(format!("安装更新失败: {e}")))?;
 
@@ -260,16 +181,16 @@ impl UpdatePort for TauriUpdateAdapter {
 
 #[cfg(test)]
 mod tests {
+    use stoneflow_application::update::UpdatePort;
     use stoneflow_domain::UpdateChannel;
 
     use super::TauriUpdateAdapter;
 
     #[test]
-    fn changelog_url_should_share_release_root_with_update_base_url() {
-        assert_eq!(
-            TauriUpdateAdapter::changelog_url("https://release.example/stoneflow/updates"),
-            "https://release.example/stoneflow/CHANGELOG.md"
-        );
+    fn adapter_should_keep_the_native_update_as_opaque_handle() {
+        fn assert_handle<P: UpdatePort<Handle = tauri_plugin_updater::Update>>() {}
+
+        assert_handle::<TauriUpdateAdapter>();
     }
 
     #[test]
@@ -277,14 +198,14 @@ mod tests {
         assert_eq!(
             TauriUpdateAdapter::endpoint_url(
                 UpdateChannel::Beta,
-                "https://release.example/stoneflow/updates"
+                "https://release.example/stoneflow"
             ),
             "https://release.example/stoneflow/updates/beta/platforms/{{target}}-{{arch}}/latest.json"
         );
         assert_eq!(
             TauriUpdateAdapter::endpoint_url(
                 UpdateChannel::Stable,
-                "https://release.example/stoneflow/updates/"
+                "https://release.example/stoneflow/"
             ),
             "https://release.example/stoneflow/updates/stable/platforms/{{target}}-{{arch}}/latest.json"
         );

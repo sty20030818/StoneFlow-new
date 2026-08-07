@@ -1,130 +1,73 @@
 import { describe, expect, test } from 'bun:test'
 
-import { assertLatestJsonConsistency, createLatestJson } from './manifest'
+import * as manifestModule from './manifest'
+import { createLatestJson, createPlatformReleaseRecord } from './manifest'
+import { platformReleaseJsonKey } from './paths'
 
-describe('createLatestJson', () => {
-	test('只写入当前平台，不跨平台 merge', () => {
-		const latest = createLatestJson({
-			version: '0.1.3-beta.4',
-			pubDate: '2026-07-30T00:00:00.000Z',
-			platformKey: 'darwin-aarch64',
-			platforms: {
-				'darwin-aarch64': {
-					signature: 'sig',
-					url: 'https://release.example/stoneflow/updates/beta/releases/0.1.3-beta.4/platforms/darwin-aarch64/StoneFlow_0.1.3-beta.4_aarch64.app.tar.gz',
-				},
-				'windows-x86_64': {
-					signature: 'other',
-					url: 'https://release.example/stoneflow/updates/beta/releases/0.1.3-beta.5/platforms/windows-x86_64/StoneFlow_0.1.3-beta.5_x64-setup.exe',
-				},
-			},
-		})
+const version = '0.1.4-beta.4'
+const platform = 'windows-x86_64'
+const updater = {
+	url: `https://release.example/stoneflow/updates/beta/releases/${version}/platforms/${platform}/artifacts/updater-sha/StoneFlow_${version}_x64-setup.exe`,
+	signature: 'signature',
+	sha256: 'updater-sha',
+}
+const downloads = [{ kind: 'nsis' as const, url: updater.url, sha256: updater.sha256 }]
 
-		expect(latest).toEqual({
-			version: '0.1.3-beta.4',
-			pub_date: '2026-07-30T00:00:00.000Z',
-			platforms: {
-				'darwin-aarch64': {
-					signature: 'sig',
-					url: 'https://release.example/stoneflow/updates/beta/releases/0.1.3-beta.4/platforms/darwin-aarch64/StoneFlow_0.1.3-beta.4_aarch64.app.tar.gz',
-				},
-			},
+describe('createPlatformReleaseRecord', () => {
+	test('生成无时间戳且字段顺序稳定的单平台不可变记录', () => {
+		const input = {
+			channel: 'beta' as const,
+			version,
+			commit: 'a'.repeat(40),
+			sourceVersion: '0.1.3',
+			platform,
+			updater,
+			downloads,
+		}
+
+		const record = createPlatformReleaseRecord(input)
+
+		expect(record).toEqual({
+			schemaVersion: 1,
+			channel: 'beta',
+			version,
+			commit: 'a'.repeat(40),
+			sourceVersion: '0.1.3',
+			platform,
+			updater,
+			downloads,
 		})
+		expect(JSON.stringify(createPlatformReleaseRecord(input))).toBe(JSON.stringify(record))
+		expect(record).not.toHaveProperty('createdAt')
+		expect(record).not.toHaveProperty('updatedAt')
+		expect(record).not.toHaveProperty('platforms')
 	})
 
-	test('缺少当前平台时失败', () => {
-		expect(() =>
-			createLatestJson({
-				version: '0.1.3-beta.4',
-				pubDate: '2026-07-30T00:00:00.000Z',
-				platformKey: 'darwin-aarch64',
-				platforms: {
-					'windows-x86_64': {
-						signature: 'sig',
-						url: 'https://example/win.exe',
-					},
-				},
-			}),
-		).toThrow('缺少当前平台')
+	test('记录 key 固定在版本与平台目录，不生成全局 manifest key', () => {
+		expect(platformReleaseJsonKey('beta', version, platform)).toBe(
+			`stoneflow/updates/beta/releases/${version}/platforms/${platform}/release.json`,
+		)
 	})
 })
 
-describe('assertLatestJsonConsistency', () => {
-	test('允许上传全局 changelog，但仍要求版本产物位于版本目录', () => {
-		const version = '0.1.3-beta.4'
-		const artifact = `StoneFlow_${version}_aarch64.app.tar.gz`
-		const platformKey = 'darwin-aarch64'
-		const latest = {
+describe('createLatestJson', () => {
+	test('只投影当前平台需要的字段且不包含 pub_date', () => {
+		const latest = createLatestJson({ version, platformKey: platform, updater })
+
+		expect(latest).toEqual({
 			version,
-			pub_date: '2026-07-29T00:00:00.000Z',
 			platforms: {
-				[platformKey]: {
-					signature: 'signature',
-					url: `https://release.example/stoneflow/updates/beta/releases/${version}/platforms/${platformKey}/${artifact}`,
+				[platform]: {
+					url: updater.url,
+					signature: updater.signature,
 				},
 			},
-		}
-		const versionKey = `stoneflow/updates/beta/releases/${version}/platforms/${platformKey}`
-		const uploads = [
-			{ filePath: '/tmp/CHANGELOG.md', key: 'stoneflow/CHANGELOG.md' },
-			{ filePath: `/tmp/${artifact}`, key: `${versionKey}/${artifact}` },
-			{ filePath: `/tmp/${artifact}.sig`, key: `${versionKey}/${artifact}.sig` },
-			{
-				filePath: '/tmp/latest.json',
-				key: `stoneflow/updates/beta/platforms/${platformKey}/latest.json`,
-			},
-		]
-
-		expect(() =>
-			assertLatestJsonConsistency(latest, version, uploads, platformKey),
-		).not.toThrow()
-		expect(() =>
-			assertLatestJsonConsistency(
-				latest,
-				version,
-				[
-					...uploads.slice(0, 1),
-					{ filePath: `/tmp/${artifact}`, key: `stoneflow/updates/beta/latest/${artifact}` },
-					{
-						filePath: `/tmp/${artifact}.sig`,
-						key: `stoneflow/updates/beta/latest/${artifact}.sig`,
-					},
-				],
-				platformKey,
-			),
-		).toThrow(`上传 key 未落在版本目录 ${version}`)
+		})
+		expect(latest).not.toHaveProperty('pub_date')
+		expect(Object.keys(latest.platforms)).toEqual([platform])
 	})
+})
 
-	test('拒绝把多平台塞进单平台 latest.json', () => {
-		expect(() =>
-			assertLatestJsonConsistency(
-				{
-					version: '0.1.2-beta.3',
-					pub_date: '2026-07-20T00:00:00.000Z',
-					platforms: {
-						'windows-x86_64': {
-							signature: 'old-signature',
-							url: 'https://release.example/stoneflow/updates/beta/releases/0.1.2-beta.3/platforms/windows-x86_64/StoneFlow_0.1.2-beta.3_x64-setup.exe',
-						},
-						'darwin-aarch64': {
-							signature: 'new-signature',
-							url: 'https://release.example/stoneflow/updates/beta/releases/0.1.2-beta.3/platforms/darwin-aarch64/StoneFlow_0.1.2-beta.3_aarch64.app.tar.gz',
-						},
-					},
-				},
-				'0.1.2-beta.3',
-				[
-					{
-						filePath: '/tmp/StoneFlow_0.1.2-beta.3_aarch64.app.tar.gz',
-						key: 'stoneflow/updates/beta/releases/0.1.2-beta.3/platforms/darwin-aarch64/StoneFlow_0.1.2-beta.3_aarch64.app.tar.gz',
-					},
-					{
-						filePath: '/tmp/StoneFlow_0.1.2-beta.3_aarch64.app.tar.gz.sig',
-						key: 'stoneflow/updates/beta/releases/0.1.2-beta.3/platforms/darwin-aarch64/StoneFlow_0.1.2-beta.3_aarch64.app.tar.gz.sig',
-					},
-				],
-				'darwin-aarch64',
-			),
-		).toThrow('必须仅包含当前平台')
-	})
+test('manifest 模块不再暴露全局 release manifest 构造器', () => {
+	expect('createReleaseManifest' in manifestModule).toBeFalse()
 })

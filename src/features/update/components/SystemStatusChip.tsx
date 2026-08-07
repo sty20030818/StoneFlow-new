@@ -5,12 +5,13 @@
  * 同一时间只展示最高优先级一条，避免多 pill 叠放。
  */
 
-import { RefreshCwIcon } from 'lucide-react'
-
 import { useSharedSyncStatus } from '@/features/sync'
 import { formatReplicaState, formatSyncStatus } from '@/features/sync'
-import { useUpdateInstallActions } from '../hooks/useUpdateInstallActions'
-import { selectReadyChipVisible, useUpdateStore } from '../model/useUpdateStore'
+import {
+	selectReadyChipVisible,
+	selectUpdateSnapshot,
+	useUpdateStore,
+} from '../model/useUpdateStore'
 import { Button } from '@/shared/components/base/button'
 import { cn } from '@/shared/lib/utils'
 
@@ -30,9 +31,9 @@ export { resolveActiveChip }
 
 export function SystemStatusChip() {
 	const updateReady = useUpdateStore(selectReadyChipVisible)
-	const updateInfo = useUpdateStore((s) => s.updateInfo)
+	const snapshot = useUpdateStore(selectUpdateSnapshot)
 	const dismissReadyChip = useUpdateStore((s) => s.dismissReadyChip)
-	const { restart } = useUpdateInstallActions()
+	const openDialog = useUpdateStore((s) => s.openDialog)
 
 	const { displayedStatus, message, runNow, running, statusPayload } = useSharedSyncStatus()
 
@@ -55,13 +56,26 @@ export function SystemStatusChip() {
 	)
 
 	if (active === 'update-ready') {
-		const version = updateInfo?.version ?? ''
+		const version = snapshot.update?.version ?? ''
+		const installFailed = Boolean(snapshot.errorMessage)
 		return (
 			<div role='status' aria-live='polite' className={shellClass}>
 				<div className={pillClass}>
-					<span className='size-2 shrink-0 rounded-full bg-emerald-500' aria-hidden />
+					<span
+						className={cn(
+							'size-2 shrink-0 rounded-full',
+							installFailed ? 'bg-red-500' : 'bg-emerald-500',
+						)}
+						aria-hidden
+					/>
 					<p className='min-w-0 truncate text-[13px] font-medium text-foreground'>
-						{version ? `v${version} 已就绪` : '更新已就绪'}
+						{installFailed
+							? version
+								? `v${version} 安装失败`
+								: '安装失败'
+							: version
+								? `v${version} 已就绪`
+								: '更新已就绪'}
 					</p>
 					<div className='flex shrink-0 items-center gap-1'>
 						<Button
@@ -77,10 +91,9 @@ export function SystemStatusChip() {
 							type='button'
 							size='sm'
 							className='h-7 rounded-full px-2.5 text-[12px] active:scale-[0.96]'
-							onClick={() => void restart()}
+							onClick={openDialog}
 						>
-							<RefreshCwIcon aria-hidden className='-ml-0.5 mr-1 size-3.5' />
-							重启
+							查看
 						</Button>
 					</div>
 				</div>

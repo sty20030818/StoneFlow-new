@@ -4,6 +4,7 @@ use tauri::ipc::Invoke;
 
 pub(crate) mod activity;
 pub(crate) mod app_lifecycle;
+pub(crate) mod changelog;
 pub(crate) mod launcher;
 pub(crate) mod lifecycle;
 pub(crate) mod projects;
@@ -69,9 +70,9 @@ pub fn handler() -> impl Fn(Invoke) -> bool + Send + Sync + 'static {
         spaces::delete_space,
         spaces::permanently_delete_space,
         update::check_update,
-        update::get_changelog,
-        update::download_and_install,
-        update::restart_and_install,
+        changelog::get_changelog,
+        update::download_update,
+        update::install_staged_update,
         update::consume_completed_update,
         update::skip_version,
         update::set_check_mode,

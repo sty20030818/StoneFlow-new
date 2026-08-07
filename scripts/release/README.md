@@ -1,130 +1,63 @@
-# 应用更新发布指南
+# release · 应用发布
 
-## 1. 生成签名密钥对
+发布入口会先从共享 Git remote 确认全局版本身份，再构建并发布当前平台。真实发布会验证已有版本身份，或原子创建新 Git Tag 并推进渠道 ledger，随后写入 R2；执行前必须确认目标环境与授权。
 
-Tauri updater 使用 Ed25519 非对称签名验证更新包。首次发布前需要生成密钥对：
+## 发布前准备
+
+- 工作区必须完整、干净，`HEAD` 已提交且可从发布 remote 的公开分支或 Tag 到达。
+- `package.json` 与 `src-tauri/tauri.conf.json` 使用相同的 Stable SemVer。
+- 根 `CHANGELOG.md` 符合项目契约，并包含本次目标版本的非空条目。
+- Tauri updater 公钥已写入 `src-tauri/tauri.conf.json`，签名私钥安全保存在仓库外。
+- 真实发布配置以下环境变量：
+
+```bash
+TAURI_SIGNING_PRIVATE_KEY=/absolute/path/to/stoneflow.key
+TAURI_SIGNING_PRIVATE_KEY_PASSWORD=your-password
+R2_ACCOUNT_ID=your-account-id
+R2_ACCESS_KEY_ID=your-access-key
+R2_SECRET_ACCESS_KEY=your-secret-key
+R2_BUCKET_NAME=your-bucket-name
+# 可选；默认 https://release.sty20030818.space/stoneflow
+R2_PUBLIC_URL=https://release.example.com/stoneflow
+```
+
+首次生成签名密钥：
 
 ```bash
 bunx tauri signer generate -w ~/.tauri/stoneflow.key
 ```
 
-这会生成两个文件：
-- `~/.tauri/stoneflow.key` - 私钥，**必须保密**，不要提交到 git
-- 终端会输出公钥，复制到 `src-tauri/tauri.conf.json` 的 `plugins.updater.pubkey` 字段
+私钥不得提交；丢失后，已安装客户端无法验证新密钥签出的更新。
 
-**重要**：私钥丢失后无法再发布能被旧版本识别的更新，请妥善备份。
-
-## 2. 环境变量
-
-发布脚本需要以下环境变量（可以放在 `.env.local` 或 CI secrets 中）：
+## 命令
 
 ```bash
-# 私钥密码（生成密钥时设置的）
-TAURI_SIGNING_PRIVATE_KEY_PASSWORD=your-password
-# 私钥路径，推荐绝对路径；脚本也兼容 ~/.tauri/stoneflow.key
-TAURI_SIGNING_PRIVATE_KEY=/Users/your-name/.tauri/stoneflow.key
+# Stable：发布配置文件中的版本
+bun run release:stable
 
-# Cloudflare R2 配置（用于上传）
-R2_ACCOUNT_ID=your-account-id
-R2_ACCESS_KEY_ID=your-access-key
-R2_SECRET_ACCESS_KEY=your-secret-key
-R2_BUCKET_NAME=your-bucket-name
-R2_PUBLIC_URL=https://release.sty20030818.space/stoneflow
-```
-
-## 3. R2 存储结构
-
-发布到 R2 后的目录结构：
-
-```
-stoneflow/
-├── updates/
-│   ├── stable/
-│   │   ├── latest.release.json            # 全局：版本分配 / commit 绑定
-│   │   ├── platforms/
-│   │   │   ├── darwin-aarch64/
-│   │   │   │   └── latest.json            # 仅该平台的 updater 指针
-│   │   │   └── windows-x86_64/
-│   │   │       └── latest.json
-│   │   └── releases/
-│   │       └── 0.1.0/
-│   │           ├── release.json
-│   │           └── platforms/
-│   │               ├── darwin-aarch64/
-│   │               │   ├── StoneFlow_0.1.0_aarch64.app.tar.gz
-│   │               │   └── StoneFlow_0.1.0_aarch64.app.tar.gz.sig
-│   │               └── windows-x86_64/
-│   │                   ├── StoneFlow_0.1.0_x64-setup.exe
-│   │                   └── StoneFlow_0.1.0_x64-setup.exe.sig
-│   └── beta/
-│       └── ...
-└── downloads/
-    ├── stable/
-    │   ├── darwin-aarch64/
-    │   │   ├── latest.dmg
-    │   │   └── 0.1.0/
-    │   │       └── StoneFlow_0.1.0_aarch64.dmg
-    │   └── windows-x86_64/
-    │       ├── latest-setup.exe
-    │       └── 0.1.0/
-    │           └── StoneFlow_0.1.0_x64-setup.exe
-    └── beta/
-        └── ...
-```
-
-## 4. 发布命令
-
-```bash
-# 发布稳定版
-bun run release
-
-# 发布测试版
+# Beta：由远端全局 Beta Tag 序列计算 beta.N
 bun run release:beta
 
-# 仅构建不 upload（本地验证）
-bun run release -- --no-upload
+# 仅在本机完成预检、构建与产物收集
+bun run release:stable -- --no-upload
+bun run release:beta -- --no-upload
 ```
 
-### 产物安全（防「版本新、包旧」）
+`--no-upload` 仍会只读访问共享 Git remote 以计算候选版本，但不会创建 Tag、推进 ledger 或访问 R2；本地产物保留在本轮唯一的 `.release-tmp/<run-id>/staged/`，命令结束时会打印精确路径。它不是手工上传方案，正式发布必须由主脚本保持条件写与 Pointer-last 顺序。
 
-脚本默认执行：
+## 安全边界
 
-1. 构建前清空 `bundle/{nsis,msi,dmg,macos,appimage}` 历史产物  
-2. 按本次 `VERSION` 精确匹配安装包文件名，不取目录第一个文件  
-3. 要求 `.sig` 与产物同路径配对  
-4. 上传前校验**本平台** `latest.json` 的 version / URL / 文件名与上传列表一致  
+- Stable 与 Beta 分别共享一条跨平台版本序列；macOS、Windows、Linux 只独立推进各自 Pointer。
+- 已发布 Tag、产物和 platform record 不可覆盖；同版本 Pointer 只接受完全相同的 payload，Pointer 不允许回退。
+- Windows Beta 只构建 NSIS，避免 MSI 不接受预发布版本文本。
+- 构建只读取 `releaseCommit` 的临时 detached clone；Git hooks/危险环境和外部 `TAURI_CONFIG` 被隔离，依赖使用 frozen lockfile 安装，Cargo 与 staged 输出按 run 隔离。
+- 新建 Tag 前只读校验远端 Changelog 历史与 YANKED 状态，已知冲突不会留下不可恢复的版本身份。
+- 每个 updater 产物都会用应用内置公钥验证将要发布的精确签名字节；密钥不匹配会在 Git/R2 写入前失败。
+- 不移动或删除发布 Tag，不手工改 ledger、record 或 Pointer。坏版本通过更高版本修复。
+- 生产 ruleset、legacy seed、R2 cutover、对象删除和生产 Pointer 变更都需要重新盘点实时状态并单独授权。
 
-任一校验失败会中止上传。发布后请确认该平台 `latest.json` 里的 url 文件名含正确版本号。
+## 进一步阅读
 
-## 5. 平台 latest.json 格式
-
-客户端 endpoint：
-
-```text
-https://release.sty20030818.space/stoneflow/updates/{channel}/platforms/{{target}}-{{arch}}/latest.json
-```
-
-每个平台一份指针，`platforms` **只含本平台一条**（Tauri static 格式）：
-
-```json
-{
-  "version": "0.1.0",
-  "pub_date": "2024-01-01T00:00:00Z",
-  "platforms": {
-    "darwin-aarch64": {
-      "signature": "base64-signature",
-      "url": "https://release.sty20030818.space/stoneflow/updates/stable/releases/0.1.0/platforms/darwin-aarch64/StoneFlow_0.1.0_aarch64.app.tar.gz"
-    }
-  }
-}
-```
-
-模型：
-
-- **版本号全局**：同一 Git commit 绑定同一 release version；新 commit 才递增（beta 为 `-beta.N`）
-- **指针按平台**：只推进当前发布平台的 `platforms/<platformKey>/latest.json`；其它平台保持各自最新
-- 因此允许 Mac 停在 `beta.4`、Win 已到 `beta.5`；Mac 用户可升到 `beta.4`，不会被全局 `beta.5` 卡住
-
-用户可见的更新内容不在 `latest.json` 中。发布前维护根目录 `CHANGELOG.md`；脚本会校验版本标题、先上传 `stoneflow/CHANGELOG.md`，再覆盖本平台 pointer。
-
-Windows Beta 只构建 NSIS `.exe`。MSI 不支持 `0.1.1-beta.1` 这类带 `beta` 文本的预发布版本号。
+- [ARCHITECTURE.md](./ARCHITECTURE.md)：Owner、模块边界与不变式
+- [DESIGN.md](./DESIGN.md)：版本规划、发布顺序、并发与恢复协议
+- [ADR-0001](../../Documents/01-架构/adr/ADR-0001-global-release-identity-and-platform-pointers.md)：全局版本身份与分平台可用性决策

@@ -28,9 +28,9 @@ tauri-plugin-global-shortcut.workspace = true
 tauri-plugin-log.workspace = true
 tauri-plugin-opener.workspace = true
 tauri-plugin-single-instance.workspace = true
-tauri-plugin-store.workspace = true
 tauri-plugin-updater.workspace = true
 tauri-plugin-window-state.workspace = true
+tempfile.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 url.workspace = true
@@ -43,7 +43,6 @@ sea-orm-migration.workspace = true
 serde_json.workspace = true
 stoneflow-domain = { path = "../domain" }
 stoneflow-test-support = { path = "../test-support" }
-tempfile.workspace = true
 tokio.workspace = true
 uuid.workspace = true
 

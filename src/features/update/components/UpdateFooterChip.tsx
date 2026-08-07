@@ -2,7 +2,7 @@
  * 更新 Footer chip（纯展示）。
  *
  * - available：Badge 提醒感
- * - downloading / ready / error：ShellFooterHit + 进度环
+ * - downloading / ready：ShellFooterHit + 进度环
  * 交互统一：整块 → onOpen（开弹窗）
  */
 
@@ -19,15 +19,9 @@ export type UpdateFooterChipProps = {
 	onOpen: () => void
 }
 
-function toneForPhase(phase: UpdateFooterView['phase']): ShellFooterHitTone {
-	switch (phase) {
-		case 'ready':
-			return 'success'
-		case 'error':
-			return 'danger'
-		default:
-			return 'neutral'
-	}
+function toneForView(view: UpdateFooterView): ShellFooterHitTone {
+	if (view.errorMessage) return 'danger'
+	return view.phase === 'ready' ? 'success' : 'neutral'
 }
 
 export function UpdateFooterChip({ view, onOpen }: UpdateFooterChipProps) {
@@ -48,19 +42,11 @@ export function UpdateFooterChip({ view, onOpen }: UpdateFooterChipProps) {
 		)
 	}
 
-	const ringState =
-		view.phase === 'downloading' || view.phase === 'ready' || view.phase === 'error'
-			? view.phase
-			: 'downloading'
+	const ringState = view.phase === 'ready' ? 'ready' : 'downloading'
 	const ringValue = view.phase === 'ready' ? 100 : view.ringValue
 
 	return (
-		<ShellFooterHit
-			label={view.label}
-			title={view.title}
-			tone={toneForPhase(view.phase)}
-			onClick={onOpen}
-		>
+		<ShellFooterHit label={view.label} title={view.title} tone={toneForView(view)} onClick={onOpen}>
 			<UpdateProgressRing
 				state={ringState}
 				value={ringValue}

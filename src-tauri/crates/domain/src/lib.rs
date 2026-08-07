@@ -42,10 +42,9 @@ pub use time::{
     to_date_only, today_local_date,
 };
 pub use update::{
-    check_mode_to_stored, is_version_skipped, normalize_check_interval_secs, parse_check_mode,
-    should_auto_check, should_auto_check_with_interval, UpdateChannel, UpdateCheckMode,
-    UpdateSettings, ALLOWED_CHECK_INTERVAL_SECS, AUTO_CHECK_INTERVAL_SECS,
-    STARTUP_CHECK_DELAY_SECS,
+    is_version_skipped, normalize_check_interval_secs, should_auto_check,
+    should_auto_check_with_interval, UpdateChannel, UpdateCheckMode, UpdateSettings,
+    ALLOWED_CHECK_INTERVAL_SECS, AUTO_CHECK_INTERVAL_SECS, STARTUP_CHECK_DELAY_SECS,
 };
 pub use view::{ViewEntityKind, ViewKind};
 pub use work::{

@@ -1,78 +1,18 @@
-//! 更新相关全局事件：仅发送统一 `update-phase`。
+//! 更新会话的唯一全局事件出口。
 
-use serde::Serialize;
-use tauri::{AppHandle, Emitter};
+use stoneflow_application::update::UpdateSessionSnapshot;
+use tauri::{AppHandle, Emitter, Manager};
 
-use stoneflow_application::update::UpdateInfo;
+use super::RuntimeUpdateService;
 
-/// 统一更新阶段事件名。
-pub const UPDATE_PHASE_EVENT: &str = "update-phase";
+pub const UPDATE_SESSION_CHANGED_EVENT: &str = "update-session-changed";
 
-/// 统一阶段 payload（camelCase）。
-/// 全局 `update-phase` 与 IPC Channel 共用此形状。
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct UpdatePhasePayload {
-    pub phase: &'static str,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub version: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub downloaded: Option<u64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub total: Option<u64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub message: Option<String>,
+pub fn emit_session_changed(app: &AppHandle, snapshot: &UpdateSessionSnapshot) {
+    let _ = app.emit(UPDATE_SESSION_CHANGED_EVENT, snapshot);
 }
 
-pub fn emit_available(app: &AppHandle, info: &UpdateInfo) {
-    let _ = app.emit(
-        UPDATE_PHASE_EVENT,
-        &UpdatePhasePayload {
-            phase: "available",
-            version: Some(info.version.clone()),
-            downloaded: None,
-            total: None,
-            message: None,
-        },
-    );
-}
-
-pub fn emit_downloading(app: &AppHandle, version: &str, downloaded: u64, total: Option<u64>) {
-    let _ = app.emit(
-        UPDATE_PHASE_EVENT,
-        &UpdatePhasePayload {
-            phase: "downloading",
-            version: Some(version.to_owned()),
-            downloaded: Some(downloaded),
-            total,
-            message: None,
-        },
-    );
-}
-
-pub fn emit_ready(app: &AppHandle, version: &str) {
-    let _ = app.emit(
-        UPDATE_PHASE_EVENT,
-        &UpdatePhasePayload {
-            phase: "ready",
-            version: Some(version.to_owned()),
-            downloaded: None,
-            total: None,
-            message: None,
-        },
-    );
-}
-
-pub fn emit_error(app: &AppHandle, message: impl Into<String>) {
-    let message = message.into();
-    let _ = app.emit(
-        UPDATE_PHASE_EVENT,
-        &UpdatePhasePayload {
-            phase: "error",
-            version: None,
-            downloaded: None,
-            total: None,
-            message: Some(message),
-        },
-    );
+pub fn emit_current_session(app: &AppHandle) {
+    if let Some(service) = app.try_state::<RuntimeUpdateService>() {
+        emit_session_changed(app, &service.session_snapshot());
+    }
 }

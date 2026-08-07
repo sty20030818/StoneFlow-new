@@ -19,4 +19,14 @@ describe('ChangelogMarkdown', () => {
 		expect(items).toHaveLength(2)
 		expect(items[1]).toHaveClass('ml-5')
 	})
+
+	it('围栏中的标题按代码原文展示', () => {
+		const { container } = render(
+			<ChangelogMarkdown content={'```text\n## [9.9.9]\n### Security\n```'} />,
+		)
+
+		expect(screen.queryByRole('heading')).not.toBeInTheDocument()
+		expect(container.querySelector('code')).toHaveTextContent('## [9.9.9] ### Security')
+		expect(screen.queryByText('```text')).not.toBeInTheDocument()
+	})
 })

@@ -11,7 +11,7 @@
 
 - 任务列表**呈现**：分组、子分组、排序、方向、完成项排序、**是否显示已完成**、空分组、字段可见性
 - 页面级偏好键（`TaskDisplayPageKey`）与默认值 / 归一化
-- 偏好读写（workspace default + personal override，Tauri store）
+- 偏好读写（workspace default + personal override，renderer localStorage）
 - `applyTaskDisplayOptionsToTasks`（含 `showCompleted === false` 时隐藏 done/canceled）
 - 工具条「显示」入口（`DisplayOptionsButton`）与面板（方向内嵌、设为默认 / 恢复默认）
 - 面板表面固定为紧凑的左标签、右控件行；属性使用 pill，底栏只保留重置与设为默认
@@ -31,7 +31,7 @@ src/features/display-options/
 ├── ARCHITECTURE.md
 ├── index.ts
 ├── core/                 # pageKey · 类型 · 默认值 · normalize
-├── api/displayOptions.ts # Tauri LazyStore 持久化
+├── api/displayOptions.ts # renderer localStorage 持久化
 ├── model/                # keys · queries · mutations · useTaskDisplayOptions
 ├── adapters/task/        # apply · groups · compare
 └── components/           # Button · Panel · Popover
@@ -64,7 +64,7 @@ src/features/display-options/
 
 | 状态 | 落点 |
 |------|------|
-| 个人 / 页面默认 | Tauri store `display-options-preferences.json` |
+| 个人 / 页面默认 | renderer `localStorage` 的独立页面键 |
 | 读取 / 写入 | Query keys + mutations |
 | 页面键 | `TaskDisplayPageKey`（含 `task:view:{id}`） |
 | **不进** filter URL `f` | Display 与临时筛选分离 |

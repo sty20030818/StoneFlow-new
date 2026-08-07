@@ -1,40 +1,42 @@
 import { toast } from 'sonner'
 
-import { checkUpdate, getUpdateSettings } from '../api/updates'
+import { normalizeTauriError } from '@/shared/lib/normalize-tauri-error'
+import { checkUpdate } from '../api/updates'
 import { useUpdateStore } from '../model/useUpdateStore'
 
-/**
- * 用户主动检查更新的唯一入口。
- *
- * 菜单、设置页和关于窗口共享 update store 的 checking 相位，禁止各自维护重复请求状态。
- */
+/** 菜单、设置页和关于窗口共享的用户主动检查入口。 */
 export function useManualUpdateCheck() {
-	const isChecking = useUpdateStore((state) => state.phase === 'checking')
+	const isChecking = useUpdateStore((state) => state.manualCheckPending)
+	const disabled = useUpdateStore(
+		(state) => state.manualCheckPending || state.snapshot?.phase === 'installing',
+	)
 
 	async function checkNow() {
 		const store = useUpdateStore.getState()
-		if (store.phase === 'checking') return
+		if (store.manualCheckPending || store.snapshot?.phase === 'installing') return
 
-		// 必须在第一个 await 前写入，避免两个入口在同一事件循环内重复发起请求。
-		store.setChecking()
-
+		// 第一个 await 前占位，防止多个入口在同一事件循环重复检查。
+		store.setManualCheckPending(true)
 		try {
-			const settings = await getUpdateSettings()
-			store.setCheckMode(settings.checkMode)
-			const info = await checkUpdate(true)
-			if (info) {
-				store.showAvailable(info, { openDialog: true })
-				return
-			}
+			const result = await checkUpdate()
+			store.applySnapshot(result.snapshot)
+			if (result.status === 'failed') throw new Error(result.message)
 
-			store.setUpToDate()
-			toast.success('当前已是最新版本')
+			const responseIsCurrent =
+				useUpdateStore.getState().snapshot?.revision === result.snapshot.revision
+
+			if (responseIsCurrent && result.noUpdate) {
+				store.setNoUpdate(true)
+				toast.success('当前已是最新版本')
+			} else if (responseIsCurrent && result.snapshot.update) {
+				store.openDialog()
+			}
 		} catch (error) {
-			const message = error instanceof Error ? error.message : '检查更新失败'
-			store.setError(message)
-			toast.error(message)
+			toast.error(normalizeTauriError(error, '检查更新失败'))
+		} finally {
+			store.setManualCheckPending(false)
 		}
 	}
 
-	return { checkNow, isChecking }
+	return { checkNow, disabled, isChecking }
 }

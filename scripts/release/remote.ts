@@ -1,39 +1,80 @@
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
-import { readFile } from 'node:fs/promises'
-import path from 'node:path'
-
-import { chalk } from './io'
-import type { ReleaseChannel, ReleaseManifest, UploadItem } from './types'
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 
 export interface ReleaseRemoteConfig {
-	publicUrl: string
-	bucket: string
-	endpoint: string
+	readonly publicUrl: string
+	readonly bucket: string
+	readonly endpoint: string
 }
 
-export async function fetchJson<T>(url: string) {
-	const response = await fetch(url, {
-		signal: AbortSignal.timeout(5000),
-	})
-	if (response.status === 404) return null
-	if (!response.ok) {
-		throw new Error(`读取远端 JSON 失败: ${url} HTTP ${response.status}`)
-	}
-	return (await response.json()) as T
+interface RemoteGetOutput {
+	readonly Body?: { transformToByteArray(): Promise<Uint8Array> }
+	readonly ETag?: string
 }
 
-export async function readRemoteLatestRelease(
-	config: ReleaseRemoteConfig,
-	channel: ReleaseChannel,
-	allowMissingOnNoUpload: boolean,
-) {
-	const url = `${config.publicUrl}/updates/${channel}/latest.release.json`
+export interface S3ObjectClient {
+	send(command: GetObjectCommand): Promise<RemoteGetOutput>
+	send(command: PutObjectCommand): Promise<unknown>
+}
+
+export interface RemoteObject {
+	readonly bytes: Uint8Array
+	readonly etag: string
+}
+
+type PutRemoteObjectInput = {
+	readonly bucket: string
+	readonly key: string
+	readonly body: Uint8Array
+	readonly contentType: string
+	readonly cacheControl: string
+} & (
+	| { readonly ifNoneMatch: '*'; readonly ifMatch?: never }
+	| { readonly ifMatch: string; readonly ifNoneMatch?: never }
+)
+
+function httpStatus(error: unknown) {
+	if (!error || typeof error !== 'object') return undefined
+	return (error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode
+}
+
+export async function getRemoteObject(
+	client: S3ObjectClient,
+	bucket: string,
+	key: string,
+): Promise<RemoteObject | null> {
+	let output: RemoteGetOutput
 	try {
-		return await fetchJson<ReleaseManifest>(url)
+		output = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }))
 	} catch (error) {
-		if (!allowMissingOnNoUpload) throw error
-		console.log(chalk.yellow('   无法读取全局 release manifest，--no-upload 将按空远端处理'))
-		return null
+		if (httpStatus(error) === 404) return null
+		throw error
+	}
+	if (!output.Body) throw new Error(`S3 GetObject ${key} 响应缺少 Body`)
+	if (!output.ETag) throw new Error(`S3 GetObject ${key} 响应缺少 ETag`)
+	return { bytes: await output.Body.transformToByteArray(), etag: output.ETag }
+}
+
+export async function putRemoteObject(
+	client: S3ObjectClient,
+	input: PutRemoteObjectInput,
+): Promise<'written' | 'conflict'> {
+	try {
+		await client.send(
+			new PutObjectCommand({
+				Bucket: input.bucket,
+				Key: input.key,
+				Body: input.body,
+				ContentType: input.contentType,
+				CacheControl: input.cacheControl,
+				IfNoneMatch: input.ifNoneMatch,
+				IfMatch: input.ifMatch,
+			}),
+		)
+		return 'written'
+	} catch (error) {
+		const status = httpStatus(error)
+		if (status === 409 || status === 412) return 'conflict'
+		throw error
 	}
 }
 
@@ -51,7 +92,7 @@ export function assertR2Config(config: ReleaseRemoteConfig) {
 	)
 }
 
-export function createS3Client(config: ReleaseRemoteConfig) {
+export function createS3Client(config: ReleaseRemoteConfig): S3ObjectClient {
 	return new S3Client({
 		region: 'auto',
 		endpoint: config.endpoint,
@@ -60,40 +101,4 @@ export function createS3Client(config: ReleaseRemoteConfig) {
 			secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
 		},
 	})
-}
-
-function isMutableReleasePointer(fileName: string) {
-	return (
-		fileName === 'CHANGELOG.md' ||
-		fileName === 'latest.json' ||
-		fileName === 'latest.release.json' ||
-		fileName.startsWith('latest.') ||
-		fileName.startsWith('latest-')
-	)
-}
-
-export async function uploadItems(config: ReleaseRemoteConfig, items: UploadItem[]) {
-	const s3Client = createS3Client(config)
-
-	for (const item of items) {
-		const fileName = path.basename(item.filePath)
-		const body = await readFile(item.filePath)
-		const isMutableFile = isMutableReleasePointer(fileName)
-
-		console.log(chalk.gray(`   上传 ${item.key}...`))
-		await s3Client.send(
-			new PutObjectCommand({
-				Bucket: config.bucket,
-				Key: item.key,
-				Body: body,
-				ContentType: fileName.endsWith('.json')
-					? 'application/json'
-					: fileName === 'CHANGELOG.md'
-						? 'text/markdown; charset=utf-8'
-						: 'application/octet-stream',
-				CacheControl: isMutableFile ? 'no-cache' : 'public, max-age=31536000, immutable',
-			}),
-		)
-		console.log(chalk.green(`   ✓ ${fileName}`))
-	}
 }

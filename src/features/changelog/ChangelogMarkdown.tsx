@@ -48,6 +48,16 @@ export function ChangelogMarkdown({ content }: { content: string }) {
 						</ul>
 					)
 				}
+				if (block.type === 'code') {
+					return (
+						<pre
+							className='m-0 overflow-x-auto rounded-md bg-sf-surface-panel-muted px-3 py-2 font-mono text-xs text-sf-text-secondary'
+							key={index}
+						>
+							<code>{block.text}</code>
+						</pre>
+					)
+				}
 				return (
 					<p className='m-0 text-sf-text-secondary' key={index}>
 						{renderInline(block.text)}
@@ -62,6 +72,7 @@ type MarkdownBlock =
 	| { type: 'h2'; text: string }
 	| { type: 'h3'; text: string }
 	| { type: 'list'; items: MarkdownListItem[] }
+	| { type: 'code'; text: string }
 	| { type: 'p'; text: string }
 
 type MarkdownListItem = {
@@ -73,6 +84,7 @@ function parseSimpleMarkdown(content: string): MarkdownBlock[] {
 	const blocks: MarkdownBlock[] = []
 	let listItems: MarkdownListItem[] = []
 	let paragraph: string[] = []
+	let fence: { marker: '`' | '~'; length: number; lines: string[] } | null = null
 	const flushParagraph = () => {
 		if (paragraph.length) {
 			blocks.push({ type: 'p', text: paragraph.join(' ').trim() })
@@ -86,6 +98,27 @@ function parseSimpleMarkdown(content: string): MarkdownBlock[] {
 		}
 	}
 	for (const rawLine of content.split('\n')) {
+		if (fence) {
+			const closing = new RegExp(`^ {0,3}\\${fence.marker}{${fence.length},}[ \\t]*$`)
+			if (closing.test(rawLine)) {
+				blocks.push({ type: 'code', text: fence.lines.join('\n') })
+				fence = null
+			} else {
+				fence.lines.push(rawLine)
+			}
+			continue
+		}
+		const opening = /^ {0,3}(`{3,}|~{3,})(.*)$/.exec(rawLine)
+		if (opening && !(opening[1][0] === '`' && opening[2].includes('`'))) {
+			flushParagraph()
+			flushList()
+			fence = {
+				marker: opening[1][0] as '`' | '~',
+				length: opening[1].length,
+				lines: [],
+			}
+			continue
+		}
 		const line = rawLine.trimEnd()
 		if (/^ {0,3}(-{3,}|_{3,}|\*{3,})\s*$/.test(line)) {
 			flushParagraph()
@@ -121,6 +154,7 @@ function parseSimpleMarkdown(content: string): MarkdownBlock[] {
 		flushList()
 		paragraph.push(line.trim())
 	}
+	if (fence) blocks.push({ type: 'code', text: fence.lines.join('\n') })
 	flushParagraph()
 	flushList()
 	return blocks

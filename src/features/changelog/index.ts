@@ -1,3 +1,3 @@
 export { ChangelogDialog } from './ChangelogDialog'
-export { ChangelogMarkdown } from './ChangelogMarkdown'
-export { useChangelog } from './useChangelog'
+export { ChangelogRelease } from './ChangelogRelease'
+export { useChangelog, type ChangelogQuery } from './useChangelog'

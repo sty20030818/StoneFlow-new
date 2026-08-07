@@ -1,37 +1,13 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import { type PropsWithChildren } from 'react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { useTaskDisplayOptions } from './useTaskDisplayOptions'
 
-const storeState = vi.hoisted(() => new Map<string, unknown>())
-const storeSaveMock = vi.hoisted(() => vi.fn())
-
-vi.mock('@tauri-apps/plugin-store', () => ({
-	LazyStore: vi.fn(function LazyStore() {
-		return {
-			get: vi.fn((key: string) => Promise.resolve(storeState.get(key))),
-			set: vi.fn((key: string, value: unknown) => {
-				storeState.set(key, value)
-				return Promise.resolve()
-			}),
-			delete: vi.fn((key: string) => {
-				storeState.delete(key)
-				return Promise.resolve()
-			}),
-			save: vi.fn(() => {
-				storeSaveMock()
-				return Promise.resolve()
-			}),
-		}
-	}),
-}))
-
 describe('useTaskDisplayOptions', () => {
 	beforeEach(() => {
-		storeState.clear()
-		storeSaveMock.mockClear()
+		localStorage.clear()
 	})
 
 	it('默认返回系统默认 display options', async () => {
@@ -50,7 +26,7 @@ describe('useTaskDisplayOptions', () => {
 		await result.current.actions.setGrouping('priority')
 
 		await waitFor(() => expect(result.current.options.groupBy).toBe('priority'))
-		expect(storeSaveMock).toHaveBeenCalled()
+		expect(localStorage.getItem('stoneflow.display-options.task:task:all')).not.toBeNull()
 	})
 
 	it('resetToDefault 会清空 personal override', async () => {

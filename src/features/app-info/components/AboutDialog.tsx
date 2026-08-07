@@ -23,7 +23,7 @@ type AboutDialogProps = {
 
 /** StoneFlow 的低频应用信息与资料入口。 */
 export function AboutDialog({ open, onOpenChange, onOpenChangelog }: AboutDialogProps) {
-	const { checkNow, isChecking } = useManualUpdateCheck()
+	const { checkNow, disabled, isChecking } = useManualUpdateCheck()
 	const { version, isLoading, hasError } = useAppVersion()
 
 	function handleOpenChangelog() {
@@ -98,7 +98,7 @@ export function AboutDialog({ open, onOpenChange, onOpenChangelog }: AboutDialog
 							<HistoryIcon aria-hidden className='size-3.5' />
 							更新日志
 						</Button>
-						<Button disabled={isChecking} onClick={() => void checkNow()} size='sm' type='button'>
+						<Button disabled={disabled} onClick={() => void checkNow()} size='sm' type='button'>
 							<RefreshCwIcon aria-hidden className={cn('size-3.5', isChecking && 'animate-spin')} />
 							{isChecking ? '检查中...' : '检查更新'}
 						</Button>

@@ -71,7 +71,7 @@ export function UserAppMenu({
 	onOpenChangelog,
 	onOpenAbout,
 }: UserAppMenuProps) {
-	const { checkNow, isChecking } = useManualUpdateCheck()
+	const { checkNow, disabled, isChecking } = useManualUpdateCheck()
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
@@ -125,7 +125,7 @@ export function UserAppMenu({
 
 				{/* 应用 */}
 				<DropdownMenuGroup>
-					<DropdownMenuItem disabled={isChecking} onSelect={() => void checkNow()}>
+					<DropdownMenuItem disabled={disabled} onSelect={() => void checkNow()}>
 						<RefreshCwIcon />
 						<span>{isChecking ? '正在检查更新...' : '检查更新'}</span>
 					</DropdownMenuItem>

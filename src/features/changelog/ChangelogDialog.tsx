@@ -11,23 +11,28 @@ import {
 	DialogTitle,
 } from '@/shared/components/base/dialog'
 
-import { ChangelogMarkdown } from './ChangelogMarkdown'
+import { ChangelogRelease } from './ChangelogRelease'
+import type { ChangelogChannel } from './contract'
 import { useChangelog } from './useChangelog'
 
 export function ChangelogDialog({
 	open,
+	channel,
+	focusVersion,
 	onOpenChange,
-	version,
 }: {
 	open: boolean
+	channel: ChangelogChannel
+	focusVersion?: string | null
 	onOpenChange: (open: boolean) => void
-	version?: string | null
 }) {
-	const { channel, entries, isLoading } = useChangelog(version, open)
-	const targetRef = useRef<HTMLElement>(null)
+	const { releases, isLoading } = useChangelog(open ? { kind: 'history', channel } : null)
+	const targetRef = useRef<HTMLDivElement>(null)
+
 	useEffect(() => {
-		if (open && version) targetRef.current?.scrollIntoView({ block: 'start' })
-	}, [entries, open, version])
+		if (open && focusVersion) targetRef.current?.scrollIntoView({ block: 'start' })
+	}, [focusVersion, open, releases])
+
 	return (
 		<Dialog onOpenChange={onOpenChange} open={open}>
 			<DialogContent
@@ -66,20 +71,16 @@ export function ChangelogDialog({
 				>
 					{isLoading ? (
 						<p className='text-[13px] text-sf-text-tertiary'>正在读取更新日志...</p>
-					) : entries.length ? (
+					) : releases.length ? (
 						<div>
-							{entries.map((entry, index) => (
-								<section
+							{releases.map((release, index) => (
+								<div
 									className={index === 0 ? undefined : 'mt-7 border-t border-sf-divider pt-7'}
-									key={entry.version}
-									ref={entry.version === version ? targetRef : undefined}
+									key={release.version}
+									ref={release.version === focusVersion ? targetRef : undefined}
 								>
-									<div className='mb-4 flex items-baseline gap-2'>
-										<h3 className='text-[16px] font-semibold text-foreground'>v{entry.version}</h3>
-										<span className='text-[12px] text-sf-text-tertiary'>{entry.date}</span>
-									</div>
-									<ChangelogMarkdown content={entry.content} />
-								</section>
+									<ChangelogRelease release={release} />
+								</div>
 							))}
 						</div>
 					) : (

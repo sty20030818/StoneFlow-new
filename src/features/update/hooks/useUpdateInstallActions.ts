@@ -1,44 +1,56 @@
-import { cancelUpdateDownload, downloadAndInstall, restartAndInstall } from '../api/updates'
-import { useUpdateStore } from '../model/useUpdateStore'
-import { handleUpdatePhasePayload } from './updatePhaseEffects'
+import { toast } from 'sonner'
 
-/** 更新 Dialog 私有的下载、取消和重启动作。 */
+import { normalizeTauriError } from '@/shared/lib/normalize-tauri-error'
+import {
+	cancelUpdateDownload,
+	downloadUpdate,
+	installStagedUpdate,
+	type UpdateChannel,
+	type UpdateLifecycleResult,
+} from '../api/updates'
+import { useUpdateStore } from '../model/useUpdateStore'
+
+function applyLifecycleResult(result: UpdateLifecycleResult) {
+	useUpdateStore.getState().applySnapshot(result.snapshot)
+	if (result.status !== 'ok') throw new Error(result.message)
+}
+
+/** 更新 Dialog 私有的下载、取消和安装动作。 */
 export function useUpdateInstallActions() {
 	async function startDownload() {
-		const store = useUpdateStore.getState()
-		useUpdateStore.setState({ downloadUiAbandoned: false })
-		store.setDownloading({ downloaded: 0, total: null }, store.updateInfo?.version)
+		const snapshot = useUpdateStore.getState().snapshot
+		if (snapshot?.phase !== 'available' || !snapshot.update) return
 
 		try {
-			await downloadAndInstall((payload) => {
-				if (useUpdateStore.getState().downloadUiAbandoned && payload.phase === 'downloading') {
-					return
-				}
-				handleUpdatePhasePayload(payload)
-			})
+			applyLifecycleResult(await downloadUpdate(snapshot.update.version, snapshot.update.channel))
 		} catch (error) {
-			if (useUpdateStore.getState().downloadUiAbandoned) return
-			const message = error instanceof Error ? error.message : '下载更新失败'
-			useUpdateStore.getState().setError(message)
+			toast.error(normalizeTauriError(error, '下载更新失败'))
 		}
 	}
 
-	async function cancelDownloadUi() {
-		useUpdateStore.getState().cancelDownloadUiLocal()
+	async function cancelDownload() {
+		if (useUpdateStore.getState().snapshot?.phase !== 'downloading') return
 		try {
-			await cancelUpdateDownload()
+			const snapshot = await cancelUpdateDownload()
+			useUpdateStore.getState().applySnapshot(snapshot)
+			useUpdateStore.getState().closeDialog()
 		} catch (error) {
-			console.error('Failed to cancel update download:', error)
+			toast.error(normalizeTauriError(error, '取消下载失败'))
 		}
 	}
 
-	async function restart() {
+	async function install(confirmedSourceChannel: UpdateChannel | null) {
+		const snapshot = useUpdateStore.getState().snapshot
+		if (snapshot?.phase !== 'ready' || !snapshot.update) return
+
 		try {
-			await restartAndInstall()
+			applyLifecycleResult(
+				await installStagedUpdate(snapshot.update.version, confirmedSourceChannel),
+			)
 		} catch (error) {
-			console.error('Failed to restart:', error)
+			toast.error(normalizeTauriError(error, '安装更新失败'))
 		}
 	}
 
-	return { startDownload, restart, cancelDownloadUi }
+	return { startDownload, install, cancelDownload }
 }

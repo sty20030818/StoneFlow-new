@@ -6,13 +6,12 @@ import {
 	downloadProgressBarValue,
 	footerUpdateLabel,
 	footerUpdateTitle,
-	formatDownloadPercent,
 } from './updatePresentation'
-import type { UpdateUiPhase } from './useUpdateStore'
+import type { UpdateSessionPhase } from '../api/updates'
 
 export type UpdateFooterVisiblePhase = Extract<
-	UpdateUiPhase,
-	'available' | 'downloading' | 'ready' | 'error'
+	UpdateSessionPhase,
+	'available' | 'downloading' | 'ready'
 >
 
 export type UpdateFooterView = {
@@ -24,13 +23,11 @@ export type UpdateFooterView = {
 	total: number | null
 	/** 0–100；null = indeterminate */
 	ringValue: number | null
-	/** 与 phase 同形，供进度环使用 */
-	ringState: UpdateFooterVisiblePhase
 	errorMessage: string | null
 }
 
 export type UpdateFooterViewInput = {
-	phase: UpdateUiPhase
+	phase: UpdateSessionPhase
 	version: string | null
 	downloaded: number
 	total: number | null
@@ -38,9 +35,9 @@ export type UpdateFooterViewInput = {
 }
 
 export function isUpdateFooterVisiblePhase(
-	phase: UpdateUiPhase,
+	phase: UpdateSessionPhase,
 ): phase is UpdateFooterVisiblePhase {
-	return phase === 'available' || phase === 'downloading' || phase === 'ready' || phase === 'error'
+	return phase === 'available' || phase === 'downloading' || phase === 'ready'
 }
 
 export function deriveUpdateFooterView(input: UpdateFooterViewInput): UpdateFooterView | null {
@@ -57,9 +54,7 @@ export function deriveUpdateFooterView(input: UpdateFooterViewInput): UpdateFoot
 					: null
 			: input.phase === 'ready'
 				? 100
-				: formatDownloadPercent(input.downloaded, input.total) !== null
-					? downloadProgressBarValue(input.downloaded, input.total)
-					: null
+				: null
 
 	return {
 		phase: input.phase,
@@ -79,7 +74,6 @@ export function deriveUpdateFooterView(input: UpdateFooterViewInput): UpdateFoot
 		downloaded: input.downloaded,
 		total: input.total,
 		ringValue,
-		ringState: input.phase,
 		errorMessage: input.errorMessage,
 	}
 }

@@ -21,8 +21,6 @@
     "dialog:allow-open",
     "opener:allow-open-path",
     "opener:allow-default-urls",
-    "opener:allow-open-url",
-    "store:default",
-    "updater:default"
+    "opener:allow-open-url"
   ]
 }

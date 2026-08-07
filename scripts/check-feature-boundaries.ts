@@ -36,6 +36,7 @@ const FEATURES = [
 	'sync',
 	'launcher',
 	'global-search',
+	'changelog',
 	'update',
 	'workspace',
 	'activity',

@@ -1,307 +1,283 @@
-/**
- * StoneFlow 应用更新发布脚本
- *
- * 长期模型：
- * - 版本号全局递增，同一 Git commit 绑定同一 release version
- * - 各平台有独立的 latest.json 指针，允许「Mac 停在 beta.4、Win 已到 beta.5」
- *
- * 用法:
- *   bun run release
- *   bun run scripts/release/release.ts stable [--no-upload]
- *   bun run scripts/release/release.ts beta [--no-upload]
- *   bun run scripts/release/release.ts beta --version 0.1.2-beta.1
- */
+/** StoneFlow 跨平台发布入口；真实发布会写 Git remote 与 R2。 */
 
-import { $, argv } from 'bun'
-import { existsSync } from 'node:fs'
-import { copyFile, mkdir } from 'node:fs/promises'
+import { argv } from 'bun'
 import path from 'node:path'
 
 import { collectReleaseArtifacts } from './artifacts'
-import { resetLocalReleaseOutputs } from './cleanup'
-import { chalk, readJSON, writeJSON } from './io'
-import { assertLatestJsonConsistency, createLatestJson, createReleaseManifest } from './manifest'
+import { buildReleaseApp } from './build'
 import {
-	createReleasePaths,
-	expandHomePath,
-	platformLatestJsonKey,
-	platformLatestJsonUrl,
-	resolvePlatformKey,
-} from './paths'
-import { resolveReleasePlan } from './release-plan'
+	inspectChangelogCompatibility,
+	publishChangelog,
+	validatePublishedChangelog,
+} from './changelog-publish'
+import { cleanupReleaseRun, combineReleaseFailure } from './cleanup'
+import { claimRelease } from './git'
+import { chalk } from './io'
+import { createLatestJson, createPlatformReleaseRecord } from './manifest'
+import { createReleasePaths, platformLatestJsonUrl, resolvePlatformKey } from './paths'
 import {
-	assertR2Config,
-	readRemoteLatestRelease,
-	type ReleaseRemoteConfig,
-	uploadItems,
-} from './remote'
-import type { ReleaseChannel, UploadItem } from './types'
+	advancePlatformPointer,
+	publishArtifactsAndRecord,
+	readPublishedPlatformRecord,
+} from './platform-release'
+import { revalidateReleasePreflight, runReleasePreflight } from './preflight'
+import { assertR2Config, createS3Client, type ReleaseRemoteConfig } from './remote'
+import type {
+	ImmutableArtifactUpload,
+	PlatformReleaseRecord,
+	ReleaseChannel,
+	ReleasePlan,
+} from './types'
+import { withReleaseBuildWorkspace } from './workspace'
 
-const CHANGELOG_ENTRY_HEADING = /^## \[\d+\.\d+\.\d+(?:-beta\.\d+)?\] - \d{4}-\d{2}-\d{2}$/
+export interface PreparedPlatformRelease {
+	readonly record: PlatformReleaseRecord
+	readonly uploadItems: readonly ImmutableArtifactUpload[]
+}
 
-export async function validateChangelog(filePath: string) {
-	if (!existsSync(filePath)) {
-		throw new Error('缺少根 CHANGELOG.md，发布已停止')
+export interface ReleaseWorkflowSteps<T> {
+	readonly inspectPlatformRecord: () => Promise<T | null>
+	readonly buildAndCollect: () => Promise<T>
+	readonly revalidate: () => Promise<ReleasePlan>
+	readonly inspectChangelogCompatibility: (plan: ReleasePlan) => Promise<void>
+	readonly claim: (plan: ReleasePlan) => Promise<void>
+	readonly publishArtifactsAndRecord: (prepared: T) => Promise<void>
+	readonly publishChangelog: (plan: ReleasePlan) => Promise<void>
+	readonly validatePublishedChangelog: () => Promise<void>
+	readonly advancePlatformPointer: (prepared: T) => Promise<void>
+}
+
+export async function runReleaseWorkflow<T>(
+	input: { readonly noUpload: boolean; readonly plan: ReleasePlan },
+	steps: ReleaseWorkflowSteps<T>,
+) {
+	if (input.noUpload) {
+		return { prepared: await steps.buildAndCollect(), built: true, published: false } as const
 	}
 
-	const content = await Bun.file(filePath).text()
-	const versions = new Set<string>()
-	for (const line of content.split('\n')) {
-		if (!line.startsWith('## ')) continue
-		if (!CHANGELOG_ENTRY_HEADING.test(line)) {
-			throw new Error(`CHANGELOG.md 版本标题格式错误: ${line}`)
-		}
-		const version = line.slice(4, line.indexOf(']'))
-		if (versions.has(version)) {
-			throw new Error(`CHANGELOG.md 存在重复版本: ${version}`)
-		}
-		versions.add(version)
+	const existing = await steps.inspectPlatformRecord()
+	if (existing && input.plan.kind !== 'reuse') {
+		throw new Error('尚未建立发布 Tag，但远端已存在同版本 platform record')
 	}
+	const built = existing === null
+	const prepared = existing ?? (await steps.buildAndCollect())
+	const currentPlan = await steps.revalidate()
+	await steps.inspectChangelogCompatibility(currentPlan)
+	await steps.claim(currentPlan)
+	if (built) await steps.publishArtifactsAndRecord(prepared)
+	await steps.publishChangelog(currentPlan)
+	await steps.validatePublishedChangelog()
+	await steps.advancePlatformPointer(prepared)
+	return { prepared, built, published: true } as const
 }
 
-export function createUploadList(input: {
-	channel: ReleaseChannel
-	platformKey: string
-	version: string
-	changelogPath: string
-	artifactItems: UploadItem[]
-	latestJsonPath: string
-	latestReleasePath: string
-	versionReleasePath: string
-}): UploadItem[] {
-	return [
-		{ filePath: input.changelogPath, key: 'stoneflow/CHANGELOG.md' },
-		...input.artifactItems,
-		{
-			filePath: input.latestReleasePath,
-			key: `stoneflow/updates/${input.channel}/latest.release.json`,
-		},
-		{
-			filePath: input.versionReleasePath,
-			key: `stoneflow/updates/${input.channel}/releases/${input.version}/release.json`,
-		},
-		{
-			filePath: input.latestJsonPath,
-			key: platformLatestJsonKey(input.channel, input.platformKey),
-		},
-	]
-}
-
-function getArg(name: string): string | undefined {
-	const idx = argv.indexOf(name)
-	return idx >= 0 && idx + 1 < argv.length ? argv[idx + 1] : undefined
-}
-
-async function resolveGitCommit() {
-	try {
-		return (await $`git rev-parse --short=8 HEAD`.quiet().text()).trim()
-	} catch {
-		return 'unknown'
-	}
-}
-
-async function buildApp(input: {
-	channel: ReleaseChannel
-	platformKey: string
-	sourceVersion: string
-	version: string
-	tauriConfPath: string
-	tauriConf: Record<string, unknown> & { version: string }
-}) {
-	console.log(chalk.gray('\n📦 构建应用...\n'))
-	const tauriEnv = { ...process.env }
-	const signingPrivateKey = expandHomePath(
-		process.env.TAURI_SIGNING_PRIVATE_KEY ?? process.env.TAURI_SIGNING_PRIVATE_KEY_PATH,
+export function parseReleaseArguments(args: readonly string[]) {
+	const allowed = new Set(['stable', 'beta', '--no-upload'])
+	const unknown = args.find((arg) => !allowed.has(arg))
+	if (unknown) throw new Error(`未知发布参数：${unknown}`)
+	const channels = args.filter(
+		(argument): argument is ReleaseChannel => argument === 'stable' || argument === 'beta',
 	)
-	if (signingPrivateKey) tauriEnv.TAURI_SIGNING_PRIVATE_KEY = signingPrivateKey
-	if (process.env.TAURI_SIGNING_PRIVATE_KEY_PASSWORD) {
-		tauriEnv.TAURI_SIGNING_PRIVATE_KEY_PASSWORD = process.env.TAURI_SIGNING_PRIVATE_KEY_PASSWORD
+	if (channels.length !== 1) throw new Error('请且仅指定一个发布渠道：stable 或 beta')
+	if (args.filter((argument) => argument === '--no-upload').length > 1) {
+		throw new Error('--no-upload 不得重复')
 	}
+	return { channel: channels[0]!, noUpload: args.includes('--no-upload') }
+}
 
-	$.env(tauriEnv)
-	if (input.version !== input.sourceVersion) {
-		await writeJSON(input.tauriConfPath, { ...input.tauriConf, version: input.version })
-	}
-	try {
-		if (input.channel === 'beta' && input.platformKey.startsWith('windows-')) {
-			console.log(
-				chalk.yellow('   Windows beta 版本跳过 MSI，仅构建 NSIS（MSI 不支持 beta 预发布标识）'),
-			)
-			await $`bun run tauri build --bundles nsis`
-		} else {
-			await $`bun run tauri build`
-		}
-	} finally {
-		if (input.version !== input.sourceVersion) {
-			await writeJSON(input.tauriConfPath, input.tauriConf)
-		}
+function createRemoteConfig(env: NodeJS.ProcessEnv): ReleaseRemoteConfig {
+	return {
+		publicUrl: env.R2_PUBLIC_URL || 'https://release.sty20030818.space/stoneflow',
+		bucket: env.R2_BUCKET_NAME || '',
+		endpoint: `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
 	}
 }
 
-async function main() {
-	const channel = argv.find((arg): arg is ReleaseChannel => arg === 'stable' || arg === 'beta')
-	if (!channel) {
-		console.error(chalk.red('错误: 请指定渠道 (stable 或 beta)'))
-		process.exit(1)
-	}
-
-	const noUpload = argv.includes('--no-upload')
+export async function runReleaseCommand(args: readonly string[] = argv.slice(2)) {
+	const env = process.env
+	const { channel, noUpload } = parseReleaseArguments(args)
 	const platformKey = resolvePlatformKey()
-	const paths = createReleasePaths({
-		channel,
-		platformKey,
-		scriptDir: import.meta.dir,
-	})
-	const remoteConfig: ReleaseRemoteConfig = {
-		publicUrl: process.env.R2_PUBLIC_URL || 'https://release.sty20030818.space/stoneflow',
-		bucket: process.env.R2_BUCKET_NAME || '',
-		endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-	}
-
-	console.log(chalk.blue(`\n🚀 开始发布 ${channel} 渠道更新...\n`))
-	console.log(chalk.gray(`   发布平台: ${platformKey}`))
-
-	await resetLocalReleaseOutputs(paths)
-	await validateChangelog(paths.changelogPath)
-
-	const tauriConf = await readJSON<Record<string, unknown> & { version: string }>(
-		paths.tauriConfPath,
-	)
-	const sourceVersion = tauriConf.version
-	const commit = await resolveGitCommit()
-	const latestRelease = await readRemoteLatestRelease(remoteConfig, channel, noUpload)
-	const releasePlan = resolveReleasePlan({
-		channel,
-		sourceVersion,
-		commit,
-		latestRelease,
-		specifiedVersion: getArg('--version'),
-	})
-	const version = releasePlan.version
-	const pubDate = new Date().toISOString()
-	const releaseVersionDir = path.join(paths.releaseRoot, version)
-	const downloadsVersionDir = path.join(paths.downloadsRoot, version)
-
-	console.log(chalk.gray(`   配置版本: ${sourceVersion}`))
-	console.log(chalk.gray(`   发布版本: ${version}`))
-	console.log(chalk.gray(`   Git 提交: ${commit}`))
-	if (releasePlan.isExistingCommitRelease) {
-		console.log(chalk.gray('   同 commit 发布，复用已有 release version'))
-	}
-
-	await buildApp({
-		channel,
-		platformKey,
-		sourceVersion,
-		version,
-		tauriConfPath: paths.tauriConfPath,
-		tauriConf,
-	})
-
-	console.log(chalk.gray('\n🔍 收集构建产物...\n'))
-	const collected = await collectReleaseArtifacts({
-		channel,
-		platformKey,
-		version,
-		tauriDist: paths.tauriDist,
-		releaseVersionDir,
-		downloadsVersionDir,
-		publicUrl: remoteConfig.publicUrl,
-	})
-
-	// 只推进本平台 pointer；其它平台的 latest 保持不变
-	const latestJson = createLatestJson({
-		version,
-		pubDate,
-		platformKey,
-		platforms: collected.platforms,
-	})
-	const releaseManifest = createReleaseManifest({
-		version,
-		channel,
-		commit,
-		sourceVersion,
-		pubDate,
-		platformKey,
-		latestRelease,
-	})
-
-	await mkdir(releaseVersionDir, { recursive: true })
-	const changelogPath = path.join(paths.workDir, 'CHANGELOG.md')
-	await copyFile(paths.changelogPath, changelogPath)
-	const latestJsonPath = path.join(
-		paths.workDir,
-		'updates',
-		channel,
-		'platforms',
-		platformKey,
-		'latest.json',
-	)
-	const latestReleasePath = path.join(paths.workDir, 'updates', channel, 'latest.release.json')
-	const versionReleasePath = path.join(releaseVersionDir, 'release.json')
-
-	await mkdir(path.dirname(latestJsonPath), { recursive: true })
-	await writeJSON(latestJsonPath, latestJson)
-	await writeJSON(latestReleasePath, releaseManifest)
-	await writeJSON(versionReleasePath, releaseManifest)
-	const uploadList = createUploadList({
-		channel,
-		platformKey,
-		version,
-		changelogPath,
-		artifactItems: collected.uploadItems,
-		latestJsonPath,
-		latestReleasePath,
-		versionReleasePath,
-	})
-	console.log(chalk.gray('\n📝 生成平台 latest.json / 全局 release manifest'))
-
-	console.log(chalk.gray('\n🔒 发布一致性校验...\n'))
-	try {
-		assertLatestJsonConsistency(latestJson, version, uploadList, platformKey)
-		console.log(chalk.green('   ✓ 平台 latest.json / 产物 / 上传列表一致'))
-	} catch (error) {
-		console.error(chalk.red(`\n❌ ${(error as Error).message}`))
-		process.exit(1)
-	}
-
-	console.log(chalk.gray('\n────────────────────────────────────────'))
-	console.log(chalk.cyan('本平台更新清单预览:'))
-	console.log(JSON.stringify(latestJson, null, 2))
-	console.log(chalk.gray('────────────────────────────────────────\n'))
-
-	if (noUpload) {
-		console.log(chalk.yellow('⚠️  --no-upload 模式，跳过上传'))
-		console.log(chalk.gray(`   构建产物已保存到: ${paths.workDir}`))
-		process.exit(0)
-	}
+	const paths = createReleasePaths({ channel, platformKey, scriptDir: import.meta.dir })
+	const remoteConfig = createRemoteConfig(env)
 
 	try {
-		assertR2Config(remoteConfig)
+		console.log(chalk.blue(`\n🚀 开始发布 ${channel} 渠道更新...\n`))
+		console.log(chalk.gray(`   发布平台: ${platformKey}`))
+		const preflight = await runReleasePreflight({ repoRoot: paths.repoRoot, channel })
+		const { sourceVersion, releaseCommit: commit, plan } = preflight
+		const { version } = plan
+		console.log(chalk.gray(`   配置版本: ${sourceVersion}`))
+		console.log(chalk.gray(`   发布版本: ${version}`))
+		console.log(chalk.gray(`   Git 提交: ${commit}`))
+
+		let client: ReturnType<typeof createS3Client> | null = null
+		if (!noUpload) {
+			assertR2Config(remoteConfig)
+			client = createS3Client(remoteConfig)
+		}
+
+		const requireClient = () => {
+			if (!client) throw new Error('--no-upload 模式不得访问 R2')
+			return client
+		}
+		const result = await withReleaseBuildWorkspace(
+			{ ...paths, releaseCommit: commit },
+			async (workspace) => {
+				const buildAndCollect = async (): Promise<PreparedPlatformRelease> => {
+					console.log(chalk.gray('\n📦 从固定 commit 快照构建应用...\n'))
+					await buildReleaseApp({
+						channel,
+						platformKey,
+						version,
+						sourceRoot: workspace.sourceRoot,
+						targetDir: workspace.targetDir,
+						env,
+					})
+					console.log(chalk.gray('\n🔍 收集构建产物...\n'))
+					const collected = await collectReleaseArtifacts({
+						channel,
+						platformKey,
+						version,
+						tauriDist: paths.tauriDist,
+						releaseVersionDir: path.join(paths.releaseRoot, version),
+						downloadsVersionDir: path.join(paths.downloadsRoot, version),
+						publicUrl: remoteConfig.publicUrl,
+						updaterPublicKey: preflight.updaterPublicKey,
+						repoRoot: workspace.sourceRoot,
+					})
+					return {
+						record: createPlatformReleaseRecord({
+							channel,
+							version,
+							commit,
+							sourceVersion,
+							platform: platformKey,
+							updater: collected.updater,
+							downloads: collected.downloads,
+						}),
+						uploadItems: collected.uploadItems,
+					}
+				}
+
+				return runReleaseWorkflow(
+					{ noUpload, plan },
+					{
+						inspectPlatformRecord: async () => {
+							const record = await readPublishedPlatformRecord({
+								client: requireClient(),
+								config: remoteConfig,
+								channel,
+								version,
+								commit,
+								sourceVersion,
+								platformKey,
+								updaterPublicKey: preflight.updaterPublicKey,
+								verifierRepoRoot: workspace.sourceRoot,
+							})
+							return record ? { record, uploadItems: [] } : null
+						},
+						buildAndCollect,
+						revalidate: () => revalidateReleasePreflight(preflight),
+						inspectChangelogCompatibility: (currentPlan) =>
+							inspectChangelogCompatibility({
+								client: requireClient(),
+								config: remoteConfig,
+								source: preflight.changelogSource,
+								targetVersion: currentPlan.version,
+								releaseKind: currentPlan.kind,
+							}),
+						claim: async (currentPlan) => {
+							await claimRelease({
+								cwd: paths.repoRoot,
+								remoteEndpoint: preflight.remoteEndpoint,
+								channel,
+								plan: currentPlan,
+							})
+						},
+						publishArtifactsAndRecord: (prepared) =>
+							publishArtifactsAndRecord({
+								client: requireClient(),
+								config: remoteConfig,
+								uploadItems: prepared.uploadItems,
+								record: prepared.record,
+							}),
+						publishChangelog: (currentPlan) =>
+							publishChangelog({
+								client: requireClient(),
+								config: remoteConfig,
+								source: preflight.changelogSource,
+								targetVersion: version,
+								releaseKind: currentPlan.kind,
+							}),
+						validatePublishedChangelog: () =>
+							validatePublishedChangelog({
+								client: requireClient(),
+								config: remoteConfig,
+								targetVersion: version,
+							}),
+						advancePlatformPointer: (prepared) =>
+							advancePlatformPointer({
+								client: requireClient(),
+								config: remoteConfig,
+								channel,
+								platformKey,
+								pointer: createLatestJson({
+									version,
+									platformKey,
+									updater: prepared.record.updater,
+								}),
+							}),
+					},
+				)
+			},
+		)
+
+		const pointer = createLatestJson({
+			version,
+			platformKey,
+			updater: result.prepared.record.updater,
+		})
+		console.log(chalk.gray('\n────────────────────────────────────────'))
+		console.log(chalk.cyan('本平台更新清单预览:'))
+		console.log(JSON.stringify(pointer, null, 2))
+		console.log(chalk.gray('────────────────────────────────────────\n'))
+		if (!result.published) {
+			console.log(chalk.yellow('⚠️  --no-upload 模式：未创建 Tag/ledger，未访问 R2'))
+			console.log(chalk.gray(`   暂存产物已保存到: ${paths.stagingDir}`))
+			return result
+		}
+
+		console.log(chalk.green('\n✅ 发布完成!'))
+		try {
+			await cleanupReleaseRun(paths)
+		} catch (error) {
+			console.warn(
+				chalk.yellow(`⚠️  发布已公开，但本地临时目录清理失败：${(error as Error).message}`),
+			)
+		}
+		console.log(
+			chalk.gray(
+				`   本平台更新地址: ${platformLatestJsonUrl(remoteConfig.publicUrl, channel, platformKey)}`,
+			),
+		)
+		console.log(chalk.gray(`   版本: ${version}`))
+		console.log(chalk.gray(`   平台: ${platformKey}\n`))
+		return result
 	} catch (error) {
-		console.error(chalk.red(`\n❌ ${(error as Error).message}`))
-		console.log(chalk.yellow('\n💡 提示: 构建产物已保存到:'), paths.workDir)
-		console.log(chalk.yellow('   你可以按 .release-tmp 下的 updates / downloads 目录手动上传到 R2'))
-		process.exit(1)
+		try {
+			await cleanupReleaseRun(paths)
+		} catch (cleanupError) {
+			throw combineReleaseFailure(error, cleanupError)
+		}
+		throw error
 	}
-
-	console.log(chalk.blue(`☁️  上传到 Cloudflare R2 (${remoteConfig.bucket})...\n`))
-	await uploadItems(remoteConfig, uploadList)
-	await resetLocalReleaseOutputs(paths)
-
-	console.log(chalk.green('\n✅ 发布完成!'))
-	console.log(
-		chalk.gray(
-			`\n   本平台更新地址: ${platformLatestJsonUrl(remoteConfig.publicUrl, channel, platformKey)}`,
-		),
-	)
-	console.log(
-		chalk.gray(`   下载目录: ${remoteConfig.publicUrl}/downloads/${channel}/${platformKey}/`),
-	)
-	console.log(chalk.gray(`   版本: ${version}`))
-	console.log(chalk.gray(`   平台: ${platformKey}\n`))
 }
 
 if (import.meta.main) {
-	await main()
+	try {
+		await runReleaseCommand()
+	} catch (error) {
+		console.error(chalk.red(`\n❌ ${(error as Error).message}`))
+		process.exitCode = 1
+	}
 }

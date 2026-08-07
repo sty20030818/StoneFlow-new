@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import {
 	rememberShellRoute,
@@ -9,27 +9,11 @@ import { normalizeShellRouteMemory } from './memory'
 
 const TASK_SHORTCUT_PATH = '/tasks/task-a'
 
-const storeState = vi.hoisted(() => new Map<string, unknown>())
-const storeSetMock = vi.hoisted(() => vi.fn())
-
-vi.mock('@tauri-apps/plugin-store', () => ({
-	LazyStore: vi.fn(function LazyStore() {
-		return {
-			get: vi.fn((key: string) => Promise.resolve(storeState.get(key))),
-			set: vi.fn((key: string, value: unknown) => {
-				storeSetMock(key, value)
-				storeState.set(key, value)
-				return Promise.resolve()
-			}),
-			save: vi.fn(() => Promise.resolve()),
-		}
-	}),
-}))
+const NAVIGATION_RESTORE_KEY = 'stoneflow.shell.navigation.restore'
 
 describe('routeMemoryStore', () => {
 	beforeEach(() => {
-		storeState.clear()
-		storeSetMock.mockClear()
+		localStorage.clear()
 	})
 
 	it('rememberShellRoute 写入 canonical path 并删除 drawer query', async () => {
@@ -38,7 +22,7 @@ describe('routeMemoryStore', () => {
 			'/space-a/views/today?task=task-a',
 		)
 
-		expect(storeState.get('shell.navigation.restore')).toEqual({
+		expect(JSON.parse(localStorage.getItem(NAVIGATION_RESTORE_KEY)!)).toEqual({
 			version: 3,
 			lastScopeKey: 'space:space-a',
 			lastRouteByScopeKey: {
@@ -50,7 +34,7 @@ describe('routeMemoryStore', () => {
 	it('rememberShellRoute 不保存 shortcut path', async () => {
 		await rememberShellRoute({ type: 'all' }, TASK_SHORTCUT_PATH)
 
-		expect(storeSetMock).not.toHaveBeenCalledWith('shell.navigation.restore', expect.anything())
+		expect(localStorage.getItem(NAVIGATION_RESTORE_KEY)).toBeNull()
 	})
 
 	it('normalizeShellRouteMemory 丢弃非法 payload（缺 version）', () => {
@@ -65,12 +49,15 @@ describe('routeMemoryStore', () => {
 	})
 
 	it('resolveStartupPath 遇到非法 payload 走默认启动路径', async () => {
-		storeState.set('shell.navigation.restore', {
-			lastScopeKey: 'space:space-a',
-			lastRouteByScopeKey: {
-				'space:space-a': '/space-a/views/today',
-			},
-		})
+		localStorage.setItem(
+			NAVIGATION_RESTORE_KEY,
+			JSON.stringify({
+				lastScopeKey: 'space:space-a',
+				lastRouteByScopeKey: {
+					'space:space-a': '/space-a/views/today',
+				},
+			}),
+		)
 
 		await expect(resolveStartupPath({ spaces: [{ id: 'space-a' } as never] })).resolves.toBe(
 			'/all/tasks',
@@ -78,13 +65,16 @@ describe('routeMemoryStore', () => {
 	})
 
 	it('resolveRememberedPathForScope 遇到非法 path 返回 defaultPath', async () => {
-		storeState.set('shell.navigation.restore', {
-			version: 3,
-			lastScopeKey: 'space:space-a',
-			lastRouteByScopeKey: {
-				'space:space-a': '/garbage',
-			},
-		})
+		localStorage.setItem(
+			NAVIGATION_RESTORE_KEY,
+			JSON.stringify({
+				version: 3,
+				lastScopeKey: 'space:space-a',
+				lastRouteByScopeKey: {
+					'space:space-a': '/garbage',
+				},
+			}),
+		)
 
 		await expect(
 			resolveRememberedPathForScope({

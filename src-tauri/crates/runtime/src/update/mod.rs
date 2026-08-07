@@ -5,5 +5,4 @@ pub mod events;
 mod service;
 mod settings_store;
 
-pub(crate) use adapter::TauriUpdateAdapter;
 pub use service::{build_update_service, RuntimeUpdateService};

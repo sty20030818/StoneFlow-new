@@ -1,70 +1,219 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import path from 'node:path'
 import { describe, expect, test } from 'bun:test'
 
-import { createUploadList, validateChangelog } from './release'
+import { parseReleaseArguments, runReleaseWorkflow } from './release'
+import type { ReleasePlan } from './types'
 
-async function withChangelog(content: string) {
-	const directory = await mkdtemp(path.join(tmpdir(), 'stoneflow-changelog-'))
-	const filePath = path.join(directory, 'CHANGELOG.md')
-	await writeFile(filePath, content)
+const claimPlan: ReleasePlan = {
+	kind: 'claim',
+	version: '0.1.4-beta.4',
+	tagName: 'v0.1.4-beta.4',
+	commit: 'a'.repeat(40),
+	expectedLedgerCommit: 'b'.repeat(40),
+}
+
+const reusePlan: ReleasePlan = { ...claimPlan, kind: 'reuse' }
+
+type Phase =
+	| 'inspect'
+	| 'build'
+	| 'revalidate'
+	| 'inspect-changelog'
+	| 'claim'
+	| 'record'
+	| 'changelog'
+	| 'validate-changelog'
+	| 'pointer'
+
+function createHarness(
+	input: {
+		plan?: ReleasePlan
+		existingRecord?: boolean
+		failAt?: Phase
+	} = {},
+) {
+	const events: Phase[] = []
+	const prepared = { source: input.existingRecord ? 'remote' : 'build' }
+	const observed: {
+		claimedPlan?: ReleasePlan
+		changelogPlan?: ReleasePlan
+		recordInput?: typeof prepared
+		pointerInput?: typeof prepared
+	} = {}
+
+	function enter(phase: Phase) {
+		events.push(phase)
+		if (input.failAt === phase) throw new Error(`boom:${phase}`)
+	}
+
 	return {
-		filePath,
-		cleanup: () => rm(directory, { recursive: true, force: true }),
+		events,
+		observed,
+		prepared,
+		steps: {
+			inspectPlatformRecord: async () => {
+				enter('inspect')
+				return input.existingRecord ? prepared : null
+			},
+			buildAndCollect: async () => {
+				enter('build')
+				return prepared
+			},
+			revalidate: async () => {
+				enter('revalidate')
+				return input.plan ?? claimPlan
+			},
+			inspectChangelogCompatibility: async () => {
+				enter('inspect-changelog')
+			},
+			claim: async (plan: ReleasePlan) => {
+				enter('claim')
+				observed.claimedPlan = plan
+			},
+			publishArtifactsAndRecord: async (release: typeof prepared) => {
+				enter('record')
+				observed.recordInput = release
+			},
+			publishChangelog: async (plan: ReleasePlan) => {
+				enter('changelog')
+				observed.changelogPlan = plan
+			},
+			validatePublishedChangelog: async () => {
+				enter('validate-changelog')
+			},
+			advancePlatformPointer: async (release: typeof prepared) => {
+				enter('pointer')
+				observed.pointerInput = release
+			},
+		},
 	}
 }
 
-describe('validateChangelog', () => {
-	test('拒绝不合法的版本标题', async () => {
-		const fixture = await withChangelog(`## [0.1] - 2026-07-29`)
-		try {
-			await expect(validateChangelog(fixture.filePath)).rejects.toThrow('版本标题格式错误')
-		} finally {
-			await fixture.cleanup()
-		}
+describe('runReleaseWorkflow', () => {
+	test('既有 platform record 一致时跳过构建和 record 写入', async () => {
+		const harness = createHarness({ plan: reusePlan, existingRecord: true })
+
+		await runReleaseWorkflow({ noUpload: false, plan: reusePlan }, harness.steps)
+
+		expect(harness.events).toEqual([
+			'inspect',
+			'revalidate',
+			'inspect-changelog',
+			'claim',
+			'changelog',
+			'validate-changelog',
+			'pointer',
+		])
+		expect(harness.observed.pointerInput).toBe(harness.prepared)
 	})
 
-	test('拒绝重复版本标题', async () => {
-		const fixture = await withChangelog(`## [0.1.2] - 2026-07-29\n\n## [0.1.2] - 2026-07-30`)
-		try {
-			await expect(validateChangelog(fixture.filePath)).rejects.toThrow('存在重复版本')
-		} finally {
-			await fixture.cleanup()
-		}
+	test('platform record 不存在时构建并收集，再提交不可变 record', async () => {
+		const harness = createHarness()
+
+		await runReleaseWorkflow({ noUpload: false, plan: claimPlan }, harness.steps)
+
+		expect(harness.events).toEqual([
+			'inspect',
+			'build',
+			'revalidate',
+			'inspect-changelog',
+			'claim',
+			'record',
+			'changelog',
+			'validate-changelog',
+			'pointer',
+		])
+		expect(harness.observed.recordInput).toBe(harness.prepared)
+		expect(harness.observed.pointerInput).toBe(harness.prepared)
 	})
 
-	test('接受空版本集合和有效 beta 标题', async () => {
-		const fixture = await withChangelog(
-			`# StoneFlow 更新日志\n\n## [0.2.0-beta.1] - 2026-07-29\n\n- 测试内容`,
+	test('claim 使用构建后 revalidate 返回的计划，Pointer 始终最后推进', async () => {
+		const revalidatedPlan = { ...claimPlan }
+		const harness = createHarness({ plan: revalidatedPlan })
+
+		await runReleaseWorkflow({ noUpload: false, plan: claimPlan }, harness.steps)
+
+		expect(harness.observed.claimedPlan).toBe(revalidatedPlan)
+		expect(harness.observed.changelogPlan).toBe(revalidatedPlan)
+		expect(harness.events.indexOf('inspect-changelog')).toBeLessThan(
+			harness.events.indexOf('claim'),
 		)
-		try {
-			await expect(validateChangelog(fixture.filePath)).resolves.toBeUndefined()
-		} finally {
-			await fixture.cleanup()
-		}
+		expect(harness.events.indexOf('revalidate')).toBeLessThan(harness.events.indexOf('claim'))
+		expect(harness.events.at(-1)).toBe('pointer')
+	})
+
+	test.each([
+		'inspect',
+		'build',
+		'revalidate',
+		'inspect-changelog',
+		'claim',
+		'record',
+		'changelog',
+		'validate-changelog',
+	] as const)('%s 失败时不推进 Pointer', async (failAt) => {
+		const harness = createHarness({ failAt })
+
+		await expect(
+			runReleaseWorkflow({ noUpload: false, plan: claimPlan }, harness.steps),
+		).rejects.toThrow(`boom:${failAt}`)
+		expect(harness.events).not.toContain('pointer')
+		if (failAt === 'inspect-changelog') expect(harness.observed.claimedPlan).toBeUndefined()
+	})
+
+	test('--no-upload 只做本地构建收集，不读取 R2、不写 Git/R2', async () => {
+		const harness = createHarness()
+
+		await runReleaseWorkflow({ noUpload: true, plan: claimPlan }, harness.steps)
+
+		expect(harness.events).toEqual(['build'])
+	})
+
+	test('既有 Tag 但 record 缺失时按 reuse 计划恢复剩余全部阶段', async () => {
+		const harness = createHarness({ plan: reusePlan })
+
+		await runReleaseWorkflow({ noUpload: false, plan: reusePlan }, harness.steps)
+
+		expect(harness.events).toEqual([
+			'inspect',
+			'build',
+			'revalidate',
+			'inspect-changelog',
+			'claim',
+			'record',
+			'changelog',
+			'validate-changelog',
+			'pointer',
+		])
+		expect(harness.observed.claimedPlan?.kind).toBe('reuse')
+		expect(harness.observed.changelogPlan?.kind).toBe('reuse')
+	})
+
+	test('尚未建立 Tag 时拒绝复用孤立的远端 record', async () => {
+		const harness = createHarness({ existingRecord: true })
+
+		await expect(
+			runReleaseWorkflow({ noUpload: false, plan: claimPlan }, harness.steps),
+		).rejects.toThrow('尚未建立发布 Tag')
+		expect(harness.events).toEqual(['inspect'])
 	})
 })
 
-describe('createUploadList', () => {
-	test('先上传 changelog，最后覆盖本平台 latest.json', () => {
-		const items = createUploadList({
+describe('parseReleaseArguments', () => {
+	test('只接受一个渠道和可选的 --no-upload', () => {
+		expect(parseReleaseArguments(['beta', '--no-upload'])).toEqual({
 			channel: 'beta',
-			platformKey: 'darwin-aarch64',
-			version: '0.2.0-beta.1',
-			changelogPath: '/tmp/CHANGELOG.md',
-			artifactItems: [{ filePath: '/tmp/StoneFlow.dmg', key: 'stoneflow/artifact' }],
-			latestJsonPath: '/tmp/latest.json',
-			latestReleasePath: '/tmp/latest.release.json',
-			versionReleasePath: '/tmp/release.json',
+			noUpload: true,
 		})
+		expect(parseReleaseArguments(['stable'])).toEqual({ channel: 'stable', noUpload: false })
+	})
 
-		expect(items.map((item) => item.key)).toEqual([
-			'stoneflow/CHANGELOG.md',
-			'stoneflow/artifact',
-			'stoneflow/updates/beta/latest.release.json',
-			'stoneflow/updates/beta/releases/0.2.0-beta.1/release.json',
-			'stoneflow/updates/beta/platforms/darwin-aarch64/latest.json',
-		])
+	test('删除 --version 逃生口并拒绝歧义参数', () => {
+		expect(() => parseReleaseArguments(['beta', '--version', '0.1.4-beta.4'])).toThrow(
+			'未知发布参数：--version',
+		)
+		expect(() => parseReleaseArguments(['stable', 'beta'])).toThrow('请且仅指定一个发布渠道')
+		expect(() => parseReleaseArguments(['beta', '--no-upload', '--no-upload'])).toThrow(
+			'--no-upload 不得重复',
+		)
 	})
 })

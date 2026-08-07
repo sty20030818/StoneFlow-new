@@ -1,14 +1,15 @@
-import { LazyStore } from '@tauri-apps/plugin-store'
-
 import {
 	normalizeTaskDisplayPreference,
 	type TaskDisplayPageKey,
 	type TaskDisplayPreferenceRecord,
 } from '@/features/display-options/core'
+import {
+	readLocalStorageValue,
+	removeLocalStorageValue,
+	writeLocalStorageValue,
+} from '@/shared/lib/localStorageValue'
 
-const DISPLAY_OPTIONS_STORE_PATH = 'display-options-preferences.json'
-
-const displayOptionsStore = new LazyStore(DISPLAY_OPTIONS_STORE_PATH)
+const DISPLAY_OPTIONS_KEY_PREFIX = 'stoneflow.display-options.'
 
 export type TaskDisplayPreferencePayload = {
 	personal: TaskDisplayPreferenceRecord | null
@@ -28,13 +29,13 @@ export type UpdateTaskDisplayPreferenceInput = {
 
 /**
  * 读取单个页面的 display preference。
- * personal 与 workspace default 都由本地 Store 持久化。
+ * personal 与 workspace default 都由 renderer localStorage 持久化。
  */
 export async function getTaskDisplayPreference(
 	pageKey: TaskDisplayPageKey,
 ): Promise<TaskDisplayPreferencePayload> {
-	const stored = await displayOptionsStore.get<TaskDisplayPreferenceStoreRecord>(
-		buildTaskDisplayPreferenceStorageKey(pageKey),
+	const stored = readLocalStorageValue<TaskDisplayPreferenceStoreRecord>(
+		`${DISPLAY_OPTIONS_KEY_PREFIX}${buildTaskDisplayPreferenceStorageKey(pageKey)}`,
 	)
 
 	return {
@@ -64,18 +65,17 @@ export async function updateTaskDisplayPreference({
 	}
 
 	const storageKey = buildTaskDisplayPreferenceStorageKey(pageKey)
+	const localStorageKey = `${DISPLAY_OPTIONS_KEY_PREFIX}${storageKey}`
 
 	if (!nextValue.personal && !nextValue.workspaceDefault) {
-		await displayOptionsStore.delete(storageKey)
-		await displayOptionsStore.save()
+		removeLocalStorageValue(localStorageKey)
 		return {
 			personal: null,
 			workspaceDefault: null,
 		}
 	}
 
-	await displayOptionsStore.set(storageKey, nextValue)
-	await displayOptionsStore.save()
+	writeLocalStorageValue(localStorageKey, nextValue)
 
 	return {
 		personal: nextValue.personal ?? null,

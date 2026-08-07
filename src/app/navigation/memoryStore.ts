@@ -1,5 +1,3 @@
-import { LazyStore } from '@tauri-apps/plugin-store'
-
 import type { ShellRouteMemory, ShellScopeKey } from './shellLocation'
 import {
 	createNextShellRouteMemory,
@@ -8,14 +6,12 @@ import {
 	resolveStartupPathFromMemory,
 } from './memory'
 import type { Scope, Space } from '@/shared/types'
+import { readLocalStorageValue, writeLocalStorageValue } from '@/shared/lib/localStorageValue'
 
 /**
  * Route memory 的本机持久化边界。
  */
-const SHELL_DEVICE_STORE_PATH = 'shell-device-preferences.json'
-const NAVIGATION_RESTORE_KEY = 'shell.navigation.restore'
-
-const routeMemoryStore = new LazyStore(SHELL_DEVICE_STORE_PATH)
+const NAVIGATION_RESTORE_KEY = 'stoneflow.shell.navigation.restore'
 
 type ResolveRememberedPathInput = {
 	scopeKey: ShellScopeKey
@@ -29,15 +25,14 @@ type ResolveStartupPathInput = {
 
 export async function rememberShellRoute(scope: Scope, path: string): Promise<void> {
 	const current = normalizeShellRouteMemory(
-		(await routeMemoryStore.get<ShellRouteMemory>(NAVIGATION_RESTORE_KEY)) ?? null,
+		readLocalStorageValue<ShellRouteMemory>(NAVIGATION_RESTORE_KEY),
 	)
 	const next = createNextShellRouteMemory(current, scope, path)
 	if (!next) {
 		return
 	}
 
-	await routeMemoryStore.set(NAVIGATION_RESTORE_KEY, next)
-	await routeMemoryStore.save()
+	writeLocalStorageValue(NAVIGATION_RESTORE_KEY, next)
 }
 
 export async function resolveRememberedPathForScope({
@@ -46,7 +41,7 @@ export async function resolveRememberedPathForScope({
 	defaultPath,
 }: ResolveRememberedPathInput): Promise<string> {
 	const navigationRestore = normalizeShellRouteMemory(
-		(await routeMemoryStore.get<ShellRouteMemory>(NAVIGATION_RESTORE_KEY)) ?? null,
+		readLocalStorageValue<ShellRouteMemory>(NAVIGATION_RESTORE_KEY),
 	)
 	return resolveRememberedRoutePathForScope({
 		scopeKey,
@@ -58,7 +53,7 @@ export async function resolveRememberedPathForScope({
 
 export async function resolveStartupPath({ spaces }: ResolveStartupPathInput): Promise<string> {
 	const navigationRestore = normalizeShellRouteMemory(
-		(await routeMemoryStore.get<ShellRouteMemory>(NAVIGATION_RESTORE_KEY)) ?? null,
+		readLocalStorageValue<ShellRouteMemory>(NAVIGATION_RESTORE_KEY),
 	)
 	return resolveStartupPathFromMemory({
 		routeMemory: navigationRestore,

@@ -17,7 +17,6 @@ import {
 	type UpdateCheckMode,
 } from '../api/updates'
 import { useManualUpdateCheck } from '../hooks/useManualUpdateCheck'
-import { useUpdateStore } from '../model/useUpdateStore'
 import { formFieldHintClass } from '@/shared/components/patterns/form-field'
 import {
 	settingsPanelDescriptionClass,
@@ -44,8 +43,7 @@ export function UpdateSettingsSection() {
 		channel: UpdateChannel
 		checkIntervalSecs: number
 	} | null>(null)
-	const setStoreCheckMode = useUpdateStore((s) => s.setCheckMode)
-	const { checkNow, isChecking } = useManualUpdateCheck()
+	const { checkNow, disabled, isChecking } = useManualUpdateCheck()
 
 	const loadSettings = useCallback(async () => {
 		setLoading(true)
@@ -62,13 +60,12 @@ export function UpdateSettingsSection() {
 				channel: s.channel,
 				checkIntervalSecs: interval,
 			})
-			setStoreCheckMode(s.checkMode)
 		} catch (err) {
 			setError(normalizeTauriError(err, '读取更新设置失败'))
 		} finally {
 			setLoading(false)
 		}
-	}, [setStoreCheckMode])
+	}, [])
 
 	useEffect(() => {
 		void loadSettings()
@@ -81,7 +78,6 @@ export function UpdateSettingsSection() {
 		try {
 			await setCheckMode(mode)
 			setSettings((prev) => (prev ? { ...prev, checkMode: mode } : prev))
-			setStoreCheckMode(mode)
 		} catch (err) {
 			setError(normalizeTauriError(err, '保存更新模式失败'))
 		} finally {
@@ -177,7 +173,7 @@ export function UpdateSettingsSection() {
 						<p className={cn(formFieldHintClass, 'mt-0.5')}>立即向服务器查询是否有新版本可用。</p>
 					</div>
 					<Button
-						disabled={isChecking || saving}
+						disabled={disabled || saving}
 						onClick={() => void checkNow()}
 						type='button'
 						variant='default'

@@ -7,9 +7,9 @@ use tauri::Manager;
 use crate::app::state::{ActiveScopeState, AppState, CommandOpenState};
 use crate::composition::build_app_state;
 use crate::sync;
-use crate::update::events::{emit_available, emit_downloading, emit_error, emit_ready};
+use crate::update::events::emit_current_session;
 use crate::update::{build_update_service, RuntimeUpdateService};
-use stoneflow_application::{DownloadOutcome, UpdateCheckKind};
+use stoneflow_application::{DownloadOutcome, UpdateCheckKind, UpdateCheckOutcome};
 use stoneflow_domain::{
     normalize_check_interval_secs, UpdateCheckMode, AUTO_CHECK_INTERVAL_SECS,
     STARTUP_CHECK_DELAY_SECS,
@@ -67,16 +67,16 @@ pub fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>>
     let app_state = build_app_state(database_state);
     app.manage(app_state);
 
+    // renderer 启动前完成更新持久化边界的构造与注册。
+    let update_service = build_update_service(app.handle())?;
+    app.manage(update_service);
+
     build_main_window(app)?;
 
     shortcuts::register_global_shortcut(app.handle());
 
     app.manage(exit_coordinator::ExitCoordinator::default());
     tray::setup_tray(app)?;
-
-    // 构建并注册更新服务
-    let update_service = build_update_service(app.handle());
-    app.manage(update_service);
 
     let update_wake = UpdateScheduleWake::new();
     app.manage(update_wake.clone());
@@ -144,8 +144,12 @@ fn schedule_update_checker(app_handle: tauri::AppHandle, wake: UpdateScheduleWak
             };
             is_startup = false;
 
-            match service.check_update_with(kind).await {
-                Ok(Some(info)) => {
+            let check_result = service.check_update_with(kind).await;
+            emit_current_session(&app_handle);
+
+            match check_result {
+                Ok(UpdateCheckOutcome::Found(info)) => {
+                    let checked_update = service.session_snapshot().update;
                     let settings = match service.get_settings().await {
                         Ok(s) => s,
                         Err(_) => {
@@ -162,7 +166,6 @@ fn schedule_update_checker(app_handle: tauri::AppHandle, wake: UpdateScheduleWak
                                 "自动检查发现更新 v{}（仅提醒，等待用户确认）",
                                 info.version
                             );
-                            emit_available(&app_handle, &info);
                         }
                         UpdateCheckMode::AutoDownload => {
                             log::info!(
@@ -170,67 +173,52 @@ fn schedule_update_checker(app_handle: tauri::AppHandle, wake: UpdateScheduleWak
                                 "自动检查发现更新 v{}，开始静默下载",
                                 info.version
                             );
+                            if let Some(update) = checked_update {
+                                let app = app_handle.clone();
+                                tauri::async_runtime::spawn(async move {
+                                    let Some(download_service) =
+                                        app.try_state::<RuntimeUpdateService>()
+                                    else {
+                                        return;
+                                    };
 
-                            let app = app_handle.clone();
-                            let version = info.version.clone();
-                            tauri::async_runtime::spawn(async move {
-                                let Some(download_service) =
-                                    app.try_state::<RuntimeUpdateService>()
-                                else {
-                                    return;
-                                };
+                                    let progress_app = app.clone();
+                                    let result = download_service
+                                        .download_update(
+                                            &update.version,
+                                            update.channel,
+                                            move |_, _| emit_current_session(&progress_app),
+                                        )
+                                        .await;
+                                    emit_current_session(&app);
 
-                                let app_for_progress = app.clone();
-                                let version_for_progress = version.clone();
-                                let app_for_done = app.clone();
-                                let app_for_error = app.clone();
-                                let app_check = app.clone();
-                                let result = download_service
-                                    .download_and_install(move |downloaded, total| {
-                                        let Some(svc) =
-                                            app_check.try_state::<RuntimeUpdateService>()
-                                        else {
-                                            return;
-                                        };
-                                        if !svc.should_emit_progress() {
-                                            return;
+                                    match result {
+                                        Ok(DownloadOutcome::Completed { version }) => {
+                                            log::info!(
+                                                target: "updater",
+                                                "静默下载完成 v{version}，等待用户重启"
+                                            );
                                         }
-                                        emit_downloading(
-                                            &app_for_progress,
-                                            &version_for_progress,
-                                            downloaded,
-                                            total,
-                                        );
-                                    })
-                                    .await;
-
-                                match result {
-                                    Ok(DownloadOutcome::Completed { version }) => {
-                                        log::info!(
-                                            target: "updater",
-                                            "静默下载完成 v{version}，等待用户重启"
-                                        );
-                                        emit_ready(&app_for_done, &version);
+                                        Ok(DownloadOutcome::InProgress) => {
+                                            log::info!(target: "updater", "静默下载已在进行");
+                                        }
+                                        Ok(DownloadOutcome::Cancelled) => {
+                                            log::info!(target: "updater", "静默下载已取消");
+                                        }
+                                        Err(e) => {
+                                            log::warn!(target: "updater", "静默下载失败: {e}");
+                                        }
                                     }
-                                    Ok(DownloadOutcome::Cancelled) => {
-                                        log::info!(
-                                            target: "updater",
-                                            "静默下载已取消"
-                                        );
-                                    }
-                                    Err(e) => {
-                                        log::warn!(
-                                            target: "updater",
-                                            "静默下载失败: {e}"
-                                        );
-                                        emit_error(&app_for_error, e.to_string());
-                                    }
-                                }
-                            });
+                                });
+                            }
                         }
                     }
                 }
-                Ok(None) => {}
+                Ok(
+                    UpdateCheckOutcome::NoUpdate
+                    | UpdateCheckOutcome::Skipped
+                    | UpdateCheckOutcome::Superseded,
+                ) => {}
                 Err(e) => {
                     log::warn!("runtime: auto check update failed: {e}");
                 }

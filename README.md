@@ -21,6 +21,7 @@ bun run dev
 bun typecheck
 bun lint
 bun test:run
+bun run test:release
 ```
 
 Rust workspace 校验：

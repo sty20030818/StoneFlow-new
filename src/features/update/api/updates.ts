@@ -1,11 +1,9 @@
 /**
  * 应用内更新相关的 Tauri IPC 调用封装。
- *
- * 进度与状态统一为 phase 形状（与全局 update-phase 同构）。
  */
 
 import { getVersion } from '@tauri-apps/api/app'
-import { Channel, invoke } from '@tauri-apps/api/core'
+import { invoke } from '@tauri-apps/api/core'
 
 /** 更新渠道 */
 export type UpdateChannel = 'stable' | 'beta'
@@ -13,9 +11,10 @@ export type UpdateChannel = 'stable' | 'beta'
 /** 更新检查模式 */
 export type UpdateCheckMode = 'manual' | 'notifyOnly' | 'autoDownload'
 
-/** 远端返回的更新信息 */
-export interface UpdateInfo {
+/** 已检查更新的不可变身份。 */
+export interface UpdateIdentity {
 	version: string
+	channel: UpdateChannel
 }
 
 /** 更新设置 */
@@ -40,54 +39,19 @@ export const ALLOWED_CHECK_INTERVAL_SECS = [
 
 export type CheckIntervalSecs = (typeof ALLOWED_CHECK_INTERVAL_SECS)[number]
 
-/** 后端 emit / Channel 的全局事件名 */
-export const UPDATE_EVENTS = {
-	PHASE: 'update-phase',
-} as const
+/** 更新生命周期唯一事件。 */
+export const UPDATE_SESSION_CHANGED_EVENT = 'update-session-changed'
 
-/** update-phase / IPC Channel 共用 payload */
-export interface UpdatePhasePayload {
-	phase: 'available' | 'downloading' | 'ready' | 'error'
-	version?: string | null
-	downloaded?: number | null
-	total?: number | null
-	message?: string | null
-}
-
-/** 检查更新 */
-export async function checkUpdate(manual: boolean): Promise<UpdateInfo | null> {
-	return invoke<UpdateInfo | null>('check_update', { manual })
-}
-
-/** 读取独立远端 changelog；无内容或网络失败时返回 null。 */
-export async function getChangelog(): Promise<string | null> {
-	return invoke<string | null>('get_changelog')
-}
-
-/** 下载并安装；onPhase 接收与全局 update-phase 同构的 payload */
-export async function downloadAndInstall(
-	onPhase: (payload: UpdatePhasePayload) => void,
-): Promise<void> {
-	const channel = new Channel<UpdatePhasePayload>()
-	channel.onmessage = (payload) => {
-		onPhase(payload)
-	}
-	return invoke('download_and_install', { onEvent: channel })
-}
-
-/** 重启并安装已下载的更新 */
-export async function restartAndInstall(): Promise<void> {
-	return invoke('restart_and_install')
+/** 读取当前运行包版本。 */
+export function getCurrentVersion(): Promise<string> {
+	return getVersion()
 }
 
 /** 消费一次应用内更新完成确认；未匹配或已消费时返回 null。 */
 export async function consumeCompletedUpdate(): Promise<string | null> {
-	return invoke<string | null>('consume_completed_update', { currentVersion: await getVersion() })
-}
-
-/** 跳过指定版本 */
-export async function skipVersion(version: string): Promise<void> {
-	return invoke('skip_version', { version })
+	return invoke<string | null>('consume_completed_update', {
+		currentVersion: await getCurrentVersion(),
+	})
 }
 
 /** 设置更新检查模式 */
@@ -110,16 +74,38 @@ export async function getUpdateSettings(): Promise<UpdateSettings> {
 	return invoke<UpdateSettings>('get_update_settings')
 }
 
-/** 进程内更新会话生命周期状态 */
-export type UpdateSessionPhase = 'idle' | 'available' | 'downloading' | 'ready'
+/** 进程内更新会话生命周期状态。 */
+export type UpdateSessionPhase = 'idle' | 'available' | 'downloading' | 'ready' | 'installing'
 
-/** 进程内更新会话快照（挂载 hydrate） */
-export interface UpdateSessionSnapshot {
-	phase: UpdateSessionPhase
-	version: string | null
+export interface UpdateProgress {
 	downloaded: number
 	total: number | null
-	downloadInFlight: boolean
+}
+
+/** 后端更新会话的唯一权威快照。 */
+export interface UpdateSessionSnapshot {
+	revision: number
+	phase: UpdateSessionPhase
+	update: UpdateIdentity | null
+	progress: UpdateProgress | null
+	errorMessage: string | null
+}
+
+export type UpdateLifecycleResult =
+	| { status: 'ok'; snapshot: UpdateSessionSnapshot }
+	| { status: 'conflict'; message: string; snapshot: UpdateSessionSnapshot }
+	| { status: 'failed'; message: string; snapshot: UpdateSessionSnapshot }
+
+export type ManualUpdateCheckResult =
+	| { status: 'ok'; snapshot: UpdateSessionSnapshot; noUpdate: boolean }
+	| { status: 'failed'; message: string; snapshot: UpdateSessionSnapshot }
+
+/** 仅跳过当前精确的 Available 更新身份。 */
+export async function skipVersion(
+	expectedVersion: string,
+	expectedChannel: UpdateChannel,
+): Promise<UpdateLifecycleResult> {
+	return invoke<UpdateLifecycleResult>('skip_version', { expectedVersion, expectedChannel })
 }
 
 /** 读取后端更新会话快照 */
@@ -127,7 +113,31 @@ export async function getUpdateSession(): Promise<UpdateSessionSnapshot> {
 	return invoke<UpdateSessionSnapshot>('get_update_session')
 }
 
-/** 取消进行中的下载（abort 下载 task） */
-export async function cancelUpdateDownload(): Promise<void> {
-	return invoke('cancel_update_download')
+/** 用户主动检查更新；checking / noUpdate 仅是本次交互结果，不是 lifecycle phase。 */
+export async function checkUpdate(): Promise<ManualUpdateCheckResult> {
+	return invoke<ManualUpdateCheckResult>('check_update')
+}
+
+/** 按已检查身份下载并暂存更新。 */
+export async function downloadUpdate(
+	expectedVersion: string,
+	expectedChannel: UpdateChannel,
+): Promise<UpdateLifecycleResult> {
+	return invoke<UpdateLifecycleResult>('download_update', { expectedVersion, expectedChannel })
+}
+
+/** 安装精确的 staged update；跨渠道时必须显式确认其来源渠道。 */
+export async function installStagedUpdate(
+	expectedVersion: string,
+	confirmedSourceChannel: UpdateChannel | null,
+): Promise<UpdateLifecycleResult> {
+	return invoke<UpdateLifecycleResult>('install_staged_update', {
+		expectedVersion,
+		confirmedSourceChannel,
+	})
+}
+
+/** 取消进行中的下载并返回取消后的权威快照。 */
+export async function cancelUpdateDownload(): Promise<UpdateSessionSnapshot> {
+	return invoke<UpdateSessionSnapshot>('cancel_update_download')
 }

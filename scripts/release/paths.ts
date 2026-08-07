@@ -1,9 +1,8 @@
+import { randomUUID } from 'node:crypto'
 import { homedir } from 'node:os'
 import path from 'node:path'
 
 import type { ReleaseChannel } from './types'
-
-export const BUNDLE_OUTPUT_DIRS = ['nsis', 'msi', 'dmg', 'macos', 'appimage'] as const
 
 export function expandHomePath(filePath: string | undefined) {
 	if (!filePath) return undefined
@@ -27,6 +26,34 @@ export function platformLatestJsonKey(channel: ReleaseChannel, platformKey: stri
 	return `stoneflow/updates/${channel}/platforms/${platformKey}/latest.json`
 }
 
+export function platformReleaseJsonKey(
+	channel: ReleaseChannel,
+	version: string,
+	platformKey: string,
+) {
+	return `stoneflow/updates/${channel}/releases/${version}/platforms/${platformKey}/release.json`
+}
+
+export function platformReleaseArtifactKey(
+	channel: ReleaseChannel,
+	version: string,
+	platformKey: string,
+	sha256: string,
+	fileName: string,
+) {
+	return `stoneflow/updates/${channel}/releases/${version}/platforms/${platformKey}/artifacts/${sha256}/${fileName}`
+}
+
+export function platformDownloadArtifactKey(
+	channel: ReleaseChannel,
+	platformKey: string,
+	version: string,
+	sha256: string,
+	fileName: string,
+) {
+	return `stoneflow/downloads/${channel}/${platformKey}/${version}/${sha256}/${fileName}`
+}
+
 /** 各平台独立的 updater 指针公开 URL。 */
 export function platformLatestJsonUrl(
 	publicUrl: string,
@@ -41,18 +68,23 @@ export function createReleasePaths(input: {
 	channel: ReleaseChannel
 	platformKey: string
 	scriptDir: string
+	runId?: string
 }) {
 	const repoRoot = path.resolve(input.scriptDir, '../..')
-	const workDir = path.join(repoRoot, '.release-tmp')
-	const releaseRoot = path.join(workDir, 'updates', input.channel, 'releases')
-	const downloadsRoot = path.join(workDir, 'downloads', input.channel, input.platformKey)
+	const workDir = path.join(repoRoot, '.release-tmp', input.runId ?? randomUUID())
+	const sourceRoot = path.join(workDir, 'source')
+	const targetDir = path.join(workDir, 'target')
+	const stagingDir = path.join(workDir, 'staged')
+	const releaseRoot = path.join(stagingDir, 'updates', input.channel, 'releases')
+	const downloadsRoot = path.join(stagingDir, 'downloads', input.channel, input.platformKey)
 
 	return {
 		repoRoot,
-		tauriConfPath: path.join(repoRoot, 'src-tauri/tauri.conf.json'),
-		tauriDist: path.join(repoRoot, 'src-tauri/target/release/bundle'),
-		changelogPath: path.join(repoRoot, 'CHANGELOG.md'),
 		workDir,
+		sourceRoot,
+		targetDir,
+		tauriDist: path.join(targetDir, 'release', 'bundle'),
+		stagingDir,
 		releaseRoot,
 		downloadsRoot,
 	}

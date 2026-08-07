@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import {
 	buildTaskDisplayPreferenceStorageKey,
@@ -6,36 +6,11 @@ import {
 	updateTaskDisplayPreference,
 } from './displayOptions'
 
-const storeState = vi.hoisted(() => new Map<string, unknown>())
-const storeSaveMock = vi.hoisted(() => vi.fn())
-const storeDeleteMock = vi.hoisted(() => vi.fn())
-
-vi.mock('@tauri-apps/plugin-store', () => ({
-	LazyStore: vi.fn(function LazyStore() {
-		return {
-			get: vi.fn((key: string) => Promise.resolve(storeState.get(key))),
-			set: vi.fn((key: string, value: unknown) => {
-				storeState.set(key, value)
-				return Promise.resolve()
-			}),
-			delete: vi.fn((key: string) => {
-				storeDeleteMock(key)
-				storeState.delete(key)
-				return Promise.resolve()
-			}),
-			save: vi.fn(() => {
-				storeSaveMock()
-				return Promise.resolve()
-			}),
-		}
-	}),
-}))
+const DISPLAY_OPTIONS_KEY = 'stoneflow.display-options.task:task:all'
 
 describe('displayOptions api', () => {
 	beforeEach(() => {
-		storeState.clear()
-		storeSaveMock.mockClear()
-		storeDeleteMock.mockClear()
+		localStorage.clear()
 	})
 
 	it('storage key 按 pageKey 生成', () => {
@@ -65,7 +40,7 @@ describe('displayOptions api', () => {
 			},
 			workspaceDefault: null,
 		})
-		expect(storeSaveMock).toHaveBeenCalled()
+		expect(localStorage.getItem(DISPLAY_OPTIONS_KEY)).not.toBeNull()
 	})
 
 	it('清空 personal 与 workspace default 时删除存储记录', async () => {
@@ -82,7 +57,7 @@ describe('displayOptions api', () => {
 			workspaceDefault: null,
 		})
 
-		expect(storeDeleteMock).toHaveBeenCalledWith('task:task:all')
+		expect(localStorage.getItem(DISPLAY_OPTIONS_KEY)).toBeNull()
 		await expect(getTaskDisplayPreference('task:all')).resolves.toEqual({
 			personal: null,
 			workspaceDefault: null,

@@ -1,9 +1,9 @@
 # StoneFlow Tauri 后端架构
 
-> 版本：v9.1
+> 版本：v9.2
 > 作用：定义 `src-tauri/` 当前已经落地的 Rust + Tauri v2 正式边界
 > 适用范围：`/Users/stonefish/Desktop/StoneFlow/src-tauri`
-> 最后更新：2026-07-24
+> 最后更新：2026-08-07
 
 ---
 
@@ -49,6 +49,7 @@ src-tauri/
 │  ├─ application/
 │  ├─ storage/
 │  ├─ sync/
+│  ├─ release-verifier/
 │  └─ test-support/
 ├─ capabilities/
 │  ├─ main.json
@@ -66,6 +67,7 @@ src-tauri/
 5. `crates/storage`
 6. `crates/sync`
 7. `crates/test-support`
+8. `crates/release-verifier`
 
 根包 `stoneflow` 本身只负责桌面入口与 Tauri 绑定。
 
@@ -246,18 +248,27 @@ crates/runtime/src/
 ├─ exit_coordinator.rs
 ├─ command_open.rs
 ├─ composition.rs
+├─ release_endpoint.rs
+├─ update_schedule.rs
 ├─ app/
 │  ├─ error.rs
 │  └─ state.rs
 ├─ services/
+├─ update/
+│  ├─ adapter.rs
+│  ├─ events.rs
+│  ├─ service.rs
+│  └─ settings_store.rs
 ├─ commands/
 │  ├─ activity.rs
+│  ├─ changelog.rs
 │  ├─ lifecycle.rs
 │  ├─ projects.rs
 │  ├─ search.rs
 │  ├─ settings.rs
 │  ├─ spaces.rs
 │  ├─ tasks.rs
+│  ├─ update.rs
 │  ├─ views.rs
 │  ├─ workspace.rs
 │  └─ launcher/
@@ -282,6 +293,13 @@ crates/runtime/src/
 2. `window/launcher/*` 是 Launcher 窗口主线，不再放回主窗口目录
 3. `commands/launcher` 按 `domain` 和 `window` 分开
 4. Windows 使用 `window-state` 持久化主窗口位置和尺寸（不保存最大化状态）；macOS / Linux 每次冷启动使用默认尺寸并居中；Launcher 不参与
+
+### 5.1 更新、Changelog 与 Release endpoint
+
+- `application::update` 保有更新会话唯一权威快照；`runtime::update` 只负责 Tauri updater adapter、设置持久化、事件和装配。opaque updater handle 始终留在 Rust 进程内。
+- `release_endpoint.rs` 只解析共享的发布根地址：update adapter 由此构造当前渠道的 per-platform pointer，`commands/changelog.rs` 由此读取根 `CHANGELOG.md`。
+- 更新命令边界为 `check_update`、`download_update`、`install_staged_update`、`get_update_session`、`cancel_update_download` 以及设置与完成标记命令；Changelog 只暴露 `get_changelog`。
+- 更新生命周期只发送 `update-session-changed` 快照事件；不再存在平行 phase/progress 事件或 renderer 端自行拼装的会话真源。
 
 ---
 
@@ -387,9 +405,10 @@ pub fn run() {
 
 长期规则：
 
-1. 主窗口拿完整业务权限
-2. Launcher 只拿最小必要窗口与事件权限
-3. 不把 `windows: ["*"]` 当正式长期方案
+1. 主窗口只拿当前业务 UI 需要的权限；更新通过自有 Tauri commands 与 core event 完成，renderer 不授予 `updater:*` 或 `store:*` 原生权限
+2. `tauri-plugin-updater` 只是 runtime adapter 的后端实现细节，不是前端 API
+3. Launcher 只拿最小必要窗口与事件权限
+4. 不把 `windows: ["*"]` 当正式长期方案
 
 ### 8.3 Global Shortcut
 

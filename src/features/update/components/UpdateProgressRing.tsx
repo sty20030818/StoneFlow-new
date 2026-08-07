@@ -1,16 +1,13 @@
 /**
  * 更新进度环（Footer / Popover 共用）。
  * 下载中：中性描边进度；无 total 时 indeterminate 慢旋；
- * 就绪：emerald 满环；失败：危险色。
+ * 就绪：满环。错误附着于 Ready，不另造进度状态。
  */
 
 import { cn } from '@/shared/lib/utils'
-import type { UpdateUiPhase } from '../model/useUpdateStore'
+import type { UpdateFooterVisiblePhase } from '../model/deriveUpdateFooterView'
 
-export type UpdateProgressRingState = Extract<
-	UpdateUiPhase,
-	'downloading' | 'ready' | 'error' | 'available'
->
+export type UpdateProgressRingState = UpdateFooterVisiblePhase
 
 type UpdateProgressRingProps = {
 	state: UpdateProgressRingState
@@ -31,7 +28,6 @@ export function UpdateProgressRing({
 	const r = (size - strokeWidth) / 2
 	const c = 2 * Math.PI * r
 	const ready = state === 'ready'
-	const error = state === 'error'
 	const downloading = state === 'downloading'
 	const available = state === 'available'
 	const determinate = downloading && value !== null
@@ -39,7 +35,6 @@ export function UpdateProgressRing({
 
 	let offset = c * 0.75
 	if (ready) offset = 0
-	else if (error) offset = c * 0.35
 	else if (available) offset = c * 0.92
 	else if (determinate && clamped !== null) offset = c - (clamped / 100) * c
 
@@ -55,13 +50,11 @@ export function UpdateProgressRing({
 			aria-label={
 				ready
 					? '更新已就绪'
-					: error
-						? '更新失败'
-						: available
-							? '有可用更新'
-							: determinate
-								? `下载进度 ${clamped}%`
-								: '正在下载'
+					: available
+						? '有可用更新'
+						: determinate
+							? `下载进度 ${clamped}%`
+							: '正在下载'
 			}
 			aria-valuenow={determinate ? (clamped ?? undefined) : undefined}
 			aria-valuemin={downloading ? 0 : undefined}
@@ -88,7 +81,7 @@ export function UpdateProgressRing({
 				strokeDashoffset={offset}
 				transform={`rotate(-90 ${size / 2} ${size / 2})`}
 				className={cn(
-					ready || error ? 'opacity-100' : 'opacity-70',
+					ready ? 'opacity-100' : 'opacity-70',
 					determinate && 'transition-[stroke-dashoffset] duration-200 ease-out',
 				)}
 			/>

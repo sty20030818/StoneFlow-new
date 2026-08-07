@@ -9,6 +9,7 @@ import { ProjectCreateContent } from '@/features/project'
 import { TaskCreateContent } from '@/features/task'
 import { CustomDateDialog } from '@/features/metadata-fields'
 import { SystemStatusChip, UpdateDialog } from '@/features/update'
+import type { UpdateChannel } from '@/features/update/contract'
 import { ChangelogDialog } from '@/features/changelog'
 import { AboutDialog } from '@/features/app-info'
 
@@ -36,8 +37,9 @@ export type ShellOverlaysProps = {
 	toggleTaskCreatePresentation: () => void
 	closeCustomDateDialog: () => void
 	changelogOpen: boolean
+	changelogChannel: UpdateChannel
+	changelogFocusVersion?: string | null
 	onChangelogOpenChange: (open: boolean) => void
-	changelogVersion?: string | null
 	aboutOpen: boolean
 	onAboutOpenChange: (open: boolean) => void
 	onOpenChangelogFromAbout: () => void
@@ -61,8 +63,9 @@ export function ShellOverlays({
 	toggleTaskCreatePresentation,
 	closeCustomDateDialog,
 	changelogOpen,
+	changelogChannel,
+	changelogFocusVersion,
 	onChangelogOpenChange,
-	changelogVersion,
 	aboutOpen,
 	onAboutOpenChange,
 	onOpenChangelogFromAbout,
@@ -137,9 +140,10 @@ export function ShellOverlays({
 			) : null}
 			<UpdateDialog />
 			<ChangelogDialog
+				channel={changelogChannel}
+				focusVersion={changelogFocusVersion}
 				open={changelogOpen}
 				onOpenChange={onChangelogOpenChange}
-				version={changelogVersion}
 			/>
 			<AboutDialog
 				open={aboutOpen}

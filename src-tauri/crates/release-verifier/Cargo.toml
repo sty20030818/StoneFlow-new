@@ -1,0 +1,9 @@
+[package]
+name = "stoneflow-release-verifier"
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+base64.workspace = true
+minisign-verify.workspace = true

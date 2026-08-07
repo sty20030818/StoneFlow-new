@@ -741,6 +741,8 @@ mod tests {
                     project_id: None,
                 },
                 statuses: None,
+                priorities: None,
+                date_filter: None,
                 limit: None,
                 cursor: None,
             })

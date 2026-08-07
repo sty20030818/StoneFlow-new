@@ -1,6 +1,6 @@
 # StoneFlow 前端架构（src）
 
-> 版本：v5.1 · 2026-07-18
+> 版本：v5.2 · 2026-08-07
 > 作用：`src/` **定稿最优架构**（WHAT / WHERE）。日常改码以本文 + [`CONVENTIONS.md`](./CONVENTIONS.md) + 各模块 `ARCHITECTURE.md` 为准。
 > 不写：债表、执行进度、变更历史（这些不属于当前架构契约）。
 
@@ -151,13 +151,20 @@ Token、shadcn 映射、Tailwind 入口。见 [`styles/ARCHITECTURE.md`](./style
 | global-search | platform | 主窗搜索 | [global-search](./features/global-search/ARCHITECTURE.md) |
 | workspace | platform | 听事件 → invalidate | [workspace](./features/workspace/ARCHITECTURE.md) |
 | sync | platform | 云同步 | [sync](./features/sync/ARCHITECTURE.md) |
-| update | platform | 应用更新 | [update](./features/update/ARCHITECTURE.md) |
+| update | platform | 后端更新会话快照的 UI 投影与动作 | [update](./features/update/ARCHITECTURE.md) |
+| changelog | content | 发布历史的读取、解析与展示 | [changelog](./features/changelog/README.md) |
 | settings | scene | 设置三入口 | [settings](./features/settings/ARCHITECTURE.md) |
 | project-overview | scene | 项目概览薄页 | [project-overview](./features/project-overview/ARCHITECTURE.md) |
 | shell-dialogs | platform | 壳级对话框 / 命令菜单 UI 态 | [shell-dialogs](./features/shell-dialogs/ARCHITECTURE.md) |
 | launcher | window | 独立窗：搜 + 建；创建内核复用 task | [launcher](./features/launcher/ARCHITECTURE.md) |
 
 **切分裁决（冻结）：** 不大合并 selection/bulk/command/filter/display；不拆 task 为多 feature 包名；不取消 navigation 包。
+
+### 5.1 更新与 Changelog 边界
+
+- `update` 以后端会话快照为唯一权威；Zustand 只投影该快照并保留局部交互态，不另建更新事实。
+- `update` 和 `layout` 只能经 `@/features/changelog` 公共入口消费 Changelog，禁止深路径导入。
+- `changelog` 独立拥有读取、解析和展示，不得反向依赖 `update`，也不决定更新是否可下载或安装。
 
 ---
 

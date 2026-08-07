@@ -1,26 +1,36 @@
-import { existsSync } from 'node:fs'
 import { rm } from 'node:fs/promises'
-import path from 'node:path'
 
-import { chalk } from './io'
-import { BUNDLE_OUTPUT_DIRS } from './paths'
-
-type LocalReleaseOutputPaths = {
+type ReleaseRunPaths = {
 	workDir: string
-	tauriDist: string
 }
 
-/** 只处理可再生的本地发布输出，不触及源码、应用数据或远端文件。 */
-export async function resetLocalReleaseOutputs(paths: LocalReleaseOutputPaths) {
-	console.log(chalk.gray('\n🧹 检查并清理本地发布输出...\n'))
-	const outputDirs = [
-		paths.workDir,
-		...BUNDLE_OUTPUT_DIRS.map((dirName) => path.join(paths.tauriDist, dirName)),
-	]
+type ReleaseBuildWorkspacePaths = {
+	sourceRoot: string
+	targetDir: string
+}
 
-	for (const dir of outputDirs) {
-		if (!existsSync(dir)) continue
-		await rm(dir, { recursive: true, force: true })
-		console.log(chalk.green(`   clean ${dir}`))
-	}
+export function combineReleaseFailure(failure: unknown, cleanupFailure: unknown) {
+	const message = failure instanceof Error ? failure.message : String(failure)
+	const cleanupMessage =
+		cleanupFailure instanceof Error ? cleanupFailure.message : String(cleanupFailure)
+	return new AggregateError(
+		[failure, cleanupFailure],
+		`${message}；同时清理发布临时目录失败：${cleanupMessage}`,
+	)
+}
+
+/** 删除本轮全部可再生输出；唯一 run 目录保证不会影响并发或历史产物。 */
+export async function cleanupReleaseRun({ workDir }: ReleaseRunPaths) {
+	await rm(workDir, { recursive: true, force: true })
+}
+
+/** 构建结束后只删除 clone 与 Cargo 输出，保留已经收集到 staged 的产物。 */
+export async function cleanupReleaseBuildWorkspace({
+	sourceRoot,
+	targetDir,
+}: ReleaseBuildWorkspacePaths) {
+	await Promise.all([
+		rm(sourceRoot, { recursive: true, force: true }),
+		rm(targetDir, { recursive: true, force: true }),
+	])
 }
