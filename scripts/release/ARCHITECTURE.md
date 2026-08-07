@@ -49,7 +49,7 @@
 1. 同一渠道内，一个版本只绑定一个 commit；同一 commit 只绑定一个版本。
 2. 版本序列跨平台共享，平台 Pointer 可停在不同版本，也可跳过中间版本。
 3. 新 claim 必须包含渠道 ledger 的旧 frontier；Tag 与 ledger 只能一次 atomic、exact-lease push，不顺序降级。
-4. 新 claim 的 Changelog 必须覆盖全部 schema-1 Tag，并在 claim 前只读证明不会删除远端版本或改变 YANKED；旧版本 `reuse` 不得用旧 checkout 覆盖远端历史。
+4. 新 claim 的 Changelog 必须覆盖全部 schema-1 Tag，并在 claim 前只读证明不会删除远端版本或改变已撤回状态；旧版本 `reuse` 不得用旧 checkout 覆盖远端历史。
 5. 捕获的精确签名字节必须能用应用内置公钥验证精确产物；新建和既有 record 的恢复路径都必须在 Pointer 前验签。
 6. artifact 和 platform record 只能创建或验证相同内容，不能覆盖；record 在全部引用产物可公开验证后才写入。
 7. Pointer 只在 record、Changelog 和公开读取验证完成后推进，只能向更高 SemVer 前进。

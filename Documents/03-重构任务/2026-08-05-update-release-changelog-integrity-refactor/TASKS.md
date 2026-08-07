@@ -6,9 +6,9 @@
 
 ## 阶段任务
 
-- [x] T1 在 `src/features/changelog/contract.ts`、`src/features/changelog/contract.test.ts` 与根 `CHANGELOG.md` 建立唯一 Keep a Changelog 契约，并将现有日志 hard cut 为受支持的版本、日期、六分类、YANKED 与 footer 语法
+- [x] T1 在 `src/features/changelog/contract.ts`、`src/features/changelog/contract.test.ts` 与根 `CHANGELOG.md` 建立唯一 Keep a Changelog 契约，并将现有日志 hard cut 为受支持的版本、日期、六中文分类、已撤回与 footer 语法
   - 纯契约同时提供版本比较、渠道过滤和 `(currentVersion, targetVersion]` 区间选择；不依赖 React、Tauri、Bun 或 Node API。
-  - 保留既有用户内容与发布日期，不增加 compare-link，不为旧中文或 emoji 分类保留兼容解析。
+  - 保留既有用户内容与发布日期，不增加 compare-link，不为旧英文或 emoji 分类保留兼容解析。
   - _对应验收标准：AC-22, AC-23, AC-24, AC-25, AC-26_
   - _测试先行：`src/features/changelog/contract.test.ts`_
 
@@ -28,7 +28,7 @@
   - _测试先行：`scripts/release/git.test.ts`_
 
 - [x] T5 在 `scripts/release/preflight.ts` 与 `scripts/release/preflight.test.ts` 以根 `package.json`、`src-tauri/tauri.conf.json`、`CHANGELOG.md`、共享 Git remote 和 `src/features/changelog/contract.ts` 为只读输入，完成构建前发布门禁与构建后候选重检
-  - 校验含 untracked 的干净工作区、拒绝隐藏 tracked 变更的 index flags、40 位 HEAD、配置版本一致、唯一 push endpoint、HEAD 可从该 endpoint 的公开分支或 Tag 到达、候选及 Beta Stable 基线 ancestry、目标 changelog 非空且非 YANKED；发布元数据只从 release commit 原始 blob 读取并拒绝非法 UTF-8，新 claim 还必须保留全部 schema-1 Tag 对应版本，并确认 HEAD/配置/changelog hash/remote refs/endpoint 在构建后未漂移。
+  - 校验含 untracked 的干净工作区、拒绝隐藏 tracked 变更的 index flags、40 位 HEAD、配置版本一致、唯一 push endpoint、HEAD 可从该 endpoint 的公开分支或 Tag 到达、候选及 Beta Stable 基线 ancestry、目标 changelog 非空且未撤回；发布元数据只从 release commit 原始 blob 读取并拒绝非法 UTF-8，新 claim 还必须保留全部 schema-1 Tag 对应版本，并确认 HEAD/配置/changelog hash/remote refs/endpoint 在构建后未漂移。
   - _对应验收标准：AC-13, AC-14, AC-22, AC-23_
   - _测试先行：`scripts/release/preflight.test.ts`_
 
@@ -43,8 +43,8 @@
   - _对应验收标准：AC-17, AC-18, AC-19, AC-20, AC-21_
   - _测试先行：`scripts/release/remote.test.ts`、`scripts/release/platform-release.test.ts`_
 
-- [x] T8 在 `scripts/release/changelog-publish.ts` 与 `scripts/release/changelog-publish.test.ts` 复用 `src/features/changelog/contract.ts` 实现完整根原文镜像、version/YANKED 不变式、ETag CAS、相同 bytes 幂等和既有 Tag 补平台只读校验
-  - 保留全部远端版本标识；不可逆 Git claim 前只读校验远端历史与 YANKED 兼容性，claim 后的 CAS 冲突仅接受完全相同 bytes；平台 Pointer 前同时验证 S3 与公开 changelog，旧 checkout 不得覆盖较新历史。既有目标存在时严格只读；仅在 Tag claim 后远端仍缺目标的崩溃恢复窗口，允许满足 version/YANKED 不变式的 CAS 补齐。
+- [x] T8 在 `scripts/release/changelog-publish.ts` 与 `scripts/release/changelog-publish.test.ts` 复用 `src/features/changelog/contract.ts` 实现完整根原文镜像、version/已撤回状态不变式、ETag CAS、相同 bytes 幂等和既有 Tag 补平台只读校验
+  - 保留全部远端版本标识；不可逆 Git claim 前只读校验远端历史与已撤回状态兼容性，claim 后的 CAS 冲突仅接受完全相同 bytes；平台 Pointer 前同时验证 S3 与公开 changelog，旧 checkout 不得覆盖较新历史。既有目标存在时严格只读；仅在 Tag claim 后远端仍缺目标的崩溃恢复窗口，允许满足 version/已撤回状态不变式的 CAS 补齐。
   - _对应验收标准：AC-20, AC-22, AC-23_
   - _测试先行：`scripts/release/changelog-publish.test.ts`_
 
@@ -88,7 +88,7 @@
 
 - [x] T15 在 `src/features/changelog/api.ts`、`src/features/changelog/useChangelog.ts`、`src/features/changelog/useChangelog.test.tsx`、`src/features/changelog/ChangelogRelease.tsx`、`src/features/changelog/ChangelogRelease.test.tsx`、`src/features/changelog/ChangelogDialog.tsx`、`src/features/changelog/index.ts`、`src/features/update/api/updates.ts`、`src/features/update/contract.ts`、`src/features/update/components/UpdateDialog.tsx`、`src/layout/overlays/ShellOverlays.tsx`、`src/layout/ShellLayoutContent.tsx` 与 `scripts/check-feature-boundaries.ts` 完成前端 changelog 所有权、调用契约和刷新回退 hard cut
   - 历史 Dialog 的渠道由 layout 经 update 公开入口读取后显式传入；Update Dialog 显式传入当前应用版本以及 staged snapshot 的 target/channel，changelog 不反向依赖 update。
-  - 只保留 `lastValidRemoteDocument` 与一个 in-flight request；每次打开或目标变化都刷新，失败按“上次有效远端 → bundled → 空集合”回退，并在完整历史中显示 YANKED。
+  - 只保留 `lastValidRemoteDocument` 与一个 in-flight request；每次打开或目标变化都刷新，失败按“上次有效远端 → bundled → 空集合”回退，并在完整历史中显示已撤回状态。
   - 删除 `src/features/changelog/model.ts` 与 `src/features/changelog/model.test.ts`，禁止跨 feature 深路径导入，不保留旧 hook overload 或兼容 facade。
   - _对应验收标准：AC-26, AC-27_
   - _测试先行：`src/features/changelog/useChangelog.test.tsx`、`src/features/changelog/ChangelogRelease.test.tsx`、`src/features/update/components/UpdateDialog.test.tsx`_
@@ -131,7 +131,8 @@
 - T2 为解除既有 runtime lib-test 编译阻断，额外在 `src-tauri/crates/runtime/src/commands/tasks.rs` 的测试输入补齐 `priorities: None` 与 `date_filter: None`；只修复测试夹具，不改变业务逻辑。
 - T2 全量 runtime 测试为 106/107；唯一失败是既有 `commands::spaces::tests::deleting_trashed_space_again_should_not_enqueue_another_operation` 的错误文案断言，与本任务改动无调用关系，已在 T20 复核为既有基线，留待 spaces 模块修复。
 - T4 红队证明普通 atomic fast-forward push 不能严格绑定预检 frontier；随后又证明 exact `--force-with-lease` 本身可能授权 non-fast-forward，且本地 replace/graft 图可伪造 ancestry。PLAN 与 ADR 已再次修正：exact lease 只承担 CAS，本地禁用 replace refs、显式拒绝非空 legacy grafts，再验证 ancestry，受保护 remote 最终拒绝 actual non-fast-forward；新增赢家后继、replace ref 与 legacy graft 反例测试。
-- T8 将“既有 Tag 补平台一律只读”收窄为“远端已有目标时只读”：若 atomic claim 已成功但进程在 changelog 写入前崩溃，重跑可在保留全部远端 version 且不改变既有 YANKED 状态时执行一次 CAS 补齐，避免已建立 Tag 永久无法恢复。
+- T8 将“既有 Tag 补平台一律只读”收窄为“远端已有目标时只读”：若 atomic claim 已成功但进程在 changelog 写入前崩溃，重跑可在保留全部远端 version 且不改变既有已撤回状态时执行一次 CAS 补齐，避免已建立 Tag 永久无法恢复。
+- Changelog 中文语法为 hard cut，不增加英文兼容代码。如果 R2 仍是旧英文文档，下一次 release 会在 claim 前 fail closed；需要另行授权一次 ETag CAS cutover。新旧客户端在远端语法不兼容时只回退到各自内置日志，不阻断 updater。
 - T20 终审把既有 AC 的完整性边界继续前移：补齐 updater record 恢复验签、流式公开摘要、commit blob/隔离构建输入、Git 与 Tauri 环境清理、claim 前 Changelog 兼容性、显式检查结果、失败快照、精确跳过身份、监听恢复和 revision-fenced 自动弹窗。这些是原验收标准的 fail-closed 与竞态闭环，不增加新的产品功能或兼容路径。
 - T20 全量门禁仍暴露任务外基线：`format:check` 有 15 份未被本任务修改的文件未格式化；前端全量测试 861/864，失败为 RowShell/LifecycleBoard/ProjectBoard 的 3 项既有 CSS class 断言；Rust workspace 的 application 66/66 通过，runtime 仍因 spaces 既有错误文案断言为 113/114。上述文件均无本任务 diff，因此未越界修改；`bun run check` 按顺序在既有 format 基线处停止。
 
@@ -147,7 +148,7 @@
 | 2026-08-06 | 完成 T5：预检固定唯一 push endpoint，拒绝普通与隐藏 dirty，校验公开 branch/Tag、Beta Stable 基线、Changelog 与构建后快照漂移；17 项预检测试通过 |
 | 2026-08-06 | 完成 T6：产物改为 SHA-256 内容寻址，Windows/Linux 同文件复用单一对象，分平台 record 无时间戳且 Pointer 删除 `pub_date`；9 项定向测试通过 |
 | 2026-08-06 | 完成 T7：S3 对象读写收口为 ETag 条件协议，产物/record 与 Pointer 分阶段；补齐 record/Pointer 版本平台 namespace 校验，19 项定向测试通过 |
-| 2026-08-06 | 完成 T8：完整根 Changelog 原文按 version/YANKED 不变式 CAS 发布，既有目标只读并支持 claim 后崩溃恢复；21 项定向测试通过 |
+| 2026-08-06 | 完成 T8：完整根 Changelog 原文按 version/已撤回状态不变式 CAS 发布，既有目标只读并支持 claim 后崩溃恢复；21 项定向测试通过 |
 | 2026-08-06 | 完成 T9：主脚本 hard cut 为可恢复的 Pointer-last 薄编排，Beta 通过 `--config` 构建且 `--no-upload` 不创建 Tag/ledger、不访问 R2；发布模块全量 129 项测试、typecheck、lint 与 feature boundaries 通过 |
 | 2026-08-06 | 完成 T10：`UpdatePort` 以关联类型交付 opaque handle，check/download 固定同一身份；互斥会话、epoch、abort 补偿与 revision 覆盖重复下载、取消和 ABA 竞态，application 定向 21/21、runtime adapter 3/3 通过 |
 | 2026-08-06 | 完成 T11：Ready/Installing 共享同一 `Arc<StagedUpdate>`，安装要求精确版本且无暂存包不再普通重启；失败保留原 handle/bytes 可重试，并发入口单飞，application 定向 24/24 通过 |
@@ -160,3 +161,4 @@
 | 2026-08-07 | 完成 T18：新建或重写 update/changelog 六份模块 README、ARCHITECTURE 与 DESIGN，长期 Owner 分别收口公开入口、依赖边界、更新事务、语法区间和刷新回退；链接、旧术语与 diff-check 通过 |
 | 2026-08-07 | 完成 T19：release README 收口为最小发布入口，新建 ARCHITECTURE/DESIGN 固化 Owner、并发、幂等恢复与 cutover 授权边界，删除过时 HOWTO 并修正 SPEC 链接；旧协议关键词、文档链接与 diff-check 通过 |
 | 2026-08-07 | 完成 T20：typecheck、lint、boundaries、本任务 TS/Rust 格式、legacy 扫描与 diff-check 通过；发布模块 146/146、application update 43/43、runtime update 8/8 与 runtime changelog 5/5 通过；前端 861/864、Rust application 66/66 且 runtime 113/114，全量 format 的 15 份失败与 4 项测试失败均已确认为无本任务 diff 的既有基线 |
+| 2026-08-07 | 按用户追加确认将 Changelog hard cut 为纯中文结构：唯一接受未发布、六个中文分类和已撤回标记，删除 UI 翻译映射，明确拒绝英文旧语法；changelog 49/49、release 146/146、typecheck、lint 与 boundaries 通过 |

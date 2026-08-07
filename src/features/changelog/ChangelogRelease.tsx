@@ -3,19 +3,10 @@ import { Badge } from '@/shared/components/base/badge'
 import type { ChangelogRelease as ChangelogReleaseModel } from './contract'
 import { ChangelogMarkdown } from './ChangelogMarkdown'
 
-const CATEGORY_LABELS = {
-	Added: '新增',
-	Changed: '变更',
-	Deprecated: '弃用',
-	Removed: '移除',
-	Fixed: '修复',
-	Security: '安全',
-} as const
-
 export function ChangelogRelease({ release }: { release: ChangelogReleaseModel }) {
 	const content = Array.from(
 		release.sections,
-		([category, body]) => `### ${CATEGORY_LABELS[category]}\n\n${body}`,
+		([category, body]) => `### ${category}\n\n${body}`,
 	).join('\n\n')
 
 	return (

@@ -8,102 +8,102 @@ import { RELEASE_TAG_SCHEMA } from './types'
 
 const BASE_CHANGELOG = `# Changelog
 
-## [Unreleased]
+## [未发布]
 
 ## [0.1.2] - 2026-08-05
 
-### Fixed
+### 修复
 
 - Baseline release.
 `
 
 const CURRENT_CHANGELOG = `# Changelog
 
-## [Unreleased]
+## [未发布]
 
 ## [0.1.3] - 2026-08-06
 
-### Added
+### 新增
 
 - Candidate release.
 
 ## [0.1.2] - 2026-08-05
 
-### Fixed
+### 修复
 
 - Baseline release.
 `
 
-const YANKED_CHANGELOG = CURRENT_CHANGELOG.replace(
+const RETRACTED_CHANGELOG = CURRENT_CHANGELOG.replace(
 	'## [0.1.3] - 2026-08-06',
-	'## [0.1.3] - 2026-08-06 [YANKED]',
+	'## [0.1.3] - 2026-08-06 [已撤回]',
 )
 
 const BETA_HISTORY_CHANGELOG = `# Changelog
 
-## [Unreleased]
+## [未发布]
 
 ## [0.1.3-beta.1] - 2026-08-06
 
-### Added
+### 新增
 
 - Earlier Beta release.
 
 ## [0.1.2] - 2026-08-05
 
-### Fixed
+### 修复
 
 - Baseline release.
 `
 
 const STABLE_BASELINE_CHANGELOG = `# Changelog
 
-## [Unreleased]
+## [未发布]
 
 ## [0.1.3] - 2026-08-07
 
-### Changed
+### 变更
 
 - New Stable baseline.
 
 ## [0.1.3-beta.1] - 2026-08-06
 
-### Added
+### 新增
 
 - Earlier Beta release.
 
 ## [0.1.2] - 2026-08-05
 
-### Fixed
+### 修复
 
 - Baseline release.
 `
 
 const NEXT_BETA_CHANGELOG = `# Changelog
 
-## [Unreleased]
+## [未发布]
 
 ## [0.1.4-beta.1] - 2026-08-08
 
-### Added
+### 新增
 
 - Beta based on Stable 0.1.3.
 
 ## [0.1.3] - 2026-08-07
 
-### Changed
+### 变更
 
 - New Stable baseline.
 
 ## [0.1.3-beta.1] - 2026-08-06
 
-### Added
+### 新增
 
 - Earlier Beta release.
 
 ## [0.1.2] - 2026-08-05
 
-### Fixed
+### 修复
 
 - Baseline release.
 `
@@ -438,7 +438,7 @@ describe('release preflight', () => {
 		})
 	})
 
-	test('目标 Changelog 条目缺失或 YANKED 时阻断', async () => {
+	test('目标 Changelog 条目缺失或已撤回时阻断', async () => {
 		await withFixture(async (fixture) => {
 			await writeFile(path.join(fixture.publisher, 'CHANGELOG.md'), BASE_CHANGELOG)
 			await commitAll(fixture, fixture.publisher, 'missing changelog target')
@@ -447,12 +447,12 @@ describe('release preflight', () => {
 				runReleasePreflight({ repoRoot: fixture.publisher, channel: 'stable' }),
 			).rejects.toThrow('不存在')
 
-			await writeFile(path.join(fixture.publisher, 'CHANGELOG.md'), YANKED_CHANGELOG)
+			await writeFile(path.join(fixture.publisher, 'CHANGELOG.md'), RETRACTED_CHANGELOG)
 			await commitAll(fixture, fixture.publisher, 'yanked changelog target')
 			await pushMain(fixture)
 			await expect(
 				runReleasePreflight({ repoRoot: fixture.publisher, channel: 'stable' }),
-			).rejects.toThrow('YANKED')
+			).rejects.toThrow('已撤回')
 		})
 	})
 
@@ -713,7 +713,7 @@ describe('release preflight', () => {
 					path.join(fixture.rival, 'CHANGELOG.md'),
 					CURRENT_CHANGELOG.replace(
 						'## [0.1.3] - 2026-08-06',
-						'## [0.1.4] - 2026-08-07\n\n### Fixed\n\n- Successor release.\n\n## [0.1.3] - 2026-08-06',
+						'## [0.1.4] - 2026-08-07\n\n### 修复\n\n- Successor release.\n\n## [0.1.3] - 2026-08-06',
 					),
 				)
 				const successor = await commitAll(fixture, fixture.rival, 'successor release')

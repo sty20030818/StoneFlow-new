@@ -95,7 +95,7 @@ const server = serve({
 
 		if (url.pathname === '/stoneflow/CHANGELOG.md') {
 			return new Response(
-				`# StoneFlow 更新日志\n\n## [Unreleased]\n\n## [${MOCK_VERSION}] - 2026-07-29\n\n### Added\n\n- Mock 更新日志。`,
+				`# StoneFlow 更新日志\n\n## [未发布]\n\n## [${MOCK_VERSION}] - 2026-07-29\n\n### 新增\n\n- Mock 更新日志。`,
 				{ headers: { ...corsHeaders, 'Content-Type': 'text/markdown; charset=utf-8' } },
 			)
 		}

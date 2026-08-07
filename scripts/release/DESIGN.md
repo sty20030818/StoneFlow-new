@@ -75,11 +75,13 @@ stoneflow/
 根 `CHANGELOG.md` 经统一 parser 验证后，完整原文发布到 `stoneflow/CHANGELOG.md`：
 
 - 首次写入使用 `If-None-Match: *`，更新使用读取到的原始 ETag 作为 `If-Match`；
-- 本地文档不得删除远端已有版本，也不得改变其 `YANKED` 状态；
+- 本地文档不得删除远端已有版本，也不得改变其已撤回状态；
 - 不可逆 Git claim 前先只读执行上述远端历史兼容性检查；claim 后仍保留同一校验和 CAS，以防并发漂移；
 - `reuse` 时远端已经包含目标版本，则只验证远端与公开 bytes，不用旧 checkout 覆盖它；
 - claim 已完成但 Changelog 尚未写入时，重跑可在保留远端历史的前提下 CAS 补齐；
 - 写入后必须同时验证 S3 与公开 URL，且目标版本仍是可发布条目。
+
+该 parser 只接受中文结构标记。R2 尚存旧英文文档时，claim 前兼容性检查必须 fail closed；经单独授权后，以已观察 ETag 对中文根文件做一次 CAS cutover，不增加英文兼容路径。
 
 ### 5.3 分平台 Pointer CAS
 
@@ -97,7 +99,7 @@ stoneflow/
 → 读取并验证既有 platform record
 → record 不存在时创建固定 commit 快照，隔离构建、收集和校验本平台产物
 → 重做预检，确认 checkout 与 remote 候选未漂移
-→ 只读确认远端 Changelog 历史与 YANKED 状态兼容
+→ 只读确认远端 Changelog 历史与已撤回状态兼容
 → atomic claim Tag + channel ledger，或验证既有 Tag
 → artifacts 条件创建并经 S3/公开 URL 验证
 → immutable platform record 最后写入

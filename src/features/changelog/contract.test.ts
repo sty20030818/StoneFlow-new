@@ -14,12 +14,12 @@ function release(
 	version: string,
 	options: { body?: string; date?: string; yanked?: boolean } = {},
 ) {
-	const { body = '### Added\n\n- 用户可见变化', date = '2026-08-01', yanked = false } = options
-	return `## [${version}] - ${date}${yanked ? ' [YANKED]' : ''}\n\n${body}`
+	const { body = '### 新增\n\n- 用户可见变化', date = '2026-08-01', yanked = false } = options
+	return `## [${version}] - ${date}${yanked ? ' [已撤回]' : ''}\n\n${body}`
 }
 
 function changelog(releases: string, unreleased = '') {
-	return `# StoneFlow 更新日志\n\n遵循 Keep a Changelog。\n\n## [Unreleased]\n\n${unreleased}${unreleased ? '\n\n' : ''}${releases}`
+	return `# StoneFlow 更新日志\n\n遵循 Keep a Changelog。\n\n## [未发布]\n\n${unreleased}${unreleased ? '\n\n' : ''}${releases}`
 }
 
 function versions(releases: readonly { version: string }[]) {
@@ -27,37 +27,61 @@ function versions(releases: readonly { version: string }[]) {
 }
 
 describe('changelog contract', () => {
-	it('解析规范分类、YANKED、footer 与代码围栏，并兼容 BOM/CRLF', () => {
+	it('解析规范分类、已撤回、footer 与代码围栏，并兼容 BOM/CRLF', () => {
 		const fencedBody = [
-			'### Fixed',
+			'### 修复',
 			'',
 			'- 修复问题',
 			'',
-			'### Added',
+			'### 新增',
 			'',
 			'```text',
 			'## [9.9.9] - 2099-01-01',
-			'### Security',
+			'### 安全',
 			'[1.2.0]: https://fake.example',
 			'```',
 			'',
 			'> ## [8.8.8] - 2099-01-01',
-			'    ### Changed',
+			'    ### 变更',
+			'',
+			'### 变更',
+			'',
+			'- 变更内容',
+			'',
+			'### 弃用',
+			'',
+			'- 弃用内容',
+			'',
+			'### 移除',
+			'',
+			'- 移除内容',
+			'',
+			'### 安全',
+			'',
+			'- 安全内容',
 		].join('\n')
 		const source = `${changelog(
 			[
 				release('1.2.0', { body: fencedBody, date: '2024-02-29' }),
 				release('1.2.0-beta.10', { yanked: true }),
 			].join('\n\n'),
-			'### Changed\n\n- 尚未发布',
-		)}\n\n[Unreleased]: https://example.com/compare/v1.2.0...HEAD\n[1.2.0]: https://example.com/releases/1.2.0\n`
+			'### 变更\n\n- 尚未发布',
+		)}\n\n[未发布]: https://example.com/compare/v1.2.0...HEAD\n[1.2.0]: https://example.com/releases/1.2.0\n`
 
 		const document = parseChangelogDocument(source)
-		expect(document.unreleased.get('Changed')).toBe('- 尚未发布')
+		expect(document.unreleased.get('变更')).toBe('- 尚未发布')
 		expect(versions(document.releases)).toEqual(['1.2.0', '1.2.0-beta.10'])
-		expect(document.releases[0].sections.get('Added')).toContain('## [9.9.9]')
-		expect(document.releases[0].sections.get('Added')).toContain('[1.2.0]: https://fake.example')
-		expect(document.releases[0].sections.get('Added')).not.toContain('[Unreleased]:')
+		expect(document.releases[0].sections.get('新增')).toContain('## [9.9.9]')
+		expect(document.releases[0].sections.get('新增')).toContain('[1.2.0]: https://fake.example')
+		expect(document.releases[0].sections.get('新增')).not.toContain('[未发布]:')
+		expect(Array.from(document.releases[0].sections.keys())).toEqual([
+			'修复',
+			'新增',
+			'变更',
+			'弃用',
+			'移除',
+			'安全',
+		])
 		expect(document.releases[1].yanked).toBe(true)
 		expect(parseChangelogDocument(`\uFEFF${source.replaceAll('\n', '\r\n')}`)).toEqual(document)
 	})
@@ -65,9 +89,7 @@ describe('changelog contract', () => {
 	it('根 CHANGELOG.md 满足契约并保留首发说明', () => {
 		const document = parseChangelogDocument(bundledChangelog)
 		expect(document.releases.at(-1)?.version).toBe('0.1.0')
-		expect(document.releases.at(-1)?.sections.get('Added')).toContain(
-			'StoneFlow 首个公开发布版本。',
-		)
+		expect(document.releases.at(-1)?.sections.get('新增')).toContain('StoneFlow 首个公开发布版本。')
 	})
 
 	it.each([
@@ -95,15 +117,21 @@ describe('changelog contract', () => {
 	)
 
 	it.each([
-		['缺少 Unreleased', release('1.0.0')],
-		['首个 H2 不是 Unreleased', `# 日志\n\n${release('1.0.0')}\n\n## [Unreleased]\n`],
-		['重复 Unreleased', `${changelog(release('1.0.0'))}\n\n## [Unreleased]\n`],
-		['Unreleased 裸正文', changelog(release('1.0.0'), '尚未发布')],
-		['版本裸正文', changelog(release('1.0.0', { body: '未归类正文\n\n### Added\n\n- 变化' }))],
+		['缺少未发布', release('1.0.0')],
+		['英文未发布标记不再兼容', `# 日志\n\n## [Unreleased]\n\n${release('1.0.0')}`],
+		['首个 H2 不是未发布', `# 日志\n\n${release('1.0.0')}\n\n## [未发布]\n`],
+		['重复未发布', `${changelog(release('1.0.0'))}\n\n## [未发布]\n`],
+		['未发布裸正文', changelog(release('1.0.0'), '尚未发布')],
+		['版本裸正文', changelog(release('1.0.0', { body: '未归类正文\n\n### 新增\n\n- 变化' }))],
 		['版本没有分类', changelog(release('1.0.0', { body: '' }))],
-		['未知分类', changelog(release('1.0.0', { body: '### 新增\n\n- 变化' }))],
-		['空分类', changelog(release('1.0.0', { body: '### Added\n\n### Fixed\n\n- 修复' }))],
-		['重复分类', changelog(release('1.0.0', { body: '### Added\n\n- A\n\n### Added\n\n- B' }))],
+		['英文分类不再兼容', changelog(release('1.0.0', { body: '### Added\n\n- 变化' }))],
+		['空分类', changelog(release('1.0.0', { body: '### 新增\n\n### 修复\n\n- 修复' }))],
+		['重复分类', changelog(release('1.0.0', { body: '### 新增\n\n- A\n\n### 新增\n\n- B' }))],
+		['英文撤回标记不再兼容', changelog('## [1.0.0] - 2026-08-01 [YANKED]\n\n### 修复\n\n- 变化')],
+		[
+			'英文未发布比较链接不再兼容',
+			`${changelog(release('1.0.0'))}\n\n[Unreleased]: https://example.com/compare`,
+		],
 		['未知 H2', `${changelog(release('1.0.0'))}\n\n## Notes\n\n- 非法内容`],
 		[
 			'footer 后还有正文',
@@ -139,11 +167,11 @@ describe('changelog contract', () => {
 		)
 		expect(getPublishableRelease(document, '1.0.0').version).toBe('1.0.0')
 		expect(() => getPublishableRelease(document, '1.0.1')).toThrow(/不存在/)
-		expect(() => getPublishableRelease(document, 'Unreleased')).toThrow(/目标版本/)
-		expect(() => getPublishableRelease(document, '1.0.0-beta.1')).toThrow(/YANKED/)
+		expect(() => getPublishableRelease(document, '未发布')).toThrow(/目标版本/)
+		expect(() => getPublishableRelease(document, '1.0.0-beta.1')).toThrow(/已撤回/)
 	})
 
-	it('按渠道选择开区间下界、闭区间上界，并排除 YANKED', () => {
+	it('按渠道选择开区间下界、闭区间上界，并排除已撤回版本', () => {
 		const document = parseChangelogDocument(
 			changelog(
 				[
@@ -225,7 +253,7 @@ describe('changelog contract', () => {
 		expect(versions(selectChangelogRange(missingMiddle, query))).toEqual(['0.1.2-beta.4'])
 	})
 
-	it('区间拒绝非法或渠道不一致的边界，历史视图保留 YANKED', () => {
+	it('区间拒绝非法或渠道不一致的边界，历史视图保留已撤回版本', () => {
 		const document = parseChangelogDocument(
 			changelog(
 				[release('1.1.0'), release('1.1.0-beta.1', { yanked: true }), release('1.0.0')].join(

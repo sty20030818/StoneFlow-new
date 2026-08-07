@@ -29,12 +29,12 @@ function changelog(entries: readonly ReleaseEntry[]) {
 		'',
 		'StoneFlow 的所有重要变更都会记录在这里。',
 		'',
-		'## [Unreleased]',
+		'## [未发布]',
 		'',
 		...entries.flatMap((entry) => [
-			`## [${entry.version}] - ${entry.date ?? '2026-08-06'}${entry.yanked ? ' [YANKED]' : ''}`,
+			`## [${entry.version}] - ${entry.date ?? '2026-08-06'}${entry.yanked ? ' [已撤回]' : ''}`,
 			'',
-			'### Changed',
+			'### 变更',
 			'',
 			`- ${entry.body ?? `Release ${entry.version}`}`,
 			'',
@@ -154,7 +154,7 @@ function publish(input: {
 }
 
 describe('publishChangelog', () => {
-	test('claim 前只读检查远端历史与 YANKED 状态且不写对象', async () => {
+	test('claim 前只读检查远端历史与已撤回状态且不写对象', async () => {
 		const remote = changelog([{ version: '0.1.3', yanked: true }])
 		const source = changelog([{ version: '0.1.4' }, { version: '0.1.3' }])
 		const s3 = new MemoryS3()
@@ -168,7 +168,7 @@ describe('publishChangelog', () => {
 				targetVersion: '0.1.4',
 				releaseKind: 'claim',
 			}),
-		).rejects.toThrow('YANKED')
+		).rejects.toThrow('撤回状态')
 		expect(s3.putCommands).toHaveLength(0)
 	})
 
@@ -224,7 +224,7 @@ describe('publishChangelog', () => {
 
 	test.each([
 		['目标版本不存在', changelog([{ version: '0.1.3' }]), '0.1.4'],
-		['目标版本已 YANKED', changelog([{ version: '0.1.4', yanked: true }]), '0.1.4'],
+		['目标版本已撤回', changelog([{ version: '0.1.4', yanked: true }]), '0.1.4'],
 	] as const)('%s 时在上传前阻断', async (_name, source, targetVersion) => {
 		const s3 = new MemoryS3()
 
@@ -244,8 +244,8 @@ describe('publishChangelog', () => {
 	})
 
 	test.each([
-		['非 YANKED 改成 YANKED', false, true],
-		['YANKED 改回非 YANKED', true, false],
+		['未撤回改成已撤回', false, true],
+		['已撤回改回未撤回', true, false],
 	] as const)('拒绝把远端既有版本%s', async (_name, remoteYanked, localYanked) => {
 		const remote = changelog([{ version: '0.1.4' }, { version: '0.1.3', yanked: remoteYanked }])
 		const source = changelog([
@@ -417,7 +417,7 @@ describe('validatePublishedChangelog', () => {
 		expect(s3.putCommands).toHaveLength(0)
 	})
 
-	test('Pointer 推进前要求 S3 目标版本非 YANKED', async () => {
+	test('Pointer 推进前要求 S3 目标版本未撤回', async () => {
 		const source = changelog([{ version: '0.1.4-beta.4', yanked: true }])
 		const s3 = new MemoryS3()
 		s3.seed(source)

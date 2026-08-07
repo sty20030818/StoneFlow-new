@@ -45,7 +45,7 @@ function assertPreservesRemoteHistory(local: ChangelogDocument, remote: Changelo
 			throw new Error(`本地 CHANGELOG.md 缺少远端版本 ${remoteRelease.version}`)
 		}
 		if (localRelease.yanked !== remoteRelease.yanked) {
-			throw new Error(`既有版本 ${remoteRelease.version} 的 YANKED 状态不可改变`)
+			throw new Error(`既有版本 ${remoteRelease.version} 的撤回状态不可改变`)
 		}
 	}
 }

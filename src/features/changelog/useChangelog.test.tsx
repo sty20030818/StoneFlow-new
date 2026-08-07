@@ -8,11 +8,11 @@ const mocks = vi.hoisted(() => ({
 vi.mock('./api', () => ({ getChangelog: mocks.getChangelog }))
 
 function release(version: string, options: { yanked?: boolean; text?: string } = {}) {
-	return `## [${version}] - 2026-08-07${options.yanked ? ' [YANKED]' : ''}\n\n### Added\n\n- ${options.text ?? version}`
+	return `## [${version}] - 2026-08-07${options.yanked ? ' [已撤回]' : ''}\n\n### 新增\n\n- ${options.text ?? version}`
 }
 
 function changelog(...releases: string[]) {
-	return `# StoneFlow 更新日志\n\n## [Unreleased]\n\n${releases.join('\n\n')}`
+	return `# StoneFlow 更新日志\n\n## [未发布]\n\n${releases.join('\n\n')}`
 }
 
 async function loadHook() {
@@ -26,7 +26,7 @@ describe('useChangelog', () => {
 		mocks.getChangelog.mockReset()
 	})
 
-	it('query 为空时不请求，完整历史保留 YANKED', async () => {
+	it('query 为空时不请求，完整历史保留已撤回版本', async () => {
 		mocks.getChangelog.mockResolvedValue(
 			changelog(release('1.1.0', { yanked: true }), release('1.0.0')),
 		)

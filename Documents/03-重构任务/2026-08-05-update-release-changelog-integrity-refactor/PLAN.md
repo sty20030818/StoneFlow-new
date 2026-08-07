@@ -49,7 +49,7 @@ Git commit + 根 CHANGELOG.md
 | updater 验签 | claim/R2 前用应用公钥验证精确产物与捕获的签名字节 | Tauri CLI 的密钥不匹配警告不能作为 fail-closed 门禁 | 只检查 `.sig` 格式或依赖 CLI 日志 |
 | pointer 推进 | S3 `If-Match` / `If-None-Match` CAS | 直接使用 R2 已支持能力和现有 SDK，拒绝回退与同版本异内容 | 无条件 PUT；并发时最后写入者获胜 |
 | Changelog 解析 | 一个环境无关的纯 TypeScript 契约 | 发布门禁和 UI 对同一格式只有一种解释 | 发布脚本与前端各自维护 regex |
-| Changelog 源格式 | 六个英文规范标题，UI 映射中文 | 无别名、无 emoji 语法分支，机器契约最小且贴近规范 | 同时兼容旧中文/emoji 标题；长期保留双格式 |
+| Changelog 源格式 | `未发布`、六个中文规范标题和 `[已撤回]` | 单一中文语法，无别名、无 emoji、无 UI 翻译映射 | 兼容旧英文/emoji 标题；长期保留双格式 |
 | 下载包持久化 | 继续仅保存在当前进程内存 | 已满足本次离线安装和失败重试边界 | 临时文件或数据库恢复；属于跨进程恢复，超出范围 |
 | 发布操作说明 | README 作为入口，ARCHITECTURE / DESIGN 各自持有边界与协议 | 消除当前 README / HOWTO 重复，同时符合文档 Owner 规则 | 继续维护两份重叠操作指南 |
 
@@ -310,7 +310,7 @@ immutable 产物使用长缓存；pointer 与 changelog 使用 `no-cache`。控�
 ```text
 只读预检与既有 platform record 恢复判断
   → record 不存在时，本地构建与产物/签名/摘要校验
-  → 重检候选并只读确认远端 changelog 历史/YANKED 兼容
+  → 重检候选并只读确认远端 changelog 历史/已撤回状态兼容
   → atomic claim annotated tag + channel ledger，或验证既有 tag
   → If-None-Match 上传并通过 S3 + 公开 URL 校验全部不可变 artifacts
   → 最后写入并读回校验 immutable platform release record
@@ -325,13 +325,14 @@ pointer 必须是最后一个影响客户端的写入。任何前置失败最多
 
 R2 `stoneflow/CHANGELOG.md` 是跨渠道共享的唯一可变内容对象，保存通过同一 parser 校验的根文件原文，不生成第二种投影格式或 serializer：
 
-- 新版本发布先读取远端正文和 ETag；本地文件必须包含远端已有的全部 release version 标识，并包含当前非空、非 YANKED 的目标版本，防止陈旧 checkout 删除较新的历史。
+- 新版本发布先读取远端正文和 ETag；本地文件必须包含远端已有的全部 release version 标识，并包含当前非空、未撤回的目标版本，防止陈旧 checkout 删除较新的历史。
 - 上述确定性兼容检查必须在不可逆 Git claim 前只读完成；claim 后仍重复检查并执行 CAS，处理远端并发漂移。
 - 已存在版本的日期和正文允许随新的受审 commit 修订；版本标识只能新增，不物理删除。
-- YANKED 状态在某版本第一次进入远端镜像时确定，此后不可改变。已进入远端的非 YANKED 问题版本只能通过更高版本修复，避免 changelog 与分平台 pointer 之间出现无法原子化的撤回竞态。
+- 已撤回状态在某版本第一次进入远端镜像时确定，此后不可改变。已进入远端的未撤回问题版本只能通过更高版本修复，避免 changelog 与分平台 pointer 之间出现无法原子化的撤回竞态。
 - 本地与远端 bytes 相同时不写；需要更新时使用观察到的 ETag 条件覆盖。远端不存在时使用 `If-None-Match: *`。
 - 409 / 412 后只重读一次：远端最终 bytes 与本地完全相同且目标条目有效时视为幂等成功；内容不同时当前运行停止，不自动 merge 或覆盖，维护者同步最新代码后再发布。
-- 对既有 tag 补发其他平台且远端已有目标条目时，不用旧 checkout 的本地文件覆盖 changelog；只读验证远端目标非空、非 YANKED。若 atomic claim 已成功但进程在 changelog 写入前崩溃，远端对象或目标条目仍缺失时，允许在本地保留全部远端 version 且既有 YANKED 状态完全不变的前提下执行一次 CAS 补齐。
+- 对既有 tag 补发其他平台且远端已有目标条目时，不用旧 checkout 的本地文件覆盖 changelog；只读验证远端目标非空、未撤回。若 atomic claim 已成功但进程在 changelog 写入前崩溃，远端对象或目标条目仍缺失时，允许在本地保留全部远端 version 且既有已撤回状态完全不变的前提下执行一次 CAS 补齐。
+- 中文语法为一次性 hard cut。若 R2 当前镜像仍使用旧英文标记，claim 前检查 fail closed；经单独授权后，以已观察 ETag 将完整中文根文件 CAS cutover，不保留英文兼容代码。
 - pointer 写入前再次从 S3 读取最终 changelog，确认目标版本仍有效。
 - pointer 写入前还必须从公开 changelog URL 读取同一 bytes；公开面尚不可用时本次停止，平台 pointer 保持原值。
 
@@ -363,16 +364,16 @@ Git Tag、R2 不可变对象和 pointer 不是跨系统原子事务。本方案�
 
 根文件 hard cut 为以下规则：
 
-- 允许 H1 和规范简介；第一个 H2 必须是唯一的 `## [Unreleased]`，可以为空。
-- 已发布标题只能是 `## [X.Y.Z] - YYYY-MM-DD` 或 `## [X.Y.Z-beta.N] - YYYY-MM-DD`，可在末尾增加 `[YANKED]`。
+- 允许 H1 和规范简介；第一个 H2 必须是唯一的 `## [未发布]`，可以为空。
+- 已发布标题只能是 `## [X.Y.Z] - YYYY-MM-DD` 或 `## [X.Y.Z-beta.N] - YYYY-MM-DD`，可在末尾增加 `[已撤回]`。
 - `X / Y / Z` 禁止前导零，`N` 从 1 开始且禁止前导零；本轮不接受 alpha、rc、其他 prerelease 或 build metadata，出现真实渠道需求时再扩展。
 - 版本唯一、日期为有效 ISO 日历日期、版本按受支持的 SemVer 子集严格从新到旧排列。
-- 版本内容只能放在 `### Added`、`Changed`、`Deprecated`、`Removed`、`Fixed`、`Security` 六类中；不接受 emoji、中文标题或别名。
+- 版本内容只能放在 `### 新增`、`变更`、`弃用`、`移除`、`修复`、`安全` 六类中；不接受 emoji、英文标题或别名。
 - 每个出现的分类必须有正文；每个已发布版本至少有一个非空分类。
 - 文末允许 Keep a Changelog 比较链接定义；解析器将其识别为 footer，绝不并入最旧版本正文。
-- `Unreleased` 不是发布条目；YANKED 条目不可作为发布目标，不进入累计更新区间，但在完整历史中保留并标记“已撤回”。
+- `未发布` 不是发布条目；已撤回条目不可作为发布目标，不进入累计更新区间，但在完整历史中保留并标记“已撤回”。
 
-UI 在渲染时将六个规范 key 映射为中文标签，内容正文继续使用中文。语法层保持英文，展示层负责本地化。
+语法层和展示层共用同一组中文分类，UI 直接渲染已解析标题，不维护第二份翻译映射。
 
 纯解析结果包含结构化 sections，而不是仅保存一段无法验证的 Markdown：
 
@@ -393,15 +394,15 @@ ChangelogDocument
 选择函数显式接收 `currentVersion`、`targetVersion` 和 `channel`，不自行读取 update settings：
 
 - 先按 SemVer 选择 `(currentVersion, targetVersion]`。
-- 排除 YANKED 和无有效正文条目。
+- 排除已撤回和无有效正文条目。
 - Stable 目标只保留无 prerelease 的 Stable 条目。
 - Beta 目标保留区间内的 Beta 与 Stable 条目。
 - 结果按新到旧返回；区间为空时返回空集合，不阻断更新。
-- 历史日志视图使用同一渠道过滤规则但不设目标区间，并保留 YANKED 条目供追溯。
+- 历史日志视图使用同一渠道过滤规则但不设目标区间，并保留已撤回条目供追溯。
 
 平台是否曾发布或安装中间版本不参与选择；版本序列来自 changelog，本地版本和目标 pointer 只提供上下界。
 
-累计 UI 复用一个单版本展示组件：每条显示版本、日期和分类正文；Update Dialog 的累计区域使用有界滚动，不改变弹窗整体视觉结构。完整历史 Dialog 复用同一组件并显示 YANKED 标记；累计区间为空时维持现有“无更新说明”状态，更新操作仍可继续。
+累计 UI 复用一个单版本展示组件：每条显示版本、日期和分类正文；Update Dialog 的累计区域使用有界滚动，不改变弹窗整体视觉结构。完整历史 Dialog 复用同一组件并显示已撤回标记；累计区间为空时维持现有“无更新说明”状态，更新操作仍可继续。
 
 ### 依赖方向
 
@@ -439,8 +440,8 @@ scripts/release ──────► src/features/changelog/contract.ts
 
 ### 仓库内迁移
 
-- 根 `CHANGELOG.md` 增加顶部 `Unreleased`，按原意将“新功能 / 核心能力”迁到 `Added`、“优化”迁到 `Changed`、“修复”迁到 `Fixed`；保留所有已有用户内容与发布日期。
-- `0.1.0` 的介绍文字移入 `Added` 正文，避免版本下出现未分类内容。
+- 根 `CHANGELOG.md` 增加顶部 `未发布`，按原意将“新功能 / 核心能力”迁到 `新增`、“优化”迁到 `变更`、“修复”迁到 `修复`；保留所有已有用户内容与发布日期。
+- `0.1.0` 的介绍文字移入 `新增` 正文，避免版本下出现未分类内容。
 - 本次不添加可选 compare-link footer，避免旧客户端在远端切换期间把 footer 当作最旧版本正文；新 parser 仍完整支持以后添加。
 - 新发布脚本立即停止读写 legacy allocator、共享 platform map 与 mutable aliases；不实现兼容解析。
 - 当前平台 `latest.json` 路径和 Tauri 标准 payload 继续使用，因此客户端 endpoint 不迁移。
@@ -460,7 +461,7 @@ v0.1.3 → 4bef5dccf8bd5116f01218e805e8df1c673ba4f6
 
 1. 先为 `v*` 配置并验证“允许创建、禁止 update / delete”的 GitHub ruleset，并为 `release-ledger/*` 配置“允许发布维护者 fast-forward、禁止 force / delete”的 ruleset。
 2. 用一次 atomic push 创建带 `legacy-seed` marker 的可验证 Stable tags，并将 Stable 与 Beta ledger 都初始化到 `v0.1.3` commit；Beta ledger 此时只充当首个新 Beta 的 Stable ancestry / CAS 基线，不伪造历史 Beta tag。
-3. 以观察到的旧 changelog ETag 为前置条件，上传严格格式的完整根文件。
+3. 以观察到的旧 changelog ETag 为前置条件，用 CAS 上传严格中文格式的完整根文件。
 
 新 object model 从 cutover 后第一个带 schema 1 tag 的版本开始；seed tags 对应的旧 R2 对象和 pointer 只作为历史现状保留，发布脚本明确拒绝给 seed 版本补发平台。
 
@@ -479,8 +480,8 @@ v0.1.3 → 4bef5dccf8bd5116f01218e805e8df1c673ba4f6
 
 ### TypeScript / UI
 
-- parser 表驱动覆盖规范标题、六分类、日期、顺序、重复、YANKED、footer 与非法旧格式。
-- 区间测试覆盖 Stable / Beta、跳过多个版本、空区间、YANKED 和 SemVer 边界。
+- parser 表驱动覆盖规范中文标题、六分类、日期、顺序、重复、已撤回、footer 与非法英文旧格式。
+- 区间测试覆盖 Stable / Beta、跳过多个版本、空区间、已撤回和 SemVer 边界。
 - loader 测试覆盖首次失败回 bundled、再次打开恢复远端、invalid remote 不污染 last-valid、并发去重。
 - store / hooks 测试覆盖旧 revision 丢弃、Installing 禁止重复操作、安装失败保留 Ready 和渠道 mismatch 确认。
 

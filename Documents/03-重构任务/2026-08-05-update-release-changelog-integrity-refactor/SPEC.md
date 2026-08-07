@@ -42,9 +42,9 @@ StoneFlow 已经具备 Stable / Beta 双渠道、分平台 updater pointer、签
 
 4. **Changelog 全局契约与跨版本展示**
    - 根 `CHANGELOG.md` 继续作为 Stable / Beta 和所有平台的唯一用户内容源，不按平台拆分
-   - 内容结构遵循 Keep a Changelog 1.1.0 的 `Unreleased`、版本日期、逆序，以及新增、变更、弃用、移除、修复、安全六类契约
+   - 内容结构遵循 Keep a Changelog 1.1.0 的 `未发布`、版本日期、逆序，以及新增、变更、弃用、移除、修复、安全六类中文契约
    - Beta 条目记录相对上一 Beta 的增量变化，Stable 条目保持面向稳定版用户的策展摘要
-   - 发布前验证目标版本条目存在且非空，`Unreleased` 不被当作已发布版本
+   - 发布前验证目标版本条目存在且非空，`未发布` 不被当作已发布版本
    - 当当前平台跳过中间版本时，更新界面展示 `(currentVersion, targetVersion]` 区间内的有效条目；Stable 只展示 Stable，Beta 展示 Beta 与 Stable
    - 远端 changelog 临时失败后不永久粘住过期快照，恢复后可在不重启应用的情况下刷新
 
@@ -133,8 +133,8 @@ StoneFlow 已经具备 Stable / Beta 双渠道、分平台 updater pointer、签
 
 ### Changelog 契约
 
-- **AC-22**：当发布前校验根 `CHANGELOG.md` 时，系统应当要求唯一顶部 `Unreleased`、按新到旧排列的 SemVer + ISO 日期版本标题、可选 `YANKED` 与文末比较链接；版本内容的分类标题只能使用新增（Added）、变更（Changed）、弃用（Deprecated）、移除（Removed）、修复（Fixed）、安全（Security）六类中的非空子集，且比较链接不得被解析为最旧版本正文。任一格式条件不满足时，应当在构建、上传和远端变更前阻断发布。
-- **AC-23**：当准备发布某目标版本时，系统应当要求根 `CHANGELOG.md` 中存在该版本的非空有效条目，且不得将 `Unreleased` 或其他版本的内容当作目标版本说明。
+- **AC-22**：当发布前校验根 `CHANGELOG.md` 时，系统应当要求唯一顶部 `未发布`、按新到旧排列的 SemVer + ISO 日期版本标题、可选 `[已撤回]` 与文末比较链接；版本内容的分类标题只能使用新增、变更、弃用、移除、修复、安全六类中文标记中的非空子集，不接受英文标题或别名，且比较链接不得被解析为最旧版本正文。任一格式条件不满足时，应当在构建、上传和远端变更前阻断发布。
+- **AC-23**：当准备发布某目标版本时，系统应当要求根 `CHANGELOG.md` 中存在该版本的非空有效条目，且不得将 `未发布` 或其他版本的内容当作目标版本说明。
 - **AC-24**：当当前版本低于本平台目标版本且期间跳过一个或多个版本时，更新界面应当按新到旧展示 `(currentVersion, targetVersion]` 区间内的有效 changelog 条目并排除区间外条目；Stable 目标只展示 Stable 版本条目，Beta 目标展示 Beta 与 Stable 版本条目。
 - **AC-25**：当 Windows 从 `0.1.2-beta.2` 直接更新到 `0.1.2-beta.4` 时，系统应当展示 beta.3 与 beta.4 的有效变化，不得要求 Windows 曾发布或安装 beta.3。
 - **AC-26**：如果累计区间内部分版本没有有效 changelog 条目，则系统应当展示其余有效条目并继续提供更新；当区间内没有有效条目时，应当使用无说明状态且不得阻断更新。

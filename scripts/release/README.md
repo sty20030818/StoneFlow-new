@@ -51,7 +51,8 @@ bun run release:beta -- --no-upload
 - 已发布 Tag、产物和 platform record 不可覆盖；同版本 Pointer 只接受完全相同的 payload，Pointer 不允许回退。
 - Windows Beta 只构建 NSIS，避免 MSI 不接受预发布版本文本。
 - 构建只读取 `releaseCommit` 的临时 detached clone；Git hooks/危险环境和外部 `TAURI_CONFIG` 被隔离，依赖使用 frozen lockfile 安装，Cargo 与 staged 输出按 run 隔离。
-- 新建 Tag 前只读校验远端 Changelog 历史与 YANKED 状态，已知冲突不会留下不可恢复的版本身份。
+- 新建 Tag 前只读校验远端 Changelog 历史与已撤回状态，已知冲突不会留下不可恢复的版本身份。
+- 中文 Changelog 契约不兼容旧英文语法。如果 R2 仍是英文文档，下一次发布会在 claim 前 fail closed；必须另行授权一次 ETag CAS cutover，不得绕过检查或增加双语兼容。
 - 每个 updater 产物都会用应用内置公钥验证将要发布的精确签名字节；密钥不匹配会在 Git/R2 写入前失败。
 - 不移动或删除发布 Tag，不手工改 ledger、record 或 Pointer。坏版本通过更高版本修复。
 - 生产 ruleset、legacy seed、R2 cutover、对象删除和生产 Pointer 变更都需要重新盘点实时状态并单独授权。

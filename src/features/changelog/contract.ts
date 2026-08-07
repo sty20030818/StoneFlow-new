@@ -1,13 +1,6 @@
 /** Changelog 唯一语法契约：纯解析、校验、版本比较与区间选择。 */
 
-export const CHANGELOG_CATEGORIES = [
-	'Added',
-	'Changed',
-	'Deprecated',
-	'Removed',
-	'Fixed',
-	'Security',
-] as const
+export const CHANGELOG_CATEGORIES = ['新增', '变更', '弃用', '移除', '修复', '安全'] as const
 
 export type ChangelogCategory = (typeof CHANGELOG_CATEGORIES)[number]
 export type ChangelogChannel = 'stable' | 'beta'
@@ -56,8 +49,8 @@ type SourceLine = {
 }
 
 const SUPPORTED_VERSION = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-beta\.([1-9]\d*))?$/
-const RELEASE_HEADING = /^## \[([^\]]+)\] - (\S+)( \[YANKED\])?$/
-const CATEGORY_HEADING = /^### (Added|Changed|Deprecated|Removed|Fixed|Security)$/
+const RELEASE_HEADING = /^## \[([^\]]+)\] - (\S+)( \[已撤回\])?$/
+const CATEGORY_HEADING = /^### (新增|变更|弃用|移除|修复|安全)$/
 const COMPARISON_LINK_PREFIX = /^\[([^\]]+)\]:/
 const COMPARISON_LINK = /^\[([^\]]+)\]:\s+(\S.*)$/
 
@@ -124,11 +117,15 @@ function annotateLines(source: string): SourceLine[] {
 	})
 }
 
+function isLinkDefinition(line: SourceLine) {
+	return line.structural && COMPARISON_LINK_PREFIX.test(line.text)
+}
+
 function comparisonLinkLabel(line: SourceLine) {
-	if (!line.structural) return null
+	if (!isLinkDefinition(line)) return null
 	const match = COMPARISON_LINK_PREFIX.exec(line.text)
 	if (!match) return null
-	return match[1] === 'Unreleased' || parseVersion(match[1]) ? match[1] : null
+	return match[1] === '未发布' || parseVersion(match[1]) ? match[1] : null
 }
 
 function trimBlankLineEdges(lines: string[]) {
@@ -161,7 +158,7 @@ function parseSections(
 	while (index < lines.length) {
 		const line = lines[index]
 		if (line.structural && line.text.startsWith('## ')) break
-		if (comparisonLinkLabel(line)) break
+		if (isLinkDefinition(line)) break
 
 		if (line.structural && line.text.startsWith('### ')) {
 			const match = CATEGORY_HEADING.exec(line.text)
@@ -204,28 +201,28 @@ function parseFooter(lines: readonly SourceLine[], start: number) {
 export function parseChangelogDocument(source: string): ChangelogDocument {
 	const lines = annotateLines(source)
 	const unreleasedIndex = lines.findIndex((line) => line.structural && line.text.startsWith('## '))
-	if (unreleasedIndex < 0) fail('缺少唯一顶部 ## [Unreleased]')
-	if (lines[unreleasedIndex].text !== '## [Unreleased]') {
-		fail('第一个 H2 必须是唯一的 ## [Unreleased]', lines[unreleasedIndex].number)
+	if (unreleasedIndex < 0) fail('缺少唯一顶部 ## [未发布]')
+	if (lines[unreleasedIndex].text !== '## [未发布]') {
+		fail('第一个 H2 必须是唯一的 ## [未发布]', lines[unreleasedIndex].number)
 	}
 	for (let index = 0; index < unreleasedIndex; index += 1) {
 		if (lines[index].structural && /^#{2,6}\s/.test(lines[index].text)) {
-			fail('Unreleased 前只允许 H1 和规范简介', lines[index].number)
+			fail('未发布前只允许 H1 和规范简介', lines[index].number)
 		}
 	}
 
-	const unreleasedResult = parseSections(lines, unreleasedIndex + 1, 'Unreleased', true)
+	const unreleasedResult = parseSections(lines, unreleasedIndex + 1, '未发布', true)
 	const releases: ChangelogRelease[] = []
 	const seenVersions = new Set<string>()
 	let index = unreleasedResult.nextIndex
 
 	while (index < lines.length) {
 		const line = lines[index]
-		if (comparisonLinkLabel(line)) {
+		if (isLinkDefinition(line)) {
 			parseFooter(lines, index)
 			break
 		}
-		if (line.text === '## [Unreleased]') fail('Unreleased 必须唯一', line.number)
+		if (line.text === '## [未发布]') fail('未发布必须唯一', line.number)
 
 		const heading = line.structural ? RELEASE_HEADING.exec(line.text) : null
 		if (!heading || !parseVersion(heading[1])) fail('版本标题格式无效', line.number)
@@ -256,7 +253,7 @@ export function getPublishableRelease(document: ChangelogDocument, targetVersion
 	if (!parseVersion(targetVersion)) fail(`发布目标版本无效：${targetVersion}`)
 	const release = document.releases.find((item) => item.version === targetVersion)
 	if (!release) fail(`发布目标版本 ${targetVersion} 不存在`)
-	if (release.yanked) fail(`发布目标版本 ${targetVersion} 已标记为 YANKED`)
+	if (release.yanked) fail(`发布目标版本 ${targetVersion} 已撤回`)
 	return release
 }
 

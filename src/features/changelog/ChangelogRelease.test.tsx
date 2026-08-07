@@ -12,8 +12,8 @@ describe('ChangelogRelease', () => {
 					date: '2026-08-07',
 					yanked: true,
 					sections: new Map([
-						['Added', '- 新功能'],
-						['Fixed', '- 修复问题'],
+						['新增', '- 新功能'],
+						['修复', '- 修复问题'],
 					]),
 				}}
 			/>,
@@ -32,12 +32,12 @@ describe('ChangelogRelease', () => {
 					version: '1.2.0',
 					date: '2026-08-07',
 					yanked: false,
-					sections: new Map([['Security', '```text\n## [9.9.9]\n### Security\n```']]),
+					sections: new Map([['安全', '```text\n## [9.9.9]\n### 安全\n```']]),
 				}}
 			/>,
 		)
 
 		expect(screen.getAllByRole('heading')).toHaveLength(2)
-		expect(container.querySelector('code')).toHaveTextContent('## [9.9.9] ### Security')
+		expect(container.querySelector('code')).toHaveTextContent('## [9.9.9] ### 安全')
 	})
 })
