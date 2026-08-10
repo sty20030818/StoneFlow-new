@@ -6,6 +6,7 @@ import { DayPicker, getDefaultClassNames, type DayButton } from 'react-day-picke
 
 import { cn } from '@/shared/lib/utils'
 import { Button, buttonVariants } from '@/shared/components/base/button'
+import { ActionTooltip } from '@/shared/components/tooltip'
 
 function Calendar({
 	className,
@@ -123,6 +124,12 @@ function Calendar({
 					return <ChevronDownIcon className={cn('size-4', className)} {...props} />
 				},
 				DayButton: CalendarDayButton,
+				PreviousMonthButton: (buttonProps) => (
+					<CalendarNavigationButton label='上一个月' {...buttonProps} />
+				),
+				NextMonthButton: (buttonProps) => (
+					<CalendarNavigationButton label='下一个月' {...buttonProps} />
+				),
 				WeekNumber: ({ children, ...props }) => {
 					return (
 						<td {...props}>
@@ -136,6 +143,27 @@ function Calendar({
 			}}
 			{...props}
 		/>
+	)
+}
+
+function CalendarNavigationButton({
+	label,
+	disabled,
+	...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & { label: string }) {
+	const button = <button {...props} aria-label={label} disabled={disabled} />
+
+	if (disabled) {
+		return button
+	}
+
+	return (
+		<ActionTooltip>
+			<ActionTooltip.Trigger asChild>{button}</ActionTooltip.Trigger>
+			<ActionTooltip.Content>
+				<ActionTooltip.Row label={label} />
+			</ActionTooltip.Content>
+		</ActionTooltip>
 	)
 }
 

@@ -13,7 +13,7 @@ import {
 } from '@/features/metadata-fields/core'
 import { useDialogStore } from '@/features/shell-dialogs'
 
-import { MetadataFieldDropdown } from './MetadataFieldDropdown'
+import { MetadataFieldDropdown, type MetadataCommandShortcut } from './MetadataFieldDropdown'
 
 export type MetadataDateDropdownProps = {
 	label: string
@@ -24,10 +24,12 @@ export type MetadataDateDropdownProps = {
 	compact?: boolean
 	buttonAppearance?: 'default' | 'row-icon'
 	disabled?: boolean
+	disabledReason?: ReactNode
 	drawerOwnedOverlay?: boolean
 	menuAlign?: 'start' | 'center' | 'end'
 	stopPropagation?: boolean
 	shortcutMode?: 'default' | 'clear-only'
+	shortcut?: MetadataCommandShortcut
 	hideWhenEmpty?: boolean
 	onChange: (value: string | null) => void
 }
@@ -41,10 +43,12 @@ export function MetadataDateDropdown({
 	compact,
 	buttonAppearance = 'default',
 	disabled,
+	disabledReason,
 	drawerOwnedOverlay,
 	menuAlign,
 	stopPropagation,
 	shortcutMode = 'clear-only',
+	shortcut,
 	hideWhenEmpty = false,
 	onChange,
 }: MetadataDateDropdownProps) {
@@ -75,9 +79,9 @@ export function MetadataDateDropdown({
 			buttonAppearance={buttonAppearance}
 			compact={compact}
 			disabled={disabled}
+			disabledReason={disabledReason}
 			drawerOwnedOverlay={drawerOwnedOverlay}
 			fieldKey={getMetadataDateFieldKey(label)}
-			headerShortcut={isDueDate ? dueDateDropdownProps.headerShortcut : undefined}
 			isValueEqual={(left, right) => left === right}
 			values={selectedDateOptionKey ? [selectedDateOptionKey] : []}
 			label={label}
@@ -88,6 +92,7 @@ export function MetadataDateDropdown({
 				value: option.key,
 			}))}
 			shortcutMode={shortcutMode}
+			shortcut={shortcut}
 			stopPropagation={stopPropagation}
 			value={selectedDateOptionKey}
 			onSelectCustomOption={() => {

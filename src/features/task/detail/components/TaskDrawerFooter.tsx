@@ -1,7 +1,8 @@
 import { Button } from '@/shared/components/base/button'
 import { DetailFooter } from '@/shared/components/detail'
+import { OverflowTooltip } from '@/shared/components/tooltip'
 import type { TaskDetail } from '@/shared/types'
-import { ArchiveIcon, MoreHorizontalIcon, Trash2Icon } from 'lucide-react'
+import { ArchiveIcon, Trash2Icon } from 'lucide-react'
 
 // 模块级 Intl 格式化器：避免每次调用都重建，格式选项固定不变
 const updatedAtFormatter = new Intl.DateTimeFormat('zh-CN', {
@@ -29,18 +30,11 @@ export function TaskDrawerFooter({
 	return (
 		<DetailFooter className='items-center gap-2 py-2 pl-4 pr-2'>
 			<div className='min-w-0 flex-1 text-[11px] text-sf-text-tertiary'>
-				<span className='truncate'>更新于 {formatUpdatedAt(task.updatedAt)}</span>
+				<OverflowTooltip content={`更新于 ${formatUpdatedAt(task.updatedAt)}`}>
+					更新于 {formatUpdatedAt(task.updatedAt)}
+				</OverflowTooltip>
 			</div>
 			<div className='flex min-w-0 shrink-0 items-center gap-2'>
-				<Button
-					aria-label='更多任务操作'
-					className='size-7 p-0'
-					size='icon'
-					type='button'
-					variant='outline'
-				>
-					<MoreHorizontalIcon className='size-4' />
-				</Button>
 				<Button
 					className='h-7 px-2 text-[12px]'
 					disabled={isArchiveBusy}

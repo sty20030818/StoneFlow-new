@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { zhCN } from 'date-fns/locale'
 import {
 	ChevronLeftIcon,
@@ -26,6 +26,7 @@ import {
 	DialogTitle,
 } from '@/shared/components/base/dialog'
 import { Input } from '@/shared/components/base/input'
+import { ActionTooltip } from '@/shared/components/tooltip'
 
 type CustomDateDialogProps = {
 	open: boolean
@@ -177,37 +178,22 @@ export function CustomDateDialog({
 									</span>
 									<div className='flex items-center gap-1'>
 										{todayDirection !== null && (
-											<Button
-												aria-label='跳回今天'
-												className='text-sf-text-secondary'
-												onClick={() => setMonth(new Date())}
-												size='icon-sm'
-												type='button'
-												variant='ghost'
-											>
+											<DateNavigationButton label='跳回今天' onClick={() => setMonth(new Date())}>
 												{todayDirection === 'back' ? <CornerUpLeftIcon /> : <CornerUpRightIcon />}
-											</Button>
+											</DateNavigationButton>
 										)}
-										<Button
-											aria-label='上一个月'
-											className='text-sf-text-secondary'
+										<DateNavigationButton
+											label='上一个月'
 											onClick={() => setMonth((current) => shiftMonth(current, -1))}
-											size='icon-sm'
-											type='button'
-											variant='ghost'
 										>
 											<ChevronLeftIcon />
-										</Button>
-										<Button
-											aria-label='下一个月'
-											className='text-sf-text-secondary'
+										</DateNavigationButton>
+										<DateNavigationButton
+											label='下一个月'
 											onClick={() => setMonth((current) => shiftMonth(current, 1))}
-											size='icon-sm'
-											type='button'
-											variant='ghost'
 										>
 											<ChevronRightIcon />
-										</Button>
+										</DateNavigationButton>
 									</div>
 								</div>
 								<Calendar
@@ -275,5 +261,35 @@ export function CustomDateDialog({
 				</div>
 			</DialogContent>
 		</Dialog>
+	)
+}
+
+function DateNavigationButton({
+	label,
+	onClick,
+	children,
+}: {
+	label: string
+	onClick: () => void
+	children: ReactNode
+}) {
+	return (
+		<ActionTooltip>
+			<ActionTooltip.Trigger asChild>
+				<Button
+					aria-label={label}
+					className='text-sf-text-secondary'
+					onClick={onClick}
+					size='icon-sm'
+					type='button'
+					variant='ghost'
+				>
+					{children}
+				</Button>
+			</ActionTooltip.Trigger>
+			<ActionTooltip.Content>
+				<ActionTooltip.Row label={label} />
+			</ActionTooltip.Content>
+		</ActionTooltip>
 	)
 }

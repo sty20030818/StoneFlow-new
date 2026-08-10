@@ -14,7 +14,7 @@ import {
 	createPriorityActionSpec,
 	createStatusActionSpec,
 	type MetadataActionIconKey,
-} from '@/features/metadata-fields'
+} from '@/features/metadata-fields/contract'
 
 import { mapMetadataActionSpecToCommandMenuGroup } from './command-menu-metadata'
 

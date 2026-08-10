@@ -6,6 +6,7 @@ import { formatTaskPriorityLabel } from '@/features/task/model/taskPriority'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { PriorityIcon } from '@/features/task/model/indicators/PriorityIcon'
 import { formatShortDate } from '@/shared/lib/date'
+import { OverflowTooltip } from '@/shared/components/tooltip'
 import { cn } from '@/shared/lib/utils'
 import type { TaskListItem } from '@/shared/types'
 import { CircleIcon, Link2Icon } from 'lucide-react'
@@ -86,14 +87,24 @@ export function TaskPreview({
 			>
 				<header className={taskPreviewHeaderClass}>
 					<div className='flex items-center justify-between gap-3 text-[11px] leading-4 text-sf-text-tertiary'>
-						<span className='min-w-0 truncate'>{breadcrumbLabel}</span>
-						<span className='shrink-0 truncate text-right'>
+						<OverflowTooltip className='min-w-0' content={breadcrumbLabel}>
+							{breadcrumbLabel}
+						</OverflowTooltip>
+						<OverflowTooltip
+							className='max-w-[45%] shrink-0 text-right'
+							content={`更新于 ${formatUpdatedAt(task.updatedAt)}`}
+						>
 							更新于 {formatUpdatedAt(task.updatedAt)}
-						</span>
+						</OverflowTooltip>
 					</div>
 					<div className='flex flex-col gap-1.5'>
-						<h2 className='line-clamp-2 text-[20px] font-semibold leading-tight text-foreground'>
-							{task.title}
+						<h2>
+							<OverflowTooltip
+								className='!line-clamp-2 !whitespace-normal text-[20px] font-semibold leading-tight text-foreground'
+								content={task.title}
+							>
+								{task.title}
+							</OverflowTooltip>
 						</h2>
 						<div className={taskPreviewMetaRowClass}>
 							<MetaPill icon={<StatusDot />} label={formatTaskStatusLabel(task.status)} />
@@ -116,7 +127,14 @@ export function TaskPreview({
 
 				<section className={cn(taskPreviewSectionClass, 'pt-3')}>
 					{note ? (
-						<p className='line-clamp-5 text-[13px] leading-6 text-sf-text-secondary'>{note}</p>
+						<p>
+							<OverflowTooltip
+								className='!line-clamp-5 !whitespace-normal text-[13px] leading-6 text-sf-text-secondary'
+								content={note}
+							>
+								{note}
+							</OverflowTooltip>
+						</p>
 					) : (
 						<div className='rounded-md border border-dashed border-sf-border-subtle bg-muted/30 px-3 py-3 text-[12px] leading-5 text-sf-text-tertiary'>
 							{detail.status === 'loading' ? '加载备注…' : '暂无备注'}
@@ -136,7 +154,9 @@ export function TaskPreview({
 									key={item.id}
 								>
 									<Link2Icon className='size-3.5 shrink-0 text-sf-text-tertiary' />
-									<span className='truncate'>{item.title}</span>
+									<OverflowTooltip className='min-w-0' content={item.title}>
+										{item.title}
+									</OverflowTooltip>
 								</div>
 							))}
 							{linkSummary.remainingCount > 0 ? (
@@ -160,7 +180,9 @@ function MetaPill({ icon, label }: { icon: ReactNode; label: string | null }) {
 	return (
 		<span className='inline-flex min-w-0 items-center gap-1.5'>
 			<span className='shrink-0 text-sf-text-tertiary'>{icon}</span>
-			<span className='truncate'>{label}</span>
+			<OverflowTooltip className='min-w-0' content={label}>
+				{label}
+			</OverflowTooltip>
 		</span>
 	)
 }

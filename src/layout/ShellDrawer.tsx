@@ -5,11 +5,10 @@ import { SheetTitle } from '@/shared/components/base/sheet'
 type ShellDrawerProps = {
 	open: boolean
 	activeDetail: EntityDetailRouteState
-	currentSpaceLabel: string
 	onClose: () => void
 }
 
-export function ShellDrawer({ open, activeDetail, currentSpaceLabel, onClose }: ShellDrawerProps) {
+export function ShellDrawer({ open, activeDetail, onClose }: ShellDrawerProps) {
 	return (
 		<Sheet modal={false} onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>
 			<SheetContent
@@ -25,12 +24,7 @@ export function ShellDrawer({ open, activeDetail, currentSpaceLabel, onClose }: 
 			>
 				<SheetTitle className='sr-only'>详情抽屉</SheetTitle>
 				<div className='no-scrollbar flex flex-1 flex-col overflow-hidden'>
-					<EntityDetailDrawerHost
-						activeDetail={activeDetail}
-						currentSpaceLabel={currentSpaceLabel}
-						onClose={onClose}
-						open={open}
-					/>
+					<EntityDetailDrawerHost activeDetail={activeDetail} onClose={onClose} open={open} />
 				</div>
 			</SheetContent>
 		</Sheet>

@@ -1,4 +1,4 @@
-import { setMetadataDomainIconRenderer } from '@/features/metadata-fields'
+import { setMetadataDomainIconRenderer } from '@/features/metadata-fields/presentation'
 import type { TaskStatus } from '@/shared/types'
 
 import { PriorityIcon } from './indicators/PriorityIcon'

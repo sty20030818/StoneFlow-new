@@ -1,6 +1,7 @@
 import { PlusIcon } from 'lucide-react'
 
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
+import { COMMAND_IDS, CommandShortcut } from '@/features/command'
 import { DisplayOptionsButton } from '@/features/display-options'
 import { FilterBar, ListFilterUiProvider, PageFilterButton } from '@/features/filter'
 import { MainCard } from '@/shared/components/main-card/MainCardLayout'
@@ -24,7 +25,11 @@ export function ViewsPage() {
 			<PageFrame.Root>
 				<PageFrame.Header
 					actions={
-						<MainCard.GhostAction aria-label='创建任务' onClick={scene.openTaskCreateDialog}>
+						<MainCard.GhostAction
+							aria-label='创建任务'
+							onClick={scene.openTaskCreateDialog}
+							tooltipShortcut={<CommandShortcut commandId={COMMAND_IDS.newFullTask} />}
+						>
 							<PlusIcon />
 						</MainCard.GhostAction>
 					}
@@ -32,9 +37,7 @@ export function ViewsPage() {
 				/>
 				<PageFrame.Toolbar
 					displayAction={
-						scene.activeView ? (
-							<DisplayOptionsButton pageKey={scene.displayPageKey} />
-						) : undefined
+						scene.activeView ? <DisplayOptionsButton pageKey={scene.displayPageKey} /> : undefined
 					}
 					filterAction={
 						scene.activeView ? (

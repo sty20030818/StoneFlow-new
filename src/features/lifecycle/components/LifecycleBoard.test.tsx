@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { useState } from 'react'
 
 import { DangerConfirmProvider } from '@/features/danger-confirm'
@@ -7,6 +7,7 @@ import {
 	type LifecycleBoardSection,
 } from '@/features/lifecycle/components/LifecycleBoard'
 import type { LifecycleEntry } from '@/shared/types'
+import { renderWithInteractionProviders as render } from '@/test/TestInteractionProviders'
 
 describe('LifecycleBoard', () => {
 	it('加载中不显示空态文案', () => {
@@ -91,12 +92,12 @@ describe('LifecycleBoard', () => {
 		const row = screen.getByRole('button', { name: '打开 任务 A' })
 
 		fireEvent.mouseEnter(row)
-		expect(row.className).toContain('bg-sf-list-row-hover')
-		expect(row.className).not.toContain('border-sf-border-subtle')
+		expect(row).toHaveClass('bg-sf-list-row-hover')
+		expect(row).not.toHaveClass('border-sf-border-subtle')
 
 		fireEvent.mouseLeave(row)
-		expect(row.className).not.toContain('bg-sf-list-row-hover')
-		expect(row.className).not.toContain('border-sf-border-subtle')
+		expect(row).not.toHaveClass('bg-sf-list-row-hover')
+		expect(row).not.toHaveClass('border-sf-border-subtle')
 	})
 
 	it('右键已选中行时菜单动作使用全部前缀', async () => {

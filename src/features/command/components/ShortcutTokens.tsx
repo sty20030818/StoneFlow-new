@@ -3,9 +3,11 @@ import { ArrowRightIcon } from 'lucide-react'
 import { Kbd, KbdGroup } from '@/shared/components/base/kbd'
 import { cn } from '@/shared/lib/utils'
 import type { ShortcutToken } from '@/features/command/keybinding'
+import { getShortcutAccessibilityLabel } from '@/features/command/shortcuts'
 
 type ShortcutTokensProps = {
-	tokens: ShortcutToken[]
+	tokens: readonly ShortcutToken[]
+	accessibilityLabel?: string
 	className?: string
 	kbdClassName?: string
 	separatorClassName?: string
@@ -16,6 +18,7 @@ type ShortcutTokensProps = {
  */
 export function ShortcutTokens({
 	tokens,
+	accessibilityLabel,
 	className,
 	kbdClassName,
 	separatorClassName,
@@ -25,9 +28,10 @@ export function ShortcutTokens({
 	}
 
 	const keyedTokens = attachTokenKeys(tokens)
+	const resolvedAccessibilityLabel = accessibilityLabel ?? getShortcutAccessibilityLabel(tokens)
 
 	return (
-		<KbdGroup className={cn('shrink-0 gap-1.5', className)}>
+		<KbdGroup aria-label={resolvedAccessibilityLabel} className={cn('shrink-0 gap-1.5', className)}>
 			{keyedTokens.map(({ token, key }) =>
 				token.type === 'separator' ? (
 					<ArrowRightIcon
@@ -36,7 +40,7 @@ export function ShortcutTokens({
 						key={key}
 					/>
 				) : (
-					<Kbd className={kbdClassName} key={key}>
+					<Kbd aria-hidden='true' className={kbdClassName} key={key}>
 						{token.value}
 					</Kbd>
 				),
@@ -49,7 +53,7 @@ export function ShortcutTokens({
  * 同一序列里可能出现重复 token（如非 Mac 平台 meta+ctrl 都渲染成 "Ctrl"），
  * 用内容 + 出现次数生成稳定 key，避免依赖数组下标。
  */
-function attachTokenKeys(tokens: ShortcutToken[]) {
+function attachTokenKeys(tokens: readonly ShortcutToken[]) {
 	const seenCount = new Map<string, number>()
 	return tokens.map((token) => {
 		const base = `${token.type}-${token.value}`

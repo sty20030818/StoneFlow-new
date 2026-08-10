@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 
 import type { SearchTaskItem } from '@/shared/types'
+import { TooltipProvider } from '@/shared/components/base/tooltip'
 
 import { GlobalSearchResults } from './GlobalSearchResults'
 
@@ -11,36 +12,41 @@ describe('GlobalSearchResults', () => {
 
 	it('高亮项变化时仍会把目标滚动进可视区', () => {
 		const { rerender } = render(
-			<GlobalSearchResults
-				errorMessage={null}
-				highlightedIndex={0}
-				onHighlightIndex={vi.fn()}
-				onSelectProject={vi.fn()}
-				onSelectTask={vi.fn()}
-				projectItems={[]}
-				taskItems={[
-					{ index: 0, item: createTaskResult({ id: 'task-a', title: '任务 A' }) },
-					{ index: 1, item: createTaskResult({ id: 'task-b', title: '任务 B' }) },
-				]}
-			/>,
+			<TooltipProvider>
+				<GlobalSearchResults
+					errorMessage={null}
+					highlightedIndex={0}
+					onHighlightIndex={vi.fn()}
+					onSelectProject={vi.fn()}
+					onSelectTask={vi.fn()}
+					projectItems={[]}
+					taskItems={[
+						{ index: 0, item: createTaskResult({ id: 'task-a', title: '任务 A' }) },
+						{ index: 1, item: createTaskResult({ id: 'task-b', title: '任务 B' }) },
+					]}
+				/>
+			</TooltipProvider>,
 		)
 
 		rerender(
-			<GlobalSearchResults
-				errorMessage={null}
-				highlightedIndex={1}
-				onHighlightIndex={vi.fn()}
-				onSelectProject={vi.fn()}
-				onSelectTask={vi.fn()}
-				projectItems={[]}
-				taskItems={[
-					{ index: 0, item: createTaskResult({ id: 'task-a', title: '任务 A' }) },
-					{ index: 1, item: createTaskResult({ id: 'task-b', title: '任务 B' }) },
-				]}
-			/>,
+			<TooltipProvider>
+				<GlobalSearchResults
+					errorMessage={null}
+					highlightedIndex={1}
+					onHighlightIndex={vi.fn()}
+					onSelectProject={vi.fn()}
+					onSelectTask={vi.fn()}
+					projectItems={[]}
+					taskItems={[
+						{ index: 0, item: createTaskResult({ id: 'task-a', title: '任务 A' }) },
+						{ index: 1, item: createTaskResult({ id: 'task-b', title: '任务 B' }) },
+					]}
+				/>
+			</TooltipProvider>,
 		)
 
 		expect(screen.getByRole('button', { name: '打开任务 任务 B' })).toBeInTheDocument()
+		expect(document.querySelectorAll('[data-slot="overflow-tooltip-trigger"]')).toHaveLength(6)
 		expect(HTMLElement.prototype.scrollIntoView).toHaveBeenCalled()
 	})
 })

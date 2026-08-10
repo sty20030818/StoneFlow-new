@@ -5,12 +5,8 @@ import {
 	type CommandId,
 	type CommandRuntime,
 } from '@/features/command/core'
-import {
-	DEFAULT_KEYBINDINGS,
-	KeybindingRegistry,
-	tokenizeKeybindingSequence,
-	type ShortcutToken,
-} from '@/features/command/keybinding'
+import { type KeybindingRegistry, type ShortcutToken } from '@/features/command/keybinding'
+import { resolveCommandShortcut } from '@/features/command/shortcuts/shortcut-display'
 
 export type CommandMenuGroupKey = 'bulk' | 'create' | 'navigate' | 'action' | 'project' | 'task'
 
@@ -65,11 +61,10 @@ const BULK_PROJECT_COMMAND_IDS: ReadonlySet<CommandId> = new Set([
 	COMMAND_IDS.projectArchive,
 	COMMAND_IDS.projectDelete,
 ])
-const keybindingRegistry = new KeybindingRegistry(DEFAULT_KEYBINDINGS)
-
 export function buildCommandMenuGroups(
 	runtime: CommandRuntime,
 	context: CommandContext,
+	shortcutRegistry: KeybindingRegistry,
 ): CommandMenuGroup[] {
 	// 合并 map + filter 为单次遍历，排序仍需在完整数组上进行
 	const visibleEntries: Array<{
@@ -98,19 +93,26 @@ export function buildCommandMenuGroups(
 				command,
 				disabled: !state.enabled,
 				disabledReason: state.disabledReason,
-				shortcut: getCommandMenuShortcut(command.id),
+				shortcut: getCommandMenuShortcut(command.id, shortcutRegistry),
 			})
 		}
 		return { key, heading, entries: groupEntries }
 	}).filter((group) => group.entries.length > 0)
 
-	const bulkGroup = buildBulkCommandMenuGroup(entries, context)
+	const bulkGroup = buildBulkCommandMenuGroup(entries, context, shortcutRegistry)
 	return bulkGroup ? [bulkGroup, ...defaultGroups] : defaultGroups
 }
 
-export function getCommandMenuShortcut(commandId: Command['id']) {
-	const binding = keybindingRegistry.getByCommandId(commandId)[0]
-	return binding ? tokenizeKeybindingSequence(binding.sequence) : null
+export function getCommandMenuShortcut(
+	commandId: Command['id'],
+	shortcutRegistry: KeybindingRegistry,
+) {
+	return resolveCommandShortcut({
+		registry: shortcutRegistry,
+		commandId,
+		scope: 'global',
+		mode: 'primary',
+	})
 }
 
 function buildBulkCommandMenuGroup(
@@ -119,6 +121,7 @@ function buildBulkCommandMenuGroup(
 		state: ReturnType<CommandRuntime['getCommandState']>
 	}>,
 	context: CommandContext,
+	shortcutRegistry: KeybindingRegistry,
 ): CommandMenuGroup | null {
 	if (
 		(context.selection.type !== 'task' &&
@@ -140,7 +143,7 @@ function buildBulkCommandMenuGroup(
 			command,
 			disabled: !state.enabled,
 			disabledReason: state.disabledReason,
-			shortcut: getCommandMenuShortcut(command.id),
+			shortcut: getCommandMenuShortcut(command.id, shortcutRegistry),
 		})
 	}
 

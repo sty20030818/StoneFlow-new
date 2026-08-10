@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react'
 
 import { openSection } from '@/app/navigation'
+import { COMMAND_IDS, type CommandId } from '@/features/command'
 import type { ShellSectionKey } from '@/layout/types'
 import type { Scope, Space } from '@/shared/types'
 import { ArchiveIcon, BoxIcon, ListTodoIcon, Layers2Icon, Trash2Icon } from 'lucide-react'
@@ -16,6 +17,7 @@ type ShellNavItem<TKey extends string = ShellCommandNavKey> = {
 	section: ShellSectionKey
 	label: string
 	icon: ShellIcon
+	commandId: CommandId
 	to: (scope: Scope, fallbackSpaceId?: string | null) => string
 }
 
@@ -31,6 +33,7 @@ export const SHELL_NAV_ITEMS: ShellNavItem<ShellMainNavKey>[] = [
 		section: 'tasks',
 		label: '所有任务',
 		icon: ListTodoIcon,
+		commandId: COMMAND_IDS.goAllTasks,
 		to: (scope, fallbackSpaceId) => openSection(scope, 'tasks', fallbackSpaceId),
 	},
 	{
@@ -38,6 +41,7 @@ export const SHELL_NAV_ITEMS: ShellNavItem<ShellMainNavKey>[] = [
 		section: 'views',
 		label: '视图',
 		icon: Layers2Icon,
+		commandId: COMMAND_IDS.goViews,
 		to: (scope, fallbackSpaceId) => openSection(scope, 'views', fallbackSpaceId),
 	},
 	{
@@ -45,6 +49,7 @@ export const SHELL_NAV_ITEMS: ShellNavItem<ShellMainNavKey>[] = [
 		section: 'projects',
 		label: '项目总览',
 		icon: BoxIcon,
+		commandId: COMMAND_IDS.goProjects,
 		to: (scope, fallbackSpaceId) => openSection(scope, 'projects', fallbackSpaceId),
 	},
 ]
@@ -55,6 +60,7 @@ export const SHELL_FOOTER_ITEMS: ShellNavItem<ShellFooterNavKey>[] = [
 		section: 'archive',
 		label: '归档',
 		icon: ArchiveIcon,
+		commandId: COMMAND_IDS.goArchive,
 		to: (scope, fallbackSpaceId) => openSection(scope, 'archive', fallbackSpaceId),
 	},
 	{
@@ -62,6 +68,7 @@ export const SHELL_FOOTER_ITEMS: ShellNavItem<ShellFooterNavKey>[] = [
 		section: 'trash',
 		label: '回收站',
 		icon: Trash2Icon,
+		commandId: COMMAND_IDS.goTrash,
 		to: (scope, fallbackSpaceId) => openSection(scope, 'trash', fallbackSpaceId),
 	},
 ]

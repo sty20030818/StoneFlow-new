@@ -1,10 +1,16 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 
+import { KeybindingRegistry, ShortcutRegistryProvider } from '@/features/command'
+import { SELECTION_SHORTCUT_BINDINGS } from '@/features/selection'
+import { TooltipProvider } from '@/shared/components/base/tooltip'
+
 import { BulkActionBar } from './BulkActionBar'
+
+const TEST_SHORTCUT_REGISTRY = new KeybindingRegistry(SELECTION_SHORTCUT_BINDINGS)
 
 describe('BulkActionBar', () => {
 	it('selectedCount 小于 1 时不渲染', () => {
-		const { container } = render(
+		const { container } = renderBulkActionBar(
 			<BulkActionBar
 				action={<button type='button'>操作</button>}
 				onClear={() => undefined}
@@ -16,7 +22,7 @@ describe('BulkActionBar', () => {
 	})
 
 	it('显示选中数量并渲染 action slot', () => {
-		render(
+		renderBulkActionBar(
 			<BulkActionBar
 				action={<button type='button'>操作</button>}
 				onClear={() => undefined}
@@ -31,7 +37,7 @@ describe('BulkActionBar', () => {
 
 	it('点击清空按钮调用 onClear', () => {
 		const onClear = vi.fn<() => void>()
-		render(
+		renderBulkActionBar(
 			<BulkActionBar
 				action={<button type='button'>操作</button>}
 				onClear={onClear}
@@ -43,4 +49,27 @@ describe('BulkActionBar', () => {
 
 		expect(onClear).toHaveBeenCalledTimes(1)
 	})
+
+	it('清空提示从 list Registry 展示 Escape', async () => {
+		renderBulkActionBar(
+			<BulkActionBar
+				action={<button type='button'>操作</button>}
+				onClear={() => undefined}
+				selectedCount={1}
+			/>,
+		)
+
+		fireEvent.focus(screen.getByRole('button', { name: '清空已选' }))
+
+		expect(await screen.findByRole('tooltip')).toHaveTextContent('清空已选Esc')
+		expect(screen.getByLabelText('按 Esc')).toBeInTheDocument()
+	})
 })
+
+function renderBulkActionBar(ui: React.ReactNode) {
+	return render(
+		<ShortcutRegistryProvider registry={TEST_SHORTCUT_REGISTRY}>
+			<TooltipProvider delayDuration={0}>{ui}</TooltipProvider>
+		</ShortcutRegistryProvider>,
+	)
+}

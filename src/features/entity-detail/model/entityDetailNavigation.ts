@@ -6,7 +6,11 @@ import {
 	clearEntityDetailSearch,
 	parseEntityDetailRouteState,
 } from './entityDetailRouteState'
-import type { EntityDetailNavigationTarget, EntityDetailTarget } from './entityDetailTypes'
+import type {
+	EntityDetailDrawerTarget,
+	EntityDetailNavigationTarget,
+	EntityDetailTarget,
+} from './entityDetailTypes'
 
 type LocationLike = {
 	pathname: string
@@ -15,7 +19,7 @@ type LocationLike = {
 
 export function openEntityDrawerTarget(
 	location: LocationLike,
-	target: EntityDetailTarget,
+	target: EntityDetailDrawerTarget,
 ): EntityDetailNavigationTarget {
 	const current = parseEntityDetailRouteState(location.search).activeDetail
 

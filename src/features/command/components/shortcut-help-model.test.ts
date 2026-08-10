@@ -1,23 +1,42 @@
 import { createShellCommandRegistry } from '@/features/command/commands'
 import { CommandRuntime, COMMAND_IDS, createEmptyCommandContext } from '@/features/command/core'
 import type { ShellCommandActions } from '@/features/command/adapters'
+import {
+	DEFAULT_KEYBINDINGS,
+	KeybindingRegistry,
+	type Keybinding,
+} from '@/features/command/keybinding'
 
-import { buildShortcutHelpGroups, getShortcutHelpShortcut } from './shortcut-help-model'
+import { buildShortcutHelpGroups, getShortcutHelpShortcuts } from './shortcut-help-model'
+
+const taskCompleteBinding: Keybinding = {
+	commandId: COMMAND_IDS.taskComplete,
+	sequence: [{ key: 'w' }],
+	scope: 'row',
+	display: 'primary',
+	preventDefault: true,
+	allowInEditable: false,
+}
+const shortcutRegistry = new KeybindingRegistry([...DEFAULT_KEYBINDINGS, taskCompleteBinding])
 
 describe('shortcut-help-model', () => {
-	it('帮助页保留 command-only 命令和 openCommandMenu 这类真实能力', () => {
-		const groups = buildShortcutHelpGroups(createRuntime(), createEmptyCommandContext())
+	it('帮助页仅保留拥有可展示绑定的真实快捷键', () => {
+		const groups = buildShortcutHelpGroups(
+			createRuntime(),
+			createEmptyCommandContext(),
+			shortcutRegistry,
+		)
 		const entries = groups.flatMap((group) => group.entries)
 
 		expect(entries.some((entry) => entry.id === COMMAND_IDS.openCommandMenu)).toBe(true)
-		expect(
-			entries.some((entry) => entry.id === COMMAND_IDS.taskComplete && entry.isCommandOnly),
-		).toBe(true)
+		expect(entries.some((entry) => entry.id === COMMAND_IDS.taskComplete)).toBe(true)
+		expect(entries.some((entry) => entry.id === COMMAND_IDS.newView)).toBe(false)
 	})
 
-	it('快捷键文案来自 registry，未绑定命令返回空', () => {
-		expect(getShortcutHelpShortcut(COMMAND_IDS.openShortcutHelp)).toBeTruthy()
-		expect(getShortcutHelpShortcut(COMMAND_IDS.taskComplete)).toBeNull()
+	it('帮助页展示 primary 与 alternative，并过滤 hidden 绑定', () => {
+		expect(getShortcutHelpShortcuts(COMMAND_IDS.openSettings, shortcutRegistry)).toHaveLength(2)
+		expect(getShortcutHelpShortcuts(COMMAND_IDS.taskComplete, shortcutRegistry)).toHaveLength(1)
+		expect(getShortcutHelpShortcuts(COMMAND_IDS.newView, shortcutRegistry)).toEqual([])
 	})
 })
 

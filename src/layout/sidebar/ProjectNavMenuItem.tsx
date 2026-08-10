@@ -4,8 +4,7 @@ import type { Scope } from '@/shared/types'
 import { SidebarMenuItem } from '@/shared/components/base/sidebar'
 import { FolderIcon } from 'lucide-react'
 
-import { ProjectRowContextMenu } from './ProjectRowContextMenu'
-import { SidebarNavRow } from './SidebarNavRow'
+import { SidebarProjectNavRow } from './SidebarNavRow'
 
 export type ProjectNavMenuItemProps = {
 	currentScope: Scope
@@ -31,9 +30,8 @@ export function ProjectNavMenuItem({
 
 	return (
 		<SidebarMenuItem>
-			<SidebarNavRow
+			<SidebarProjectNavRow
 				badge={project.badge}
-				contextMenuContent={<ProjectRowContextMenu />}
 				icon={FolderIcon}
 				label={project.label}
 				to={projectPath}

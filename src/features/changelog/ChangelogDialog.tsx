@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { XIcon } from 'lucide-react'
 
 import { AppScrollArea } from '@/shared/components/AppScrollArea'
@@ -10,6 +10,7 @@ import {
 	DialogDescription,
 	DialogTitle,
 } from '@/shared/components/base/dialog'
+import { ActionTooltip } from '@/shared/components/tooltip'
 
 import { ChangelogRelease } from './ChangelogRelease'
 import type { ChangelogChannel } from './contract'
@@ -28,13 +29,27 @@ export function ChangelogDialog({
 }) {
 	const { releases, isLoading } = useChangelog(open ? { kind: 'history', channel } : null)
 	const targetRef = useRef<HTMLDivElement>(null)
+	const [closeTooltipOpen, setCloseTooltipOpen] = useState(false)
 
 	useEffect(() => {
 		if (open && focusVersion) targetRef.current?.scrollIntoView({ block: 'start' })
 	}, [focusVersion, open, releases])
 
+	useEffect(() => {
+		if (!open) {
+			setCloseTooltipOpen(false)
+		}
+	}, [open])
+
+	function handleOpenChange(nextOpen: boolean) {
+		if (!nextOpen) {
+			setCloseTooltipOpen(false)
+		}
+		onOpenChange(nextOpen)
+	}
+
 	return (
-		<Dialog onOpenChange={onOpenChange} open={open}>
+		<Dialog onOpenChange={handleOpenChange} open={open}>
 			<DialogContent
 				className='top-[18%] max-sm:max-w-[calc(100%-1.5rem)] max-lg:max-w-[calc(100%-1.5rem)] sm:max-w-190 translate-y-0 overflow-hidden rounded-lg border border-sf-border-subtle bg-background/98 p-0 shadow-(--sf-shadow-popover)'
 				disableAnimation
@@ -44,14 +59,21 @@ export function ChangelogDialog({
 				<DialogDescription className='sr-only'>
 					查看 StoneFlow 已发布版本的更新内容
 				</DialogDescription>
-				<Button
-					aria-label='关闭更新日志'
-					className='absolute top-3 right-3 size-8'
-					onClick={() => onOpenChange(false)}
-					variant='ghost'
-				>
-					<XIcon className='size-4' />
-				</Button>
+				<ActionTooltip onOpenChange={setCloseTooltipOpen} open={closeTooltipOpen}>
+					<ActionTooltip.Trigger asChild>
+						<Button
+							aria-label='关闭更新日志'
+							className='absolute top-3 right-3 size-8'
+							onClick={() => handleOpenChange(false)}
+							variant='ghost'
+						>
+							<XIcon aria-hidden className='size-4' />
+						</Button>
+					</ActionTooltip.Trigger>
+					<ActionTooltip.Content>
+						<ActionTooltip.Row label='关闭' />
+					</ActionTooltip.Content>
+				</ActionTooltip>
 				<div className='flex items-center gap-2 px-5 pt-4 pb-2 pr-12'>
 					<h2 className='min-w-0 text-[18px] leading-6 font-bold text-foreground'>更新日志</h2>
 					<Badge

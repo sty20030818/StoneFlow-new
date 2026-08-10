@@ -11,7 +11,7 @@ import {
 	clearEntityDetailSearch,
 	parseEntityDetailRouteState,
 } from './entityDetailRouteState'
-import type { EntityDetailTarget } from './entityDetailTypes'
+import type { EntityDetailDrawerTarget, EntityDetailTarget } from './entityDetailTypes'
 
 export function useEntityDetailController() {
 	const location = useLocation()
@@ -51,7 +51,7 @@ export function useEntityDetailController() {
 	])
 
 	const openDrawer = useCallback(
-		(target: EntityDetailTarget) => {
+		(target: EntityDetailDrawerTarget) => {
 			const nextTarget = openEntityDrawerTarget(locationTarget, target)
 			startTransition(() => {
 				void navigate({

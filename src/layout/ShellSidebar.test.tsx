@@ -4,6 +4,11 @@ import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { ShellSidebar } from '@/layout/ShellSidebar'
 import { resolveRememberedPathForScope } from '@/app/navigation'
 import { DangerConfirmProvider } from '@/features/danger-confirm'
+import {
+	DEFAULT_KEYBINDINGS,
+	KeybindingRegistry,
+	ShortcutRegistryProvider,
+} from '@/features/command'
 import { SubmitRegistryProvider } from '@/features/submit'
 import { SyncStatusProvider } from '@/features/sync'
 import { SidebarProvider } from '@/shared/components/base/sidebar'
@@ -19,6 +24,7 @@ vi.mock('@/app/navigation', async (importOriginal) => {
 })
 
 const mockedResolveRememberedPathForScope = vi.mocked(resolveRememberedPathForScope)
+const TEST_SHORTCUT_REGISTRY = new KeybindingRegistry(DEFAULT_KEYBINDINGS)
 
 describe('ShellSidebar', () => {
 	beforeEach(() => {
@@ -55,6 +61,36 @@ describe('ShellSidebar', () => {
 		expect(screen.getByRole('link', { name: '归档' })).toBeInTheDocument()
 		expect(screen.getByRole('link', { name: '回收站' })).toBeInTheDocument()
 		expect(screen.queryByRole('link', { name: '设置' })).not.toBeInTheDocument()
+	})
+
+	it('固定导航 Tooltip 从 Registry 展示箭头序列', async () => {
+		await renderShellSidebar({
+			mainItems: {
+				allTasks: { visible: true, order: 200 },
+				views: { visible: true, order: 300 },
+				projectOverview: { visible: true, order: 400 },
+			},
+			projectSection: {
+				visible: true,
+				order: 500,
+				collapsed: false,
+				showCounts: true,
+				showCompleted: true,
+				maxVisible: null,
+			},
+			footerItems: {
+				archive: { visible: true, order: 900 },
+				trash: { visible: true, order: 1000 },
+			},
+			width: 256,
+			desktopPreference: 'expanded',
+		})
+
+		fireEvent.focus(screen.getByRole('link', { name: '所有任务' }))
+
+		expect(await screen.findByRole('tooltip')).toHaveTextContent('所有任务GT')
+		expect(screen.getByLabelText('依次按 G、T')).toBeInTheDocument()
+		expect(document.querySelector('.lucide-arrow-right')).toBeInTheDocument()
 	})
 
 	it('All scope 下隐藏项目总览与项目列表（含独立事项），保留所有任务与视图', () => {
@@ -96,7 +132,7 @@ describe('ShellSidebar', () => {
 		expect(screen.getByText('所有空间')).toBeInTheDocument()
 	})
 
-	it('项目 badge 会显示在 sidebar 项目行上', () => {
+	it('动态项目行显示 badge，并始终提供名称 Tooltip', async () => {
 		renderShellSidebar(
 			{
 				mainItems: {
@@ -129,6 +165,8 @@ describe('ShellSidebar', () => {
 		)
 
 		expect(screen.getByText('7')).toBeInTheDocument()
+		fireEvent.focus(screen.getByRole('link', { name: /StoneFlow VNext/ }))
+		expect(await screen.findByRole('tooltip')).toHaveTextContent('StoneFlow VNext')
 	})
 
 	it('Space 删除会打开统一确认弹窗，并默认聚焦确认按钮', async () => {
@@ -253,7 +291,7 @@ describe('ShellSidebar', () => {
 		fireEvent.click(await screen.findByRole('menuitem', { name: '新建空间' }))
 		expect(await screen.findByRole('dialog', { name: '新建 Space' })).toBeInTheDocument()
 
-		fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+		fireEvent.click(screen.getByRole('button', { name: '关闭' }))
 		await waitFor(() => {
 			expect(screen.queryByRole('dialog', { name: '新建 Space' })).not.toBeInTheDocument()
 		})
@@ -409,33 +447,35 @@ function renderShellSidebar(
 	overrides?: Partial<Parameters<typeof ShellSidebar>[0]>,
 ) {
 	return renderWithRouterContext(
-		<SubmitRegistryProvider>
-			<DangerConfirmProvider>
-				<SyncStatusProvider>
-					<TooltipProvider>
-						<SidebarProvider desktopPreference='expanded' sidebarWidth={settings.width}>
-							<LocationProbe />
-							<ShellSidebar
-								currentScope={{ type: 'space', spaceId: 'space-personal' }}
-								currentSpaceId='space-personal'
-								onArchiveSpace={async () => mockSpaceRemovalResult(null)}
-								onCreateSpace={async () => mockSpace}
-								onDeleteSpace={async () => mockSpaceRemovalResult(null)}
-								onOpenProjectCreateDialog={() => undefined}
-								onResetMainItemsVisibility={() => undefined}
-								onSetDefaultSpace={async () => mockSpace}
-								onUpdateItemVisibility={() => undefined}
-								onUpdateSpace={async () => mockSpace}
-								projects={projects}
-								spaces={[mockSpace]}
-								settings={settings}
-								{...overrides}
-							/>
-						</SidebarProvider>
-					</TooltipProvider>
-				</SyncStatusProvider>
-			</DangerConfirmProvider>
-		</SubmitRegistryProvider>,
+		<ShortcutRegistryProvider registry={TEST_SHORTCUT_REGISTRY}>
+			<SubmitRegistryProvider>
+				<DangerConfirmProvider>
+					<SyncStatusProvider>
+						<TooltipProvider delayDuration={0}>
+							<SidebarProvider desktopPreference='expanded' sidebarWidth={settings.width}>
+								<LocationProbe />
+								<ShellSidebar
+									currentScope={{ type: 'space', spaceId: 'space-personal' }}
+									currentSpaceId='space-personal'
+									onArchiveSpace={async () => mockSpaceRemovalResult(null)}
+									onCreateSpace={async () => mockSpace}
+									onDeleteSpace={async () => mockSpaceRemovalResult(null)}
+									onOpenProjectCreateDialog={() => undefined}
+									onResetMainItemsVisibility={() => undefined}
+									onSetDefaultSpace={async () => mockSpace}
+									onUpdateItemVisibility={() => undefined}
+									onUpdateSpace={async () => mockSpace}
+									projects={projects}
+									spaces={[mockSpace]}
+									settings={settings}
+									{...overrides}
+								/>
+							</SidebarProvider>
+						</TooltipProvider>
+					</SyncStatusProvider>
+				</DangerConfirmProvider>
+			</SubmitRegistryProvider>
+		</ShortcutRegistryProvider>,
 		{
 			initialEntry: '/space-personal/standalone',
 		},

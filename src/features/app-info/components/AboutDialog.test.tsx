@@ -1,6 +1,8 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { TooltipProvider } from '@/shared/components/base/tooltip'
+
 import { getAppVersion, openAppInfoUrl } from '../api/appInfo'
 import { AboutDialog } from './AboutDialog'
 
@@ -15,23 +17,34 @@ describe('AboutDialog', () => {
 	})
 
 	it('展示运行中版本与不可用的资料入口', async () => {
-		render(<AboutDialog onOpenChange={vi.fn()} onOpenChangelog={vi.fn()} open />)
+		renderAboutDialog(<AboutDialog onOpenChange={vi.fn()} onOpenChangelog={vi.fn()} open />)
 
 		expect(await screen.findByText('v0.1.2')).toBeInTheDocument()
 		expect(screen.getByRole('button', { name: /官方网站，待配置/ })).toBeDisabled()
 		expect(screen.getByRole('button', { name: /反馈与支持，待配置/ })).toBeDisabled()
 		expect(screen.getByRole('button', { name: /隐私政策，待配置/ })).toBeDisabled()
 		expect(screen.getByRole('button', { name: /许可证，待配置/ })).toBeDisabled()
+		const disabledLinkTrigger = document.querySelector(
+			'[data-slot="disabled-action-tooltip-trigger"]',
+		)
+		fireEvent.focus(disabledLinkTrigger!)
+		expect(await screen.findByRole('tooltip')).toHaveTextContent('此资料入口尚未配置')
 		expect(openAppInfoUrl).not.toHaveBeenCalled()
 	})
 
 	it('关闭关于窗口并可转到更新日志', async () => {
 		const onOpenChange = vi.fn()
 		const onOpenChangelog = vi.fn()
-		render(<AboutDialog onOpenChange={onOpenChange} onOpenChangelog={onOpenChangelog} open />)
+		renderAboutDialog(
+			<AboutDialog onOpenChange={onOpenChange} onOpenChangelog={onOpenChangelog} open />,
+		)
 
-		fireEvent.click(await screen.findByRole('button', { name: '关闭关于 StoneFlow' }))
+		const closeButton = await screen.findByRole('button', { name: '关闭关于 StoneFlow' })
+		fireEvent.focus(closeButton)
+		expect(await screen.findByRole('tooltip')).toHaveTextContent('关闭')
+		fireEvent.click(closeButton)
 		expect(onOpenChange).toHaveBeenCalledWith(false)
+		await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument())
 		expect(screen.queryByRole('button', { name: '关闭' })).not.toBeInTheDocument()
 
 		fireEvent.click(screen.getByRole('button', { name: /更新日志/ }))
@@ -39,3 +52,7 @@ describe('AboutDialog', () => {
 		expect(onOpenChange).toHaveBeenCalledWith(false)
 	})
 })
+
+function renderAboutDialog(node: React.ReactNode) {
+	return render(<TooltipProvider delayDuration={0}>{node}</TooltipProvider>)
+}

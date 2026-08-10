@@ -1,7 +1,7 @@
-import type { KeybindingSequence, KeybindingStroke } from './keybinding.types'
+import type { KeybindingSequence, KeybindingStroke, ShortcutPlatform } from './keybinding.types'
 
-type FormatKeybindingOptions = {
-	platform?: 'mac' | 'windows' | 'linux'
+export type FormatKeybindingOptions = {
+	platform?: ShortcutPlatform
 }
 
 export type ShortcutToken = {
@@ -13,13 +13,24 @@ export function formatKeybindingSequence(
 	sequence: KeybindingSequence,
 	options: FormatKeybindingOptions = {},
 ) {
-	return sequence.map((stroke) => formatKeybindingStroke(stroke, options)).join(' ')
+	return sequence.map((stroke) => formatKeybindingStroke(stroke, options)).join(' → ')
+}
+
+/**
+ * 生成不依赖视觉箭头的读屏文案，明确 chord 是按顺序输入而非同时按下。
+ */
+export function formatKeybindingSequenceAccessible(
+	sequence: KeybindingSequence,
+	options: FormatKeybindingOptions = {},
+) {
+	const strokes = sequence.map((stroke) => formatKeybindingStroke(stroke, options))
+	return strokes.length === 1 ? `按 ${strokes[0]}` : `依次按 ${strokes.join('、')}`
 }
 
 /**
  * 将快捷键序列拆成稳定的键帽 token，供 Command / ShortcutHelp / ChordHint 统一渲染。
  * - 普通组合键拆成连续 key token：⌘K -> [⌘] [K]
- * - chord 在两段之间插入 separator：G I -> [G] → [I]
+ * - chord 在两段之间插入 separator：G → I -> [G] → [I]
  */
 export function tokenizeKeybindingSequence(
 	sequence: KeybindingSequence,
@@ -37,7 +48,7 @@ export function tokenizeKeybindingSequence(
 
 export function formatKeybindingStroke(
 	stroke: KeybindingStroke,
-	{ platform = inferPlatform() }: FormatKeybindingOptions = {},
+	{ platform = inferShortcutPlatform() }: FormatKeybindingOptions = {},
 ) {
 	const modifierParts = getModifierParts(stroke, platform)
 	const key = formatKey(stroke.key, platform)
@@ -50,16 +61,19 @@ export function formatKeybindingStroke(
 
 export function tokenizeKeybindingStroke(
 	stroke: KeybindingStroke,
-	{ platform = inferPlatform() }: FormatKeybindingOptions = {},
+	{ platform = inferShortcutPlatform() }: FormatKeybindingOptions = {},
 ): ShortcutToken[] {
 	const parts = [...getModifierParts(stroke, platform), formatKey(stroke.key, platform)]
 	return parts.map((value) => ({ type: 'key', value }))
 }
 
-function getModifierParts(stroke: KeybindingStroke, platform: 'mac' | 'windows' | 'linux') {
+function getModifierParts(stroke: KeybindingStroke, platform: ShortcutPlatform) {
 	const modifierParts: string[] = []
-	if (stroke.meta) {
+	if (stroke.mod) {
 		modifierParts.push(platform === 'mac' ? '⌘' : 'Ctrl')
+	}
+	if (stroke.meta) {
+		modifierParts.push(platform === 'mac' ? '⌘' : platform === 'windows' ? 'Win' : 'Meta')
 	}
 	if (stroke.ctrl) {
 		modifierParts.push(platform === 'mac' ? '⌃' : 'Ctrl')
@@ -73,7 +87,7 @@ function getModifierParts(stroke: KeybindingStroke, platform: 'mac' | 'windows' 
 	return modifierParts
 }
 
-function formatKey(key: string, platform: 'mac' | 'windows' | 'linux') {
+function formatKey(key: string, platform: ShortcutPlatform) {
 	if (key === ' ') {
 		return platform === 'mac' ? '␠' : 'Space'
 	}
@@ -105,7 +119,7 @@ function formatKey(key: string, platform: 'mac' | 'windows' | 'linux') {
 	return key
 }
 
-function inferPlatform(): 'mac' | 'windows' | 'linux' {
+export function inferShortcutPlatform(): ShortcutPlatform {
 	if (typeof navigator === 'undefined') {
 		return 'mac'
 	}

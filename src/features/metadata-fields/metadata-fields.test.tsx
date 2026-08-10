@@ -1,5 +1,6 @@
-import { fireEvent, render, screen } from '@testing-library/react'
 import { CalendarIcon } from 'lucide-react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { TooltipProvider } from '@/shared/components/base/tooltip'
 
 import {
 	createDueDateActionSpec,
@@ -45,10 +46,9 @@ describe('metadata-fields', () => {
 		const props = createProjectParentMetadataDropdownProps([{ id: 'project-1', name: '项目 A' }])
 		const onChange = vi.fn()
 
-		render(
+		renderMetadata(
 			<MetadataFieldDropdown
 				fieldKey='parentProject'
-				headerShortcut={props.headerShortcut}
 				label='父项目'
 				menuLabel={props.menuLabel}
 				options={props.options}
@@ -64,10 +64,10 @@ describe('metadata-fields', () => {
 		expect(onChange).toHaveBeenCalledWith('project-1')
 	})
 
-	it('generic dropdown 继续保留 fieldKey fallback 和数字快捷键', async () => {
+	it('generic dropdown 保留菜单文案和数字快捷键，但不从 fieldKey 猜上下文快捷键', async () => {
 		const onChange = vi.fn()
 
-		render(
+		renderMetadata(
 			<MetadataFieldDropdown
 				fieldKey='priority'
 				label='优先级'
@@ -82,17 +82,62 @@ describe('metadata-fields', () => {
 
 		fireEvent.pointerDown(screen.getByRole('button', { name: '优先级' }))
 		expect(await screen.findByText('设置优先级为...')).toBeInTheDocument()
-		expect(getHeaderShortcutSummary()).toBe('P')
+		expect(getHeaderShortcutSummary()).toBeNull()
 		expect(getShortcutHintDigits()).toEqual(['0', '1'])
 
 		fireEvent.keyDown(window, { key: '1' })
 		expect(onChange).toHaveBeenCalledWith(2)
 	})
 
+	it('禁用字段通过可聚焦外壳解释真实原因，不把 native disabled button 当 Tooltip trigger', async () => {
+		renderMetadata(
+			<MetadataFieldDropdown
+				buttonAppearance='row-icon'
+				disabled
+				disabledReason='正在更新任务，暂时无法修改优先级'
+				label='优先级'
+				options={[{ value: 0, label: '无优先级' }]}
+				value={0}
+				onChange={() => undefined}
+			/>,
+		)
+
+		const disabledTrigger = screen.getByRole('group', { name: '优先级' })
+		fireEvent.focus(disabledTrigger)
+		expect(await screen.findByRole('tooltip')).toHaveTextContent('正在更新任务，暂时无法修改优先级')
+		expect(screen.getByRole('button', { name: '优先级' })).toBeDisabled()
+	})
+
+	it('菜单打开后卸载 trigger 的溢出 Tooltip，避免两个浮层残留', async () => {
+		renderMetadata(
+			<MetadataFieldDropdown
+				label='优先级'
+				options={[
+					{ value: 0, label: '一个很长的优先级名称' },
+					{ value: 1, label: '高' },
+				]}
+				value={0}
+				onChange={() => undefined}
+			/>,
+		)
+
+		const overflowTrigger = document.querySelector(
+			'[data-slot="overflow-tooltip-trigger"]',
+		) as HTMLSpanElement
+		Object.defineProperty(overflowTrigger, 'clientWidth', { configurable: true, value: 40 })
+		Object.defineProperty(overflowTrigger, 'scrollWidth', { configurable: true, value: 160 })
+		fireEvent.focus(overflowTrigger)
+		expect(await screen.findByRole('tooltip')).toHaveTextContent('一个很长的优先级名称')
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '优先级' }))
+		expect(await screen.findByRole('menu')).toBeInTheDocument()
+		await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument())
+	})
+
 	it('MetadataDateDropdown 保持 clear-only 语义和 drawer overlay 标记', async () => {
 		const onChange = vi.fn()
 
-		render(
+		renderMetadata(
 			<MetadataDateDropdown
 				drawerOwnedOverlay
 				icon={<CalendarIcon className='size-3.5' />}
@@ -126,10 +171,9 @@ describe('metadata-fields', () => {
 			],
 		})
 
-		render(
+		renderMetadata(
 			<MetadataPlacementDropdown
 				groups={groupedProps.groups}
-				headerShortcut={groupedProps.headerShortcut}
 				label='归属'
 				menuLabel={groupedProps.menuLabel}
 				value={{ kind: 'project', spaceId: 'space-b', projectId: 'project-b' }}
@@ -145,7 +189,7 @@ describe('metadata-fields', () => {
 		expect(screen.getAllByRole('menuitem', { name: /独立事项/ })).toHaveLength(2)
 		expect(screen.getByRole('menuitem', { name: /项目 A/ })).toBeInTheDocument()
 		expect(screen.getByRole('menuitem', { name: /项目 B/ })).toBeInTheDocument()
-		expect(getHeaderShortcutSummary()).toBe('⇧ P')
+		expect(getHeaderShortcutSummary()).toBeNull()
 	})
 
 	it('Task placement grouped dropdown 支持 standalone 当前值、mixed indicator 和 clear-only digit', async () => {
@@ -156,7 +200,7 @@ describe('metadata-fields', () => {
 			projects: [{ id: 'project-a', name: '项目 A', spaceId: 'space-a' }],
 		})
 
-		render(
+		renderMetadata(
 			<MetadataPlacementDropdown
 				groups={groupedProps.groups}
 				label='归属'
@@ -177,7 +221,7 @@ describe('metadata-fields', () => {
 		expect(getIndicatorState('项目 A')).toBe('mixed')
 	})
 
-	it('Task placement grouped dropdown 显式 header 优先级高于默认值', async () => {
+	it('Task placement grouped dropdown 支持显式菜单标题和 drawer overlay', async () => {
 		const groupedProps = createTaskPlacementGroupedDropdownProps({
 			mode: 'local',
 			currentSpaceId: 'space-a',
@@ -185,11 +229,10 @@ describe('metadata-fields', () => {
 			projects: [],
 		})
 
-		render(
+		renderMetadata(
 			<MetadataPlacementDropdown
 				drawerOwnedOverlay
 				groups={groupedProps.groups}
-				headerShortcut='X'
 				label='归属'
 				menuAlign='end'
 				menuLabel='显式标题'
@@ -203,7 +246,7 @@ describe('metadata-fields', () => {
 		const menu = await screen.findByRole('menu')
 		expect(menu).toHaveAttribute('data-drawer-owned-overlay', 'true')
 		expect(screen.getByText('显式标题')).toBeInTheDocument()
-		expect(getHeaderShortcutSummary()).toBe('X')
+		expect(getHeaderShortcutSummary()).toBeNull()
 	})
 
 	it('parent project action spec 只保留 generic 语义', () => {
@@ -216,6 +259,10 @@ describe('metadata-fields', () => {
 		})
 	})
 })
+
+function renderMetadata(ui: React.ReactNode) {
+	return render(<TooltipProvider>{ui}</TooltipProvider>)
+}
 
 function getShortcutHintDigits() {
 	return [...document.querySelectorAll('[data-slot="shortcut-menu-item-hint"]')].map(

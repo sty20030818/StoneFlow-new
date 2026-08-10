@@ -11,7 +11,6 @@ import {
 	SIDEBAR_WIDTH_MAX,
 	SIDEBAR_WIDTH_MIN,
 } from '@/shared/lib/shellSidebarGeometry'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/base/tooltip'
 import {
 	SidebarContext,
 	type SidebarContextValue,
@@ -21,6 +20,7 @@ import {
 	type SidebarVisualState,
 	useSidebar,
 } from '@/shared/components/base/sidebar-context'
+import { ActionTooltip } from '@/shared/components/tooltip'
 
 // Shell 响应式断点：>=1024 视作 desktop（桌面态），<1024 视作 mobile（抽屉态）
 const SIDEBAR_DESKTOP_BREAKPOINT_PX = 1024
@@ -483,8 +483,6 @@ const sidebarMenuButtonVariants = cva(
 type SidebarMenuButtonProps = React.ComponentProps<'button'> &
 	VariantProps<typeof sidebarMenuButtonVariants> & {
 		asChild?: boolean
-		/** icon 折叠态的浮层提示文案；展开态下忽略 */
-		tooltip?: string
 	}
 
 function SidebarMenuButton({
@@ -492,12 +490,11 @@ function SidebarMenuButton({
 	asChild = false,
 	isActive = false,
 	size = 'default',
-	tooltip,
 	children,
 	...props
 }: SidebarMenuButtonProps) {
 	const Comp = asChild ? Slot.Root : 'button'
-	const button = (
+	return (
 		<Comp
 			className={cn(sidebarMenuButtonVariants({ className, isActive, size }))}
 			data-active={isActive}
@@ -506,24 +503,6 @@ function SidebarMenuButton({
 		>
 			{children}
 		</Comp>
-	)
-
-	if (!tooltip) {
-		return button
-	}
-
-	// 展开态隐藏 tooltip，避免和原文重复；折叠/抽屉关闭态才展示
-	return (
-		<Tooltip>
-			<TooltipTrigger asChild>{button}</TooltipTrigger>
-			<TooltipContent
-				className='group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:hidden group-data-[sidebar-layout=mobile]/sidebar-wrapper:hidden'
-				side='right'
-				sideOffset={8}
-			>
-				{tooltip}
-			</TooltipContent>
-		</Tooltip>
 	)
 }
 
@@ -641,124 +620,134 @@ function SidebarRail({ className, ...props }: React.ComponentProps<'button'>) {
 		lastWidth: number
 		raf: number | null
 	}>({ startX: 0, startWidth: sidebarWidth, dragged: false, lastWidth: sidebarWidth, raf: null })
+	const toggleLabel = desktopPreference === 'expanded' ? '收起侧边栏' : '展开侧边栏'
+
 	return (
-		<button
-			aria-label={desktopPreference === 'expanded' ? '收起侧边栏' : '展开侧边栏'}
-			className={cn(
-				// rail 热区仍然跨过分界线，但缩窄到 8px，避免压住 sidebar 右侧滚动条。
-				'group/sidebar-rail absolute inset-y-0 right-0 z-20 flex w-2 translate-x-1/2 items-stretch select-none group-data-[sidebar-layout=mobile]/sidebar-wrapper:hidden',
-				// 展开态允许拖拽改宽；折叠态用向右展开语义的箭头 cursor。
-				visualState === 'desktop-expanded' ? 'cursor-col-resize' : 'cursor-pointer',
-				className,
-			)}
-			data-slot='sidebar-rail'
-			onClick={() => {
-				// 如果刚刚发生过拖拽手势，则忽略 click（避免拖拽结束后又触发一次切换）
-				if (dragStateRef.current.dragged) {
-					dragStateRef.current.dragged = false
-					return
-				}
-				toggleSidebar()
-			}}
-			onPointerDown={(event) => {
-				// mobile：抽屉宽度固定，不允许拖拽改宽
-				if (visualState !== 'desktop-expanded') return
+		<ActionTooltip>
+			<ActionTooltip.Trigger asChild>
+				<button
+					aria-label={toggleLabel}
+					className={cn(
+						// rail 热区仍然跨过分界线，但缩窄到 8px，避免压住 sidebar 右侧滚动条。
+						'group/sidebar-rail absolute inset-y-0 right-0 z-20 flex w-2 translate-x-1/2 items-stretch select-none group-data-[sidebar-layout=mobile]/sidebar-wrapper:hidden',
+						// 展开态允许拖拽改宽；折叠态用向右展开语义的箭头 cursor。
+						visualState === 'desktop-expanded' ? 'cursor-col-resize' : 'cursor-pointer',
+						className,
+					)}
+					data-slot='sidebar-rail'
+					onClick={() => {
+						// 如果刚刚发生过拖拽手势，则忽略 click（避免拖拽结束后又触发一次切换）
+						if (dragStateRef.current.dragged) {
+							dragStateRef.current.dragged = false
+							return
+						}
+						toggleSidebar()
+					}}
+					onPointerDown={(event) => {
+						// mobile：抽屉宽度固定，不允许拖拽改宽
+						if (visualState !== 'desktop-expanded') return
 
-				dragStateRef.current.startWidth = sidebarWidth
-				dragStateRef.current.lastWidth = sidebarWidth
-				dragStateRef.current.startX = event.clientX
-				dragStateRef.current.dragged = false
-				;(event.currentTarget as HTMLButtonElement).setPointerCapture(event.pointerId)
+						dragStateRef.current.startWidth = sidebarWidth
+						dragStateRef.current.lastWidth = sidebarWidth
+						dragStateRef.current.startX = event.clientX
+						dragStateRef.current.dragged = false
+						;(event.currentTarget as HTMLButtonElement).setPointerCapture(event.pointerId)
 
-				const providerEl = (event.currentTarget as HTMLElement).closest(
-					'[data-slot="sidebar-provider"]',
-				) as HTMLElement | null
-				if (providerEl) {
-					providerEl.dataset.sidebarResizing = 'true'
-				}
-				document.body.style.cursor = 'col-resize'
-			}}
-			onPointerMove={(event) => {
-				if (visualState !== 'desktop-expanded') return
+						const providerEl = (event.currentTarget as HTMLElement).closest(
+							'[data-slot="sidebar-provider"]',
+						) as HTMLElement | null
+						if (providerEl) {
+							providerEl.dataset.sidebarResizing = 'true'
+						}
+						document.body.style.cursor = 'col-resize'
+					}}
+					onPointerMove={(event) => {
+						if (visualState !== 'desktop-expanded') return
 
-				// 仅当按住 rail 拖动时才处理
-				if (!(event.currentTarget as HTMLButtonElement).hasPointerCapture(event.pointerId)) {
-					return
-				}
+						// 仅当按住 rail 拖动时才处理
+						if (!(event.currentTarget as HTMLButtonElement).hasPointerCapture(event.pointerId)) {
+							return
+						}
 
-				const deltaX = event.clientX - dragStateRef.current.startX
-				const threshold = 6
+						const deltaX = event.clientX - dragStateRef.current.startX
+						const threshold = 6
 
-				if (Math.abs(deltaX) > threshold) {
-					dragStateRef.current.dragged = true
-				}
+						if (Math.abs(deltaX) > threshold) {
+							dragStateRef.current.dragged = true
+						}
 
-				const nextWidth = dragStateRef.current.startWidth + deltaX
-				dragStateRef.current.lastWidth = nextWidth
+						const nextWidth = dragStateRef.current.startWidth + deltaX
+						dragStateRef.current.lastWidth = nextWidth
 
-				// 拖动时不走 React setState（避免整棵布局重渲染导致卡顿），只更新 CSS 变量做即时反馈
-				const providerEl = (event.currentTarget as HTMLElement).closest(
-					'[data-slot="sidebar-provider"]',
-				) as HTMLElement | null
-				if (!providerEl) return
+						// 拖动时不走 React setState（避免整棵布局重渲染导致卡顿），只更新 CSS 变量做即时反馈
+						const providerEl = (event.currentTarget as HTMLElement).closest(
+							'[data-slot="sidebar-provider"]',
+						) as HTMLElement | null
+						if (!providerEl) return
 
-				if (dragStateRef.current.raf !== null) return
-				dragStateRef.current.raf = window.requestAnimationFrame(() => {
-					const clamped = clampSidebarWidth(dragStateRef.current.lastWidth)
-					providerEl.style.setProperty('--sf-shell-sidebar-width-current', `${clamped}px`)
-					providerEl.style.setProperty('--sf-shell-sidebar-panel-width', `${clamped}px`)
-					providerEl.style.setProperty('--sf-shell-sidebar-reserved-width', `${clamped}px`)
-					dragStateRef.current.raf = null
-				})
-			}}
-			onPointerUp={(event) => {
-				const providerEl = (event.currentTarget as HTMLElement).closest(
-					'[data-slot="sidebar-provider"]',
-				) as HTMLElement | null
-				if (providerEl) {
-					providerEl.dataset.sidebarResizing = 'false'
-				}
-				document.body.style.cursor = ''
+						if (dragStateRef.current.raf !== null) return
+						dragStateRef.current.raf = window.requestAnimationFrame(() => {
+							const clamped = clampSidebarWidth(dragStateRef.current.lastWidth)
+							providerEl.style.setProperty('--sf-shell-sidebar-width-current', `${clamped}px`)
+							providerEl.style.setProperty('--sf-shell-sidebar-panel-width', `${clamped}px`)
+							providerEl.style.setProperty('--sf-shell-sidebar-reserved-width', `${clamped}px`)
+							dragStateRef.current.raf = null
+						})
+					}}
+					onPointerUp={(event) => {
+						const providerEl = (event.currentTarget as HTMLElement).closest(
+							'[data-slot="sidebar-provider"]',
+						) as HTMLElement | null
+						if (providerEl) {
+							providerEl.dataset.sidebarResizing = 'false'
+						}
+						document.body.style.cursor = ''
 
-				if ((event.currentTarget as HTMLButtonElement).hasPointerCapture(event.pointerId)) {
-					;(event.currentTarget as HTMLButtonElement).releasePointerCapture(event.pointerId)
-				}
-				if (dragStateRef.current.raf !== null) {
-					window.cancelAnimationFrame(dragStateRef.current.raf)
-					dragStateRef.current.raf = null
-				}
+						if ((event.currentTarget as HTMLButtonElement).hasPointerCapture(event.pointerId)) {
+							;(event.currentTarget as HTMLButtonElement).releasePointerCapture(event.pointerId)
+						}
+						if (dragStateRef.current.raf !== null) {
+							window.cancelAnimationFrame(dragStateRef.current.raf)
+							dragStateRef.current.raf = null
+						}
 
-				// 松手时一次性写回 state + 持久化
-				if (
-					layoutMode === 'desktop' &&
-					desktopPreference === 'expanded' &&
-					dragStateRef.current.dragged
-				) {
-					// 只在松手时通知外层提交宽度，拖动过程仍然只改 CSS 变量以保持丝滑。
-					setSidebarWidth(dragStateRef.current.lastWidth)
-				}
-			}}
-			onPointerCancel={() => {
-				document.body.style.cursor = ''
-			}}
-			style={{
-				cursor:
-					visualState === 'desktop-expanded'
-						? 'col-resize'
-						: visualState === 'desktop-collapsed'
-							? 'e-resize'
-							: undefined,
-			}}
-			tabIndex={-1}
-			type='button'
-			{...props}
-		>
-			<span
-				aria-hidden='true'
-				// rail 左边缘在边界左侧 4px，因此中心线正好压在边界上
-				className='pointer-events-none absolute inset-y-0 left-1/2 w-1 -translate-x-1/2 bg-transparent transition-colors group-hover/sidebar-rail:bg-sf-border-strong'
-			/>
-		</button>
+						// 松手时一次性写回 state + 持久化
+						if (
+							layoutMode === 'desktop' &&
+							desktopPreference === 'expanded' &&
+							dragStateRef.current.dragged
+						) {
+							// 只在松手时通知外层提交宽度，拖动过程仍然只改 CSS 变量以保持丝滑。
+							setSidebarWidth(dragStateRef.current.lastWidth)
+						}
+					}}
+					onPointerCancel={() => {
+						document.body.style.cursor = ''
+					}}
+					style={{
+						cursor:
+							visualState === 'desktop-expanded'
+								? 'col-resize'
+								: visualState === 'desktop-collapsed'
+									? 'e-resize'
+									: undefined,
+					}}
+					tabIndex={-1}
+					type='button'
+					{...props}
+				>
+					<span
+						aria-hidden='true'
+						// rail 左边缘在边界左侧 4px，因此中心线正好压在边界上
+						className='pointer-events-none absolute inset-y-0 left-1/2 w-1 -translate-x-1/2 bg-transparent transition-colors group-hover/sidebar-rail:bg-sf-border-strong'
+					/>
+				</button>
+			</ActionTooltip.Trigger>
+			<ActionTooltip.Content side='right' sideOffset={8}>
+				<ActionTooltip.Row label={toggleLabel} />
+				{visualState === 'desktop-expanded' ? <ActionTooltip.Row label='拖动调整宽度' /> : null}
+			</ActionTooltip.Content>
+		</ActionTooltip>
 	)
 }
 

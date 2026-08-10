@@ -43,7 +43,6 @@ export type MetadataActionOption<TValue> = {
 export type MetadataActionSpec<TValue> = {
 	fieldKey: MetadataActionFieldKey
 	headerLabel: string
-	headerShortcut?: string
 	commandPlaceholder?: string
 	options: Array<MetadataActionOption<TValue>>
 }

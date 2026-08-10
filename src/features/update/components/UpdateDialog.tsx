@@ -24,6 +24,7 @@ import {
 	dialogShellTitleClass,
 } from '@/shared/components/patterns/dialog-shell'
 import { StatusNotice } from '@/shared/components/StatusNotice'
+import { ActionTooltip, DisabledActionTooltip } from '@/shared/components/tooltip'
 import { normalizeTauriError } from '@/shared/lib/normalize-tauri-error'
 import { cn } from '@/shared/lib/utils'
 import { ChangelogRelease, useChangelog } from '@/features/changelog'
@@ -55,6 +56,7 @@ export function UpdateDialog() {
 	const updateInfo = snapshot.update
 	const [currentVersion, setCurrentVersion] = useState<string | null>(null)
 	const [readySettings, setReadySettings] = useState<ReadySettingsState>(null)
+	const [closeTooltipOpen, setCloseTooltipOpen] = useState(false)
 
 	const isDownloading = phase === 'downloading'
 	const isReady = phase === 'ready'
@@ -124,6 +126,12 @@ export function UpdateDialog() {
 		}
 	}, [readyKey])
 
+	useEffect(() => {
+		if (!dialogVisible || isInstalling) {
+			setCloseTooltipOpen(false)
+		}
+	}, [dialogVisible, isInstalling])
+
 	const currentReadySettings = readySettings?.key === readyKey ? readySettings : null
 	const settingsLoading =
 		isReady && currentReadySettings?.status !== 'loaded' && currentReadySettings?.status !== 'error'
@@ -137,7 +145,15 @@ export function UpdateDialog() {
 	const canInstall = Boolean(updateInfo && configuredChannel && !settingsError && !settingsLoading)
 
 	function handleOpenChange(nextOpen: boolean) {
-		if (!nextOpen && !isInstalling) closeDialog()
+		if (!nextOpen && !isInstalling) {
+			setCloseTooltipOpen(false)
+			closeDialog()
+		}
+	}
+
+	function handleClose() {
+		setCloseTooltipOpen(false)
+		closeDialog()
 	}
 
 	async function handleSkip() {
@@ -230,17 +246,38 @@ export function UpdateDialog() {
 						<h2 className={dialogShellTitleClass}>{titleText}</h2>
 						<p className={dialogShellDescriptionClass}>{descText}</p>
 					</div>
-					<Button
-						type='button'
-						variant='ghost'
-						size='icon-sm'
-						className='size-7 shrink-0 text-sf-icon-secondary'
-						aria-label='关闭'
-						disabled={isInstalling}
-						onClick={closeDialog}
-					>
-						<XIcon className='size-3.5' aria-hidden />
-					</Button>
+					{isInstalling ? (
+						<DisabledActionTooltip label='关闭' reason='安装完成前无法关闭更新窗口'>
+							<Button
+								aria-label='关闭'
+								className='size-7 shrink-0 text-sf-icon-secondary'
+								disabled
+								size='icon-sm'
+								type='button'
+								variant='ghost'
+							>
+								<XIcon aria-hidden className='size-3.5' />
+							</Button>
+						</DisabledActionTooltip>
+					) : (
+						<ActionTooltip onOpenChange={setCloseTooltipOpen} open={closeTooltipOpen}>
+							<ActionTooltip.Trigger asChild>
+								<Button
+									aria-label='关闭'
+									className='size-7 shrink-0 text-sf-icon-secondary'
+									onClick={handleClose}
+									size='icon-sm'
+									type='button'
+									variant='ghost'
+								>
+									<XIcon aria-hidden className='size-3.5' />
+								</Button>
+							</ActionTooltip.Trigger>
+							<ActionTooltip.Content>
+								<ActionTooltip.Row label='关闭' />
+							</ActionTooltip.Content>
+						</ActionTooltip>
+					)}
 				</div>
 
 				{showBody ? (

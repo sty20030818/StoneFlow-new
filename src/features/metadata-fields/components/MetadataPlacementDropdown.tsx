@@ -1,6 +1,7 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { FolderIcon, TargetIcon } from 'lucide-react'
 
+import { CommandShortcut, CommandTooltipRow } from '@/features/command'
 import {
 	buildMetadataShortcutItems,
 	findTaskPlacementGroupItem,
@@ -16,22 +17,24 @@ import {
 	DropdownMenuLabel,
 	DropdownMenuTrigger,
 } from '@/shared/components/base/dropdown-menu'
-import { Kbd } from '@/shared/components/base/kbd'
 import { ShortcutDigitSelectLayer } from '@/shared/components/shortcut-menu'
+import { ActionTooltip, DisabledActionTooltip } from '@/shared/components/tooltip'
 
 import { MetadataFieldButton } from './MetadataFieldButton'
+import type { MetadataCommandShortcut } from './MetadataFieldDropdown'
 import { MetadataPlacementGroupList } from './MetadataPlacementGroupList'
 
 export type MetadataPlacementDropdownProps = {
 	label: string
 	menuLabel?: string
-	headerShortcut?: string | null
+	shortcut?: MetadataCommandShortcut
 	ariaLabel?: string
 	buttonIcon?: ReactNode
 	buttonLabel?: ReactNode
 	compact?: boolean
 	buttonAppearance?: 'default' | 'row-icon'
 	disabled?: boolean
+	disabledReason?: ReactNode
 	drawerOwnedOverlay?: boolean
 	menuAlign?: 'start' | 'center' | 'end'
 	stopPropagation?: boolean
@@ -52,19 +55,22 @@ function GroupedPlacementDropdown({
 	values,
 	groups,
 	menuLabel,
-	headerShortcut,
+	shortcut,
 	ariaLabel,
 	buttonIcon,
 	buttonLabel,
 	compact,
 	buttonAppearance = 'default',
 	disabled,
+	disabledReason,
 	drawerOwnedOverlay,
 	menuAlign = 'start',
 	stopPropagation,
 	shortcutMode = 'clear-only',
 	onChange,
 }: MetadataPlacementDropdownProps) {
+	const [menuOpen, setMenuOpen] = useState(false)
+	const [tooltipOpen, setTooltipOpen] = useState(false)
 	const currentItem = findTaskPlacementGroupItem(groups, value)
 	const selectedValues = values ?? [value]
 	const flatItems = groups.flatMap((group) => group.items)
@@ -81,19 +87,58 @@ function GroupedPlacementDropdown({
 		return null
 	}
 
+	const trigger = (
+		<DropdownMenuTrigger asChild>
+			<MetadataFieldButton
+				ariaLabel={ariaLabel ?? label}
+				appearance={buttonAppearance}
+				compact={compact}
+				disabled={disabled}
+				icon={buttonIcon ?? getGroupedPlacementIcon(currentItem)}
+				label={buttonLabel ?? currentItem.title}
+				stopPropagation={stopPropagation}
+				suppressOverflowTooltip={menuOpen}
+			/>
+		</DropdownMenuTrigger>
+	)
+	const shouldShowTooltip = buttonAppearance === 'row-icon' || shortcut !== undefined
+	const triggerLabel = ariaLabel ?? label
+
 	return (
-		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<MetadataFieldButton
-					ariaLabel={ariaLabel ?? label}
-					appearance={buttonAppearance}
-					compact={compact}
-					disabled={disabled}
-					icon={buttonIcon ?? getGroupedPlacementIcon(currentItem)}
-					label={buttonLabel ?? currentItem.title}
-					stopPropagation={stopPropagation}
-				/>
-			</DropdownMenuTrigger>
+		<DropdownMenu
+			onOpenChange={(open) => {
+				setMenuOpen(open)
+				if (open) {
+					setTooltipOpen(false)
+				}
+			}}
+			open={menuOpen}
+		>
+			{disabled && disabledReason ? (
+				<DisabledActionTooltip label={triggerLabel} reason={disabledReason}>
+					{trigger}
+				</DisabledActionTooltip>
+			) : shouldShowTooltip && !disabled ? (
+				<ActionTooltip
+					onOpenChange={(open) => setTooltipOpen(open && !menuOpen)}
+					open={tooltipOpen && !menuOpen}
+				>
+					<ActionTooltip.Trigger asChild>{trigger}</ActionTooltip.Trigger>
+					<ActionTooltip.Content>
+						{shortcut ? (
+							<CommandTooltipRow
+								commandId={shortcut.commandId}
+								label={triggerLabel}
+								scope={shortcut.scope}
+							/>
+						) : (
+							<ActionTooltip.Row label={triggerLabel} />
+						)}
+					</ActionTooltip.Content>
+				</ActionTooltip>
+			) : (
+				trigger
+			)}
 			<DropdownMenuContent
 				align={menuAlign}
 				data-drawer-owned-overlay={drawerOwnedOverlay ? 'true' : undefined}
@@ -103,13 +148,12 @@ function GroupedPlacementDropdown({
 				<DropdownMenuLabel className='px-2 py-1.5 text-[12px] normal-case tracking-normal'>
 					<span className='flex items-center gap-2'>
 						<span className='min-w-0 flex-1 truncate'>{menuLabel}</span>
-						{headerShortcut ? (
-							<Kbd
-								className='h-5 min-w-5 rounded-sm border border-sf-border-subtle bg-background/90 px-1.5 text-[11px] font-medium text-muted-foreground'
-								data-slot='metadata-field-menu-shortcut-summary'
-							>
-								{headerShortcut}
-							</Kbd>
+						{shortcut ? (
+							<CommandShortcut
+								commandId={shortcut.commandId}
+								kbdClassName='h-5 min-w-5 rounded-sm border border-sf-border-subtle bg-background/90 px-1.5 text-[11px] font-medium text-muted-foreground'
+								scope={shortcut.scope}
+							/>
 						) : null}
 					</span>
 				</DropdownMenuLabel>

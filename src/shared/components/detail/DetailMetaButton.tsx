@@ -3,6 +3,7 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react'
 
 import { cn } from '@/shared/lib/utils'
 import { buttonVariants } from '@/shared/components/base/button'
+import { OverflowTooltip } from '@/shared/components/tooltip'
 
 type DetailMetaButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> & {
 	icon?: ReactNode
@@ -25,7 +26,9 @@ export const DetailMetaButton = forwardRef<HTMLButtonElement, DetailMetaButtonPr
 				type={type}
 			>
 				{icon}
-				<span className='min-w-0 flex-1 truncate text-left'>{label}</span>
+				<OverflowTooltip className='min-w-0 flex-1 text-left' content={label}>
+					{label}
+				</OverflowTooltip>
 				{trailing}
 			</button>
 		)

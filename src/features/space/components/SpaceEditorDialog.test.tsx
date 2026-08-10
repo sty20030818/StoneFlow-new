@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, screen } from '@testing-library/react'
 import { useMemo, useState } from 'react'
 
 import {
@@ -6,6 +6,7 @@ import {
 	useRegisterSubmitTarget,
 	useSubmitRegistryContext,
 } from '@/features/submit'
+import { renderWithInteractionProviders as render } from '@/test/TestInteractionProviders'
 import { SpaceEditorDialog } from './SpaceEditorDialog'
 
 describe('SpaceEditorDialog', () => {

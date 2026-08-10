@@ -1,7 +1,8 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 
 import { DangerConfirmProvider } from '@/features/danger-confirm'
 import type { ProjectOverviewItem } from '@/shared/types'
+import { renderWithInteractionProviders as render } from '@/test/TestInteractionProviders'
 import { ProjectRowAdapter, type ProjectRowAdapterProps } from './ProjectRowAdapter'
 
 function createProject(

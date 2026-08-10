@@ -1,7 +1,7 @@
 # entity-detail · 实体详情导航
 
 > 作用：描述 **当前已落地** 的 `src/features/entity-detail` 边界  
-> 最后更新：2026-07-18
+> 最后更新：2026-08-10
 
 ---
 
@@ -9,10 +9,10 @@
 
 **负责：**
 
-- 实体详情 URL search 契约：`?task=` / `?project=`
+- 任务详情抽屉 URL search 契约：`?task=`
 - 解析、构建、清理 search 参数
-- 抽屉开关与独立详情页导航（`useEntityDetailController`）
-- 壳层抽屉宿主：按 kind 分发 `TaskDrawer` / 项目占位
+- 任务抽屉开关与任务/项目独立详情页导航（`useEntityDetailController`）
+- 壳层抽屉宿主：挂载真实可用的 `TaskDrawer`
 
 **不负责：**
 
@@ -43,7 +43,7 @@ src/features/entity-detail/
 
 | 类 | 符号 |
 |----|------|
-| 类型 | `EntityDetailKind` · `EntityDetailTarget` · `EntityDetailRouteState` · `EntityDetailOpenMode` · `EntityDetailNavigationTarget` · `EntityDetailParseResult` |
+| 类型 | `EntityDetailKind` · `EntityDetailTarget` · `EntityDetailDrawerTarget` · `EntityDetailRouteState` · `EntityDetailNavigationTarget` · `EntityDetailParseResult` |
 | Search | `parseEntityDetailRouteState` · `buildEntityDetailSearch` · `clearEntityDetailSearch` · `normalizeEntityDetailId` |
 | 导航 | `openEntityDrawerTarget` · `closeEntityDrawerTarget` · `resolveEntityPageTarget` |
 | 控制 | `useEntityDetailController` |
@@ -75,7 +75,7 @@ src/features/entity-detail/
 
 | 状态 | 落点 |
 |------|------|
-| 当前打开实体 | **URL search** `task` / `project` 查询参数 |
+| 当前打开任务 | **URL search** `task` 查询参数；历史 `project` 参数只负责清理 |
 | 抽屉开闭 | **URL**（controller 驱动 `navigate`，非独立 store） |
 | 独立详情页 | **URL** pathname（`resolveEntityPageTarget` → `app/navigation`） |
 | 详情数据 | **Query**（在 `task` / `project` 详情子树，非本域） |

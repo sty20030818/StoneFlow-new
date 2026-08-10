@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { act, fireEvent, render, waitFor } from '@testing-library/react'
+import { act, fireEvent, waitFor } from '@testing-library/react'
 
 import {
 	Sidebar,
@@ -9,6 +9,7 @@ import {
 	SidebarTrigger,
 } from '@/shared/components/base/sidebar'
 import { DEFAULT_SIDEBAR_WIDTH } from '@/shared/lib/shellSidebarGeometry'
+import { renderWithInteractionProviders as render } from '@/test/TestInteractionProviders'
 
 type MatchMediaController = {
 	setMatches: (matches: boolean) => void

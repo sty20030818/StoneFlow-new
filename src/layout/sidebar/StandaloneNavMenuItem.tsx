@@ -1,4 +1,5 @@
 import { openSection } from '@/app/navigation'
+import { COMMAND_IDS } from '@/features/command'
 import type { Scope } from '@/shared/types'
 import { SidebarMenuItem } from '@/shared/components/base/sidebar'
 import { TargetIcon } from 'lucide-react'
@@ -25,11 +26,11 @@ export function StandaloneNavMenuItem({
 		<SidebarMenuItem>
 			<SidebarNavRow
 				badge={badge}
+				commandId={COMMAND_IDS.goStandalone}
 				contextMenuContent={contextMenuContent}
 				icon={TargetIcon}
 				label='独立事项'
 				to={standalonePath}
-				tooltip='独立事项'
 			/>
 		</SidebarMenuItem>
 	)

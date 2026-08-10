@@ -24,7 +24,7 @@ import {
 	getTaskPlacementTargetValue,
 	resolveTaskPlacementTarget,
 	type TaskPlacementGroup,
-} from '@/features/metadata-fields'
+} from '@/features/metadata-fields/contract'
 import type { CommandContext, CommandId } from '@/features/command/core'
 import type { SearchProjectItem, Space } from '@/shared/types'
 
@@ -163,15 +163,13 @@ export function buildCommandTaskPlacementGroups({
 		currentSpaceId: resolveTaskPlacementCurrentSpaceId(context),
 		spaces,
 		projects,
-	}).map(
-		(group): CommandTaskPlacementGroup => ({
-			...group,
-			items: group.items.map((item) => ({
-				...item,
-				leading: getCommandMenuPlacementLeading(item.target.kind),
-			})),
-		}),
-	)
+	}).map((group): CommandTaskPlacementGroup => ({
+		...group,
+		items: group.items.map((item) => ({
+			...item,
+			leading: getCommandMenuPlacementLeading(item.target.kind),
+		})),
+	}))
 }
 
 export function resolveCommandIcon(commandId: CommandId): ComponentType<LucideProps> {

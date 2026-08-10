@@ -1,14 +1,18 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import { createShellCommandRegistry } from '@/features/command/commands'
 import { CommandRuntime, createEmptyCommandContext } from '@/features/command/core'
+import { DEFAULT_KEYBINDINGS, KeybindingRegistry } from '@/features/command/keybinding'
+import { ShortcutRegistryProvider } from '@/features/command/shortcuts'
 import type { ShellCommandActions } from '@/features/command/adapters'
+import { TASK_ROW_SHORTCUT_BINDINGS } from '@/features/task/shortcut-contribution'
+import { TooltipProvider } from '@/shared/components/base/tooltip'
 
 import { ShortcutHelp } from './ShortcutHelp'
 
 describe('ShortcutHelp', () => {
-	it('按分类展示命令、保留 command-only，并显示快捷键或无默认快捷键', () => {
-		render(
+	it('按分类仅展示拥有真实绑定的快捷键', async () => {
+		renderShortcutHelp(
 			<ShortcutHelp
 				context={createEmptyCommandContext()}
 				description='测试'
@@ -23,13 +27,18 @@ describe('ShortcutHelp', () => {
 		expect(screen.getByText('打开命令菜单')).toBeInTheDocument()
 		expect(screen.getByText('完成任务')).toBeInTheDocument()
 		expect(screen.getByRole('button', { name: '关闭快捷键帮助' })).toBeInTheDocument()
-		expect(screen.getAllByText('命令内').length).toBeGreaterThan(0)
 		expect(screen.getAllByText('/').length).toBeGreaterThan(0)
-		expect(screen.getAllByText('未绑定').length).toBeGreaterThan(0)
+		expect(screen.queryByText('命令内')).not.toBeInTheDocument()
+		expect(screen.queryByText('未绑定')).not.toBeInTheDocument()
+		const closeButton = screen.getByRole('button', { name: '关闭快捷键帮助' })
+		fireEvent.focus(closeButton)
+		expect(await screen.findByRole('tooltip')).toHaveTextContent('关闭')
+		fireEvent.click(closeButton)
+		await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument())
 	})
 
 	it('列表区使用统一滚动容器，标题区不进入滚动层', () => {
-		render(
+		renderShortcutHelp(
 			<ShortcutHelp
 				context={createEmptyCommandContext()}
 				description='测试'
@@ -54,6 +63,19 @@ function createRuntime() {
 		registry: createShellCommandRegistry(createActions()),
 		getContext: createEmptyCommandContext,
 	})
+}
+
+const shortcutRegistry = new KeybindingRegistry([
+	...DEFAULT_KEYBINDINGS,
+	...TASK_ROW_SHORTCUT_BINDINGS,
+])
+
+function renderShortcutHelp(node: React.ReactNode) {
+	return render(
+		<ShortcutRegistryProvider registry={shortcutRegistry}>
+			<TooltipProvider>{node}</TooltipProvider>
+		</ShortcutRegistryProvider>,
+	)
 }
 
 function createActions(): ShellCommandActions {

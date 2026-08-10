@@ -1,11 +1,12 @@
 /** @vitest-environment jsdom */
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 
 import {
 	SubmitRegistryProvider,
 	useSubmitRegistryActions,
 	useSubmitRegistryContext,
 } from '@/features/submit'
+import { renderWithInteractionProviders as render } from '@/test/TestInteractionProviders'
 import { TaskCreateContent } from './TaskCreateContent'
 
 const createTaskMock = vi.fn()

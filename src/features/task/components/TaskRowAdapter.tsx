@@ -1,5 +1,6 @@
 import { memo, useMemo } from 'react'
 
+import { COMMAND_IDS, CommandShortcut } from '@/features/command'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { TaskContextMenu } from '@/features/task/components/TaskContextMenu'
 import type { TaskContextMenuBulkActions } from '@/features/task/components/useTaskContextMenuBulkActions'
@@ -9,8 +10,8 @@ import {
 	getTaskPriorityMetadataDropdownProps,
 	getTaskStatusMetadataDropdownProps,
 	MetadataDateDropdown,
-	MetadataFieldButton,
 	MetadataFieldDropdown,
+	MetadataFieldValue,
 	MetadataPlacementDropdown,
 	resolveTaskPlacementTarget,
 	taskDateMetadataIcons,
@@ -26,6 +27,7 @@ import {
 	RowTitleCell,
 	type RowSelectionGroupPosition,
 } from '@/shared/components/row'
+import { ActionTooltip } from '@/shared/components/tooltip'
 import { formatShortDate } from '@/shared/lib/date'
 
 export type TaskRowAdapterProps = {
@@ -53,7 +55,6 @@ export type TaskRowAdapterProps = {
 		/** Board 级预计算的 placement groups；有则不再按行 build */
 		placementGroups?: TaskPlacementGroup[]
 		placementMenuLabel?: string
-		placementHeaderShortcut?: string
 	}
 	visibleProperties?: readonly TaskDisplayPropertyKey[]
 	/** 跨 Space 列表（所有空间）时固定露出 Space 名，不依赖 display 偏好 */
@@ -72,10 +73,7 @@ export type TaskRowAdapterProps = {
 	}
 }
 
-function taskRowAdapterPropsEqual(
-	prev: TaskRowAdapterProps,
-	next: TaskRowAdapterProps,
-): boolean {
+function taskRowAdapterPropsEqual(prev: TaskRowAdapterProps, next: TaskRowAdapterProps): boolean {
 	// 滚动时父级常新建 rowState / contextTasks 对象；按字段比，避免 memo 失效卡顿
 	if (prev.task !== next.task) return false
 	if (prev.actions !== next.actions) return false
@@ -143,7 +141,6 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 		if (projectBinding?.placementGroups && projectBinding.placementGroups.length > 0) {
 			return {
 				menuLabel: projectBinding.placementMenuLabel ?? '移动到项目...',
-				headerShortcut: projectBinding.placementHeaderShortcut ?? '⇧ P',
 				groups: projectBinding.placementGroups,
 			}
 		}
@@ -294,6 +291,8 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 							ariaLabel={`选择任务 ${task.title}`}
 							checked={isSelected}
 							disabled={isPending}
+							disabledReason='正在更新任务，暂时无法更改选择'
+							tooltipShortcut={<CommandShortcut commandId={COMMAND_IDS.taskSelect} scope='row' />}
 							visible={isSelected || isHovered}
 							onCheckedChange={() => actions.onToggleTaskSelection(task.id)}
 						/>
@@ -303,11 +302,12 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 								buttonAppearance='row-icon'
 								compact
 								disabled={isPending}
+								disabledReason='正在更新任务，暂时无法修改优先级'
 								fieldKey='priority'
-								headerShortcut={priorityDropdownProps.headerShortcut}
 								label='优先级'
 								menuLabel={priorityDropdownProps.menuLabel}
 								options={priorityDropdownProps.options}
+								shortcut={{ commandId: COMMAND_IDS.taskSetPriority, scope: 'row' }}
 								stopPropagation
 								value={task.priority}
 								onChange={(priority) => void actions.onUpdateTaskPriority(task, priority)}
@@ -319,11 +319,12 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 								buttonAppearance='row-icon'
 								compact
 								disabled={isPending}
+								disabledReason='正在更新任务，暂时无法修改状态'
 								fieldKey='status'
-								headerShortcut={statusDropdownProps.headerShortcut}
 								label='状态'
 								menuLabel={statusDropdownProps.menuLabel}
 								options={statusDropdownProps.options}
+								shortcut={{ commandId: COMMAND_IDS.taskSetStatus, scope: 'row' }}
 								stopPropagation
 								value={task.status}
 								onChange={(status) => void actions.onUpdateTaskStatus(task, status)}
@@ -342,10 +343,13 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 							<MetadataDateDropdown
 								ariaLabel={`截止 ${task.title}`}
 								compact
+								disabled={isPending}
+								disabledReason='正在更新任务，暂时无法修改截止时间'
 								hideWhenEmpty
 								icon={taskDateMetadataIcons.due}
 								label='截止时间'
 								menuAlign='end'
+								shortcut={{ commandId: COMMAND_IDS.taskOpenDateMenu, scope: 'row' }}
 								stopPropagation
 								value={task.dueAt}
 								onChange={(value) => void actions.onUpdateTaskDueDate?.(task, value)}
@@ -355,6 +359,8 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 							<MetadataDateDropdown
 								ariaLabel={`计划 ${task.title}`}
 								compact
+								disabled={isPending}
+								disabledReason='正在更新任务，暂时无法修改计划时间'
 								hideWhenEmpty
 								icon={taskDateMetadataIcons.scheduled}
 								label='计划时间'
@@ -368,12 +374,13 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 							<MetadataPlacementDropdown
 								compact
 								disabled={isPending}
+								disabledReason='正在更新任务，暂时无法修改归属'
 								groups={placementDropdownProps.groups}
-								headerShortcut={placementDropdownProps.headerShortcut}
 								label='归属'
 								menuAlign='end'
 								menuLabel={placementDropdownProps.menuLabel}
 								shortcutMode='clear-only'
+								shortcut={{ commandId: COMMAND_IDS.taskChangePlacement, scope: 'row' }}
 								stopPropagation
 								value={projectValue}
 								onChange={(value: TaskPlacementTarget) =>
@@ -383,17 +390,11 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 						) : null}
 						{/* All scope：Space 以行右侧按钮形式展示（与归属/日期并列） */}
 						{showSpaceLabel && spaceButtonVisual.label ? (
-							<MetadataFieldButton
+							<MetadataFieldValue
 								ariaLabel={`所属空间 ${spaceButtonVisual.label}`}
 								compact
 								icon={spaceButtonVisual.icon}
 								label={spaceButtonVisual.label}
-								stopPropagation
-								// 展示用：点击不打开菜单（改归属走 project 按钮）
-								onClick={(event) => {
-									event.preventDefault()
-									event.stopPropagation()
-								}}
 							/>
 						) : null}
 						{showUpdatedAt ? <UpdatedAtCell value={task.updatedAt} /> : null}
@@ -409,14 +410,17 @@ function UpdatedAtCell({ value }: { value: string | null | undefined }) {
 	if (!value) {
 		return null
 	}
+	const formatted = formatShortDate(value)
 
 	return (
-		<span
-			className='shrink-0 text-xs tabular-nums text-sf-text-tertiary'
-			title={`更新于 ${formatShortDate(value)}`}
-		>
-			{formatShortDate(value)}
-		</span>
+		<ActionTooltip>
+			<ActionTooltip.Trigger asChild>
+				<span className='shrink-0 text-xs tabular-nums text-sf-text-tertiary'>{formatted}</span>
+			</ActionTooltip.Trigger>
+			<ActionTooltip.Content>
+				<ActionTooltip.Row label={`更新于 ${formatted}`} />
+			</ActionTooltip.Content>
+		</ActionTooltip>
 	)
 }
 

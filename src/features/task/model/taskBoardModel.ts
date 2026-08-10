@@ -174,9 +174,7 @@ export function buildTaskBoardExtent({
 	// totalCount 仅在 number 时可信（含 0）；undefined/null = 未就绪，不占位
 	const knownTotal = typeof totalCount === 'number' ? totalCount : null
 	const unloadedRowCount =
-		hasNextPage && knownTotal != null
-			? Math.max(0, knownTotal - Math.max(0, loadedServerCount))
-			: 0
+		hasNextPage && knownTotal != null ? Math.max(0, knownTotal - Math.max(0, loadedServerCount)) : 0
 	const spacerSizePx = unloadedRowCount * TASK_BOARD_ROW_SIZE
 	const contentHeightPx = flatSizePx + spacerSizePx
 	return { contentHeightPx, spacerSizePx, unloadedRowCount }
@@ -227,8 +225,7 @@ export function buildTaskBoardStickyPush({
 		nextStickyIndex != null
 			? (itemOffsets[nextStickyIndex] ?? Number.POSITIVE_INFINITY)
 			: Number.POSITIVE_INFINITY
-	const pushOffset =
-		nextStickyIndex == null ? 0 : Math.min(0, nextStart - y - headerSize)
+	const pushOffset = nextStickyIndex == null ? 0 : Math.min(0, nextStart - y - headerSize)
 	return {
 		activeStickyIndex,
 		nextStickyIndex,

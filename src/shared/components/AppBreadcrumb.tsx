@@ -15,6 +15,7 @@ import {
 	breadcrumbLeadForegroundClass,
 	breadcrumbLeadIconClass,
 } from '@/shared/components/patterns/breadcrumb'
+import { OverflowTooltip } from '@/shared/components/tooltip'
 import { cn } from '@/shared/lib/utils'
 
 export type BreadcrumbNode = {
@@ -41,12 +42,13 @@ export function AppBreadcrumb({ items }: AppBreadcrumbProps) {
 				{items.map((item, index) => {
 					const Icon = item.icon
 					const isCurrent = item.current ?? index === items.length - 1
+					const shouldTruncate = item.truncate ?? index > 0
 					const labelClassName = cn(
 						index === 0
 							? breadcrumbLeadForegroundClass
 							: `${breadcrumbLeadClass} text-sf-text-tertiary`,
 						'h-5 items-center leading-none',
-						item.truncate ? 'min-w-0 truncate' : null,
+						shouldTruncate ? 'min-w-0 max-w-full' : null,
 						isCurrent ? 'font-semibold text-foreground' : null,
 					)
 
@@ -58,7 +60,7 @@ export function AppBreadcrumb({ items }: AppBreadcrumbProps) {
 							label={item.label}
 							labelClassName={labelClassName}
 							to={item.to}
-							truncate={item.truncate ?? index > 0}
+							truncate={shouldTruncate}
 						>
 							{index > 0 ? <BreadcrumbSeparator /> : null}
 						</BreadcrumbNodeItem>
@@ -88,6 +90,14 @@ function BreadcrumbNodeItem({
 	to,
 	truncate,
 }: BreadcrumbNodeItemProps) {
+	const labelNode = truncate ? (
+		<OverflowTooltip className='min-w-0 flex-1' content={label}>
+			{label}
+		</OverflowTooltip>
+	) : (
+		label
+	)
+
 	return (
 		<>
 			{children}
@@ -95,13 +105,13 @@ function BreadcrumbNodeItem({
 				{isCurrent || !to ? (
 					<BreadcrumbPage className={labelClassName}>
 						{Icon ? <Icon aria-hidden className={breadcrumbLeadIconClass} /> : null}
-						{label}
+						{labelNode}
 					</BreadcrumbPage>
 				) : (
 					<BreadcrumbLink asChild className={labelClassName}>
 						<Link from='/' to={to as never}>
 							{Icon ? <Icon aria-hidden className={breadcrumbLeadIconClass} /> : null}
-							{label}
+							{labelNode}
 						</Link>
 					</BreadcrumbLink>
 				)}

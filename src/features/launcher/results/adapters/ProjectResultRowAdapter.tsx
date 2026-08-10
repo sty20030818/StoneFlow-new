@@ -2,6 +2,7 @@ import { FolderIcon } from 'lucide-react'
 
 import type { LauncherProjectItem } from '../../model/types'
 import { RowShell } from '@/shared/components/row'
+import { OverflowTooltip } from '@/shared/components/tooltip'
 
 type ProjectResultRowAdapterProps = {
 	item: LauncherProjectItem
@@ -41,10 +42,15 @@ export function ProjectResultRowAdapter({
 
 				<RowShell.Title>
 					<div className='min-w-0'>
-						<div className='truncate text-[12.5px] text-foreground'>{item.name}</div>
-						<div className='mt-0.5 truncate text-[11px] text-sf-text-quaternary'>
+						<OverflowTooltip className='text-[12.5px] text-foreground' content={item.name}>
+							{item.name}
+						</OverflowTooltip>
+						<OverflowTooltip
+							className='mt-0.5 text-[11px] text-sf-text-quaternary'
+							content={item.spaceName}
+						>
 							{item.spaceName}
-						</div>
+						</OverflowTooltip>
 					</div>
 				</RowShell.Title>
 			</RowShell.Left>

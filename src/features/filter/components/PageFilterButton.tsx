@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react'
 import { ListFilterIcon } from 'lucide-react'
 
+import { COMMAND_IDS, CommandActionTooltip } from '@/features/command'
 import { Button } from '@/shared/components/base/button'
 
 import { subscribeFilterUiEvent } from '../model/filterUiEvents'
@@ -20,10 +21,12 @@ export function PageFilterButton({ className }: PageFilterButtonProps) {
 	const filterUi = useListFilterUi()
 	const pageFilter = usePageFilterContext()
 	const [menuOpen, setMenuOpen] = useState(false)
+	const [tooltipOpen, setTooltipOpen] = useState(false)
 
 	useEffect(() => {
 		return subscribeFilterUiEvent((event) => {
 			if (event.type === 'open-menu') {
+				setTooltipOpen(false)
 				setMenuOpen(true)
 				return
 			}
@@ -37,41 +40,62 @@ export function PageFilterButton({ className }: PageFilterButtonProps) {
 	const hasActive = filterUi
 		? !filterUi.session.isEmpty || filterUi.session.dirty
 		: pageFilter.state.hasActiveFilters
+	const label = hasActive ? '筛选（已启用）' : '筛选'
 
 	const trigger = (
-		<Button
-			aria-label={hasActive ? '筛选（已启用）' : '筛选'}
-			className={className}
-			data-active={hasActive ? 'true' : undefined}
-			size='icon-sm'
-			type='button'
-			variant='outline'
+		<CommandActionTooltip
+			commandId={COMMAND_IDS.filterAdd}
+			label={label}
+			onOpenChange={(nextOpen) => setTooltipOpen(menuOpen ? false : nextOpen)}
+			open={tooltipOpen}
 		>
-			<ListFilterIcon />
-		</Button>
-	)
-
-	if (!filterUi) {
-		return (
 			<Button
-				aria-label={hasActive ? '筛选（已启用）' : '筛选'}
+				aria-label={label}
 				className={className}
 				data-active={hasActive ? 'true' : undefined}
-				onClick={() => {
-					pageFilter.actions.openFilterMenu()
-				}}
 				size='icon-sm'
 				type='button'
 				variant='outline'
 			>
 				<ListFilterIcon />
 			</Button>
+		</CommandActionTooltip>
+	)
+
+	if (!filterUi) {
+		return (
+			<CommandActionTooltip
+				commandId={COMMAND_IDS.filterAdd}
+				label={label}
+				onOpenChange={setTooltipOpen}
+				open={tooltipOpen}
+			>
+				<Button
+					aria-label={label}
+					className={className}
+					data-active={hasActive ? 'true' : undefined}
+					onClick={() => {
+						setTooltipOpen(false)
+						pageFilter.actions.openFilterMenu()
+					}}
+					size='icon-sm'
+					type='button'
+					variant='outline'
+				>
+					<ListFilterIcon />
+				</Button>
+			</CommandActionTooltip>
 		)
 	}
 
 	return (
 		<FilterMenu
-			onOpenChange={setMenuOpen}
+			onOpenChange={(nextOpen) => {
+				setMenuOpen(nextOpen)
+				if (nextOpen) {
+					setTooltipOpen(false)
+				}
+			}}
 			open={menuOpen}
 			trigger={trigger}
 		/>

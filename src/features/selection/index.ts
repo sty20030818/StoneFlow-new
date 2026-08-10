@@ -23,9 +23,6 @@ export {
 /** 通用实体多选 / 焦点（task/project/lifecycle 列表）。 */
 export { useEntitySelection } from './model/useEntitySelection'
 
-/** Escape 清空选择。 */
-export { useEntitySelectionEscape } from './model/useEntitySelectionEscape'
-
 // ── 行快捷键作用域 ──────────────────────────────────────────────────────────
 
 /**
@@ -36,3 +33,6 @@ export {
 	EntityRowShortcutScope,
 	type EntityRowShortcutState,
 } from './components/EntityRowShortcutScope'
+
+/** 由 AppProviders 在组合根注入统一 KeybindingRegistry。 */
+export { SELECTION_SHORTCUT_BINDINGS } from './shortcuts'

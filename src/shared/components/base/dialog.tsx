@@ -5,6 +5,7 @@ import { Dialog as DialogPrimitive } from 'radix-ui'
 
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/components/base/button'
+import { ActionTooltip } from '@/shared/components/tooltip'
 import { XIcon } from 'lucide-react'
 
 function Dialog({ ...props }: React.ComponentProps<typeof DialogPrimitive.Root>) {
@@ -65,16 +66,32 @@ function DialogContent({
 				{...props}
 			>
 				{children}
-				{showCloseButton && (
-					<DialogPrimitive.Close data-slot='dialog-close' asChild>
-						<Button variant='ghost' className='absolute top-2 right-2' size='icon-sm'>
-							<XIcon />
-							<span className='sr-only'>Close</span>
-						</Button>
-					</DialogPrimitive.Close>
-				)}
+				{showCloseButton ? <DialogIconCloseButton /> : null}
 			</DialogPrimitive.Content>
 		</DialogPortal>
+	)
+}
+
+function DialogIconCloseButton() {
+	return (
+		<ActionTooltip>
+			<ActionTooltip.Trigger asChild>
+				<DialogPrimitive.Close data-slot='dialog-close' asChild>
+					<Button
+						aria-label='关闭'
+						className='absolute top-2 right-2'
+						size='icon-sm'
+						type='button'
+						variant='ghost'
+					>
+						<XIcon />
+					</Button>
+				</DialogPrimitive.Close>
+			</ActionTooltip.Trigger>
+			<ActionTooltip.Content>
+				<ActionTooltip.Row label='关闭' />
+			</ActionTooltip.Content>
+		</ActionTooltip>
 	)
 }
 
@@ -104,7 +121,7 @@ function DialogFooter({
 			{children}
 			{showCloseButton && (
 				<DialogPrimitive.Close asChild>
-					<Button variant='outline'>Close</Button>
+					<Button variant='outline'>关闭</Button>
 				</DialogPrimitive.Close>
 			)}
 		</div>

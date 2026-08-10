@@ -1,9 +1,9 @@
 import { useCallback, useRef, useState } from 'react'
 import { FormProvider, useController } from 'react-hook-form'
-import { toast } from 'sonner'
 
 import { useCreateProjectMutation } from '../hooks/project.mutations'
 import type { ProjectDetail } from '../model/types'
+import { COMMAND_IDS, CommandActionTooltip } from '@/features/command'
 import { useSubmitTargetFromForm, type SubmitIntent } from '@/features/submit'
 import { normalizeSubmitError, useZodForm } from '@/shared/form'
 import { Button } from '@/shared/components/base/button'
@@ -11,7 +11,7 @@ import { Input } from '@/shared/components/base/input'
 import { Switch } from '@/shared/components/base/switch'
 import { Textarea } from '@/shared/components/base/textarea'
 import { CreateModalContent } from '@/shared/components/create-modal-content'
-import { MoreHorizontalIcon, PaperclipIcon } from 'lucide-react'
+import { DisabledActionTooltip } from '@/shared/components/tooltip'
 import {
 	buildProjectCreateDefaultValues,
 	projectCreateSchema,
@@ -60,6 +60,13 @@ export function ProjectCreateContent({
 	}, [form])
 
 	const canSubmit = !isSubmitting && Boolean(selectedSpaceId) && nameField.value.trim().length > 0
+	const submitDisabledReason = isSubmitting
+		? '正在创建项目'
+		: nameField.value.trim().length === 0
+			? '请先填写项目名称'
+			: !selectedSpaceId
+				? '请先选择所属 Space'
+				: null
 
 	const submitProject = useCallback(
 		async (intent: SubmitIntent = 'default') => {
@@ -114,6 +121,12 @@ export function ProjectCreateContent({
 		submit: submitProject,
 	})
 
+	const submitButton = (
+		<Button disabled={!canSubmit} onClick={() => void submitProject('default')} size='sm'>
+			{submitState === 'submitting' ? '创建中…' : '创建项目'}
+		</Button>
+	)
+
 	return (
 		<FormProvider {...form}>
 			<CreateModalContent>
@@ -139,21 +152,12 @@ export function ProjectCreateContent({
 					/>
 				</CreateModalContent.Body>
 
-				<CreateModalContent.Metadata error={submitState === 'error' ? errorMessage : null}>
-					<Button onClick={() => toast.info('更多属性即将支持')} size='icon-sm' variant='outline'>
-						<MoreHorizontalIcon />
-					</Button>
-				</CreateModalContent.Metadata>
+				{submitState === 'error' ? (
+					<CreateModalContent.Metadata error={errorMessage}>{null}</CreateModalContent.Metadata>
+				) : null}
 
 				<CreateModalContent.Footer>
-					<Button
-						className='text-sf-icon-secondary'
-						onClick={() => toast.info('附件上传功能即将支持')}
-						size='icon-sm'
-						variant='outline'
-					>
-						<PaperclipIcon />
-					</Button>
+					<span aria-hidden />
 
 					<div className='flex items-center gap-3'>
 						<p
@@ -171,9 +175,15 @@ export function ProjectCreateContent({
 							/>
 							创建更多
 						</div>
-						<Button disabled={!canSubmit} onClick={() => void submitProject('default')} size='sm'>
-							{submitState === 'submitting' ? '创建中…' : '创建项目'}
-						</Button>
+						{submitDisabledReason ? (
+							<DisabledActionTooltip label='创建项目' reason={submitDisabledReason}>
+								{submitButton}
+							</DisabledActionTooltip>
+						) : (
+							<CommandActionTooltip commandId={COMMAND_IDS.saveOrSubmit} label='创建项目'>
+								{submitButton}
+							</CommandActionTooltip>
+						)}
 					</div>
 				</CreateModalContent.Footer>
 			</CreateModalContent>

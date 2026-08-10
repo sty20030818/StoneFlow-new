@@ -1,8 +1,8 @@
 import { useCallback, useRef, useState } from 'react'
 import { FormProvider, useController } from 'react-hook-form'
-import { toast } from 'sonner'
 
 import { useEntityDetailController } from '@/features/entity-detail'
+import { COMMAND_IDS, CommandActionTooltip } from '@/features/command'
 import { MetadataDateDropdown, taskDateMetadataIcons } from '@/features/metadata-fields'
 import type { ProjectOption } from '@/features/project'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
@@ -20,7 +20,7 @@ import { Input } from '@/shared/components/base/input'
 import { Switch } from '@/shared/components/base/switch'
 import { Textarea } from '@/shared/components/base/textarea'
 import { CreateModalContent } from '@/shared/components/create-modal-content'
-import { MoreHorizontalIcon, PaperclipIcon, TagIcon } from 'lucide-react'
+import { DisabledActionTooltip } from '@/shared/components/tooltip'
 import {
 	buildTaskCreateDefaultValues,
 	taskCreateSchema,
@@ -114,6 +114,13 @@ export function TaskCreateContent({
 	const hasPlacementTarget =
 		placement === 'project' ? projectId.trim().length > 0 : spaceId.trim().length > 0
 	const canSubmit = !isSubmitting && titleField.value.trim().length > 0 && hasPlacementTarget
+	const submitDisabledReason = isSubmitting
+		? '正在创建任务'
+		: titleField.value.trim().length === 0
+			? '请先填写任务标题'
+			: !hasPlacementTarget
+				? '请先选择任务归属'
+				: null
 
 	const resetFieldsOnly = useCallback(() => {
 		const currentValues = form.getValues()
@@ -174,6 +181,12 @@ export function TaskCreateContent({
 		supportedIntents: ['continue', 'open'],
 		submit: submitTask,
 	})
+
+	const submitButton = (
+		<Button disabled={!canSubmit} onClick={() => void submitTask('default')} size='sm'>
+			{submitState === 'submitting' ? '创建中…' : '创建任务'}
+		</Button>
+	)
 
 	return (
 		<FormProvider {...form}>
@@ -253,23 +266,10 @@ export function TaskCreateContent({
 						value={remindAt}
 						onChange={remindAtField.onChange}
 					/>
-					<Button onClick={() => toast.info('标签功能即将支持')} size='sm' variant='outline'>
-						<TagIcon />
-						标签
-					</Button>
-					<Button onClick={() => toast.info('更多属性即将支持')} size='icon-sm' variant='outline'>
-						<MoreHorizontalIcon />
-					</Button>
 				</CreateModalContent.Metadata>
 
 				<CreateModalContent.Footer>
-					<Button
-						onClick={() => toast.info('附件上传功能即将支持')}
-						size='icon-sm'
-						variant='outline'
-					>
-						<PaperclipIcon />
-					</Button>
+					<span aria-hidden />
 
 					<div className='flex items-center gap-3'>
 						<p
@@ -287,9 +287,15 @@ export function TaskCreateContent({
 							/>
 							创建更多
 						</div>
-						<Button disabled={!canSubmit} onClick={() => void submitTask('default')} size='sm'>
-							{submitState === 'submitting' ? '创建中…' : '创建任务'}
-						</Button>
+						{submitDisabledReason ? (
+							<DisabledActionTooltip label='创建任务' reason={submitDisabledReason}>
+								{submitButton}
+							</DisabledActionTooltip>
+						) : (
+							<CommandActionTooltip commandId={COMMAND_IDS.saveOrSubmit} label='创建任务'>
+								{submitButton}
+							</CommandActionTooltip>
+						)}
 					</div>
 				</CreateModalContent.Footer>
 			</CreateModalContent>

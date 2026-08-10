@@ -2,7 +2,8 @@
 
 import { useLayoutEffect, useRef, useState } from 'react'
 
-import { Button } from '@/shared/components/base/button'
+import { buttonVariants } from '@/shared/components/base/button'
+import { cn } from '@/shared/lib/utils'
 import type { CommandSelectedEntity } from '@/features/command/core'
 
 export const COMMAND_SELECTION_CHIP_GAP_PX = 6
@@ -101,28 +102,25 @@ export function CommandMenuSelectionChips({ entities }: { entities: CommandSelec
 function ReadonlySelectionSummaryChip({
 	label,
 	tabular = false,
+	className,
 	...props
-}: React.ComponentProps<typeof Button> & {
+}: React.ComponentProps<'span'> & {
 	label: string
 	tabular?: boolean
 }) {
 	return (
-		<Button
-			aria-hidden='true'
-			className={[
-				'pointer-events-none max-w-56 shrink-0 cursor-default overflow-hidden',
-				tabular ? 'tabular-nums' : null,
-			]
-				.filter(Boolean)
-				.join(' ')}
-			size='default'
-			tabIndex={-1}
-			type='button'
-			variant='outline'
+		<span
 			{...props}
+			aria-hidden='true'
+			className={cn(
+				buttonVariants({ variant: 'outline', size: 'default' }),
+				'pointer-events-none max-w-56 shrink-0 cursor-default overflow-hidden',
+				tabular && 'tabular-nums',
+				className,
+			)}
 		>
 			<span className='truncate'>{label}</span>
-		</Button>
+		</span>
 	)
 }
 

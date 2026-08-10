@@ -30,7 +30,7 @@ export type {
 
 // ── Keybinding ──────────────────────────────────────────────────────────────
 
-export { DEFAULT_KEYBINDINGS, matchKeybindingEvent } from './keybinding'
+export { DEFAULT_KEYBINDINGS, KeybindingRegistry, matchKeybindingEvent } from './keybinding'
 
 export type {
 	Keybinding,
@@ -48,13 +48,40 @@ export { useCommandContext, useCommandRunner, useCommandRuntime } from './runtim
 /**
  * 全局快捷键层与快捷键展示 tokens。
  */
-export { CommandShortcutLayer, getCommandShortcutTokens } from './shortcuts'
+export {
+	CommandShortcutLayer,
+	getShortcutAccessibilityLabel,
+	resolveCommandShortcut,
+	SHORTCUT_DISPATCH_PRIORITY,
+	ShortcutRegistryProvider,
+	useShortcutDispatcher,
+	useShortcutRegistry,
+} from './shortcuts'
 
-export type { CommandChordSession } from './shortcuts'
+export type {
+	CommandChordSession,
+	ShortcutDispatchHandler,
+	ShortcutDispatchPriority,
+	ShortcutDispatchResult,
+} from './shortcuts'
 
 // ── UI ──────────────────────────────────────────────────────────────────────
 
-export { ChordHint, CommandMenu, ShortcutTokens, ShortcutHelp } from './components'
+export {
+	ChordHint,
+	CommandActionTooltip,
+	CommandMenu,
+	CommandShortcut,
+	CommandTooltipRow,
+	ShortcutTokens,
+	ShortcutHelp,
+} from './components'
+
+export type {
+	CommandActionTooltipProps,
+	CommandShortcutProps,
+	CommandTooltipRowProps,
+} from './components'
 
 export type { CommandMenuMode } from './components'
 

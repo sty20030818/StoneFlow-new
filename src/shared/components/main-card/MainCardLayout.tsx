@@ -8,6 +8,7 @@ import {
 	mainCardSectionClass,
 	mainCardToolbarPillVariants,
 } from '@/shared/components/patterns/main-card'
+import { ActionTooltip } from '@/shared/components/tooltip'
 
 /**
  * MainCard 是页级骨架：Root / Header / Body 为正式必选结构。
@@ -43,6 +44,12 @@ type MainCardToolbarProps = {
 type MainCardShellSlotProps = {
 	children: ReactNode
 	className?: string
+}
+
+type MainCardGhostActionProps = Omit<ComponentProps<typeof Button>, 'aria-label' | 'children'> & {
+	'aria-label': string
+	children: ReactNode
+	tooltipShortcut?: ReactNode
 }
 
 function MainCardRoot({ children, className }: MainCardRootProps) {
@@ -139,11 +146,37 @@ function MainCardEmpty({ children, className }: MainCardShellSlotProps) {
 	return <div className={cn('flex min-h-0 flex-1 flex-col', className)}>{children}</div>
 }
 
-function MainCardGhostAction({ children, className, ...props }: ComponentProps<typeof Button>) {
-	return (
-		<Button className={className} size='icon-sm' type='button' variant='ghost' {...props}>
+function MainCardGhostAction({
+	children,
+	className,
+	disabled,
+	'aria-label': ariaLabel,
+	tooltipShortcut,
+	...props
+}: MainCardGhostActionProps) {
+	const action = (
+		<Button
+			aria-label={ariaLabel}
+			className={className}
+			disabled={disabled}
+			size='icon-sm'
+			type='button'
+			variant='ghost'
+			{...props}
+		>
 			{children}
 		</Button>
+	)
+
+	if (disabled) return action
+
+	return (
+		<ActionTooltip>
+			<ActionTooltip.Trigger asChild>{action}</ActionTooltip.Trigger>
+			<ActionTooltip.Content>
+				<ActionTooltip.Row label={ariaLabel} shortcut={tooltipShortcut} />
+			</ActionTooltip.Content>
+		</ActionTooltip>
 	)
 }
 

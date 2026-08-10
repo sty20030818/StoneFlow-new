@@ -4,14 +4,16 @@ import { useBulkActionContext } from '@/features/bulk-action'
 import {
 	CommandRegistry,
 	CommandRuntime,
+	COMMAND_IDS,
 	matchKeybindingEvent,
-	type KeybindingChordState,
+	SHORTCUT_DISPATCH_PRIORITY,
+	useShortcutDispatcher,
+	useShortcutRegistry,
 } from '@/features/command'
 import type { TaskListItem } from '@/shared/types'
 import { useTaskPreviewController } from '@/features/task/detail'
 
 import { resolveTaskRowTarget } from './rowTargetResolver'
-import { TASK_ROW_SHORTCUT_BINDINGS } from './taskRowShortcutBindings'
 import {
 	createTaskRowCommandActions,
 	createTaskRowCommandContext,
@@ -23,7 +25,6 @@ import {
 	getCommandTargetId,
 	hasPointerMovedEnough,
 	isBlockedByHigherLayer,
-	isEditableEventTarget,
 	normalizeKeyboardEvent,
 	toTaskRowRef,
 } from './rowShortcutGuards'
@@ -50,7 +51,7 @@ type UseTaskRowShortcutControllerArgs = {
 }
 
 /**
- * 行快捷键内部状态与 window 键盘绑定（供 Scope 壳消费）。
+ * 行快捷键内部状态与优先级分发器注册（供 Scope 壳消费）。
  */
 export function useTaskRowShortcutController({
 	tasks,
@@ -64,6 +65,12 @@ export function useTaskRowShortcutController({
 	onOpenTask,
 	onPeekTask,
 }: UseTaskRowShortcutControllerArgs): TaskRowShortcutState {
+	const shortcutRegistry = useShortcutRegistry()
+	const rowShortcutBindings = useMemo(() => shortcutRegistry.getByScope('row'), [shortcutRegistry])
+	const listShortcutBindings = useMemo(
+		() => shortcutRegistry.getByScope('list'),
+		[shortcutRegistry],
+	)
 	const { cancelScheduledClose, setHoveredTask } = useTaskPreviewController()
 	const [hoveredId, setHoveredId] = useState<string | null>(focusedTaskId)
 	const [hoverSource, setHoverSource] = useState<HoverSource | null>(
@@ -76,7 +83,6 @@ export function useTaskRowShortcutController({
 	const frozenPointerPointRef = useRef<PointerPoint | null>(null)
 	const lastPointerPointRef = useRef<PointerPoint | null>(null)
 	const shiftToggleSessionRef = useRef<ShiftToggleSession>(EMPTY_SHIFT_TOGGLE_SESSION)
-	const chordStateRef = useRef<KeybindingChordState | null>(null)
 
 	const { runBulkAction } = useBulkActionContext()
 
@@ -233,30 +239,53 @@ export function useTaskRowShortcutController({
 		}
 	}, [cancelScheduledClose, hoveredId, hoverSource, setHoveredTask])
 
-	useEffect(() => {
-		function handleWindowKeyDown(event: KeyboardEvent) {
-			if (isBlockedByHigherLayer()) {
-				return
-			}
+	useShortcutDispatcher(SHORTCUT_DISPATCH_PRIORITY.row, (event) => {
+		if (isBlockedByHigherLayer()) {
+			return 'unhandled'
+		}
 
-			if (
-				(event.metaKey || event.ctrlKey) &&
-				!event.altKey &&
-				!event.shiftKey &&
-				event.key.toLowerCase() === 'a' &&
-				!event.defaultPrevented &&
-				!event.isComposing &&
-				!isEditableEventTarget(event.target)
-			) {
+		const listResult = matchKeybindingEvent({
+			bindings: listShortcutBindings,
+			event: normalizeKeyboardEvent(event),
+			scope: 'list',
+			chordState: null,
+			now: performance.now(),
+		})
+
+		if (
+			listResult.status === 'matched' &&
+			listResult.keybinding.commandId === COMMAND_IDS.selectionSelectAll
+		) {
+			if (listResult.keybinding.preventDefault) {
 				event.preventDefault()
-				shiftToggleSessionRef.current = EMPTY_SHIFT_TOGGLE_SESSION
-				onSelectAllTasks?.(tasks.map((task) => task.id))
-				updateHoveredRow(null, null, {
-					scrollIntoView: false,
-				})
-				return
 			}
+			shiftToggleSessionRef.current = EMPTY_SHIFT_TOGGLE_SESSION
+			onSelectAllTasks?.(tasks.map((task) => task.id))
+			updateHoveredRow(null, null, {
+				scrollIntoView: false,
+			})
+			return 'handled'
+		}
 
+		if (
+			listResult.status === 'matched' &&
+			listResult.keybinding.commandId === COMMAND_IDS.selectionClear
+		) {
+			if (selectedTaskIds.length === 0) {
+				return 'unhandled'
+			}
+			if (listResult.keybinding.preventDefault) {
+				event.preventDefault()
+			}
+			shiftToggleSessionRef.current = EMPTY_SHIFT_TOGGLE_SESSION
+			onClearTaskSelection?.()
+			return 'handled'
+		}
+
+		if (
+			listResult.status === 'matched' &&
+			isSelectionNavigationCommand(listResult.keybinding.commandId)
+		) {
 			const navigationResult = handleTaskRowNavigationKey({
 				event,
 				hoveredId: hoveredIdRef.current,
@@ -277,46 +306,38 @@ export function useTaskRowShortcutController({
 				},
 			})
 			if (navigationResult === 'handled') {
-				return
+				if (listResult.keybinding.preventDefault) {
+					event.preventDefault()
+				}
+				return 'handled'
 			}
-
-			if (!rowTarget.hasTarget && selectedTaskIds.length === 0) {
-				return
-			}
-
-			const result = matchKeybindingEvent({
-				bindings: TASK_ROW_SHORTCUT_BINDINGS,
-				event: normalizeKeyboardEvent(event),
-				scope: 'row',
-				chordState: chordStateRef.current,
-				now: performance.now(),
-			})
-
-			if (result.status !== 'matched') {
-				chordStateRef.current = null
-				return
-			}
-
-			if (result.keybinding.preventDefault) {
-				event.preventDefault()
-			}
-
-			window.setTimeout(() => {
-				void runtime.execute(result.keybinding.commandId)
-			}, 0)
 		}
 
-		window.addEventListener('keydown', handleWindowKeyDown)
-		return () => window.removeEventListener('keydown', handleWindowKeyDown)
-	}, [
-		onToggleTaskSelection,
-		onSelectAllTasks,
-		rowTarget.hasTarget,
-		runtime,
-		selectedTaskIds.length,
-		tasks,
-		updateHoveredRow,
-	])
+		if (!rowTarget.hasTarget && selectedTaskIds.length === 0) {
+			return 'unhandled'
+		}
+
+		const result = matchKeybindingEvent({
+			bindings: rowShortcutBindings,
+			event: normalizeKeyboardEvent(event),
+			scope: 'row',
+			chordState: null,
+			now: performance.now(),
+		})
+
+		if (result.status !== 'matched') {
+			return 'unhandled'
+		}
+
+		if (result.keybinding.preventDefault) {
+			event.preventDefault()
+		}
+
+		window.setTimeout(() => {
+			void runtime.execute(result.keybinding.commandId)
+		}, 0)
+		return 'handled'
+	})
 
 	return useMemo<TaskRowShortcutState>(
 		() => ({
@@ -358,5 +379,14 @@ export function useTaskRowShortcutController({
 			},
 		}),
 		[commandTargetId, hoveredId, hoverSource, updateHoveredRow],
+	)
+}
+
+function isSelectionNavigationCommand(commandId: string) {
+	return (
+		commandId === COMMAND_IDS.selectionFocusPrevious ||
+		commandId === COMMAND_IDS.selectionFocusNext ||
+		commandId === COMMAND_IDS.selectionExtendPrevious ||
+		commandId === COMMAND_IDS.selectionExtendNext
 	)
 }

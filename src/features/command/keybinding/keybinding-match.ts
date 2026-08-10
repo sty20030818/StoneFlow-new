@@ -1,4 +1,5 @@
 import { shouldIgnoreKeybindingEvent } from './input-guard'
+import { inferShortcutPlatform } from './keybinding-format'
 import type {
 	Keybinding,
 	KeybindingChordState,
@@ -6,6 +7,7 @@ import type {
 	KeybindingScope,
 	KeybindingStroke,
 	NormalizedKeyEvent,
+	ShortcutPlatform,
 } from './keybinding.types'
 
 export const KEYBINDING_CHORD_TIMEOUT_MS = 1000
@@ -16,12 +18,14 @@ export function matchKeybindingEvent({
 	scope = 'global',
 	chordState,
 	now,
+	platform = inferShortcutPlatform(),
 }: {
-	bindings: Keybinding[]
+	bindings: readonly Keybinding[]
 	event: NormalizedKeyEvent
 	scope?: KeybindingScope
 	chordState: KeybindingChordState | null
 	now: number
+	platform?: ShortcutPlatform
 }): KeybindingMatchResult {
 	const stroke = normalizeKeybindingStroke(event)
 	if (!stroke) {
@@ -36,8 +40,8 @@ export function matchKeybindingEvent({
 		const binding = scopedBindings.find(
 			(candidate) =>
 				candidate.sequence.length === 2 &&
-				areStrokesEqual(candidate.sequence[0], activeChord.prefix) &&
-				areStrokesEqual(candidate.sequence[1], stroke),
+				areStrokesEqual(candidate.sequence[0], activeChord.prefix, platform) &&
+				areStrokesEqual(candidate.sequence[1], stroke, platform),
 		)
 
 		if (!binding) {
@@ -52,7 +56,8 @@ export function matchKeybindingEvent({
 	}
 
 	const singleStrokeBinding = scopedBindings.find(
-		(binding) => binding.sequence.length === 1 && areStrokesEqual(binding.sequence[0], stroke),
+		(binding) =>
+			binding.sequence.length === 1 && areStrokesEqual(binding.sequence[0], stroke, platform),
 	)
 	if (singleStrokeBinding) {
 		if (shouldIgnoreKeybindingEvent(event, singleStrokeBinding.allowInEditable)) {
@@ -63,7 +68,8 @@ export function matchKeybindingEvent({
 	}
 
 	const hasSequencePrefix = scopedBindings.some(
-		(binding) => binding.sequence.length === 2 && areStrokesEqual(binding.sequence[0], stroke),
+		(binding) =>
+			binding.sequence.length === 2 && areStrokesEqual(binding.sequence[0], stroke, platform),
 	)
 	if (!hasSequencePrefix) {
 		return { status: 'cancelled' }
@@ -96,7 +102,14 @@ export function normalizeKeybindingStroke(event: NormalizedKeyEvent): Keybinding
 }
 
 function isSupportedNamedKey(key: string) {
-	return key === 'Enter' || key === 'Delete' || key === 'Backspace' || key === 'Escape'
+	return (
+		key === 'Enter' ||
+		key === 'Delete' ||
+		key === 'Backspace' ||
+		key === 'Escape' ||
+		key === 'ArrowUp' ||
+		key === 'ArrowDown'
+	)
 }
 
 function normalizeKeyName(key: string) {
@@ -109,12 +122,29 @@ function normalizeKeyName(key: string) {
 	return key.toLowerCase()
 }
 
-export function areStrokesEqual(left: KeybindingStroke, right: KeybindingStroke) {
+export function areStrokesEqual(
+	left: KeybindingStroke,
+	right: KeybindingStroke,
+	platform: ShortcutPlatform = inferShortcutPlatform(),
+) {
+	const leftModifiers = resolveModifiers(left, platform)
+	const rightModifiers = resolveModifiers(right, platform)
 	return (
-		left.key === right.key &&
-		Boolean(left.meta) === Boolean(right.meta) &&
-		Boolean(left.ctrl) === Boolean(right.ctrl) &&
+		normalizeComparableKey(left.key) === normalizeComparableKey(right.key) &&
+		leftModifiers.meta === rightModifiers.meta &&
+		leftModifiers.ctrl === rightModifiers.ctrl &&
 		Boolean(left.alt) === Boolean(right.alt) &&
 		Boolean(left.shift) === Boolean(right.shift)
 	)
+}
+
+function normalizeComparableKey(key: string) {
+	return key.length === 1 ? key.toLowerCase() : key
+}
+
+function resolveModifiers(stroke: KeybindingStroke, platform: ShortcutPlatform) {
+	return {
+		meta: Boolean(stroke.meta || (stroke.mod && platform === 'mac')),
+		ctrl: Boolean(stroke.ctrl || (stroke.mod && platform !== 'mac')),
+	}
 }

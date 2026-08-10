@@ -27,9 +27,9 @@ export function TaskPropertiesSection({ autosave, disabled = false }: TaskProper
 				<MetadataFieldDropdown
 					buttonLabel={formatTaskStatusLabel(autosave.draft.status)}
 					disabled={disabled}
+					disabledReason='回收站中的任务为只读'
 					drawerOwnedOverlay
 					fieldKey='status'
-					headerShortcut={statusDropdownProps.headerShortcut}
 					label='状态'
 					menuLabel={statusDropdownProps.menuLabel}
 					options={statusDropdownProps.options}
@@ -46,9 +46,9 @@ export function TaskPropertiesSection({ autosave, disabled = false }: TaskProper
 				<MetadataFieldDropdown
 					buttonLabel={formatTaskPriorityLabel(autosave.draft.priority)}
 					disabled={disabled}
+					disabledReason='回收站中的任务为只读'
 					drawerOwnedOverlay
 					fieldKey='priority'
-					headerShortcut={priorityDropdownProps.headerShortcut}
 					label='优先级'
 					menuLabel={priorityDropdownProps.menuLabel}
 					options={priorityDropdownProps.options}
@@ -64,6 +64,7 @@ export function TaskPropertiesSection({ autosave, disabled = false }: TaskProper
 			<DetailFieldRow className='items-center' label='截止时间' labelClassName='pt-0'>
 				<MetadataDateDropdown
 					disabled={disabled}
+					disabledReason='回收站中的任务为只读'
 					drawerOwnedOverlay
 					icon={taskDateMetadataIcons.due}
 					label='截止时间'
@@ -79,6 +80,7 @@ export function TaskPropertiesSection({ autosave, disabled = false }: TaskProper
 			<DetailFieldRow className='items-center' label='计划时间' labelClassName='pt-0'>
 				<MetadataDateDropdown
 					disabled={disabled}
+					disabledReason='回收站中的任务为只读'
 					drawerOwnedOverlay
 					icon={taskDateMetadataIcons.scheduled}
 					label='计划时间'
@@ -94,6 +96,7 @@ export function TaskPropertiesSection({ autosave, disabled = false }: TaskProper
 			<DetailFieldRow className='items-center' label='提醒时间' labelClassName='pt-0'>
 				<MetadataDateDropdown
 					disabled={disabled}
+					disabledReason='回收站中的任务为只读'
 					drawerOwnedOverlay
 					icon={taskDateMetadataIcons.reminder}
 					label='提醒时间'

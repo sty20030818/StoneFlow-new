@@ -4,6 +4,12 @@ import { vi } from 'vitest'
 
 import { ShellRouteProvider } from '@/app/navigation'
 import { parseShellRoute } from '@/app/navigation'
+import {
+	DEFAULT_KEYBINDINGS,
+	KeybindingRegistry,
+	ShortcutRegistryProvider,
+} from '@/features/command'
+import { TooltipProvider } from '@/shared/components/base/tooltip'
 import { renderWithMatchedRoute } from '@/test/renderWithRouter'
 import { ViewsPage } from '@/features/view/components/ViewsPage'
 
@@ -164,7 +170,7 @@ vi.mock('@/features/view/hooks/view.queries', () => ({
 					{
 						...item,
 						items: item.items ?? [],
-						totalCount: item.totalCount ?? (item.items?.length ?? 0),
+						totalCount: item.totalCount ?? item.items?.length ?? 0,
 						nextCursor: item.nextCursor ?? null,
 					},
 				]
@@ -183,9 +189,8 @@ vi.mock('@/features/view/hooks/view.queries', () => ({
 			isFetchNextPageError: false,
 		}
 	},
-	flattenTaskViewPages: (
-		pages: Array<{ items: unknown[] }> | undefined,
-	) => pages?.flatMap((page) => page.items) ?? [],
+	flattenTaskViewPages: (pages: Array<{ items: unknown[] }> | undefined) =>
+		pages?.flatMap((page) => page.items) ?? [],
 }))
 
 vi.mock('@/features/view/hooks/view.mutations', () => ({
@@ -408,12 +413,18 @@ function renderViewsPage(
 		path: '/all/views/$viewId',
 		wrap: (children) => {
 			const content = (
-				<ShellRouteProvider shellRoute={parseShellRoute(initialEntry)}>
-					{children}
-				</ShellRouteProvider>
+				<ShortcutRegistryProvider registry={testShortcutRegistry}>
+					<TooltipProvider delayDuration={0}>
+						<ShellRouteProvider shellRoute={parseShellRoute(initialEntry)}>
+							{children}
+						</ShellRouteProvider>
+					</TooltipProvider>
+				</ShortcutRegistryProvider>
 			)
 
 			return options.wrap ? options.wrap(content) : content
 		},
 	})
 }
+
+const testShortcutRegistry = new KeybindingRegistry(DEFAULT_KEYBINDINGS)

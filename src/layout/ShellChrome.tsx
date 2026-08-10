@@ -30,8 +30,6 @@ type ShellChromeProps = {
 	shellRoute: ShellRoute
 	/** 进入设置前捕获的工作路径，供「返回应用」 */
 	settingsReturnPath: string
-	/** 顶栏当前 Space 文案 */
-	currentSpaceLabel: string
 	/** Header 项目列表（命令板缓存或侧栏） */
 	headerProjects: CommandHost['commandProjects'] | ChromeData['sidebarProjectLinks']
 	chrome: ChromeData
@@ -55,7 +53,6 @@ export function ShellChrome({
 	activeSection,
 	shellRoute,
 	settingsReturnPath,
-	currentSpaceLabel,
 	headerProjects,
 	chrome,
 	command,
@@ -68,7 +65,6 @@ export function ShellChrome({
 	return (
 		<>
 			<CommandShortcutLayer
-				bindings={command.activeShortcutBindings}
 				onChordStateChange={command.setChordSession}
 				onTrigger={command.runCommand}
 				shouldTrigger={command.shouldTriggerCommandShortcut}
@@ -139,7 +135,6 @@ export function ShellChrome({
 				<div className='relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sf-shell'>
 					<ShellMain
 						activeDetail={command.activeDetail}
-						currentSpaceLabel={currentSpaceLabel}
 						isDrawerOpen={command.isDrawerOpen}
 						onCloseDrawer={command.closeEntityDrawer}
 						onOpenProjectCreateDialog={() => createDialog.openProjectCreateDialog()}

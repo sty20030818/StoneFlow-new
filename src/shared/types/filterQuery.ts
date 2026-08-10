@@ -3,13 +3,7 @@
  * 领域纯函数在 `@/features/filter/core`。
  */
 
-export const FILTER_FIELD_VALUES = [
-	'status',
-	'priority',
-	'project',
-	'due',
-	'planned',
-] as const
+export const FILTER_FIELD_VALUES = ['status', 'priority', 'project', 'due', 'planned'] as const
 
 export type FilterField = (typeof FILTER_FIELD_VALUES)[number]
 

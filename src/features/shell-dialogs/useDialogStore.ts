@@ -34,10 +34,7 @@ type DialogState = {
 	taskCreatePresentation: CreateDialogPresentation
 	customDateDialog: CustomDateDialogState | null
 
-	openCommand: (
-		mode?: CommandMenuMode,
-		selectionOverride?: CommandSelectionContext | null,
-	) => void
+	openCommand: (mode?: CommandMenuMode, selectionOverride?: CommandSelectionContext | null) => void
 	closeCommand: () => void
 	setCommandOpen: (open: boolean) => void
 	openShortcutHelp: () => void

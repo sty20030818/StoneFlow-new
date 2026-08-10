@@ -130,13 +130,6 @@ export function ShellLayoutContent({
 		)
 	}
 
-	const currentSpaceLabel =
-		currentScope.type === 'all'
-			? '所有空间'
-			: (chrome.spaces.find((space) => space.id === currentSpaceId)?.name ??
-				currentSpaceId ??
-				'未选择 Space')
-
 	/** 命令板已缓存全量项目则优先；否则回退侧栏列表 */
 	const headerProjects =
 		command.commandProjects.length > 0 ? command.commandProjects : chrome.sidebarProjectLinks
@@ -162,7 +155,6 @@ export function ShellLayoutContent({
 					createDialog={createDialog}
 					currentScope={currentScope}
 					currentSpaceId={currentSpaceId}
-					currentSpaceLabel={currentSpaceLabel}
 					handleOpenTaskCreate={handleOpenTaskCreate}
 					onOpenChangelog={() => openChangelog()}
 					onOpenAbout={() => setIsAboutOpen(true)}

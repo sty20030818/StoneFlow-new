@@ -4,7 +4,6 @@ import type { ProjectOption } from '@/features/project'
 import type { Space } from '@/shared/types'
 
 import type { TaskDetailDraft } from '../model/taskDetailDraft'
-import { TaskLabelsSection } from './TaskLabelsSection'
 import { TaskLinksSection } from './TaskLinksSection'
 import { TaskNoteField } from './TaskNoteField'
 import { TaskPlacementSection } from './TaskPlacementSection'
@@ -24,11 +23,10 @@ export function TaskDrawerBody({ taskId, autosave, projects, spaces }: TaskDrawe
 			<div className='flex flex-col' data-task-drawer-body='true'>
 				<TaskTitleField autosave={autosave} />
 				<TaskNoteField autosave={autosave} />
-				{/* 属性块：状态、优先级、日期、归属、标签 */}
+				{/* 属性块：状态、优先级、日期、归属 */}
 				<div className='mt-3 space-y-2 border-t border-sf-divider pt-3'>
 					<TaskPropertiesSection autosave={autosave} />
 					<TaskPlacementSection autosave={autosave} projects={projects} spaces={spaces} />
-					<TaskLabelsSection />
 				</div>
 				{/* 链接块 */}
 				<div className='mt-3 border-t border-sf-divider pt-3'>

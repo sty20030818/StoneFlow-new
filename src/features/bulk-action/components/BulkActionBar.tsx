@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 
 import { XIcon } from 'lucide-react'
 
+import { COMMAND_IDS, CommandActionTooltip } from '@/features/command'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/components/base/button'
 import {
@@ -37,16 +38,22 @@ export function BulkActionBar({ selectedCount, onClear, action, className }: Bul
 			<div aria-label='批量操作' className={BULK_ACTION_BAR_CLASS} role='toolbar'>
 				<div className='inline-flex items-center gap-1.5'>
 					<span className={BULK_ACTION_COUNT_PILL_CLASS}>已选 {selectedCount} 项</span>
-					<Button
-						aria-label='清空已选'
-						className={BULK_ACTION_BUTTON_CLASS}
-						onClick={onClear}
-						size='icon-sm'
-						type='button'
-						variant='outline'
+					<CommandActionTooltip
+						commandId={COMMAND_IDS.selectionClear}
+						label='清空已选'
+						scope='list'
 					>
-						<XIcon />
-					</Button>
+						<Button
+							aria-label='清空已选'
+							className={BULK_ACTION_BUTTON_CLASS}
+							onClick={onClear}
+							size='icon-sm'
+							type='button'
+							variant='outline'
+						>
+							<XIcon />
+						</Button>
+					</CommandActionTooltip>
 				</div>
 
 				<div aria-hidden className='mx-0.5 h-5 w-px shrink-0 bg-border' />

@@ -13,6 +13,7 @@ import {
 	shellFooterStaticTextClass,
 	shellFooterStatusDotClass,
 } from '@/shared/components/patterns/shell-footer'
+import { ActionTooltip, DisabledActionTooltip, OverflowTooltip } from '@/shared/components/tooltip'
 import { cn } from '@/shared/lib/utils'
 
 function Root({
@@ -27,7 +28,11 @@ function Root({
 	)
 }
 
-function Dot({ className, busy, ...props }: ComponentPropsWithoutRef<'span'> & { busy?: boolean }) {
+function Dot({
+	className,
+	busy,
+	...props
+}: Omit<ComponentPropsWithoutRef<'span'>, 'title'> & { busy?: boolean }) {
 	return (
 		<span
 			className={cn(shellFooterStatusDotClass, busy && 'animate-pulse', className)}
@@ -40,13 +45,24 @@ function Dot({ className, busy, ...props }: ComponentPropsWithoutRef<'span'> & {
 function StaticLabel({
 	className,
 	children,
-	...props
-}: ComponentPropsWithoutRef<'span'> & { children: ReactNode }) {
-	return (
-		<span className={cn(shellFooterStaticTextClass, 'max-w-28', className)} {...props}>
-			{children}
-		</span>
-	)
+	overflowContent,
+}: {
+	children: ReactNode
+	className?: string
+	overflowContent?: ReactNode
+}) {
+	if (overflowContent !== undefined) {
+		return (
+			<OverflowTooltip
+				className={cn(shellFooterStaticTextClass, 'max-w-28', className)}
+				content={overflowContent}
+			>
+				{children}
+			</OverflowTooltip>
+		)
+	}
+
+	return <span className={cn(shellFooterStaticTextClass, 'max-w-28', className)}>{children}</span>
 }
 
 function InteractiveLabel({
@@ -54,7 +70,7 @@ function InteractiveLabel({
 	children,
 	ref,
 	...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & {
+}: Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'title'> & {
 	children: ReactNode
 	ref?: Ref<HTMLButtonElement>
 }) {
@@ -77,21 +93,47 @@ function InteractiveLabel({
 function IconButton({
 	className,
 	children,
+	disabled,
+	disabledReason,
 	ref,
+	'aria-label': ariaLabel,
 	...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & {
+}: Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'aria-label' | 'children' | 'title'> & {
+	'aria-label': string
 	children: ReactNode
+	disabledReason?: ReactNode
 	ref?: Ref<HTMLButtonElement>
 }) {
-	return (
+	const action = (
 		<button
 			ref={ref}
 			type='button'
+			aria-label={ariaLabel}
 			className={cn(shellFooterIconButtonClass, className)}
+			disabled={disabled}
 			{...props}
 		>
 			{children}
 		</button>
+	)
+
+	if (disabled) {
+		return disabledReason === undefined ? (
+			action
+		) : (
+			<DisabledActionTooltip label={ariaLabel} reason={disabledReason}>
+				{action}
+			</DisabledActionTooltip>
+		)
+	}
+
+	return (
+		<ActionTooltip>
+			<ActionTooltip.Trigger asChild>{action}</ActionTooltip.Trigger>
+			<ActionTooltip.Content>
+				<ActionTooltip.Row label={ariaLabel} />
+			</ActionTooltip.Content>
+		</ActionTooltip>
 	)
 }
 

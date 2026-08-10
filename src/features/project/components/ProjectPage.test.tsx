@@ -63,7 +63,8 @@ vi.mock('@/features/display-options', () => ({
 	DisplayOptionsButton: () => <button type='button'>显示设置</button>,
 }))
 
-vi.mock('@/features/bulk-action', () => ({
+vi.mock('@/features/bulk-action', async (importOriginal) => ({
+	...(await importOriginal<typeof import('@/features/bulk-action')>()),
 	BulkActionBar: () => <div data-testid='bulk-bar'>批量操作</div>,
 	BulkCommandMenuAction: () => null,
 }))

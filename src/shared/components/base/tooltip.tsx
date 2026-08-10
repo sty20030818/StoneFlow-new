@@ -6,13 +6,17 @@ import { Tooltip as TooltipPrimitive } from 'radix-ui'
 import { cn } from '@/shared/lib/utils'
 
 function TooltipProvider({
-	delayDuration = 0,
+	delayDuration = 500,
+	disableHoverableContent = true,
+	skipDelayDuration = 250,
 	...props
 }: React.ComponentProps<typeof TooltipPrimitive.Provider>) {
 	return (
 		<TooltipPrimitive.Provider
 			data-slot='tooltip-provider'
 			delayDuration={delayDuration}
+			disableHoverableContent={disableHoverableContent}
+			skipDelayDuration={skipDelayDuration}
 			{...props}
 		/>
 	)
@@ -44,7 +48,6 @@ function TooltipContent({
 				{...props}
 			>
 				{children}
-				<TooltipPrimitive.Arrow className='z-50 size-2.5 translate-y-[calc(-50%-2px)] rotate-45 rounded-xs border-r border-b border-sf-border-secondary bg-popover fill-popover' />
 			</TooltipPrimitive.Content>
 		</TooltipPrimitive.Portal>
 	)

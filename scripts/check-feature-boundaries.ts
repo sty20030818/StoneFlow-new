@@ -8,6 +8,7 @@
  * from '@/features/<name>/contract'   // 纯契约（无 React Page）
  * from '@/features/<name>/page'       // 仅页面（routes）
  * from '@/features/<name>/presentation' // 稳定展示契约
+ * from '@/features/<name>/shortcut-contribution' // 组合根快捷键纯数据贡献
  * ```
  *
  * ## 禁止
@@ -44,7 +45,7 @@ const FEATURES = [
 	'shell-dialogs',
 ] as const
 
-const STABLE_SUFFIXES = ['contract', 'page', 'presentation'] as const
+const STABLE_SUFFIXES = ['contract', 'page', 'presentation', 'shortcut-contribution'] as const
 const SRC = join(import.meta.dir, '..', 'src')
 
 type Violation = {
@@ -117,7 +118,7 @@ if (violations.length > 0) {
 		console.error(`  ${violation.file}:${violation.line}`)
 		console.error(`    ${violation.text}`)
 		console.error(
-			`    → 合法: @/features/${violation.feature} | …/contract | …/page | …/presentation（禁止其它深路径）\n`,
+			`    → 合法: @/features/${violation.feature} | …/contract | …/page | …/presentation | …/shortcut-contribution（禁止其它深路径）\n`,
 		)
 	}
 	console.error(`Total: ${violations.length}`)
@@ -125,5 +126,5 @@ if (violations.length > 0) {
 }
 
 console.log(
-	`Feature boundaries OK (${FEATURES.length} features; entries: . | contract | page | presentation).`,
+	`Feature boundaries OK (${FEATURES.length} features; entries: . | contract | page | presentation | shortcut-contribution).`,
 )

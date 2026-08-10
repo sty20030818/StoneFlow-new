@@ -2,6 +2,11 @@ import type { CommandId } from '@/features/command/core'
 
 export type KeybindingScope = 'global' | 'command-menu' | 'list' | 'row' | 'dropdown'
 
+export type ShortcutPlatform = 'mac' | 'windows' | 'linux'
+
+/** `hidden` 仅表示绑定可执行但不进入界面展示，不代表命令尚未实现。 */
+export type KeybindingDisplay = 'primary' | 'alternative' | 'hidden'
+
 export type KeybindingKey =
 	| string
 	| 'ArrowUp'
@@ -16,6 +21,8 @@ export type KeybindingKey =
 
 export type KeybindingStroke = {
 	key: KeybindingKey
+	/** 当前平台的主修饰键：macOS 为 Command，Windows / Linux 为 Control。 */
+	mod?: boolean
 	meta?: boolean
 	ctrl?: boolean
 	alt?: boolean
@@ -30,6 +37,8 @@ export type Keybinding = {
 	commandId: CommandId
 	sequence: KeybindingSequence
 	scope: KeybindingScope
+	/** 明确快捷键的展示职责，禁止再用数组声明顺序推断主快捷键。 */
+	display: KeybindingDisplay
 	preventDefault: boolean
 	allowInEditable: boolean
 }
@@ -60,5 +69,6 @@ export type KeybindingMatchResult =
 export type KeybindingConflict = {
 	scope: KeybindingScope
 	sequence: KeybindingSequence
-	commandIds: CommandId[]
+	commandIds: readonly CommandId[]
+	platforms: readonly ShortcutPlatform[]
 }

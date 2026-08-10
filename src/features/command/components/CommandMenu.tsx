@@ -21,6 +21,7 @@ import type {
 	TaskPriority,
 	TaskStatus,
 } from '@/shared/types'
+import { useShortcutRegistry } from '@/features/command/shortcuts/shortcut-registry-context'
 
 import { buildCommandMenuGroups } from './command-menu-model'
 import { getCommandMenuEmptyText, getCommandMenuPlaceholder } from './command-menu-helpers'
@@ -90,8 +91,12 @@ export function CommandMenu({
 }: CommandMenuProps) {
 	const [query, setQuery] = useState('')
 	const inputRef = useRef<HTMLInputElement>(null)
+	const shortcutRegistry = useShortcutRegistry()
 	const openCustomDateDialog = useDialogStore((state) => state.openCustomDateDialog)
-	const groups = useMemo(() => buildCommandMenuGroups(runtime, context), [context, runtime])
+	const groups = useMemo(
+		() => buildCommandMenuGroups(runtime, context, shortcutRegistry),
+		[context, runtime, shortcutRegistry],
+	)
 	const scopedSearch = useGlobalSearch(isCommandMenuSearchMode(mode) ? query : '')
 	const isScopedMode = mode !== 'default'
 

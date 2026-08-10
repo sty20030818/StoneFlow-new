@@ -3,6 +3,7 @@ import { Dialog as SheetPrimitive } from 'radix-ui'
 
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/components/base/button'
+import { ActionTooltip } from '@/shared/components/tooltip'
 import { XIcon } from 'lucide-react'
 
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
@@ -67,14 +68,7 @@ function SheetContent({
 				{...props}
 			>
 				{children}
-				{showCloseButton && (
-					<SheetPrimitive.Close data-slot='sheet-close' asChild>
-						<Button variant='ghost' className='absolute top-3 right-3' size='icon-sm'>
-							<XIcon />
-							<span className='sr-only'>Close</span>
-						</Button>
-					</SheetPrimitive.Close>
-				)}
+				{showCloseButton ? <SheetIconCloseButton /> : null}
 			</SheetPrimitive.Content>
 		</>
 	)
@@ -84,6 +78,29 @@ function SheetContent({
 	}
 
 	return <SheetPortal>{content}</SheetPortal>
+}
+
+function SheetIconCloseButton() {
+	return (
+		<ActionTooltip>
+			<ActionTooltip.Trigger asChild>
+				<SheetPrimitive.Close data-slot='sheet-close' asChild>
+					<Button
+						aria-label='关闭'
+						className='absolute top-3 right-3'
+						size='icon-sm'
+						type='button'
+						variant='ghost'
+					>
+						<XIcon />
+					</Button>
+				</SheetPrimitive.Close>
+			</ActionTooltip.Trigger>
+			<ActionTooltip.Content>
+				<ActionTooltip.Row label='关闭' />
+			</ActionTooltip.Content>
+		</ActionTooltip>
+	)
 }
 
 function SheetHeader({ className, ...props }: React.ComponentProps<'div'>) {

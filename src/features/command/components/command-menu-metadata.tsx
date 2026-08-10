@@ -1,8 +1,5 @@
-import {
-	mapMetadataActionSpecToDropdownProps,
-	type MetadataActionSpec,
-	type MetadataDropdownMappedProps,
-} from '@/features/metadata-fields'
+import type { MetadataActionSpec } from '@/features/metadata-fields/contract'
+import { renderMetadataActionIcon } from '@/features/metadata-fields/presentation'
 
 export type CommandMenuMetadataOption<TValue> = {
 	key: string
@@ -24,9 +21,6 @@ export type CommandMenuMetadataGroup<TValue> = {
 export function mapMetadataActionSpecToCommandMenuGroup<TValue>(
 	spec: MetadataActionSpec<TValue>,
 ): CommandMenuMetadataGroup<TValue> {
-	const dropdownProps: MetadataDropdownMappedProps<TValue> =
-		mapMetadataActionSpecToDropdownProps(spec)
-
 	return {
 		heading: spec.headerLabel,
 		placeholder: spec.commandPlaceholder,
@@ -34,7 +28,7 @@ export function mapMetadataActionSpecToCommandMenuGroup<TValue>(
 			key: option.key ?? String(index),
 			value: option.value,
 			label: option.label,
-			leading: dropdownProps.options[index]?.icon ?? null,
+			leading: renderMetadataActionIcon(option.iconKey),
 			digit: option.digit,
 			disabled: option.disabled,
 			disabledReason: option.disabledReason,

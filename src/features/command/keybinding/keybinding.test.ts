@@ -3,6 +3,7 @@ import {
 	DEFAULT_KEYBINDINGS,
 	KEYBINDING_CHORD_TIMEOUT_MS,
 	KeybindingRegistry,
+	KeybindingRegistryConflictError,
 	formatKeybindingSequence,
 	matchKeybindingEvent,
 	tokenizeKeybindingSequence,
@@ -10,6 +11,8 @@ import {
 	type KeybindingChordState,
 	type NormalizedKeyEvent,
 } from '@/features/command/keybinding'
+
+const defaultRegistry = new KeybindingRegistry(DEFAULT_KEYBINDINGS)
 
 describe('keybinding', () => {
 	it('匹配 C 快速创建任务，并解绑 V 全局创建', () => {
@@ -30,22 +33,18 @@ describe('keybinding', () => {
 		expect(matchCommand('t', chordState, 600)).toBe(COMMAND_IDS.newFullTask)
 		expect(matchCommand('i', chordState, 600)).toBe(COMMAND_IDS.newStandaloneTask)
 		expect(matchCommand('p', chordState, 600)).toBe(COMMAND_IDS.newProject)
-		expect(matchCommand('v', chordState, 600)).toBe(COMMAND_IDS.newView)
 	})
 
 	it('匹配 G 组导航命令', () => {
 		const cases = [
 			['i', COMMAND_IDS.goStandalone],
 			['t', COMMAND_IDS.goAllTasks],
-			['d', COMMAND_IDS.goToday],
-			['u', COMMAND_IDS.goUpcoming],
 			['f', COMMAND_IDS.goFocus],
 			['v', COMMAND_IDS.goViews],
 			['p', COMMAND_IDS.goProjects],
 			['a', COMMAND_IDS.goArchive],
 			['x', COMMAND_IDS.goTrash],
 			['s', COMMAND_IDS.openSettings],
-			['r', COMMAND_IDS.goRecent],
 		] as const
 
 		for (const [key, commandId] of cases) {
@@ -59,9 +58,6 @@ describe('keybinding', () => {
 		const cases = [
 			['t', COMMAND_IDS.openTask],
 			['p', COMMAND_IDS.openProject],
-			['v', COMMAND_IDS.openView],
-			['s', COMMAND_IDS.openSpace],
-			['r', COMMAND_IDS.openRecent],
 		] as const
 
 		for (const [key, commandId] of cases) {
@@ -71,15 +67,53 @@ describe('keybinding', () => {
 		}
 	})
 
+	it('未接入命令不进入默认 Registry，也无法命中 chord', () => {
+		const unimplementedCommands = [
+			COMMAND_IDS.newView,
+			COMMAND_IDS.openView,
+			COMMAND_IDS.openSpace,
+			COMMAND_IDS.openRecent,
+			COMMAND_IDS.goToday,
+			COMMAND_IDS.goUpcoming,
+			COMMAND_IDS.goRecent,
+		]
+		for (const commandId of unimplementedCommands) {
+			expect(defaultRegistry.resolveAll({ commandId, scope: 'global' })).toEqual([])
+		}
+
+		const removedChords = [
+			['n', 'v'],
+			['o', 'v'],
+			['o', 's'],
+			['o', 'r'],
+			['g', 'd'],
+			['g', 'u'],
+			['g', 'r'],
+		] as const
+		for (const [prefix, key] of removedChords) {
+			const result = matchKeybindingEvent({
+				bindings: DEFAULT_KEYBINDINGS,
+				event: createKeyEvent(key),
+				chordState: { prefix: { key: prefix }, scope: 'global', startedAt: 100 },
+				now: 200,
+			})
+			expect(result).toEqual({ status: 'cancelled' })
+		}
+	})
+
 	it('格式化 O 组打开命令显示', () => {
 		const registry = new KeybindingRegistry(DEFAULT_KEYBINDINGS)
+		const openTask = registry.resolvePrimary({
+			commandId: COMMAND_IDS.openTask,
+			scope: 'global',
+		})
+		const openProject = registry.resolvePrimary({
+			commandId: COMMAND_IDS.openProject,
+			scope: 'global',
+		})
 
-		expect(
-			formatKeybindingSequence(registry.getByCommandId(COMMAND_IDS.openTask)[0].sequence),
-		).toBe('O T')
-		expect(
-			formatKeybindingSequence(registry.getByCommandId(COMMAND_IDS.openProject)[0].sequence),
-		).toBe('O P')
+		expect(openTask && formatKeybindingSequence(openTask.sequence)).toBe('O → T')
+		expect(openProject && formatKeybindingSequence(openProject.sequence)).toBe('O → P')
 	})
 
 	it('非法第二键取消 chord', () => {
@@ -127,40 +161,116 @@ describe('keybinding', () => {
 		expect(matchCommand('c', null, 100, { isComposing: true })).toBeNull()
 	})
 
-	it('检测同 scope 重复绑定', () => {
+	it('构造时拒绝同 scope 的规范化重复绑定', () => {
 		const duplicate: Keybinding = {
 			commandId: 'test.duplicate',
 			sequence: [{ key: 'c' }],
 			scope: 'global',
+			display: 'primary',
 			preventDefault: true,
 			allowInEditable: false,
 		}
 
-		const registry = new KeybindingRegistry([...DEFAULT_KEYBINDINGS, duplicate])
+		expect(() => new KeybindingRegistry([...DEFAULT_KEYBINDINGS, duplicate])).toThrow(
+			KeybindingRegistryConflictError,
+		)
+	})
 
-		expect(registry.detectConflicts()).toEqual([
-			{
-				scope: 'global',
-				sequence: [{ key: 'c' }],
-				commandIds: [COMMAND_IDS.newQuickTask, 'test.duplicate'],
-			},
+	it('冲突检测会按平台展开 mod 语义', () => {
+		const modBinding = createTestBinding('test.mod', 'global', [{ key: 'k', mod: true }])
+		const macMetaBinding = createTestBinding('test.meta', 'global', [{ key: 'k', meta: true }])
+
+		expect(() => new KeybindingRegistry([modBinding, macMetaBinding])).toThrow(
+			KeybindingRegistryConflictError,
+		)
+	})
+
+	it('允许不同 scope 复用同一按键', () => {
+		const registry = new KeybindingRegistry([
+			createTestBinding('test.global', 'global', [{ key: 'c' }]),
+			createTestBinding('test.row', 'row', [{ key: 'c' }]),
+		])
+
+		expect(registry.getByScope('global')).toHaveLength(1)
+		expect(registry.getByScope('row')).toHaveLength(1)
+	})
+
+	it('primary / all 解析不依赖声明顺序', () => {
+		const primary = defaultRegistry.resolvePrimary({
+			commandId: COMMAND_IDS.openSettings,
+			scope: 'global',
+		})
+		const all = defaultRegistry.resolveAll({
+			commandId: COMMAND_IDS.openSettings,
+			scope: 'global',
+		})
+
+		expect(primary?.sequence).toEqual([{ key: ',', mod: true }])
+		expect(all.map((binding) => binding.sequence)).toEqual([
+			[{ key: ',', mod: true }],
+			[{ key: 'g' }, { key: 's' }],
 		])
 	})
 
+	it('hidden 绑定可执行，但不会解析成可展示快捷键', () => {
+		const runtimeOnlyBinding: Keybinding = {
+			...createTestBinding('test.runtimeOnly', 'global', [{ key: 'h' }]),
+			display: 'hidden',
+		}
+		const registry = new KeybindingRegistry([runtimeOnlyBinding])
+
+		expect(
+			registry.resolvePrimary({
+				commandId: runtimeOnlyBinding.commandId,
+				scope: 'global',
+			}),
+		).toBeNull()
+		expect(
+			matchKeybindingEvent({
+				bindings: registry.getAll(),
+				event: createKeyEvent('h'),
+				chordState: null,
+				now: 100,
+			}),
+		).toMatchObject({ status: 'matched', keybinding: runtimeOnlyBinding })
+	})
+
+	it('拒绝没有 primary 的可展示快捷键组', () => {
+		expect(
+			() =>
+				new KeybindingRegistry([
+					{
+						...createTestBinding('test.alternative', 'global', [{ key: 'a' }]),
+						display: 'alternative',
+					},
+				]),
+		).toThrow('必须且只能声明一个 primary')
+	})
+
+	it('mod 在各平台映射到对应的物理修饰键', () => {
+		expect(matchCommand('k', null, 100, { metaKey: true }, 'mac')).toBe(COMMAND_IDS.openCommandMenu)
+		expect(matchCommand('k', null, 100, { ctrlKey: true }, 'windows')).toBe(
+			COMMAND_IDS.openCommandMenu,
+		)
+		expect(matchCommand('k', null, 100, { ctrlKey: true }, 'mac')).toBeNull()
+	})
+
 	it('格式化平台快捷键显示', () => {
-		expect(formatKeybindingSequence([{ key: 'k', meta: true }], { platform: 'mac' })).toBe('⌘K')
-		expect(formatKeybindingSequence([{ key: 'k', meta: true }], { platform: 'windows' })).toBe(
+		expect(formatKeybindingSequence([{ key: 'k', mod: true }], { platform: 'mac' })).toBe('⌘K')
+		expect(formatKeybindingSequence([{ key: 'k', mod: true }], { platform: 'windows' })).toBe(
 			'Ctrl K',
 		)
-		expect(formatKeybindingSequence([{ key: '/', meta: true }], { platform: 'mac' })).toBe('⌘/')
-		expect(formatKeybindingSequence([{ key: '/', ctrl: true }], { platform: 'windows' })).toBe(
+		expect(formatKeybindingSequence([{ key: '/', mod: true }], { platform: 'mac' })).toBe('⌘/')
+		expect(formatKeybindingSequence([{ key: '/', mod: true }], { platform: 'windows' })).toBe(
 			'Ctrl /',
 		)
-		expect(formatKeybindingSequence([{ key: 'g' }, { key: 'i' }], { platform: 'mac' })).toBe('G I')
+		expect(formatKeybindingSequence([{ key: 'g' }, { key: 'i' }], { platform: 'mac' })).toBe(
+			'G → I',
+		)
 	})
 
 	it('将快捷键拆成键帽 token', () => {
-		expect(tokenizeKeybindingSequence([{ key: 'k', meta: true }], { platform: 'mac' })).toEqual([
+		expect(tokenizeKeybindingSequence([{ key: 'k', mod: true }], { platform: 'mac' })).toEqual([
 			{ type: 'key', value: '⌘' },
 			{ type: 'key', value: 'K' },
 		])
@@ -177,6 +287,7 @@ describe('keybinding', () => {
 				commandId: COMMAND_IDS.taskOpenDetail,
 				sequence: [{ key: 'Enter' }],
 				scope: 'row',
+				display: 'primary',
 				preventDefault: true,
 				allowInEditable: false,
 			},
@@ -184,13 +295,15 @@ describe('keybinding', () => {
 				commandId: COMMAND_IDS.taskDelete,
 				sequence: [{ key: 'Delete' }],
 				scope: 'row',
+				display: 'primary',
 				preventDefault: true,
 				allowInEditable: false,
 			},
 			{
 				commandId: COMMAND_IDS.taskDelete,
-				sequence: [{ key: 'Backspace', meta: true }],
+				sequence: [{ key: 'Backspace', mod: true }],
 				scope: 'row',
+				display: 'alternative',
 				preventDefault: true,
 				allowInEditable: false,
 			},
@@ -234,12 +347,14 @@ function matchCommand(
 	chordState: KeybindingChordState | null = null,
 	now = 100,
 	eventOverrides: Partial<NormalizedKeyEvent> = {},
+	platform: 'mac' | 'windows' | 'linux' = eventOverrides.ctrlKey ? 'windows' : 'mac',
 ) {
 	const result = matchKeybindingEvent({
 		bindings: DEFAULT_KEYBINDINGS,
 		event: createKeyEvent(key, eventOverrides),
 		chordState,
 		now,
+		platform,
 	})
 
 	return result.status === 'matched' ? result.keybinding.commandId : null
@@ -288,7 +403,23 @@ function matchScopedCommand(
 		scope: 'row',
 		chordState: null,
 		now: 100,
+		platform: eventOverrides.ctrlKey ? 'windows' : 'mac',
 	})
 
 	return result.status === 'matched' ? result.keybinding.commandId : null
+}
+
+function createTestBinding(
+	commandId: string,
+	scope: Keybinding['scope'],
+	sequence: Keybinding['sequence'],
+): Keybinding {
+	return {
+		commandId,
+		scope,
+		sequence,
+		display: 'primary',
+		preventDefault: false,
+		allowInEditable: false,
+	}
 }

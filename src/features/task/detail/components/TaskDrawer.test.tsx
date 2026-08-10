@@ -2,6 +2,13 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AutosaveController } from '@/shared/autosave'
+import {
+	DEFAULT_KEYBINDINGS,
+	KeybindingRegistry,
+	ShortcutRegistryProvider,
+} from '@/features/command'
+import { TASK_ROW_SHORTCUT_BINDINGS } from '@/features/task/shortcuts'
+import { TooltipProvider } from '@/shared/components/base/tooltip'
 import type { TaskDetail } from '@/shared/types'
 
 import type { TaskDetailDraft } from '../model/taskDetailDraft'
@@ -185,7 +192,7 @@ describe('TaskDrawer', () => {
 			status: 'loading',
 		}
 
-		render(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
+		renderTaskDrawer(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
 
 		expect(screen.getByText('加载中...')).toBeInTheDocument()
 	})
@@ -198,54 +205,51 @@ describe('TaskDrawer', () => {
 			error: '任务详情加载失败',
 		}
 
-		render(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
+		renderTaskDrawer(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
 
 		expect(screen.getByText('任务详情加载失败')).toBeInTheDocument()
 		expect(screen.getByRole('button', { name: '关闭' })).toBeInTheDocument()
 	})
 
 	it('不渲染动态页签和手动保存按钮', () => {
-		render(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
+		renderTaskDrawer(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
 
 		expect(screen.queryByRole('button', { name: '动态' })).not.toBeInTheDocument()
 		expect(screen.queryByRole('button', { name: '保存' })).not.toBeInTheDocument()
 		expect(getEntityActivitiesMock).not.toHaveBeenCalled()
 	})
 
-	it('头部显示任务详情、保存状态、打开和更多', () => {
-		const { container } = render(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
+	it('头部显示任务详情、保存状态和打开动作', () => {
+		const { container } = renderTaskDrawer(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
 
 		expect(screen.getByText('任务详情')).toBeInTheDocument()
 		expect(screen.getByRole('button', { name: '打开' })).toHaveAttribute('data-variant', 'outline')
-		expect(screen.getAllByRole('button', { name: '更多任务操作' })[0]).toHaveAttribute(
-			'data-variant',
-			'outline',
-		)
+		expect(screen.queryByRole('button', { name: '更多任务操作' })).not.toBeInTheDocument()
 		expect(screen.queryByRole('button', { name: '关闭任务详情' })).not.toBeInTheDocument()
 		expect(container.querySelector('[data-task-drawer-body="true"]')).toContainElement(
 			screen.getByLabelText('任务标题'),
 		)
 	})
 
-	it('正文按文档顺序渲染标题、备注、属性、归属、标签、链接', () => {
-		const { container } = render(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
+	it('正文按文档顺序渲染标题、备注、属性、归属和链接', () => {
+		const { container } = renderTaskDrawer(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
 		const body = container.querySelector('[data-task-drawer-body="true"]')
 
 		expect(body).toBeInTheDocument()
 		expect(screen.getByLabelText('任务标题')).toHaveClass('border-0')
 		expect(screen.getByLabelText('任务备注')).toHaveClass('border-0')
 		expect(screen.getByLabelText('任务备注')).toHaveClass('min-h-40')
-		// 属性、归属、标签现在使用 DetailFieldRow label-value 布局，不再是 h3 heading
+		// 属性、归属使用 DetailFieldRow label-value 布局，不再是 h3 heading
 		expect(container.querySelector('[data-task-properties="stack"]')).toBeInTheDocument()
 		expect(screen.getByText('归属')).toBeInTheDocument()
 		expect(screen.queryByText('项目')).not.toBeInTheDocument()
-		expect(screen.getByText('标签')).toBeInTheDocument()
+		expect(screen.queryByText('标签')).not.toBeInTheDocument()
 		// 链接仍然是独立 section，保留 heading
 		expect(screen.getByRole('heading', { name: '链接' })).toBeInTheDocument()
 	})
 
 	it('归属 dropdown 使用 grouped placement menu', async () => {
-		render(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
+		renderTaskDrawer(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
 
 		fireEvent.pointerDown(screen.getByRole('button', { name: '归属' }))
 
@@ -255,14 +259,9 @@ describe('TaskDrawer', () => {
 		expect(screen.getAllByRole('menuitem', { name: /独立事项/ })).toHaveLength(2)
 	})
 
-	it('标签和链接区块不会接管 autosave', () => {
-		render(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
+	it('链接区块不会接管 autosave', () => {
+		renderTaskDrawer(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
 
-		expect(screen.getByRole('button', { name: '添加标签' })).toBeDisabled()
-		expect(screen.getByRole('button', { name: '添加标签' })).toHaveAttribute(
-			'data-variant',
-			'outline',
-		)
 		expect(screen.getByRole('button', { name: '添加链接' })).toHaveAttribute(
 			'data-variant',
 			'outline',
@@ -277,20 +276,18 @@ describe('TaskDrawer', () => {
 			error: '网络错误',
 		})
 
-		render(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
+		renderTaskDrawer(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
 
 		expect(screen.getByText('保存失败')).toBeInTheDocument()
 		expect(screen.getByText('网络错误')).toBeInTheDocument()
 	})
 
-	it('底部展示更新时间、更多、归档和移入回收站', () => {
-		render(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
+	it('底部展示更新时间、归档和移入回收站', () => {
+		renderTaskDrawer(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
 
-		expect(screen.getByText(/^更新于 /)).toBeInTheDocument()
-		expect(screen.getAllByRole('button', { name: '更多任务操作' })[1]).toHaveAttribute(
-			'data-variant',
-			'outline',
-		)
+		const updatedAt = screen.getByText(/^更新于 /)
+		expect(updatedAt).toBeInTheDocument()
+		expect(updatedAt.closest('[data-slot="overflow-tooltip-trigger"]')).toHaveTextContent('更新于')
 		expect(screen.getByRole('button', { name: '归档' })).toHaveAttribute('data-variant', 'outline')
 		expect(screen.getByRole('button', { name: '移入回收站' })).toHaveAttribute(
 			'data-variant',
@@ -299,7 +296,7 @@ describe('TaskDrawer', () => {
 	})
 
 	it('归档和恢复走控制器动作', async () => {
-		render(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
+		renderTaskDrawer(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
 
 		fireEvent.click(screen.getByRole('button', { name: '归档' }))
 
@@ -338,8 +335,21 @@ describe('TaskDrawer', () => {
 })
 
 function renderWithRouter(node: React.ReactNode) {
-	return render(node)
+	return renderTaskDrawer(node)
 }
+
+function renderTaskDrawer(node: React.ReactNode) {
+	return render(
+		<ShortcutRegistryProvider registry={testShortcutRegistry}>
+			<TooltipProvider delayDuration={0}>{node}</TooltipProvider>
+		</ShortcutRegistryProvider>,
+	)
+}
+
+const testShortcutRegistry = new KeybindingRegistry([
+	...DEFAULT_KEYBINDINGS,
+	...TASK_ROW_SHORTCUT_BINDINGS,
+])
 
 function createAutosaveController(
 	overrides: Partial<AutosaveController<TaskDetailDraft>> = {},

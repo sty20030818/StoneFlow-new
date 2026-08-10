@@ -5,6 +5,7 @@ import {
 	DropdownMenuContent,
 	DropdownMenuTrigger,
 } from '@/shared/components/base/dropdown-menu'
+import { TooltipProvider } from '@/shared/components/base/tooltip'
 
 import { getFilterValueOptions } from './filterOptionCatalog'
 import { FilterValueOption } from './FilterValueOption'
@@ -26,16 +27,19 @@ describe('filter value options', () => {
 	it('勾选值后保持菜单打开', () => {
 		const onToggle = vi.fn()
 		render(
-			<DropdownMenu defaultOpen>
-				<DropdownMenuTrigger>筛选</DropdownMenuTrigger>
-				<DropdownMenuContent>
-					<FilterValueOption checked={false} label='高' onToggle={onToggle} />
-				</DropdownMenuContent>
-			</DropdownMenu>,
+			<TooltipProvider>
+				<DropdownMenu defaultOpen>
+					<DropdownMenuTrigger>筛选</DropdownMenuTrigger>
+					<DropdownMenuContent>
+						<FilterValueOption checked={false} label='高' onToggle={onToggle} />
+					</DropdownMenuContent>
+				</DropdownMenu>
+			</TooltipProvider>,
 		)
 
 		const option = screen.getByRole('menuitemcheckbox', { name: '高' })
 		expect(option.querySelector('[data-slot="selection-indicator"]')).toBeInTheDocument()
+		expect(option.querySelector('[data-slot="overflow-tooltip-trigger"]')).toBeInTheDocument()
 		fireEvent.click(option)
 
 		expect(onToggle).toHaveBeenCalledTimes(1)

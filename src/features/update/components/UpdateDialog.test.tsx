@@ -1,6 +1,8 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { TooltipProvider } from '@/shared/components/base/tooltip'
+
 import { useUpdateStore } from '../model/useUpdateStore'
 import { UpdateDialog } from './UpdateDialog'
 
@@ -83,7 +85,7 @@ describe('UpdateDialog', () => {
 		mocks.useChangelog.mockReturnValue({ releases: [], isLoading: false })
 	})
 
-	it('检查失败时不展示安装动作，并允许重新检查', () => {
+	it('检查失败时不展示安装动作，并允许重新检查', async () => {
 		useUpdateStore.setState({
 			dialogVisible: true,
 			snapshot: {
@@ -94,12 +96,14 @@ describe('UpdateDialog', () => {
 				errorMessage: '检查更新失败',
 			},
 		})
-		render(<UpdateDialog />)
+		renderUpdateDialog()
 
 		expect(screen.getByRole('button', { name: '重新检查' })).toBeInTheDocument()
 		expect(screen.getAllByRole('button', { name: '关闭' })).toHaveLength(1)
 		expect(screen.queryByRole('button', { name: '立即更新' })).not.toBeInTheDocument()
 		expect(screen.queryByRole('button', { name: '跳过此版本' })).not.toBeInTheDocument()
+		fireEvent.focus(screen.getByRole('button', { name: '关闭' }))
+		expect(await screen.findByRole('tooltip')).toHaveTextContent('关闭')
 
 		fireEvent.click(screen.getByRole('button', { name: '重新检查' }))
 		expect(mocks.checkNow).toHaveBeenCalledTimes(1)
@@ -108,7 +112,7 @@ describe('UpdateDialog', () => {
 
 	it('检查中时在当前弹窗显示禁用的进度操作', () => {
 		useUpdateStore.setState({ dialogVisible: true, manualCheckPending: true })
-		render(<UpdateDialog />)
+		renderUpdateDialog()
 
 		expect(screen.getByRole('button', { name: '正在检查...' })).toBeDisabled()
 		expect(screen.queryByRole('button', { name: '重新检查' })).not.toBeInTheDocument()
@@ -122,7 +126,7 @@ describe('UpdateDialog', () => {
 			releases: query ? [{ version: '0.1.2-beta.4' }, { version: '0.1.2-beta.3' }] : [],
 		}))
 		showSnapshot('available', { channel: 'beta', version: '0.1.2-beta.4' })
-		render(<UpdateDialog />)
+		renderUpdateDialog()
 
 		await waitFor(() =>
 			expect(mocks.useChangelog).toHaveBeenLastCalledWith({
@@ -141,7 +145,7 @@ describe('UpdateDialog', () => {
 	it('累计区间无说明时仍可下载 staged 目标', async () => {
 		mocks.getCurrentVersion.mockResolvedValue('0.1.0')
 		showSnapshot('available', { channel: 'stable', version: '0.2.0' })
-		render(<UpdateDialog />)
+		renderUpdateDialog()
 
 		await waitFor(() =>
 			expect(mocks.useChangelog).toHaveBeenLastCalledWith({
@@ -170,7 +174,7 @@ describe('UpdateDialog', () => {
 				errorMessage: null,
 			},
 		})
-		render(<UpdateDialog />)
+		renderUpdateDialog()
 
 		fireEvent.click(screen.getByRole('button', { name: '跳过此版本' }))
 		await waitFor(() => expect(useUpdateStore.getState().dialogVisible).toBe(false))
@@ -192,7 +196,7 @@ describe('UpdateDialog', () => {
 				errorMessage: null,
 			},
 		})
-		render(<UpdateDialog />)
+		renderUpdateDialog()
 
 		fireEvent.click(screen.getByRole('button', { name: '跳过此版本' }))
 		await waitFor(() => expect(mocks.toastError).toHaveBeenCalledWith('更新失败: 设置保存失败'))
@@ -211,7 +215,7 @@ describe('UpdateDialog', () => {
 			}),
 		)
 		showSnapshot('ready')
-		render(<UpdateDialog />)
+		renderUpdateDialog()
 
 		expect(screen.getByRole('button', { name: '正在确认...' })).toBeDisabled()
 		expect(mocks.getUpdateSettings).toHaveBeenCalledTimes(1)
@@ -228,7 +232,7 @@ describe('UpdateDialog', () => {
 
 	it('渠道已切换时明示 staged 身份，并提交精确来源渠道确认', async () => {
 		showSnapshot('ready', { channel: 'beta', version: '0.2.0-beta.4' })
-		render(<UpdateDialog />)
+		renderUpdateDialog()
 
 		expect(
 			await screen.findByText('当前配置为 Stable 渠道，仍将安装 Beta v0.2.0-beta.4。'),
@@ -244,7 +248,7 @@ describe('UpdateDialog', () => {
 			errorMessage: '系统安装器拒绝了安装包',
 			version: '0.2.0-beta.4',
 		})
-		render(<UpdateDialog />)
+		renderUpdateDialog()
 
 		const retryButton = await screen.findByRole('button', { name: '重试安装' })
 		expect(screen.getByText('系统安装器拒绝了安装包')).toBeInTheDocument()
@@ -258,12 +262,17 @@ describe('UpdateDialog', () => {
 
 	it('Installing 明确锁定关闭和全部更新操作', async () => {
 		showSnapshot('installing')
-		render(<UpdateDialog />)
+		renderUpdateDialog()
 
 		expect(screen.getAllByText('正在安装更新')).toHaveLength(2)
 		expect(screen.getByRole('button', { name: '正在安装...' })).toBeDisabled()
 		const closeButton = screen.getByRole('button', { name: '关闭' })
 		expect(closeButton).toBeDisabled()
+		const disabledCloseTrigger = document.querySelector(
+			'[data-slot="disabled-action-tooltip-trigger"]',
+		)
+		fireEvent.focus(disabledCloseTrigger!)
+		expect(await screen.findByRole('tooltip')).toHaveTextContent('关闭安装完成前无法关闭更新窗口')
 		fireEvent.click(closeButton)
 
 		expect(useUpdateStore.getState().dialogVisible).toBe(true)
@@ -274,3 +283,11 @@ describe('UpdateDialog', () => {
 		await waitFor(() => expect(useUpdateStore.getState().dialogVisible).toBe(true))
 	})
 })
+
+function renderUpdateDialog() {
+	return render(
+		<TooltipProvider delayDuration={0}>
+			<UpdateDialog />
+		</TooltipProvider>,
+	)
+}

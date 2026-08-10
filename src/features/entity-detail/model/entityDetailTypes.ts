@@ -5,9 +5,12 @@ export type EntityDetailTarget = {
 	id: string
 }
 
-export type EntityDetailRouteState = EntityDetailTarget | null
+export type EntityDetailDrawerTarget = {
+	kind: 'task'
+	id: string
+}
 
-export type EntityDetailOpenMode = 'drawer' | 'page'
+export type EntityDetailRouteState = EntityDetailDrawerTarget | null
 
 export type EntityDetailParseResult = {
 	activeDetail: EntityDetailRouteState

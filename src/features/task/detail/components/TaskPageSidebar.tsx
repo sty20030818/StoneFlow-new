@@ -5,7 +5,6 @@ import type { ProjectOption } from '@/features/project'
 import type { Space } from '@/shared/types'
 
 import type { TaskDetailDraft } from '../model/taskDetailDraft'
-import { TaskLabelsSection } from './TaskLabelsSection'
 import { TaskPlacementSection } from './TaskPlacementSection'
 import { TaskPropertiesSection } from './TaskPropertiesSection'
 
@@ -58,13 +57,6 @@ export function TaskPageSidebar({
 				title='属性'
 			>
 				<TaskPropertiesSection autosave={autosave} disabled={isReadOnly} />
-			</DetailSection>
-
-			<DetailSection
-				className='rounded-xl border border-sf-border-subtle bg-card px-4 py-4'
-				title='标签'
-			>
-				<TaskLabelsSection />
 			</DetailSection>
 
 			<DetailSection

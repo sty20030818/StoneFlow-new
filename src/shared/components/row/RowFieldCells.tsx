@@ -4,6 +4,7 @@ import type { ComponentProps, ReactNode } from 'react'
 import { cn } from '@/shared/lib/utils'
 import { Button, buttonVariants } from '@/shared/components/base/button'
 import { Checkbox } from '@/shared/components/base/checkbox'
+import { ActionTooltip, DisabledActionTooltip, OverflowTooltip } from '@/shared/components/tooltip'
 import type { VariantProps } from 'class-variance-authority'
 
 type StopEvent = {
@@ -18,7 +19,9 @@ export type RowSelectionCellProps = {
 	checked: boolean
 	visible?: boolean
 	disabled?: boolean
+	disabledReason?: ReactNode
 	ariaLabel: string
+	tooltipShortcut?: ReactNode
 	onCheckedChange: () => void
 }
 
@@ -45,13 +48,25 @@ export function RowSelectionCell({
 	checked,
 	visible = false,
 	disabled,
+	disabledReason,
 	ariaLabel,
+	tooltipShortcut,
 	onCheckedChange,
 }: RowSelectionCellProps) {
 	// checked / visible（键盘 hover）强制显示；指针 hover 用 row-shell group，避免 React 全表 re-render
 	const forceVisible = checked || visible
-
-	return (
+	const checkbox = (
+		<Checkbox
+			aria-label={ariaLabel}
+			checked={checked}
+			disabled={disabled}
+			onCheckedChange={() => onCheckedChange()}
+			onClick={stopRowEventPropagation}
+			onKeyDownCapture={stopRowEventPropagation}
+			onPointerDownCapture={stopRowEventPropagation}
+		/>
+	)
+	const cell = (
 		<span
 			className={cn(
 				'flex size-5 shrink-0 items-center justify-center transition-opacity',
@@ -61,30 +76,42 @@ export function RowSelectionCell({
 			)}
 			data-slot='row-selection-cell'
 		>
-			<Checkbox
-				aria-label={ariaLabel}
-				checked={checked}
-				disabled={disabled}
-				onCheckedChange={() => onCheckedChange()}
-				onClick={stopRowEventPropagation}
-				onKeyDownCapture={stopRowEventPropagation}
-				onPointerDownCapture={stopRowEventPropagation}
-			/>
+			{checkbox}
 		</span>
+	)
+
+	if (disabled) {
+		return disabledReason ? (
+			<DisabledActionTooltip label={ariaLabel} reason={disabledReason}>
+				{cell}
+			</DisabledActionTooltip>
+		) : (
+			cell
+		)
+	}
+
+	return (
+		<ActionTooltip>
+			<ActionTooltip.Trigger asChild>{cell}</ActionTooltip.Trigger>
+			<ActionTooltip.Content>
+				<ActionTooltip.Row label={ariaLabel} shortcut={tooltipShortcut} />
+			</ActionTooltip.Content>
+		</ActionTooltip>
 	)
 }
 
 export function RowTitleCell({ title, doneLike = false, className }: RowTitleCellProps) {
 	return (
-		<p
+		<OverflowTooltip
 			className={cn(
 				'truncate text-sm font-medium text-foreground transition-colors group-hover/row-shell:text-foreground',
 				doneLike ? 'text-sf-text-tertiary line-through' : null,
 				className,
 			)}
+			content={title}
 		>
 			{title}
-		</p>
+		</OverflowTooltip>
 	)
 }
 
@@ -131,7 +158,9 @@ export const RowMetaButton = forwardRef<HTMLButtonElement, RowMetaButtonProps>(
 				{children ?? (
 					<>
 						{icon}
-						<span className='min-w-0 truncate'>{label}</span>
+						<OverflowTooltip className='min-w-0' content={label}>
+							{label}
+						</OverflowTooltip>
 						{trailing}
 					</>
 				)}

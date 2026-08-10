@@ -34,9 +34,10 @@ export {
 
 export {
 	MetadataFieldDropdown,
+	type MetadataCommandShortcut,
 	MetadataFieldButton,
 	MetadataDateDropdown,
-	MetadataDateButton,
+	MetadataFieldValue,
 	CustomDateDialog,
 	MetadataPlacementDropdown,
 } from './components'

@@ -1,6 +1,12 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import {
+	cleanup,
+	fireEvent,
+	render as testingLibraryRender,
+	screen,
+	waitFor,
+} from '@testing-library/react'
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
-import type { PropsWithChildren } from 'react'
+import type { PropsWithChildren, ReactNode } from 'react'
 
 import {
 	closeSession,
@@ -23,11 +29,20 @@ import type {
 	LauncherTaskItem,
 } from './model/types'
 import { formatDateLabel } from './model/launcherFormatters'
+import {
+	formatLauncherShortcut,
+	inferLauncherShortcutPlatform,
+} from './model/launcherShortcutKeymap'
+import { TooltipProvider } from '@/shared/components/base/tooltip'
 
 const listenMock = vi.fn()
 const originalRequestAnimationFrame = window.requestAnimationFrame
 const originalCancelAnimationFrame = window.cancelAnimationFrame
 const DEFAULT_SESSION_ID = 'session-1'
+
+function render(ui: ReactNode) {
+	return testingLibraryRender(<TooltipProvider delayDuration={0}>{ui}</TooltipProvider>)
+}
 
 vi.mock('./api/launcherApi', () => ({
 	closeSession: vi.fn<typeof closeSession>(),
@@ -228,6 +243,55 @@ describe('LauncherPage', () => {
 		expect(screen.getByTestId('launcher-composer')).toBeInTheDocument()
 		expect(screen.getByTestId('launcher-results')).toBeInTheDocument()
 		expect(screen.getByTestId('launcher-footer')).toBeInTheDocument()
+	})
+
+	it('更多参数显示动作 Tooltip，执行后立即关闭并更新动作名', async () => {
+		render(<LauncherPage />)
+		await screen.findByTestId('launcher-recent-tasks-section')
+
+		const advancedTrigger = screen.getByLabelText('更多参数')
+		fireEvent.focus(advancedTrigger)
+		expect(await screen.findByRole('tooltip')).toHaveTextContent('展开更多参数')
+		expect(screen.getByRole('tooltip').querySelector('[data-slot="kbd"]')).toBeNull()
+		fireEvent.click(advancedTrigger)
+		await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument())
+
+		fireEvent.blur(advancedTrigger)
+		fireEvent.focus(advancedTrigger)
+		expect(await screen.findByRole('tooltip')).toHaveTextContent('收起更多参数')
+	})
+
+	it('动态文本只通过真实溢出触发 Tooltip', async () => {
+		render(<LauncherPage />)
+		await screen.findByTestId('launcher-recent-tasks-section')
+
+		const overflowValues = Array.from(
+			document.querySelectorAll<HTMLElement>('[data-slot="overflow-tooltip-trigger"]'),
+		).map((element) => element.textContent)
+
+		expect(overflowValues).toEqual(
+			expect.arrayContaining([
+				'独立事项',
+				'最近任务 A',
+				'产品研发 / 独立事项',
+				'最近项目 A',
+				'产品研发',
+				'输入标题创建，或打开最近任务、项目',
+			]),
+		)
+
+		const taskTitle = screen.getByText('最近任务 A')
+		setElementSize(taskTitle, { clientWidth: 80, scrollWidth: 160 })
+		fireEvent.focus(taskTitle)
+		expect(await screen.findByRole('tooltip')).toHaveTextContent('最近任务 A')
+
+		fireEvent.blur(taskTitle)
+		await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument())
+
+		const projectTitle = screen.getByText('最近项目 A')
+		setElementSize(projectTitle, { clientWidth: 80, scrollWidth: 80 })
+		fireEvent.focus(projectTitle)
+		expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
 	})
 
 	it('打开会话直接 present', async () => {
@@ -454,6 +518,29 @@ describe('LauncherPage', () => {
 		expect(screen.getByLabelText('优先级').querySelector('svg')).not.toBeNull()
 		expect(screen.getByRole('button', { name: /已完成/ })).toBeInTheDocument()
 		expect(screen.getByRole('button', { name: /截止/ })).not.toHaveTextContent('截止时间')
+	})
+
+	it('Mod+Enter 使用当前平台 binding 创建并打开，页脚展示同一 binding', async () => {
+		render(<LauncherPage />)
+		await screen.findByTestId('launcher-recent-tasks-section')
+
+		const input = screen.getByLabelText('Launcher 输入')
+		fireEvent.change(input, { target: { value: '创建并打开任务' } })
+
+		const platform = inferLauncherShortcutPlatform()
+		expect(screen.getByText(formatLauncherShortcut('createAndOpen', platform))).toBeInTheDocument()
+
+		fireEvent.keyDown(input, {
+			key: 'Enter',
+			...(platform === 'mac' ? { metaKey: true } : { ctrlKey: true }),
+		})
+
+		await waitFor(() => {
+			expect(mockedCreateAndOpen).toHaveBeenCalledWith(
+				expect.objectContaining({ title: '创建并打开任务' }),
+			)
+		})
+		expect(mockedCreate).not.toHaveBeenCalled()
 	})
 
 	it('Esc 按优先级先关弹层、再清空输入、最后关闭窗口', async () => {
@@ -722,6 +809,14 @@ describe('formatDateLabel', () => {
 		expect(formatDateLabel('2026-05-01')).toBe('5/1')
 	})
 })
+
+function setElementSize(
+	element: HTMLElement,
+	{ clientWidth, scrollWidth }: { clientWidth: number; scrollWidth: number },
+) {
+	Object.defineProperty(element, 'clientWidth', { configurable: true, value: clientWidth })
+	Object.defineProperty(element, 'scrollWidth', { configurable: true, value: scrollWidth })
+}
 
 function createOpenContext(): LauncherOpenContext {
 	return {

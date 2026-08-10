@@ -3,6 +3,7 @@ import {
 	cloneElement,
 	Fragment,
 	isValidElement,
+	useState,
 	type ComponentProps,
 	type ReactElement,
 	type ReactNode,
@@ -13,6 +14,7 @@ import { ContextMenu, ContextMenuTrigger } from '@/shared/components/base/contex
 import { cn } from '@/shared/lib/utils'
 import { Badge } from '@/shared/components/base/badge'
 import { Button } from '@/shared/components/base/button'
+import { ActionTooltip, OverflowTooltip } from '@/shared/components/tooltip'
 import {
 	Collapsible,
 	CollapsibleContent,
@@ -113,9 +115,12 @@ export function BoardGroupHeader({
 		>
 			<div className='flex min-w-0 items-center gap-2'>
 				{leading}
-				<span className={cn('truncate text-sm font-semibold text-foreground', titleClassName)}>
+				<OverflowTooltip
+					className={cn('text-sm font-semibold text-foreground', titleClassName)}
+					content={title}
+				>
 					{title}
-				</span>
+				</OverflowTooltip>
 				{typeof count === 'number' ? (
 					<Badge
 						className={cn(entityBoardSectionCountBadgeClass, entityBoardCompactBadgeClass)}
@@ -250,21 +255,44 @@ export function BoardCollapsibleSection({
 	contextMenuContent,
 	children,
 }: BoardCollapsibleSectionProps) {
+	const [contextMenuOpen, setContextMenuOpen] = useState(false)
+	const [toggleTooltipOpen, setToggleTooltipOpen] = useState(false)
+	const toggleLabel = open ? `折叠 ${label}` : `展开 ${label}`
 	const header = (
 		<div
 			className={BOARD_GROUP_HEADER_CLASS}
 			data-board-section-header='true'
-			onDoubleClick={() => onOpenChange(!open)}
+			onDoubleClick={() => {
+				setToggleTooltipOpen(false)
+				onOpenChange(!open)
+			}}
 		>
-			<CollapsibleTrigger
-				aria-label={`切换 ${label} 分区折叠状态`}
-				className={entityBoardSectionToggleClass}
+			<ActionTooltip
+				onOpenChange={(nextOpen) => setToggleTooltipOpen(nextOpen && !contextMenuOpen)}
+				open={toggleTooltipOpen && !contextMenuOpen}
 			>
-				<BoardChevron data-chevron />
-			</CollapsibleTrigger>
+				<ActionTooltip.Trigger asChild>
+					<CollapsibleTrigger
+						aria-label={toggleLabel}
+						className={entityBoardSectionToggleClass}
+						onClick={() => setToggleTooltipOpen(false)}
+					>
+						<BoardChevron data-chevron />
+					</CollapsibleTrigger>
+				</ActionTooltip.Trigger>
+				<ActionTooltip.Content>
+					<ActionTooltip.Row label={toggleLabel} />
+				</ActionTooltip.Content>
+			</ActionTooltip>
 			<div className={entityBoardSectionHeadingClass}>
 				{icon}
-				<span className='truncate'>{label}</span>
+				{contextMenuOpen ? (
+					<span className='min-w-0 truncate'>{label}</span>
+				) : (
+					<OverflowTooltip className='min-w-0' content={label}>
+						{label}
+					</OverflowTooltip>
+				)}
 				<Badge className={entityBoardSectionCountBadgeClass} variant='secondary'>
 					{count}
 				</Badge>
@@ -289,7 +317,15 @@ export function BoardCollapsibleSection({
 			open={open}
 		>
 			{contextMenuContent ? (
-				<ContextMenu>
+				<ContextMenu
+					onOpenChange={(nextOpen) => {
+						setContextMenuOpen(nextOpen)
+						if (nextOpen) {
+							setToggleTooltipOpen(false)
+						}
+					}}
+					open={contextMenuOpen}
+				>
 					<ContextMenuTrigger asChild>{header}</ContextMenuTrigger>
 					{contextMenuContent}
 				</ContextMenu>

@@ -1,24 +1,69 @@
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 
+import {
+	COMMAND_IDS,
+	CommandShortcutLayer,
+	DEFAULT_KEYBINDINGS,
+	KeybindingRegistry,
+	ShortcutRegistryProvider,
+	type CommandId,
+} from '@/features/command'
 import { useEntitySelection } from '@/features/selection/model'
+import { SELECTION_SHORTCUT_BINDINGS } from '@/features/selection/shortcuts'
 
 import { EntityRowShortcutScope } from './EntityRowShortcutScope'
 
+const TEST_SHORTCUT_REGISTRY = new KeybindingRegistry([
+	...DEFAULT_KEYBINDINGS,
+	...SELECTION_SHORTCUT_BINDINGS,
+])
+
 describe('EntityRowShortcutScope', () => {
-	it('Cmd+A 全选后不制造键盘 hover 行', () => {
-		render(<EntitySelectionHarness />)
+	it('Mod+A 全选后不制造键盘 hover 行', () => {
+		renderSelectionHarness()
 
 		fireEvent.mouseEnter(screen.getByTestId('row-b'))
 		expect(screen.getByTestId('hovered-id')).toHaveTextContent('b')
 
-		fireKey('a', { metaKey: true })
+		fireKey('a', { ctrlKey: true })
 
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent('a,b,c')
 		expect(screen.getByTestId('focused-id')).toHaveTextContent('none')
 		expect(screen.getByTestId('hovered-id')).toHaveTextContent('none')
 		expect(screen.getByTestId('hover-source')).toHaveTextContent('none')
 	})
+
+	it('Escape 从同一 Registry 清空选择', () => {
+		const onGlobalTrigger = vi.fn<(id: CommandId) => void>()
+		renderSelectionHarness(onGlobalTrigger)
+		fireKey('a', { ctrlKey: true })
+
+		const event = fireKey('Escape')
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(screen.getByTestId('selected-ids')).toBeEmptyDOMElement()
+		expect(onGlobalTrigger).not.toHaveBeenCalled()
+	})
+
+	it('无选择时 list 不消费 Escape，事件下沉给 global close', async () => {
+		const onGlobalTrigger = vi.fn<(id: CommandId) => void>()
+		renderSelectionHarness(onGlobalTrigger)
+
+		const event = fireKey('Escape')
+
+		expect(event.defaultPrevented).toBe(true)
+		await waitFor(() => expect(onGlobalTrigger).toHaveBeenCalledWith(COMMAND_IDS.close))
+	})
 })
+
+function renderSelectionHarness(onGlobalTrigger: (id: CommandId) => void = () => undefined) {
+	return render(
+		<ShortcutRegistryProvider registry={TEST_SHORTCUT_REGISTRY}>
+			<CommandShortcutLayer onTrigger={onGlobalTrigger} />
+			<EntitySelectionHarness />
+		</ShortcutRegistryProvider>,
+	)
+}
 
 function EntitySelectionHarness() {
 	const ids = ['a', 'b', 'c']
@@ -28,6 +73,7 @@ function EntitySelectionHarness() {
 		<EntityRowShortcutScope
 			focusedId={selection.focusedId}
 			ids={ids}
+			onClearSelection={selection.clearSelection}
 			onMoveFocus={selection.moveFocus}
 			onSelectAll={selection.selectIds}
 			onSetFocusedId={selection.setFocusedId}
@@ -71,4 +117,6 @@ function fireKey(
 	act(() => {
 		window.dispatchEvent(event)
 	})
+
+	return event
 }

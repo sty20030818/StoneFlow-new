@@ -1,7 +1,9 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, type RenderResult } from '@testing-library/react'
+import type { ReactElement } from 'react'
 
 import { TaskBoard } from '@/features/task/components/TaskBoard'
 import type { RowSelectionGroupPosition } from '@/shared/components/patterns/row-tokens'
+import { TooltipProvider } from '@/shared/components/base/tooltip'
 import type { TaskListItem } from '@/shared/types'
 
 vi.mock('@/features/task/components/useTaskContextMenuBulkActions', () => ({
@@ -39,7 +41,7 @@ vi.mock('@/features/task/components/TaskRowAdapter', () => ({
 
 describe('TaskBoard', () => {
 	it('加载中不显示空态文案', () => {
-		render(
+		renderTaskBoard(
 			<TaskBoard
 				activeTaskId={null}
 				emptyDescription='empty description'
@@ -62,7 +64,7 @@ describe('TaskBoard', () => {
 	})
 
 	it('显示状态分区 header，并用 totalCount 锁定总高', () => {
-		const { container } = render(
+		const { container } = renderTaskBoard(
 			<TaskBoard
 				activeTaskId={null}
 				onEmptyAction={() => undefined}
@@ -84,6 +86,10 @@ describe('TaskBoard', () => {
 		expect(screen.getByText('任务 A')).toBeInTheDocument()
 		// scrollTop=0 且首个 header start=0 → stuck，浮层 + 原位（opacity:0）
 		expect(screen.getAllByText('待执行').length).toBeGreaterThanOrEqual(1)
+		expect(screen.getAllByRole('button', { name: '折叠 待执行' }).length).toBeGreaterThanOrEqual(1)
+		expect(
+			screen.getAllByRole('button', { name: '在 待执行 中创建任务' }).length,
+		).toBeGreaterThanOrEqual(1)
 		expect(container.querySelector('[data-task-board-sticky-header]')).toBeTruthy()
 		const root = container.querySelector('[data-task-board-virtual="sections"]')
 		// 续拉中：flat(1 header + 1 行) + 未加载 99 行占位
@@ -94,7 +100,7 @@ describe('TaskBoard', () => {
 	})
 
 	it('customSections 显示分组标题', () => {
-		render(
+		renderTaskBoard(
 			<TaskBoard
 				activeTaskId={null}
 				customSections={[
@@ -129,7 +135,7 @@ describe('TaskBoard', () => {
 			createTask({ id: 'task-3', title: '任务 C' }),
 			createTask({ id: 'task-4', title: '任务 D', status: 'doing' }),
 		]
-		const { container } = render(
+		const { container } = renderTaskBoard(
 			<TaskBoard
 				activeTaskId={null}
 				customSections={[
@@ -162,6 +168,10 @@ describe('TaskBoard', () => {
 		})
 	})
 })
+
+function renderTaskBoard(element: ReactElement): RenderResult {
+	return render(<TooltipProvider>{element}</TooltipProvider>)
+}
 
 function createTask(
 	overrides: Partial<TaskListItem> & Pick<TaskListItem, 'id' | 'title'>,

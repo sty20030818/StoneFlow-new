@@ -7,6 +7,7 @@ import {
 	MetadataFieldDropdown,
 } from '@/features/metadata-fields'
 import { Button } from '@/shared/components/base/button'
+import { ActionTooltip } from '@/shared/components/tooltip'
 import {
 	Dialog,
 	DialogContent,
@@ -85,29 +86,44 @@ export function CreateDialogShell({
 
 					<div className='flex items-center gap-0.5'>
 						{showFullscreenToggle ? (
-							<Button
-								aria-label={fullscreen ? '退出全屏创建' : '全屏创建'}
-								className='size-7 text-sf-icon-secondary'
-								onClick={onToggleFullscreen}
-								size='icon-sm'
-								type='button'
-								variant='ghost'
-							>
-								{fullscreen ? (
-									<Minimize2Icon className='size-3.5' />
-								) : (
-									<Maximize2Icon className='size-3.5' />
-								)}
-							</Button>
+							<ActionTooltip>
+								<ActionTooltip.Trigger asChild>
+									<Button
+										aria-label={fullscreen ? '退出全屏创建' : '全屏创建'}
+										className='size-7 text-sf-icon-secondary'
+										onClick={onToggleFullscreen}
+										size='icon-sm'
+										type='button'
+										variant='ghost'
+									>
+										{fullscreen ? (
+											<Minimize2Icon className='size-3.5' />
+										) : (
+											<Maximize2Icon className='size-3.5' />
+										)}
+									</Button>
+								</ActionTooltip.Trigger>
+								<ActionTooltip.Content>
+									<ActionTooltip.Row label={fullscreen ? '退出全屏创建' : '全屏创建'} />
+								</ActionTooltip.Content>
+							</ActionTooltip>
 						) : null}
-						<Button
-							className='size-7 text-sf-icon-secondary'
-							onClick={onClose}
-							size='icon-sm'
-							variant='ghost'
-						>
-							<XIcon className='size-3.5' />
-						</Button>
+						<ActionTooltip>
+							<ActionTooltip.Trigger asChild>
+								<Button
+									aria-label='关闭创建窗口'
+									className='size-7 text-sf-icon-secondary'
+									onClick={onClose}
+									size='icon-sm'
+									variant='ghost'
+								>
+									<XIcon className='size-3.5' />
+								</Button>
+							</ActionTooltip.Trigger>
+							<ActionTooltip.Content>
+								<ActionTooltip.Row label='关闭创建窗口' />
+							</ActionTooltip.Content>
+						</ActionTooltip>
 					</div>
 				</div>
 
@@ -139,7 +155,6 @@ function CreateDialogSpaceSelector({
 		<MetadataFieldDropdown
 			buttonIcon={buttonVisual.icon}
 			buttonLabel={currentSpaceLabel}
-			headerShortcut={spaceDropdownProps.headerShortcut}
 			label='空间'
 			menuLabel={spaceDropdownProps.menuLabel}
 			options={options}

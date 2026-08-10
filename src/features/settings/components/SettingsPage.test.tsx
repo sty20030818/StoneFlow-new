@@ -6,6 +6,7 @@ import type * as TauriEvent from '@tauri-apps/api/event'
 import type { ShellSidebarSettings } from '../api/shellDevicePreferences'
 import { SettingsPage } from './SettingsPage'
 import type { Space } from '@/shared/types'
+import { TooltipProvider } from '@/shared/components/base/tooltip'
 import { renderWithRouterContext } from '@/test/renderWithRouter'
 
 const loadSidebarSettingsSpy = vi.fn<() => Promise<void>>()
@@ -924,10 +925,28 @@ describe('SettingsPage', () => {
 		expect(screen.getAllByText('总计 88 条主数据')).toHaveLength(2)
 		expect(screen.getAllByText('1 条').length).toBeGreaterThanOrEqual(1)
 	})
+
+	it('同步配置图标提示动作，并在打开配置窗口前关闭提示', async () => {
+		mockSettingsSection = 'sync'
+		await renderSettingsPage()
+
+		const configureButton = await screen.findByRole('button', { name: '配置同步数据库' })
+		await waitFor(() => expect(configureButton).toBeEnabled())
+		fireEvent.focus(configureButton)
+		expect(await screen.findByRole('tooltip')).toHaveTextContent('配置同步数据库')
+
+		fireEvent.click(configureButton)
+		expect(await screen.findByRole('dialog')).toBeInTheDocument()
+		await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument())
+	})
 })
 
 async function renderSettingsPage() {
-	return renderWithRouterContext(<SettingsPage />)
+	return renderWithRouterContext(
+		<TooltipProvider delayDuration={0}>
+			<SettingsPage />
+		</TooltipProvider>,
+	)
 }
 
 function openSyncConfigDialog() {

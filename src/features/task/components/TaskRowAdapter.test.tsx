@@ -1,12 +1,24 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
+import {
+	DEFAULT_KEYBINDINGS,
+	KeybindingRegistry,
+	ShortcutRegistryProvider,
+} from '@/features/command'
 import { DangerConfirmProvider } from '@/features/danger-confirm'
 import type { TaskPlacementTarget } from '@/features/metadata-fields'
 import { ROW_SHELL_ACTIVE_CLASS, ROW_SHELL_SELECTED_CLASS } from '@/shared/components/row'
+import { TooltipProvider } from '@/shared/components/base/tooltip'
 import type { TaskListItem } from '@/shared/types'
 
 import { TaskRowAdapter, type TaskRowAdapterProps } from './TaskRowAdapter'
 import type { TaskContextMenuBulkActions } from './useTaskContextMenuBulkActions'
+import { TASK_ROW_SHORTCUT_BINDINGS } from '../shortcuts'
+
+const TEST_SHORTCUT_REGISTRY = new KeybindingRegistry([
+	...DEFAULT_KEYBINDINGS,
+	...TASK_ROW_SHORTCUT_BINDINGS,
+])
 
 function buildTask(partial: Partial<TaskListItem> = {}): TaskListItem {
 	return {
@@ -86,7 +98,7 @@ function renderTaskRowAdapter({
 	showSpaceLabel?: boolean
 } = {}) {
 	render(
-		<DangerConfirmProvider>
+		<TestProviders>
 			<TaskRowAdapter
 				actions={actions}
 				contextMenuActions={contextMenuActions}
@@ -97,7 +109,7 @@ function renderTaskRowAdapter({
 				task={task}
 				visibleProperties={visibleProperties}
 			/>
-		</DangerConfirmProvider>,
+		</TestProviders>,
 	)
 
 	return { task, rowState, projectBinding, actions }
@@ -123,8 +135,9 @@ describe('TaskRowAdapter', () => {
 
 		expect(screen.getByText('工作')).toBeInTheDocument()
 		expect(screen.getByText('跨空间任务')).toBeInTheDocument()
-		const spaceButton = screen.getByRole('button', { name: '所属空间 工作' })
-		const icon = spaceButton.querySelector('svg')
+		const spaceValue = screen.getByLabelText('所属空间 工作')
+		expect(spaceValue.tagName).toBe('SPAN')
+		const icon = spaceValue.querySelector('svg')
 		// briefcase + green token（来自 space-2 的 iconKey/colorKey）
 		expect(icon).toBeTruthy()
 		expect(icon?.getAttribute('class') ?? '').toContain('text-[#2da44e]')
@@ -163,6 +176,15 @@ describe('TaskRowAdapter', () => {
 		fireEvent.pointerDown(screen.getByRole('button', { name: '设置任务 任务 A 的状态' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /已完成/ }))
 		expect(actions.onUpdateTaskStatus).toHaveBeenCalledWith(task, 'done')
+	})
+
+	it('任务行字段 Tooltip 只从 row Registry 展示真实快捷键', async () => {
+		renderTaskRowAdapter()
+
+		fireEvent.focus(screen.getByRole('button', { name: '设置任务 任务 A 的优先级' }))
+
+		expect(await screen.findByRole('tooltip')).toHaveTextContent('设置任务 任务 A 的优先级P')
+		expect(screen.getByLabelText('按 P')).toBeInTheDocument()
 	})
 
 	it('归属字段使用 local grouped placement，并暴露 standalone / project', async () => {
@@ -253,7 +275,7 @@ describe('TaskRowAdapter', () => {
 		const task = buildTask()
 		const actions = buildActions()
 		const { rerender } = render(
-			<DangerConfirmProvider>
+			<TestProviders>
 				<TaskRowAdapter
 					actions={actions}
 					projectBinding={createProjectBinding()}
@@ -264,7 +286,7 @@ describe('TaskRowAdapter', () => {
 					}}
 					task={task}
 				/>
-			</DangerConfirmProvider>,
+			</TestProviders>,
 		)
 
 		const row = screen.getByRole('button', { name: '打开任务 任务 A' })
@@ -272,7 +294,7 @@ describe('TaskRowAdapter', () => {
 		expect(row.className).toContain('opacity-75')
 
 		rerender(
-			<DangerConfirmProvider>
+			<TestProviders>
 				<TaskRowAdapter
 					actions={actions}
 					projectBinding={createProjectBinding()}
@@ -283,7 +305,7 @@ describe('TaskRowAdapter', () => {
 					}}
 					task={task}
 				/>
-			</DangerConfirmProvider>,
+			</TestProviders>,
 		)
 
 		const selectedRow = screen.getByRole('button', { name: '打开任务 任务 A' })
@@ -307,6 +329,16 @@ describe('TaskRowAdapter', () => {
 		})
 	})
 })
+
+function TestProviders({ children }: { children: React.ReactNode }) {
+	return (
+		<ShortcutRegistryProvider registry={TEST_SHORTCUT_REGISTRY}>
+			<TooltipProvider delayDuration={0}>
+				<DangerConfirmProvider>{children}</DangerConfirmProvider>
+			</TooltipProvider>
+		</ShortcutRegistryProvider>
+	)
+}
 
 function buildContextMenuActions(): TaskContextMenuBulkActions {
 	return {

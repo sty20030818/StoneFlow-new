@@ -1,5 +1,11 @@
-import { useMemo, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 
+import {
+	CommandShortcut,
+	CommandTooltipRow,
+	type CommandId,
+	type KeybindingScope,
+} from '@/features/command'
 import {
 	buildMetadataShortcutItems,
 	defaultMetadataValueComparator,
@@ -15,8 +21,8 @@ import {
 	DropdownMenuLabel,
 	DropdownMenuTrigger,
 } from '@/shared/components/base/dropdown-menu'
-import { Kbd } from '@/shared/components/base/kbd'
 import { buildDigitShortcutMap, ShortcutDigitSelectLayer } from '@/shared/components/shortcut-menu'
+import { ActionTooltip, DisabledActionTooltip } from '@/shared/components/tooltip'
 
 import { MetadataFieldButton } from './MetadataFieldButton'
 import { MetadataFieldMenuItem } from './MetadataFieldMenuItem'
@@ -33,6 +39,11 @@ export type MetadataFieldKey =
 
 type MetadataMenuAlign = 'start' | 'center' | 'end'
 
+export type MetadataCommandShortcut = {
+	commandId: CommandId
+	scope: KeybindingScope
+}
+
 export type MetadataFieldDropdownProps<TValue> = {
 	fieldKey?: MetadataFieldKey
 	label: string
@@ -40,13 +51,14 @@ export type MetadataFieldDropdownProps<TValue> = {
 	values?: TValue[]
 	options: Array<MetadataFieldOption<TValue>>
 	menuLabel?: string
-	headerShortcut?: string | null
+	shortcut?: MetadataCommandShortcut
 	ariaLabel?: string
 	buttonLabel?: ReactNode
 	buttonIcon?: ReactNode
 	compact?: boolean
 	buttonAppearance?: 'default' | 'row-icon'
 	disabled?: boolean
+	disabledReason?: ReactNode
 	drawerOwnedOverlay?: boolean
 	menuAlign?: MetadataMenuAlign
 	stopPropagation?: boolean
@@ -63,13 +75,14 @@ export function MetadataFieldDropdown<TValue>({
 	values,
 	options,
 	menuLabel,
-	headerShortcut,
+	shortcut,
 	ariaLabel,
 	buttonLabel,
 	buttonIcon,
 	compact,
 	buttonAppearance = 'default',
 	disabled,
+	disabledReason,
 	drawerOwnedOverlay,
 	menuAlign = 'start',
 	stopPropagation,
@@ -78,6 +91,8 @@ export function MetadataFieldDropdown<TValue>({
 	onSelectCustomOption,
 	onChange,
 }: MetadataFieldDropdownProps<TValue>) {
+	const [menuOpen, setMenuOpen] = useState(false)
+	const [tooltipOpen, setTooltipOpen] = useState(false)
 	const currentOption = options.find((option) => isValueEqual(option.value, value)) ?? options[0]
 	const selectedValues = values ?? [value]
 	const shortcutItems = useMemo(
@@ -86,25 +101,63 @@ export function MetadataFieldDropdown<TValue>({
 	)
 	const digitShortcutMap = useMemo(() => buildDigitShortcutMap(shortcutItems), [shortcutItems])
 	const resolvedMenuLabel = menuLabel ?? buildMetadataMenuLabel(fieldKey, label)
-	const resolvedHeaderShortcut = headerShortcut ?? getMetadataMenuShortcut(fieldKey)
 
 	if (!currentOption) {
 		return null
 	}
 
+	const trigger = (
+		<DropdownMenuTrigger asChild>
+			<MetadataFieldButton
+				ariaLabel={ariaLabel ?? label}
+				appearance={buttonAppearance}
+				compact={compact}
+				disabled={disabled}
+				icon={buttonIcon === undefined ? currentOption.icon : buttonIcon}
+				label={buttonLabel ?? currentOption.label}
+				stopPropagation={stopPropagation}
+				suppressOverflowTooltip={menuOpen}
+			/>
+		</DropdownMenuTrigger>
+	)
+	const shouldShowTooltip = buttonAppearance === 'row-icon' || shortcut !== undefined
+	const triggerLabel = ariaLabel ?? label
+
 	return (
-		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<MetadataFieldButton
-					ariaLabel={ariaLabel ?? label}
-					appearance={buttonAppearance}
-					compact={compact}
-					disabled={disabled}
-					icon={buttonIcon === undefined ? currentOption.icon : buttonIcon}
-					label={buttonLabel ?? currentOption.label}
-					stopPropagation={stopPropagation}
-				/>
-			</DropdownMenuTrigger>
+		<DropdownMenu
+			onOpenChange={(open) => {
+				setMenuOpen(open)
+				if (open) {
+					setTooltipOpen(false)
+				}
+			}}
+			open={menuOpen}
+		>
+			{disabled && disabledReason ? (
+				<DisabledActionTooltip label={triggerLabel} reason={disabledReason}>
+					{trigger}
+				</DisabledActionTooltip>
+			) : shouldShowTooltip && !disabled ? (
+				<ActionTooltip
+					onOpenChange={(open) => setTooltipOpen(open && !menuOpen)}
+					open={tooltipOpen && !menuOpen}
+				>
+					<ActionTooltip.Trigger asChild>{trigger}</ActionTooltip.Trigger>
+					<ActionTooltip.Content>
+						{shortcut ? (
+							<CommandTooltipRow
+								commandId={shortcut.commandId}
+								label={triggerLabel}
+								scope={shortcut.scope}
+							/>
+						) : (
+							<ActionTooltip.Row label={triggerLabel} />
+						)}
+					</ActionTooltip.Content>
+				</ActionTooltip>
+			) : (
+				trigger
+			)}
 			<DropdownMenuContent
 				align={menuAlign}
 				data-drawer-owned-overlay={drawerOwnedOverlay ? 'true' : undefined}
@@ -114,13 +167,12 @@ export function MetadataFieldDropdown<TValue>({
 				<DropdownMenuLabel className='px-2 py-1.5 text-[12px] normal-case tracking-normal'>
 					<span className='flex items-center gap-2'>
 						<span className='min-w-0 flex-1 truncate'>{resolvedMenuLabel}</span>
-						{resolvedHeaderShortcut ? (
-							<Kbd
-								className='h-5 min-w-5 rounded-sm border border-sf-border-subtle bg-background/90 px-1.5 text-[11px] font-medium text-muted-foreground'
-								data-slot='metadata-field-menu-shortcut-summary'
-							>
-								{resolvedHeaderShortcut}
-							</Kbd>
+						{shortcut ? (
+							<CommandShortcut
+								commandId={shortcut.commandId}
+								kbdClassName='h-5 min-w-5 rounded-sm border border-sf-border-subtle bg-background/90 px-1.5 text-[11px] font-medium text-muted-foreground'
+								scope={shortcut.scope}
+							/>
 						) : null}
 					</span>
 				</DropdownMenuLabel>
@@ -180,20 +232,5 @@ function buildMetadataMenuLabel(fieldKey: MetadataFieldKey | undefined, fallback
 			return '设置提醒时间为...'
 		default:
 			return `设置${fallbackLabel}为...`
-	}
-}
-
-function getMetadataMenuShortcut(fieldKey: MetadataFieldKey | undefined) {
-	switch (fieldKey) {
-		case 'priority':
-			return 'P'
-		case 'status':
-			return 'S'
-		case 'dueDate':
-			return 'D'
-		case 'project':
-			return '⇧ P'
-		default:
-			return null
 	}
 }

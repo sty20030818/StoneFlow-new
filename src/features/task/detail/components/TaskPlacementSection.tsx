@@ -41,9 +41,9 @@ export function TaskPlacementSection({
 		<DetailFieldRow className='items-center' label='归属' labelClassName='pt-0'>
 			<MetadataPlacementDropdown
 				disabled={disabled}
+				disabledReason='回收站中的任务为只读'
 				drawerOwnedOverlay
 				groups={dropdownProps.groups}
-				headerShortcut={dropdownProps.headerShortcut}
 				label='归属'
 				menuLabel={dropdownProps.menuLabel}
 				value={currentValue}

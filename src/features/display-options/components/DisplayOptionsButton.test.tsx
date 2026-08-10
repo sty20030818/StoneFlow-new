@@ -3,7 +3,16 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { PropsWithChildren } from 'react'
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import {
+	DEFAULT_KEYBINDINGS,
+	KeybindingRegistry,
+	ShortcutRegistryProvider,
+} from '@/features/command'
+import { TooltipProvider } from '@/shared/components/base/tooltip'
+
 import { DisplayOptionsButton } from './DisplayOptionsButton'
+
+const TEST_SHORTCUT_REGISTRY = new KeybindingRegistry(DEFAULT_KEYBINDINGS)
 
 describe('DisplayOptionsButton', () => {
 	beforeEach(() => {
@@ -45,6 +54,18 @@ describe('DisplayOptionsButton', () => {
 		await screen.findByText('显示属性')
 		expect(screen.queryByRole('button', { name: /链接/ })).not.toBeInTheDocument()
 	})
+
+	it('打开显示面板时关闭 trigger Tooltip', async () => {
+		renderWithQueryClient(<DisplayOptionsButton pageKey='task:all' />)
+
+		const trigger = screen.getByRole('button', { name: '显示选项' })
+		fireEvent.focus(trigger)
+		expect(await screen.findByRole('tooltip')).toHaveTextContent('显示选项')
+
+		fireEvent.click(trigger)
+		expect(await screen.findByText('分组')).toBeInTheDocument()
+		await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument())
+	})
 })
 
 function renderWithQueryClient(ui: React.ReactNode) {
@@ -67,5 +88,11 @@ function renderWithQueryClient(ui: React.ReactNode) {
 }
 
 function TestWrapper({ children }: PropsWithChildren) {
-	return <div className='p-6'>{children}</div>
+	return (
+		<ShortcutRegistryProvider registry={TEST_SHORTCUT_REGISTRY}>
+			<TooltipProvider>
+				<div className='p-6'>{children}</div>
+			</TooltipProvider>
+		</ShortcutRegistryProvider>
+	)
 }

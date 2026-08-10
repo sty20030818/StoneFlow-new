@@ -1,8 +1,7 @@
-// 全局 chord 进行中标志：当全局快捷键系统（use-command-shortcuts）进入 chord 前缀等待态时置为 true，
-// chord 完成、取消或超时后重置为 false。
-// TaskRowShortcutScope 等行内作用域在 isBlockedByHigherLayer 中读取此状态，
-// 避免 chord 第二键（如 f→p 中的 p）被行内单键命令（如 taskSetPriority）同时消费。
-// 与 modal-guard 相同，使用模块级变量而非 React state，确保 window keydown 闭包可拿到最新值。
+// 全局 chord 进行中标志：进入 chord 前缀等待态时置为 true，完成、取消或超时后重置。
+// 单一快捷键分发器据此跳过 row/list 高优先级处理器，确保第二键只进入 global 会话；
+// 行交互 guard 也会读取它，覆盖非键盘入口的高层阻断判断。
+// 与 modal-guard 相同，使用模块级变量确保原生事件分发阶段同步可见。
 
 let globalChordPending = false
 

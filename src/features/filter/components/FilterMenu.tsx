@@ -6,8 +6,8 @@
  */
 import { useState, type ReactNode } from 'react'
 
+import { COMMAND_IDS, CommandShortcut } from '@/features/command'
 import { Input } from '@/shared/components/base/input'
-import { Kbd } from '@/shared/components/base/kbd'
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -77,7 +77,7 @@ export function FilterMenu({ trigger, open, onOpenChange, className }: FilterMen
 		<DropdownMenu onOpenChange={handleOpenChange} open={isOpen}>
 			<DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
 			<DropdownMenuContent align='end' className={cn('w-60 min-w-60', className)} sideOffset={6}>
-				{/* Linear: 顶部搜索 + F 快捷键提示 */}
+				{/* 顶部搜索与 canonical 筛选快捷键提示。 */}
 				<div className='flex items-center gap-2 border-b border-border px-2 py-1.5'>
 					<Input
 						aria-label='筛选字段'
@@ -87,7 +87,7 @@ export function FilterMenu({ trigger, open, onOpenChange, className }: FilterMen
 						placeholder='添加筛选…'
 						value={query}
 					/>
-					<Kbd className='shrink-0'>F</Kbd>
+					<CommandShortcut className='shrink-0' commandId={COMMAND_IDS.filterAdd} />
 				</div>
 
 				<DropdownMenuGroupSection>

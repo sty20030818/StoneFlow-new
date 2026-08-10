@@ -20,6 +20,7 @@ export type MainNavSidebarMenuItemProps = {
 	itemKey: SidebarMainItemKey
 	label: string
 	icon: MainNavItemViewModel['icon']
+	commandId: MainNavItemViewModel['commandId']
 	to: string
 	badge?: string
 	navItems: MainNavItemViewModel[]
@@ -33,6 +34,7 @@ export function MainNavSidebarMenuItem({
 	itemKey,
 	label,
 	icon,
+	commandId,
 	to,
 	badge,
 	navItems,
@@ -45,6 +47,7 @@ export function MainNavSidebarMenuItem({
 		<SidebarMenuItem>
 			<SidebarNavRow
 				badge={badge}
+				commandId={commandId}
 				contextMenuContent={
 					<MainNavRowContextMenu
 						footerItems={footerItems}

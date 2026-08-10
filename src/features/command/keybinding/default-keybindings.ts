@@ -1,330 +1,93 @@
-import { COMMAND_IDS } from '@/features/command/core'
+import { COMMAND_IDS, type CommandId } from '@/features/command/core'
 
-import type { Keybinding } from './keybinding.types'
+import type { Keybinding, KeybindingDisplay, KeybindingSequence } from './keybinding.types'
 
-export const DEFAULT_KEYBINDINGS: Keybinding[] = [
-	{
-		commandId: COMMAND_IDS.openCommandMenu,
-		sequence: [{ key: 'k', meta: true }],
+type GlobalBindingOptions = {
+	allowInEditable?: boolean
+	preventDefault?: boolean
+}
+
+function globalBinding(
+	display: KeybindingDisplay,
+	commandId: CommandId,
+	sequence: KeybindingSequence,
+	options: GlobalBindingOptions = {},
+): Keybinding {
+	return {
+		commandId,
+		sequence,
 		scope: 'global',
-		preventDefault: true,
+		display,
+		preventDefault: options.preventDefault ?? shouldPreventDefault(sequence),
+		allowInEditable: options.allowInEditable ?? false,
+	}
+}
+
+const primary = (
+	commandId: CommandId,
+	sequence: KeybindingSequence,
+	options?: GlobalBindingOptions,
+) => globalBinding('primary', commandId, sequence, options)
+
+const alternative = (commandId: CommandId, sequence: KeybindingSequence) =>
+	globalBinding('alternative', commandId, sequence)
+
+/**
+ * 默认快捷键声明同时服务于运行匹配和界面展示，只包含已经接入且可执行的命令。
+ * `hidden` 保留给“真实可执行但不应展示”的运行时绑定，不得用于尚未接入的命令。
+ */
+export const DEFAULT_KEYBINDINGS: readonly Keybinding[] = [
+	primary(COMMAND_IDS.openCommandMenu, [{ key: 'k', mod: true }], {
 		allowInEditable: true,
-	},
-	{
-		commandId: COMMAND_IDS.openCommandMenu,
-		sequence: [{ key: 'k', ctrl: true }],
-		scope: 'global',
-		preventDefault: true,
+		preventDefault: false,
+	}),
+	primary(COMMAND_IDS.openSearch, [{ key: '/' }]),
+	primary(COMMAND_IDS.close, [{ key: 'Escape' }], { allowInEditable: true }),
+	primary(COMMAND_IDS.selectionDeleteByRoute, [{ key: 'Backspace', mod: true }]),
+	primary(COMMAND_IDS.layoutToggleSidebar, [{ key: '[' }]),
+	primary(COMMAND_IDS.layoutTogglePreview, [{ key: ']' }]),
+	primary(COMMAND_IDS.saveOrSubmit, [{ key: 'Enter', mod: true }], {
 		allowInEditable: true,
-	},
-	{
-		commandId: COMMAND_IDS.openSearch,
-		sequence: [{ key: '/' }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: false,
-	},
-	{
-		commandId: COMMAND_IDS.close,
-		sequence: [{ key: 'Escape' }],
-		scope: 'global',
-		preventDefault: true,
+	}),
+	primary(COMMAND_IDS.submitAndContinue, [{ key: 'Enter', mod: true, shift: true }], {
 		allowInEditable: true,
-	},
-	{
-		commandId: COMMAND_IDS.selectionDeleteByRoute,
-		sequence: [{ key: 'Backspace', meta: true }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: false,
-	},
-	{
-		commandId: COMMAND_IDS.selectionDeleteByRoute,
-		sequence: [{ key: 'Backspace', ctrl: true }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: false,
-	},
-	{
-		commandId: COMMAND_IDS.layoutToggleSidebar,
-		sequence: [{ key: '[' }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: false,
-	},
-	{
-		commandId: COMMAND_IDS.layoutTogglePreview,
-		sequence: [{ key: ']' }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: false,
-	},
-	{
-		commandId: COMMAND_IDS.saveOrSubmit,
-		sequence: [{ key: 'Enter', meta: true }],
-		scope: 'global',
-		preventDefault: true,
+	}),
+	primary(COMMAND_IDS.submitAndOpen, [{ key: 'Enter', mod: true, alt: true }], {
 		allowInEditable: true,
-	},
-	{
-		commandId: COMMAND_IDS.saveOrSubmit,
-		sequence: [{ key: 'Enter', ctrl: true }],
-		scope: 'global',
-		preventDefault: true,
+	}),
+	primary(COMMAND_IDS.openShortcutHelp, [{ key: '/', mod: true }], {
 		allowInEditable: true,
-	},
-	{
-		commandId: COMMAND_IDS.submitAndContinue,
-		sequence: [{ key: 'Enter', meta: true, shift: true }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: true,
-	},
-	{
-		commandId: COMMAND_IDS.submitAndContinue,
-		sequence: [{ key: 'Enter', ctrl: true, shift: true }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: true,
-	},
-	{
-		commandId: COMMAND_IDS.submitAndOpen,
-		sequence: [{ key: 'Enter', meta: true, alt: true }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: true,
-	},
-	{
-		commandId: COMMAND_IDS.submitAndOpen,
-		sequence: [{ key: 'Enter', ctrl: true, alt: true }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: true,
-	},
-	{
-		commandId: COMMAND_IDS.openShortcutHelp,
-		sequence: [{ key: '/', meta: true }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: true,
-	},
-	{
-		commandId: COMMAND_IDS.openSettings,
-		sequence: [{ key: ',', meta: true }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: true,
-	},
-	{
-		commandId: COMMAND_IDS.openSettings,
-		sequence: [{ key: ',', ctrl: true }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: true,
-	},
-	{
-		commandId: COMMAND_IDS.goBack,
-		sequence: [{ key: '[', meta: true }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: true,
-	},
-	{
-		commandId: COMMAND_IDS.goBack,
-		sequence: [{ key: '[', ctrl: true }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: true,
-	},
-	{
-		commandId: COMMAND_IDS.goForward,
-		sequence: [{ key: ']', meta: true }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: true,
-	},
-	{
-		commandId: COMMAND_IDS.goForward,
-		sequence: [{ key: ']', ctrl: true }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: true,
-	},
-	{
-		commandId: COMMAND_IDS.openShortcutHelp,
-		sequence: [{ key: '/', ctrl: true }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: true,
-	},
-	{
-		commandId: COMMAND_IDS.newQuickTask,
-		sequence: [{ key: 'c' }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: false,
-	},
-	{
-		commandId: COMMAND_IDS.newFullTask,
-		sequence: [{ key: 'n' }, { key: 't' }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: false,
-	},
-	{
-		commandId: COMMAND_IDS.newStandaloneTask,
-		sequence: [{ key: 'n' }, { key: 'i' }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: false,
-	},
-	{
-		commandId: COMMAND_IDS.newProject,
-		sequence: [{ key: 'n' }, { key: 'p' }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: false,
-	},
-	{
-		commandId: COMMAND_IDS.newView,
-		sequence: [{ key: 'n' }, { key: 'v' }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: false,
-	},
-	{
-		commandId: COMMAND_IDS.openTask,
-		sequence: [{ key: 'o' }, { key: 't' }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: false,
-	},
-	{
-		commandId: COMMAND_IDS.openProject,
-		sequence: [{ key: 'o' }, { key: 'p' }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: false,
-	},
-	{
-		commandId: COMMAND_IDS.openView,
-		sequence: [{ key: 'o' }, { key: 'v' }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: false,
-	},
-	{
-		commandId: COMMAND_IDS.openSpace,
-		sequence: [{ key: 'o' }, { key: 's' }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: false,
-	},
-	{
-		commandId: COMMAND_IDS.openRecent,
-		sequence: [{ key: 'o' }, { key: 'r' }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: false,
-	},
-	{
-		commandId: COMMAND_IDS.taskChangePlacement,
-		sequence: [{ key: 'p', shift: true }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: false,
-	},
-	{
-		commandId: COMMAND_IDS.goStandalone,
-		sequence: [{ key: 'g' }, { key: 'i' }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: false,
-	},
-	{
-		commandId: COMMAND_IDS.goAllTasks,
-		sequence: [{ key: 'g' }, { key: 't' }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: false,
-	},
-	{
-		commandId: COMMAND_IDS.goToday,
-		sequence: [{ key: 'g' }, { key: 'd' }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: false,
-	},
-	{
-		commandId: COMMAND_IDS.goUpcoming,
-		sequence: [{ key: 'g' }, { key: 'u' }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: false,
-	},
-	{
-		commandId: COMMAND_IDS.goFocus,
-		sequence: [{ key: 'g' }, { key: 'f' }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: false,
-	},
-	{
-		commandId: COMMAND_IDS.goViews,
-		sequence: [{ key: 'g' }, { key: 'v' }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: false,
-	},
-	{
-		commandId: COMMAND_IDS.goProjects,
-		sequence: [{ key: 'g' }, { key: 'p' }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: false,
-	},
-	{
-		commandId: COMMAND_IDS.goArchive,
-		sequence: [{ key: 'g' }, { key: 'a' }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: false,
-	},
-	{
-		commandId: COMMAND_IDS.goTrash,
-		sequence: [{ key: 'g' }, { key: 'x' }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: false,
-	},
-	{
-		// 与 Cmd+, 同一命令：打开设置（记住上次分区）
-		commandId: COMMAND_IDS.openSettings,
-		sequence: [{ key: 'g' }, { key: 's' }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: false,
-	},
-	{
-		commandId: COMMAND_IDS.goRecent,
-		sequence: [{ key: 'g' }, { key: 'r' }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: false,
-	},
-	// 对齐 Linear：F 直接开筛选菜单；Shift+F 开显示选项（无 F 二次 chord）
-	{
-		commandId: COMMAND_IDS.filterAdd,
-		sequence: [{ key: 'f' }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: false,
-	},
-	{
-		commandId: COMMAND_IDS.displayOpenOptions,
-		sequence: [{ key: 'f', shift: true }],
-		scope: 'global',
-		preventDefault: true,
-		allowInEditable: false,
-	},
+	}),
+	primary(COMMAND_IDS.openSettings, [{ key: ',', mod: true }], { allowInEditable: true }),
+	primary(COMMAND_IDS.goBack, [{ key: '[', mod: true }], { allowInEditable: true }),
+	primary(COMMAND_IDS.goForward, [{ key: ']', mod: true }], { allowInEditable: true }),
+	primary(COMMAND_IDS.newQuickTask, [{ key: 'c' }]),
+	primary(COMMAND_IDS.newFullTask, [{ key: 'n' }, { key: 't' }]),
+	primary(COMMAND_IDS.newStandaloneTask, [{ key: 'n' }, { key: 'i' }]),
+	primary(COMMAND_IDS.newProject, [{ key: 'n' }, { key: 'p' }]),
+	primary(COMMAND_IDS.openTask, [{ key: 'o' }, { key: 't' }]),
+	primary(COMMAND_IDS.openProject, [{ key: 'o' }, { key: 'p' }]),
+	primary(COMMAND_IDS.taskChangePlacement, [{ key: 'p', shift: true }]),
+	primary(COMMAND_IDS.goStandalone, [{ key: 'g' }, { key: 'i' }]),
+	primary(COMMAND_IDS.goAllTasks, [{ key: 'g' }, { key: 't' }]),
+	primary(COMMAND_IDS.goFocus, [{ key: 'g' }, { key: 'f' }]),
+	primary(COMMAND_IDS.goViews, [{ key: 'g' }, { key: 'v' }]),
+	primary(COMMAND_IDS.goProjects, [{ key: 'g' }, { key: 'p' }]),
+	primary(COMMAND_IDS.goArchive, [{ key: 'g' }, { key: 'a' }]),
+	primary(COMMAND_IDS.goTrash, [{ key: 'g' }, { key: 'x' }]),
+	alternative(COMMAND_IDS.openSettings, [{ key: 'g' }, { key: 's' }]),
+	primary(COMMAND_IDS.filterAdd, [{ key: 'f' }]),
+	primary(COMMAND_IDS.displayOpenOptions, [{ key: 'f', shift: true }]),
 ]
+
+function shouldPreventDefault(sequence: KeybindingSequence) {
+	return sequence.some(
+		(stroke) =>
+			Boolean(stroke.mod || stroke.meta || stroke.ctrl || stroke.alt) ||
+			stroke.key === 'Enter' ||
+			stroke.key === 'Delete' ||
+			stroke.key === 'Backspace' ||
+			stroke.key === 'Escape' ||
+			stroke.key === 'Space',
+	)
+}

@@ -6,10 +6,12 @@ export {
 	matchKeybindingEvent,
 	normalizeKeybindingStroke,
 } from './keybinding-match'
-export { KeybindingRegistry } from './keybinding-registry'
+export { KeybindingRegistry, KeybindingRegistryConflictError } from './keybinding-registry'
 export {
 	formatKeybindingSequence,
+	formatKeybindingSequenceAccessible,
 	formatKeybindingStroke,
+	inferShortcutPlatform,
 	tokenizeKeybindingSequence,
 	tokenizeKeybindingStroke,
 } from './keybinding-format'
@@ -18,11 +20,13 @@ export type {
 	Keybinding,
 	KeybindingChordState,
 	KeybindingConflict,
+	KeybindingDisplay,
 	KeybindingKey,
 	KeybindingMatchResult,
 	KeybindingScope,
 	KeybindingSequence,
 	KeybindingStroke,
 	NormalizedKeyEvent,
+	ShortcutPlatform,
 } from './keybinding.types'
-export type { ShortcutToken } from './keybinding-format'
+export type { FormatKeybindingOptions, ShortcutToken } from './keybinding-format'

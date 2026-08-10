@@ -1,5 +1,8 @@
-import { TASK_PRIORITY_OPTIONS, type TaskPriorityValue } from '@/features/task'
-import { TASK_STATUS_OPTIONS } from '@/features/task'
+import {
+	TASK_PRIORITY_OPTIONS,
+	TASK_STATUS_OPTIONS,
+	type TaskPriorityValue,
+} from '@/features/task/contract'
 import type { TaskStatus } from '@/shared/types'
 
 import {
@@ -12,7 +15,6 @@ export function createStatusActionSpec(): MetadataActionSpec<TaskStatus> {
 	return {
 		fieldKey: 'status',
 		headerLabel: '设置状态为...',
-		headerShortcut: 'S',
 		commandPlaceholder: '选择状态…',
 		options: TASK_STATUS_OPTIONS.map((option, index) => ({
 			key: option.value,
@@ -28,7 +30,6 @@ export function createPriorityActionSpec(): MetadataActionSpec<TaskPriorityValue
 	return {
 		fieldKey: 'priority',
 		headerLabel: '设置优先级为...',
-		headerShortcut: 'P',
 		commandPlaceholder: '选择优先级…',
 		options: TASK_PRIORITY_OPTIONS.map((option, index) => ({
 			key: String(option.value),
@@ -51,7 +52,6 @@ export function createDueDateActionSpec({
 	return {
 		fieldKey: 'dueDate',
 		headerLabel: '设置截止时间为...',
-		headerShortcut: 'D',
 		commandPlaceholder: '选择截止时间…',
 		options: createMetadataDateOptionsConfig({
 			currentValue,

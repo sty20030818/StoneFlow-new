@@ -1,6 +1,7 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 
 import { ShellFooter } from '@/layout/ShellFooter'
+import { TooltipProvider } from '@/shared/components/base/tooltip'
 
 vi.mock('@/features/sync', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('@/features/sync')>()
@@ -25,7 +26,11 @@ vi.mock('@tauri-apps/api/app', () => ({
 
 describe('ShellFooter', () => {
 	it('左侧：状态灯 + 文案 + 同步按钮分离；右侧：版本；无快捷键', async () => {
-		const { container } = render(<ShellFooter />)
+		const { container } = render(
+			<TooltipProvider delayDuration={0}>
+				<ShellFooter />
+			</TooltipProvider>,
+		)
 
 		// 文案独立
 		expect(screen.getByText('已同步')).toBeInTheDocument()
@@ -42,7 +47,11 @@ describe('ShellFooter', () => {
 		expect(dot?.className).toMatch(/rounded-full/)
 
 		// 右侧版本
-		expect(await screen.findByText('v0.1.1')).toBeInTheDocument()
+		const version = await screen.findByText('v0.1.1')
+		expect(version).toBeInTheDocument()
+		expect(version).not.toHaveAttribute('title')
+		fireEvent.focus(version)
+		expect(await screen.findByRole('tooltip')).toHaveTextContent('版本 0.1.1')
 
 		// 无快捷键提示
 		expect(screen.queryByText('命令')).not.toBeInTheDocument()

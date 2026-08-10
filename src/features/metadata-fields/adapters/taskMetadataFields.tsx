@@ -52,12 +52,10 @@ export function createTaskPlacementGroupedDropdownProps({
 	}>
 }): {
 	menuLabel: string
-	headerShortcut?: string
 	groups: TaskPlacementGroup[]
 } {
 	return {
 		menuLabel: '移动到项目...',
-		headerShortcut: '⇧ P',
 		groups: buildTaskPlacementGroups({
 			mode,
 			currentSpaceId,

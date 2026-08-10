@@ -2,6 +2,7 @@ import { forwardRef, type ComponentProps, type ReactNode } from 'react'
 
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/components/base/button'
+import { OverflowTooltip } from '@/shared/components/tooltip'
 
 type StopEvent = {
 	stopPropagation: () => void
@@ -19,6 +20,7 @@ export type MetadataFieldButtonProps = Omit<ComponentProps<typeof Button>, 'chil
 	stopPropagation?: boolean
 	compact?: boolean
 	appearance?: 'default' | 'row-icon'
+	suppressOverflowTooltip?: boolean
 }
 
 export const MetadataFieldButton = forwardRef<HTMLButtonElement, MetadataFieldButtonProps>(
@@ -31,6 +33,7 @@ export const MetadataFieldButton = forwardRef<HTMLButtonElement, MetadataFieldBu
 			stopPropagation = false,
 			compact = false,
 			appearance = 'default',
+			suppressOverflowTooltip = false,
 			className,
 			onClick,
 			onKeyDownCapture,
@@ -107,7 +110,13 @@ export const MetadataFieldButton = forwardRef<HTMLButtonElement, MetadataFieldBu
 				variant={variant}
 			>
 				{icon}
-				<span className='min-w-0 truncate'>{label}</span>
+				{suppressOverflowTooltip ? (
+					<span className='block min-w-0 max-w-full truncate'>{label}</span>
+				) : (
+					<OverflowTooltip className='min-w-0' content={label}>
+						{label}
+					</OverflowTooltip>
+				)}
 				{trailing}
 			</Button>
 		)

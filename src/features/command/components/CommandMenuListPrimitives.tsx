@@ -9,6 +9,7 @@ import { Badge } from '@/shared/components/base/badge'
 import { Kbd } from '@/shared/components/base/kbd'
 import { CommandGroup, CommandItem, CommandList } from '@/shared/components/base/command'
 import { getProjectStatusBadgeVariant } from '@/shared/components/badgeSemantics'
+import { OverflowTooltip } from '@/shared/components/tooltip'
 import type { CommandId } from '@/features/command/core'
 
 import { ShortcutTokens } from './ShortcutTokens'
@@ -183,9 +184,12 @@ export function CommandRow({
 	return (
 		<div className='flex w-full min-w-0 items-center gap-3'>
 			<div className='flex size-4 shrink-0 items-center justify-center'>{leading}</div>
-			<span className='min-w-0 flex-1 truncate text-[14px] font-medium text-foreground'>
+			<OverflowTooltip
+				className='min-w-0 flex-1 text-[14px] font-medium text-foreground'
+				content={title}
+			>
 				{title}
-			</span>
+			</OverflowTooltip>
 			<div className='ml-auto flex shrink-0 items-center justify-end'>{trailing}</div>
 		</div>
 	)
@@ -197,9 +201,12 @@ export function renderCommandIcon(Icon: ComponentType<LucideProps>) {
 
 export function CommandRowMeta({ children }: { children: React.ReactNode }) {
 	return (
-		<span className='block max-w-48 truncate text-right text-[12px] text-sf-text-tertiary'>
+		<OverflowTooltip
+			className='block max-w-48 text-right text-[12px] text-sf-text-tertiary'
+			content={children}
+		>
 			{children}
-		</span>
+		</OverflowTooltip>
 	)
 }
 

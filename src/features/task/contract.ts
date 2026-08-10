@@ -35,3 +35,7 @@ export {
 	findTaskPlacementGroupItem,
 	getTaskPlacementGroupSearchText,
 } from './model/taskPlacementGroups'
+
+export { TASK_PRIORITY_OPTIONS } from './model/taskPriority'
+export type { TaskPriorityValue } from './model/taskPriority'
+export { TASK_STATUS_OPTIONS } from './model/taskStatus'

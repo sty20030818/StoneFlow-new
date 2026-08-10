@@ -23,6 +23,7 @@ import {
 	SelectValue,
 } from '@/shared/components/base/select'
 import { Switch } from '@/shared/components/base/switch'
+import { ActionTooltip, DisabledActionTooltip } from '@/shared/components/tooltip'
 
 import { PropertyToggleGrid } from './PropertyToggleGrid'
 
@@ -152,26 +153,16 @@ export function DisplayOptionsPanel({
 					label='排序'
 					leading={
 						canToggleOrderDirection ? (
-							<button
-								aria-label={
-									options.orderDirection === 'asc' ? '升序，点击切换为降序' : '降序，点击切换为升序'
-								}
-								className='flex size-8 items-center justify-center rounded-md text-sf-text-tertiary transition-[color,background-color,transform] hover:bg-muted hover:text-foreground active:scale-[0.96]'
+							<OrderDirectionButton
+								direction={options.orderDirection}
 								disabled={isPending}
-								onClick={() =>
+								onToggle={() =>
 									void actions.setOrdering(
 										options.orderBy,
 										options.orderDirection === 'asc' ? 'desc' : 'asc',
 									)
 								}
-								type='button'
-							>
-								{options.orderDirection === 'asc' ? (
-									<ArrowUpIcon className='size-3.5' />
-								) : (
-									<ArrowDownIcon className='size-3.5' />
-								)}
-							</button>
+							/>
 						) : null
 					}
 				>
@@ -288,6 +279,50 @@ export function DisplayOptionsPanel({
 				<p className='px-2 pb-2 text-[12px] text-sf-text-tertiary'>正在读取显示偏好…</p>
 			) : null}
 		</div>
+	)
+}
+
+function OrderDirectionButton({
+	direction,
+	disabled,
+	onToggle,
+}: {
+	direction: ResolvedTaskDisplayOptions['orderDirection']
+	disabled: boolean
+	onToggle: () => void
+}) {
+	const label = direction === 'asc' ? '切换为降序' : '切换为升序'
+	const button = (
+		<button
+			aria-label={label}
+			className='flex size-8 items-center justify-center rounded-md text-sf-text-tertiary transition-[color,background-color,transform] hover:bg-muted hover:text-foreground active:scale-[0.96]'
+			disabled={disabled}
+			onClick={onToggle}
+			type='button'
+		>
+			{direction === 'asc' ? (
+				<ArrowUpIcon className='size-3.5' />
+			) : (
+				<ArrowDownIcon className='size-3.5' />
+			)}
+		</button>
+	)
+
+	if (disabled) {
+		return (
+			<DisabledActionTooltip label={label} reason='正在读取显示偏好'>
+				{button}
+			</DisabledActionTooltip>
+		)
+	}
+
+	return (
+		<ActionTooltip>
+			<ActionTooltip.Trigger asChild>{button}</ActionTooltip.Trigger>
+			<ActionTooltip.Content>
+				<ActionTooltip.Row label={label} />
+			</ActionTooltip.Content>
+		</ActionTooltip>
 	)
 }
 

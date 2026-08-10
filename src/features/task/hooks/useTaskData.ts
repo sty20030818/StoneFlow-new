@@ -3,11 +3,7 @@ import { useMemo } from 'react'
 import type { ListTasksInput, TaskListItem } from '@/shared/types'
 import type { QueryLoadStatus } from '@/shared/query/queryStatus'
 
-import {
-	flattenTaskListPages,
-	useTaskDetailQuery,
-	useTaskListInfiniteQuery,
-} from './task.queries'
+import { flattenTaskListPages, useTaskDetailQuery, useTaskListInfiniteQuery } from './task.queries'
 
 const EMPTY_TASK_LIST_ITEMS: TaskListItem[] = []
 

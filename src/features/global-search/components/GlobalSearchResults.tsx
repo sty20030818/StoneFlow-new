@@ -17,6 +17,7 @@ import {
 	ROW_SHELL_BASE_CLASS,
 	ROW_SHELL_IDLE_CLASS,
 } from '@/shared/components/patterns/row-tokens'
+import { OverflowTooltip } from '@/shared/components/tooltip'
 import { FolderIcon, SearchIcon } from 'lucide-react'
 
 type GlobalSearchResultsProps = {
@@ -146,7 +147,9 @@ function SearchTaskResultRow({
 					<TaskStatusIndicator status={task.status} />
 				</span>
 				<div className='min-w-0 flex-1'>
-					<div className='truncate text-[13px] font-medium text-foreground'>{task.title}</div>
+					<OverflowTooltip className='text-[13px] font-medium text-foreground' content={task.title}>
+						{task.title}
+					</OverflowTooltip>
 				</div>
 			</div>
 			<div className='ml-auto hidden shrink-0 items-center gap-1.5 md:flex'>
@@ -191,7 +194,12 @@ function SearchProjectResultRow({
 					<FolderIcon className='size-3.5' />
 				</span>
 				<div className='min-w-0 flex-1'>
-					<div className='truncate text-[13px] font-medium text-foreground'>{project.name}</div>
+					<OverflowTooltip
+						className='text-[13px] font-medium text-foreground'
+						content={project.name}
+					>
+						{project.name}
+					</OverflowTooltip>
 				</div>
 			</div>
 			<div className='ml-auto hidden shrink-0 items-center gap-1.5 md:flex'>
@@ -232,8 +240,11 @@ function EntityLabel({ label }: { label: string }) {
 
 function ContextPill({ label }: { label: string }) {
 	return (
-		<span className='inline-flex max-w-36 items-center truncate rounded-md bg-sf-list-section-bg px-2 py-1 text-[11px] font-medium text-sf-shell-text-secondary'>
+		<OverflowTooltip
+			className='inline-flex max-w-36 items-center rounded-md bg-sf-list-section-bg px-2 py-1 text-[11px] font-medium text-sf-shell-text-secondary'
+			content={label}
+		>
 			{label}
-		</span>
+		</OverflowTooltip>
 	)
 }

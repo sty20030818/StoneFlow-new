@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { ExternalLinkIcon, HistoryIcon, InfoIcon, RefreshCwIcon, XIcon } from 'lucide-react'
 
 import { Button } from '@/shared/components/base/button'
@@ -8,6 +9,7 @@ import {
 	DialogTitle,
 } from '@/shared/components/base/dialog'
 import { dialogShellReadingClass } from '@/shared/components/patterns/dialog-shell'
+import { ActionTooltip, DisabledActionTooltip } from '@/shared/components/tooltip'
 import { cn } from '@/shared/lib/utils'
 import { useManualUpdateCheck } from '@/features/update'
 
@@ -25,9 +27,23 @@ type AboutDialogProps = {
 export function AboutDialog({ open, onOpenChange, onOpenChangelog }: AboutDialogProps) {
 	const { checkNow, disabled, isChecking } = useManualUpdateCheck()
 	const { version, isLoading, hasError } = useAppVersion()
+	const [closeTooltipOpen, setCloseTooltipOpen] = useState(false)
+
+	useEffect(() => {
+		if (!open) {
+			setCloseTooltipOpen(false)
+		}
+	}, [open])
+
+	function handleOpenChange(nextOpen: boolean) {
+		if (!nextOpen) {
+			setCloseTooltipOpen(false)
+		}
+		onOpenChange(nextOpen)
+	}
 
 	function handleOpenChangelog() {
-		onOpenChange(false)
+		handleOpenChange(false)
 		onOpenChangelog()
 	}
 
@@ -45,7 +61,7 @@ export function AboutDialog({ open, onOpenChange, onOpenChangelog }: AboutDialog
 			: '版本信息暂不可用'
 
 	return (
-		<Dialog onOpenChange={onOpenChange} open={open}>
+		<Dialog onOpenChange={handleOpenChange} open={open}>
 			<DialogContent
 				className={cn(dialogShellReadingClass, 'sm:max-w-lg')}
 				disableAnimation
@@ -56,15 +72,22 @@ export function AboutDialog({ open, onOpenChange, onOpenChangelog }: AboutDialog
 					查看 StoneFlow 版本、更新和资料入口。
 				</DialogDescription>
 
-				<Button
-					aria-label='关闭关于 StoneFlow'
-					className='absolute top-3 right-3 size-8'
-					onClick={() => onOpenChange(false)}
-					type='button'
-					variant='ghost'
-				>
-					<XIcon aria-hidden className='size-4' />
-				</Button>
+				<ActionTooltip onOpenChange={setCloseTooltipOpen} open={closeTooltipOpen}>
+					<ActionTooltip.Trigger asChild>
+						<Button
+							aria-label='关闭关于 StoneFlow'
+							className='absolute top-3 right-3 size-8'
+							onClick={() => handleOpenChange(false)}
+							type='button'
+							variant='ghost'
+						>
+							<XIcon aria-hidden className='size-4' />
+						</Button>
+					</ActionTooltip.Trigger>
+					<ActionTooltip.Content>
+						<ActionTooltip.Row label='关闭' />
+					</ActionTooltip.Content>
+				</ActionTooltip>
 
 				<div className='flex items-center gap-3 px-5 pt-4 pb-3 pr-14'>
 					<div className='flex min-w-0 items-center gap-3'>
@@ -109,15 +132,14 @@ export function AboutDialog({ open, onOpenChange, onOpenChangelog }: AboutDialog
 						<div className='grid grid-cols-2 gap-2'>
 							{appInfoLinks.map((link) => {
 								const canOpen = isConfiguredAppInfoUrl(link.url)
-								return (
+								const linkButton = (
 									<Button
 										aria-label={canOpen ? link.label : `${link.label}，待配置`}
-										className='justify-start'
+										className='w-full justify-start'
 										disabled={!canOpen}
 										key={link.key}
 										onClick={() => handleOpenLink(link.url)}
 										size='sm'
-										title={canOpen ? link.label : '待配置'}
 										type='button'
 										variant='ghost'
 									>
@@ -129,6 +151,18 @@ export function AboutDialog({ open, onOpenChange, onOpenChangelog }: AboutDialog
 										<span className='truncate'>{link.label}</span>
 										{canOpen ? null : <span className='ml-auto text-[11px]'>待配置</span>}
 									</Button>
+								)
+
+								return canOpen ? (
+									linkButton
+								) : (
+									<DisabledActionTooltip
+										key={link.key}
+										label={link.label}
+										reason='此资料入口尚未配置'
+									>
+										{linkButton}
+									</DisabledActionTooltip>
 								)
 							})}
 						</div>

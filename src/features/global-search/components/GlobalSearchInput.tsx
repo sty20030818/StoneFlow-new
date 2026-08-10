@@ -6,9 +6,9 @@ import {
 } from '@/features/global-search/model/useSearchFocusIntentStore'
 import { useGlobalSearch } from '@/features/global-search/model/useGlobalSearch'
 import { GlobalSearchResults } from '@/features/global-search/components/GlobalSearchResults'
+import { COMMAND_IDS, CommandActionTooltip, CommandShortcut } from '@/features/command'
 import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
 import { InputGroup, InputGroupAddon } from '@/shared/components/base/input-group'
-import { Kbd } from '@/shared/components/base/kbd'
 import { globalSearchInputShellClass } from '@/shared/components/patterns/global-search'
 import { SearchIcon } from 'lucide-react'
 
@@ -203,16 +203,18 @@ export function GlobalSearchInput({ onOpenTask, onOpenProject }: GlobalSearchInp
 
 					<InputGroupAddon align='inline-end' className='px-2.5'>
 						{shouldShowClearHint ? (
-							<button
-								aria-label='清空并关闭搜索'
-								className='flex items-center'
-								onClick={clearSearch}
-								type='button'
-							>
-								<Kbd>Esc</Kbd>
-							</button>
+							<CommandActionTooltip commandId={COMMAND_IDS.close} label='清空并关闭搜索'>
+								<button
+									aria-label='清空并关闭搜索'
+									className='flex items-center'
+									onClick={clearSearch}
+									type='button'
+								>
+									<CommandShortcut commandId={COMMAND_IDS.close} />
+								</button>
+							</CommandActionTooltip>
 						) : (
-							<Kbd>/</Kbd>
+							<CommandShortcut commandId={COMMAND_IDS.openSearch} />
 						)}
 					</InputGroupAddon>
 				</InputGroup>

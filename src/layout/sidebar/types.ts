@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react'
 
+import type { CommandId } from '@/features/command'
 import type { SidebarMainItemKey } from '@/features/settings'
 import type { ShellSectionKey } from '@/layout/types'
 
@@ -8,6 +9,7 @@ export type SidebarRouteNavModel = {
 	label: string
 	icon: ComponentType<{ className?: string }>
 	to: string
+	commandId: CommandId
 	badge?: string
 	section: ShellSectionKey
 }

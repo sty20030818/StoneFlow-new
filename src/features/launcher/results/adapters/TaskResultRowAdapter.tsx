@@ -4,6 +4,7 @@ import { PriorityIcon } from '@/features/task'
 import { TaskStatusIndicator } from '@/features/task'
 import type { LauncherTaskItem } from '../../model/types'
 import { RowShell } from '@/shared/components/row'
+import { OverflowTooltip } from '@/shared/components/tooltip'
 import { cn } from '@/shared/lib/utils'
 
 type TaskResultRowAdapterProps = {
@@ -21,6 +22,8 @@ export function TaskResultRowAdapter({
 	onOpen,
 	onHover,
 }: TaskResultRowAdapterProps) {
+	const subtitle = getTaskSubtitle(item)
+
 	return (
 		<RowShell.Root
 			active={isActive}
@@ -43,10 +46,15 @@ export function TaskResultRowAdapter({
 
 				<RowShell.Title>
 					<div className='min-w-0'>
-						<div className='truncate text-[12.5px] text-foreground'>{item.title}</div>
-						<div className='mt-0.5 truncate text-[11px] text-sf-text-quaternary'>
-							{getTaskSubtitle(item)}
-						</div>
+						<OverflowTooltip className='text-[12.5px] text-foreground' content={item.title}>
+							{item.title}
+						</OverflowTooltip>
+						<OverflowTooltip
+							className='mt-0.5 text-[11px] text-sf-text-quaternary'
+							content={subtitle}
+						>
+							{subtitle}
+						</OverflowTooltip>
 					</div>
 				</RowShell.Title>
 			</RowShell.Left>

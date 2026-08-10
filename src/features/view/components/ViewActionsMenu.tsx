@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { EllipsisIcon, PencilIcon, PlusIcon, Trash2Icon } from 'lucide-react'
 
 import { Button } from '@/shared/components/base/button'
+import { ActionTooltip } from '@/shared/components/tooltip'
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -20,14 +22,33 @@ type ViewActionsMenuProps = {
 
 export function ViewActionsMenu({ activeView, onCreate, onEdit, onDelete }: ViewActionsMenuProps) {
 	const canMutateActiveView = activeView?.kind === 'custom'
+	const [menuOpen, setMenuOpen] = useState(false)
+	const [tooltipOpen, setTooltipOpen] = useState(false)
+
+	function handleMenuOpenChange(nextOpen: boolean) {
+		setMenuOpen(nextOpen)
+		if (nextOpen) {
+			setTooltipOpen(false)
+		}
+	}
 
 	return (
-		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<Button aria-label='视图操作' size='icon-sm' type='button' variant='outline'>
-					<EllipsisIcon />
-				</Button>
-			</DropdownMenuTrigger>
+		<DropdownMenu onOpenChange={handleMenuOpenChange} open={menuOpen}>
+			<ActionTooltip
+				onOpenChange={(nextOpen) => setTooltipOpen(menuOpen ? false : nextOpen)}
+				open={tooltipOpen}
+			>
+				<ActionTooltip.Trigger asChild>
+					<DropdownMenuTrigger asChild>
+						<Button aria-label='视图操作' size='icon-sm' type='button' variant='outline'>
+							<EllipsisIcon />
+						</Button>
+					</DropdownMenuTrigger>
+				</ActionTooltip.Trigger>
+				<ActionTooltip.Content>
+					<ActionTooltip.Row label='视图操作' />
+				</ActionTooltip.Content>
+			</ActionTooltip>
 			<DropdownMenuContent align='end'>
 				<DropdownMenuGroup>
 					<DropdownMenuItem

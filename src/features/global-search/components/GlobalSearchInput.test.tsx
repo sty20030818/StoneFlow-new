@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { vi } from 'vitest'
 
@@ -6,6 +6,7 @@ import { searchEntities } from '@/features/global-search/api/searchEntities'
 import { useSearchFocusIntentStore } from '@/features/global-search/model/useSearchFocusIntentStore'
 import { GlobalSearchInput } from '@/features/global-search/components/GlobalSearchInput'
 import type { SearchEntitiesResult, SearchProjectItem, SearchTaskItem } from '@/shared/types'
+import { renderWithInteractionProviders as render } from '@/test/TestInteractionProviders'
 
 vi.mock('@/features/global-search/api/searchEntities', () => ({
 	searchEntities: vi.fn<typeof searchEntities>(),

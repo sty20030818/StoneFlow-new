@@ -27,6 +27,7 @@ import {
 import { SettingInfoRow, SettingsSection } from '../settingsShared'
 import { statusNoticeCompactTextClass } from '@/shared/components/patterns/status-notice'
 import { StatusNotice } from '@/shared/components/StatusNotice'
+import { ActionTooltip, DisabledActionTooltip } from '@/shared/components/tooltip'
 import {
 	Collapsible,
 	CollapsibleContent,
@@ -98,6 +99,7 @@ export function SettingsSyncPanel() {
 	const [databaseUrl, setDatabaseUrl] = useState('')
 	const [syncConfigDialogOpen, setSyncConfigDialogOpen] = useState(false)
 	const [syncDetailsOpen, setSyncDetailsOpen] = useState(false)
+	const [configTooltipOpen, setConfigTooltipOpen] = useState(false)
 	/** 定时模式下的分钟草稿，失焦/回车时提交 */
 	const [intervalMinutesDraft, setIntervalMinutesDraft] = useState(String(DEFAULT_INTERVAL_MINUTES))
 
@@ -286,6 +288,7 @@ export function SettingsSyncPanel() {
 	const effectiveSyncErrorTitle = getSyncErrorTitle(syncStatus?.lastErrorMode ?? null, syncRunning)
 	const syncBusy = syncSaving || syncPolicySaving || syncRunning || syncLoading
 	const syncActionBusy = syncBusy || syncDiagnosing
+
 	const replicaState: SyncReplicaState = syncStatus?.replicaState ?? 'uninitialized'
 	const policyMode: SyncPolicyMode = syncStatus?.policyMode ?? 'interval'
 	const displayedSyncStatus: SyncStatus = syncRunning
@@ -306,6 +309,52 @@ export function SettingsSyncPanel() {
 		syncRunning,
 		syncSaving,
 	})
+	const syncNowDisabled = syncActionBusy || !syncStatus?.hasRemoteConfig
+	const syncNowDisabledReason = syncActionBusy ? '正在处理同步操作，请稍候' : '请先配置同步数据库'
+	const diagnosticsDisabled = syncBusy || syncDiagnosing || !syncStatus?.hasRemoteConfig
+	const diagnosticsDisabledReason =
+		syncBusy || syncDiagnosing ? '正在处理同步操作，请稍候' : '请先配置同步数据库'
+
+	const configureButton = (
+		<Button
+			aria-label='配置同步数据库'
+			disabled={syncActionBusy}
+			onClick={() => {
+				setConfigTooltipOpen(false)
+				setSyncConfigDialogOpen(true)
+			}}
+			size='icon-sm'
+			type='button'
+			variant='ghost'
+		>
+			<SettingsIcon aria-hidden />
+		</Button>
+	)
+	const syncNowButton = (
+		<Button
+			disabled={syncNowDisabled}
+			onClick={() => void handleRunSync()}
+			type='button'
+			variant='secondary'
+		>
+			{syncRunning
+				? '同步中...'
+				: replicaState === 'baseline_required'
+					? '建立基线并同步'
+					: '立即同步'}
+		</Button>
+	)
+	const refreshDiagnosticsButton = (
+		<Button
+			disabled={diagnosticsDisabled}
+			onClick={() => void refreshSyncDiagnostics()}
+			size='sm'
+			type='button'
+			variant='secondary'
+		>
+			{syncDiagnosing ? '诊断中...' : '刷新诊断'}
+		</Button>
+	)
 
 	return (
 		<div className='flex w-full min-w-0 flex-col gap-4'>
@@ -332,28 +381,28 @@ export function SettingsSyncPanel() {
 								</p>
 							</div>
 							<div className='flex shrink-0 items-center gap-2 self-start'>
-								<Button
-									aria-label='配置同步数据库'
-									disabled={syncActionBusy}
-									onClick={() => setSyncConfigDialogOpen(true)}
-									size='icon-sm'
-									type='button'
-									variant='ghost'
-								>
-									<SettingsIcon />
-								</Button>
-								<Button
-									disabled={syncActionBusy || !syncStatus?.hasRemoteConfig}
-									onClick={() => void handleRunSync()}
-									type='button'
-									variant='secondary'
-								>
-									{syncRunning
-										? '同步中...'
-										: replicaState === 'baseline_required'
-											? '建立基线并同步'
-											: '立即同步'}
-								</Button>
+								{syncActionBusy ? (
+									<DisabledActionTooltip label='配置同步数据库' reason='正在处理同步操作，请稍候'>
+										{configureButton}
+									</DisabledActionTooltip>
+								) : (
+									<ActionTooltip
+										onOpenChange={setConfigTooltipOpen}
+										open={configTooltipOpen && !syncConfigDialogOpen && !syncActionBusy}
+									>
+										<ActionTooltip.Trigger asChild>{configureButton}</ActionTooltip.Trigger>
+										<ActionTooltip.Content>
+											<ActionTooltip.Row label='配置同步数据库' />
+										</ActionTooltip.Content>
+									</ActionTooltip>
+								)}
+								{syncNowDisabled ? (
+									<DisabledActionTooltip label='立即同步' reason={syncNowDisabledReason}>
+										{syncNowButton}
+									</DisabledActionTooltip>
+								) : (
+									syncNowButton
+								)}
 							</div>
 						</div>
 
@@ -496,15 +545,13 @@ export function SettingsSyncPanel() {
 												只读查看当前设备与云端副本的同步序号和工作集摘要，用于排查同步问题。
 											</p>
 										</div>
-										<Button
-											disabled={syncBusy || syncDiagnosing || !syncStatus?.hasRemoteConfig}
-											onClick={() => void refreshSyncDiagnostics()}
-											size='sm'
-											type='button'
-											variant='secondary'
-										>
-											{syncDiagnosing ? '诊断中...' : '刷新诊断'}
-										</Button>
+										{diagnosticsDisabled ? (
+											<DisabledActionTooltip label='刷新诊断' reason={diagnosticsDisabledReason}>
+												{refreshDiagnosticsButton}
+											</DisabledActionTooltip>
+										) : (
+											refreshDiagnosticsButton
+										)}
 									</div>
 
 									{syncDiagnostics ? (

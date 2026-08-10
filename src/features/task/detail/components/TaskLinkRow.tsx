@@ -8,6 +8,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from '@/shared/components/base/dropdown-menu'
+import { ActionTooltip, OverflowTooltip } from '@/shared/components/tooltip'
 import { cn } from '@/shared/lib/utils'
 import type { TaskLink } from '@/shared/types'
 
@@ -23,6 +24,8 @@ type TaskLinkRowProps = {
 export function TaskLinkRow({ link, onOpen, onEdit, onRemove }: TaskLinkRowProps) {
 	const [isMenuOpen, setMenuOpen] = useState(false)
 	const [isEditorOpen, setEditorOpen] = useState(false)
+	const [isMoreTooltipOpen, setMoreTooltipOpen] = useState(false)
+	const linkSubtitle = formatLinkSubtitle(link.url)
 
 	return (
 		<TaskLinkEditorPopover
@@ -34,10 +37,18 @@ export function TaskLinkRow({ link, onOpen, onEdit, onRemove }: TaskLinkRowProps
 					)}
 				>
 					<div className='min-w-0 flex-1'>
-						<p className='truncate text-[12px] font-medium text-foreground'>{link.title}</p>
-						<p className='mt-1 truncate text-[11px] text-sf-shell-text-tertiary'>
-							{formatLinkSubtitle(link.url)}
-						</p>
+						<OverflowTooltip
+							className='text-[12px] font-medium text-foreground'
+							content={link.title}
+						>
+							{link.title}
+						</OverflowTooltip>
+						<OverflowTooltip
+							className='mt-1 text-[11px] text-sf-shell-text-tertiary'
+							content={linkSubtitle}
+						>
+							{linkSubtitle}
+						</OverflowTooltip>
 					</div>
 					<div className='flex shrink-0 items-center gap-1'>
 						<Button
@@ -54,19 +65,37 @@ export function TaskLinkRow({ link, onOpen, onEdit, onRemove }: TaskLinkRowProps
 							<ExternalLinkIcon className='size-3.5' />
 							打开
 						</Button>
-						<DropdownMenu onOpenChange={setMenuOpen} open={isMenuOpen}>
-							<DropdownMenuTrigger asChild>
-								<Button
-									aria-label={`更多链接操作：${link.title}`}
-									className='size-7 p-0'
-									onClick={(event) => event.stopPropagation()}
-									size='icon'
-									type='button'
-									variant='outline'
-								>
-									<MoreHorizontalIcon className='size-4' />
-								</Button>
-							</DropdownMenuTrigger>
+						<DropdownMenu
+							onOpenChange={(nextOpen) => {
+								setMenuOpen(nextOpen)
+								if (nextOpen) {
+									setMoreTooltipOpen(false)
+								}
+							}}
+							open={isMenuOpen}
+						>
+							<ActionTooltip
+								onOpenChange={(nextOpen) => setMoreTooltipOpen(nextOpen && !isMenuOpen)}
+								open={isMoreTooltipOpen && !isMenuOpen}
+							>
+								<ActionTooltip.Trigger asChild>
+									<DropdownMenuTrigger asChild>
+										<Button
+											aria-label={`更多链接操作：${link.title}`}
+											className='size-7 p-0'
+											onClick={(event) => event.stopPropagation()}
+											size='icon'
+											type='button'
+											variant='outline'
+										>
+											<MoreHorizontalIcon className='size-4' />
+										</Button>
+									</DropdownMenuTrigger>
+								</ActionTooltip.Trigger>
+								<ActionTooltip.Content>
+									<ActionTooltip.Row label='更多链接操作' />
+								</ActionTooltip.Content>
+							</ActionTooltip>
 							<DropdownMenuContent align='end' className='w-44' data-drawer-owned-overlay='true'>
 								<DropdownMenuItem
 									onSelect={(event) => {

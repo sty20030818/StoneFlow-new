@@ -2,14 +2,6 @@ import { getTaskPlacementTargetValue, type TaskPlacementTarget } from '@/feature
 
 export type PropertyOptionIndicator = 'checked' | 'mixed' | null
 
-export const TASK_CONTEXT_SHORTCUTS = {
-	status: 'S',
-	priority: 'P',
-	date: 'D',
-	project: '⇧ P',
-	archive: 'A',
-} as const
-
 export function getIndicatorValues<T>(values: T[]) {
 	return new Set(values)
 }
@@ -31,15 +23,4 @@ export function getPlacementOptionIndicator(
 	}
 
 	return values.size === 1 ? 'checked' : 'mixed'
-}
-
-function isApplePlatform() {
-	if (typeof navigator === 'undefined') {
-		return false
-	}
-	return /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent)
-}
-
-export function getDeleteShortcutLabel() {
-	return isApplePlatform() ? '⌘ ⌫' : 'Ctrl ⌫'
 }

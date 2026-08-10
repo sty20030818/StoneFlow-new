@@ -34,7 +34,6 @@ export function StatusMetaAction({
 		<MetadataFieldDropdown
 			disabled={disabled}
 			fieldKey='status'
-			headerShortcut={statusDropdownProps.headerShortcut}
 			label='状态'
 			menuLabel={statusDropdownProps.menuLabel}
 			options={statusDropdownProps.options}
@@ -62,7 +61,6 @@ export function PriorityMetaAction({
 		<MetadataFieldDropdown
 			disabled={disabled}
 			fieldKey='priority'
-			headerShortcut={priorityDropdownProps.headerShortcut}
 			label='优先级'
 			menuLabel={priorityDropdownProps.menuLabel}
 			options={priorityDropdownProps.options}
@@ -106,8 +104,8 @@ export function PlacementMetaAction({
 			buttonIcon={needsProjectSelection ? <FolderIcon className='size-3.5' /> : undefined}
 			buttonLabel={needsProjectSelection ? '选择项目' : undefined}
 			disabled={disabled}
+			disabledReason='项目列表加载中，暂时无法选择归属'
 			groups={groupedDropdownProps.groups}
-			headerShortcut={groupedDropdownProps.headerShortcut}
 			label='归属'
 			menuLabel={groupedDropdownProps.menuLabel}
 			value={value}

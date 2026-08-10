@@ -13,6 +13,7 @@ import {
 	launcherMenuContentClass,
 	launcherMenuItemClass,
 } from '@/shared/components/patterns/launcher'
+import { OverflowTooltip } from '@/shared/components/tooltip'
 
 type PlacementControlProps = {
 	open: boolean
@@ -50,7 +51,13 @@ export function PlacementControl({
 					variant='outline'
 				>
 					<TriggerIcon className='size-3.5 text-sf-text-secondary' />
-					<span className='truncate text-[12px]'>{label}</span>
+					{open ? (
+						<span className='min-w-0 flex-1 truncate text-[12px]'>{label}</span>
+					) : (
+						<OverflowTooltip className='min-w-0 flex-1 text-[12px]' content={label}>
+							{label}
+						</OverflowTooltip>
+					)}
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align='end' className={`w-60 ${launcherMenuContentClass}`}>

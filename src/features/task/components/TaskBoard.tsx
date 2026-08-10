@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { defaultRangeExtractor, useVirtualizer, type Range } from '@tanstack/react-virtual'
 import { uniq } from 'es-toolkit/array'
 import { registerTaskBoardScrollToTaskId } from './taskBoardScroll'
@@ -48,10 +48,7 @@ import type { TaskPlacementTarget } from '@/features/metadata-fields'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
 import { Button } from '@/shared/components/base/button'
 import { Badge } from '@/shared/components/base/badge'
-import {
-	ContextMenu,
-	ContextMenuTrigger,
-} from '@/shared/components/base/context-menu'
+import { ContextMenu, ContextMenuTrigger } from '@/shared/components/base/context-menu'
 import { ListTodoIcon, PlusIcon, TriangleIcon } from 'lucide-react'
 import {
 	entityBoardCompactBadgeClass,
@@ -63,6 +60,7 @@ import {
 	entityBoardSectionToggleClass,
 } from '@/shared/components/patterns/entity-board'
 import { StatusNotice } from '@/shared/components/StatusNotice'
+import { ActionTooltip, OverflowTooltip } from '@/shared/components/tooltip'
 import { cn } from '@/shared/lib/utils'
 
 export type TaskBoardProps = {
@@ -215,18 +213,13 @@ export function TaskBoard({
 	const itemOffsets = useMemo(() => buildTaskBoardItemOffsets(flatItems), [flatItems])
 	const flatSizePx = useMemo(() => measureTaskBoardFlatSize(flatItems), [flatItems])
 
-	const {
-		stickyShellRef,
-		stickyPushLayerRef,
-		stickyActiveIndex,
-		stickyStuck,
-		nextStickyIndex,
-	} = useTaskBoardSticky({
-		scrollViewportRef,
-		stickyIndexes,
-		itemOffsets,
-		enabled: status === 'ready',
-	})
+	const { stickyShellRef, stickyPushLayerRef, stickyActiveIndex, stickyStuck, nextStickyIndex } =
+		useTaskBoardSticky({
+			scrollViewportRef,
+			stickyIndexes,
+			itemOffsets,
+			enabled: status === 'ready',
+		})
 
 	const taskShortcutOrder = useMemo(() => {
 		if (customSections && customSections.length > 0) {
@@ -422,14 +415,7 @@ export function TaskBoard({
 		if (lastVirtualIndex >= flatItems.length - 8 || lastVirtualIndex >= flatItems.length) {
 			onFetchNextPage()
 		}
-	}, [
-		flatItems.length,
-		hasNextPage,
-		isFetchingNextPage,
-		lastVirtualIndex,
-		onFetchNextPage,
-		status,
-	])
+	}, [flatItems.length, hasNextPage, isFetchingNextPage, lastVirtualIndex, onFetchNextPage, status])
 
 	const stickyHeaderItem = flatItems[stickyActiveIndex]
 	const stickyHeader = stickyHeaderItem?.kind === 'header' ? stickyHeaderItem : null
@@ -502,9 +488,7 @@ export function TaskBoard({
 							onCollapseAll={handleCollapseAll}
 							onExpandAll={handleExpandAll}
 							onOpenChange={
-								item.status
-									? (open) => handleSectionOpenChange(item.status!, open)
-									: undefined
+								item.status ? (open) => handleSectionOpenChange(item.status!, open) : undefined
 							}
 							onToggleTaskSelection={onToggleTaskSelection}
 							open={item.open}
@@ -615,9 +599,7 @@ export function TaskBoard({
 								return (
 									<div
 										data-index={index}
-										data-sticky={
-											stickyStuck && index === stickyActiveIndex ? 'true' : undefined
-										}
+										data-sticky={stickyStuck && index === stickyActiveIndex ? 'true' : undefined}
 										key={key}
 										style={{
 											// 全部 absolute：scrollHeight 只由外层 height 决定
@@ -742,6 +724,9 @@ function StatusSectionHeader({
 	openTaskCreateDialog: (draft?: { projectId?: string | null; status?: TaskStatus }) => void
 }) {
 	const sectionIds = useMemo(() => tasks.map((t) => t.id), [tasks])
+	const [contextMenuOpen, setContextMenuOpen] = useState(false)
+	const [toggleTooltipOpen, setToggleTooltipOpen] = useState(false)
+	const [createTooltipOpen, setCreateTooltipOpen] = useState(false)
 	const { selectedCount, handleSelectAll, handleDeselectAll } = useSectionSelection({
 		sectionIds,
 		selectedIdSet: selectedTaskIdSet,
@@ -753,30 +738,56 @@ function StatusSectionHeader({
 		<div
 			className={cn(ROW_SHELL_SECTION_HEADER_CLASS, 'relative z-10')}
 			data-board-section-header='true'
-			onDoubleClick={() => onOpenChange?.(!open)}
+			onDoubleClick={() => {
+				setToggleTooltipOpen(false)
+				setCreateTooltipOpen(false)
+				onOpenChange?.(!open)
+			}}
 		>
 			{status && onOpenChange ? (
-				<button
-					aria-expanded={open}
-					aria-label={`切换 ${label} 分区折叠状态`}
-					className={entityBoardSectionToggleClass}
-					onClick={() => onOpenChange(!open)}
-					type='button'
+				<ActionTooltip
+					onOpenChange={(nextOpen) => setToggleTooltipOpen(nextOpen && !contextMenuOpen)}
+					open={toggleTooltipOpen && !contextMenuOpen}
 				>
-					<span className='inline-flex size-3 shrink-0 items-center justify-center' data-chevron>
-						<TriangleIcon
-							className={cn(
-								'size-1.5 text-sf-icon-subtle transition-transform',
-								open ? 'rotate-180' : 'rotate-90',
-							)}
-							fill='currentColor'
-						/>
-					</span>
-				</button>
+					<ActionTooltip.Trigger asChild>
+						<button
+							aria-expanded={open}
+							aria-label={open ? `折叠 ${label}` : `展开 ${label}`}
+							className={entityBoardSectionToggleClass}
+							onClick={() => {
+								setToggleTooltipOpen(false)
+								onOpenChange(!open)
+							}}
+							type='button'
+						>
+							<span
+								className='inline-flex size-3 shrink-0 items-center justify-center'
+								data-chevron
+							>
+								<TriangleIcon
+									className={cn(
+										'size-1.5 text-sf-icon-subtle transition-transform',
+										open ? 'rotate-180' : 'rotate-90',
+									)}
+									fill='currentColor'
+								/>
+							</span>
+						</button>
+					</ActionTooltip.Trigger>
+					<ActionTooltip.Content>
+						<ActionTooltip.Row label={open ? `折叠 ${label}` : `展开 ${label}`} />
+					</ActionTooltip.Content>
+				</ActionTooltip>
 			) : null}
 			<div className={entityBoardSectionHeadingClass}>
 				{status ? <TaskStatusIndicator status={status} /> : null}
-				<span className='truncate'>{label}</span>
+				{contextMenuOpen ? (
+					<span className='min-w-0 truncate'>{label}</span>
+				) : (
+					<OverflowTooltip className='min-w-0' content={label}>
+						{label}
+					</OverflowTooltip>
+				)}
 				<Badge className={entityBoardSectionCountBadgeClass} variant='secondary'>
 					{count}
 				</Badge>
@@ -790,20 +801,31 @@ function StatusSectionHeader({
 				) : null}
 			</div>
 			{status ? (
-				<Button
-					aria-label={`在 ${label} 中创建任务`}
-					className={entityBoardSectionActionButtonClass}
-					onClick={(event) => {
-						event.preventDefault()
-						event.stopPropagation()
-						openTaskCreateDialog({ projectId: createProjectId, status })
-					}}
-					size='icon-xs'
-					type='button'
-					variant='ghost'
+				<ActionTooltip
+					onOpenChange={(nextOpen) => setCreateTooltipOpen(nextOpen && !contextMenuOpen)}
+					open={createTooltipOpen && !contextMenuOpen}
 				>
-					<PlusIcon />
-				</Button>
+					<ActionTooltip.Trigger asChild>
+						<Button
+							aria-label={`在 ${label} 中创建任务`}
+							className={entityBoardSectionActionButtonClass}
+							onClick={(event) => {
+								setCreateTooltipOpen(false)
+								event.preventDefault()
+								event.stopPropagation()
+								openTaskCreateDialog({ projectId: createProjectId, status })
+							}}
+							size='icon-xs'
+							type='button'
+							variant='ghost'
+						>
+							<PlusIcon />
+						</Button>
+					</ActionTooltip.Trigger>
+					<ActionTooltip.Content>
+						<ActionTooltip.Row label={`在 ${label} 中创建任务`} />
+					</ActionTooltip.Content>
+				</ActionTooltip>
 			) : (
 				<span className={entityBoardSectionRightSpacerClass} />
 			)}
@@ -816,7 +838,16 @@ function StatusSectionHeader({
 
 	return (
 		<div data-board-section='true' data-state={open ? 'open' : 'closed'}>
-			<ContextMenu>
+			<ContextMenu
+				onOpenChange={(nextOpen) => {
+					setContextMenuOpen(nextOpen)
+					if (nextOpen) {
+						setToggleTooltipOpen(false)
+						setCreateTooltipOpen(false)
+					}
+				}}
+				open={contextMenuOpen}
+			>
 				<ContextMenuTrigger asChild>{header}</ContextMenuTrigger>
 				<BoardSectionContextMenu
 					onCollapse={() => onOpenChange(false)}

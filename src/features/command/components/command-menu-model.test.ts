@@ -7,6 +7,9 @@ import {
 	type Command,
 	type CommandContext,
 } from '@/features/command/core'
+import { DEFAULT_KEYBINDINGS, KeybindingRegistry } from '@/features/command/keybinding'
+
+const shortcutRegistry = new KeybindingRegistry(DEFAULT_KEYBINDINGS)
 
 const context = createEmptyCommandContext()
 
@@ -27,7 +30,7 @@ describe('buildCommandMenuGroups', () => {
 			}),
 		])
 
-		const groups = buildCommandMenuGroups(runtime, context)
+		const groups = buildCommandMenuGroups(runtime, context, shortcutRegistry)
 		const entries = groups.flatMap((group) => group.entries)
 
 		expect(entries.map((entry) => entry.command.id)).toEqual([COMMAND_IDS.newView])
@@ -49,20 +52,22 @@ describe('buildCommandMenuGroups', () => {
 			}),
 		])
 
-		const [group] = buildCommandMenuGroups(runtime, context)
+		const [group] = buildCommandMenuGroups(runtime, context, shortcutRegistry)
 
 		expect(group.entries.map((entry) => entry.command.id)).toEqual(['test.high', 'test.low'])
 	})
 
 	it('快捷键文案来自默认 keybinding registry', () => {
-		expect(getCommandMenuShortcut(COMMAND_IDS.newQuickTask)?.map((token) => token.value)).toEqual([
-			'C',
-		])
-		expect(getCommandMenuShortcut(COMMAND_IDS.newFullTask)?.map((token) => token.value)).toEqual([
-			'N',
-			'→',
-			'T',
-		])
+		expect(
+			getCommandMenuShortcut(COMMAND_IDS.newQuickTask, shortcutRegistry)?.map(
+				(token) => token.value,
+			),
+		).toEqual(['C'])
+		expect(
+			getCommandMenuShortcut(COMMAND_IDS.newFullTask, shortcutRegistry)?.map(
+				(token) => token.value,
+			),
+		).toEqual(['N', '→', 'T'])
 	})
 
 	it('完整 V1 分类会生成菜单分组', () => {
@@ -77,7 +82,7 @@ describe('buildCommandMenuGroups', () => {
 			createCommand('test.system', { category: 'system' }),
 		])
 
-		const groups = buildCommandMenuGroups(runtime, context)
+		const groups = buildCommandMenuGroups(runtime, context, shortcutRegistry)
 
 		expect(groups.map((group) => group.key)).toEqual(['action', 'project', 'task'])
 	})
@@ -94,7 +99,7 @@ describe('buildCommandMenuGroups', () => {
 			createCommand('test.normalTask', { category: 'task' }),
 		])
 
-		const groups = buildCommandMenuGroups(runtime, createTaskSelectionContext())
+		const groups = buildCommandMenuGroups(runtime, createTaskSelectionContext(), shortcutRegistry)
 
 		expect(groups[0]?.key).toBe('bulk')
 		expect(groups[0]?.entries.map((entry) => entry.command.id)).toEqual([
@@ -124,6 +129,7 @@ describe('buildCommandMenuGroups', () => {
 		const groups = buildCommandMenuGroups(
 			runtime,
 			createLifecycleSelectionContext({ page: 'archive' }),
+			shortcutRegistry,
 		)
 
 		expect(groups[0]?.key).toBe('bulk')
@@ -146,6 +152,7 @@ describe('buildCommandMenuGroups', () => {
 		const groups = buildCommandMenuGroups(
 			runtime,
 			createLifecycleSelectionContext({ page: 'trash' }),
+			shortcutRegistry,
 		)
 
 		expect(groups[0]?.key).toBe('bulk')
@@ -162,7 +169,11 @@ describe('buildCommandMenuGroups', () => {
 			createCommand('test.normalProject', { category: 'project' }),
 		])
 
-		const groups = buildCommandMenuGroups(runtime, createProjectSelectionContext())
+		const groups = buildCommandMenuGroups(
+			runtime,
+			createProjectSelectionContext(),
+			shortcutRegistry,
+		)
 
 		expect(groups[0]?.key).toBe('bulk')
 		expect(groups[0]?.entries.map((entry) => entry.command.id)).toEqual([
@@ -175,7 +186,7 @@ describe('buildCommandMenuGroups', () => {
 	})
 
 	it('未绑定命令没有快捷键文案', () => {
-		expect(getCommandMenuShortcut(COMMAND_IDS.taskComplete)).toBeNull()
+		expect(getCommandMenuShortcut(COMMAND_IDS.taskComplete, shortcutRegistry)).toBeNull()
 	})
 })
 

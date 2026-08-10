@@ -2,6 +2,7 @@ import { useCallback, type KeyboardEvent } from 'react'
 
 import type { LauncherInput } from '../api/launcherApi'
 import type { LauncherAction } from './launcherDomainTypes'
+import { matchLauncherShortcut, type LauncherShortcutId } from '../model/launcherShortcutKeymap'
 import type {
 	LauncherDraft,
 	LauncherFocusTarget,
@@ -118,36 +119,37 @@ export function useLauncherSubmitActions({
 
 	const handleInputKeyDown = useCallback(
 		(event: KeyboardEvent<HTMLInputElement>) => {
-			if (event.key === 'Escape') {
-				event.preventDefault()
-				handleEscape()
-				return
-			}
+			const shortcut = matchLauncherShortcut(event, {
+				isEnabled: (id) => isShortcutEnabled(id, hasTitle),
+			})
 
-			if (event.key === 'ArrowDown') {
-				event.preventDefault()
-				moveFocus(1)
-				return
-			}
-
-			if (event.key === 'ArrowUp') {
-				event.preventDefault()
-				moveFocus(-1)
-				return
-			}
-
-			if (event.key !== 'Enter') {
+			if (!shortcut) {
 				return
 			}
 
 			event.preventDefault()
 
-			if ((event.metaKey || event.ctrlKey) && hasTitle) {
+			if (shortcut === 'clearOrClose') {
+				handleEscape()
+				return
+			}
+
+			if (shortcut === 'selectNext') {
+				moveFocus(1)
+				return
+			}
+
+			if (shortcut === 'selectPrevious') {
+				moveFocus(-1)
+				return
+			}
+
+			if (shortcut === 'createAndOpen') {
 				void submit('createAndOpen')
 				return
 			}
 
-			if (event.shiftKey && hasTitle) {
+			if (shortcut === 'createAndContinue') {
 				void submit('createAndContinue')
 				return
 			}
@@ -172,4 +174,8 @@ export function useLauncherSubmitActions({
 		handleInputKeyDown,
 		submit,
 	}
+}
+
+function isShortcutEnabled(id: LauncherShortcutId, hasTitle: boolean) {
+	return id !== 'createAndOpen' && id !== 'createAndContinue' ? true : hasTitle
 }

@@ -15,8 +15,15 @@ import type { Scope, Space, TaskStatus } from '@/shared/types'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/base/avatar'
 import { Button } from '@/shared/components/base/button'
 import { useSidebar } from '@/shared/components/base/sidebar-context'
+import { ActionTooltip } from '@/shared/components/tooltip'
 import { cn } from '@/shared/lib/utils'
-import { ChordHint, CommandMenu, ShortcutHelp, type CommandMenuMode } from '@/features/command'
+import {
+	ChordHint,
+	CommandActionTooltip,
+	CommandMenu,
+	ShortcutHelp,
+	type CommandMenuMode,
+} from '@/features/command'
 import { type CommandChordSession } from '@/features/command'
 import {
 	COMMAND_IDS,
@@ -108,7 +115,7 @@ export function ShellHeader({
 		() => /Windows/i.test(window.navigator.userAgent) || window.navigator.platform === 'Win32',
 		[],
 	)
-	const { toggleSidebar, visualState: sidebarVisualState, isMobile: isLayoutNarrow } = useSidebar()
+	const { visualState: sidebarVisualState, isMobile: isLayoutNarrow } = useSidebar()
 	const sidebarToggleOpen =
 		sidebarVisualState === 'desktop-expanded' || sidebarVisualState === 'mobile-open'
 	const SidebarToggleIcon = sidebarToggleOpen ? PanelLeftCloseIcon : PanelLeftOpenIcon
@@ -274,21 +281,26 @@ export function ShellHeader({
 								data-slot='shell-header-nav'
 								data-tauri-drag-region
 							>
-								<Button
-									aria-label={sidebarToggleOpen ? '收起侧边栏' : '展开侧边栏'}
-									className={cn(
-										'hidden shrink-0 group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:hidden group-data-[sidebar-layout=mobile]/sidebar-wrapper:inline-flex group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:inline-flex',
-										shellChromeNavCircleButtonClass,
-										'focus-visible:ring-0',
-									)}
-									data-slot='sidebar-trigger'
-									onClick={toggleSidebar}
-									size='icon-sm'
-									type='button'
-									variant='ghost'
+								<CommandActionTooltip
+									commandId={COMMAND_IDS.layoutToggleSidebar}
+									label={sidebarToggleOpen ? '收起侧边栏' : '展开侧边栏'}
 								>
-									<SidebarToggleIcon className='size-3.5' />
-								</Button>
+									<Button
+										aria-label={sidebarToggleOpen ? '收起侧边栏' : '展开侧边栏'}
+										className={cn(
+											'hidden shrink-0 group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:hidden group-data-[sidebar-layout=mobile]/sidebar-wrapper:inline-flex group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:inline-flex',
+											shellChromeNavCircleButtonClass,
+											'focus-visible:ring-0',
+										)}
+										data-slot='sidebar-trigger'
+										onClick={() => onRunCommand(COMMAND_IDS.layoutToggleSidebar)}
+										size='icon-sm'
+										type='button'
+										variant='ghost'
+									>
+										<SidebarToggleIcon className='size-3.5' />
+									</Button>
+								</CommandActionTooltip>
 
 								<HistoryDropdown
 									entries={routeHistoryEntries}
@@ -333,16 +345,18 @@ export function ShellHeader({
 							data-tauri-drag-region
 						>
 							{/* 单一创建入口：与 C 键同源 quick task；完整任务/项目走 Command / 侧栏 */}
-							<Button
-								aria-label='快速新建任务'
-								className={shellChromeIconActionClass}
-								onClick={() => onRunCommand(COMMAND_IDS.newQuickTask)}
-								size='icon'
-								type='button'
-								variant='outline'
-							>
-								<SquarePenIcon className='size-3.5' />
-							</Button>
+							<CommandActionTooltip commandId={COMMAND_IDS.newQuickTask} label='快速新建任务'>
+								<Button
+									aria-label='快速新建任务'
+									className={shellChromeIconActionClass}
+									onClick={() => onRunCommand(COMMAND_IDS.newQuickTask)}
+									size='icon'
+									type='button'
+									variant='outline'
+								>
+									<SquarePenIcon className='size-3.5' />
+								</Button>
+							</CommandActionTooltip>
 
 							<div className={shellChromeAvatarClusterClass}>
 								<UserAppMenu
@@ -363,30 +377,51 @@ export function ShellHeader({
 							{/* macOS 使用系统原生窗体控制，避免与页面内自绘按钮重复。 */}
 							{!isMac ? (
 								<div className={shellChromeWindowControlsRowClass} data-tauri-drag-region>
-									<Button
-										aria-label='最小化窗口'
-										className={shellChromeWindowControlClass}
-										onClick={() => void handleMinimize()}
-										variant='ghost'
-									>
-										<MinusIcon className='size-3.5' />
-									</Button>
-									<Button
-										aria-label={isMaximized ? '还原窗口' : '最大化窗口'}
-										className={shellChromeWindowControlClass}
-										onClick={() => void handleToggleMaximize()}
-										variant='ghost'
-									>
-										<SquareIcon className={`size-3 ${isMaximized ? 'scale-[0.88]' : ''}`} />
-									</Button>
-									<Button
-										aria-label='关闭窗口'
-										className={`${shellChromeWindowControlClass} hover:bg-destructive hover:text-white`}
-										onClick={() => void handleClose()}
-										variant='ghost'
-									>
-										<XIcon className='size-3.5' />
-									</Button>
+									<ActionTooltip>
+										<ActionTooltip.Trigger asChild>
+											<Button
+												aria-label='最小化窗口'
+												className={shellChromeWindowControlClass}
+												onClick={() => void handleMinimize()}
+												variant='ghost'
+											>
+												<MinusIcon className='size-3.5' />
+											</Button>
+										</ActionTooltip.Trigger>
+										<ActionTooltip.Content>
+											<ActionTooltip.Row label='最小化窗口' />
+										</ActionTooltip.Content>
+									</ActionTooltip>
+									<ActionTooltip>
+										<ActionTooltip.Trigger asChild>
+											<Button
+												aria-label={isMaximized ? '还原窗口' : '最大化窗口'}
+												className={shellChromeWindowControlClass}
+												onClick={() => void handleToggleMaximize()}
+												variant='ghost'
+											>
+												<SquareIcon className={`size-3 ${isMaximized ? 'scale-[0.88]' : ''}`} />
+											</Button>
+										</ActionTooltip.Trigger>
+										<ActionTooltip.Content>
+											<ActionTooltip.Row label={isMaximized ? '还原窗口' : '最大化窗口'} />
+										</ActionTooltip.Content>
+									</ActionTooltip>
+									<ActionTooltip>
+										<ActionTooltip.Trigger asChild>
+											<Button
+												aria-label='关闭窗口'
+												className={`${shellChromeWindowControlClass} hover:bg-destructive hover:text-white`}
+												onClick={() => void handleClose()}
+												variant='ghost'
+											>
+												<XIcon className='size-3.5' />
+											</Button>
+										</ActionTooltip.Trigger>
+										<ActionTooltip.Content>
+											<ActionTooltip.Row label='关闭窗口' />
+										</ActionTooltip.Content>
+									</ActionTooltip>
 								</div>
 							) : null}
 						</div>

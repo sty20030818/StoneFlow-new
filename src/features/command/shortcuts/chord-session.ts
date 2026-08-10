@@ -1,12 +1,14 @@
 import {
 	areStrokesEqual,
 	formatKeybindingStroke,
+	inferShortcutPlatform,
 	tokenizeKeybindingStroke,
 	type ShortcutToken,
 	type Keybinding,
 	type KeybindingChordState,
 	type KeybindingScope,
 	type KeybindingStroke,
+	type ShortcutPlatform,
 } from '@/features/command/keybinding'
 
 export type ChordHintOption = {
@@ -29,16 +31,18 @@ export type CommandChordSession = {
  * 这里不存业务枚举，避免帮助提示和真实绑定漂移。
  */
 export function buildChordSession(
-	bindings: Keybinding[],
+	bindings: readonly Keybinding[],
 	chordState: KeybindingChordState,
+	platform: ShortcutPlatform = inferShortcutPlatform(),
 ): CommandChordSession {
 	// 合并 filter + map + filter 为单次遍历
 	const options: ChordHintOption[] = []
 	for (const binding of bindings) {
 		if (
 			binding.scope !== chordState.scope ||
+			binding.display === 'hidden' ||
 			binding.sequence.length !== 2 ||
-			!areStrokesEqual(binding.sequence[0], chordState.prefix)
+			!areStrokesEqual(binding.sequence[0], chordState.prefix, platform)
 		) {
 			continue
 		}
@@ -51,16 +55,16 @@ export function buildChordSession(
 		options.push({
 			commandId: binding.commandId,
 			stroke,
-			display: formatKeybindingStroke(stroke),
-			tokens: tokenizeKeybindingStroke(stroke),
+			display: formatKeybindingStroke(stroke, { platform }),
+			tokens: tokenizeKeybindingStroke(stroke, { platform }),
 		})
 	}
 
 	return {
 		prefix: chordState.prefix,
 		scope: chordState.scope,
-		prefixDisplay: formatKeybindingStroke(chordState.prefix),
-		prefixTokens: tokenizeKeybindingStroke(chordState.prefix),
+		prefixDisplay: formatKeybindingStroke(chordState.prefix, { platform }),
+		prefixTokens: tokenizeKeybindingStroke(chordState.prefix, { platform }),
 		options,
 	}
 }

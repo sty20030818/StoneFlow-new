@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
+import {
+	COMMAND_IDS,
+	matchKeybindingEvent,
+	SHORTCUT_DISPATCH_PRIORITY,
+	useShortcutDispatcher,
+	useShortcutRegistry,
+} from '@/features/command'
+import { isHigherInteractionLayerOpen } from '@/shared/lib/interaction-layer'
 import { useLatestRef } from '@/shared/lib/useLatestRef'
 
 type EntityRowShortcutScopeProps = {
@@ -56,6 +64,11 @@ export function EntityRowShortcutScope({
 	onClearSelection,
 	onSelectAll,
 }: EntityRowShortcutScopeProps) {
+	const shortcutRegistry = useShortcutRegistry()
+	const listShortcutBindings = useMemo(
+		() => shortcutRegistry.getByScope('list'),
+		[shortcutRegistry],
+	)
 	const [focusId, setFocusId] = useState<string | null>(externalFocusedId)
 	const [hoverSource, setHoverSource] = useState<'pointer' | 'keyboard' | null>(
 		externalFocusedId ? 'keyboard' : null,
@@ -114,84 +127,93 @@ export function EntityRowShortcutScope({
 		[onSetFocusedId],
 	)
 
-	useEffect(() => {
-		function handleKeyDown(event: KeyboardEvent) {
-			if (isBlockedByHigherLayer() || isEditableEventTarget(event.target)) {
-				return
-			}
-
-			if (event.defaultPrevented || event.isComposing) {
-				return
-			}
-
-			if (
-				(event.metaKey || event.ctrlKey) &&
-				!event.altKey &&
-				!event.shiftKey &&
-				event.key.toLowerCase() === 'a'
-			) {
-				event.preventDefault()
-				shiftToggleSessionRef.current = EMPTY_SHIFT_TOGGLE_SESSION
-				onSelectAllRef.current?.(ids)
-				updateHoveredRow(null, null)
-				return
-			}
-
-			if (event.key === 'Escape' && selectedIdSet && selectedIdSet.size > 0) {
-				event.preventDefault()
-				onClearSelectionRef.current?.()
-				shiftToggleSessionRef.current = EMPTY_SHIFT_TOGGLE_SESSION
-				return
-			}
-
-			if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') {
-				return
-			}
-
-			const moveFocus = onMoveFocusRef.current
-			if (!moveFocus) {
-				return
-			}
-
-			event.preventDefault()
-			const delta = event.key === 'ArrowDown' ? 1 : -1
-			const toggleSelection = onToggleSelectionRef.current
-			if (event.shiftKey && toggleSelection) {
-				const nextSession = handleShiftToggleNavigation({
-					delta,
-					focusedId: focusId,
-					ids,
-					shiftToggleSession: shiftToggleSessionRef.current,
-					onToggleSelection: toggleSelection,
-					setFocusId: (id, options) => {
-						updateHoveredRow(id, 'keyboard', options)
-					},
-				})
-				shiftToggleSessionRef.current = nextSession
-				return
-			}
-
-			const nextId = moveFocus(delta, {
-				preserveAnchor: false,
-				selectRange: false,
-			})
-			shiftToggleSessionRef.current = EMPTY_SHIFT_TOGGLE_SESSION
-			updateHoveredRow(nextId, 'keyboard', { syncExternal: false })
+	useShortcutDispatcher(SHORTCUT_DISPATCH_PRIORITY.list, (event) => {
+		if (isHigherInteractionLayerOpen()) {
+			return 'unhandled'
 		}
 
-		window.addEventListener('keydown', handleKeyDown)
-		return () => window.removeEventListener('keydown', handleKeyDown)
-		// useLatestRef 返回的 ref 对象稳定；列入 deps 仅满足静态检查，不会导致反复订阅
-	}, [
-		focusId,
-		ids,
-		onClearSelectionRef,
-		onMoveFocusRef,
-		onSelectAllRef,
-		onToggleSelectionRef,
-		selectedIdSet,
-		updateHoveredRow,
-	])
+		if (event.defaultPrevented || event.isComposing) {
+			return 'unhandled'
+		}
+
+		const result = matchKeybindingEvent({
+			bindings: listShortcutBindings,
+			event,
+			scope: 'list',
+			chordState: null,
+			now: performance.now(),
+		})
+		if (result.status !== 'matched') {
+			return 'unhandled'
+		}
+
+		const { commandId } = result.keybinding
+		if (commandId === COMMAND_IDS.selectionSelectAll) {
+			if (result.keybinding.preventDefault) {
+				event.preventDefault()
+			}
+			shiftToggleSessionRef.current = EMPTY_SHIFT_TOGGLE_SESSION
+			onSelectAllRef.current?.(ids)
+			updateHoveredRow(null, null)
+			return 'handled'
+		}
+
+		if (commandId === COMMAND_IDS.selectionClear) {
+			if (!selectedIdSet || selectedIdSet.size === 0) {
+				return 'unhandled'
+			}
+			if (result.keybinding.preventDefault) {
+				event.preventDefault()
+			}
+			onClearSelectionRef.current?.()
+			shiftToggleSessionRef.current = EMPTY_SHIFT_TOGGLE_SESSION
+			return 'handled'
+		}
+
+		const moveFocus = onMoveFocusRef.current
+		if (!moveFocus) {
+			return 'unhandled'
+		}
+
+		const isPrevious =
+			commandId === COMMAND_IDS.selectionFocusPrevious ||
+			commandId === COMMAND_IDS.selectionExtendPrevious
+		const isNext =
+			commandId === COMMAND_IDS.selectionFocusNext || commandId === COMMAND_IDS.selectionExtendNext
+		if (!isPrevious && !isNext) {
+			return 'unhandled'
+		}
+		if (result.keybinding.preventDefault) {
+			event.preventDefault()
+		}
+		const delta = isNext ? 1 : -1
+		const toggleSelection = onToggleSelectionRef.current
+		const extendsSelection =
+			commandId === COMMAND_IDS.selectionExtendPrevious ||
+			commandId === COMMAND_IDS.selectionExtendNext
+		if (extendsSelection && toggleSelection) {
+			const nextSession = handleShiftToggleNavigation({
+				delta,
+				focusedId: focusId,
+				ids,
+				shiftToggleSession: shiftToggleSessionRef.current,
+				onToggleSelection: toggleSelection,
+				setFocusId: (id, options) => {
+					updateHoveredRow(id, 'keyboard', options)
+				},
+			})
+			shiftToggleSessionRef.current = nextSession
+			return 'handled'
+		}
+
+		const nextId = moveFocus(delta, {
+			preserveAnchor: false,
+			selectRange: false,
+		})
+		shiftToggleSessionRef.current = EMPTY_SHIFT_TOGGLE_SESSION
+		updateHoveredRow(nextId, 'keyboard', { syncExternal: false })
+		return 'handled'
+	})
 
 	const state = useMemo<EntityRowShortcutState>(
 		() => ({
@@ -316,25 +338,4 @@ function getValidId(ids: string[], id: string | null) {
 function isSelectionBoundary(ids: string[], id: string, delta: -1 | 1) {
 	const index = ids.indexOf(id)
 	return (delta < 0 && index === 0) || (delta > 0 && index === ids.length - 1)
-}
-
-function isBlockedByHigherLayer() {
-	return Boolean(
-		document.querySelector(
-			'[cmdk-root], [data-slot="dialog-content"], [data-slot="dropdown-menu-content"], [data-slot="context-menu-content"]',
-		),
-	)
-}
-
-function isEditableEventTarget(target: EventTarget | null) {
-	if (typeof HTMLElement === 'undefined' || !(target instanceof HTMLElement)) {
-		return false
-	}
-
-	if (target.isContentEditable) {
-		return true
-	}
-
-	const tagName = target.tagName
-	return tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT'
 }

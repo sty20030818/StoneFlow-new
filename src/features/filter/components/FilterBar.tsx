@@ -15,6 +15,7 @@ import {
 	DialogTitle,
 } from '@/shared/components/base/dialog'
 import { Input } from '@/shared/components/base/input'
+import { ActionTooltip, OverflowTooltip } from '@/shared/components/tooltip'
 import { cn } from '@/shared/lib/utils'
 
 import {
@@ -37,6 +38,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/bas
 export function FilterBar({ className }: { className?: string }) {
 	const ui = useListFilterUi()
 	const [saveOpen, setSaveOpen] = useState(false)
+	const [filterMenuOpen, setFilterMenuOpen] = useState(false)
+	const [filterTooltipOpen, setFilterTooltipOpen] = useState(false)
 
 	if (!ui) return null
 
@@ -77,19 +80,36 @@ export function FilterBar({ className }: { className?: string }) {
 							projects={projects}
 						/>
 					))}
-					<FilterMenu
-						trigger={
-							<Button
-								aria-label='添加筛选'
-								className='size-7'
-								size='icon'
-								type='button'
-								variant='ghost'
-							>
-								<PlusIcon className='size-3.5' />
-							</Button>
-						}
-					/>
+					<ActionTooltip
+						onOpenChange={(nextOpen) => setFilterTooltipOpen(nextOpen && !filterMenuOpen)}
+						open={filterTooltipOpen && !filterMenuOpen}
+					>
+						<FilterMenu
+							onOpenChange={(nextOpen) => {
+								setFilterMenuOpen(nextOpen)
+								if (nextOpen) {
+									setFilterTooltipOpen(false)
+								}
+							}}
+							open={filterMenuOpen}
+							trigger={
+								<ActionTooltip.Trigger asChild>
+									<Button
+										aria-label='添加筛选'
+										className='size-7'
+										size='icon'
+										type='button'
+										variant='ghost'
+									>
+										<PlusIcon className='size-3.5' />
+									</Button>
+								</ActionTooltip.Trigger>
+							}
+						/>
+						<ActionTooltip.Content>
+							<ActionTooltip.Row label='添加筛选' />
+						</ActionTooltip.Content>
+					</ActionTooltip>
 					<div className='ml-auto flex items-center gap-1.5'>
 						{dirty ? (
 							<Button onClick={() => clearTemp()} size='sm' type='button' variant='ghost'>
@@ -142,14 +162,21 @@ function FilterChip({
 				}
 				projects={projects}
 			/>
-			<button
-				aria-label='删除条件'
-				className='rounded p-0.5 text-sf-text-tertiary hover:bg-muted hover:text-foreground'
-				onClick={onRemove}
-				type='button'
-			>
-				<XIcon className='size-3' />
-			</button>
+			<ActionTooltip>
+				<ActionTooltip.Trigger asChild>
+					<button
+						aria-label='删除筛选条件'
+						className='rounded p-0.5 text-sf-text-tertiary hover:bg-muted hover:text-foreground'
+						onClick={onRemove}
+						type='button'
+					>
+						<XIcon className='size-3' />
+					</button>
+				</ActionTooltip.Trigger>
+				<ActionTooltip.Content>
+					<ActionTooltip.Row label='删除筛选条件' />
+				</ActionTooltip.Content>
+			</ActionTooltip>
 		</div>
 	)
 }
@@ -207,6 +234,7 @@ function ValuesPicker({
 }) {
 	const [open, setOpen] = useState(false)
 	const options = getFilterValueOptions(clause.field, projects)
+	const summary = formatClauseValuesSummary(clause, projects)
 
 	function toggle(value: string) {
 		const next = clause.values.includes(value)
@@ -221,10 +249,16 @@ function ValuesPicker({
 		<Popover onOpenChange={setOpen} open={open}>
 			<PopoverTrigger asChild>
 				<button
-					className='max-w-[140px] truncate rounded px-1 font-medium hover:bg-muted'
+					className='flex max-w-[140px] min-w-0 rounded px-1 font-medium hover:bg-muted'
 					type='button'
 				>
-					{formatClauseValuesSummary(clause, projects)}
+					{open ? (
+						<span className='min-w-0 truncate'>{summary}</span>
+					) : (
+						<OverflowTooltip className='min-w-0' content={summary}>
+							{summary}
+						</OverflowTooltip>
+					)}
 				</button>
 			</PopoverTrigger>
 			<PopoverContent align='start' className='max-h-56 w-48 overflow-y-auto p-1'>
@@ -245,7 +279,9 @@ function ValuesPicker({
 									{option.leading}
 								</span>
 							) : null}
-							<span className='truncate'>{option.label}</span>
+							<OverflowTooltip className='min-w-0 flex-1' content={option.label}>
+								{option.label}
+							</OverflowTooltip>
 						</button>
 					)
 				})}

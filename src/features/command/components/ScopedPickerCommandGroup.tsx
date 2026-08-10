@@ -11,7 +11,7 @@ import {
 	createStatusActionSpec,
 	getTaskPlacementTargetValue,
 	normalizeMetadataDateValue,
-} from '@/features/metadata-fields'
+} from '@/features/metadata-fields/contract'
 import { useGlobalSearch } from '@/features/global-search'
 import type { CustomDateDialogState } from '@/features/shell-dialogs'
 import type { CommandContext, TaskPlacementTarget } from '@/features/command/core'

@@ -48,7 +48,9 @@ describe('buildTaskCommandSelection', () => {
 	it('fallbackSubtitle 为函数时优先用于副标题（所有空间露出 Space）', () => {
 		const selection = buildTaskCommandSelection({
 			selectedIds: ['task-a'],
-			tasks: [createTask({ id: 'task-a', title: '任务 A', projectName: '项目 X', spaceName: '工作' })],
+			tasks: [
+				createTask({ id: 'task-a', title: '任务 A', projectName: '项目 X', spaceName: '工作' }),
+			],
 			fallbackSubtitle: (task) =>
 				task.projectName ? `${task.spaceName} · ${task.projectName}` : task.spaceName,
 		})

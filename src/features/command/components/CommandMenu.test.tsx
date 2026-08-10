@@ -3,6 +3,8 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 import { createShellCommandRegistry } from '@/features/command/commands'
+import { DEFAULT_KEYBINDINGS, KeybindingRegistry } from '@/features/command/keybinding'
+import { ShortcutRegistryProvider } from '@/features/command/shortcuts'
 import {
 	CommandRuntime,
 	COMMAND_IDS,
@@ -14,6 +16,7 @@ import {
 import type { ShellCommandActions } from '@/features/command/adapters'
 
 import type { SearchEntitiesResult, SearchProjectItem, SearchTaskItem } from '@/shared/types'
+import { TooltipProvider } from '@/shared/components/base/tooltip'
 import { CommandMenu } from './CommandMenu'
 import type { CommandMenuMode } from './command-menu-types'
 
@@ -365,9 +368,11 @@ describe('CommandMenu', () => {
 		expect(await screen.findByText('没有匹配的任务')).toBeInTheDocument()
 
 		rerender(
-			<QueryClientProvider client={createTestQueryClient()}>
-				{createCommandMenuElement({ mode: 'project-picker' })}
-			</QueryClientProvider>,
+			withCommandProviders(
+				<QueryClientProvider client={createTestQueryClient()}>
+					{createCommandMenuElement({ mode: 'project-picker' })}
+				</QueryClientProvider>,
+			),
 		)
 		fireEvent.change(screen.getByPlaceholderText('搜索项目…'), { target: { value: 'none' } })
 		await waitFor(() => expect(mockedSearchEntities).toHaveBeenCalledTimes(2))
@@ -577,21 +582,33 @@ function renderCommandMenu({
 	onSelectTask: (task: SearchTaskItem) => void
 }> = {}) {
 	return render(
-		<QueryClientProvider client={createTestQueryClient()}>
-			{createCommandMenuElement({
-				mode,
-				onNavigateProject,
-				onOpenChange,
-				onRunCommand,
-				onSelectTaskDate,
-				onSelectTaskPriority,
-				onSelectTaskStatus,
-				onSelectProject,
-				onSelectTaskPlacement,
-				onSelectTask,
-				context,
-			})}
-		</QueryClientProvider>,
+		withCommandProviders(
+			<QueryClientProvider client={createTestQueryClient()}>
+				{createCommandMenuElement({
+					mode,
+					onNavigateProject,
+					onOpenChange,
+					onRunCommand,
+					onSelectTaskDate,
+					onSelectTaskPriority,
+					onSelectTaskStatus,
+					onSelectProject,
+					onSelectTaskPlacement,
+					onSelectTask,
+					context,
+				})}
+			</QueryClientProvider>,
+		),
+	)
+}
+
+const testShortcutRegistry = new KeybindingRegistry(DEFAULT_KEYBINDINGS)
+
+function withCommandProviders(node: React.ReactNode) {
+	return (
+		<ShortcutRegistryProvider registry={testShortcutRegistry}>
+			<TooltipProvider delayDuration={0}>{node}</TooltipProvider>
+		</ShortcutRegistryProvider>
 	)
 }
 

@@ -22,7 +22,7 @@ export function PropertySubTrigger({
 	children: ReactNode
 	disabled?: boolean
 	icon: ReactNode
-	shortcut: string
+	shortcut: ReactNode
 }) {
 	return (
 		<ContextMenuSubTrigger disabled={disabled} className='[&>svg:last-child]:ml-1'>

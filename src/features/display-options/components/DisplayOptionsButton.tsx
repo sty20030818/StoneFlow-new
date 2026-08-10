@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react'
 import { SlidersHorizontalIcon } from 'lucide-react'
 
+import { COMMAND_IDS, CommandActionTooltip } from '@/features/command'
 import type { TaskDisplayPageKey } from '@/features/display-options/core'
 import { useTaskDisplayOptions } from '@/features/display-options/model'
 import { Button } from '@/shared/components/base/button'
@@ -20,10 +21,12 @@ type DisplayOptionsButtonProps = {
 export function DisplayOptionsButton({ pageKey }: DisplayOptionsButtonProps) {
 	const display = useTaskDisplayOptions(pageKey)
 	const [open, setOpen] = useState(false)
+	const [tooltipOpen, setTooltipOpen] = useState(false)
 
 	useEffect(() => {
 		return subscribeDisplayUiEvent((event) => {
 			if (event.type === 'open-menu') {
+				setTooltipOpen(false)
 				setOpen(true)
 			}
 		})
@@ -33,15 +36,27 @@ export function DisplayOptionsButton({ pageKey }: DisplayOptionsButtonProps) {
 		<DisplayOptionsPopover
 			actions={display.actions}
 			error={display.error}
-			onOpenChange={setOpen}
+			onOpenChange={(nextOpen) => {
+				setOpen(nextOpen)
+				if (nextOpen) {
+					setTooltipOpen(false)
+				}
+			}}
 			open={open}
 			options={display.options}
 			pageKey={pageKey}
 			status={display.status}
 			trigger={
-				<Button aria-label='显示选项' size='icon-sm' type='button' variant='outline'>
-					<SlidersHorizontalIcon />
-				</Button>
+				<CommandActionTooltip
+					commandId={COMMAND_IDS.displayOpenOptions}
+					label='显示选项'
+					onOpenChange={(nextOpen) => setTooltipOpen(open ? false : nextOpen)}
+					open={tooltipOpen}
+				>
+					<Button aria-label='显示选项' size='icon-sm' type='button' variant='outline'>
+						<SlidersHorizontalIcon />
+					</Button>
+				</CommandActionTooltip>
 			}
 		/>
 	)

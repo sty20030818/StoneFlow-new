@@ -1,5 +1,5 @@
 import { startTransition } from 'react'
-import { MoreHorizontalIcon, SquareArrowOutUpRightIcon } from 'lucide-react'
+import { SquareArrowOutUpRightIcon } from 'lucide-react'
 
 import { useEntityDetailController } from '@/features/entity-detail'
 import type { AutosaveController } from '@/shared/autosave'
@@ -44,15 +44,6 @@ export function TaskDrawerHeader({ autosave, taskId }: TaskDrawerHeaderProps) {
 				>
 					<SquareArrowOutUpRightIcon className='size-3.5' />
 					打开
-				</Button>
-				<Button
-					aria-label='更多任务操作'
-					className='size-7 p-0'
-					size='icon'
-					type='button'
-					variant='outline'
-				>
-					<MoreHorizontalIcon className='size-4' />
 				</Button>
 			</div>
 		</DetailHeader>

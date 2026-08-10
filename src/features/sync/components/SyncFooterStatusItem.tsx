@@ -27,19 +27,19 @@ export function SyncFooterStatusItem() {
 				}
 			: null,
 	})
+	const disabledReason =
+		view.actionDisabled && view.actionLabel !== view.title ? view.title : undefined
 
 	return (
 		<ShellFooterStatus.Root role='status' aria-live='polite' aria-label={view.title}>
-			<ShellFooterStatus.Dot
-				className={view.tone.dotClassName}
-				busy={view.busy}
-				title={view.title}
-			/>
-			<ShellFooterStatus.StaticLabel title={view.title}>{view.label}</ShellFooterStatus.StaticLabel>
+			<ShellFooterStatus.Dot className={view.tone.dotClassName} busy={view.busy} />
+			<ShellFooterStatus.StaticLabel overflowContent={view.title}>
+				{view.label}
+			</ShellFooterStatus.StaticLabel>
 			<ShellFooterStatus.IconButton
 				disabled={view.actionDisabled}
+				disabledReason={disabledReason}
 				aria-label={view.actionLabel}
-				title={view.actionLabel}
 				onClick={() => {
 					if (view.actionDisabled) return
 					void runNow()

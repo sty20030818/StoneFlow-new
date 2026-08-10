@@ -1,7 +1,8 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 
 import { DangerConfirmProvider } from '@/features/danger-confirm'
 import type { LifecycleEntry } from '@/shared/types'
+import { renderWithInteractionProviders as render } from '@/test/TestInteractionProviders'
 import { LifecycleRowAdapter, type LifecycleRowAdapterProps } from './LifecycleRowAdapter'
 
 function createEntry(
@@ -61,6 +62,25 @@ describe('LifecycleRowAdapter', () => {
 	})
 
 	it('archive 模式支持整行打开详情', () => {
+		const entry = createEntry({ id: 'task-1', entityType: 'task', title: '任务 A' })
+		const actions = buildActions()
+
+		render(
+			<DangerConfirmProvider>
+				<LifecycleRowAdapter
+					actions={actions}
+					entry={entry}
+					mode='archive'
+					rowState={{ isPending: false, isSelected: false }}
+				/>
+			</DangerConfirmProvider>,
+		)
+
+		fireEvent.click(screen.getByRole('button', { name: '打开 任务 A' }))
+		expect(actions.onOpenDetail).toHaveBeenCalledWith(entry)
+	})
+
+	it('未接入项目详情抽屉前，归档项目不暴露假打开动作', () => {
 		const entry = createEntry({ id: 'project-1', entityType: 'project', title: '项目 A' })
 		const actions = buildActions()
 
@@ -75,8 +95,7 @@ describe('LifecycleRowAdapter', () => {
 			</DangerConfirmProvider>,
 		)
 
-		fireEvent.click(screen.getByRole('button', { name: '打开 项目 A' }))
-		expect(actions.onOpenDetail).toHaveBeenCalledWith(entry)
+		expect(screen.queryByRole('button', { name: '打开 项目 A' })).not.toBeInTheDocument()
 	})
 
 	it('trash 模式禁用整行打开详情', () => {

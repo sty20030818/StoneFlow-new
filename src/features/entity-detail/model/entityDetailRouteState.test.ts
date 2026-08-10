@@ -21,10 +21,10 @@ describe('entityDetailRouteState', () => {
 		})
 	})
 
-	it('解析 project query', () => {
+	it('project query 属于已移除的抽屉契约并要求清理', () => {
 		expect(parseEntityDetailRouteState('?project=project-a')).toEqual({
-			activeDetail: { kind: 'project', id: 'project-a' },
-			shouldCleanSearch: false,
+			activeDetail: null,
+			shouldCleanSearch: true,
 		})
 	})
 

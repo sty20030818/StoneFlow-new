@@ -49,19 +49,6 @@ describe('entityDetailNavigation', () => {
 		})
 	})
 
-	it('task 切 project 使用 replace 并删除 task query', () => {
-		expect(
-			openEntityDrawerTarget(
-				{ pathname: '/projects', search: '?task=task-a&view=today' },
-				{ kind: 'project', id: 'project-a' },
-			),
-		).toEqual({
-			pathname: '/projects',
-			search: '?view=today&project=project-a',
-			replace: true,
-		})
-	})
-
 	it('关闭 Drawer 使用 replace', () => {
 		expect(
 			closeEntityDrawerTarget({ pathname: '/views', search: '?view=today&task=task-a' }),

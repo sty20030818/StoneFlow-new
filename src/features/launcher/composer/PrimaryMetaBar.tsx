@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { ChevronDownIcon } from 'lucide-react'
 
 import { useLauncher } from '../domain/LauncherDomainProvider'
@@ -8,9 +9,12 @@ import { SpaceControl } from './controls/SpaceControl'
 import { Button } from '@/shared/components/base/button'
 import { cn } from '@/shared/lib/utils'
 import { launcherToolbarRowClass } from '@/shared/components/patterns/launcher'
+import { ActionTooltip } from '@/shared/components/tooltip'
 
 export function PrimaryMetaBar() {
 	const { actions, derived, state } = useLauncher()
+	const [advancedTooltipOpen, setAdvancedTooltipOpen] = useState(false)
+	const advancedActionLabel = state.isAdvancedOpen ? '收起更多参数' : '展开更多参数'
 
 	return (
 		<div className={launcherToolbarRowClass} data-testid='launcher-primary-meta-bar'>
@@ -44,19 +48,33 @@ export function PrimaryMetaBar() {
 				spaces={state.openContext?.spaces ?? []}
 			/>
 
-			<Button
-				aria-label='更多参数'
-				className={cn(
-					state.isAdvancedOpen ? 'border-primary text-primary' : 'text-sf-text-quaternary',
-				)}
-				onClick={actions.toggleAdvanced}
-				size='icon-sm'
-				variant='outline'
-			>
-				<ChevronDownIcon
-					className={cn('size-4 transition-transform', state.isAdvancedOpen ? 'rotate-180' : '')}
-				/>
-			</Button>
+			<ActionTooltip onOpenChange={setAdvancedTooltipOpen} open={advancedTooltipOpen}>
+				<ActionTooltip.Trigger asChild>
+					<Button
+						aria-expanded={state.isAdvancedOpen}
+						aria-label='更多参数'
+						className={cn(
+							state.isAdvancedOpen ? 'border-primary text-primary' : 'text-sf-text-quaternary',
+						)}
+						onClick={() => {
+							setAdvancedTooltipOpen(false)
+							actions.toggleAdvanced()
+						}}
+						size='icon-sm'
+						variant='outline'
+					>
+						<ChevronDownIcon
+							className={cn(
+								'size-4 transition-transform',
+								state.isAdvancedOpen ? 'rotate-180' : '',
+							)}
+						/>
+					</Button>
+				</ActionTooltip.Trigger>
+				<ActionTooltip.Content>
+					<ActionTooltip.Row label={advancedActionLabel} />
+				</ActionTooltip.Content>
+			</ActionTooltip>
 		</div>
 	)
 }

@@ -16,6 +16,7 @@ import {
 	SidebarMenuItem,
 	SidebarRail,
 } from '@/shared/components/base/sidebar'
+import { ActionTooltip } from '@/shared/components/tooltip'
 import {
 	sidebarMenuIconClass,
 	sidebarMenuLabelClass,
@@ -65,16 +66,22 @@ export function SettingsSidebar({
 		<Sidebar collapsible='icon'>
 			<SidebarHeader className='gap-1 px-3 pb-1 pt-2 group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:px-2 group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:px-2'>
 				<div className={sidebarShellNavLinkStretchClass}>
-					<SidebarMenuButton
-						aria-label='返回应用'
-						className='h-10 min-h-10 justify-start text-left'
-						onClick={handleBack}
-						tooltip='返回应用'
-						type='button'
-					>
-						<ChevronLeftIcon className={sidebarMenuIconClass} />
-						<span className={cn(sidebarMenuLabelClass, 'text-left')}>返回应用</span>
-					</SidebarMenuButton>
+					<ActionTooltip>
+						<ActionTooltip.Trigger asChild>
+							<SidebarMenuButton
+								aria-label='返回应用'
+								className='h-10 min-h-10 justify-start text-left'
+								onClick={handleBack}
+								type='button'
+							>
+								<ChevronLeftIcon className={sidebarMenuIconClass} />
+								<span className={cn(sidebarMenuLabelClass, 'text-left')}>返回应用</span>
+							</SidebarMenuButton>
+						</ActionTooltip.Trigger>
+						<ActionTooltip.Content side='right' sideOffset={8}>
+							<ActionTooltip.Row label='返回应用' />
+						</ActionTooltip.Content>
+					</ActionTooltip>
 				</div>
 			</SidebarHeader>
 
@@ -94,18 +101,24 @@ export function SettingsSidebar({
 									return (
 										<SidebarMenuItem key={item.key}>
 											<div className={sidebarShellNavLinkStretchClass}>
-												<SidebarMenuButton
-													className='justify-start text-left'
-													isActive={isActive}
-													onClick={() => handleOpenSection(to, item.key)}
-													tooltip={item.label}
-													type='button'
-												>
-													<Icon className={sidebarMenuIconClass} />
-													<span className={cn(sidebarMenuLabelClass, 'text-left')}>
-														{item.label}
-													</span>
-												</SidebarMenuButton>
+												<ActionTooltip>
+													<ActionTooltip.Trigger asChild>
+														<SidebarMenuButton
+															className='justify-start text-left'
+															isActive={isActive}
+															onClick={() => handleOpenSection(to, item.key)}
+															type='button'
+														>
+															<Icon className={sidebarMenuIconClass} />
+															<span className={cn(sidebarMenuLabelClass, 'text-left')}>
+																{item.label}
+															</span>
+														</SidebarMenuButton>
+													</ActionTooltip.Trigger>
+													<ActionTooltip.Content side='right' sideOffset={8}>
+														<ActionTooltip.Row label={item.label} />
+													</ActionTooltip.Content>
+												</ActionTooltip>
 											</div>
 										</SidebarMenuItem>
 									)

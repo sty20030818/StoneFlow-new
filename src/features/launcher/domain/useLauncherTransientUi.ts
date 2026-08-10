@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react'
 
+import { matchLauncherShortcut } from '../model/launcherShortcutKeymap'
+
 const PANEL_CLOSE_DELAY_MS = 220
 
 type UseLauncherTransientUiArgs = {
@@ -71,7 +73,7 @@ export function useLauncherTransientUi({
 
 	useEffect(() => {
 		const handler = (event: globalThis.KeyboardEvent) => {
-			if (event.defaultPrevented || event.key !== 'Escape') {
+			if (event.defaultPrevented || matchLauncherShortcut(event) !== 'clearOrClose') {
 				return
 			}
 

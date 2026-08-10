@@ -1,4 +1,5 @@
 import { isGlobalChordPending } from '@/shared/lib/global-chord-guard'
+import { isHigherInteractionLayerOpen } from '@/shared/lib/interaction-layer'
 import type { NormalizedKeyEvent } from '@/features/command'
 
 import type { PointerPoint } from './types'
@@ -42,11 +43,7 @@ export function isBlockedByHigherLayer() {
 		return true
 	}
 
-	return Boolean(
-		document.querySelector(
-			'[cmdk-root], [data-slot="dialog-content"], [data-slot="dropdown-menu-content"], [data-slot="context-menu-content"]',
-		),
-	)
+	return isHigherInteractionLayerOpen()
 }
 
 export function normalizeKeyboardEvent(event: KeyboardEvent): NormalizedKeyEvent {

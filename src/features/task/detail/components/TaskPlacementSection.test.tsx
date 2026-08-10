@@ -1,8 +1,9 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, screen } from '@testing-library/react'
 import { describe, expect, it, vi, type Mock } from 'vitest'
 
 import type { ProjectOption } from '@/features/project'
 import type { AutosaveController } from '@/shared/autosave'
+import { renderWithInteractionProviders as render } from '@/test/TestInteractionProviders'
 
 import type { TaskDetailDraft } from '../model/taskDetailDraft'
 import { TaskPlacementSection } from './TaskPlacementSection'

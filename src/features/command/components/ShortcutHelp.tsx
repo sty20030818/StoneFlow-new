@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { XIcon } from 'lucide-react'
 
@@ -12,7 +12,9 @@ import {
 	DialogTitle,
 } from '@/shared/components/base/dialog'
 import { dialogShellReadingClass } from '@/shared/components/patterns/dialog-shell'
+import { ActionTooltip, OverflowTooltip } from '@/shared/components/tooltip'
 import { cn } from '@/shared/lib/utils'
+import { useShortcutRegistry } from '@/features/command/shortcuts/shortcut-registry-context'
 
 import { buildShortcutHelpGroups } from './shortcut-help-model'
 import { ShortcutTokens } from './ShortcutTokens'
@@ -36,11 +38,29 @@ export function ShortcutHelp({
 	runtime,
 	title,
 }: ShortcutHelpProps) {
-	const groups = useMemo(() => buildShortcutHelpGroups(runtime, context), [context, runtime])
+	const shortcutRegistry = useShortcutRegistry()
+	const groups = useMemo(
+		() => buildShortcutHelpGroups(runtime, context, shortcutRegistry),
+		[context, runtime, shortcutRegistry],
+	)
 	const contentRef = useRef<HTMLDivElement>(null)
+	const [closeTooltipOpen, setCloseTooltipOpen] = useState(false)
+
+	useEffect(() => {
+		if (!open) {
+			setCloseTooltipOpen(false)
+		}
+	}, [open])
+
+	function handleOpenChange(nextOpen: boolean) {
+		if (!nextOpen) {
+			setCloseTooltipOpen(false)
+		}
+		onOpenChange(nextOpen)
+	}
 
 	return (
-		<Dialog onOpenChange={onOpenChange} open={open}>
+		<Dialog onOpenChange={handleOpenChange} open={open}>
 			<DialogContent
 				className={cn(dialogShellReadingClass, className)}
 				disableAnimation
@@ -55,17 +75,28 @@ export function ShortcutHelp({
 				<DialogTitle className='sr-only'>{title}</DialogTitle>
 				<DialogDescription className='sr-only'>{description}</DialogDescription>
 
-				<Button
-					aria-label='关闭快捷键帮助'
-					className='absolute top-3 right-3 size-8'
-					onClick={() => onOpenChange(false)}
-					variant='ghost'
-				>
-					<XIcon className='size-4' />
-				</Button>
+				<ActionTooltip onOpenChange={setCloseTooltipOpen} open={closeTooltipOpen}>
+					<ActionTooltip.Trigger asChild>
+						<Button
+							aria-label='关闭快捷键帮助'
+							className='absolute top-3 right-3 size-8'
+							onClick={() => handleOpenChange(false)}
+							variant='ghost'
+						>
+							<XIcon aria-hidden className='size-4' />
+						</Button>
+					</ActionTooltip.Trigger>
+					<ActionTooltip.Content>
+						<ActionTooltip.Row label='关闭' />
+					</ActionTooltip.Content>
+				</ActionTooltip>
 				<div className='px-5 pt-4 pb-3'>
-					<h2 className='truncate pr-9 text-[16px] font-medium text-foreground'>{title}</h2>
-					<p className='mt-1 truncate text-[12px] text-sf-text-tertiary'>{description}</p>
+					<OverflowTooltip className='pr-9 text-[16px] font-medium text-foreground' content={title}>
+						{title}
+					</OverflowTooltip>
+					<OverflowTooltip className='mt-1 text-[12px] text-sf-text-tertiary' content={description}>
+						{description}
+					</OverflowTooltip>
 				</div>
 				<AppScrollArea
 					className='max-h-120'
@@ -101,28 +132,27 @@ function ShortcutHelpRow({
 	return (
 		<article className='mx-1 flex min-h-11 items-center gap-3 rounded-md bg-transparent px-3 py-2'>
 			<div className='min-w-0 flex-1'>
-				<div className='flex min-w-0 items-center gap-2'>
-					<span className='truncate text-[14px] font-medium text-foreground'>{entry.title}</span>
-					{entry.isCommandOnly ? (
-						<span className='shrink-0 rounded-sm bg-sf-surface-app px-1.5 py-0.5 text-[10px] font-medium tracking-normal text-sf-text-tertiary'>
-							命令内
-						</span>
-					) : null}
-				</div>
+				<OverflowTooltip className='text-[14px] font-medium text-foreground' content={entry.title}>
+					{entry.title}
+				</OverflowTooltip>
 				{entry.description ? (
-					<p className='mt-0.5 truncate text-[12px] text-sf-text-tertiary'>{entry.description}</p>
+					<OverflowTooltip
+						className='mt-0.5 text-[12px] text-sf-text-tertiary'
+						content={entry.description}
+					>
+						{entry.description}
+					</OverflowTooltip>
 				) : null}
 			</div>
-			<div className='ml-auto flex shrink-0 items-center justify-end'>
-				{entry.shortcut ? (
+			<div className='ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2'>
+				{entry.shortcuts.map((shortcut) => (
 					<ShortcutTokens
 						kbdClassName='h-6 min-w-6 rounded-sm border border-sf-border-subtle bg-background/90 px-1.5 text-[11px] text-sf-text-secondary'
+						key={shortcut.map((token) => `${token.type}:${token.value}`).join('|')}
 						separatorClassName='text-sf-text-quaternary'
-						tokens={entry.shortcut}
+						tokens={shortcut}
 					/>
-				) : (
-					<span className='text-[12px] text-sf-text-quaternary'>未绑定</span>
-				)}
+				))}
 			</div>
 		</article>
 	)

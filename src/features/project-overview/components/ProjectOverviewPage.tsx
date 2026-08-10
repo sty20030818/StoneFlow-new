@@ -1,6 +1,7 @@
 import { PlusIcon } from 'lucide-react'
 
 import { BulkActionBar } from '@/features/bulk-action'
+import { COMMAND_IDS, CommandShortcut } from '@/features/command'
 import { MainCard } from '@/shared/components/main-card/MainCardLayout'
 import { Button } from '@/shared/components/base/button'
 import { BULK_ACTION_BUTTON_CLASS } from '@/shared/components/patterns/bulk-action'
@@ -21,7 +22,11 @@ export function ProjectOverviewPage() {
 		<PageFrame.Root>
 			<PageFrame.Header
 				actions={
-					<MainCard.GhostAction aria-label='创建项目' onClick={scene.openProjectCreateDialog}>
+					<MainCard.GhostAction
+						aria-label='创建项目'
+						onClick={scene.openProjectCreateDialog}
+						tooltipShortcut={<CommandShortcut commandId={COMMAND_IDS.newProject} />}
+					>
 						<PlusIcon />
 					</MainCard.GhostAction>
 				}

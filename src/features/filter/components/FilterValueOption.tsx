@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 
 import { DropdownMenuItem } from '@/shared/components/base/dropdown-menu'
 import { SelectionIndicator } from '@/shared/components/base/selection-indicator'
+import { OverflowTooltip } from '@/shared/components/tooltip'
 
 type FilterValueOptionProps = {
 	checked: boolean
@@ -38,7 +39,9 @@ export function FilterValueOption({
 					{leading}
 				</span>
 			) : null}
-			<span className='min-w-0 flex-1 truncate'>{label}</span>
+			<OverflowTooltip className='min-w-0 flex-1' content={label}>
+				{label}
+			</OverflowTooltip>
 			{count == null ? null : (
 				<span className='shrink-0 text-[12px] tabular-nums text-sf-text-tertiary'>{count}</span>
 			)}

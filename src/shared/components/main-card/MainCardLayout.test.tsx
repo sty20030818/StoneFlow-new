@@ -1,6 +1,7 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 
 import { MainCard } from './MainCardLayout'
+import { TooltipProvider } from '@/shared/components/base/tooltip'
 
 describe('MainCardLayout', () => {
 	it('MainCardBody 使用统一滚动容器协议，并保留 viewport 几何类', () => {
@@ -19,5 +20,20 @@ describe('MainCardLayout', () => {
 		expect(viewport?.className).toContain('pb-2')
 		expect(viewport?.className).toContain('gap-2')
 		expect(viewport?.className).toContain('custom-gap')
+	})
+
+	it('GhostAction 强制使用 aria-label，并自动生成 icon-only 操作 Tooltip', async () => {
+		render(
+			<TooltipProvider delayDuration={0}>
+				<MainCard.GhostAction aria-label='创建任务'>
+					<span aria-hidden>+</span>
+				</MainCard.GhostAction>
+			</TooltipProvider>,
+		)
+
+		const action = screen.getByRole('button', { name: '创建任务' })
+		expect(action).not.toHaveAttribute('title')
+		fireEvent.focus(action)
+		expect(await screen.findByRole('tooltip')).toHaveTextContent('创建任务')
 	})
 })

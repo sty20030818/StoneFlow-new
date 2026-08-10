@@ -5,6 +5,7 @@ import { MainCard } from '@/shared/components/main-card/MainCardLayout'
 import { DisplayOptionsButton } from '@/features/display-options'
 import { FilterBar, ListFilterUiProvider, PageFilterButton } from '@/features/filter'
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
+import { COMMAND_IDS, CommandShortcut } from '@/features/command'
 import { useTaskListScene, type TaskListSceneVariant } from '@/features/task/hooks/useTaskListScene'
 import { TaskBoard } from './TaskBoard'
 import { AppBreadcrumb } from '@/shared/components/AppBreadcrumb'
@@ -29,7 +30,11 @@ export function TaskListSceneView({ variant }: TaskListSceneViewProps) {
 			<PageFrame.Root>
 				<PageFrame.Header
 					actions={
-						<MainCard.GhostAction aria-label='创建任务' onClick={scene.openCreate}>
+						<MainCard.GhostAction
+							aria-label='创建任务'
+							onClick={scene.openCreate}
+							tooltipShortcut={<CommandShortcut commandId={COMMAND_IDS.newFullTask} />}
+						>
 							<PlusIcon />
 						</MainCard.GhostAction>
 					}

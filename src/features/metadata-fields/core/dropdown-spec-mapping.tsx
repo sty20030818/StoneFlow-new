@@ -4,7 +4,6 @@ import { renderMetadataActionIcon } from './metadata-icon-tokens'
 
 export type MetadataDropdownMappedProps<TValue> = {
 	menuLabel: string
-	headerShortcut?: string
 	options: Array<MetadataFieldOption<TValue>>
 }
 
@@ -13,7 +12,6 @@ export function mapMetadataActionSpecToDropdownProps<TValue>(
 ): MetadataDropdownMappedProps<TValue> {
 	return {
 		menuLabel: spec.headerLabel,
-		headerShortcut: spec.headerShortcut,
 		options: spec.options.map((option) => ({
 			key: option.key,
 			value: option.value,

@@ -25,7 +25,6 @@ describe('EntityDetailDrawerHost', () => {
 		render(
 			<EntityDetailDrawerHost
 				activeDetail={{ kind: 'task', id: 'task-a' }}
-				currentSpaceLabel='Work'
 				onClose={onClose}
 				open
 			/>,
@@ -34,28 +33,9 @@ describe('EntityDetailDrawerHost', () => {
 		expect(screen.getByTestId('task-drawer')).toHaveTextContent('task-a')
 	})
 
-	it('project 分发到 project 渲染分支', () => {
-		render(
-			<EntityDetailDrawerHost
-				activeDetail={{ kind: 'project', id: 'project-a' }}
-				currentSpaceLabel='Work'
-				onClose={onClose}
-				open
-			/>,
-		)
-
-		expect(screen.getByText('项目详情')).toBeInTheDocument()
-		expect(screen.getByText('project-a')).toBeInTheDocument()
-	})
-
 	it('null 不渲染实体内容', () => {
 		const { container } = render(
-			<EntityDetailDrawerHost
-				activeDetail={null}
-				currentSpaceLabel='Work'
-				onClose={onClose}
-				open
-			/>,
+			<EntityDetailDrawerHost activeDetail={null} onClose={onClose} open />,
 		)
 
 		expect(container).toBeEmptyDOMElement()
@@ -64,14 +44,13 @@ describe('EntityDetailDrawerHost', () => {
 	it('close action 调用 onClose', () => {
 		render(
 			<EntityDetailDrawerHost
-				activeDetail={{ kind: 'project', id: 'project-a' }}
-				currentSpaceLabel='Work'
+				activeDetail={{ kind: 'task', id: 'task-a' }}
 				onClose={onClose}
 				open
 			/>,
 		)
 
-		fireEvent.click(screen.getByRole('button', { name: '关闭' }))
+		fireEvent.click(screen.getByRole('button', { name: '关闭任务' }))
 
 		expect(onClose).toHaveBeenCalledTimes(1)
 	})

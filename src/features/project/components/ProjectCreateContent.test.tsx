@@ -1,8 +1,9 @@
 /** @vitest-environment jsdom */
 import { useState } from 'react'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 
 import { SubmitRegistryProvider, useSubmitRegistryActions } from '@/features/submit'
+import { renderWithInteractionProviders as render } from '@/test/TestInteractionProviders'
 import { ProjectCreateContent } from './ProjectCreateContent'
 
 const createProjectMock = vi.fn()

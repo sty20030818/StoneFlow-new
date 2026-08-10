@@ -10,7 +10,7 @@ import {
 	type TaskDisplayPageKey,
 	type UseTaskDisplayOptionsResult,
 } from '@/features/display-options'
-import { useEntitySelectionEscape, useRegisterCommandSelection } from '@/features/selection'
+import { useRegisterCommandSelection } from '@/features/selection'
 import type { ProjectOption } from '@/features/project'
 import type { Space, TaskListItem } from '@/shared/types'
 
@@ -93,11 +93,6 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 		focusedTaskId: selection.focusedTaskId,
 		activeTaskId: input.activeTaskId,
 	})
-	useEntitySelectionEscape({
-		hasSelection: selection.selectedCount > 0,
-		clearSelection: selection.clearTaskSelection,
-	})
-
 	const boardProps = useMemo(
 		(): TaskBoardProps => ({
 			activeTaskId: input.activeTaskId,

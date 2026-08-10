@@ -20,12 +20,9 @@ import { useEntityDetailController } from '@/features/entity-detail'
 import { useTaskPreviewController } from '@/features/task'
 import { useSearchFocusIntentStore } from '@/features/global-search'
 import {
-	DEFAULT_KEYBINDINGS,
 	type CommandChordSession,
-	type Keybinding,
 	useCommandRunner,
 	useCommandRuntime,
-	COMMAND_IDS,
 	type CommandId,
 } from '@/features/command'
 import { useBulkActionContext } from '@/features/bulk-action'
@@ -174,18 +171,6 @@ export function useShellCommandSystem({
 		[commandContext, commandRuntime],
 	)
 
-	const activeShortcutBindings = useMemo<Keybinding[]>(
-		() =>
-			isShortcutHelpOpen
-				? DEFAULT_KEYBINDINGS.filter(
-						(binding) =>
-							binding.commandId === COMMAND_IDS.openShortcutHelp ||
-							binding.commandId === COMMAND_IDS.close,
-					)
-				: DEFAULT_KEYBINDINGS,
-		[isShortcutHelpOpen],
-	)
-
 	const taskMetaHandlers = useMemo(
 		() => createShellCommandTaskMetaHandlers(commandContext, runEntityBulkActionFromCommand),
 		[commandContext, runEntityBulkActionFromCommand],
@@ -196,7 +181,6 @@ export function useShellCommandSystem({
 		commandRuntime,
 		runCommand,
 		shouldTriggerCommandShortcut,
-		activeShortcutBindings,
 		chordSession,
 		setChordSession,
 		isCommandOpen,

@@ -31,7 +31,15 @@ vi.mock('@/shared/components/main-card/MainCardLayout', () => ({
 		),
 		Body: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 		Footer: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-		GhostAction: ({ children, ...props }: { children: ReactNode; onClick?: () => void }) => (
+		GhostAction: ({
+			children,
+			tooltipShortcut: _tooltipShortcut,
+			...props
+		}: {
+			children: ReactNode
+			onClick?: () => void
+			tooltipShortcut?: ReactNode
+		}) => (
 			<button aria-label='创建任务' type='button' {...props}>
 				{children}
 			</button>
@@ -59,7 +67,8 @@ vi.mock('@/features/display-options', () => ({
 	DisplayOptionsButton: () => <button type='button'>显示设置</button>,
 }))
 
-vi.mock('@/features/bulk-action', () => ({
+vi.mock('@/features/bulk-action', async (importOriginal) => ({
+	...(await importOriginal<typeof import('@/features/bulk-action')>()),
 	BulkActionBar: () => <div data-testid='bulk-bar'>批量操作</div>,
 	BulkCommandMenuAction: () => null,
 }))

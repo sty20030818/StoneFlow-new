@@ -1,4 +1,13 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
+import {
+	COMMAND_IDS,
+	CommandShortcutLayer,
+	DEFAULT_KEYBINDINGS,
+	KeybindingRegistry,
+	ShortcutRegistryProvider,
+	type CommandId,
+} from '@/features/command'
+import { SELECTION_SHORTCUT_BINDINGS } from '@/features/selection'
 import { useTaskSelection } from '@/features/task/hooks/useTaskSelection'
 
 import { useDialogStore } from '@/features/shell-dialogs'
@@ -19,6 +28,13 @@ import type { TaskListItem } from '@/shared/types'
 import { TaskPreviewProvider } from '@/features/task/detail'
 
 import { TaskRowShortcutScope } from './TaskRowShortcutScope'
+import { TASK_ROW_SHORTCUT_BINDINGS } from './taskRowShortcutBindings'
+
+const TEST_SHORTCUT_REGISTRY = new KeybindingRegistry([
+	...DEFAULT_KEYBINDINGS,
+	...SELECTION_SHORTCUT_BINDINGS,
+	...TASK_ROW_SHORTCUT_BINDINGS,
+])
 
 type BulkActionCall = {
 	actionId: BulkActionId
@@ -76,7 +92,7 @@ describe('TaskRowShortcutScope', () => {
 		expect(actions.onOpenTask).toHaveBeenNthCalledWith(1, 'task-a')
 	})
 
-	it('A / Delete / Cmd+Backspace 执行归档和删除', () => {
+	it('A / Delete / Mod+Backspace 执行归档和删除', () => {
 		const actions = createActions()
 		const bulkCalls: BulkActionCall[] = []
 		renderScope({ actions, bulkCalls })
@@ -84,7 +100,7 @@ describe('TaskRowShortcutScope', () => {
 		fireEvent.mouseMove(screen.getByTestId('row-task-a'))
 		fireKey('a')
 		fireKey('Delete')
-		fireKey('Backspace', { metaKey: true })
+		fireKey('Backspace', { ctrlKey: true })
 		flushShortcutTimers()
 
 		expect(bulkCalls.map((call) => call.actionId)).toEqual([
@@ -130,6 +146,42 @@ describe('TaskRowShortcutScope', () => {
 		expect(useDialogStore.getState().commandSelectionOverride?.ids).toEqual(['task-a'])
 	})
 
+	it('Shift+P 有行目标时由 row 优先消费，不再触发同键的 global 命令', () => {
+		const onGlobalTrigger = vi.fn<(id: CommandId) => void>()
+		renderScope({ onGlobalTrigger })
+
+		fireEvent.mouseMove(screen.getByTestId('row-task-a'))
+		fireKey('P', { shiftKey: true })
+		flushShortcutTimers()
+
+		expect(useDialogStore.getState().commandMenuMode).toBe('task-placement-picker')
+		expect(onGlobalTrigger).not.toHaveBeenCalled()
+	})
+
+	it('Shift+P 没有行目标时下沉给 global 命令', () => {
+		const onGlobalTrigger = vi.fn<(id: CommandId) => void>()
+		renderScope({ onGlobalTrigger })
+
+		fireKey('P', { shiftKey: true })
+		flushShortcutTimers()
+
+		expect(onGlobalTrigger).toHaveBeenCalledWith(COMMAND_IDS.taskChangePlacement)
+		expect(useDialogStore.getState().isCommandOpen).toBe(false)
+	})
+
+	it('global chord pending 时跳过 row，g→p 只触发全局项目导航', () => {
+		const onGlobalTrigger = vi.fn<(id: CommandId) => void>()
+		renderScope({ onGlobalTrigger })
+
+		fireEvent.mouseMove(screen.getByTestId('row-task-a'))
+		fireKey('g')
+		fireKey('p')
+		flushShortcutTimers()
+
+		expect(onGlobalTrigger).toHaveBeenCalledWith(COMMAND_IDS.goProjects)
+		expect(useDialogStore.getState().isCommandOpen).toBe(false)
+	})
+
 	it('全局 chord 进行中时 Row 单键命令不触发（防止 g→p 等与 row p 冲突）', () => {
 		const actions = createActions()
 		const bulkCalls: BulkActionCall[] = []
@@ -140,10 +192,8 @@ describe('TaskRowShortcutScope', () => {
 		// 模拟全局 chord 进入 pending（例如用户按下了 g、n 等前缀键）
 		setGlobalChordPending(true)
 
-		// chord 进行中时，p / s / d 等 Row 单键命令不应触发
+		// chord 进行中的下一键属于 global 会话，Row 单键命令不应触发。
 		fireKey('p')
-		fireKey('s')
-		fireKey('d')
 		flushShortcutTimers()
 
 		expect(useDialogStore.getState().isCommandOpen).toBe(false)
@@ -213,6 +263,16 @@ describe('TaskRowShortcutScope', () => {
 
 		expect(bulkCalls).toHaveLength(1)
 		expect(bulkCalls[0]?.snapshot.ids).toEqual(['task-a'])
+	})
+
+	it('Escape 通过 list Registry 清空当前选择', () => {
+		const actions = createActions()
+		renderScope({ actions, selectedTaskIds: ['task-a'] })
+
+		const event = fireKey('Escape')
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(actions.onClearTaskSelection).toHaveBeenCalledTimes(1)
 	})
 
 	it('多选且没有 row target 时仍使用 selection 执行', () => {
@@ -324,7 +384,7 @@ describe('TaskRowShortcutScope', () => {
 
 		expect(screen.getByTestId('hovered-target')).toHaveTextContent('none')
 
-		expect(fireKey('ArrowDown').defaultPrevented).toBe(false)
+		expect(fireKey('ArrowDown').defaultPrevented).toBe(true)
 		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-a')
 		expect(screen.getByTestId('hover-source')).toHaveTextContent('keyboard')
 		expect(screen.getByTestId('selected-count')).toHaveTextContent('0')
@@ -516,14 +576,14 @@ describe('TaskRowShortcutScope', () => {
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-c,task-d,task-e,task-f')
 	})
 
-	it('Cmd+A 全选后不制造键盘 hover 行', () => {
+	it('Mod+A 全选后不制造键盘 hover 行', () => {
 		const actions = createActions()
 		renderSelectionScope({ actions })
 
 		fireEvent.pointerMove(screen.getByTestId('row-task-c'), { clientX: 8, clientY: 8 })
 		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-c')
 
-		fireKey('a', { metaKey: true })
+		fireKey('a', { ctrlKey: true })
 
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent(
 			'task-a,task-b,task-c,task-d,task-e,task-f',
@@ -698,6 +758,7 @@ function renderScope({
 	confirmingActionIds = [],
 	selectedTaskIds = [],
 	withBlockingLayer = false,
+	onGlobalTrigger = () => undefined,
 }: {
 	actions?: ReturnType<typeof createActions>
 	bulkCalls?: BulkActionCall[]
@@ -705,6 +766,7 @@ function renderScope({
 	confirmingActionIds?: BulkActionId[]
 	selectedTaskIds?: string[]
 	withBlockingLayer?: boolean
+	onGlobalTrigger?: (id: CommandId) => void
 } = {}) {
 	const tasks = [
 		createTask({ id: 'task-a', title: '任务 A' }),
@@ -712,49 +774,58 @@ function renderScope({
 	]
 
 	render(
-		<DangerConfirmProvider>
-			<TaskPreviewProvider>
-				<BulkActionProvider
-					actions={createTestBulkActions({
-						bulkCalls,
-						bulkResults,
-						confirmingActionIds,
-					})}
-				>
-					{withBlockingLayer ? <div data-slot='dropdown-menu-content' /> : null}
-					<input aria-label='编辑标题' />
-					<TaskRowShortcutScope
-						activeTaskId={null}
-						onClearTaskSelection={actions.onClearTaskSelection}
-						onOpenTask={actions.onOpenTask}
-						onPeekTask={actions.onPeekTask}
-						onToggleTaskSelection={actions.onToggleTaskSelection}
-						selectedTaskIdSet={new Set(selectedTaskIds)}
-						tasks={tasks}
+		<ShortcutRegistryProvider registry={TEST_SHORTCUT_REGISTRY}>
+			<CommandShortcutLayer onTrigger={onGlobalTrigger} />
+			<DangerConfirmProvider>
+				<TaskPreviewProvider>
+					<BulkActionProvider
+						actions={createTestBulkActions({
+							bulkCalls,
+							bulkResults,
+							confirmingActionIds,
+						})}
 					>
-						{(state) => (
-							<div data-testid='scope-root'>
-								{tasks.map((task) => (
-									<div
-										data-task-id={task.id}
-										data-testid={`row-${task.id}`}
-										key={task.id}
-										onMouseEnter={() => state.onRowHover(task.id)}
-										onMouseLeave={() => state.onRowHover(null)}
-										onMouseMove={(event) =>
-											state.onRowPointerMove(task.id, { x: event.clientX, y: event.clientY })
-										}
-										onPointerMove={(event) =>
-											state.onRowPointerMove(task.id, { x: event.clientX, y: event.clientY })
-										}
-									></div>
-								))}
-							</div>
-						)}
-					</TaskRowShortcutScope>
-				</BulkActionProvider>
-			</TaskPreviewProvider>
-		</DangerConfirmProvider>,
+						{withBlockingLayer ? <div data-slot='dropdown-menu-content' /> : null}
+						<input aria-label='编辑标题' />
+						<TaskRowShortcutScope
+							activeTaskId={null}
+							onClearTaskSelection={actions.onClearTaskSelection}
+							onOpenTask={actions.onOpenTask}
+							onPeekTask={actions.onPeekTask}
+							onToggleTaskSelection={actions.onToggleTaskSelection}
+							selectedTaskIdSet={new Set(selectedTaskIds)}
+							tasks={tasks}
+						>
+							{(state) => (
+								<div data-testid='scope-root'>
+									{tasks.map((task) => (
+										<div
+											data-task-id={task.id}
+											data-testid={`row-${task.id}`}
+											key={task.id}
+											onMouseEnter={() => state.onRowHover(task.id)}
+											onMouseLeave={() => state.onRowHover(null)}
+											onMouseMove={(event) =>
+												state.onRowPointerMove(task.id, {
+													x: event.clientX,
+													y: event.clientY,
+												})
+											}
+											onPointerMove={(event) =>
+												state.onRowPointerMove(task.id, {
+													x: event.clientX,
+													y: event.clientY,
+												})
+											}
+										></div>
+									))}
+								</div>
+							)}
+						</TaskRowShortcutScope>
+					</BulkActionProvider>
+				</TaskPreviewProvider>
+			</DangerConfirmProvider>
+		</ShortcutRegistryProvider>,
 	)
 
 	return actions
@@ -851,7 +922,11 @@ function renderSelectionScope({
 		)
 	}
 
-	render(<SelectionHarness />)
+	render(
+		<ShortcutRegistryProvider registry={TEST_SHORTCUT_REGISTRY}>
+			<SelectionHarness />
+		</ShortcutRegistryProvider>,
+	)
 	return actions
 }
 

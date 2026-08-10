@@ -26,11 +26,7 @@ import {
 	useProjectOverviewData,
 	useReopenProjectMutation,
 } from '@/features/project'
-import {
-	useEntitySelection,
-	useEntitySelectionEscape,
-	useRegisterCommandSelection,
-} from '@/features/selection'
+import { useEntitySelection, useRegisterCommandSelection } from '@/features/selection'
 
 /**
  * 项目总览页唯一 wiring：视图轨 / 选择 / bulk / 行动作。
@@ -78,10 +74,6 @@ export function useProjectOverviewScene() {
 		[clearProjectSelection, overviewItems, selectionSnapshot.ids],
 	)
 	useRegisterCommandSelection(commandSelection)
-	useEntitySelectionEscape({
-		hasSelection: selectedCount > 0,
-		clearSelection: clearProjectSelection,
-	})
 	async function runRowAction(projectId: string, runner: () => Promise<unknown>) {
 		setBusyProjectId(projectId)
 		try {

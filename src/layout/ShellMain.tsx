@@ -1,8 +1,8 @@
 import { useEffect, type MouseEvent, type PropsWithChildren } from 'react'
 
-import { ShellDrawer } from '@/layout/ShellDrawer'
 import type { EntityDetailRouteState } from '@/features/entity-detail'
 import { TaskPreview, useTaskPreviewController } from '@/features/task'
+import { ShellDrawer } from '@/layout/ShellDrawer'
 import {
 	ContextMenu,
 	ContextMenuContent,
@@ -14,7 +14,6 @@ import { cn } from '@/shared/lib/utils'
 import { FolderPlusIcon, SquarePenIcon } from 'lucide-react'
 
 type ShellMainProps = PropsWithChildren<{
-	currentSpaceLabel: string
 	activeDetail: EntityDetailRouteState
 	isDrawerOpen: boolean
 	showPreview?: boolean
@@ -51,7 +50,6 @@ const INTERACTIVE_TARGET_SELECTOR = [
 
 export function ShellMain({
 	children,
-	currentSpaceLabel,
 	activeDetail,
 	isDrawerOpen,
 	showPreview = true,
@@ -176,7 +174,6 @@ export function ShellMain({
 
 							<ShellDrawer
 								activeDetail={activeDetail}
-								currentSpaceLabel={currentSpaceLabel}
 								onClose={onCloseDrawer}
 								open={isDrawerOpen}
 							/>

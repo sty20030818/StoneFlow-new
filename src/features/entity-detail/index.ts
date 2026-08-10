@@ -9,8 +9,8 @@
 
 export type {
 	EntityDetailKind,
+	EntityDetailDrawerTarget,
 	EntityDetailNavigationTarget,
-	EntityDetailOpenMode,
 	EntityDetailParseResult,
 	EntityDetailRouteState,
 	EntityDetailTarget,
@@ -32,5 +32,5 @@ export {
 /** 抽屉开关 / 独立页导航控制器。 */
 export { useEntityDetailController } from './model/useEntityDetailController'
 
-/** 壳层挂载的抽屉宿主（按 kind 分发 Task/Project drawer）。 */
+/** 壳层挂载的任务详情抽屉宿主。 */
 export { EntityDetailDrawerHost } from './components/EntityDetailDrawerHost'

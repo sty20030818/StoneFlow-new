@@ -1,37 +1,25 @@
-import { act, renderHook } from '@testing-library/react'
+import { act, renderHook as renderReactHook } from '@testing-library/react'
+import type { ReactNode } from 'react'
 
 import { COMMAND_IDS, type CommandId } from '@/features/command/core'
-import type { Keybinding } from '@/features/command/keybinding'
+import {
+	DEFAULT_KEYBINDINGS,
+	KeybindingRegistry,
+	type Keybinding,
+} from '@/features/command/keybinding'
+import { ShortcutRegistryProvider } from './shortcut-registry-context'
 import { useCommandShortcuts } from './use-command-shortcuts'
 
-const bindings: Keybinding[] = [
-	createBinding(COMMAND_IDS.newQuickTask, [{ key: 'c' }]),
-	createBinding(COMMAND_IDS.newFullTask, [{ key: 'n' }, { key: 't' }]),
-	createBinding(COMMAND_IDS.newStandaloneTask, [{ key: 'n' }, { key: 'i' }]),
-	createBinding(COMMAND_IDS.newProject, [{ key: 'n' }, { key: 'p' }]),
-	createBinding(COMMAND_IDS.newView, [{ key: 'n' }, { key: 'v' }]),
-	createBinding(COMMAND_IDS.openTask, [{ key: 'o' }, { key: 't' }]),
-	createBinding(COMMAND_IDS.openProject, [{ key: 'o' }, { key: 'p' }]),
-	createBinding(COMMAND_IDS.openView, [{ key: 'o' }, { key: 'v' }]),
-	createBinding(COMMAND_IDS.openSpace, [{ key: 'o' }, { key: 's' }]),
-	createBinding(COMMAND_IDS.openRecent, [{ key: 'o' }, { key: 'r' }]),
-	createBinding(COMMAND_IDS.goStandalone, [{ key: 'g' }, { key: 'i' }]),
-	createBinding(COMMAND_IDS.goAllTasks, [{ key: 'g' }, { key: 't' }]),
-	createBinding(COMMAND_IDS.goToday, [{ key: 'g' }, { key: 'd' }]),
-	createBinding(COMMAND_IDS.goUpcoming, [{ key: 'g' }, { key: 'u' }]),
-	createBinding(COMMAND_IDS.goFocus, [{ key: 'g' }, { key: 'f' }]),
-	createBinding(COMMAND_IDS.goViews, [{ key: 'g' }, { key: 'v' }]),
-	createBinding(COMMAND_IDS.goProjects, [{ key: 'g' }, { key: 'p' }]),
-	createBinding(COMMAND_IDS.goArchive, [{ key: 'g' }, { key: 'a' }]),
-	createBinding(COMMAND_IDS.goTrash, [{ key: 'g' }, { key: 'x' }]),
-	createBinding(COMMAND_IDS.openSettings, [{ key: 'g' }, { key: 's' }]),
-	createBinding(COMMAND_IDS.goRecent, [{ key: 'g' }, { key: 'r' }]),
-	createBinding(COMMAND_IDS.openSearch, [{ key: '/' }]),
-	createBinding(COMMAND_IDS.openShortcutHelp, [{ key: '/', meta: true }], true),
-	createBinding(COMMAND_IDS.openShortcutHelp, [{ key: '/', ctrl: true }], true),
-	createBinding(COMMAND_IDS.openCommandMenu, [{ key: 'k', meta: true }], true),
-	createBinding(COMMAND_IDS.openCommandMenu, [{ key: 'k', ctrl: true }], true),
-]
+const bindings = DEFAULT_KEYBINDINGS
+const shortcutRegistry = new KeybindingRegistry(bindings)
+
+function renderHook<Result>(callback: () => Result) {
+	return renderReactHook(callback, {
+		wrapper: ({ children }: { children: ReactNode }) => (
+			<ShortcutRegistryProvider registry={shortcutRegistry}>{children}</ShortcutRegistryProvider>
+		),
+	})
+}
 
 describe('useCommandShortcuts', () => {
 	beforeEach(() => {
@@ -76,7 +64,7 @@ describe('useCommandShortcuts', () => {
 		const onTrigger = vi.fn<(id: CommandId) => void>()
 		renderHook(() => useCommandShortcuts({ bindings, onTrigger }))
 
-		for (const key of ['t', 'i', 'p', 'v']) {
+		for (const key of ['t', 'i', 'p']) {
 			fireKey('n')
 			act(() => {
 				vi.advanceTimersByTime(100)
@@ -90,7 +78,6 @@ describe('useCommandShortcuts', () => {
 		expect(onTrigger).toHaveBeenNthCalledWith(1, COMMAND_IDS.newFullTask)
 		expect(onTrigger).toHaveBeenNthCalledWith(2, COMMAND_IDS.newStandaloneTask)
 		expect(onTrigger).toHaveBeenNthCalledWith(3, COMMAND_IDS.newProject)
-		expect(onTrigger).toHaveBeenNthCalledWith(4, COMMAND_IDS.newView)
 	})
 
 	it('前缀超时后自动取消', () => {
@@ -121,7 +108,7 @@ describe('useCommandShortcuts', () => {
 		const onTrigger = vi.fn<(id: CommandId) => void>()
 		renderHook(() => useCommandShortcuts({ bindings, onTrigger }))
 
-		for (const key of ['i', 't', 'd', 'u', 'f', 'v', 'p', 'a', 'x', 's', 'r']) {
+		for (const key of ['i', 't', 'f', 'v', 'p', 'a', 'x', 's']) {
 			fireKey('g')
 			fireKey(key)
 		}
@@ -131,22 +118,19 @@ describe('useCommandShortcuts', () => {
 
 		expect(onTrigger).toHaveBeenNthCalledWith(1, COMMAND_IDS.goStandalone)
 		expect(onTrigger).toHaveBeenNthCalledWith(2, COMMAND_IDS.goAllTasks)
-		expect(onTrigger).toHaveBeenNthCalledWith(3, COMMAND_IDS.goToday)
-		expect(onTrigger).toHaveBeenNthCalledWith(4, COMMAND_IDS.goUpcoming)
-		expect(onTrigger).toHaveBeenNthCalledWith(5, COMMAND_IDS.goFocus)
-		expect(onTrigger).toHaveBeenNthCalledWith(6, COMMAND_IDS.goViews)
-		expect(onTrigger).toHaveBeenNthCalledWith(7, COMMAND_IDS.goProjects)
-		expect(onTrigger).toHaveBeenNthCalledWith(8, COMMAND_IDS.goArchive)
-		expect(onTrigger).toHaveBeenNthCalledWith(9, COMMAND_IDS.goTrash)
-		expect(onTrigger).toHaveBeenNthCalledWith(10, COMMAND_IDS.openSettings)
-		expect(onTrigger).toHaveBeenNthCalledWith(11, COMMAND_IDS.goRecent)
+		expect(onTrigger).toHaveBeenNthCalledWith(3, COMMAND_IDS.goFocus)
+		expect(onTrigger).toHaveBeenNthCalledWith(4, COMMAND_IDS.goViews)
+		expect(onTrigger).toHaveBeenNthCalledWith(5, COMMAND_IDS.goProjects)
+		expect(onTrigger).toHaveBeenNthCalledWith(6, COMMAND_IDS.goArchive)
+		expect(onTrigger).toHaveBeenNthCalledWith(7, COMMAND_IDS.goTrash)
+		expect(onTrigger).toHaveBeenNthCalledWith(8, COMMAND_IDS.openSettings)
 	})
 
 	it('支持 O 组打开序列', () => {
 		const onTrigger = vi.fn<(id: CommandId) => void>()
 		renderHook(() => useCommandShortcuts({ bindings, onTrigger }))
 
-		for (const key of ['t', 'p', 'v', 's', 'r']) {
+		for (const key of ['t', 'p']) {
 			fireKey('o')
 			fireKey(key)
 		}
@@ -156,9 +140,66 @@ describe('useCommandShortcuts', () => {
 
 		expect(onTrigger).toHaveBeenNthCalledWith(1, COMMAND_IDS.openTask)
 		expect(onTrigger).toHaveBeenNthCalledWith(2, COMMAND_IDS.openProject)
-		expect(onTrigger).toHaveBeenNthCalledWith(3, COMMAND_IDS.openView)
-		expect(onTrigger).toHaveBeenNthCalledWith(4, COMMAND_IDS.openSpace)
-		expect(onTrigger).toHaveBeenNthCalledWith(5, COMMAND_IDS.openRecent)
+	})
+
+	it('未接入命令不会通过默认快捷键触发', () => {
+		const onTrigger = vi.fn<(id: CommandId) => void>()
+		renderHook(() => useCommandShortcuts({ bindings, onTrigger }))
+
+		for (const [prefix, key] of [
+			['n', 'v'],
+			['o', 'v'],
+			['o', 's'],
+			['o', 'r'],
+			['g', 'd'],
+			['g', 'u'],
+			['g', 'r'],
+		] as const) {
+			fireKey(prefix)
+			fireKey(key)
+		}
+		act(() => {
+			vi.runAllTimers()
+		})
+
+		expect(onTrigger).not.toHaveBeenCalled()
+	})
+
+	it('未接入命令不会进入默认 chord 候选', () => {
+		const onTrigger = vi.fn<(id: CommandId) => void>()
+		const onChordStateChange = vi.fn()
+		renderHook(() => useCommandShortcuts({ bindings, onTrigger, onChordStateChange }))
+
+		for (const [prefix, removedKeys] of [
+			['n', ['V']],
+			['o', ['V', 'S', 'R']],
+			['g', ['D', 'U', 'R']],
+		] as const) {
+			fireKey(prefix)
+			const options = onChordStateChange.mock.lastCall?.[0].options ?? []
+			for (const removedKey of removedKeys) {
+				expect(options).not.toEqual(
+					expect.arrayContaining([expect.objectContaining({ display: removedKey })]),
+				)
+			}
+			fireKey('z')
+		}
+	})
+
+	it('hidden 仅用于可执行但不展示的运行时绑定', () => {
+		const onTrigger = vi.fn<(id: CommandId) => void>()
+		const runtimeOnlyBinding: Keybinding = {
+			...createBinding('test.runtimeOnly', [{ key: 'h' }]),
+			display: 'hidden',
+		}
+		renderHook(() => useCommandShortcuts({ bindings: [runtimeOnlyBinding], onTrigger }))
+
+		fireKey('h')
+		act(() => {
+			vi.runAllTimers()
+		})
+
+		expect(onTrigger).toHaveBeenCalledWith('test.runtimeOnly')
 	})
 
 	it('输入态聚焦时忽略 O 组前缀', () => {
@@ -176,10 +217,12 @@ describe('useCommandShortcuts', () => {
 
 	it('保留 / 与 Cmd/Ctrl+K 的统一入口分发', () => {
 		const onTrigger = vi.fn<(id: CommandId) => void>()
-		renderHook(() => useCommandShortcuts({ bindings, onTrigger }))
+		const macHook = renderHook(() => useCommandShortcuts({ bindings, onTrigger, platform: 'mac' }))
 
 		fireKey('/')
 		fireKey('k', document.body, { metaKey: true })
+		macHook.unmount()
+		renderHook(() => useCommandShortcuts({ bindings, onTrigger, platform: 'windows' }))
 		fireKey('k', document.body, { ctrlKey: true })
 		act(() => {
 			vi.runAllTimers()
@@ -192,9 +235,11 @@ describe('useCommandShortcuts', () => {
 
 	it('Cmd/Ctrl+K 打开命令面板时不 preventDefault，避免系统隐藏鼠标', () => {
 		const onTrigger = vi.fn<(id: CommandId) => void>()
-		renderHook(() => useCommandShortcuts({ bindings, onTrigger }))
+		const macHook = renderHook(() => useCommandShortcuts({ bindings, onTrigger, platform: 'mac' }))
 
 		const metaEvent = fireKey('k', document.body, { metaKey: true })
+		macHook.unmount()
+		renderHook(() => useCommandShortcuts({ bindings, onTrigger, platform: 'windows' }))
 		const ctrlEvent = fireKey('k', document.body, { ctrlKey: true })
 		act(() => {
 			vi.runAllTimers()
@@ -213,6 +258,7 @@ describe('useCommandShortcuts', () => {
 				bindings,
 				onTrigger,
 				shouldTrigger: () => false,
+				platform: 'mac',
 			}),
 		)
 
@@ -238,11 +284,13 @@ describe('useCommandShortcuts', () => {
 
 	it('输入态仍允许 Cmd/Ctrl+K', () => {
 		const onTrigger = vi.fn<(id: CommandId) => void>()
-		renderHook(() => useCommandShortcuts({ bindings, onTrigger }))
+		const macHook = renderHook(() => useCommandShortcuts({ bindings, onTrigger, platform: 'mac' }))
 		const input = document.createElement('input')
 		document.body.appendChild(input)
 
 		fireKey('k', input, { metaKey: true })
+		macHook.unmount()
+		renderHook(() => useCommandShortcuts({ bindings, onTrigger, platform: 'windows' }))
 		fireKey('k', input, { ctrlKey: true })
 		act(() => {
 			vi.runAllTimers()
@@ -266,10 +314,14 @@ describe('useCommandShortcuts', () => {
 				options: expect.arrayContaining([
 					expect.objectContaining({ display: 'I' }),
 					expect.objectContaining({ display: 'T' }),
-					expect.objectContaining({ display: 'D' }),
 				]),
 			}),
 		)
+		for (const removedKey of ['D', 'U', 'R']) {
+			expect(onChordStateChange.mock.lastCall?.[0].options).not.toEqual(
+				expect.arrayContaining([expect.objectContaining({ display: removedKey })]),
+			)
+		}
 	})
 
 	it('命中、取消和超时后清空 chord 状态', () => {
@@ -378,12 +430,18 @@ function createBinding(
 	commandId: CommandId,
 	sequence: Keybinding['sequence'],
 	allowInEditable = false,
+	preventDefault = sequence.some(
+		(stroke) =>
+			Boolean(stroke.mod || stroke.meta || stroke.ctrl || stroke.alt) ||
+			['Enter', 'Delete', 'Backspace', 'Escape', 'Space'].includes(stroke.key),
+	),
 ): Keybinding {
 	return {
 		commandId,
 		sequence,
 		scope: 'global',
-		preventDefault: true,
+		display: 'primary',
+		preventDefault,
 		allowInEditable,
 	}
 }

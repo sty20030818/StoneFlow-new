@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 
 import { openSection, openStartupFallback } from '@/app/navigation'
+import { COMMAND_IDS, CommandActionTooltip } from '@/features/command'
 import { SHELL_FOOTER_ITEMS, SHELL_NAV_ITEMS, type ShellProjectLink } from '@/layout/config'
 import {
 	isAllScope,
@@ -30,6 +31,7 @@ import { useDangerConfirm } from '@/features/danger-confirm'
 import { cn } from '@/shared/lib/utils'
 import { AppScrollArea } from '@/shared/components/AppScrollArea'
 import { Button } from '@/shared/components/base/button'
+import { ActionTooltip } from '@/shared/components/tooltip'
 import {
 	ContextMenu,
 	ContextMenuContent,
@@ -131,7 +133,7 @@ export function ShellSidebar({
 	const [editorMode, setEditorMode] = useState<'create' | 'edit'>('create')
 	const [editorOpen, setEditorOpen] = useState(false)
 	const [spaceSwitcherMenuOpen, setSpaceSwitcherMenuOpen] = useState(false)
-	const [spaceSwitcherTooltipSuppressed, setSpaceSwitcherTooltipSuppressed] = useState(false)
+	const [spaceSwitcherTooltipOpen, setSpaceSwitcherTooltipOpen] = useState(false)
 	const [dropdownError, setDropdownError] = useState<string | null>(null)
 	const fallbackSpaceId =
 		currentSpaceId ?? spaces.find((space) => space.isDefault)?.id ?? spaces[0]?.id ?? null
@@ -261,20 +263,10 @@ export function ShellSidebar({
 
 	const handleSpaceSwitcherMenuOpenChange = useCallback((open: boolean) => {
 		setSpaceSwitcherMenuOpen(open)
-		setSpaceSwitcherTooltipSuppressed(true)
+		if (open) {
+			setSpaceSwitcherTooltipOpen(false)
+		}
 	}, [])
-
-	const handleSpaceSwitcherPointerEnter = useCallback(() => {
-		if (!spaceSwitcherMenuOpen && !editorOpen) {
-			setSpaceSwitcherTooltipSuppressed(false)
-		}
-	}, [editorOpen, spaceSwitcherMenuOpen])
-
-	const handleSpaceSwitcherPointerLeave = useCallback(() => {
-		if (!spaceSwitcherMenuOpen && !editorOpen) {
-			setSpaceSwitcherTooltipSuppressed(false)
-		}
-	}, [editorOpen, spaceSwitcherMenuOpen])
 
 	const handleSpaceEditorSubmit = useCallback(
 		async (input: { name: string; iconKey: string; colorKey: string }) => {
@@ -326,39 +318,41 @@ export function ShellSidebar({
 										open={spaceSwitcherMenuOpen}
 										onOpenChange={handleSpaceSwitcherMenuOpenChange}
 									>
-										<DropdownMenuTrigger asChild>
-											<SidebarMenuButton
-												aria-label='切换 Space'
-												onPointerEnter={handleSpaceSwitcherPointerEnter}
-												onPointerLeave={handleSpaceSwitcherPointerLeave}
-												size='lg'
-												tooltip={
-													spaceSwitcherMenuOpen || editorOpen || spaceSwitcherTooltipSuppressed
-														? undefined
-														: currentScopeLabel
-												}
-											>
-												{allScope ? (
-													<SpaceIconBadge
-														visual={{
-															label: '所有空间',
-															icon: OrbitIcon,
-															iconClassName: 'text-[#8b5cf6]',
-															iconBadgeClassName: 'bg-[#8b5cf6]',
-															swatchClassName: 'bg-[#8b5cf6]',
-														}}
-													/>
-												) : activeSpaceVisual ? (
-													<SpaceIconBadge visual={activeSpaceVisual} />
-												) : null}
-												<span className='min-w-0 flex-1 truncate text-left font-semibold'>
-													{currentScopeLabel}
-												</span>
-												<ChevronsUpDownIcon
-													className={`${shellChromeIconSubtleClass} group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:hidden group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:hidden`}
-												/>
-											</SidebarMenuButton>
-										</DropdownMenuTrigger>
+										<ActionTooltip
+											onOpenChange={(open) =>
+												setSpaceSwitcherTooltipOpen(open && !spaceSwitcherMenuOpen && !editorOpen)
+											}
+											open={spaceSwitcherTooltipOpen && !spaceSwitcherMenuOpen && !editorOpen}
+										>
+											<ActionTooltip.Trigger asChild>
+												<DropdownMenuTrigger asChild>
+													<SidebarMenuButton aria-label='切换 Space' size='lg'>
+														{allScope ? (
+															<SpaceIconBadge
+																visual={{
+																	label: '所有空间',
+																	icon: OrbitIcon,
+																	iconClassName: 'text-[#8b5cf6]',
+																	iconBadgeClassName: 'bg-[#8b5cf6]',
+																	swatchClassName: 'bg-[#8b5cf6]',
+																}}
+															/>
+														) : activeSpaceVisual ? (
+															<SpaceIconBadge visual={activeSpaceVisual} />
+														) : null}
+														<span className='min-w-0 flex-1 truncate text-left font-semibold'>
+															{currentScopeLabel}
+														</span>
+														<ChevronsUpDownIcon
+															className={`${shellChromeIconSubtleClass} group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:hidden group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:hidden`}
+														/>
+													</SidebarMenuButton>
+												</DropdownMenuTrigger>
+											</ActionTooltip.Trigger>
+											<ActionTooltip.Content side='right' sideOffset={8}>
+												<ActionTooltip.Row label={currentScopeLabel} />
+											</ActionTooltip.Content>
+										</ActionTooltip>
 										<DropdownMenuContent
 											align='start'
 											side={isMobile ? 'bottom' : 'right'}
@@ -549,6 +543,7 @@ export function ShellSidebar({
 										{visibleNavItems.map((item) => (
 											<MainNavSidebarMenuItem
 												badge={item.badge}
+												commandId={item.commandId}
 												footerItems={footerCustomizeItems}
 												icon={item.icon}
 												itemKey={item.settingsKey}
@@ -569,16 +564,22 @@ export function ShellSidebar({
 								<SidebarGroup className='group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:hidden group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:hidden'>
 									<div className={sidebarSectionHeaderRowClass}>
 										<SidebarGroupLabel className='px-0'>项目列表</SidebarGroupLabel>
-										<Button
-											aria-label='创建项目'
-											className='size-6 hover:bg-sf-shell-hover-strong focus-visible:bg-sf-shell-hover-strong'
-											onClick={() => onOpenProjectCreateDialog()}
-											size='icon'
-											type='button'
-											variant='ghost'
+										<CommandActionTooltip
+											commandId={COMMAND_IDS.newProject}
+											contentProps={{ side: 'right', sideOffset: 8 }}
+											label='创建项目'
 										>
-											<PlusIcon />
-										</Button>
+											<Button
+												aria-label='创建项目'
+												className='size-6 hover:bg-sf-shell-hover-strong focus-visible:bg-sf-shell-hover-strong'
+												onClick={() => onOpenProjectCreateDialog()}
+												size='icon'
+												type='button'
+												variant='ghost'
+											>
+												<PlusIcon />
+											</Button>
+										</CommandActionTooltip>
 									</div>
 
 									{!settings.projectSection.collapsed ? (
@@ -622,6 +623,7 @@ export function ShellSidebar({
 										<SidebarMenuItem key={item.key}>
 											<SidebarNavRow
 												badge={item.badge}
+												commandId={item.commandId}
 												contextMenuContent={
 													<SidebarItemContextMenu
 														footerItems={footerCustomizeItems}

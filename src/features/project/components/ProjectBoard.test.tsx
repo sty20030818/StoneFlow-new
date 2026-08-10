@@ -1,9 +1,10 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, screen } from '@testing-library/react'
 import { useState, type ReactElement } from 'react'
 
 import { DangerConfirmProvider } from '@/features/danger-confirm'
 import { ProjectBoard } from '@/features/project/components/ProjectBoard'
 import type { ProjectOverviewItem } from '@/shared/types'
+import { renderWithInteractionProviders as render } from '@/test/TestInteractionProviders'
 
 describe('ProjectBoard', () => {
 	it('加载中不显示空态文案', () => {
@@ -63,10 +64,10 @@ describe('ProjectBoard', () => {
 			/>,
 		)
 
-		expect(screen.getByRole('button', { name: '切换 进行中项目 分区折叠状态' })).toBeInTheDocument()
-		expect(screen.getByRole('button', { name: '切换 已完成项目 分区折叠状态' })).toBeInTheDocument()
-		expect(screen.getByRole('button', { name: '切换 已归档项目 分区折叠状态' })).toBeInTheDocument()
-		expect(screen.getByText('进行中项目', { selector: 'p' })).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: '折叠 进行中项目' })).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: '折叠 已完成项目' })).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: '折叠 已归档项目' })).toBeInTheDocument()
+		expect(screen.getAllByText('进行中项目')).not.toHaveLength(0)
 		expect(screen.getByText('已完成项目 A')).toBeInTheDocument()
 		expect(screen.getByText('已归档项目 A')).toBeInTheDocument()
 		expect(screen.queryByText('个活跃')).not.toBeInTheDocument()
@@ -141,12 +142,12 @@ describe('ProjectBoard', () => {
 		const row = screen.getByRole('button', { name: '打开项目 项目 A' })
 
 		fireEvent.mouseEnter(row)
-		expect(row.className).toContain('bg-sf-list-row-hover')
-		expect(row.className).not.toContain('border-sf-border-subtle')
+		expect(row).toHaveClass('bg-sf-list-row-hover')
+		expect(row).not.toHaveClass('border-sf-border-subtle')
 
 		fireEvent.mouseLeave(row)
-		expect(row.className).not.toContain('bg-sf-list-row-hover')
-		expect(row.className).not.toContain('border-sf-border-subtle')
+		expect(row).not.toHaveClass('bg-sf-list-row-hover')
+		expect(row).not.toHaveClass('border-sf-border-subtle')
 	})
 })
 

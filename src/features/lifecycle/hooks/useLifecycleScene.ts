@@ -17,11 +17,7 @@ import {
 	type BulkActionId,
 } from '@/features/bulk-action'
 import { useEntityDetailController } from '@/features/entity-detail'
-import {
-	useEntitySelection,
-	useEntitySelectionEscape,
-	useRegisterCommandSelection,
-} from '@/features/selection'
+import { useEntitySelection, useRegisterCommandSelection } from '@/features/selection'
 import type { LifecycleEntry, LifecycleMode } from '@/shared/types'
 import { normalizeTauriError } from '@/shared/lib/normalize-tauri-error'
 
@@ -92,11 +88,6 @@ export function useLifecycleScene(mode: LifecycleMode) {
 		[clearEntrySelection, mode, selectionSnapshot.ids, sliceItems],
 	)
 	useRegisterCommandSelection(commandSelection)
-	useEntitySelectionEscape({
-		hasSelection: selectedCount > 0,
-		clearSelection: clearEntrySelection,
-	})
-
 	const showSpacePill = scope.type === 'all'
 	const scopeItems = showSpacePill
 		? sliceItems
@@ -135,12 +126,7 @@ export function useLifecycleScene(mode: LifecycleMode) {
 			return
 		}
 
-		if (entry.entityType === 'project') {
-			openEntityDrawer({ kind: 'project', id: entry.id })
-			return
-		}
-
-		if (entry.spaceId) {
+		if (entry.entityType === 'space' && entry.spaceId) {
 			void navigate({
 				to: openSection(
 					{ type: 'space', spaceId: entry.spaceId },

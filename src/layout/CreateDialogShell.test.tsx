@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { fireEvent, render, screen } from '@testing-library/react'
 
+import { TooltipProvider } from '@/shared/components/base/tooltip'
 import type { Space } from '@/shared/types'
 import { CreateDialogShell } from './CreateDialogShell'
 
@@ -47,17 +48,19 @@ function renderCreateDialogShell({
 	selectedSpaceId: string | null
 }) {
 	return render(
-		<CreateDialogShell
-			description='创建一个新任务'
-			onClose={vi.fn()}
-			onSelectSpace={onSelectSpace}
-			open
-			selectedSpaceId={selectedSpaceId}
-			spaces={spaces}
-			title='新建任务'
-		>
-			<div>表单内容</div>
-		</CreateDialogShell>,
+		<TooltipProvider>
+			<CreateDialogShell
+				description='创建一个新任务'
+				onClose={vi.fn()}
+				onSelectSpace={onSelectSpace}
+				open
+				selectedSpaceId={selectedSpaceId}
+				spaces={spaces}
+				title='新建任务'
+			>
+				<div>表单内容</div>
+			</CreateDialogShell>
+		</TooltipProvider>,
 	)
 }
 

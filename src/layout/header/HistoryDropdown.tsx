@@ -1,10 +1,11 @@
-import { memo } from 'react'
+import { memo, useState } from 'react'
 
 import { getSpaceVisual } from '@/features/space'
 import type { ShellRouteHistoryEntry } from '@/app/navigation'
 import type { Space } from '@/shared/types'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/components/base/button'
+import { ActionTooltip } from '@/shared/components/tooltip'
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -36,18 +37,38 @@ type HistoryDropdownProps = {
 }
 
 export function HistoryDropdown({ entries, spaces, onNavigate }: HistoryDropdownProps) {
+	const [menuOpen, setMenuOpen] = useState(false)
+	const [tooltipOpen, setTooltipOpen] = useState(false)
+
+	function handleMenuOpenChange(nextOpen: boolean) {
+		setMenuOpen(nextOpen)
+		if (nextOpen) {
+			setTooltipOpen(false)
+		}
+	}
+
 	return (
-		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<Button
-					aria-label='打开历史记录'
-					className={`${shellChromeNavCircleButtonClass} ${shellChromeNavCircleButtonExpandedClass}`}
-					size='icon-sm'
-					variant='ghost'
-				>
-					<HistoryIcon className='size-3.5' />
-				</Button>
-			</DropdownMenuTrigger>
+		<DropdownMenu onOpenChange={handleMenuOpenChange} open={menuOpen}>
+			<ActionTooltip
+				onOpenChange={(nextOpen) => setTooltipOpen(menuOpen ? false : nextOpen)}
+				open={tooltipOpen}
+			>
+				<ActionTooltip.Trigger asChild>
+					<DropdownMenuTrigger asChild>
+						<Button
+							aria-label='打开历史记录'
+							className={`${shellChromeNavCircleButtonClass} ${shellChromeNavCircleButtonExpandedClass}`}
+							size='icon-sm'
+							variant='ghost'
+						>
+							<HistoryIcon className='size-3.5' />
+						</Button>
+					</DropdownMenuTrigger>
+				</ActionTooltip.Trigger>
+				<ActionTooltip.Content>
+					<ActionTooltip.Row label='打开历史记录' />
+				</ActionTooltip.Content>
+			</ActionTooltip>
 			<DropdownMenuContent align='start' className='min-w-68'>
 				<DropdownMenuLabel>最近浏览</DropdownMenuLabel>
 				<DropdownMenuGroup>

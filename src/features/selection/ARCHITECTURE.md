@@ -21,7 +21,7 @@ CommandSelectionProvider
 ## Public
 
 - `CommandSelectionProvider` · `useRegisterCommandSelection`
-- `useEntitySelection` · `useEntitySelectionEscape`
+- `useEntitySelection` · `EntityRowShortcutScope`（含 Registry 驱动的 Escape 清空）
 - 行快捷键作用域组件
 
 **不在本包：** `build*CommandSelection` → 各域 public

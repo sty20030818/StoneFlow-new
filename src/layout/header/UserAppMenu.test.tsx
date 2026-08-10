@@ -1,23 +1,30 @@
-import { fireEvent, screen } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { render } from '@testing-library/react'
 
 import { UserAppMenu } from '@/layout/header/UserAppMenu'
-import { COMMAND_IDS } from '@/features/command'
+import {
+	COMMAND_IDS,
+	DEFAULT_KEYBINDINGS,
+	KeybindingRegistry,
+	ShortcutRegistryProvider,
+} from '@/features/command'
 import { TooltipProvider } from '@/shared/components/base/tooltip'
+
+const TEST_SHORTCUT_REGISTRY = new KeybindingRegistry(DEFAULT_KEYBINDINGS)
 
 describe('UserAppMenu', () => {
 	it('点击头像打开应用菜单，并暴露设置与快捷键项', async () => {
 		const onRunCommand = vi.fn()
 		const onOpenChangelog = vi.fn()
 		const onOpenAbout = vi.fn()
-		render(
-			<TooltipProvider>
+		renderUserAppMenu(
+			<>
 				<UserAppMenu
 					onOpenAbout={onOpenAbout}
 					onOpenChangelog={onOpenChangelog}
 					onRunCommand={onRunCommand}
 				/>
-			</TooltipProvider>,
+			</>,
 		)
 
 		fireEvent.pointerDown(screen.getByRole('button', { name: '应用菜单' }))
@@ -25,11 +32,8 @@ describe('UserAppMenu', () => {
 		expect(await screen.findByRole('menuitem', { name: /设置/ })).toBeInTheDocument()
 		expect(screen.getByRole('menuitem', { name: /键盘快捷键/ })).toBeInTheDocument()
 		expect(screen.getByRole('menuitem', { name: /更新日志/ })).toBeInTheDocument()
-		// Radix 菜单项用 aria-disabled / data-disabled，不是 native disabled
-		expect(screen.getByRole('menuitem', { name: /用户资料/ })).toHaveAttribute(
-			'aria-disabled',
-			'true',
-		)
+		expect(screen.queryByRole('menuitem', { name: /用户资料/ })).not.toBeInTheDocument()
+		expect(screen.queryByRole('menuitem', { name: /诊断与支持/ })).not.toBeInTheDocument()
 		expect(screen.getByRole('menuitem', { name: /检查更新/ })).not.toHaveAttribute(
 			'aria-disabled',
 			'true',
@@ -44,14 +48,14 @@ describe('UserAppMenu', () => {
 		const onRunCommand = vi.fn()
 		const onOpenChangelog = vi.fn()
 		const onOpenAbout = vi.fn()
-		render(
-			<TooltipProvider>
+		renderUserAppMenu(
+			<>
 				<UserAppMenu
 					onOpenAbout={onOpenAbout}
 					onOpenChangelog={onOpenChangelog}
 					onRunCommand={onRunCommand}
 				/>
-			</TooltipProvider>,
+			</>,
 		)
 
 		fireEvent.pointerDown(screen.getByRole('button', { name: '应用菜单' }))
@@ -70,4 +74,26 @@ describe('UserAppMenu', () => {
 		fireEvent.click(await screen.findByRole('menuitem', { name: /关于 StoneFlow/ }))
 		expect(onOpenAbout).toHaveBeenCalledTimes(1)
 	})
+
+	it('打开应用菜单时关闭 trigger Tooltip', async () => {
+		renderUserAppMenu(
+			<UserAppMenu onOpenAbout={vi.fn()} onOpenChangelog={vi.fn()} onRunCommand={vi.fn()} />,
+		)
+
+		const trigger = screen.getByRole('button', { name: '应用菜单' })
+		fireEvent.focus(trigger)
+		expect(await screen.findByRole('tooltip')).toHaveTextContent('应用菜单')
+
+		fireEvent.pointerDown(trigger)
+		expect(await screen.findByRole('menu')).toBeInTheDocument()
+		await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument())
+	})
 })
+
+function renderUserAppMenu(ui: React.ReactNode) {
+	return render(
+		<ShortcutRegistryProvider registry={TEST_SHORTCUT_REGISTRY}>
+			<TooltipProvider>{ui}</TooltipProvider>
+		</ShortcutRegistryProvider>,
+	)
+}

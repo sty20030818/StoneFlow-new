@@ -3,7 +3,7 @@ import { useDangerConfirm } from '@/features/danger-confirm'
 import { formatShortDate } from '@/shared/lib/date'
 import {
 	createProjectParentMetadataDropdownProps,
-	MetadataDateButton,
+	MetadataFieldValue,
 	MetadataFieldDropdown,
 	projectDateMetadataIcons,
 } from '@/features/metadata-fields'
@@ -109,6 +109,7 @@ export function ProjectRowAdapter({
 								ariaLabel={`选择项目 ${project.name}`}
 								checked={isSelected}
 								disabled={rowState.isPending}
+								disabledReason='正在更新项目，暂时无法更改选择'
 								visible={isSelected || isHovered}
 								onCheckedChange={() => actions.onToggleSelected?.(project.id)}
 							/>
@@ -137,8 +138,8 @@ export function ProjectRowAdapter({
 							<MetadataFieldDropdown
 								compact
 								disabled={rowState.isPending}
+								disabledReason='正在更新项目，暂时无法修改父项目'
 								fieldKey='parentProject'
-								headerShortcut={projectPlacementDropdownProps.headerShortcut}
 								label='父项目'
 								menuLabel={projectPlacementDropdownProps.menuLabel}
 								options={projectPlacementDropdownProps.options}
@@ -156,15 +157,14 @@ export function ProjectRowAdapter({
 								}}
 							/>
 						) : null}
-						<MetadataDateButton
-							ariaLabel={`截止 ${project.name}`}
-							compact
-							formatter={formatShortDate}
-							icon={projectDateMetadataIcons.due}
-							labelPrefix='截止'
-							stopPropagation
-							value={project.dueAt}
-						/>
+						{project.dueAt ? (
+							<MetadataFieldValue
+								ariaLabel={`截止 ${project.name}`}
+								compact
+								icon={projectDateMetadataIcons.due}
+								label={`截止 ${formatShortDate(project.dueAt)}`}
+							/>
+						) : null}
 						<CreatedAtCell formatter={formatShortDate} value={project.createdAt} />
 					</RowShell.Fields>
 				</RowShell.Right>

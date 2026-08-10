@@ -2,14 +2,7 @@
  * Board 分区 sticky 顶替：scroll 帧写 DOM；index 变才 setState。
  * 换分区时禁止先把旧标题 transform 置 0（会闪）。
  */
-import {
-	useCallback,
-	useEffect,
-	useLayoutEffect,
-	useRef,
-	useState,
-	type RefObject,
-} from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
 
 import { buildTaskBoardStickyPush } from '@/features/task/model/taskBoardModel'
 
@@ -114,8 +107,7 @@ export function useTaskBoardSticky({
 		}
 	}, [applyStickyDom, enabled, scrollViewportRef, stickyIndexes, itemOffsets])
 
-	const stickyHeaderKey =
-		stickyIndexes.length > 0 ? `sticky:${stickyActiveIndex}` : 'sticky:none'
+	const stickyHeaderKey = stickyIndexes.length > 0 ? `sticky:${stickyActiveIndex}` : 'sticky:none'
 
 	useLayoutEffect(() => {
 		stickyRenderedIndexRef.current = stickyActiveIndex

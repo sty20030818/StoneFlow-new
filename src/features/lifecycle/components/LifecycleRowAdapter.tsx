@@ -54,7 +54,10 @@ export function LifecycleRowAdapter({
 	const targetEntries = contextEntries && contextEntries.length > 0 ? contextEntries : [entry]
 	const isBulkContext = targetEntries.length > 1
 	const canOpenDetail =
-		!isBulkContext && mode === 'archive' && typeof actions.onOpenDetail === 'function'
+		!isBulkContext &&
+		mode === 'archive' &&
+		entry.entityType !== 'project' &&
+		typeof actions.onOpenDetail === 'function'
 	const createdAtValue = mode === 'archive' ? entry.archivedAt : entry.deletedAt
 	const isHovered = rowState.isHovered ?? false
 	const hoverSource = rowState.hoverSource ?? null
@@ -126,6 +129,7 @@ export function LifecycleRowAdapter({
 							ariaLabel={`选择 ${entry.title}`}
 							checked={rowState.isSelected}
 							disabled={rowState.isPending}
+							disabledReason='正在处理该条目，暂时无法更改选择'
 							visible={rowState.isSelected || isHovered}
 							onCheckedChange={actions.onToggleSelected}
 						/>
