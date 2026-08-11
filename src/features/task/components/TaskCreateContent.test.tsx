@@ -31,6 +31,20 @@ describe('TaskCreateContent', () => {
 		createTaskMock.mockResolvedValue(createTaskDetail())
 	})
 
+	it('标题为空时禁用创建，但仍展示创建快捷键', async () => {
+		renderTaskCreate()
+
+		const button = screen.getByRole('button', { name: '创建任务' })
+		expect(button).toBeDisabled()
+		const trigger = button.closest('[data-slot="disabled-command-action-tooltip-trigger"]')
+		fireEvent.focus(trigger!)
+
+		const tooltip = await screen.findByRole('tooltip')
+		expect(tooltip).toHaveTextContent('创建任务')
+		expect(tooltip).not.toHaveTextContent('请先填写任务标题')
+		expect(tooltip.querySelector('[data-slot="action-tooltip-shortcut"]')).toBeInTheDocument()
+	})
+
 	it('勾选创建更多后，普通创建会保留元数据并自动关闭开关', async () => {
 		renderTaskCreate()
 

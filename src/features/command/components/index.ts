@@ -1,9 +1,15 @@
 export { ChordHint } from './ChordHint'
-export { CommandActionTooltip, CommandShortcut, CommandTooltipRow } from './CommandActionTooltip'
+export {
+	CommandActionTooltip,
+	CommandShortcut,
+	CommandTooltipRow,
+	DisabledCommandActionTooltip,
+} from './CommandActionTooltip'
 export type {
 	CommandActionTooltipProps,
 	CommandShortcutProps,
 	CommandTooltipRowProps,
+	DisabledCommandActionTooltipProps,
 } from './CommandActionTooltip'
 export { CommandMenu } from './CommandMenu'
 export type { CommandMenuProject } from './CommandMenu'

@@ -37,10 +37,7 @@ export function PageFilterButton({ className }: PageFilterButtonProps) {
 		})
 	}, [filterUi, pageFilter.actions])
 
-	const hasActive = filterUi
-		? !filterUi.session.isEmpty || filterUi.session.dirty
-		: pageFilter.state.hasActiveFilters
-	const label = hasActive ? '筛选（已启用）' : '筛选'
+	const label = '筛选'
 
 	const trigger = (
 		<CommandActionTooltip
@@ -52,7 +49,6 @@ export function PageFilterButton({ className }: PageFilterButtonProps) {
 			<Button
 				aria-label={label}
 				className={className}
-				data-active={hasActive ? 'true' : undefined}
 				size='icon-sm'
 				type='button'
 				variant='outline'
@@ -73,7 +69,6 @@ export function PageFilterButton({ className }: PageFilterButtonProps) {
 				<Button
 					aria-label={label}
 					className={className}
-					data-active={hasActive ? 'true' : undefined}
 					onClick={() => {
 						setTooltipOpen(false)
 						pageFilter.actions.openFilterMenu()

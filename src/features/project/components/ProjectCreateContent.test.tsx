@@ -20,6 +20,20 @@ describe('ProjectCreateContent', () => {
 		createProjectMock.mockResolvedValue({ id: 'project-created' })
 	})
 
+	it('名称为空时禁用创建，但仍展示创建快捷键', async () => {
+		renderProjectCreate()
+
+		const button = screen.getByRole('button', { name: '创建项目' })
+		expect(button).toBeDisabled()
+		const trigger = button.closest('[data-slot="disabled-command-action-tooltip-trigger"]')
+		fireEvent.focus(trigger!)
+
+		const tooltip = await screen.findByRole('tooltip')
+		expect(tooltip).toHaveTextContent('创建项目')
+		expect(tooltip).not.toHaveTextContent('请先填写项目名称')
+		expect(tooltip.querySelector('[data-slot="action-tooltip-shortcut"]')).toBeInTheDocument()
+	})
+
 	it('勾选创建更多后提交会清空名称描述、保留弹窗并显示计数', async () => {
 		const onCreated = vi.fn()
 		renderProjectCreate({ onCreated })

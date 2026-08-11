@@ -99,6 +99,14 @@ type CommandActionTooltipProps = TooltipRootControlProps &
 		scope?: KeybindingScope
 	}
 
+type DisabledCommandActionTooltipProps = TooltipRootControlProps & {
+	children: React.ReactElement
+	commandId: CommandId
+	contentProps?: Omit<React.ComponentProps<typeof ActionTooltip.Content>, 'children'>
+	label: string
+	scope?: KeybindingScope
+}
+
 /**
  * Command 绑定操作的标准 Tooltip。
  * 顶层剩余属性会经 Slot 转发到真实 trigger，因此可安全作为 Dropdown/Popover 的 asChild 子节点。
@@ -141,5 +149,32 @@ const CommandActionTooltip = React.forwardRef<HTMLElement, CommandActionTooltipP
 	},
 )
 
-export { CommandActionTooltip, CommandShortcut, CommandTooltipRow }
-export type { CommandActionTooltipProps, CommandShortcutProps, CommandTooltipRowProps }
+/** 让原生 disabled 控件仍可 hover / focus，同时复用同一命令提示内容。 */
+function DisabledCommandActionTooltip({
+	children,
+	label,
+	...tooltipProps
+}: DisabledCommandActionTooltipProps) {
+	return (
+		<CommandActionTooltip {...tooltipProps} label={label}>
+			<span
+				aria-disabled='true'
+				aria-label={label}
+				className='inline-flex max-w-full cursor-not-allowed'
+				data-slot='disabled-command-action-tooltip-trigger'
+				role='group'
+				tabIndex={0}
+			>
+				{children}
+			</span>
+		</CommandActionTooltip>
+	)
+}
+
+export { CommandActionTooltip, CommandShortcut, CommandTooltipRow, DisabledCommandActionTooltip }
+export type {
+	CommandActionTooltipProps,
+	CommandShortcutProps,
+	CommandTooltipRowProps,
+	DisabledCommandActionTooltipProps,
+}

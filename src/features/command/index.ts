@@ -73,6 +73,7 @@ export {
 	CommandMenu,
 	CommandShortcut,
 	CommandTooltipRow,
+	DisabledCommandActionTooltip,
 	ShortcutTokens,
 	ShortcutHelp,
 } from './components'
@@ -81,6 +82,7 @@ export type {
 	CommandActionTooltipProps,
 	CommandShortcutProps,
 	CommandTooltipRowProps,
+	DisabledCommandActionTooltipProps,
 } from './components'
 
 export type { CommandMenuMode } from './components'

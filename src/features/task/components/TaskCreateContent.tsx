@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from 'react'
 import { FormProvider, useController } from 'react-hook-form'
 
 import { useEntityDetailController } from '@/features/entity-detail'
-import { COMMAND_IDS, CommandActionTooltip } from '@/features/command'
+import { COMMAND_IDS, CommandActionTooltip, DisabledCommandActionTooltip } from '@/features/command'
 import { MetadataDateDropdown, taskDateMetadataIcons } from '@/features/metadata-fields'
 import type { ProjectOption } from '@/features/project'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
@@ -20,7 +20,6 @@ import { Input } from '@/shared/components/base/input'
 import { Switch } from '@/shared/components/base/switch'
 import { Textarea } from '@/shared/components/base/textarea'
 import { CreateModalContent } from '@/shared/components/create-modal-content'
-import { DisabledActionTooltip } from '@/shared/components/tooltip'
 import {
 	buildTaskCreateDefaultValues,
 	taskCreateSchema,
@@ -114,13 +113,6 @@ export function TaskCreateContent({
 	const hasPlacementTarget =
 		placement === 'project' ? projectId.trim().length > 0 : spaceId.trim().length > 0
 	const canSubmit = !isSubmitting && titleField.value.trim().length > 0 && hasPlacementTarget
-	const submitDisabledReason = isSubmitting
-		? '正在创建任务'
-		: titleField.value.trim().length === 0
-			? '请先填写任务标题'
-			: !hasPlacementTarget
-				? '请先选择任务归属'
-				: null
 
 	const resetFieldsOnly = useCallback(() => {
 		const currentValues = form.getValues()
@@ -287,14 +279,14 @@ export function TaskCreateContent({
 							/>
 							创建更多
 						</div>
-						{submitDisabledReason ? (
-							<DisabledActionTooltip label='创建任务' reason={submitDisabledReason}>
-								{submitButton}
-							</DisabledActionTooltip>
-						) : (
+						{canSubmit ? (
 							<CommandActionTooltip commandId={COMMAND_IDS.saveOrSubmit} label='创建任务'>
 								{submitButton}
 							</CommandActionTooltip>
+						) : (
+							<DisabledCommandActionTooltip commandId={COMMAND_IDS.saveOrSubmit} label='创建任务'>
+								{submitButton}
+							</DisabledCommandActionTooltip>
 						)}
 					</div>
 				</CreateModalContent.Footer>

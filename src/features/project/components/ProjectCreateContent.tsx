@@ -3,7 +3,7 @@ import { FormProvider, useController } from 'react-hook-form'
 
 import { useCreateProjectMutation } from '../hooks/project.mutations'
 import type { ProjectDetail } from '../model/types'
-import { COMMAND_IDS, CommandActionTooltip } from '@/features/command'
+import { COMMAND_IDS, CommandActionTooltip, DisabledCommandActionTooltip } from '@/features/command'
 import { useSubmitTargetFromForm, type SubmitIntent } from '@/features/submit'
 import { normalizeSubmitError, useZodForm } from '@/shared/form'
 import { Button } from '@/shared/components/base/button'
@@ -11,7 +11,6 @@ import { Input } from '@/shared/components/base/input'
 import { Switch } from '@/shared/components/base/switch'
 import { Textarea } from '@/shared/components/base/textarea'
 import { CreateModalContent } from '@/shared/components/create-modal-content'
-import { DisabledActionTooltip } from '@/shared/components/tooltip'
 import {
 	buildProjectCreateDefaultValues,
 	projectCreateSchema,
@@ -60,13 +59,6 @@ export function ProjectCreateContent({
 	}, [form])
 
 	const canSubmit = !isSubmitting && Boolean(selectedSpaceId) && nameField.value.trim().length > 0
-	const submitDisabledReason = isSubmitting
-		? '正在创建项目'
-		: nameField.value.trim().length === 0
-			? '请先填写项目名称'
-			: !selectedSpaceId
-				? '请先选择所属 Space'
-				: null
 
 	const submitProject = useCallback(
 		async (intent: SubmitIntent = 'default') => {
@@ -175,14 +167,14 @@ export function ProjectCreateContent({
 							/>
 							创建更多
 						</div>
-						{submitDisabledReason ? (
-							<DisabledActionTooltip label='创建项目' reason={submitDisabledReason}>
-								{submitButton}
-							</DisabledActionTooltip>
-						) : (
+						{canSubmit ? (
 							<CommandActionTooltip commandId={COMMAND_IDS.saveOrSubmit} label='创建项目'>
 								{submitButton}
 							</CommandActionTooltip>
+						) : (
+							<DisabledCommandActionTooltip commandId={COMMAND_IDS.saveOrSubmit} label='创建项目'>
+								{submitButton}
+							</DisabledCommandActionTooltip>
 						)}
 					</div>
 				</CreateModalContent.Footer>
