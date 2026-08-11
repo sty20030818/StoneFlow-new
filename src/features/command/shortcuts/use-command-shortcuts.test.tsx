@@ -308,19 +308,14 @@ describe('useCommandShortcuts', () => {
 
 		fireKey('g')
 
-		expect(onChordStateChange).toHaveBeenLastCalledWith(
-			expect.objectContaining({
-				prefixDisplay: 'G',
-				options: expect.arrayContaining([
-					expect.objectContaining({ display: 'I' }),
-					expect.objectContaining({ display: 'T' }),
-				]),
-			}),
+		const session = onChordStateChange.mock.lastCall?.[0]
+		const optionKeys = session?.options.map(
+			(option: { tokens: Array<{ value: string }> }) => option.tokens[0]?.value,
 		)
+		expect(session?.prefixTokens).toEqual([{ type: 'key', value: 'G' }])
+		expect(optionKeys).toEqual(expect.arrayContaining(['I', 'T']))
 		for (const removedKey of ['D', 'U', 'R']) {
-			expect(onChordStateChange.mock.lastCall?.[0].options).not.toEqual(
-				expect.arrayContaining([expect.objectContaining({ display: removedKey })]),
-			)
+			expect(optionKeys).not.toContain(removedKey)
 		}
 	})
 

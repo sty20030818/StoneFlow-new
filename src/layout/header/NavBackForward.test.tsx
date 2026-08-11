@@ -27,7 +27,7 @@ describe('NavBackForward', () => {
 		const backButton = screen.getByRole('button', { name: '后退' })
 		fireEvent.focus(backButton)
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('后退')
-		expect(screen.getByLabelText(/^按 .+\+\[$/)).toBeInTheDocument()
+		expect(screen.getByLabelText(/^按 (?:Command|Control) \+ \[$/)).toBeInTheDocument()
 
 		fireEvent.click(backButton)
 		expect(onBack).toHaveBeenCalledOnce()

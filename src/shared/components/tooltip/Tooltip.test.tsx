@@ -54,6 +54,7 @@ describe('shared tooltip patterns', () => {
 
 		expect(screen.getByRole('button', { name: '任务入口' })).toBeInTheDocument()
 		const tooltip = await screen.findByRole('tooltip')
+		expect(tooltip).toHaveAttribute('data-side', 'bottom')
 		expect(tooltip).toHaveTextContent('全部任务G → T')
 		expect(tooltip).toHaveTextContent('独立任务G → I')
 		expect(tooltip.querySelectorAll('[data-slot="action-tooltip-row"]')).toHaveLength(2)
@@ -115,8 +116,9 @@ describe('shared tooltip patterns', () => {
 		setElementSize(trigger, { clientWidth: 80, scrollWidth: 160 })
 
 		fireEvent.focus(trigger)
-		expect(await screen.findByRole('tooltip')).toHaveTextContent('一个完整的项目名称')
-		expect(trigger).toHaveAttribute('data-overflowing', 'true')
+		const tooltip = await screen.findByRole('tooltip')
+		expect(tooltip).toHaveAttribute('data-side', 'bottom')
+		expect(tooltip).toHaveTextContent('一个完整的项目名称')
 
 		setElementSize(trigger, { clientWidth: 80, scrollWidth: 80 })
 		const triggerObserver = observers.find((candidate) =>
@@ -126,7 +128,6 @@ describe('shared tooltip patterns', () => {
 		act(() => triggerObserver!.callback([], triggerObserver!))
 
 		await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument())
-		expect(trigger).toHaveAttribute('data-overflowing', 'false')
 		expect(triggerObserver!.observe).toHaveBeenCalledWith(trigger)
 	})
 

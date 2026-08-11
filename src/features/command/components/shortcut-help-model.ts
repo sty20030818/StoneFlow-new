@@ -1,10 +1,7 @@
-import {
-	type KeybindingRegistry,
-	type KeybindingScope,
-	type ShortcutToken,
-} from '@/features/command/keybinding'
+import { type KeybindingRegistry, type KeybindingScope } from '@/features/command/keybinding'
 import type { Command, CommandContext, CommandRuntime } from '@/features/command/core'
 import { resolveCommandShortcut } from '@/features/command/shortcuts/shortcut-display'
+import type { ShortcutToken } from '@/shared/lib/keyboardShortcut'
 
 import type { CommandMenuGroupKey } from './command-menu-model'
 

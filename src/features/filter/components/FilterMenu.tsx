@@ -17,8 +17,6 @@ import {
 	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
 } from '@/shared/components/base/dropdown-menu'
-import { cn } from '@/shared/lib/utils'
-
 import { setFilterFieldClause, type FilterField, type FilterQuery } from '../core'
 import { useListFilterUi } from '../model/ListFilterUiContext'
 import { FILTER_MENU_FIELDS, formatFilterFieldLabel } from './filterLabels'
@@ -27,23 +25,13 @@ import { FilterValueSubMenu } from './FilterValueSubMenu'
 
 type FilterMenuProps = {
 	trigger: ReactNode
-	open?: boolean
-	onOpenChange?: (open: boolean) => void
-	className?: string
+	open: boolean
+	onOpenChange: (open: boolean) => void
 }
 
-export function FilterMenu({ trigger, open, onOpenChange, className }: FilterMenuProps) {
-	const ui = useListFilterUi()
-	const [internalOpen, setInternalOpen] = useState(false)
+export function FilterMenu({ trigger, open, onOpenChange }: FilterMenuProps) {
+	const { session, projects } = useListFilterUi()
 	const [query, setQuery] = useState('')
-	const isOpen = open ?? internalOpen
-	const setOpen = onOpenChange ?? setInternalOpen
-
-	if (!ui) {
-		return <>{trigger}</>
-	}
-
-	const { session, projects } = ui
 	const normalizedQuery = query.trim().toLowerCase()
 	const visibleFields = FILTER_MENU_FIELDS.filter((field) =>
 		normalizedQuery.length === 0
@@ -52,7 +40,7 @@ export function FilterMenu({ trigger, open, onOpenChange, className }: FilterMen
 	)
 
 	function handleOpenChange(next: boolean) {
-		setOpen(next)
+		onOpenChange(next)
 		if (!next) {
 			setQuery('')
 		}
@@ -74,9 +62,9 @@ export function FilterMenu({ trigger, open, onOpenChange, className }: FilterMen
 	}
 
 	return (
-		<DropdownMenu onOpenChange={handleOpenChange} open={isOpen}>
+		<DropdownMenu onOpenChange={handleOpenChange} open={open}>
 			<DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
-			<DropdownMenuContent align='end' className={cn('w-60 min-w-60', className)} sideOffset={6}>
+			<DropdownMenuContent align='end' className='w-60 min-w-60' sideOffset={6}>
 				{/* 顶部搜索与 canonical 筛选快捷键提示。 */}
 				<div className='flex items-center gap-2 border-b border-border px-2 py-1.5'>
 					<Input

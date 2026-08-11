@@ -4,6 +4,7 @@ import { XIcon } from 'lucide-react'
 
 import type { CommandContext, CommandRuntime } from '@/features/command/core'
 import { AppScrollArea } from '@/shared/components/AppScrollArea'
+import { ShortcutTokens } from '@/shared/components/ShortcutTokens'
 import { Button } from '@/shared/components/base/button'
 import {
 	Dialog,
@@ -17,7 +18,6 @@ import { cn } from '@/shared/lib/utils'
 import { useShortcutRegistry } from '@/features/command/shortcuts/shortcut-registry-context'
 
 import { buildShortcutHelpGroups } from './shortcut-help-model'
-import { ShortcutTokens } from './ShortcutTokens'
 
 type ShortcutHelpProps = {
 	className?: string

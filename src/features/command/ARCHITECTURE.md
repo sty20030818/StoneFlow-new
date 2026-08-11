@@ -1,6 +1,6 @@
 # command · 命令 / 快捷键 / 命令板
 
-> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-07-19
+> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-08-11
 
 ---
 
@@ -52,7 +52,7 @@ src/features/command/
 ├── commands/                # 元数据 + createShellCommandRegistry
 ├── core/                    # Registry / Runtime / Context
 ├── components/              # Menu 壳 + 分段 / Help / Hint
-├── keybinding/              # 默认表 + 匹配
+├── keybinding/              # 默认表 + 匹配；平台键帽投影由 shared 负责
 ├── runtime/                 # React hooks
 └── shortcuts/               # ShortcutLayer / chord
 ```
@@ -81,7 +81,7 @@ index.ts                       # adapters public
 |----|------|
 | 运行时 | `CommandRegistry` · `CommandRuntime` · `useCommandRuntime` / Context / Runner |
 | 快捷键 | `DEFAULT_KEYBINDINGS` · `matchKeybindingEvent` · `CommandShortcutLayer` |
-| UI | `CommandMenu` · `ShortcutHelp` · `ChordHint` · `ShortcutTokens` |
+| UI | `CommandMenu` · `ShortcutHelp` · `ChordHint` |
 | 标识 / 上下文 | `COMMAND_IDS` · `CommandContext` · `CommandSelectionContext` · `CommandHostContext` |
 | 壳适配形状 | `ShellCommandActions` / `ShellCommandAdapter` / `SHELL_CHROME_ACTION_KEYS` |
 | IPC | `takePendingCommandOpenIntent` |
@@ -101,6 +101,7 @@ keybinding 底层工具、Menu 内部分组、`createDisabledCommand` 等 bind �
 | navigation | 换页命令只调 path-only intent |
 | shell-dialogs | 命令板 mode / selection override |
 | bulk-action | 域 handler 内可调 bulk 引擎 |
+| shared | 提供纯键帽 token、平台显示规则与 `ShortcutTokens` |
 
 ---
 

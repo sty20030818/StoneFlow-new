@@ -12,10 +12,6 @@ function ActionTooltipRoot(props: React.ComponentProps<typeof Tooltip>) {
 	return <Tooltip {...props} />
 }
 
-function ActionTooltipTrigger(props: React.ComponentProps<typeof TooltipTrigger>) {
-	return <TooltipTrigger {...props} />
-}
-
 function ActionTooltipContent({
 	className,
 	...props
@@ -47,8 +43,7 @@ function ActionTooltipRow({ label, shortcut }: ActionTooltipRowProps) {
 const ActionTooltip = Object.assign(ActionTooltipRoot, {
 	Content: ActionTooltipContent,
 	Row: ActionTooltipRow,
-	Trigger: ActionTooltipTrigger,
+	Trigger: TooltipTrigger,
 })
 
 export { ActionTooltip }
-export type { ActionTooltipRowProps }

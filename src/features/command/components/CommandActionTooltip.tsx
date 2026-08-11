@@ -3,14 +3,9 @@ import { Slot } from 'radix-ui'
 
 import type { CommandId } from '@/features/command/core'
 import type { KeybindingScope } from '@/features/command/keybinding'
-import {
-	getShortcutAccessibilityLabel,
-	resolveCommandShortcut,
-	useShortcutRegistry,
-} from '@/features/command/shortcuts'
+import { resolveCommandShortcut, useShortcutRegistry } from '@/features/command/shortcuts'
+import { ShortcutTokens } from '@/shared/components/ShortcutTokens'
 import { ActionTooltip } from '@/shared/components/tooltip'
-
-import { ShortcutTokens } from './ShortcutTokens'
 
 type CommandTooltipRowProps = {
 	commandId: CommandId
@@ -48,7 +43,6 @@ function CommandShortcut({
 
 	return (
 		<ShortcutTokens
-			accessibilityLabel={getShortcutAccessibilityLabel(tokens)}
 			className={className}
 			kbdClassName={kbdClassName}
 			separatorClassName={separatorClassName}
@@ -73,14 +67,7 @@ function CommandTooltipRow({ commandId, label, scope = 'global' }: CommandToolti
 	return (
 		<ActionTooltip.Row
 			label={label}
-			shortcut={
-				tokens ? (
-					<ShortcutTokens
-						accessibilityLabel={getShortcutAccessibilityLabel(tokens)}
-						tokens={tokens}
-					/>
-				) : undefined
-			}
+			shortcut={tokens ? <ShortcutTokens tokens={tokens} /> : undefined}
 		/>
 	)
 }
@@ -172,9 +159,3 @@ function DisabledCommandActionTooltip({
 }
 
 export { CommandActionTooltip, CommandShortcut, CommandTooltipRow, DisabledCommandActionTooltip }
-export type {
-	CommandActionTooltipProps,
-	CommandShortcutProps,
-	CommandTooltipRowProps,
-	DisabledCommandActionTooltipProps,
-}

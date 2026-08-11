@@ -50,7 +50,6 @@ export { useCommandContext, useCommandRunner, useCommandRuntime } from './runtim
  */
 export {
 	CommandShortcutLayer,
-	getShortcutAccessibilityLabel,
 	resolveCommandShortcut,
 	SHORTCUT_DISPATCH_PRIORITY,
 	ShortcutRegistryProvider,
@@ -58,12 +57,7 @@ export {
 	useShortcutRegistry,
 } from './shortcuts'
 
-export type {
-	CommandChordSession,
-	ShortcutDispatchHandler,
-	ShortcutDispatchPriority,
-	ShortcutDispatchResult,
-} from './shortcuts'
+export type { CommandChordSession } from './shortcuts'
 
 // ── UI ──────────────────────────────────────────────────────────────────────
 
@@ -74,15 +68,7 @@ export {
 	CommandShortcut,
 	CommandTooltipRow,
 	DisabledCommandActionTooltip,
-	ShortcutTokens,
 	ShortcutHelp,
-} from './components'
-
-export type {
-	CommandActionTooltipProps,
-	CommandShortcutProps,
-	CommandTooltipRowProps,
-	DisabledCommandActionTooltipProps,
 } from './components'
 
 export type { CommandMenuMode } from './components'

@@ -5,8 +5,9 @@ import {
 	type CommandId,
 	type CommandRuntime,
 } from '@/features/command/core'
-import { type KeybindingRegistry, type ShortcutToken } from '@/features/command/keybinding'
+import { type KeybindingRegistry } from '@/features/command/keybinding'
 import { resolveCommandShortcut } from '@/features/command/shortcuts/shortcut-display'
+import type { ShortcutToken } from '@/shared/lib/keyboardShortcut'
 
 export type CommandMenuGroupKey = 'bulk' | 'create' | 'navigate' | 'action' | 'project' | 'task'
 

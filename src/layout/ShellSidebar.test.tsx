@@ -88,7 +88,9 @@ describe('ShellSidebar', () => {
 
 		fireEvent.focus(screen.getByRole('link', { name: '所有任务' }))
 
-		expect(await screen.findByRole('tooltip')).toHaveTextContent('所有任务GT')
+		const tooltip = await screen.findByRole('tooltip')
+		expect(tooltip).toHaveAttribute('data-side', 'right')
+		expect(tooltip).toHaveTextContent('所有任务GT')
 		expect(screen.getByLabelText('依次按 G、T')).toBeInTheDocument()
 		expect(document.querySelector('.lucide-arrow-right')).toBeInTheDocument()
 	})

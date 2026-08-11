@@ -58,13 +58,7 @@ export {
 // ── UI ────────────────────────────────────────────────────
 export { PageFilterButton } from './components/PageFilterButton'
 export { FilterBar } from './components/FilterBar'
-export { FilterMenu } from './components/FilterMenu'
-export {
-	ListFilterUiProvider,
-	useListFilterUi,
-	type FilterProjectOption,
-	type ListFilterUiValue,
-} from './model/ListFilterUiContext'
+export { ListFilterUiProvider } from './model/ListFilterUiContext'
 
 export {
 	parseListFilterSearch,

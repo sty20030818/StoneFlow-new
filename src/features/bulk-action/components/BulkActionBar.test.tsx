@@ -62,7 +62,7 @@ describe('BulkActionBar', () => {
 		fireEvent.focus(screen.getByRole('button', { name: '清空已选' }))
 
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('清空已选Esc')
-		expect(screen.getByLabelText('按 Esc')).toBeInTheDocument()
+		expect(screen.getByLabelText('按 Escape')).toBeInTheDocument()
 	})
 })
 

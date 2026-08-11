@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { formatLauncherShortcut, matchLauncherShortcut } from './launcherShortcutKeymap'
+import { getLauncherShortcutTokens, matchLauncherShortcut } from './launcherShortcutKeymap'
 
 const baseEvent = {
 	key: '',
@@ -58,12 +58,19 @@ describe('launcherShortcutKeymap', () => {
 		).toBe('confirm')
 	})
 
-	it('从同一 binding 生成平台化页脚文案', () => {
-		expect(formatLauncherShortcut('selectPrevious', 'windows')).toBe('↑')
-		expect(formatLauncherShortcut('selectNext', 'windows')).toBe('↓')
-		expect(formatLauncherShortcut('createAndContinue', 'windows')).toBe('⇧↵')
-		expect(formatLauncherShortcut('createAndOpen', 'mac')).toBe('⌘↵')
-		expect(formatLauncherShortcut('createAndOpen', 'windows')).toBe('Ctrl+↵')
-		expect(formatLauncherShortcut('clearOrClose', 'linux')).toBe('Esc')
+	it('从同一 binding 生成平台化页脚键帽', () => {
+		expect(values(getLauncherShortcutTokens('selectPrevious', 'windows'))).toEqual(['↑'])
+		expect(values(getLauncherShortcutTokens('selectNext', 'windows'))).toEqual(['↓'])
+		expect(values(getLauncherShortcutTokens('createAndContinue', 'windows'))).toEqual([
+			'Shift',
+			'Enter',
+		])
+		expect(values(getLauncherShortcutTokens('createAndOpen', 'mac'))).toEqual(['⌘', 'Enter'])
+		expect(values(getLauncherShortcutTokens('createAndOpen', 'windows'))).toEqual(['Ctrl', 'Enter'])
+		expect(values(getLauncherShortcutTokens('clearOrClose', 'linux'))).toEqual(['Esc'])
 	})
 })
+
+function values(tokens: ReturnType<typeof getLauncherShortcutTokens>) {
+	return tokens.map((token) => token.value)
+}

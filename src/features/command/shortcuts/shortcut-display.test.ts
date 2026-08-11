@@ -5,7 +5,7 @@ import {
 	type Keybinding,
 } from '@/features/command/keybinding'
 
-import { getShortcutAccessibilityLabel, resolveCommandShortcut } from './shortcut-display'
+import { resolveCommandShortcut } from './shortcut-display'
 
 const baseQuery = {
 	registry: new KeybindingRegistry(DEFAULT_KEYBINDINGS),
@@ -109,23 +109,5 @@ describe('resolveCommandShortcut', () => {
 				mode: 'primary',
 			}),
 		).toBeNull()
-	})
-})
-
-describe('getShortcutAccessibilityLabel', () => {
-	it('明确区分同时按键与依次输入 chord', () => {
-		expect(
-			getShortcutAccessibilityLabel([
-				{ type: 'key', value: '⌘' },
-				{ type: 'key', value: 'K' },
-			]),
-		).toBe('按 ⌘+K')
-		expect(
-			getShortcutAccessibilityLabel([
-				{ type: 'key', value: 'G' },
-				{ type: 'separator', value: '→' },
-				{ type: 'key', value: 'T' },
-			]),
-		).toBe('依次按 G、T')
 	})
 })

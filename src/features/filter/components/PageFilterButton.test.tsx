@@ -12,6 +12,12 @@ import { renderWithInteractionProviders } from '@/test/TestInteractionProviders'
 import { PageFilterButton } from './PageFilterButton'
 
 describe('PageFilterButton', () => {
+	it('缺少 ListFilterUiProvider 时立即暴露装配错误', () => {
+		expect(() => renderWithInteractionProviders(<PageFilterButton />)).toThrow(
+			'useListFilterUi 必须在 ListFilterUiProvider 内使用',
+		)
+	})
+
 	it('已有筛选时仍显示稳定的操作名称和快捷键', async () => {
 		const query = normalizeFilterQuery({
 			clauses: [createFilterClause('status', 'is', ['todo'], 'status-filter')],

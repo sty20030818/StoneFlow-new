@@ -1,6 +1,6 @@
 # launcher · 独立窗 Launcher
 
-> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-07-19
+> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-08-11
 
 ---
 
@@ -62,6 +62,7 @@ src/features/launcher/
 | 新建行 | 有标题时钉在 Results 上方；↑↓ 独立 focus lane |
 | 圆角 | Win **8** / Mac **16** → `--launcher-panel-radius` |
 | 复用 | 主站 sf token + RowShell 原样；禁止 RowShell/Board launcher variant |
+| 快捷键 | Launcher 独占本地 binding / 匹配；键帽与读屏语义复用 shared |
 
 ---
 

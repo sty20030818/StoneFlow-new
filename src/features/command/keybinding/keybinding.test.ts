@@ -4,9 +4,7 @@ import {
 	KEYBINDING_CHORD_TIMEOUT_MS,
 	KeybindingRegistry,
 	KeybindingRegistryConflictError,
-	formatKeybindingSequence,
 	matchKeybindingEvent,
-	tokenizeKeybindingSequence,
 	type Keybinding,
 	type KeybindingChordState,
 	type NormalizedKeyEvent,
@@ -101,7 +99,7 @@ describe('keybinding', () => {
 		}
 	})
 
-	it('格式化 O 组打开命令显示', () => {
+	it('O 组打开命令保留声明的 chord', () => {
 		const registry = new KeybindingRegistry(DEFAULT_KEYBINDINGS)
 		const openTask = registry.resolvePrimary({
 			commandId: COMMAND_IDS.openTask,
@@ -112,8 +110,8 @@ describe('keybinding', () => {
 			scope: 'global',
 		})
 
-		expect(openTask && formatKeybindingSequence(openTask.sequence)).toBe('O → T')
-		expect(openProject && formatKeybindingSequence(openProject.sequence)).toBe('O → P')
+		expect(openTask?.sequence).toEqual([{ key: 'o' }, { key: 't' }])
+		expect(openProject?.sequence).toEqual([{ key: 'o' }, { key: 'p' }])
 	})
 
 	it('非法第二键取消 chord', () => {
@@ -253,32 +251,6 @@ describe('keybinding', () => {
 			COMMAND_IDS.openCommandMenu,
 		)
 		expect(matchCommand('k', null, 100, { ctrlKey: true }, 'mac')).toBeNull()
-	})
-
-	it('格式化平台快捷键显示', () => {
-		expect(formatKeybindingSequence([{ key: 'k', mod: true }], { platform: 'mac' })).toBe('⌘K')
-		expect(formatKeybindingSequence([{ key: 'k', mod: true }], { platform: 'windows' })).toBe(
-			'Ctrl K',
-		)
-		expect(formatKeybindingSequence([{ key: '/', mod: true }], { platform: 'mac' })).toBe('⌘/')
-		expect(formatKeybindingSequence([{ key: '/', mod: true }], { platform: 'windows' })).toBe(
-			'Ctrl /',
-		)
-		expect(formatKeybindingSequence([{ key: 'g' }, { key: 'i' }], { platform: 'mac' })).toBe(
-			'G → I',
-		)
-	})
-
-	it('将快捷键拆成键帽 token', () => {
-		expect(tokenizeKeybindingSequence([{ key: 'k', mod: true }], { platform: 'mac' })).toEqual([
-			{ type: 'key', value: '⌘' },
-			{ type: 'key', value: 'K' },
-		])
-		expect(tokenizeKeybindingSequence([{ key: 'g' }, { key: 'i' }], { platform: 'mac' })).toEqual([
-			{ type: 'key', value: 'G' },
-			{ type: 'separator', value: '→' },
-			{ type: 'key', value: 'I' },
-		])
 	})
 
 	it('支持 Row scope 使用的命名键', () => {

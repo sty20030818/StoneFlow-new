@@ -1,27 +1,21 @@
 import {
 	areStrokesEqual,
-	formatKeybindingStroke,
-	inferShortcutPlatform,
-	tokenizeKeybindingStroke,
-	type ShortcutToken,
 	type Keybinding,
 	type KeybindingChordState,
-	type KeybindingScope,
-	type KeybindingStroke,
 	type ShortcutPlatform,
 } from '@/features/command/keybinding'
+import {
+	inferShortcutPlatform,
+	tokenizeShortcutStroke,
+	type ShortcutToken,
+} from '@/shared/lib/keyboardShortcut'
 
-export type ChordHintOption = {
+type ChordHintOption = {
 	commandId: string
-	stroke: KeybindingStroke
-	display: string
 	tokens: ShortcutToken[]
 }
 
 export type CommandChordSession = {
-	prefix: KeybindingStroke
-	scope: KeybindingScope
-	prefixDisplay: string
 	prefixTokens: ShortcutToken[]
 	options: ChordHintOption[]
 }
@@ -54,17 +48,12 @@ export function buildChordSession(
 
 		options.push({
 			commandId: binding.commandId,
-			stroke,
-			display: formatKeybindingStroke(stroke, { platform }),
-			tokens: tokenizeKeybindingStroke(stroke, { platform }),
+			tokens: tokenizeShortcutStroke(stroke, platform),
 		})
 	}
 
 	return {
-		prefix: chordState.prefix,
-		scope: chordState.scope,
-		prefixDisplay: formatKeybindingStroke(chordState.prefix, { platform }),
-		prefixTokens: tokenizeKeybindingStroke(chordState.prefix, { platform }),
+		prefixTokens: tokenizeShortcutStroke(chordState.prefix, platform),
 		options,
 	}
 }

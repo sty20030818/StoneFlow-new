@@ -1,7 +1,7 @@
 # filter · 筛选平台
 
 > 作用：描述 **当前已落地** 的 `src/features/filter` 边界  
-> 最后更新：2026-08-04
+> 最后更新：2026-08-11
 
 ---
 
@@ -57,7 +57,9 @@ src/features/filter/
 - 领域：`FilterQuery`、`normalize`、`adaptFilterQueryToListTasks`、URL codec
 - 会话：`useListFilterSession`、`ListFilterUiProvider`
 - 命令：`registerFilterCommands`、`useRegisterFilterCommandAdapter`、`emitFilterUiEvent`
-- UI：`PageFilterButton`、`FilterBar`、`FilterMenu`
+- UI：`PageFilterButton`、`FilterBar`；`FilterMenu` 是 Provider 内部受控组件
+
+`PageFilterButton`、`FilterBar` 与 `FilterMenu` 必须位于 `ListFilterUiProvider` 内；缺失 Provider 是装配错误，禁止静默降级为空 UI 或占位按钮。
 
 Filter 二级值行使用纯视觉 `SelectionIndicator`，交互语义由外层 `menuitemcheckbox` 持有；status / priority 的文案与图标只从 `@/features/task/presentation` 读取，不在 filter 内维护第二套定义。菜单选择即时写入 `session.replaceEffective`，并保持一级、二级菜单打开。
 

@@ -7,21 +7,12 @@ export {
 	normalizeKeybindingStroke,
 } from './keybinding-match'
 export { KeybindingRegistry, KeybindingRegistryConflictError } from './keybinding-registry'
-export {
-	formatKeybindingSequence,
-	formatKeybindingSequenceAccessible,
-	formatKeybindingStroke,
-	inferShortcutPlatform,
-	tokenizeKeybindingSequence,
-	tokenizeKeybindingStroke,
-} from './keybinding-format'
 export { isEditableTarget, shouldIgnoreKeybindingEvent } from './input-guard'
 export type {
 	Keybinding,
 	KeybindingChordState,
 	KeybindingConflict,
 	KeybindingDisplay,
-	KeybindingKey,
 	KeybindingMatchResult,
 	KeybindingScope,
 	KeybindingSequence,
@@ -29,4 +20,3 @@ export type {
 	NormalizedKeyEvent,
 	ShortcutPlatform,
 } from './keybinding.types'
-export type { FormatKeybindingOptions, ShortcutToken } from './keybinding-format'

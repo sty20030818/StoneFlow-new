@@ -1,7 +1,8 @@
 /**
  * 列表页注入筛选会话 + Save，供 FilterMenu / FilterBar / 按钮消费。
+ * 消费组件必须位于 Provider 内，装配缺失时立即失败。
  */
-import { createContext, useContext, type PropsWithChildren, type ReactNode } from 'react'
+import { createContext, useContext, type PropsWithChildren } from 'react'
 
 import type { ListFilterSession } from './useListFilterSession'
 
@@ -28,21 +29,10 @@ export function ListFilterUiProvider({
 	return <ListFilterUiContext.Provider value={value}>{children}</ListFilterUiContext.Provider>
 }
 
-export function useListFilterUi(): ListFilterUiValue | null {
-	return useContext(ListFilterUiContext)
-}
-
-export function useRequiredListFilterUi(): ListFilterUiValue {
+export function useListFilterUi(): ListFilterUiValue {
 	const value = useContext(ListFilterUiContext)
 	if (!value) {
-		throw new Error('useRequiredListFilterUi 必须在 ListFilterUiProvider 内使用')
+		throw new Error('useListFilterUi 必须在 ListFilterUiProvider 内使用')
 	}
 	return value
-}
-
-/** 可选：仅渲染 children 当有 session */
-export function WhenListFilterUi({ children }: { children: ReactNode }) {
-	const value = useListFilterUi()
-	if (!value) return null
-	return <>{children}</>
 }

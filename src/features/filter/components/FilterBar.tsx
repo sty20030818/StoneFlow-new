@@ -36,14 +36,11 @@ import { getFilterValueOptions } from './filterOptionCatalog'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/base/popover'
 
 export function FilterBar({ className }: { className?: string }) {
-	const ui = useListFilterUi()
+	const { session, projects, canOverwriteView, onSave } = useListFilterUi()
 	const [saveOpen, setSaveOpen] = useState(false)
 	const [filterMenuOpen, setFilterMenuOpen] = useState(false)
 	const [filterTooltipOpen, setFilterTooltipOpen] = useState(false)
 
-	if (!ui) return null
-
-	const { session, projects, canOverwriteView, onSave } = ui
 	const { effective, dirty, isEmpty, clearTemp, replaceEffective } = session
 
 	// 干净空：不渲染；干净非空（View 定义）渲染 chip 且无 Clear；dirty 显示 Clear
@@ -65,65 +62,61 @@ export function FilterBar({ className }: { className?: string }) {
 		replaceEffective(next)
 	}
 
-	const showBar = !isEmpty || dirty
-
 	return (
 		<div className={cn('flex flex-col gap-1.5', className)}>
-			{showBar ? (
-				<div className='flex flex-wrap items-center gap-1.5 rounded-lg border border-border/80 bg-muted/30 px-2 py-1.5'>
-					{effective.clauses.map((clause) => (
-						<FilterChip
-							clause={clause}
-							key={clause.id}
-							onRemove={() => removeClause(clause.id)}
-							onUpdate={updateClause}
-							projects={projects}
-						/>
-					))}
-					<ActionTooltip
-						onOpenChange={(nextOpen) => setFilterTooltipOpen(nextOpen && !filterMenuOpen)}
-						open={filterTooltipOpen && !filterMenuOpen}
-					>
-						<FilterMenu
-							onOpenChange={(nextOpen) => {
-								setFilterMenuOpen(nextOpen)
-								if (nextOpen) {
-									setFilterTooltipOpen(false)
-								}
-							}}
-							open={filterMenuOpen}
-							trigger={
-								<ActionTooltip.Trigger asChild>
-									<Button
-										aria-label='添加筛选'
-										className='size-7'
-										size='icon'
-										type='button'
-										variant='ghost'
-									>
-										<PlusIcon className='size-3.5' />
-									</Button>
-								</ActionTooltip.Trigger>
+			<div className='flex flex-wrap items-center gap-1.5 rounded-lg border border-border/80 bg-muted/30 px-2 py-1.5'>
+				{effective.clauses.map((clause) => (
+					<FilterChip
+						clause={clause}
+						key={clause.id}
+						onRemove={() => removeClause(clause.id)}
+						onUpdate={updateClause}
+						projects={projects}
+					/>
+				))}
+				<ActionTooltip
+					onOpenChange={(nextOpen) => setFilterTooltipOpen(nextOpen && !filterMenuOpen)}
+					open={filterTooltipOpen && !filterMenuOpen}
+				>
+					<FilterMenu
+						onOpenChange={(nextOpen) => {
+							setFilterMenuOpen(nextOpen)
+							if (nextOpen) {
+								setFilterTooltipOpen(false)
 							}
-						/>
-						<ActionTooltip.Content>
-							<ActionTooltip.Row label='添加筛选' />
-						</ActionTooltip.Content>
-					</ActionTooltip>
-					<div className='ml-auto flex items-center gap-1.5'>
-						{dirty ? (
-							<Button onClick={() => clearTemp()} size='sm' type='button' variant='ghost'>
-								清除
-							</Button>
-						) : null}
-						{!isEmpty && onSave ? (
-							<Button onClick={() => setSaveOpen(true)} size='sm' type='button' variant='outline'>
-								保存
-							</Button>
-						) : null}
-					</div>
+						}}
+						open={filterMenuOpen}
+						trigger={
+							<ActionTooltip.Trigger asChild>
+								<Button
+									aria-label='添加筛选'
+									className='size-7'
+									size='icon'
+									type='button'
+									variant='ghost'
+								>
+									<PlusIcon className='size-3.5' />
+								</Button>
+							</ActionTooltip.Trigger>
+						}
+					/>
+					<ActionTooltip.Content>
+						<ActionTooltip.Row label='添加筛选' />
+					</ActionTooltip.Content>
+				</ActionTooltip>
+				<div className='ml-auto flex items-center gap-1.5'>
+					{dirty ? (
+						<Button onClick={() => clearTemp()} size='sm' type='button' variant='ghost'>
+							清除
+						</Button>
+					) : null}
+					{!isEmpty && onSave ? (
+						<Button onClick={() => setSaveOpen(true)} size='sm' type='button' variant='outline'>
+							保存
+						</Button>
+					) : null}
 				</div>
-			) : null}
+			</div>
 
 			{onSave ? (
 				<FilterSaveDialog
@@ -249,7 +242,7 @@ function ValuesPicker({
 		<Popover onOpenChange={setOpen} open={open}>
 			<PopoverTrigger asChild>
 				<button
-					className='flex max-w-[140px] min-w-0 rounded px-1 font-medium hover:bg-muted'
+					className='flex max-w-35 min-w-0 rounded px-1 font-medium hover:bg-muted'
 					type='button'
 				>
 					{open ? (

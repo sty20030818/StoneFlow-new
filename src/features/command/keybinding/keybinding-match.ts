@@ -1,5 +1,5 @@
 import { shouldIgnoreKeybindingEvent } from './input-guard'
-import { inferShortcutPlatform } from './keybinding-format'
+import { inferShortcutPlatform } from '@/shared/lib/keyboardShortcut'
 import type {
 	Keybinding,
 	KeybindingChordState,

@@ -2,13 +2,12 @@ import { useState } from 'react'
 
 import {
 	COMMAND_IDS,
-	getShortcutAccessibilityLabel,
 	resolveCommandShortcut,
-	ShortcutTokens,
 	type CommandId,
 	useShortcutRegistry,
 } from '@/features/command'
 import { useManualUpdateCheck } from '@/features/update'
+import { ShortcutTokens } from '@/shared/components/ShortcutTokens'
 import { cn } from '@/shared/lib/utils'
 import { Avatar, AvatarBadge, AvatarFallback, AvatarImage } from '@/shared/components/base/avatar'
 import {
@@ -46,7 +45,6 @@ function MenuCommandShortcut({ commandId }: { commandId: CommandId }) {
 	return (
 		<DropdownMenuShortcut className='tracking-normal'>
 			<ShortcutTokens
-				accessibilityLabel={getShortcutAccessibilityLabel(tokens)}
 				kbdClassName={menuShortcutKbdClassName}
 				separatorClassName='text-sf-text-quaternary'
 				tokens={tokens}

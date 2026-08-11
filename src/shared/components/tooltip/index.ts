@@ -1,6 +1,3 @@
 export { ActionTooltip } from './ActionTooltip'
-export type { ActionTooltipRowProps } from './ActionTooltip'
 export { DisabledActionTooltip } from './DisabledActionTooltip'
-export type { DisabledActionTooltipProps } from './DisabledActionTooltip'
 export { OverflowTooltip } from './OverflowTooltip'
-export type { OverflowTooltipProps } from './OverflowTooltip'

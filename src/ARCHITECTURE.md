@@ -121,6 +121,8 @@ base UI、board/row、query 跨域失效工具、types、lib、events、form…
 
 `shared/components/page-frame` 是工作区页面的纯视觉骨架，只提供 Header、Toolbar、Body、Footer 与 BulkBar 的组合顺序。它不持有实体数据、Board 分发或业务操作。
 
+`shared/lib/keyboardShortcut` 与 `shared/components/ShortcutTokens` 只负责跨平台键帽投影和展示；Command / Launcher 各自拥有绑定、匹配与动作语义。
+
 任务集合页面由 task 域的 `useTaskCollectionScene` 统一任务 Board、展示、选择、预览与批量操作接线；全部任务、独立事项、视图与项目详情只提供数据源和页面专属动作。项目总览与生命周期页面复用 `PageFrame`，各自在所属 Feature 内维护实体 Board 和业务编排。
 
 ### 4.6 `styles/`

@@ -29,10 +29,8 @@ import type {
 	LauncherTaskItem,
 } from './model/types'
 import { formatDateLabel } from './model/launcherFormatters'
-import {
-	formatLauncherShortcut,
-	inferLauncherShortcutPlatform,
-} from './model/launcherShortcutKeymap'
+import { getLauncherShortcutTokens } from './model/launcherShortcutKeymap'
+import { getShortcutAccessibilityLabel, inferShortcutPlatform } from '@/shared/lib/keyboardShortcut'
 import { TooltipProvider } from '@/shared/components/base/tooltip'
 
 const listenMock = vi.fn()
@@ -425,8 +423,7 @@ describe('LauncherPage', () => {
 		await waitFor(() => {
 			expect(screen.getByText('没有匹配结果')).toBeInTheDocument()
 		})
-		expect(screen.getByText('Enter')).toBeInTheDocument()
-		expect(screen.getByText(/创建「xxx」/)).toBeInTheDocument()
+		expect(screen.getByText(/创建「xxx」/).parentElement).toHaveTextContent('Enter 创建「xxx」')
 		expect(screen.queryByTestId('launcher-recent-tasks-section')).not.toBeInTheDocument()
 		expect(screen.queryByTestId('launcher-recent-projects-section')).not.toBeInTheDocument()
 	})
@@ -527,8 +524,9 @@ describe('LauncherPage', () => {
 		const input = screen.getByLabelText('Launcher 输入')
 		fireEvent.change(input, { target: { value: '创建并打开任务' } })
 
-		const platform = inferLauncherShortcutPlatform()
-		expect(screen.getByText(formatLauncherShortcut('createAndOpen', platform))).toBeInTheDocument()
+		const platform = inferShortcutPlatform()
+		const shortcutTokens = getLauncherShortcutTokens('createAndOpen', platform)
+		expect(screen.getByLabelText(getShortcutAccessibilityLabel(shortcutTokens))).toBeInTheDocument()
 
 		fireEvent.keyDown(input, {
 			key: 'Enter',

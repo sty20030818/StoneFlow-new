@@ -2,6 +2,8 @@ import type { ReactNode } from 'react'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { EMPTY_FILTER_QUERY } from '@/features/filter'
+
 import { TaskListSceneView } from './TaskListSceneView'
 
 const openCreate = vi.fn()
@@ -54,6 +56,18 @@ vi.mock('@/features/task/hooks/useTaskListScene', () => ({
 		taskCollection: { boardProps: { tasks: [], status: 'ready' } },
 		toolbarPills: [{ label: '所有任务' }],
 		bulk: { selectedCount: 0, clearTaskSelection: vi.fn() },
+		filterUiValue: {
+			session: {
+				base: EMPTY_FILTER_QUERY,
+				temp: EMPTY_FILTER_QUERY,
+				effective: EMPTY_FILTER_QUERY,
+				dirty: false,
+				isEmpty: true,
+				setTemp: vi.fn(),
+				clearTemp: vi.fn(),
+				replaceEffective: vi.fn(),
+			},
+		},
 		openCreate,
 		showStandaloneHint: variant === 'standalone',
 	}),

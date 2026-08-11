@@ -5,6 +5,7 @@ import type { ComponentType, ReactNode } from 'react'
 import { CheckIcon, FolderOpenIcon, FoldersIcon, MinusIcon, type LucideProps } from 'lucide-react'
 
 import { AppScrollArea } from '@/shared/components/AppScrollArea'
+import { ShortcutTokens } from '@/shared/components/ShortcutTokens'
 import { Badge } from '@/shared/components/base/badge'
 import { Kbd } from '@/shared/components/base/kbd'
 import { CommandGroup, CommandItem, CommandList } from '@/shared/components/base/command'
@@ -12,7 +13,6 @@ import { getProjectStatusBadgeVariant } from '@/shared/components/badgeSemantics
 import { OverflowTooltip } from '@/shared/components/tooltip'
 import type { CommandId } from '@/features/command/core'
 
-import { ShortcutTokens } from './ShortcutTokens'
 import { buildCommandMenuGroups, type CommandMenuEntry } from './command-menu-model'
 import { resolveCommandIcon } from './command-menu-helpers'
 import type { CommandRowSelectionIndicator } from './command-menu-helpers'

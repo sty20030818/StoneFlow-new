@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react'
 import { ShortcutTokens } from './ShortcutTokens'
 
 describe('ShortcutTokens', () => {
-	it('chord 在未显式传文案时仍提供顺序输入语义', () => {
+	it('隐藏视觉键帽，并用独立文案表达顺序输入语义', () => {
 		render(
 			<ShortcutTokens
 				tokens={[
@@ -17,5 +17,19 @@ describe('ShortcutTokens', () => {
 		expect(screen.getByLabelText('依次按 G、T')).toBeInTheDocument()
 		expect(screen.getByText('G')).toHaveAttribute('aria-hidden', 'true')
 		expect(screen.getByText('T')).toHaveAttribute('aria-hidden', 'true')
+	})
+
+	it('不会让读屏直接朗读 macOS 修饰键符号', () => {
+		render(
+			<ShortcutTokens
+				tokens={[
+					{ type: 'key', value: '⇧' },
+					{ type: 'key', value: '⌘' },
+					{ type: 'key', value: 'Enter' },
+				]}
+			/>,
+		)
+
+		expect(screen.getByLabelText('按 Shift + Command + Enter')).toBeInTheDocument()
 	})
 })

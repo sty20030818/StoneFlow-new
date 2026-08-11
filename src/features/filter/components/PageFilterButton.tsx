@@ -1,6 +1,6 @@
 /**
  * 工具条「筛选」入口：锚定 FilterMenu；订阅 F / 命令 open-menu。
- * 无 ListFilterUi 时仅按钮占位。
+ * 必须位于 ListFilterUiProvider 内。
  */
 import { useEffect, useState } from 'react'
 import { ListFilterIcon } from 'lucide-react'
@@ -18,7 +18,7 @@ type PageFilterButtonProps = {
 }
 
 export function PageFilterButton({ className }: PageFilterButtonProps) {
-	const filterUi = useListFilterUi()
+	const { session } = useListFilterUi()
 	const pageFilter = usePageFilterContext()
 	const [menuOpen, setMenuOpen] = useState(false)
 	const [tooltipOpen, setTooltipOpen] = useState(false)
@@ -31,11 +31,11 @@ export function PageFilterButton({ className }: PageFilterButtonProps) {
 				return
 			}
 			if (event.type === 'clear-all') {
-				filterUi?.session.clearTemp()
+				session.clearTemp()
 				pageFilter.actions.clearAll()
 			}
 		})
-	}, [filterUi, pageFilter.actions])
+	}, [pageFilter.actions, session])
 
 	const label = '筛选'
 
@@ -57,31 +57,6 @@ export function PageFilterButton({ className }: PageFilterButtonProps) {
 			</Button>
 		</CommandActionTooltip>
 	)
-
-	if (!filterUi) {
-		return (
-			<CommandActionTooltip
-				commandId={COMMAND_IDS.filterAdd}
-				label={label}
-				onOpenChange={setTooltipOpen}
-				open={tooltipOpen}
-			>
-				<Button
-					aria-label={label}
-					className={className}
-					onClick={() => {
-						setTooltipOpen(false)
-						pageFilter.actions.openFilterMenu()
-					}}
-					size='icon-sm'
-					type='button'
-					variant='outline'
-				>
-					<ListFilterIcon />
-				</Button>
-			</CommandActionTooltip>
-		)
-	}
 
 	return (
 		<FilterMenu

@@ -1,6 +1,5 @@
 import type { CommandChordSession } from '@/features/command/shortcuts'
-
-import { ShortcutTokens } from './ShortcutTokens'
+import { ShortcutTokens } from '@/shared/components/ShortcutTokens'
 
 type ChordHintProps = {
 	session: CommandChordSession | null

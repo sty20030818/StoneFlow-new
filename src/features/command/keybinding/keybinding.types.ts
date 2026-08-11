@@ -1,33 +1,14 @@
 import type { CommandId } from '@/features/command/core'
+import type { ShortcutPlatform, ShortcutStroke } from '@/shared/lib/keyboardShortcut'
 
 export type KeybindingScope = 'global' | 'command-menu' | 'list' | 'row' | 'dropdown'
 
-export type ShortcutPlatform = 'mac' | 'windows' | 'linux'
+export type { ShortcutPlatform }
 
 /** `hidden` 仅表示绑定可执行但不进入界面展示，不代表命令尚未实现。 */
 export type KeybindingDisplay = 'primary' | 'alternative' | 'hidden'
 
-export type KeybindingKey =
-	| string
-	| 'ArrowUp'
-	| 'ArrowDown'
-	| 'ArrowLeft'
-	| 'ArrowRight'
-	| 'Enter'
-	| 'Escape'
-	| 'Delete'
-	| 'Backspace'
-	| 'Space'
-
-export type KeybindingStroke = {
-	key: KeybindingKey
-	/** 当前平台的主修饰键：macOS 为 Command，Windows / Linux 为 Control。 */
-	mod?: boolean
-	meta?: boolean
-	ctrl?: boolean
-	alt?: boolean
-	shift?: boolean
-}
+export type KeybindingStroke = ShortcutStroke
 
 export type KeybindingSequence =
 	| readonly [KeybindingStroke]

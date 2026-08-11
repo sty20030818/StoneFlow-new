@@ -1,9 +1,9 @@
 import { AlertTriangleIcon, CheckCircle2Icon, LoaderCircleIcon } from 'lucide-react'
 
 import { useLauncher } from '../domain/LauncherDomainProvider'
-import { formatLauncherShortcut, type LauncherShortcutId } from '../model/launcherShortcutKeymap'
+import { getLauncherShortcutTokens, type LauncherShortcutId } from '../model/launcherShortcutKeymap'
 import { cn } from '@/shared/lib/utils'
-import { Kbd } from '@/shared/components/base/kbd'
+import { ShortcutTokens } from '@/shared/components/ShortcutTokens'
 import { launcherFooterChromeClass } from '@/shared/components/patterns/launcher'
 import { OverflowTooltip } from '@/shared/components/tooltip'
 
@@ -54,7 +54,9 @@ export function LauncherFooter() {
 function Hint({ label, shortcuts }: { label: string; shortcuts: readonly LauncherShortcutId[] }) {
 	return (
 		<span className='flex items-center gap-1 whitespace-nowrap'>
-			<Kbd>{shortcuts.map((id) => formatLauncherShortcut(id)).join('')}</Kbd>
+			{shortcuts.map((id) => (
+				<ShortcutTokens className='gap-1' key={id} tokens={getLauncherShortcutTokens(id)} />
+			))}
 			<span>{label}</span>
 		</span>
 	)

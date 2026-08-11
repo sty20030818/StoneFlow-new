@@ -24,10 +24,7 @@ function DisabledActionTooltip({ children, label, reason }: DisabledActionToolti
 				</span>
 			</ActionTooltip.Trigger>
 			<ActionTooltip.Content>
-				<div
-					className='flex max-w-64 flex-col gap-1 px-1.5 py-1'
-					data-slot='disabled-action-tooltip-content'
-				>
+				<div className='flex max-w-64 flex-col gap-1 px-1.5 py-1'>
 					<span className='font-medium text-foreground'>{label}</span>
 					<span className='text-pretty text-muted-foreground'>{reason}</span>
 				</div>
@@ -37,4 +34,3 @@ function DisabledActionTooltip({ children, label, reason }: DisabledActionToolti
 }
 
 export { DisabledActionTooltip }
-export type { DisabledActionTooltipProps }

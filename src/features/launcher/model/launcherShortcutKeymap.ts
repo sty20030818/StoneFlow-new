@@ -1,3 +1,9 @@
+import {
+	inferShortcutPlatform,
+	tokenizeShortcutStroke,
+	type ShortcutPlatform,
+} from '@/shared/lib/keyboardShortcut'
+
 export type LauncherShortcutId =
 	| 'selectPrevious'
 	| 'selectNext'
@@ -5,8 +11,6 @@ export type LauncherShortcutId =
 	| 'createAndContinue'
 	| 'createAndOpen'
 	| 'clearOrClose'
-
-export type LauncherShortcutPlatform = 'mac' | 'windows' | 'linux'
 
 type LauncherShortcutEvent = {
 	key: string
@@ -23,7 +27,7 @@ type LauncherShortcutBinding = {
 }
 
 type MatchLauncherShortcutOptions = {
-	platform?: LauncherShortcutPlatform
+	platform?: ShortcutPlatform
 	isEnabled?: (id: LauncherShortcutId) => boolean
 }
 
@@ -42,10 +46,7 @@ const LAUNCHER_SHORTCUT_BINDINGS = {
 
 export function matchLauncherShortcut(
 	event: LauncherShortcutEvent,
-	{
-		platform = inferLauncherShortcutPlatform(),
-		isEnabled = () => true,
-	}: MatchLauncherShortcutOptions = {},
+	{ platform = inferShortcutPlatform(), isEnabled = () => true }: MatchLauncherShortcutOptions = {},
 ): LauncherShortcutId | null {
 	for (const binding of Object.values(LAUNCHER_SHORTCUT_BINDINGS)) {
 		if (!isEnabled(binding.id) || !matchesBinding(event, binding, platform)) {
@@ -58,36 +59,17 @@ export function matchLauncherShortcut(
 	return null
 }
 
-export function formatLauncherShortcut(
+export function getLauncherShortcutTokens(
 	id: LauncherShortcutId,
-	platform: LauncherShortcutPlatform = inferLauncherShortcutPlatform(),
+	platform: ShortcutPlatform = inferShortcutPlatform(),
 ) {
-	const binding: LauncherShortcutBinding = LAUNCHER_SHORTCUT_BINDINGS[id]
-	const mod = binding.mod ? (platform === 'mac' ? '⌘' : 'Ctrl+') : ''
-	const shift = binding.shift ? '⇧' : ''
-	return `${mod}${shift}${formatKey(binding.key)}`
-}
-
-export function inferLauncherShortcutPlatform(): LauncherShortcutPlatform {
-	if (typeof navigator === 'undefined') {
-		return 'mac'
-	}
-
-	if (/Mac|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-		return 'mac'
-	}
-
-	if (/Windows/i.test(navigator.userAgent)) {
-		return 'windows'
-	}
-
-	return 'linux'
+	return tokenizeShortcutStroke(LAUNCHER_SHORTCUT_BINDINGS[id], platform)
 }
 
 function matchesBinding(
 	event: LauncherShortcutEvent,
 	binding: LauncherShortcutBinding,
-	platform: LauncherShortcutPlatform,
+	platform: ShortcutPlatform,
 ) {
 	if (event.key !== binding.key) {
 		return false
@@ -98,17 +80,4 @@ function matchesBinding(
 	}
 
 	return !binding.shift || event.shiftKey
-}
-
-function formatKey(key: LauncherShortcutBinding['key']) {
-	switch (key) {
-		case 'ArrowUp':
-			return '↑'
-		case 'ArrowDown':
-			return '↓'
-		case 'Enter':
-			return '↵'
-		case 'Escape':
-			return 'Esc'
-	}
 }
