@@ -32,7 +32,6 @@ vi.mock('@/shared/components/main-card/MainCardLayout', () => ({
 			</div>
 		),
 		Body: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-		Footer: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 		GhostAction: ({
 			children,
 			tooltipShortcut: _tooltipShortcut,
@@ -69,7 +68,6 @@ vi.mock('@/features/task/hooks/useTaskListScene', () => ({
 			},
 		},
 		openCreate,
-		showStandaloneHint: variant === 'standalone',
 	}),
 }))
 
@@ -108,9 +106,6 @@ describe('TaskListSceneView', () => {
 		render(<TaskListSceneView variant='standalone' />)
 
 		expect(screen.getByText('状态分组任务 Board')).toBeInTheDocument()
-		expect(
-			screen.getByText('这些是当前 Space 下尚未归属到任何 Project 的独立事项。'),
-		).toBeInTheDocument()
 		fireEvent.click(screen.getByRole('button', { name: '创建任务' }))
 		expect(openCreate).toHaveBeenCalled()
 	})

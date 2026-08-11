@@ -4,7 +4,7 @@
 
 ## 职责
 
-- 固定 Header、Toolbar、可滚动 Body、Footer、BulkBar 的页面区域顺序；
+- 固定 Header、Toolbar、可滚动 Body、BulkBar 的页面区域顺序；
 - 通过 compound components 让页面显式组合所需区域；
 - 复用 `MainCard` 的滚动、间距与可访问性基础。
 
@@ -22,7 +22,6 @@
   <PageFrame.Header breadcrumb={breadcrumb} actions={actions} />
   <PageFrame.Toolbar pills={pills} filterAction={filterAction} displayAction={displayAction} />
   <PageFrame.Body>{children}</PageFrame.Body>
-  <PageFrame.Footer>{footer}</PageFrame.Footer>
   <PageFrame.BulkBar>{bulkBar}</PageFrame.BulkBar>
 </PageFrame.Root>
 ```

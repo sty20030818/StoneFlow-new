@@ -315,9 +315,6 @@ export function useViewsScene() {
 		taskCollection,
 		displayPageKey,
 		filterUiValue,
-		footerDescription: activeView
-			? `当前视图共 ${viewTotalCount || visibleTasks.length} 条任务`
-			: '正在准备视图数据',
 		bulk: {
 			selectedCount: taskCollection.selectedCount,
 			clearTaskSelection: taskCollection.clearTaskSelection,

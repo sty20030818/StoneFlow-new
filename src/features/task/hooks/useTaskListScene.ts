@@ -283,6 +283,5 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 			clearTaskSelection: taskCollection.clearTaskSelection,
 		},
 		openCreate,
-		showStandaloneHint: variant === 'standalone',
 	}
 }

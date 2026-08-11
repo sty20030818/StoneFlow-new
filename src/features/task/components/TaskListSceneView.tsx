@@ -1,4 +1,4 @@
-import { Layers3Icon, PlusIcon } from 'lucide-react'
+import { PlusIcon } from 'lucide-react'
 
 import { PageFrame } from '@/shared/components/page-frame'
 import { MainCard } from '@/shared/components/main-card/MainCardLayout'
@@ -48,12 +48,6 @@ export function TaskListSceneView({ variant }: TaskListSceneViewProps) {
 				/>
 				<PageFrame.Body>
 					<TaskBoard {...scene.taskCollection.boardProps} />
-					{scene.showStandaloneHint ? (
-						<div className='mt-auto flex items-center gap-2 px-1 text-[12px] text-sf-text-tertiary'>
-							<Layers3Icon className='size-3.5' />
-							这些是当前 Space 下尚未归属到任何 Project 的独立事项。
-						</div>
-					) : null}
 				</PageFrame.Body>
 				<PageFrame.BulkBar>
 					<BulkActionBar

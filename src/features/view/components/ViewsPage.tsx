@@ -70,9 +70,6 @@ export function ViewsPage() {
 				<PageFrame.Body>
 					<TaskBoard {...scene.taskCollection.boardProps} />
 				</PageFrame.Body>
-				<PageFrame.Footer>
-					<div className='px-1 text-[12px] text-sf-text-tertiary'>{scene.footerDescription}</div>
-				</PageFrame.Footer>
 				<PageFrame.BulkBar>
 					<BulkActionBar
 						action={<BulkCommandMenuAction />}

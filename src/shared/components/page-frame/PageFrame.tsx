@@ -74,10 +74,6 @@ function PageFrameBody({ children, className }: PageFrameBodyProps) {
 	)
 }
 
-function PageFrameFooter({ children, className }: PageFrameSlotProps) {
-	return <MainCard.Footer className={className}>{children}</MainCard.Footer>
-}
-
 function PageFrameBulkBar({ children }: Pick<PageFrameSlotProps, 'children'>) {
 	return <>{children}</>
 }
@@ -87,6 +83,5 @@ export const PageFrame = {
 	Header: PageFrameHeader,
 	Toolbar: PageFrameToolbar,
 	Body: PageFrameBody,
-	Footer: PageFrameFooter,
 	BulkBar: PageFrameBulkBar,
 }

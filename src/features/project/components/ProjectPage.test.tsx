@@ -34,7 +34,6 @@ vi.mock('@/shared/components/main-card/MainCardLayout', () => ({
 			</div>
 		),
 		Body: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-		Footer: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 		GhostAction: ({ children }: { children: ReactNode }) => (
 			<button type='button'>{children}</button>
 		),

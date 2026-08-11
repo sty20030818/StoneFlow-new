@@ -130,10 +130,6 @@ function MainCardBody({ children, className }: MainCardShellSlotProps) {
 	)
 }
 
-function MainCardFooter({ children, className }: MainCardShellSlotProps) {
-	return <div className={cn('mt-auto flex flex-col gap-3', className)}>{children}</div>
-}
-
 function MainCardNoticeGroup({ children, className }: MainCardShellSlotProps) {
 	return <div className={cn('flex flex-col gap-3', className)}>{children}</div>
 }
@@ -185,7 +181,6 @@ export const MainCard = {
 	Header: MainCardHeader,
 	Toolbar: MainCardToolbar,
 	Body: MainCardBody,
-	Footer: MainCardFooter,
 	NoticeGroup: MainCardNoticeGroup,
 	Section: MainCardSection,
 	Empty: MainCardEmpty,
@@ -195,7 +190,6 @@ export const MainCard = {
 export {
 	MainCardBody,
 	MainCardEmpty,
-	MainCardFooter,
 	MainCardGhostAction,
 	MainCardHeader,
 	MainCardNoticeGroup,
