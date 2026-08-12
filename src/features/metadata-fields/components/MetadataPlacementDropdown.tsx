@@ -115,7 +115,15 @@ function GroupedPlacementDropdown({
 			open={menuOpen}
 		>
 			{disabled && disabledReason ? (
-				<DisabledActionTooltip label={triggerLabel} reason={disabledReason}>
+				<DisabledActionTooltip
+					label={triggerLabel}
+					reason={disabledReason}
+					shortcut={
+						shortcut ? (
+							<CommandShortcut commandId={shortcut.commandId} scope={shortcut.scope} />
+						) : undefined
+					}
+				>
 					{trigger}
 				</DisabledActionTooltip>
 			) : shouldShowTooltip && !disabled ? (

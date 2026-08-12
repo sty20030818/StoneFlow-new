@@ -53,6 +53,7 @@ export type MetadataFieldDropdownProps<TValue> = {
 	menuLabel?: string
 	shortcut?: MetadataCommandShortcut
 	ariaLabel?: string
+	tooltipLabel?: string
 	buttonLabel?: ReactNode
 	buttonIcon?: ReactNode
 	compact?: boolean
@@ -77,6 +78,7 @@ export function MetadataFieldDropdown<TValue>({
 	menuLabel,
 	shortcut,
 	ariaLabel,
+	tooltipLabel,
 	buttonLabel,
 	buttonIcon,
 	compact,
@@ -105,11 +107,13 @@ export function MetadataFieldDropdown<TValue>({
 	if (!currentOption) {
 		return null
 	}
+	const resolvedAriaLabel = ariaLabel ?? label
+	const resolvedTooltipLabel = tooltipLabel ?? label
 
 	const trigger = (
 		<DropdownMenuTrigger asChild>
 			<MetadataFieldButton
-				ariaLabel={ariaLabel ?? label}
+				ariaLabel={resolvedAriaLabel}
 				appearance={buttonAppearance}
 				compact={compact}
 				disabled={disabled}
@@ -121,7 +125,6 @@ export function MetadataFieldDropdown<TValue>({
 		</DropdownMenuTrigger>
 	)
 	const shouldShowTooltip = buttonAppearance === 'row-icon' || shortcut !== undefined
-	const triggerLabel = ariaLabel ?? label
 
 	return (
 		<DropdownMenu
@@ -134,7 +137,16 @@ export function MetadataFieldDropdown<TValue>({
 			open={menuOpen}
 		>
 			{disabled && disabledReason ? (
-				<DisabledActionTooltip label={triggerLabel} reason={disabledReason}>
+				<DisabledActionTooltip
+					ariaLabel={resolvedAriaLabel}
+					label={resolvedTooltipLabel}
+					reason={disabledReason}
+					shortcut={
+						shortcut ? (
+							<CommandShortcut commandId={shortcut.commandId} scope={shortcut.scope} />
+						) : undefined
+					}
+				>
 					{trigger}
 				</DisabledActionTooltip>
 			) : shouldShowTooltip && !disabled ? (
@@ -147,11 +159,11 @@ export function MetadataFieldDropdown<TValue>({
 						{shortcut ? (
 							<CommandTooltipRow
 								commandId={shortcut.commandId}
-								label={triggerLabel}
+								label={resolvedTooltipLabel}
 								scope={shortcut.scope}
 							/>
 						) : (
-							<ActionTooltip.Row label={triggerLabel} />
+							<ActionTooltip.Row label={resolvedTooltipLabel} />
 						)}
 					</ActionTooltip.Content>
 				</ActionTooltip>

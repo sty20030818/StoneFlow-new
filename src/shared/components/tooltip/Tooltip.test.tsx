@@ -69,10 +69,15 @@ describe('shared tooltip patterns', () => {
 		await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument())
 	})
 
-	it('DisabledActionTooltip 为禁用原因提供可聚焦触发点', async () => {
+	it('DisabledActionTooltip 分离可见文案与无障碍名称，并展示快捷键和禁用原因', async () => {
 		render(
 			<TooltipProvider delayDuration={0}>
-				<DisabledActionTooltip label='删除任务' reason='你没有删除权限'>
+				<DisabledActionTooltip
+					ariaLabel='删除任务：任务 A'
+					label='删除任务'
+					reason='你没有删除权限'
+					shortcut={<span aria-label='按 X'>X</span>}
+				>
 					<button disabled type='button'>
 						删除
 					</button>
@@ -80,12 +85,15 @@ describe('shared tooltip patterns', () => {
 			</TooltipProvider>,
 		)
 
-		const trigger = document.querySelector('[data-slot="disabled-action-tooltip-trigger"]')
+		const trigger = screen.getByRole('group', { name: '删除任务：任务 A' })
 		expect(trigger).toHaveAttribute('tabindex', '0')
 		expect(trigger).toHaveAttribute('aria-disabled', 'true')
 
-		fireEvent.focus(trigger!)
-		expect(await screen.findByRole('tooltip')).toHaveTextContent('删除任务你没有删除权限')
+		fireEvent.focus(trigger)
+		const tooltip = await screen.findByRole('tooltip')
+		expect(tooltip).toHaveTextContent('删除任务X你没有删除权限')
+		expect(tooltip).not.toHaveTextContent('任务 A')
+		expect(screen.getByLabelText('按 X')).toBeInTheDocument()
 	})
 
 	it('OverflowTooltip 首次 focus 复测截断，并在 resize 后不再截断时关闭', async () => {

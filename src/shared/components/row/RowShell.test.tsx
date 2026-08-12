@@ -88,11 +88,7 @@ describe('RowSelectionCell', () => {
 		const onCheckedChange = vi.fn()
 		render(
 			<TooltipProvider delayDuration={0}>
-				<RowSelectionCell
-					ariaLabel='选择任务 A'
-					checked={false}
-					onCheckedChange={onCheckedChange}
-				/>
+				<RowSelectionCell checked={false} label='选择任务 A' onCheckedChange={onCheckedChange} />
 			</TooltipProvider>,
 		)
 
@@ -113,8 +109,8 @@ describe('RowSelectionCell', () => {
 		const { rerender } = render(
 			<TooltipProvider delayDuration={0}>
 				<RowSelectionCell
-					ariaLabel='选择任务 A'
 					checked={false}
+					label='选择任务 A'
 					onCheckedChange={onCheckedChange}
 					visible
 				/>
@@ -129,7 +125,7 @@ describe('RowSelectionCell', () => {
 
 		rerender(
 			<TooltipProvider delayDuration={0}>
-				<RowSelectionCell ariaLabel='选择任务 A' checked onCheckedChange={onCheckedChange} />
+				<RowSelectionCell checked label='选择任务 A' onCheckedChange={onCheckedChange} />
 			</TooltipProvider>,
 		)
 		const checked = screen.getByRole('checkbox', { name: '选择任务 A' })
@@ -137,20 +133,24 @@ describe('RowSelectionCell', () => {
 		expect(checked).toHaveAttribute('data-state', 'checked')
 	})
 
-	it('可用选择框用 ariaLabel 提供操作 Tooltip，禁用且无原因时不编造提示', async () => {
+	it('可用和禁用选择框分离可见文案与无障碍名称，并保留快捷键', async () => {
 		const { rerender } = render(
 			<TooltipProvider delayDuration={0}>
 				<RowSelectionCell
 					ariaLabel='选择任务 A'
 					checked={false}
+					label='选择任务'
 					onCheckedChange={() => undefined}
+					tooltipShortcut={<span aria-label='按 X'>X</span>}
 					visible
 				/>
 			</TooltipProvider>,
 		)
 
 		fireEvent.focus(screen.getByRole('checkbox', { name: '选择任务 A' }))
-		expect(await screen.findByRole('tooltip')).toHaveTextContent('选择任务 A')
+		const enabledTooltip = await screen.findByRole('tooltip')
+		expect(enabledTooltip).toHaveTextContent('选择任务X')
+		expect(enabledTooltip).not.toHaveTextContent('任务 A')
 
 		rerender(
 			<TooltipProvider delayDuration={0}>
@@ -158,7 +158,9 @@ describe('RowSelectionCell', () => {
 					ariaLabel='选择任务 A'
 					checked={false}
 					disabled
+					label='选择任务'
 					onCheckedChange={() => undefined}
+					tooltipShortcut={<span aria-label='按 X'>X</span>}
 					visible
 				/>
 			</TooltipProvider>,
@@ -173,14 +175,19 @@ describe('RowSelectionCell', () => {
 					checked={false}
 					disabled
 					disabledReason='正在更新任务，暂时无法更改选择'
+					label='选择任务'
 					onCheckedChange={() => undefined}
+					tooltipShortcut={<span aria-label='按 X'>X</span>}
 					visible
 				/>
 			</TooltipProvider>,
 		)
 
 		fireEvent.focus(screen.getByRole('group', { name: '选择任务 A' }))
-		expect(await screen.findByRole('tooltip')).toHaveTextContent('正在更新任务，暂时无法更改选择')
+		const disabledTooltip = await screen.findByRole('tooltip')
+		expect(disabledTooltip).toHaveTextContent('选择任务X正在更新任务，暂时无法更改选择')
+		expect(disabledTooltip).not.toHaveTextContent('任务 A')
+		expect(screen.getByLabelText('按 X')).toBeInTheDocument()
 	})
 })
 

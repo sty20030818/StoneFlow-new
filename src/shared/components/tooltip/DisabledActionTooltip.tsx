@@ -3,18 +3,26 @@ import * as React from 'react'
 import { ActionTooltip } from './ActionTooltip'
 
 type DisabledActionTooltipProps = {
+	ariaLabel?: string
 	children: React.ReactNode
 	label: string
 	reason: React.ReactNode
+	shortcut?: React.ReactNode
 }
 
-function DisabledActionTooltip({ children, label, reason }: DisabledActionTooltipProps) {
+function DisabledActionTooltip({
+	ariaLabel,
+	children,
+	label,
+	reason,
+	shortcut,
+}: DisabledActionTooltipProps) {
 	return (
 		<ActionTooltip>
 			<ActionTooltip.Trigger asChild>
 				<span
 					aria-disabled='true'
-					aria-label={label}
+					aria-label={ariaLabel ?? label}
 					className='inline-flex max-w-full cursor-not-allowed'
 					data-slot='disabled-action-tooltip-trigger'
 					role='group'
@@ -23,11 +31,9 @@ function DisabledActionTooltip({ children, label, reason }: DisabledActionToolti
 					{children}
 				</span>
 			</ActionTooltip.Trigger>
-			<ActionTooltip.Content>
-				<div className='flex max-w-64 flex-col gap-1 px-1.5 py-1'>
-					<span className='font-medium text-foreground'>{label}</span>
-					<span className='text-pretty text-muted-foreground'>{reason}</span>
-				</div>
+			<ActionTooltip.Content className='max-w-64'>
+				<ActionTooltip.Row label={label} shortcut={shortcut} />
+				<span className='px-1.5 pb-1 text-pretty text-muted-foreground'>{reason}</span>
 			</ActionTooltip.Content>
 		</ActionTooltip>
 	)

@@ -20,6 +20,7 @@ export type MetadataDateDropdownProps = {
 	value: string | null | undefined
 	icon: ReactNode
 	ariaLabel?: string
+	tooltipLabel?: string
 	buttonLabel?: string
 	compact?: boolean
 	buttonAppearance?: 'default' | 'row-icon'
@@ -39,6 +40,7 @@ export function MetadataDateDropdown({
 	value,
 	icon,
 	ariaLabel,
+	tooltipLabel,
 	buttonLabel,
 	compact,
 	buttonAppearance = 'default',
@@ -94,6 +96,7 @@ export function MetadataDateDropdown({
 			shortcutMode={shortcutMode}
 			shortcut={shortcut}
 			stopPropagation={stopPropagation}
+			tooltipLabel={tooltipLabel}
 			value={selectedDateOptionKey}
 			onSelectCustomOption={() => {
 				openCustomDateDialog({

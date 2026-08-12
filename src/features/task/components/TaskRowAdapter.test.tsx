@@ -162,30 +162,66 @@ describe('TaskRowAdapter', () => {
 	it('选择框切换触发选择回调', () => {
 		const { actions } = renderTaskRowAdapter()
 
-		fireEvent.click(screen.getByRole('checkbox', { name: '选择任务 任务 A' }))
+		fireEvent.click(screen.getByRole('checkbox', { name: '选择任务：任务 A' }))
 		expect(actions.onToggleTaskSelection).toHaveBeenCalledWith('task-1')
 	})
 
 	it('优先级和状态变更回调透传', async () => {
 		const { actions, task } = renderTaskRowAdapter()
 
-		fireEvent.pointerDown(screen.getByRole('button', { name: '设置任务 任务 A 的优先级' }))
+		fireEvent.pointerDown(screen.getByRole('button', { name: '修改优先级：任务 A' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /高/ }))
 		expect(actions.onUpdateTaskPriority).toHaveBeenCalledWith(task, 3)
 
-		fireEvent.pointerDown(screen.getByRole('button', { name: '设置任务 任务 A 的状态' }))
+		fireEvent.pointerDown(screen.getByRole('button', { name: '修改状态：任务 A' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /已完成/ }))
 		expect(actions.onUpdateTaskStatus).toHaveBeenCalledWith(task, 'done')
 	})
 
-	it('任务行字段 Tooltip 只从 row Registry 展示真实快捷键', async () => {
-		renderTaskRowAdapter()
+	it.each([
+		['checkbox', '选择任务：任务 A', '选择任务', 'X'],
+		['button', '修改优先级：任务 A', '修改优先级', 'P'],
+		['button', '修改状态：任务 A', '修改状态', 'S'],
+		['button', '修改截止时间：任务 A', '修改截止时间', 'D'],
+	] as const)(
+		'任务行 %s Tooltip 只展示稳定动作和 Registry 快捷键',
+		async (role, accessibleName, tooltipLabel, shortcut) => {
+			renderTaskRowAdapter()
 
-		fireEvent.focus(screen.getByRole('button', { name: '设置任务 任务 A 的优先级' }))
+			fireEvent.focus(screen.getByRole(role, { name: accessibleName }))
+			const tooltip = await screen.findByRole('tooltip')
+			expect(tooltip).toHaveTextContent(`${tooltipLabel}${shortcut}`)
+			expect(tooltip).not.toHaveTextContent('任务 A')
+			expect(screen.getByLabelText(`按 ${shortcut}`)).toBeInTheDocument()
+		},
+	)
 
-		expect(await screen.findByRole('tooltip')).toHaveTextContent('设置任务 任务 A 的优先级P')
-		expect(screen.getByLabelText('按 P')).toBeInTheDocument()
-	})
+	it.each([
+		['选择任务：任务 A', '选择任务', '正在更新任务，暂时无法更改选择', '按 X'],
+		['修改优先级：任务 A', '修改优先级', '正在更新任务，暂时无法修改优先级', '按 P'],
+		['修改状态：任务 A', '修改状态', '正在更新任务，暂时无法修改状态', '按 S'],
+		['修改截止时间：任务 A', '修改截止时间', '正在更新任务，暂时无法修改截止时间', '按 D'],
+		['修改计划时间：任务 A', '修改计划时间', '正在更新任务，暂时无法修改计划时间', null],
+		['归属', '归属', '正在更新任务，暂时无法修改归属', '按 Shift + P'],
+	] as const)(
+		'pending 时 %s Tooltip 保留动作、快捷键和原因，但不显示任务名',
+		async (accessibleName, tooltipLabel, disabledReason, shortcutLabel) => {
+			renderTaskRowAdapter({
+				rowState: { isActive: false, isSelected: false, isPending: true },
+			})
+
+			fireEvent.focus(screen.getByRole('group', { name: accessibleName }))
+			const tooltip = await screen.findByRole('tooltip')
+			expect(tooltip).toHaveTextContent(tooltipLabel)
+			expect(tooltip).toHaveTextContent(disabledReason)
+			expect(tooltip).not.toHaveTextContent('任务 A')
+			expect(
+				tooltip
+					.querySelector('[data-slot="action-tooltip-shortcut"] [aria-label]')
+					?.getAttribute('aria-label') ?? null,
+			).toBe(shortcutLabel)
+		},
+	)
 
 	it('归属字段使用 local grouped placement，并暴露 standalone / project', async () => {
 		const { projectBinding, task } = renderTaskRowAdapter()
@@ -229,10 +265,8 @@ describe('TaskRowAdapter', () => {
 			visibleProperties: ['status', 'project', 'updatedAt'],
 		})
 
-		expect(
-			screen.queryByRole('button', { name: '设置任务 任务 A 的优先级' }),
-		).not.toBeInTheDocument()
-		expect(screen.getByRole('button', { name: '设置任务 任务 A 的状态' })).toBeInTheDocument()
+		expect(screen.queryByRole('button', { name: '修改优先级：任务 A' })).not.toBeInTheDocument()
+		expect(screen.getByRole('button', { name: '修改状态：任务 A' })).toBeInTheDocument()
 		expect(screen.getByRole('button', { name: '归属' })).toBeInTheDocument()
 		expect(screen.getByText('5/7')).toBeInTheDocument()
 		expect(screen.queryByText('5/6')).not.toBeInTheDocument()
@@ -310,7 +344,7 @@ describe('TaskRowAdapter', () => {
 
 		const selectedRow = screen.getByRole('button', { name: '打开任务 任务 A' })
 		expect(selectedRow.className).toContain(ROW_SHELL_SELECTED_CLASS)
-		expect(screen.getByRole('checkbox', { name: '选择任务 任务 A' })).toHaveAttribute(
+		expect(screen.getByRole('checkbox', { name: '选择任务：任务 A' })).toHaveAttribute(
 			'aria-checked',
 			'true',
 		)

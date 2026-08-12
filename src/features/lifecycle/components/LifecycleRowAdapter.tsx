@@ -126,10 +126,10 @@ export function LifecycleRowAdapter({
 				<RowShell.Left>
 					<RowShell.Leading>
 						<RowSelectionCell
-							ariaLabel={`选择 ${entry.title}`}
 							checked={rowState.isSelected}
 							disabled={rowState.isPending}
 							disabledReason='正在处理该条目，暂时无法更改选择'
+							label={`选择 ${entry.title}`}
 							visible={rowState.isSelected || isHovered}
 							onCheckedChange={actions.onToggleSelected}
 						/>

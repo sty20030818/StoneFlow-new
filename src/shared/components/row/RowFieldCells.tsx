@@ -20,7 +20,8 @@ export type RowSelectionCellProps = {
 	visible?: boolean
 	disabled?: boolean
 	disabledReason?: ReactNode
-	ariaLabel: string
+	label: string
+	ariaLabel?: string
 	tooltipShortcut?: ReactNode
 	onCheckedChange: () => void
 }
@@ -49,15 +50,17 @@ export function RowSelectionCell({
 	visible = false,
 	disabled,
 	disabledReason,
+	label,
 	ariaLabel,
 	tooltipShortcut,
 	onCheckedChange,
 }: RowSelectionCellProps) {
+	const accessibleLabel = ariaLabel ?? label
 	// checked / visible（键盘 hover）强制显示；指针 hover 用 row-shell group，避免 React 全表 re-render
 	const forceVisible = checked || visible
 	const checkbox = (
 		<Checkbox
-			aria-label={ariaLabel}
+			aria-label={accessibleLabel}
 			checked={checked}
 			disabled={disabled}
 			onCheckedChange={() => onCheckedChange()}
@@ -82,7 +85,12 @@ export function RowSelectionCell({
 
 	if (disabled) {
 		return disabledReason ? (
-			<DisabledActionTooltip label={ariaLabel} reason={disabledReason}>
+			<DisabledActionTooltip
+				ariaLabel={accessibleLabel}
+				label={label}
+				reason={disabledReason}
+				shortcut={tooltipShortcut}
+			>
 				{cell}
 			</DisabledActionTooltip>
 		) : (
@@ -94,7 +102,7 @@ export function RowSelectionCell({
 		<ActionTooltip>
 			<ActionTooltip.Trigger asChild>{cell}</ActionTooltip.Trigger>
 			<ActionTooltip.Content>
-				<ActionTooltip.Row label={ariaLabel} shortcut={tooltipShortcut} />
+				<ActionTooltip.Row label={label} shortcut={tooltipShortcut} />
 			</ActionTooltip.Content>
 		</ActionTooltip>
 	)

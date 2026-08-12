@@ -89,23 +89,27 @@ describe('metadata-fields', () => {
 		expect(onChange).toHaveBeenCalledWith(2)
 	})
 
-	it('禁用字段通过可聚焦外壳解释真实原因，不把 native disabled button 当 Tooltip trigger', async () => {
+	it('禁用字段保留上下文无障碍名称，并展示短动作和原因', async () => {
 		renderMetadata(
 			<MetadataFieldDropdown
+				ariaLabel='修改优先级：任务 A'
 				buttonAppearance='row-icon'
 				disabled
 				disabledReason='正在更新任务，暂时无法修改优先级'
 				label='优先级'
 				options={[{ value: 0, label: '无优先级' }]}
+				tooltipLabel='修改优先级'
 				value={0}
 				onChange={() => undefined}
 			/>,
 		)
 
-		const disabledTrigger = screen.getByRole('group', { name: '优先级' })
+		const disabledTrigger = screen.getByRole('group', { name: '修改优先级：任务 A' })
 		fireEvent.focus(disabledTrigger)
-		expect(await screen.findByRole('tooltip')).toHaveTextContent('正在更新任务，暂时无法修改优先级')
-		expect(screen.getByRole('button', { name: '优先级' })).toBeDisabled()
+		const tooltip = await screen.findByRole('tooltip')
+		expect(tooltip).toHaveTextContent('修改优先级正在更新任务，暂时无法修改优先级')
+		expect(tooltip).not.toHaveTextContent('任务 A')
+		expect(screen.getByRole('button', { name: '修改优先级：任务 A' })).toBeDisabled()
 	})
 
 	it('菜单打开后卸载 trigger 的溢出 Tooltip，避免两个浮层残留', async () => {

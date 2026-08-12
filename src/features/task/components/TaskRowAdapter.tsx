@@ -288,17 +288,18 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 				<RowShell.Left>
 					<RowShell.Leading>
 						<RowSelectionCell
-							ariaLabel={`选择任务 ${task.title}`}
+							ariaLabel={`选择任务：${task.title}`}
 							checked={isSelected}
 							disabled={isPending}
 							disabledReason='正在更新任务，暂时无法更改选择'
+							label='选择任务'
 							tooltipShortcut={<CommandShortcut commandId={COMMAND_IDS.taskSelect} scope='row' />}
 							visible={isSelected || isHovered}
 							onCheckedChange={() => actions.onToggleTaskSelection(task.id)}
 						/>
 						{showPriority ? (
 							<MetadataFieldDropdown
-								ariaLabel={`设置任务 ${task.title} 的优先级`}
+								ariaLabel={`修改优先级：${task.title}`}
 								buttonAppearance='row-icon'
 								compact
 								disabled={isPending}
@@ -309,13 +310,14 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 								options={priorityDropdownProps.options}
 								shortcut={{ commandId: COMMAND_IDS.taskSetPriority, scope: 'row' }}
 								stopPropagation
+								tooltipLabel='修改优先级'
 								value={task.priority}
 								onChange={(priority) => void actions.onUpdateTaskPriority(task, priority)}
 							/>
 						) : null}
 						{showStatus ? (
 							<MetadataFieldDropdown
-								ariaLabel={`设置任务 ${task.title} 的状态`}
+								ariaLabel={`修改状态：${task.title}`}
 								buttonAppearance='row-icon'
 								compact
 								disabled={isPending}
@@ -326,6 +328,7 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 								options={statusDropdownProps.options}
 								shortcut={{ commandId: COMMAND_IDS.taskSetStatus, scope: 'row' }}
 								stopPropagation
+								tooltipLabel='修改状态'
 								value={task.status}
 								onChange={(status) => void actions.onUpdateTaskStatus(task, status)}
 							/>
@@ -341,7 +344,7 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 					<RowShell.Fields>
 						{showDueAt ? (
 							<MetadataDateDropdown
-								ariaLabel={`截止 ${task.title}`}
+								ariaLabel={`修改截止时间：${task.title}`}
 								compact
 								disabled={isPending}
 								disabledReason='正在更新任务，暂时无法修改截止时间'
@@ -351,13 +354,14 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 								menuAlign='end'
 								shortcut={{ commandId: COMMAND_IDS.taskOpenDateMenu, scope: 'row' }}
 								stopPropagation
+								tooltipLabel='修改截止时间'
 								value={task.dueAt}
 								onChange={(value) => void actions.onUpdateTaskDueDate?.(task, value)}
 							/>
 						) : null}
 						{showScheduledAt ? (
 							<MetadataDateDropdown
-								ariaLabel={`计划 ${task.title}`}
+								ariaLabel={`修改计划时间：${task.title}`}
 								compact
 								disabled={isPending}
 								disabledReason='正在更新任务，暂时无法修改计划时间'
@@ -366,6 +370,7 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 								label='计划时间'
 								menuAlign='end'
 								stopPropagation
+								tooltipLabel='修改计划时间'
 								value={task.plannedAt}
 								onChange={(value) => void actions.onUpdateTaskScheduledAt?.(task, value)}
 							/>

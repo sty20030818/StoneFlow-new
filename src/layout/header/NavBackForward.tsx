@@ -1,4 +1,4 @@
-import { COMMAND_IDS, CommandActionTooltip } from '@/features/command'
+import { COMMAND_IDS, CommandActionTooltip, CommandShortcut } from '@/features/command'
 import { Button } from '@/shared/components/base/button'
 import { shellChromeNavCircleButtonClass } from '@/shared/components/patterns/shell-chrome'
 import { DisabledActionTooltip } from '@/shared/components/tooltip'
@@ -32,7 +32,11 @@ export function NavBackForward({
 					</Button>
 				</CommandActionTooltip>
 			) : (
-				<DisabledActionTooltip label='后退' reason='没有可返回的页面'>
+				<DisabledActionTooltip
+					label='后退'
+					reason='没有可返回的页面'
+					shortcut={<CommandShortcut commandId={COMMAND_IDS.goBack} />}
+				>
 					<Button
 						aria-label='后退'
 						className={shellChromeNavCircleButtonClass}
@@ -57,7 +61,11 @@ export function NavBackForward({
 					</Button>
 				</CommandActionTooltip>
 			) : (
-				<DisabledActionTooltip label='前进' reason='没有可前进的页面'>
+				<DisabledActionTooltip
+					label='前进'
+					reason='没有可前进的页面'
+					shortcut={<CommandShortcut commandId={COMMAND_IDS.goForward} />}
+				>
 					<Button
 						aria-label='前进'
 						className={shellChromeNavCircleButtonClass}

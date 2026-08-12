@@ -106,10 +106,10 @@ export function ProjectRowAdapter({
 					<RowShell.Leading>
 						{hasSelection ? (
 							<RowSelectionCell
-								ariaLabel={`选择项目 ${project.name}`}
 								checked={isSelected}
 								disabled={rowState.isPending}
 								disabledReason='正在更新项目，暂时无法更改选择'
+								label={`选择项目 ${project.name}`}
 								visible={isSelected || isHovered}
 								onCheckedChange={() => actions.onToggleSelected?.(project.id)}
 							/>
