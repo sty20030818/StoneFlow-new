@@ -56,7 +56,7 @@ export function BulkActionBar({ selectedCount, onClear, action, className }: Bul
 					</CommandActionTooltip>
 				</div>
 
-				<div aria-hidden className='mx-0.5 h-5 w-px shrink-0 bg-border' />
+				<div aria-hidden className='mx-0.5 h-5 w-px shrink-0 bg-legacy-border' />
 
 				<div className='flex items-center truncate'>{action}</div>
 			</div>

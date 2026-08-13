@@ -1,10 +1,9 @@
 /**
  * 更新进度环（Footer / Popover 共用）。
- * 下载中：中性描边进度；无 total 时 indeterminate 慢旋；
+ * 下载中：中性描边进度；无 total 时显示静态不确定状态；
  * 就绪：满环。错误附着于 Ready，不另造进度状态。
  */
 
-import { cn } from '@/shared/lib/utils'
 import type { UpdateFooterVisiblePhase } from '../model/deriveUpdateFooterView'
 
 export type UpdateProgressRingState = UpdateFooterVisiblePhase
@@ -38,14 +37,12 @@ export function UpdateProgressRing({
 	else if (available) offset = c * 0.92
 	else if (determinate && clamped !== null) offset = c - (clamped / 100) * c
 
-	const indeterminateSpin = downloading && value === null
-
 	return (
 		<svg
 			width={size}
 			height={size}
 			viewBox={`0 0 ${size} ${size}`}
-			className={cn(indeterminateSpin && 'animate-spin', className)}
+			className={className}
 			role={downloading ? 'progressbar' : 'img'}
 			aria-label={
 				ready
@@ -80,10 +77,7 @@ export function UpdateProgressRing({
 				strokeDasharray={c}
 				strokeDashoffset={offset}
 				transform={`rotate(-90 ${size / 2} ${size / 2})`}
-				className={cn(
-					ready ? 'opacity-100' : 'opacity-70',
-					determinate && 'transition-[stroke-dashoffset] duration-200 ease-out',
-				)}
+				className={ready ? 'opacity-100' : 'opacity-70'}
 			/>
 			{ready ? (
 				<path

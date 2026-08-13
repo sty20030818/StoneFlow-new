@@ -167,9 +167,9 @@ export function UpdateSettingsSection() {
 					/>
 				) : null}
 
-				<div className='flex items-center justify-between rounded-xl border border-sf-border-subtle bg-muted/25 p-4'>
+				<div className='flex items-center justify-between rounded-xl border border-sf-border-subtle bg-legacy-muted/25 p-4'>
 					<div>
-						<p className='text-sm font-medium text-foreground'>手动检查更新</p>
+						<p className='text-sm font-medium text-legacy-foreground'>手动检查更新</p>
 						<p className={cn(formFieldHintClass, 'mt-0.5')}>立即向服务器查询是否有新版本可用。</p>
 					</div>
 					<Button
@@ -178,10 +178,7 @@ export function UpdateSettingsSection() {
 						type='button'
 						variant='default'
 					>
-						<RefreshCwIcon
-							aria-hidden
-							className={cn('-ml-0.5 mr-1.5 size-4', isChecking && 'animate-spin')}
-						/>
+						<RefreshCwIcon aria-hidden className='-ml-0.5 mr-1.5 size-4' />
 						{isChecking ? '检查中...' : '检查更新'}
 					</Button>
 				</div>

@@ -76,7 +76,7 @@ export function TaskLinkEditorPopover({
 					<DialogTitle className='sr-only'>{titleLabel}</DialogTitle>
 					<form className='space-y-3' onSubmit={(event) => void handleSubmit(event)}>
 						<div className='space-y-1'>
-							<h4 className='text-[13px] font-medium text-foreground'>{titleLabel}</h4>
+							<h4 className='text-[13px] font-medium text-legacy-foreground'>{titleLabel}</h4>
 							<p className='text-[12px] leading-5 text-sf-shell-text-tertiary'>
 								仅支持 `http` / `https` URL。
 							</p>

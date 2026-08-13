@@ -42,7 +42,7 @@ export function ProjectResultRowAdapter({
 
 				<RowShell.Title>
 					<div className='min-w-0'>
-						<OverflowTooltip className='text-[12.5px] text-foreground' content={item.name}>
+						<OverflowTooltip className='text-[12.5px] text-legacy-foreground' content={item.name}>
 							{item.name}
 						</OverflowTooltip>
 						<OverflowTooltip

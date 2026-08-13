@@ -36,12 +36,41 @@
 		"treeSha256": "39485440382560c1becb520454fe8b605a761e5b996e90543c178bb5373b676f",
 		"treeHashScope": "installed node_modules/@heroui-pro/react regular-file tree",
 		"treeHashMethod": "Sort relative regular-file paths bytewise, hash each file with SHA-256, then SHA-256 the resulting manifest.",
-		"installedTreeDifference": "The environment-variable smoke restored 547 installed files, including dist/postinstall/index.js. A prior positional-key diagnostic produced 546 files and is not the accepted contract evidence; T8 and T110 own the required no-cache reproducibility check."
+		"installedTreeDifference": "The environment-variable cache smoke restored 547 installed files, including the bootstrap dist/postinstall/index.js. The accepted T8 no-cache artifact removes that bootstrap file and is recorded separately below."
+	},
+	"stageBObservedArtifact": {
+		"recordedAt": "2026-08-13",
+		"name": "@heroui-pro/react",
+		"version": "1.0.0-beta.8",
+		"fileCount": 546,
+		"diskUsageKiB": 3936,
+		"exportCount": 70,
+		"peerDependencyCount": 30,
+		"scripts": null,
+		"packageJsonSha256": "9aba0a6842767eb89ed5938d84c0f666ba86eea16efbe9fbfdb40a960b1a8e95",
+		"treeSha256": "4d8b86e822fc1e4f30772293c2600e85d35a16b4f98c3480db7c11c8fb22b972",
+		"treeHashScope": "main-project node_modules/@heroui-pro/react regular-file tree after hpsetup@4.7.0 --no-cache",
+		"differenceFromCacheSmoke": "dist/postinstall/index.js is absent from the canonical installed artifact"
+	},
+	"stageBIsolatedVerification": {
+		"recordedAt": "2026-08-13",
+		"temporaryWorkspace": true,
+		"installerCommand": "hpsetup@4.7.0 react --auto --no-cache",
+		"credentialInjection": "HEROUI_KEY process environment",
+		"credentialRecorded": false,
+		"sourceFetch": "failed-and-restored-from-local-cache",
+		"frozenInstall": "passed",
+		"typecheck": "passed",
+		"productionBuild": "passed",
+		"legacyDependencyCorrection": "cmdk@1.1.1 was added as a temporary direct dependency because the legacy command implementation imports it; removal remains owned by the command hard-cut stage",
+		"noCacheContractSatisfied": false,
+		"cacheFallbackAcceptedByTaskOwner": true,
+		"cacheFallbackAcceptedAt": "2026-08-14"
 	},
 	"claims": {
 		"collectUiPackageAccessVerified": true,
 		"packageIntegrityRecorded": true,
 		"heroUiOfficialLicenseVerified": false,
-		"freshNoCacheProjectInstall": "deferred-to-T8-and-T110"
+		"freshNoCacheProjectInstall": "not-required-after-task-owner-approved-cache-fallback; isolated-frozen-install-typecheck-build-passed-from-the-recorded-cache-artifact"
 	}
 }

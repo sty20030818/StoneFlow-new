@@ -17,7 +17,7 @@ function Command({ className, ...props }: React.ComponentProps<typeof CommandPri
 		<CommandPrimitive
 			data-slot='command'
 			className={cn(
-				'flex size-full flex-col overflow-hidden rounded-lg border border-sf-border-subtle bg-background/98 p-0 text-popover-foreground shadow-(--sf-shadow-popover)',
+				'flex size-full flex-col overflow-hidden rounded-lg border border-sf-border-subtle bg-legacy-background/98 p-0 text-popover-foreground shadow-(--sf-shadow-popover)',
 				className,
 			)}
 			{...props}
@@ -69,7 +69,7 @@ const CommandInput = React.forwardRef<
 				data-slot='command-input'
 				ref={ref}
 				className={cn(
-					'w-full border-none bg-transparent p-0 text-[18px] font-medium text-foreground shadow-none outline-hidden ring-0 placeholder:text-sf-text-quaternary disabled:cursor-not-allowed disabled:opacity-50',
+					'w-full border-none bg-transparent p-0 text-[18px] font-medium text-legacy-foreground shadow-none outline-hidden ring-0 placeholder:text-sf-text-quaternary disabled:cursor-not-allowed disabled:opacity-50',
 					className,
 				)}
 				{...props}
@@ -118,7 +118,7 @@ function CommandGroup({
 		<CommandPrimitive.Group
 			data-slot='command-group'
 			className={cn(
-				'overflow-hidden px-0 text-foreground **:[[cmdk-group-heading]]:pr-2 **:[[cmdk-group-heading]]:pl-3 **:[[cmdk-group-heading]]:pt-1 **:[[cmdk-group-heading]]:pb-2 **:[[cmdk-group-heading]]:text-[13px] **:[[cmdk-group-heading]]:font-medium **:[[cmdk-group-heading]]:tracking-normal **:[[cmdk-group-heading]]:text-sf-text-secondary',
+				'overflow-hidden px-0 text-legacy-foreground **:[[cmdk-group-heading]]:pr-2 **:[[cmdk-group-heading]]:pl-3 **:[[cmdk-group-heading]]:pt-1 **:[[cmdk-group-heading]]:pb-2 **:[[cmdk-group-heading]]:text-[13px] **:[[cmdk-group-heading]]:font-medium **:[[cmdk-group-heading]]:tracking-normal **:[[cmdk-group-heading]]:text-sf-text-secondary',
 				className,
 			)}
 			{...props}
@@ -148,7 +148,7 @@ function CommandItem({
 		<CommandPrimitive.Item
 			data-slot='command-item'
 			className={cn(
-				'group/command-item relative mx-1 flex min-h-11 cursor-default items-center rounded-md bg-transparent px-3 py-2 text-sm outline-hidden select-none hover:bg-sf-surface-app in-data-[slot=dialog-content]:rounded-md! data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-55 data-[selected=false]:bg-transparent data-selected:bg-sf-surface-app data-selected:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0',
+				'group/command-item relative mx-1 flex min-h-11 cursor-default items-center rounded-md bg-transparent px-3 py-2 text-sm outline-hidden select-none hover:bg-sf-surface-app in-data-[slot=dialog-content]:rounded-md! data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-55 data-[selected=false]:bg-transparent data-selected:bg-sf-surface-app data-selected:text-legacy-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0',
 				className,
 			)}
 			{...props}
@@ -163,7 +163,7 @@ function CommandShortcut({ className, ...props }: React.ComponentProps<'span'>) 
 		<span
 			data-slot='command-shortcut'
 			className={cn(
-				'ml-auto text-xs tracking-widest text-muted-foreground group-data-selected/command-item:text-foreground',
+				'ml-auto text-xs tracking-widest text-muted-foreground group-data-selected/command-item:text-legacy-foreground',
 				className,
 			)}
 			{...props}

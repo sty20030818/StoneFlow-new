@@ -236,8 +236,7 @@ export function ShellHeader({
 					{isAtLeastSm ? (
 						<div
 							className={cn(
-								'flex h-full shrink-0 flex-nowrap items-center transition-[width] duration-(--sf-shell-layout-sync-duration) ease-(--sf-shell-layout-sync-easing) motion-reduce:transition-none',
-								'group-data-[sidebar-resizing=true]/sidebar-wrapper:transition-none',
+								'flex h-full shrink-0 flex-nowrap items-center',
 								'group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:w-(--sf-shell-sidebar-reserved-width) group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:min-w-0',
 								'group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:pr-3',
 								'group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:w-max group-data-[sidebar-layout=mobile]/sidebar-wrapper:w-max',

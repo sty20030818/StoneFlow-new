@@ -1,33 +1,22 @@
-/* 全局字体入口：用 unicode-range 固定英文与中文的实际字形来源。 */
+/* Inter 4.1 官方 Variable WOFF2；授权文本见 /fonts/Inter-OFL.txt。 */
 @font-face {
-	font-family: "StoneFlow Sans";
-	src: url("/fonts/MapleMono-Regular.ttf") format("truetype");
+	font-family: "InterVariable";
+	src: url("/fonts/InterVariable.woff2") format("woff2");
 	font-style: normal;
-	font-weight: 400;
+	font-weight: 400 600;
 	font-display: swap;
-	unicode-range:
-		U+0000-00FF, U+0100-024F, U+0259, U+1E00-1EFF, U+2000-206F, U+20A0-20CF, U+2100-214F,
-		U+2190-21FF, U+2200-22FF, U+2460-24FF, U+25A0-25FF;
 }
 
-@font-face {
-	font-family: "StoneFlow Sans";
-	src: url("/fonts/LXGWWenKaiLite-Regular.ttf") format("truetype");
-	font-style: normal;
-	font-weight: 400;
-	font-display: swap;
-	unicode-range:
-		U+2E80-2EFF, U+2F00-2FDF, U+2FF0-2FFF, U+3000-303F, U+31C0-31EF, U+3400-4DBF, U+4E00-9FFF,
-		U+F900-FAFF, U+FE10-FE1F, U+FE30-FE4F, U+FF00-FFEF;
+@theme inline {
+	--font-sans:
+		"InterVariable", "PingFang SC", "Microsoft YaHei UI", "Segoe UI", system-ui, sans-serif;
+	--font-mono:
+		ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
+		monospace;
 }
 
-@font-face {
-	font-family: "StoneFlow Sans";
-	src: url("/fonts/LXGWWenKaiLite-Medium.ttf") format("truetype");
-	font-style: normal;
-	font-weight: 500;
-	font-display: swap;
-	unicode-range:
-		U+2E80-2EFF, U+2F00-2FDF, U+2FF0-2FFF, U+3000-303F, U+31C0-31EF, U+3400-4DBF, U+4E00-9FFF,
-		U+F900-FAFF, U+FE10-FE1F, U+FE30-FE4F, U+FF00-FFEF;
+@layer base {
+	html {
+		font-optical-sizing: auto;
+	}
 }

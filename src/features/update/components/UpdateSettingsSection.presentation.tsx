@@ -65,14 +65,16 @@ export function UpdateCheckModeOptions({
 }) {
 	return (
 		<div className='grid gap-3'>
-			<p className={cn(formFieldHintClass, 'text-foreground font-medium')}>更新检查方式</p>
+			<p className={cn(formFieldHintClass, 'text-legacy-foreground font-medium')}>更新检查方式</p>
 			{CHECK_MODE_OPTIONS.map((option) => {
 				const checked = value === option.value
 				return (
 					<label
 						className={cn(
-							'flex items-start gap-3 rounded-xl border border-sf-border-subtle bg-muted/25 p-3 transition-colors',
-							disabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer hover:bg-muted/45',
+							'flex items-start gap-3 rounded-xl border border-sf-border-subtle bg-legacy-muted/25 p-3',
+							disabled
+								? 'cursor-not-allowed opacity-70'
+								: 'cursor-pointer hover:bg-legacy-muted/45',
 							checked && 'border-primary/40 bg-primary/5',
 						)}
 						key={option.value}
@@ -86,7 +88,7 @@ export function UpdateCheckModeOptions({
 							type='radio'
 						/>
 						<div className='min-w-0'>
-							<p className='text-sm font-medium text-foreground'>{option.label}</p>
+							<p className='text-sm font-medium text-legacy-foreground'>{option.label}</p>
 							<p className={formFieldHintClass}>{option.description}</p>
 						</div>
 					</label>
@@ -107,15 +109,17 @@ export function UpdateChannelOptions({
 }) {
 	return (
 		<div className='grid gap-3 pt-1'>
-			<p className={cn(formFieldHintClass, 'text-foreground font-medium')}>更新渠道</p>
+			<p className={cn(formFieldHintClass, 'text-legacy-foreground font-medium')}>更新渠道</p>
 			<div className='grid gap-3 md:grid-cols-2'>
 				{CHANNEL_OPTIONS.map((option) => {
 					const checked = value === option.value
 					return (
 						<label
 							className={cn(
-								'flex items-start gap-3 rounded-xl border border-sf-border-subtle bg-muted/25 p-3 transition-colors',
-								disabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer hover:bg-muted/45',
+								'flex items-start gap-3 rounded-xl border border-sf-border-subtle bg-legacy-muted/25 p-3',
+								disabled
+									? 'cursor-not-allowed opacity-70'
+									: 'cursor-pointer hover:bg-legacy-muted/45',
 								checked && 'border-primary/40 bg-primary/5',
 							)}
 							key={option.value}
@@ -129,7 +133,7 @@ export function UpdateChannelOptions({
 								type='radio'
 							/>
 							<div className='min-w-0'>
-								<p className='flex items-center gap-2 text-sm font-medium text-foreground'>
+								<p className='flex items-center gap-2 text-sm font-medium text-legacy-foreground'>
 									{option.label}
 									{option.badge ? (
 										<Badge variant='warning' className='text-[10px] px-1 py-0'>
@@ -158,7 +162,7 @@ export function UpdateIntervalOptions({
 }) {
 	return (
 		<div className='grid gap-3 pt-1'>
-			<p className={cn(formFieldHintClass, 'text-foreground font-medium')}>自动检查间隔</p>
+			<p className={cn(formFieldHintClass, 'text-legacy-foreground font-medium')}>自动检查间隔</p>
 			<p className={formFieldHintClass}>启动约 3 秒后会检查一次；之后按此间隔定期检查。</p>
 			<div className='flex flex-wrap gap-2'>
 				{INTERVAL_OPTIONS.map((option) => {
@@ -170,11 +174,11 @@ export function UpdateIntervalOptions({
 							disabled={disabled}
 							onClick={() => onChange(option.value)}
 							className={cn(
-								'rounded-full border px-3 py-1.5 text-[13px] transition-colors',
+								'rounded-full border px-3 py-1.5 text-[13px]',
 								disabled && 'cursor-not-allowed opacity-70',
 								checked
-									? 'border-primary/40 bg-primary/10 font-medium text-foreground'
-									: 'border-sf-border-subtle bg-muted/25 text-sf-shell-text-tertiary hover:bg-muted/45',
+									? 'border-primary/40 bg-primary/10 font-medium text-legacy-foreground'
+									: 'border-sf-border-subtle bg-legacy-muted/25 text-sf-shell-text-tertiary hover:bg-legacy-muted/45',
 							)}
 						>
 							{option.label}

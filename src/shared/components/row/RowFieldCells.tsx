@@ -112,7 +112,7 @@ export function RowTitleCell({ title, doneLike = false, className }: RowTitleCel
 	return (
 		<OverflowTooltip
 			className={cn(
-				'truncate text-sm font-medium text-foreground transition-colors group-hover/row-shell:text-foreground',
+				'truncate text-sm font-medium text-legacy-foreground transition-colors group-hover/row-shell:text-legacy-foreground',
 				doneLike ? 'text-sf-text-tertiary line-through' : null,
 				className,
 			)}

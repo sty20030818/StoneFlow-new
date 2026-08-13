@@ -12,10 +12,7 @@ export function AdvancedCollapse() {
 	return (
 		<div
 			aria-hidden={!open}
-			className={cn(
-				'grid transition-[grid-template-rows] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]',
-				open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
-			)}
+			className={cn('grid', open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}
 			data-testid='launcher-advanced-collapse'
 		>
 			<div className='min-h-0 overflow-hidden'>

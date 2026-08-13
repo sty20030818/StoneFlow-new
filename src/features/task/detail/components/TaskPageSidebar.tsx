@@ -36,7 +36,7 @@ export function TaskPageSidebar({
 		<div className='flex flex-col gap-3'>
 			{task.archivedAt ? (
 				<DetailPageStatusBlock>
-					<p className='text-sm font-medium text-foreground'>已归档任务</p>
+					<p className='text-sm font-medium text-legacy-foreground'>已归档任务</p>
 					<p className='mt-1 text-[12px] leading-5 text-sf-text-secondary'>
 						该任务仍可查看，并可从页面恢复。
 					</p>
@@ -45,7 +45,7 @@ export function TaskPageSidebar({
 
 			{task.deletedAt ? (
 				<DetailPageStatusBlock>
-					<p className='text-sm font-medium text-foreground'>回收站中的任务</p>
+					<p className='text-sm font-medium text-legacy-foreground'>回收站中的任务</p>
 					<p className='mt-1 text-[12px] leading-5 text-sf-text-secondary'>
 						当前页面为只读，避免继续对已删除实体写入 autosave。
 					</p>
@@ -94,7 +94,7 @@ function MetaRow({ label, value }: { label: string; value: string }) {
 	return (
 		<div className='flex items-start justify-between gap-3 text-[12px] leading-5'>
 			<span className='shrink-0 text-sf-text-tertiary'>{label}</span>
-			<span className='min-w-0 text-right text-foreground'>{value}</span>
+			<span className='min-w-0 text-right text-legacy-foreground'>{value}</span>
 		</div>
 	)
 }

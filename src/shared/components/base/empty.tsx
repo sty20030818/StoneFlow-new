@@ -72,7 +72,7 @@ function EmptyMedia({
 function EmptyTitle({ className, ...props }: React.ComponentProps<'div'>) {
 	return (
 		<div
-			className={cn('text-sm font-medium text-foreground tracking-tight', className)}
+			className={cn('text-sm font-medium text-legacy-foreground tracking-tight', className)}
 			data-slot='empty-title'
 			{...props}
 		/>
@@ -84,7 +84,7 @@ function EmptyDescription({ className, ...props }: React.ComponentProps<'p'>) {
 		<p
 			className={cn(
 				// 让空态描述在多行时更“均匀换行”，避免最后一行特别短带来的视觉失衡
-				'text-balance text-sm leading-6 text-muted-foreground [&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-foreground',
+				'text-balance text-sm leading-6 text-muted-foreground [&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-legacy-foreground',
 				className,
 			)}
 			data-slot='empty-description'

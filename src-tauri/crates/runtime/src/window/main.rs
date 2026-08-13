@@ -6,7 +6,7 @@
 //! 3. Windows 再恢复位置和尺寸；macOS / Linux 不持久化窗口状态；
 //! 4. 再 `show` —— 禁止「可见后再 center」。
 //!
-//! 首帧壳色（W1）：原生窗 + WebView `background_color` 与 `index.html` / `--sf-neutral-100` 对齐。
+//! 首帧壳色（W1）：原生窗 + WebView `background_color` 与 `theme.css` / `index.html` 对齐。
 //!
 //! Windows 只保存位置和尺寸，不保存最大化或可见状态；关闭时主动落盘。
 
@@ -25,7 +25,7 @@ pub const MAIN_WINDOW_LABEL: &str = "main";
 #[cfg(target_os = "windows")]
 pub const WINDOWS_MAIN_WINDOW_STATE: StateFlags = StateFlags::SIZE.union(StateFlags::POSITION);
 
-/// 与 `--sf-neutral-100` / `index.html` inline 背景同步；改 token 时请三处一起改。
+/// 与 `theme.css` / `index.html` inline 背景同步；`check-shell-theme-sync` 防止三处漂移。
 const MAIN_WINDOW_SHELL_BG: Color = Color(0xf3, 0xf3, 0xf4, 0xff);
 
 const MAIN_WINDOW_WIDTH: f64 = 1280.0;

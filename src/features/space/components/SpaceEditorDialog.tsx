@@ -149,7 +149,7 @@ export function SpaceEditorDialog({
 								<PreviewIcon className='size-5 text-white' />
 							</span>
 							<div className='min-w-0'>
-								<p className='truncate text-[13px] font-medium text-foreground'>
+								<p className='truncate text-[13px] font-medium text-legacy-foreground'>
 									{name.trim() || 'Space 预览'}
 								</p>
 								<p className='text-[12px] text-muted-foreground'>

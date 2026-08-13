@@ -14,7 +14,7 @@ export function SelectionIndicator({ checked, disabled, className }: SelectionIn
 		<span
 			aria-hidden
 			className={cn(
-				'flex size-4 shrink-0 items-center justify-center rounded-[5px] border transition-colors',
+				'flex size-4 shrink-0 items-center justify-center rounded-[5px] border',
 				checked
 					? 'border-primary bg-primary text-primary-foreground'
 					: 'border-sf-border-strong bg-transparent text-transparent group-hover/selection-indicator:border-sf-icon-secondary',

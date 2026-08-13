@@ -37,7 +37,7 @@ export function getSyncStatusTone(status: SyncStatus): SyncStatusTone {
 			return {
 				badgeVariant: 'primary',
 				dotClassName: syncStatusDotClassNames.syncing,
-				surfaceClassName: 'border-sf-accent-soft-border bg-accent',
+				surfaceClassName: 'border-sf-accent-soft-border bg-legacy-accent',
 			}
 		case 'error':
 		case 'needs_attention':
@@ -50,7 +50,7 @@ export function getSyncStatusTone(status: SyncStatus): SyncStatusTone {
 			return {
 				badgeVariant: 'outline',
 				dotClassName: syncStatusDotClassNames.default,
-				surfaceClassName: 'border-sf-border-subtle bg-muted/35',
+				surfaceClassName: 'border-sf-border-subtle bg-legacy-muted/35',
 			}
 	}
 }

@@ -13,8 +13,8 @@
 	}
 
 	body {
-		background: var(--sf-shell-bg);
-		color: var(--sf-main-text);
+		background: var(--surface-secondary);
+		color: var(--foreground);
 		@apply font-sans antialiased;
 		font-feature-settings: "cv01", "ss03";
 		font-synthesis: none;
@@ -65,6 +65,6 @@
 	}
 
 	::selection {
-		background: color-mix(in oklab, var(--primary) 18%, white);
+		background: color-mix(in oklab, var(--accent) 18%, white);
 	}
 }

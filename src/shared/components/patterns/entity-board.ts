@@ -14,12 +14,12 @@ export const entityBoardLoadingCardClass =
 	'rounded-[28px] border border-sf-border-subtle bg-card/90 p-6 text-[13px] text-sf-shell-text-secondary'
 
 export const entityBoardSectionHeadingClass =
-	'flex min-w-0 flex-1 items-center gap-2 px-1 text-sm font-semibold text-foreground'
+	'flex min-w-0 flex-1 items-center gap-2 px-1 text-sm font-semibold text-legacy-foreground'
 
 export const entityBoardSectionCountBadgeClass =
 	'ml-1 border-transparent bg-transparent shadow-none'
 export const entityBoardSectionSelectedBadgeClass =
-	'border-transparent bg-sf-selection-surface text-foreground shadow-none'
+	'border-transparent bg-sf-selection-surface text-legacy-foreground shadow-none'
 export const entityBoardSectionRightSpacerClass = 'pr-1'
 export const entityBoardCompactBadgeClass = 'h-5 rounded-full px-2 text-[11px]'
 export const entityBoardSectionActionButtonClass =

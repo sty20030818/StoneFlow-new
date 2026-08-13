@@ -26,7 +26,7 @@ import { ChevronLeftIcon } from 'lucide-react'
 
 /** 设置侧栏分区标题：与原「设置」主标题同级样式，左对齐 */
 const settingsSidebarSectionTitleClass = cn(
-	'px-2.5 pb-1 pt-3 text-left text-[13px] font-semibold tracking-tight text-foreground',
+	'px-2.5 pb-1 pt-3 text-left text-[13px] font-semibold tracking-tight text-legacy-foreground',
 	'group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:sr-only group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:sr-only',
 )
 

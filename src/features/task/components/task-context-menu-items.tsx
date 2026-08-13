@@ -67,11 +67,11 @@ export function PropertyOptionItem({
 
 function PropertyOptionIndicatorIcon({ indicator }: { indicator: PropertyOptionIndicator }) {
 	if (indicator === 'checked') {
-		return <CheckIcon className='size-3.5 text-foreground' />
+		return <CheckIcon className='size-3.5 text-legacy-foreground' />
 	}
 
 	if (indicator === 'mixed') {
-		return <MinusIcon className='size-3.5 text-foreground' />
+		return <MinusIcon className='size-3.5 text-legacy-foreground' />
 	}
 
 	return <CheckIcon className='invisible size-3.5' />

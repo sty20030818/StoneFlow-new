@@ -17,19 +17,19 @@ export const launcherSurfaceClipClass = [
 	'rounded-[var(--launcher-panel-radius,8px)]',
 	'[clip-path:inset(0_round_var(--launcher-panel-radius,8px))]',
 	'border border-black/[0.05]',
-	'bg-background/92',
+	'bg-legacy-background/92',
 	'shadow-[inset_0_1px_0_rgba(255,255,255,0.72),0_0_0_0.5px_rgba(0,0,0,0.025)]',
 ].join(' ')
 
 /** Composer 顶栏衬底 */
-export const launcherChromeClass = 'shrink-0 border-b border-black/[0.05] bg-background/96'
+export const launcherChromeClass = 'shrink-0 border-b border-black/[0.05] bg-legacy-background/96'
 
 /** Results 槽位衬底；真实滚动交给 AppScrollArea */
-export const launcherResultsPaneClass = 'min-h-0 bg-background/78'
+export const launcherResultsPaneClass = 'min-h-0 bg-legacy-background/78'
 
 /** Footer 底栏 */
 export const launcherFooterChromeClass =
-	'shrink-0 rounded-b-[var(--launcher-panel-radius,8px)] border-t border-black/[0.06] bg-background/96'
+	'shrink-0 rounded-b-[var(--launcher-panel-radius,8px)] border-t border-black/[0.06] bg-legacy-background/96'
 
 /** 空态轻标题 */
 export const launcherSectionLabelClass =

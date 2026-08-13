@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html class="light" data-theme="stoneflow-light" lang="zh-CN">
 	<head>
 		<meta charset="UTF-8" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -7,7 +7,7 @@
 		<title>stoneflow</title>
 		<!--
 			开屏首帧（须在 CSS/JS 就绪前生效）：
-			1. 壳色：与 --sf-neutral-100 / 原生 background_color 对齐（#f3f3f4）
+			1. 壳色：与 theme.css / 原生 background_color 对齐（#f3f3f4）
 			2. 主窗静态骨架：复刻 ShellLayoutSkeleton（灰壳 + 白卡）；改尺寸/色时两边一起改
 			3. 骨架在 #root 外作遮罩，避免 createRoot 清空 root 时闪空帧；React 首帧后再撤
 			几何默认宽 = shared/lib/shellSidebarGeometry DEFAULT_SIDEBAR_WIDTH（256）
@@ -16,6 +16,7 @@
 			html,
 			body,
 			#root {
+				color-scheme: light;
 				margin: 0;
 				height: 100%;
 				background: #f3f3f4;
@@ -71,8 +72,8 @@
 				min-height: 0;
 				overflow: hidden;
 				border-radius: 8px; /* rounded-lg */
-				border: 1px solid #e5e5e6; /* --sf-border-subtle / neutral-200 */
-				background: #fcfcfd; /* --sf-surface-panel / neutral-25 */
+				border: 1px solid #e5e5e6; /* theme.css --separator */
+				background: #fcfcfd; /* theme.css --background */
 			}
 
 			#sf-boot-shell .sf-boot-footer {

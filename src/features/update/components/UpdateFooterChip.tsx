@@ -34,7 +34,7 @@ export function UpdateFooterChip({ view, onOpen }: UpdateFooterChipProps) {
 					<Badge
 						asChild
 						variant='default'
-						className='max-w-38 cursor-pointer text-[11px] active:scale-[0.96]'
+						className='max-w-38 cursor-pointer text-[11px]'
 					>
 						<button type='button' aria-label={view.title} onClick={onOpen}>
 							{/* 光学：箭头略偏下 */}
@@ -63,7 +63,7 @@ export function UpdateFooterChip({ view, onOpen }: UpdateFooterChipProps) {
 			<UpdateProgressRing
 				state={ringState}
 				value={ringValue}
-				className={view.phase === 'downloading' ? 'text-foreground/70' : undefined}
+				className={view.phase === 'downloading' ? 'text-legacy-foreground/70' : undefined}
 			/>
 		</ShellFooterHit>
 	)

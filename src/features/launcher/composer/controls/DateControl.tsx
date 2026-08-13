@@ -34,7 +34,7 @@ export function DateControl({
 		<Popover onOpenChange={(nextOpen) => onOpenChange(nextOpen, popoverKey)} open={open}>
 			<PopoverTrigger asChild>
 				<Button
-					className={cn(value ? 'text-foreground' : 'text-sf-text-quaternary')}
+					className={cn(value ? 'text-legacy-foreground' : 'text-sf-text-quaternary')}
 					size='sm'
 					variant='outline'
 				>

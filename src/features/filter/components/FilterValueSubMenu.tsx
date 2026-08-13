@@ -32,7 +32,7 @@ export function FilterValueSubMenu({
 
 	return (
 		<div className='flex max-h-72 flex-col'>
-			<div className='shrink-0 border-b border-border px-2 py-1.5'>
+			<div className='shrink-0 border-b border-legacy-border px-2 py-1.5'>
 				<Input
 					aria-label={`${formatFilterFieldLabel(field)} 筛选`}
 					className='h-7 border-0 bg-transparent px-1 shadow-none focus-visible:ring-0'

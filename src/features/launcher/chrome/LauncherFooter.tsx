@@ -34,7 +34,7 @@ export function LauncherFooter() {
 					<CheckCircle2Icon className='size-3.5 shrink-0' />
 				) : null}
 				{state.submitState === 'submitting' ? (
-					<LoaderCircleIcon className='size-3.5 shrink-0 animate-spin' />
+					<LoaderCircleIcon className='size-3.5 shrink-0' />
 				) : null}
 				<OverflowTooltip className='flex-1' content={state.message}>
 					{state.message}

@@ -50,9 +50,8 @@ export function SystemStatusChip() {
 	)
 	const pillClass = cn(
 		'pointer-events-auto flex max-w-md items-center gap-3 rounded-full',
-		'border border-border bg-background/95 px-3 py-1.5 shadow-(--sf-shadow-float)',
-		'backdrop-blur-sm supports-backdrop-filter:bg-background/85',
-		'animate-in fade-in-0 slide-in-from-bottom-1 duration-200',
+		'border border-legacy-border bg-legacy-background/95 px-3 py-1.5 shadow-(--sf-shadow-float)',
+		'backdrop-blur-sm supports-backdrop-filter:bg-legacy-background/85',
 	)
 
 	if (active === 'update-ready') {
@@ -68,7 +67,7 @@ export function SystemStatusChip() {
 						)}
 						aria-hidden
 					/>
-					<p className='min-w-0 truncate text-[13px] font-medium text-foreground'>
+					<p className='min-w-0 truncate text-[13px] font-medium text-legacy-foreground'>
 						{installFailed
 							? version
 								? `v${version} 安装失败`
@@ -90,7 +89,7 @@ export function SystemStatusChip() {
 						<Button
 							type='button'
 							size='sm'
-							className='h-7 rounded-full px-2.5 text-[12px] active:scale-[0.96]'
+							className='h-7 rounded-full px-2.5 text-[12px]'
 							onClick={openDialog}
 						>
 							查看
@@ -112,7 +111,7 @@ export function SystemStatusChip() {
 		<div role='status' aria-live='polite' className={shellClass}>
 			<div className={pillClass}>
 				<span className='size-2 shrink-0 rounded-full bg-red-500' aria-hidden />
-				<p className='min-w-0 truncate text-[13px] font-medium text-foreground'>
+				<p className='min-w-0 truncate text-[13px] font-medium text-legacy-foreground'>
 					同步：{syncLabel}
 				</p>
 				<div className='flex shrink-0 items-center gap-1'>

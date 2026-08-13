@@ -51,7 +51,7 @@ export const MetadataFieldButton = forwardRef<HTMLButtonElement, MetadataFieldBu
 					{...props}
 					aria-label={ariaLabel}
 					className={cn(
-						'flex size-5 shrink-0 items-center justify-center rounded-full border border-transparent bg-transparent p-0 text-foreground shadow-none transition-colors outline-none focus-visible:border-border focus-visible:ring-0 disabled:pointer-events-none disabled:opacity-50',
+						'flex size-5 shrink-0 items-center justify-center rounded-full border border-transparent bg-transparent p-0 text-legacy-foreground shadow-none outline-none focus-visible:border-legacy-border focus-visible:ring-0 disabled:pointer-events-none disabled:opacity-50',
 						className,
 					)}
 					onClick={(event) => {

@@ -10,7 +10,7 @@ export const formFieldHintClass = 'mt-1 text-[12px] leading-5 text-sf-shell-text
 export const formFieldLabelVariants = cva('text-[12px] font-medium', {
 	variants: {
 		tone: {
-			default: 'text-foreground',
+			default: 'text-legacy-foreground',
 			muted: 'text-sf-text-secondary',
 		},
 	},

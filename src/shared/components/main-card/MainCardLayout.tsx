@@ -68,7 +68,9 @@ function MainCardHeader({ title, breadcrumb, action, className }: MainCardHeader
 		>
 			<div className='min-w-0 flex-1'>
 				{breadcrumb ?? (
-					<h1 className='truncate text-sm font-semibold leading-5 text-foreground'>{title}</h1>
+					<h1 className='truncate text-sm font-semibold leading-5 text-legacy-foreground'>
+						{title}
+					</h1>
 				)}
 			</div>
 			{action ? <div className={mainCardInlineActionsClass}>{action}</div> : null}

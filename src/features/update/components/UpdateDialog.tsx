@@ -285,7 +285,7 @@ export function UpdateDialog() {
 						{showNotes ? (
 							<div
 								aria-label='本次累计更新说明'
-								className='max-h-64 space-y-5 overflow-y-auto rounded-xl bg-muted p-3'
+								className='max-h-64 space-y-5 overflow-y-auto rounded-xl bg-legacy-muted p-3'
 								role='region'
 							>
 								{releases.map((release) => (
@@ -296,9 +296,9 @@ export function UpdateDialog() {
 
 						{isDownloading ? (
 							<div className='space-y-2'>
-								<div className='h-1.5 w-full overflow-hidden rounded-full bg-muted'>
+								<div className='h-1.5 w-full overflow-hidden rounded-full bg-legacy-muted'>
 									<div
-										className='h-full rounded-full bg-primary transition-[width] duration-200 ease-out'
+										className='h-full rounded-full bg-primary'
 										style={{ width: `${progressPercent}%` }}
 									/>
 								</div>
@@ -349,10 +349,7 @@ export function UpdateDialog() {
 				<div className={cn(createDialogFooterClass, 'justify-end')}>
 					{isInstalling ? (
 						<Button disabled size='sm' type='button'>
-							<span
-								aria-hidden
-								className='-ml-0.5 mr-2 size-3 animate-spin rounded-full border-2 border-current border-t-transparent'
-							/>
+							<span aria-hidden className='-ml-0.5 mr-2 size-3 rounded-full border-2 border-current' />
 							正在安装...
 						</Button>
 					) : isReady ? (
@@ -392,19 +389,13 @@ export function UpdateDialog() {
 								后台继续
 							</Button>
 							<Button disabled size='sm' type='button'>
-								<span
-									aria-hidden
-									className='-ml-0.5 mr-2 size-3 animate-spin rounded-full border-2 border-current border-t-transparent'
-								/>
+								<span aria-hidden className='-ml-0.5 mr-2 size-3 rounded-full border-2 border-current' />
 								下载中
 							</Button>
 						</>
 					) : isChecking ? (
 						<Button disabled size='sm' type='button'>
-							<span
-								aria-hidden
-								className='-ml-0.5 mr-2 size-3 animate-spin rounded-full border-2 border-current border-t-transparent'
-							/>
+							<span aria-hidden className='-ml-0.5 mr-2 size-3 rounded-full border-2 border-current' />
 							正在检查...
 						</Button>
 					) : isCheckError ? (

@@ -44,7 +44,7 @@ function SettingsPreferenceRow({
 	return (
 		<div className='flex flex-col gap-3 border-b border-sf-border-subtle py-3 last:border-b-0 sm:flex-row sm:items-center sm:justify-between sm:gap-6'>
 			<div className='min-w-0 flex-1'>
-				<label className='text-sm font-medium text-foreground' htmlFor={htmlFor}>
+				<label className='text-sm font-medium text-legacy-foreground' htmlFor={htmlFor}>
 					{label}
 				</label>
 				<p className={formFieldHintClass}>{description}</p>
@@ -101,9 +101,9 @@ export function SettingInfoRow({
 	value: ReactNode
 }) {
 	return (
-		<div className='rounded-xl border border-sf-border-subtle bg-muted/25 p-3'>
-			<p className='text-sm font-medium text-foreground'>{label}</p>
-			<div className='mt-1 text-sm text-foreground'>{value}</div>
+		<div className='rounded-xl border border-sf-border-subtle bg-legacy-muted/25 p-3'>
+			<p className='text-sm font-medium text-legacy-foreground'>{label}</p>
+			<div className='mt-1 text-sm text-legacy-foreground'>{value}</div>
 			<p className={`mt-1 ${formFieldHintClass}`}>{description}</p>
 		</div>
 	)
@@ -111,7 +111,7 @@ export function SettingInfoRow({
 
 export function SettingsPreferenceGroup({ children }: { children: ReactNode }) {
 	return (
-		<div className='divide-y divide-sf-border-subtle rounded-xl border border-sf-border-subtle bg-muted/15 px-3'>
+		<div className='divide-y divide-sf-border-subtle rounded-xl border border-sf-border-subtle bg-legacy-muted/15 px-3'>
 			{children}
 		</div>
 	)

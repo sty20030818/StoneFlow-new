@@ -7,7 +7,7 @@ import { cn } from '@/shared/lib/utils'
 const statusNoticeVariants = cva('rounded-lg border', {
 	variants: {
 		variant: {
-			neutral: 'border-sf-border-subtle bg-muted/60 text-sf-shell-text-tertiary',
+			neutral: 'border-sf-border-subtle bg-legacy-muted/60 text-sf-shell-text-tertiary',
 			success:
 				'border-sf-success-surface-border bg-sf-success-surface text-sf-success-surface-text',
 			warning:

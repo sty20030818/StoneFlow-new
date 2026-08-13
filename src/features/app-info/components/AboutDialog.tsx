@@ -97,7 +97,7 @@ export function AboutDialog({ open, onOpenChange, onOpenChangelog }: AboutDialog
 							src='/StoneFlow.png'
 						/>
 						<div className='min-w-0'>
-							<h2 className='truncate text-[16px] font-medium text-foreground'>StoneFlow</h2>
+							<h2 className='truncate text-[16px] font-medium text-legacy-foreground'>StoneFlow</h2>
 							<p className='mt-1 truncate text-[12px] text-sf-text-tertiary'>
 								专注于日常工作的本地优先工作流。
 							</p>
@@ -106,10 +106,10 @@ export function AboutDialog({ open, onOpenChange, onOpenChangelog }: AboutDialog
 				</div>
 
 				<div className='space-y-4 px-5 pb-5'>
-					<div className='flex items-center justify-between rounded-xl border border-sf-border-subtle bg-muted/25 px-3 py-2.5'>
+					<div className='flex items-center justify-between rounded-xl border border-sf-border-subtle bg-legacy-muted/25 px-3 py-2.5'>
 						<span className='text-[13px] text-sf-text-secondary'>当前版本</span>
 						<span
-							className='text-[13px] font-medium text-foreground tabular-nums'
+							className='text-[13px] font-medium text-legacy-foreground tabular-nums'
 							data-error={hasError || undefined}
 						>
 							{versionText}
@@ -122,7 +122,7 @@ export function AboutDialog({ open, onOpenChange, onOpenChangelog }: AboutDialog
 							更新日志
 						</Button>
 						<Button disabled={disabled} onClick={() => void checkNow()} size='sm' type='button'>
-							<RefreshCwIcon aria-hidden className={cn('size-3.5', isChecking && 'animate-spin')} />
+							<RefreshCwIcon aria-hidden className='size-3.5' />
 							{isChecking ? '检查中...' : '检查更新'}
 						</Button>
 					</div>

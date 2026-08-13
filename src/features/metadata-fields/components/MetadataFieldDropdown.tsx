@@ -182,7 +182,7 @@ export function MetadataFieldDropdown<TValue>({
 						{shortcut ? (
 							<CommandShortcut
 								commandId={shortcut.commandId}
-								kbdClassName='h-5 min-w-5 rounded-sm border border-sf-border-subtle bg-background/90 px-1.5 text-[11px] font-medium text-muted-foreground'
+								kbdClassName='h-5 min-w-5 rounded-sm border border-sf-border-subtle bg-legacy-background/90 px-1.5 text-[11px] font-medium text-muted-foreground'
 								scope={shortcut.scope}
 							/>
 						) : null}

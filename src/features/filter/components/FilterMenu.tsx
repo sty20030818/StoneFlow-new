@@ -66,7 +66,7 @@ export function FilterMenu({ trigger, open, onOpenChange }: FilterMenuProps) {
 			<DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
 			<DropdownMenuContent align='end' className='w-60 min-w-60' sideOffset={6}>
 				{/* 顶部搜索与 canonical 筛选快捷键提示。 */}
-				<div className='flex items-center gap-2 border-b border-border px-2 py-1.5'>
+				<div className='flex items-center gap-2 border-b border-legacy-border px-2 py-1.5'>
 					<Input
 						aria-label='筛选字段'
 						className='h-7 border-0 bg-transparent px-1 shadow-none focus-visible:ring-0'

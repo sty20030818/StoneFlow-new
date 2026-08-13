@@ -29,10 +29,10 @@ export function PropertyToggleGrid({ items, className }: PropertyToggleGridProps
 				<button
 					aria-pressed={item.checked}
 					className={cn(
-						'h-7 rounded-full px-2.5 text-[12px] font-medium transition-[color,background-color,border-color,transform] active:scale-[0.96]',
+						'h-7 rounded-full px-2.5 text-[12px] font-medium',
 						item.checked
-							? 'bg-muted text-foreground'
-							: 'border border-border/80 bg-transparent text-sf-text-secondary hover:bg-muted/50',
+							? 'bg-legacy-muted text-legacy-foreground'
+							: 'border border-legacy-border/80 bg-transparent text-sf-text-secondary hover:bg-legacy-muted/50',
 						item.disabled && 'pointer-events-none opacity-50',
 					)}
 					disabled={item.disabled}

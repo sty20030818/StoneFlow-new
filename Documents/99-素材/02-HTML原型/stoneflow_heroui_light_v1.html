@@ -1,72 +1,43 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="light" data-theme="stoneflow-light">
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<title>StoneFlow × HeroUI 浅色系统预览</title>
 		<style>
 			@font-face {
-				font-family: 'StoneFlow Current';
-				src: url('../../../public/fonts/MapleMono-Regular.ttf') format('truetype');
+				font-family: 'Inter Variable';
+				src: url('../../../public/fonts/InterVariable.woff2') format('woff2');
 				font-style: normal;
-				font-weight: 400;
-				font-display: swap;
-				unicode-range:
-					U+0000-00FF, U+0100-024F, U+0259, U+1E00-1EFF, U+2000-206F, U+20A0-20CF, U+2100-214F,
-					U+2190-21FF, U+2200-22FF, U+2460-24FF, U+25A0-25FF;
-			}
-
-			@font-face {
-				font-family: 'StoneFlow Current';
-				src: url('../../../public/fonts/LXGWWenKaiLite-Regular.ttf') format('truetype');
-				font-style: normal;
-				font-weight: 400;
-				font-display: swap;
-				unicode-range:
-					U+2E80-2EFF, U+2F00-2FDF, U+2FF0-2FFF, U+3000-303F, U+31C0-31EF, U+3400-4DBF, U+4E00-9FFF,
-					U+F900-FAFF, U+FE10-FE1F, U+FE30-FE4F, U+FF00-FFEF;
-			}
-
-			@font-face {
-				font-family: 'StoneFlow Current';
-				src: url('../../../public/fonts/LXGWWenKaiLite-Medium.ttf') format('truetype');
-				font-style: normal;
-				font-weight: 500;
-				font-display: swap;
-				unicode-range:
-					U+2E80-2EFF, U+2F00-2FDF, U+2FF0-2FFF, U+3000-303F, U+31C0-31EF, U+3400-4DBF, U+4E00-9FFF,
-					U+F900-FAFF, U+FE10-FE1F, U+FE30-FE4F, U+FF00-FFEF;
-			}
-
-			@font-face {
-				font-family: 'Inter Preview';
-				src: url('https://rsms.me/inter/font-files/InterVariable.woff2?v=4.1') format('woff2');
-				font-style: normal;
-				font-weight: 100 900;
+				font-weight: 400 600;
 				font-display: swap;
 			}
 
 			:root {
 				color-scheme: light;
-				--page: #eeeeec;
-				--ink: #252526;
-				--ink-secondary: #5f6066;
-				--ink-muted: #6b6c73;
-				--line: #e2e2df;
-				--line-soft: #ececea;
-				--surface: #fafaf9;
+				--page: #f3f3f4;
+				--ink: #303032;
+				--ink-strong: #1b1b1b;
+				--ink-secondary: #5a5a5c;
+				--ink-muted: #5a5a5c;
+				--line: #dbdbdb;
+				--line-soft: #e5e5e6;
+				--surface: #fcfcfd;
 				--surface-raised: #ffffff;
-				--surface-soft: #f4f4f2;
-				--surface-hover: #efefed;
-				--sidebar: #efefed;
+				--surface-soft: #f3f3f4;
+				--surface-hover: #f6f6f7;
+				--sidebar: #f3f3f4;
+				--sidebar-hover: #ebebec;
+				--sidebar-active: #e5e5e6;
 				--accent: #5e6ad2;
-				--accent-hover: #5562c4;
-				--accent-soft: #eff0ff;
-				--accent-ink: #4f59b7;
-				--success: #2f7d4f;
-				--warning: #94601b;
-				--danger: #b74646;
-				--info: #456eb3;
+				--accent-hover: #6566df;
+				--accent-active: #5562c4;
+				--accent-soft: #eef0ff;
+				--accent-ink: #4d57b8;
+				--success: #27a644;
+				--warning: #b7791f;
+				--danger: #d14343;
+				--info: #3a72d8;
 				--radius-sm: 6px;
 				--radius-md: 8px;
 				--radius-lg: 12px;
@@ -78,22 +49,13 @@
 				box-sizing: border-box;
 			}
 
-			html {
-				scroll-behavior: smooth;
-			}
-
 			body {
 				margin: 0;
 				background: var(--page);
 				color: var(--ink);
 				font-family:
-					Inter,
-					-apple-system,
-					BlinkMacSystemFont,
-					'Segoe UI',
-					'PingFang SC',
-					'Microsoft YaHei',
-					sans-serif;
+					'Inter Variable', 'PingFang SC', 'Microsoft YaHei UI', 'Segoe UI', system-ui, sans-serif;
+				font-optical-sizing: auto;
 				font-size: 14px;
 				-webkit-font-smoothing: antialiased;
 				text-rendering: optimizeLegibility;
@@ -134,7 +96,7 @@
 			.section-kicker,
 			.source-label {
 				font-size: 11px;
-				font-weight: 650;
+				font-weight: 600;
 				letter-spacing: 0.09em;
 				text-transform: uppercase;
 				color: var(--accent-ink);
@@ -144,7 +106,7 @@
 				max-width: 820px;
 				margin: 10px 0 14px;
 				font-size: clamp(34px, 5vw, 68px);
-				font-weight: 560;
+				font-weight: 600;
 				letter-spacing: -0.055em;
 				line-height: 0.98;
 			}
@@ -204,7 +166,7 @@
 				background: var(--accent);
 				color: white;
 				font-size: 12px;
-				font-weight: 700;
+				font-weight: 600;
 			}
 
 			.section {
@@ -227,7 +189,7 @@
 			.section h2 {
 				margin: 6px 0 0;
 				font-size: clamp(22px, 3vw, 32px);
-				font-weight: 570;
+				font-weight: 600;
 				letter-spacing: -0.035em;
 			}
 
@@ -258,7 +220,7 @@
 				color: #25724a;
 			}
 
-			.badge.proposal {
+			.badge.confirmed {
 				border-color: #dcdef6;
 				background: var(--accent-soft);
 				color: var(--accent-ink);
@@ -286,7 +248,7 @@
 			}
 
 			.swatch:hover {
-				border-color: #cfcfd4;
+				border-color: #cccccc;
 			}
 
 			.swatch-color {
@@ -302,7 +264,7 @@
 			.swatch-name {
 				overflow: hidden;
 				font-size: 12px;
-				font-weight: 620;
+				font-weight: 600;
 				text-overflow: ellipsis;
 				white-space: nowrap;
 			}
@@ -328,7 +290,7 @@
 			.subsection h3 {
 				margin: 0;
 				font-size: 15px;
-				font-weight: 650;
+				font-weight: 600;
 			}
 
 			.font-grid {
@@ -345,34 +307,10 @@
 				background: var(--surface-raised);
 			}
 
-			.font-card.current {
-				font-family: 'StoneFlow Current', 'PingFang SC', sans-serif;
-				font-synthesis: none;
-			}
-
-			.font-card.inter,
-			.shell-preview[data-font='inter'] {
+			.font-card.inter {
 				font-family:
-					'Inter Preview',
-					Inter,
-					-apple-system,
-					BlinkMacSystemFont,
-					'Segoe UI',
-					'PingFang SC',
-					'Microsoft YaHei',
-					sans-serif;
+					'Inter Variable', 'PingFang SC', 'Microsoft YaHei UI', 'Segoe UI', system-ui, sans-serif;
 				font-optical-sizing: auto;
-			}
-
-			.font-card.system {
-				font-family:
-					-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei',
-					sans-serif;
-			}
-
-			.shell-preview[data-font='current'] {
-				font-family: 'StoneFlow Current', 'PingFang SC', sans-serif;
-				font-synthesis: none;
 			}
 
 			.font-card-head {
@@ -385,13 +323,13 @@
 
 			.font-name {
 				font-size: 13px;
-				font-weight: 650;
+				font-weight: 600;
 			}
 
 			.font-display {
 				margin-bottom: 18px;
 				font-size: clamp(26px, 4vw, 44px);
-				font-weight: 560;
+				font-weight: 600;
 				letter-spacing: -0.045em;
 				line-height: 1.05;
 			}
@@ -509,9 +447,9 @@
 			.demo-stage {
 				overflow-x: auto;
 				padding: 10px;
-				border: 1px solid #d6d6d9;
+				border: 1px solid var(--line);
 				border-radius: 15px;
-				background: #dedee0;
+				background: var(--sidebar-active);
 			}
 
 			.shell-preview {
@@ -519,7 +457,7 @@
 				min-width: 890px;
 				height: 610px;
 				overflow: hidden;
-				border: 1px solid #d0d0d3;
+				border: 1px solid var(--line);
 				border-radius: 12px;
 				background: var(--sidebar);
 				box-shadow: 0 22px 60px rgb(20 20 24 / 14%);
@@ -544,13 +482,13 @@
 				width: 10px;
 				height: 10px;
 				border-radius: 50%;
-				background: #d1d1d4;
+				background: var(--line);
 			}
 
 			.window-title {
 				font-size: 11px;
 				font-weight: 600;
-				color: #77777e;
+				color: var(--ink-secondary);
 			}
 
 			.window-actions {
@@ -566,15 +504,11 @@
 
 			.shell-sidebar {
 				position: relative;
-				flex: 0 0 244px;
-				width: 244px;
+				flex: 0 0 256px;
+				width: 256px;
 				min-width: 0;
 				overflow: hidden;
 				background: var(--sidebar);
-				transition:
-					width 140ms ease,
-					flex-basis 140ms ease,
-					opacity 110ms ease;
 			}
 
 			.shell-preview[data-mode='icon'] .shell-sidebar {
@@ -608,16 +542,16 @@
 				align-items: center;
 				min-width: 0;
 				border-radius: 7px;
-				color: #68686f;
+				color: var(--ink-secondary);
 			}
 
 			.workspace-switcher {
 				height: 36px;
 				gap: 9px;
 				padding: 0 8px;
-				color: #35353a;
+				color: var(--ink);
 				font-size: 12px;
-				font-weight: 620;
+				font-weight: 600;
 			}
 
 			.workspace-mark {
@@ -630,7 +564,7 @@
 				background: var(--accent);
 				color: white;
 				font-size: 10px;
-				font-weight: 700;
+				font-weight: 600;
 			}
 
 			.workspace-name,
@@ -643,8 +577,8 @@
 			.sidebar-section-label {
 				margin: 17px 8px 6px;
 				font-size: 10px;
-				font-weight: 620;
-				color: #a0a0a6;
+				font-weight: 600;
+				color: var(--ink-muted);
 			}
 
 			.nav-list {
@@ -659,10 +593,13 @@
 				font-size: 12px;
 			}
 
+			.nav-item:hover {
+				background: var(--sidebar-hover);
+			}
+
 			.nav-item.active {
-				background: rgb(255 255 255 / 64%);
-				color: #303036;
-				box-shadow: inset 0 0 0 1px rgb(40 40 46 / 5%);
+				background: var(--sidebar-active);
+				color: var(--ink);
 			}
 
 			.nav-icon,
@@ -682,7 +619,7 @@
 			.sidebar-count {
 				margin-left: auto;
 				font-size: 10px;
-				color: #99999f;
+				color: var(--ink-muted);
 			}
 
 			.sidebar-bottom {
@@ -712,6 +649,7 @@
 				display: none;
 				width: 8px;
 				cursor: col-resize;
+				pointer-events: none;
 			}
 
 			.resize-handle::after {
@@ -720,7 +658,7 @@
 				bottom: 0;
 				left: 3px;
 				width: 1px;
-				background: #d7d7da;
+				background: var(--line);
 				content: '';
 			}
 
@@ -739,7 +677,6 @@
 				border-radius: 12px;
 				background: var(--surface);
 				box-shadow: 0 1px 2px rgb(30 30 34 / 3%);
-				transition: margin-left 140ms ease;
 			}
 
 			.shell-preview[data-mode='hidden'] .main-surface {
@@ -759,7 +696,7 @@
 				align-items: center;
 				gap: 8px;
 				padding: 0 13px;
-				border-bottom: 1px solid #e8e8e9;
+				border-bottom: 1px solid var(--line-soft);
 			}
 
 			.breadcrumb {
@@ -768,13 +705,13 @@
 				align-items: center;
 				gap: 7px;
 				font-size: 12px;
-				color: #77777e;
+				color: var(--ink-secondary);
 			}
 
 			.breadcrumb strong {
 				overflow: hidden;
-				color: #303036;
-				font-weight: 620;
+				color: var(--ink);
+				font-weight: 600;
 				text-overflow: ellipsis;
 				white-space: nowrap;
 			}
@@ -784,6 +721,10 @@
 				align-items: center;
 				gap: 5px;
 				margin-left: auto;
+			}
+
+			.mobile-sidebar-trigger {
+				display: none;
 			}
 
 			.icon-button {
@@ -821,17 +762,17 @@
 				align-items: center;
 				gap: 7px;
 				padding: 0 13px;
-				border-bottom: 1px solid #ededee;
+				border-bottom: 1px solid var(--line-soft);
 			}
 
 			.view-title {
 				font-size: 13px;
-				font-weight: 630;
+				font-weight: 600;
 			}
 
 			.view-meta {
 				font-size: 10px;
-				color: #96969c;
+				color: var(--ink-muted);
 			}
 
 			.view-chip {
@@ -841,11 +782,11 @@
 				gap: 5px;
 				margin-left: auto;
 				padding: 0 8px;
-				border: 1px solid #e1e1e3;
+				border: 1px solid var(--line);
 				border-radius: 7px;
 				background: #ffffff;
 				font-size: 10px;
-				color: #68686f;
+				color: var(--ink-secondary);
 			}
 
 			.task-list {
@@ -862,14 +803,14 @@
 				gap: 7px;
 				padding: 0 9px;
 				font-size: 11px;
-				font-weight: 620;
-				color: #595960;
+				font-weight: 600;
+				color: var(--ink-secondary);
 			}
 
 			.status-dot {
 				width: 8px;
 				height: 8px;
-				border: 2px solid #a1a1a8;
+				border: 2px solid var(--ink-muted);
 				border-radius: 50%;
 			}
 
@@ -881,7 +822,7 @@
 				height: 42px;
 				padding: 0 9px;
 				border-radius: 7px;
-				color: #404046;
+				color: var(--ink);
 				font-size: 11px;
 			}
 
@@ -890,7 +831,7 @@
 			}
 
 			.task-row:hover {
-				background: #f1f1f2;
+				background: var(--surface-hover);
 			}
 
 			.task-row.selected {
@@ -903,12 +844,12 @@
 				width: 18px;
 				height: 18px;
 				place-items: center;
-				color: #8e8e94;
+				color: var(--ink-muted);
 			}
 
 			.task-title {
 				overflow: hidden;
-				font-weight: 520;
+				font-weight: 500;
 				text-overflow: ellipsis;
 				white-space: nowrap;
 			}
@@ -917,7 +858,7 @@
 			.task-id {
 				overflow: hidden;
 				font-size: 10px;
-				color: #9999a0;
+				color: var(--ink-muted);
 				text-overflow: ellipsis;
 				white-space: nowrap;
 			}
@@ -926,12 +867,8 @@
 				width: 322px;
 				min-width: 322px;
 				overflow: hidden;
-				border-left: 1px solid #e2e2e4;
+				border-left: 1px solid var(--line-soft);
 				background: #ffffff;
-				transition:
-					width 150ms ease,
-					min-width 150ms ease,
-					opacity 120ms ease;
 			}
 
 			.shell-preview[data-detail-layout='float'] .detail-panel {
@@ -968,12 +905,12 @@
 				align-items: center;
 				gap: 8px;
 				padding: 0 12px;
-				border-bottom: 1px solid #ececee;
+				border-bottom: 1px solid var(--line-soft);
 			}
 
 			.detail-eyebrow {
 				font-size: 10px;
-				font-weight: 620;
+				font-weight: 600;
 				color: var(--accent-ink);
 			}
 
@@ -990,7 +927,7 @@
 			.detail-title {
 				margin: 0;
 				font-size: 19px;
-				font-weight: 580;
+				font-weight: 600;
 				letter-spacing: -0.025em;
 				line-height: 1.35;
 			}
@@ -999,7 +936,7 @@
 				margin: -6px 0 0;
 				font-size: 11px;
 				line-height: 1.6;
-				color: #77777e;
+				color: var(--ink-secondary);
 			}
 
 			.detail-field {
@@ -1012,7 +949,7 @@
 			}
 
 			.field-label {
-				color: #929298;
+				color: var(--ink-muted);
 			}
 
 			.field-value {
@@ -1022,7 +959,7 @@
 				gap: 6px;
 				padding: 5px 7px;
 				border-radius: 6px;
-				color: #4d4d54;
+				color: var(--ink-secondary);
 			}
 
 			.field-value:hover {
@@ -1036,9 +973,180 @@
 				gap: 12px;
 				margin-top: auto;
 				padding: 12px 14px;
-				border-top: 1px solid #ececee;
+				border-top: 1px solid var(--line-soft);
 				font-size: 10px;
-				color: #99999f;
+				color: var(--ink-muted);
+			}
+
+			.component-lab {
+				display: grid;
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+				gap: 12px;
+			}
+
+			.state-card {
+				min-width: 0;
+				padding: 16px;
+				border: 1px solid var(--line-soft);
+				border-radius: var(--radius-lg);
+				background: var(--surface-raised);
+			}
+
+			.state-card h3 {
+				margin: 0 0 5px;
+				font-size: 13px;
+				font-weight: 600;
+			}
+
+			.state-card > p {
+				margin: 0 0 14px;
+				color: var(--ink-secondary);
+				font-size: 11px;
+				line-height: 1.5;
+			}
+
+			.state-row {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 8px;
+				align-items: center;
+			}
+
+			.demo-button,
+			.demo-field {
+				height: 32px;
+				border: 1px solid var(--line);
+				border-radius: 7px;
+				background: var(--surface-raised);
+				color: var(--ink-secondary);
+				font-size: 12px;
+			}
+
+			.demo-button {
+				padding: 0 11px;
+			}
+
+			.demo-button[data-state='hover'] {
+				border-color: #cccccc;
+				background: var(--page);
+				color: var(--ink);
+			}
+
+			.demo-button[data-state='pressed'],
+			.demo-button[data-state='open'] {
+				border-color: #d6d6d7;
+				background: #efeff0;
+				color: var(--ink-strong);
+			}
+
+			.demo-button[data-state='focus'],
+			.demo-field[data-state='focus'] {
+				outline: 2px solid var(--accent);
+				outline-offset: 2px;
+			}
+
+			.demo-button:disabled {
+				opacity: 0.42;
+			}
+
+			.field-stack {
+				display: grid;
+				gap: 10px;
+			}
+
+			.field-demo {
+				display: grid;
+				gap: 5px;
+				font-size: 11px;
+				color: var(--ink-secondary);
+			}
+
+			.demo-field {
+				width: 100%;
+				padding: 0 10px;
+			}
+
+			.demo-field[aria-invalid='true'] {
+				border-color: var(--danger);
+				outline: 1px solid var(--danger);
+			}
+
+			.field-error {
+				color: var(--danger);
+				font-size: 10px;
+			}
+
+			.demo-menu,
+			.demo-list {
+				display: grid;
+				gap: 2px;
+				padding: 5px;
+				border: 1px solid var(--line);
+				border-radius: 9px;
+				background: var(--surface-raised);
+				box-shadow: var(--shadow-panel);
+			}
+
+			.demo-menu-item,
+			.demo-list-item {
+				display: flex;
+				min-height: 30px;
+				align-items: center;
+				gap: 8px;
+				padding: 0 8px;
+				border-radius: 6px;
+				font-size: 11px;
+			}
+
+			.demo-menu-item[data-state='hover'],
+			.demo-list-item[data-state='hover'] {
+				background: var(--surface-hover);
+			}
+
+			.demo-menu-item[data-disabled='true'] {
+				opacity: 0.42;
+			}
+
+			.demo-list-item[data-selected='true'] {
+				background: var(--accent-soft);
+				color: var(--ink-strong);
+			}
+
+			.demo-list-item[data-state='focus'] {
+				box-shadow: inset 0 0 0 2px var(--accent);
+			}
+
+			.menu-shortcut {
+				margin-left: auto;
+				color: var(--ink-muted);
+				font-size: 10px;
+			}
+
+			.feedback-stack {
+				display: grid;
+				gap: 12px;
+			}
+
+			.demo-toast {
+				padding: 10px 12px;
+				border: 1px solid var(--line);
+				border-radius: 9px;
+				background: var(--surface-raised);
+				box-shadow: var(--shadow-float);
+				font-size: 11px;
+			}
+
+			.progress-track {
+				height: 6px;
+				overflow: hidden;
+				border-radius: 999px;
+				background: var(--sidebar-active);
+			}
+
+			.progress-value {
+				width: 68%;
+				height: 100%;
+				background: var(--accent);
 			}
 
 			.decision-grid {
@@ -1063,7 +1171,7 @@
 			.decision-card h3 {
 				margin: 10px 0 7px;
 				font-size: 13px;
-				font-weight: 650;
+				font-weight: 600;
 			}
 
 			.decision-card p {
@@ -1096,7 +1204,7 @@
 
 			.source-title {
 				font-size: 12px;
-				font-weight: 630;
+				font-weight: 600;
 			}
 
 			.source-copy {
@@ -1118,16 +1226,27 @@
 				color: white;
 				font-size: 11px;
 				opacity: 0;
-				transform: translateY(6px);
-				transition:
-					opacity 120ms ease,
-					transform 120ms ease;
 				pointer-events: none;
 			}
 
 			.toast.show {
 				opacity: 1;
-				transform: translateY(0);
+			}
+
+			@media (max-width: 1023px) {
+				.shell-preview .shell-sidebar {
+					width: 0;
+					flex-basis: 0;
+					opacity: 0;
+				}
+
+				.shell-preview .main-surface {
+					margin-left: 8px;
+				}
+
+				.mobile-sidebar-trigger {
+					display: inline-flex;
+				}
 			}
 
 			@media (max-width: 900px) {
@@ -1146,18 +1265,13 @@
 					grid-template-columns: 1fr;
 				}
 
+				.component-lab {
+					grid-template-columns: 1fr;
+				}
+
 				.section-head {
 					align-items: start;
 					flex-direction: column;
-				}
-			}
-
-			@media (prefers-reduced-motion: reduce) {
-				*,
-				*::before,
-				*::after {
-					scroll-behavior: auto !important;
-					transition-duration: 0.01ms !important;
 				}
 			}
 		</style>
@@ -1250,9 +1364,9 @@
 				<div class="subsection">
 					<div class="subsection-head">
 						<h3>StoneFlow × HeroUI 浅色方向</h3>
-						<span class="badge proposal">已确认方向 · 关键前景组合已校准</span>
+						<span class="badge confirmed">已确认色板 · 关键前景组合已校准</span>
 					</div>
-					<div id="proposalPalette" class="palette-grid"></div>
+					<div id="stoneflowPalette" class="palette-grid"></div>
 				</div>
 			</section>
 
@@ -1260,94 +1374,19 @@
 				<div class="section-head">
 					<div>
 						<div class="section-kicker">02 / Typography</div>
-						<h2 id="font-title">当前字体 vs Linear 风格字体</h2>
+						<h2 id="font-title">已确认的 Linear 风格字体合同</h2>
 					</div>
-					<span class="badge">同文案、同字号直接对比</span>
+					<span class="badge confirmed">本地 Inter Variable · 400 / 500 / 600</span>
 				</div>
 				<p class="section-intro">
-					Linear 在 2024 年官方确认标题用 Inter Display、其他文字用
-					Inter；当前公开启动壳的网络资源观察到 Inter Variable。后者不是长期字体契约。StoneFlow
-					现在则用 Maple Mono 显示拉丁字符、霞鹜文楷显示中文。
+					StoneFlow 统一使用本地 Inter Variable，中文依次回退到 PingFang SC、Microsoft YaHei UI
+					和系统 UI 字体；正文只使用真实的 400、500、600 三档，代码继续使用系统等宽字体。
 				</p>
-				<div class="subsection font-grid">
-					<article class="font-card current">
-						<div class="font-card-head">
-							<span class="font-name">StoneFlow Current</span>
-							<span class="badge">Maple Mono + 霞鹜文楷</span>
-						</div>
-						<div class="font-display">今天，把复杂的事做简单。</div>
-						<p class="font-body">
-							STO-128 · 重构 TaskBoard keyboard navigation，保持多选与 Peek 的行为一致。
-						</p>
-						<div class="type-rows">
-							<div class="type-row">
-								<span class="type-size">12 / 400</span
-								><span class="type-sample" style="font-size: 12px; font-weight: 400"
-									>任务详情 · Due Aug 18 · 12:48</span
-								><span class="type-meta">caption</span>
-							</div>
-							<div class="type-row">
-								<span class="type-size">13 / 500</span
-								><span class="type-sample" style="font-size: 13px; font-weight: 500"
-									>修复 Sidebar 收起后的焦点顺序</span
-								><span class="type-meta">row</span>
-							</div>
-							<div class="type-row">
-								<span class="type-size">14 / 600</span
-								><span class="type-sample" style="font-size: 14px; font-weight: 600"
-									>Project Aurora / In Progress</span
-								><span class="type-meta">label</span>
-							</div>
-							<div class="type-row">
-								<span class="type-size">18 / 600</span
-								><span class="type-sample" style="font-size: 18px; font-weight: 600"
-									>任务详情编辑器</span
-								><span class="type-meta">heading</span>
-							</div>
-						</div>
-					</article>
-
+				<div class="subsection">
 					<article class="font-card inter">
 						<div class="font-card-head">
-							<span class="font-name">Inter Variable + 系统中文</span>
-							<span id="interStatus" class="badge proposal">推荐候选</span>
-						</div>
-						<div class="font-display">今天，把复杂的事做简单。</div>
-						<p class="font-body">
-							STO-128 · 重构 TaskBoard keyboard navigation，保持多选与 Peek 的行为一致。
-						</p>
-						<div class="type-rows">
-							<div class="type-row">
-								<span class="type-size">12 / 400</span
-								><span class="type-sample" style="font-size: 12px; font-weight: 400"
-									>任务详情 · Due Aug 18 · 12:48</span
-								><span class="type-meta">caption</span>
-							</div>
-							<div class="type-row">
-								<span class="type-size">13 / 500</span
-								><span class="type-sample" style="font-size: 13px; font-weight: 500"
-									>修复 Sidebar 收起后的焦点顺序</span
-								><span class="type-meta">row</span>
-							</div>
-							<div class="type-row">
-								<span class="type-size">14 / 600</span
-								><span class="type-sample" style="font-size: 14px; font-weight: 600"
-									>Project Aurora / In Progress</span
-								><span class="type-meta">label</span>
-							</div>
-							<div class="type-row">
-								<span class="type-size">18 / 600</span
-								><span class="type-sample" style="font-size: 18px; font-weight: 600"
-									>任务详情编辑器</span
-								><span class="type-meta">heading</span>
-							</div>
-						</div>
-					</article>
-
-					<article class="font-card system">
-						<div class="font-card-head">
-							<span class="font-name">纯系统 UI 字体</span>
-							<span class="badge">零字体资产</span>
+							<span class="font-name">Inter Variable + 系统中文 fallback</span>
+							<span id="interStatus" class="badge confirmed">检查本地字体</span>
 						</div>
 						<div class="font-display">今天，把复杂的事做简单。</div>
 						<p class="font-body">
@@ -1433,7 +1472,7 @@
 								data-shell-mode="resize"
 								aria-pressed="false"
 							>
-								展开态拖宽
+								展开态调宽
 							</button>
 						</div>
 						<div class="control-group">
@@ -1443,25 +1482,8 @@
 								<span id="sidebarWidthValue" class="range-value">280px</span>
 							</label>
 						</div>
-						<div class="control-group" aria-label="预览字体与详情区">
-							<span class="control-label">字体</span>
-							<button
-								class="control-button"
-								type="button"
-								data-shell-font="current"
-								aria-pressed="false"
-							>
-								当前
-							</button>
-							<button
-								class="control-button"
-								type="button"
-								data-shell-font="inter"
-								aria-pressed="true"
-							>
-								Inter
-							</button>
-							<span class="control-label" style="margin-left: 6px">任务详情</span>
+						<div class="control-group" aria-label="详情区演示状态">
+							<span class="control-label">任务详情</span>
 							<button
 								class="control-button"
 								type="button"
@@ -1478,7 +1500,13 @@
 							>
 								Aside 右栏
 							</button>
-							<button id="detailToggle" class="control-button" type="button" aria-pressed="true">
+							<button
+								id="detailToggle"
+								class="control-button"
+								type="button"
+								aria-controls="detailPanel"
+								aria-expanded="true"
+							>
 								关闭任务详情
 							</button>
 						</div>
@@ -1489,7 +1517,6 @@
 							id="shellPreview"
 							class="shell-preview"
 							data-mode="expanded"
-							data-font="inter"
 							data-detail="open"
 							data-detail-layout="float"
 						>
@@ -1507,7 +1534,9 @@
 										<div class="workspace-switcher">
 											<span class="workspace-mark">S</span>
 											<span class="workspace-name">StoneFlow</span>
-											<span class="sidebar-chevron" style="margin-left: auto; color: #99999f"
+											<span
+												class="sidebar-chevron"
+												style="margin-left: auto; color: var(--ink-muted)"
 												>⌄</span
 											>
 										</div>
@@ -1562,6 +1591,9 @@
 								<section class="main-surface" aria-label="主工作区预览">
 									<div class="main-column">
 										<header class="content-header">
+											<button class="action-button mobile-sidebar-trigger" type="button">
+												导航 Sheet
+											</button>
 											<div class="breadcrumb">
 												<span>所有空间</span><span>/</span><strong>我的任务</strong>
 											</div>
@@ -1626,7 +1658,7 @@
 										</div>
 									</div>
 
-									<aside class="detail-panel" aria-label="任务详情编辑区预览">
+									<aside id="detailPanel" class="detail-panel" aria-label="任务详情编辑区预览">
 										<div class="detail-inner">
 											<header class="detail-head">
 												<span class="detail-eyebrow">这就是右侧任务详情区</span>
@@ -1683,7 +1715,7 @@
 
 					<div class="decision-grid">
 						<article class="decision-card recommended">
-							<span class="badge proposal">已确认 · 三态 Sidebar</span>
+							<span class="badge confirmed">已确认 · 三态 Sidebar</span>
 							<h3>Inset + Sidebar + Resizable</h3>
 							<p>
 								桌面点按伸缩区切换 256px 宽栏与 48px 窄栏；宽栏可在 220–330px 拖动。小于 1024px
@@ -1710,10 +1742,114 @@
 				</div>
 			</section>
 
+			<section class="section" aria-labelledby="component-states-title">
+				<div class="section-head">
+					<div>
+						<div class="section-kicker">04 / Components</div>
+						<h2 id="component-states-title">HeroUI 全局状态合同</h2>
+					</div>
+					<span class="badge confirmed">统一状态，不做 feature 私有皮肤</span>
+				</div>
+				<p class="section-intro">
+					这组样张固定通用控件的 default、hover、pressed/open、focus-visible、disabled、invalid 与
+					selected 语义。产品层只组合 HeroUI 组件，不再复制 Button、Field、Menu 或 List 的皮肤。
+				</p>
+				<div class="subsection component-lab">
+					<article class="state-card">
+						<h3>Button</h3>
+						<p>pressed/open 是灰色填充状态；键盘焦点始终使用独立的紫色 focus ring。</p>
+						<div class="state-row">
+							<button class="demo-button" type="button">Default</button>
+							<button class="demo-button" type="button" data-state="hover">Hover</button>
+							<button class="demo-button" type="button" data-state="pressed">Pressed</button>
+							<button class="demo-button" type="button" data-state="open">Open</button>
+							<button class="demo-button" type="button" data-state="focus">Focus</button>
+							<button class="demo-button" type="button" disabled>Disabled</button>
+						</div>
+					</article>
+
+					<article class="state-card">
+						<h3>Field</h3>
+						<p>边框负责静态控件轮廓，focus-visible 与 invalid 由独立状态信号承担。</p>
+						<div class="field-stack">
+							<label class="field-demo"
+								>任务标题<input class="demo-field" value="重构键盘导航"
+							/></label>
+							<label class="field-demo"
+								>聚焦状态<input class="demo-field" data-state="focus" value="Inter + HeroUI"
+							/></label>
+							<label class="field-demo"
+								>无效状态<input
+									class="demo-field"
+									aria-invalid="true"
+									aria-describedby="task-title-error"
+									value=""
+								/><span id="task-title-error" class="field-error">请输入任务标题</span></label
+							>
+						</div>
+					</article>
+
+					<article class="state-card">
+						<h3>Menu / ContextMenu</h3>
+						<p>菜单只投影 Command Catalog；右键、快捷键与 ActionBar 调用同一业务命令。</p>
+						<div class="demo-menu" aria-label="任务操作视觉示例">
+							<div class="demo-menu-item" data-state="hover">
+								打开详情<span class="menu-shortcut">↵</span>
+							</div>
+							<div class="demo-menu-item">设置状态<span class="menu-shortcut">S</span></div>
+							<div class="demo-menu-item" data-disabled="true">移动到已归档</div>
+						</div>
+					</article>
+
+					<article class="state-card">
+						<h3>Collection</h3>
+						<p>hover、真实焦点和 selection 是三个不同状态；键盘焦点不能再伪装成 hover。</p>
+						<div class="demo-list" aria-label="任务集合视觉示例">
+							<div class="demo-list-item">STO-128 · Default</div>
+							<div class="demo-list-item" data-state="hover">STO-129 · Hover</div>
+							<div class="demo-list-item" data-selected="true">STO-130 · Selected</div>
+							<div class="demo-list-item" data-state="focus">STO-131 · Focus</div>
+						</div>
+					</article>
+
+					<article class="state-card">
+						<h3>Toast / Progress</h3>
+						<p>本阶段只采用 HeroUI 包内动效；StoneFlow 不再维护自己的 transition 或 keyframes。</p>
+						<div class="feedback-stack">
+							<div class="demo-toast" role="status">
+								<strong>同步完成</strong><br />24 个任务已经更新
+							</div>
+							<div>
+								<div class="meta-row"><span>下载更新</span><strong>68%</strong></div>
+								<div
+									class="progress-track"
+									role="progressbar"
+									aria-label="下载更新"
+									aria-valuemin="0"
+									aria-valuemax="100"
+									aria-valuenow="68"
+								>
+									<div class="progress-value"></div>
+								</div>
+							</div>
+						</div>
+					</article>
+
+					<article class="state-card">
+						<h3>Sheet / Aside</h3>
+						<p>上方 Shell 原型已覆盖两种详情呈现：宽窗允许 Aside 或 Sheet，窄窗统一使用 Sheet。</p>
+						<div class="state-row">
+							<span class="badge">宽窗 · Aside / Sheet</span>
+							<span class="badge confirmed">&lt;1024px · Sheet</span>
+						</div>
+					</article>
+				</div>
+			</section>
+
 			<section class="section" aria-labelledby="sources-title">
 				<div class="section-head">
 					<div>
-						<div class="section-kicker">04 / Sources</div>
+						<div class="section-kicker">05 / Sources</div>
 						<h2 id="sources-title">事实边界与资料来源</h2>
 					</div>
 				</div>
@@ -1782,7 +1918,7 @@
 						<span class="source-label">Inter 官方</span
 						><span class="source-title">Inter Variable</span
 						><span class="source-copy"
-							>本原型仅从官方站点加载预览字体；产品落地时应本地打包，不依赖远程字体。</span
+							>本原型与产品均使用仓库内 OFL 授权的 Inter Variable，不依赖远程字体。</span
 						>
 					</a>
 				</div>
@@ -1800,26 +1936,31 @@
 				['Strong content', '#23252A', '公开启动壳'],
 			]
 
-			const proposalColors = [
-				['App canvas', '#EEEEEC', 'background'],
-				['Navigation shell', '#EFEFED', 'surface tertiary'],
-				['Main surface', '#FAFAF9', 'surface'],
+			const stoneflowColors = [
+				['Shell / Header', '#F3F3F4', 'surface secondary'],
+				['Header hover', '#E4E4E5', 'chrome hover'],
+				['Sidebar hover', '#EBEBEC', 'shell hover'],
+				['Sidebar active', '#E5E5E6', 'current / selected'],
+				['Main surface', '#FCFCFD', 'background'],
 				['Raised surface', '#FFFFFF', 'overlay / card'],
-				['Secondary surface', '#F4F4F2', 'surface secondary'],
-				['Hover surface', '#EFEFED', 'interactive hover'],
-				['Primary text', '#252526', 'foreground'],
-				['Secondary text', '#5F6066', 'foreground secondary'],
-				['Muted text', '#6B6C73', 'muted readable'],
-				['Border', '#E2E2DF', 'border'],
-				['Separator', '#ECECEA', 'separator'],
+				['Raised hover', '#F7F7F7', 'button hover'],
+				['Main hover', '#F6F6F7', 'row hover'],
+				['Primary text', '#303032', 'foreground'],
+				['Strong text', '#1B1B1B', 'pressed / open'],
+				['Secondary text', '#5A5A5C', 'muted readable'],
+				['Control text', '#5D5D5F', 'outline foreground'],
+				['Border', '#DBDBDB', 'control border'],
+				['Border hover', '#CCCCCC', 'control border hover'],
+				['Border active', '#D6D6D7', 'pressed / open border'],
+				['Control active', '#EFEFF0', 'pressed / open'],
 				['Accent', '#5E6AD2', 'accent'],
-				['Accent hover', '#5562C4', 'accent hover'],
-				['Accent soft', '#EFF0FF', 'selection / soft'],
-				['Accent text', '#4F59B7', 'accent foreground'],
-				['Success', '#2F7D4F', 'success'],
-				['Warning', '#94601B', 'warning'],
-				['Danger', '#B74646', 'danger'],
-				['Info', '#456EB3', 'info'],
+				['Accent hover', '#6566DF', 'accent hover · white text AA'],
+				['Accent active', '#5562C4', 'accent pressed'],
+				['Accent soft', '#EEF0FF', 'selection / soft'],
+				['Success', '#27A644', 'success'],
+				['Warning', '#B7791F', 'warning'],
+				['Danger', '#D14343', 'danger'],
+				['Info', '#3A72D8', 'info'],
 			]
 
 			function renderPalette(targetId, colors) {
@@ -1838,7 +1979,7 @@
 			}
 
 			renderPalette('linearPalette', linearColors)
-			renderPalette('proposalPalette', proposalColors)
+			renderPalette('stoneflowPalette', stoneflowColors)
 
 			const toast = document.getElementById('toast')
 			let toastTimer
@@ -1878,15 +2019,6 @@
 				widthValue.textContent = value
 			})
 
-			document.querySelectorAll('[data-shell-font]').forEach((button) => {
-				button.addEventListener('click', () => {
-					shell.dataset.font = button.dataset.shellFont
-					document.querySelectorAll('[data-shell-font]').forEach((item) => {
-						item.setAttribute('aria-pressed', String(item === button))
-					})
-				})
-			})
-
 			document.querySelectorAll('button[data-detail-layout]').forEach((button) => {
 				button.addEventListener('click', () => {
 					shell.dataset.detailLayout = button.dataset.detailLayout
@@ -1898,9 +2030,11 @@
 			})
 
 			const detailToggle = document.getElementById('detailToggle')
+			const detailPanel = document.getElementById('detailPanel')
 			function setDetail(open) {
 				shell.dataset.detail = open ? 'open' : 'closed'
-				detailToggle.setAttribute('aria-pressed', String(open))
+				detailToggle.setAttribute('aria-expanded', String(open))
+				detailPanel.hidden = !open
 				detailToggle.textContent = open ? '关闭任务详情' : '打开任务详情'
 			}
 
@@ -1910,7 +2044,7 @@
 				.addEventListener('click', () => setDetail(false))
 
 			if (document.fonts?.load) {
-				document.fonts.load('14px "Inter Preview"').then((fonts) => {
+				document.fonts.load('14px "Inter Variable"').then((fonts) => {
 					const status = document.getElementById('interStatus')
 					status.textContent = fonts.length ? 'Inter Variable 已加载' : '未加载，使用系统回退'
 				})

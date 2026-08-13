@@ -100,7 +100,7 @@ export function ShellChrome({
 				spaces={chrome.spaces}
 			/>
 			<div className='relative flex min-h-0 min-w-0 flex-1 overflow-hidden bg-sf-shell'>
-				<div className='flex min-h-0 w-(--sf-shell-sidebar-reserved-width) shrink-0 flex-col overflow-hidden transition-[width] duration-(--sf-shell-layout-sync-duration) ease-(--sf-shell-layout-sync-easing) motion-reduce:transition-none group-data-[sidebar-resizing=true]/sidebar-wrapper:transition-none'>
+				<div className='flex min-h-0 w-(--sf-shell-sidebar-reserved-width) shrink-0 flex-col overflow-hidden'>
 					{isSettingsMode ? (
 						<SettingsSidebar
 							activeSettingsSection={shellRoute.settingsSection ?? DEFAULT_SETTINGS_SECTION}

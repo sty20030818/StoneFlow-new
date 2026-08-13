@@ -52,7 +52,7 @@ const CALENDAR_CLASS_NAMES = {
 	// 覆盖基础 day 类：用 flex-1 + aspect-square 让 7 列均分宽度并保持方形
 	day: 'group/day relative flex-1 aspect-square text-center p-0 select-none',
 	today:
-		'rounded-full bg-sf-surface-active text-foreground data-[selected-single=true]:bg-primary data-[selected-single=true]:text-primary-foreground',
+		'rounded-full bg-sf-surface-active text-legacy-foreground data-[selected-single=true]:bg-primary data-[selected-single=true]:text-primary-foreground',
 	outside: 'text-sf-text-quaternary opacity-70 aria-selected:text-sf-text-quaternary',
 } as const
 
@@ -142,7 +142,7 @@ export function CustomDateDialog({
 						<div className='flex items-start gap-8'>
 							<div className='flex flex-1 flex-col'>
 								<div className='ml-2 mb-2 flex h-7 w-full items-center'>
-									<span className='text-[13px] font-medium text-foreground'>
+									<span className='text-[13px] font-medium text-legacy-foreground'>
 										{formatCalendarHeaderMonth(month)}
 									</span>
 								</div>
@@ -173,7 +173,7 @@ export function CustomDateDialog({
 							</div>
 							<div className='flex flex-1 flex-col'>
 								<div className='ml-2 mb-2 flex h-7 items-center justify-between'>
-									<span className='text-[13px] font-medium text-foreground'>
+									<span className='text-[13px] font-medium text-legacy-foreground'>
 										{formatCalendarHeaderMonth(nextMonth)}
 									</span>
 									<div className='flex items-center gap-1'>

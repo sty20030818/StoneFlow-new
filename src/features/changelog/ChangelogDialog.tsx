@@ -51,7 +51,7 @@ export function ChangelogDialog({
 	return (
 		<Dialog onOpenChange={handleOpenChange} open={open}>
 			<DialogContent
-				className='top-[18%] max-sm:max-w-[calc(100%-1.5rem)] max-lg:max-w-[calc(100%-1.5rem)] sm:max-w-190 translate-y-0 overflow-hidden rounded-lg border border-sf-border-subtle bg-background/98 p-0 shadow-(--sf-shadow-popover)'
+				className='top-[18%] max-sm:max-w-[calc(100%-1.5rem)] max-lg:max-w-[calc(100%-1.5rem)] sm:max-w-190 translate-y-0 overflow-hidden rounded-lg border border-sf-border-subtle bg-legacy-background/98 p-0 shadow-(--sf-shadow-popover)'
 				disableAnimation
 				showCloseButton={false}
 			>
@@ -75,7 +75,9 @@ export function ChangelogDialog({
 					</ActionTooltip.Content>
 				</ActionTooltip>
 				<div className='flex items-center gap-2 px-5 pt-4 pb-2 pr-12'>
-					<h2 className='min-w-0 text-[18px] leading-6 font-bold text-foreground'>更新日志</h2>
+					<h2 className='min-w-0 text-[18px] leading-6 font-bold text-legacy-foreground'>
+						更新日志
+					</h2>
 					<Badge
 						className='h-5 shrink-0 rounded-md border-sf-border-subtle bg-sf-surface-panel-muted px-1.5 text-[11px] font-medium text-sf-text-secondary'
 						variant='outline'

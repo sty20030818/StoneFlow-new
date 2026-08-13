@@ -100,7 +100,7 @@ export function TaskPreview({
 					<div className='flex flex-col gap-1.5'>
 						<h2>
 							<OverflowTooltip
-								className='!line-clamp-2 !whitespace-normal text-[20px] font-semibold leading-tight text-foreground'
+								className='!line-clamp-2 !whitespace-normal text-[20px] font-semibold leading-tight text-legacy-foreground'
 								content={task.title}
 							>
 								{task.title}
@@ -136,7 +136,7 @@ export function TaskPreview({
 							</OverflowTooltip>
 						</p>
 					) : (
-						<div className='rounded-md border border-dashed border-sf-border-subtle bg-muted/30 px-3 py-3 text-[12px] leading-5 text-sf-text-tertiary'>
+						<div className='rounded-md border border-dashed border-sf-border-subtle bg-legacy-muted/30 px-3 py-3 text-[12px] leading-5 text-sf-text-tertiary'>
 							{detail.status === 'loading' ? '加载备注…' : '暂无备注'}
 						</div>
 					)}

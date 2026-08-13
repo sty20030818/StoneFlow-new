@@ -116,7 +116,7 @@ export function BoardGroupHeader({
 			<div className='flex min-w-0 items-center gap-2'>
 				{leading}
 				<OverflowTooltip
-					className={cn('text-sm font-semibold text-foreground', titleClassName)}
+					className={cn('text-sm font-semibold text-legacy-foreground', titleClassName)}
 					content={title}
 				>
 					{title}

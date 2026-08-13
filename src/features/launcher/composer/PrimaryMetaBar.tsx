@@ -64,10 +64,7 @@ export function PrimaryMetaBar() {
 						variant='outline'
 					>
 						<ChevronDownIcon
-							className={cn(
-								'size-4 transition-transform',
-								state.isAdvancedOpen ? 'rotate-180' : '',
-							)}
+							className={cn('size-4', state.isAdvancedOpen ? 'rotate-180' : '')}
 						/>
 					</Button>
 				</ActionTooltip.Trigger>

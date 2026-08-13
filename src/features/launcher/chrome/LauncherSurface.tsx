@@ -19,7 +19,6 @@ export function LauncherSurface({
 			aria-label='StoneFlow Launcher'
 			className={cn(
 				'relative z-10 h-full w-full min-h-0',
-				'transition-opacity duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]',
 				isVisible ? 'opacity-100' : 'pointer-events-none opacity-0',
 				className,
 			)}

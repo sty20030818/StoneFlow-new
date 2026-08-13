@@ -8,7 +8,6 @@ import { RefreshCwIcon } from 'lucide-react'
 import { deriveSyncFooterView } from '@/features/sync/model/deriveSyncFooterView'
 import { useSharedSyncStatus } from '@/features/sync/model/SyncStatusProvider'
 import { ShellFooterStatus } from '@/shared/components/patterns/ShellFooterStatus'
-import { cn } from '@/shared/lib/utils'
 
 export function SyncFooterStatusItem() {
 	const { displayedStatus, loading, message, runNow, running, statusPayload } =
@@ -45,7 +44,7 @@ export function SyncFooterStatusItem() {
 					void runNow()
 				}}
 			>
-				<RefreshCwIcon aria-hidden className={cn('size-3', view.busy && 'animate-spin')} />
+				<RefreshCwIcon aria-hidden className='size-3' />
 			</ShellFooterStatus.IconButton>
 		</ShellFooterStatus.Root>
 	)

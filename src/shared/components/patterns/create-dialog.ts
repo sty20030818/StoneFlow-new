@@ -8,7 +8,7 @@ import { dialogShellFloatingBaseClass } from './dialog-shell'
  */
 export const createDialogShellClass = cn(
 	'flex min-h-[30dvh] max-h-[70dvh] max-w-[calc(100%-1.5rem+8px)]',
-	'flex-col gap-0 overflow-hidden rounded-3xl border border-border',
+	'flex-col gap-0 overflow-hidden rounded-3xl border border-legacy-border',
 	'sm:max-w-3xl top-[15dvh] translate-y-0',
 	'transition-[width,max-width,height,max-height,top,border-radius] duration-200 ease-out motion-reduce:transition-none',
 	dialogShellFloatingBaseClass,
@@ -24,7 +24,7 @@ export const createDialogShellFullscreenClass = cn(
  * 短决策浮动壳（更新提醒等）：同族圆角/顶偏，无 create 表单的 min/max-h，宽度收成 md。
  */
 export const createDialogCompactShellClass = cn(
-	'flex flex-col gap-0 overflow-hidden rounded-3xl border border-border',
+	'flex flex-col gap-0 overflow-hidden rounded-3xl border border-legacy-border',
 	'max-w-[calc(100%-1.5rem)] sm:max-w-md top-[15dvh] translate-y-0',
 	dialogShellFloatingBaseClass,
 )

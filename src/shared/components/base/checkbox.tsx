@@ -8,12 +8,12 @@ function Checkbox({ className, ...props }: React.ComponentProps<typeof CheckboxP
 		<CheckboxPrimitive.Root
 			data-slot='checkbox'
 			className={cn(
-				'group/checkbox flex size-5 shrink-0 items-center justify-center rounded-full bg-transparent p-0 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-40',
+				'group/checkbox flex size-5 shrink-0 items-center justify-center rounded-full bg-transparent p-0 outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-40',
 				className,
 			)}
 			{...props}
 		>
-			<span className='flex size-4 items-center justify-center rounded-[5px] border border-sf-border-strong bg-transparent text-transparent transition-colors group-hover/checkbox:border-sf-icon-secondary group-data-[state=checked]/checkbox:border-primary group-data-[state=checked]/checkbox:bg-primary group-data-[state=checked]/checkbox:text-primary-foreground group-data-[state=indeterminate]/checkbox:border-primary group-data-[state=indeterminate]/checkbox:bg-primary group-data-[state=indeterminate]/checkbox:text-primary-foreground'>
+			<span className='flex size-4 items-center justify-center rounded-[5px] border border-sf-border-strong bg-transparent text-transparent group-hover/checkbox:border-sf-icon-secondary group-data-[state=checked]/checkbox:border-primary group-data-[state=checked]/checkbox:bg-primary group-data-[state=checked]/checkbox:text-primary-foreground group-data-[state=indeterminate]/checkbox:border-primary group-data-[state=indeterminate]/checkbox:bg-primary group-data-[state=indeterminate]/checkbox:text-primary-foreground'>
 				<CheckboxPrimitive.Indicator data-slot='checkbox-indicator'>
 					<svg
 						aria-hidden

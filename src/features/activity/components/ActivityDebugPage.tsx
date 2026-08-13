@@ -156,7 +156,7 @@ export function ActivityDebugPage({
 								key={entry.id}
 							>
 								<div className={activityDebugMetaRowClass}>
-									<span className='rounded-full bg-muted px-2.5 py-1 font-medium text-foreground'>
+									<span className='rounded-full bg-legacy-muted px-2.5 py-1 font-medium text-legacy-foreground'>
 										{entry.action}
 									</span>
 									<span>{entry.entityType}</span>
@@ -167,7 +167,7 @@ export function ActivityDebugPage({
 								</div>
 
 								{entry.summary ? (
-									<p className='text-sm leading-6 text-foreground'>{entry.summary}</p>
+									<p className='text-sm leading-6 text-legacy-foreground'>{entry.summary}</p>
 								) : null}
 
 								{entry.metadata ? (
@@ -180,7 +180,7 @@ export function ActivityDebugPage({
 								) : null}
 
 								<details className={activityDebugDetailsClass}>
-									<summary className='cursor-pointer text-sm font-medium text-foreground'>
+									<summary className='cursor-pointer text-sm font-medium text-legacy-foreground'>
 										字段变化 ({entry.changes.length})
 									</summary>
 									{entry.changes.length === 0 ? (
@@ -193,7 +193,9 @@ export function ActivityDebugPage({
 													key={change.id}
 												>
 													<div className={activityDebugMetaRowClass}>
-														<span className='font-medium text-foreground'>{change.field}</span>
+														<span className='font-medium text-legacy-foreground'>
+															{change.field}
+														</span>
 														<span>{change.createdAt}</span>
 													</div>
 													<div className='mt-2 grid gap-2 md:grid-cols-2'>

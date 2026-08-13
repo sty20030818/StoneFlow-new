@@ -11,11 +11,12 @@ export const activityDebugMetaRowClass =
 	'flex flex-wrap items-center gap-2 text-[12px] text-sf-shell-text-tertiary'
 
 export const activityDebugCodeBlockClass =
-	'overflow-x-auto rounded-lg bg-muted/60 p-3 text-[12px] leading-5 text-sf-shell-text-secondary'
+	'overflow-x-auto rounded-lg bg-legacy-muted/60 p-3 text-[12px] leading-5 text-sf-shell-text-secondary'
 
-export const activityDebugDetailsClass = 'rounded-lg border border-sf-border-subtle bg-muted/35 p-3'
+export const activityDebugDetailsClass =
+	'rounded-lg border border-sf-border-subtle bg-legacy-muted/35 p-3'
 
 export const activityDebugCompactCodeBlockClass =
-	'overflow-x-auto rounded-md bg-muted/60 p-2 text-[12px] leading-5 text-sf-shell-text-secondary'
+	'overflow-x-auto rounded-md bg-legacy-muted/60 p-2 text-[12px] leading-5 text-sf-shell-text-secondary'
 
 export const activityDebugDetailsEmptyTextClass = 'mt-3 text-sm text-sf-shell-text-tertiary'

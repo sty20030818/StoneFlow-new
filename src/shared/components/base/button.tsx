@@ -5,7 +5,7 @@ import { Slot } from 'radix-ui'
 import { cn } from '@/shared/lib/utils'
 
 const buttonVariants = cva(
-	"group/button inline-flex shrink-0 items-center justify-center rounded-md border border-transparent bg-clip-padding text-sm leading-none font-medium whitespace-nowrap transition-colors outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/18 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+	"group/button inline-flex shrink-0 items-center justify-center rounded-md border border-transparent bg-clip-padding text-sm leading-none font-medium whitespace-nowrap outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/18 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
 	{
 		variants: {
 			variant: {
@@ -14,7 +14,7 @@ const buttonVariants = cva(
 				outline:
 					'border-sf-border-interactive bg-sf-surface-interactive text-sf-text-interactive shadow-(--sf-shadow-interactive) hover:border-sf-border-interactive-hover hover:bg-sf-surface-interactive-hover hover:text-sf-text-interactive-hover focus-visible:border-sf-border-interactive-active focus-visible:bg-sf-surface-interactive-active focus-visible:text-sf-text-interactive-active aria-expanded:border-sf-border-interactive-active aria-expanded:bg-sf-surface-interactive-active aria-expanded:text-sf-text-interactive-active aria-pressed:border-sf-border-interactive-active aria-pressed:bg-sf-surface-interactive-active aria-pressed:text-sf-text-interactive-active data-[state=open]:border-sf-border-interactive-active data-[state=open]:bg-sf-surface-interactive-active data-[state=open]:text-sf-text-interactive-active',
 				secondary:
-					'border-border bg-secondary text-secondary-foreground hover:bg-muted/80 hover:text-foreground aria-expanded:bg-muted/80 aria-expanded:text-foreground',
+					'border-legacy-border bg-secondary text-secondary-foreground hover:bg-legacy-muted/80 hover:text-legacy-foreground aria-expanded:bg-legacy-muted/80 aria-expanded:text-legacy-foreground',
 				ghost:
 					'text-muted-foreground hover:bg-sf-surface-interactive-hover hover:text-sf-text-interactive-hover focus-visible:bg-sf-surface-interactive-hover focus-visible:text-sf-text-interactive-hover aria-expanded:bg-sf-surface-interactive-hover aria-expanded:text-sf-text-interactive-hover aria-pressed:bg-sf-surface-interactive-hover aria-pressed:text-sf-text-interactive-hover data-[state=open]:bg-sf-surface-interactive-hover data-[state=open]:text-sf-text-interactive-hover',
 				destructive:

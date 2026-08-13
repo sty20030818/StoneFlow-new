@@ -420,7 +420,7 @@ function SidebarGroupAction({
 	return (
 		<Comp
 			className={cn(
-				'inline-flex size-7 shrink-0 items-center justify-center rounded-md border border-transparent text-sf-shell-text-secondary transition-colors hover:bg-sf-shell-hover hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/18 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-3.5',
+				'inline-flex size-7 shrink-0 items-center justify-center rounded-md border border-transparent text-sf-shell-text-secondary transition-colors hover:bg-sf-shell-hover hover:text-legacy-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/18 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-3.5',
 				className,
 			)}
 			data-slot='sidebar-group-action'
@@ -469,8 +469,8 @@ const sidebarMenuButtonVariants = cva(
 				lg: 'h-10 px-2.5 text-[14px] group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:w-8 group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:w-8',
 			},
 			isActive: {
-				true: 'border-sf-border-subtle bg-sidebar-accent font-medium text-foreground shadow-(--sf-shadow-panel)',
-				false: 'hover:bg-sf-shell-hover hover:text-foreground',
+				true: 'border-sf-border-subtle bg-sidebar-accent font-medium text-legacy-foreground shadow-(--sf-shadow-panel)',
+				false: 'hover:bg-sf-shell-hover hover:text-legacy-foreground',
 			},
 		},
 		defaultVariants: {
@@ -518,7 +518,7 @@ function SidebarMenuAction({
 	return (
 		<Comp
 			className={cn(
-				'inline-flex size-7 shrink-0 items-center justify-center rounded-md border border-transparent text-sf-shell-text-secondary transition-colors hover:bg-sf-shell-hover hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/18 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-3.5',
+				'inline-flex size-7 shrink-0 items-center justify-center rounded-md border border-transparent text-sf-shell-text-secondary transition-colors hover:bg-sf-shell-hover hover:text-legacy-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/18 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-3.5',
 				className,
 			)}
 			data-slot='sidebar-menu-action'
@@ -566,8 +566,8 @@ const sidebarMenuSubButtonVariants = cva(
 				sm: 'h-7 px-2 text-[12px]',
 			},
 			isActive: {
-				true: 'border-sf-border-subtle bg-sidebar-accent font-medium text-foreground shadow-(--sf-shadow-panel)',
-				false: 'hover:bg-sf-shell-hover hover:text-foreground',
+				true: 'border-sf-border-subtle bg-sidebar-accent font-medium text-legacy-foreground shadow-(--sf-shadow-panel)',
+				false: 'hover:bg-sf-shell-hover hover:text-legacy-foreground',
 			},
 		},
 		defaultVariants: {
@@ -773,7 +773,7 @@ function SidebarTrigger({ className, stateful = true, onClick, ...props }: Sideb
 			aria-label={isOpen ? '收起侧边栏' : '展开侧边栏'}
 			className={cn(
 				// 与主壳 `Button` `icon-sm` 同 30×30 底槽，便于与顶栏三键/品牌圆钮对齐
-				'inline-flex size-7.5 shrink-0 items-center justify-center rounded-md border border-transparent text-sf-shell-text-secondary transition-colors hover:bg-sf-shell-hover hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/18 focus-visible:outline-none [&_svg]:pointer-events-none [&_svg]:shrink-0',
+				'inline-flex size-7.5 shrink-0 items-center justify-center rounded-md border border-transparent text-sf-shell-text-secondary transition-colors hover:bg-sf-shell-hover hover:text-legacy-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/18 focus-visible:outline-none [&_svg]:pointer-events-none [&_svg]:shrink-0',
 				className,
 			)}
 			data-slot='sidebar-trigger'

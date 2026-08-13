@@ -136,7 +136,7 @@ export function ShellLayoutContent({
 
 	return (
 		<SidebarProvider
-			className='sf-shell-layout relative flex h-full min-h-0 flex-col overflow-hidden bg-background'
+			className='sf-shell-layout relative flex h-full min-h-0 flex-col overflow-hidden bg-legacy-background'
 			desktopPreference={chrome.sidebarSettings.desktopPreference}
 			onDesktopPreferenceChange={(next) => {
 				void chrome.setDesktopPreference(next)

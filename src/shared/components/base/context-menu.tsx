@@ -74,7 +74,7 @@ function ContextMenuItem({
 			data-inset={inset}
 			data-variant={variant}
 			className={cn(
-				'group/context-menu-item relative flex min-h-9 cursor-default items-center gap-2 rounded-lg px-2.5 py-2 text-[12px] leading-5 outline-hidden select-none hover:bg-muted/80 focus:bg-muted/80 focus:text-foreground data-highlighted:bg-muted/80 data-highlighted:text-foreground data-inset:pl-8 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*=size-])]:size-4 data-[variant=destructive]:*:[svg]:text-destructive',
+				'group/context-menu-item relative flex min-h-9 cursor-default items-center gap-2 rounded-lg px-2.5 py-2 text-[12px] leading-5 outline-hidden select-none hover:bg-legacy-muted/80 focus:bg-legacy-muted/80 focus:text-legacy-foreground data-highlighted:bg-legacy-muted/80 data-highlighted:text-legacy-foreground data-inset:pl-8 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*=size-])]:size-4 data-[variant=destructive]:*:[svg]:text-destructive',
 				className,
 			)}
 			{...props}
@@ -95,7 +95,7 @@ function ContextMenuSubTrigger({
 			data-slot='context-menu-sub-trigger'
 			data-inset={inset}
 			className={cn(
-				'flex min-h-9 cursor-default items-center gap-2 rounded-lg px-2.5 py-2 text-[12px] leading-5 outline-hidden select-none hover:bg-muted/80 focus:bg-muted/80 focus:text-foreground data-inset:pl-8 data-open:bg-muted/80 data-open:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*=size-])]:size-4',
+				'flex min-h-9 cursor-default items-center gap-2 rounded-lg px-2.5 py-2 text-[12px] leading-5 outline-hidden select-none hover:bg-legacy-muted/80 focus:bg-legacy-muted/80 focus:text-legacy-foreground data-inset:pl-8 data-open:bg-legacy-muted/80 data-open:text-legacy-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*=size-])]:size-4',
 				className,
 			)}
 			{...props}
@@ -136,7 +136,7 @@ function ContextMenuCheckboxItem({
 			data-slot='context-menu-checkbox-item'
 			data-inset={inset}
 			className={cn(
-				'relative flex min-h-9 cursor-default items-center gap-2 rounded-lg py-2 pr-9 pl-2.5 text-[12px] leading-5 outline-hidden select-none hover:bg-muted/80 focus:bg-muted/80 focus:text-foreground data-inset:pl-8 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*=size-])]:size-4',
+				'relative flex min-h-9 cursor-default items-center gap-2 rounded-lg py-2 pr-9 pl-2.5 text-[12px] leading-5 outline-hidden select-none hover:bg-legacy-muted/80 focus:bg-legacy-muted/80 focus:text-legacy-foreground data-inset:pl-8 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*=size-])]:size-4',
 				className,
 			)}
 			checked={checked}
@@ -168,7 +168,7 @@ function ContextMenuRadioItem({
 			data-slot='context-menu-radio-item'
 			data-inset={inset}
 			className={cn(
-				'relative flex min-h-9 cursor-default items-center gap-2 rounded-lg py-2 pr-9 pl-2.5 text-[12px] leading-5 outline-hidden select-none hover:bg-muted/80 focus:bg-muted/80 focus:text-foreground data-inset:pl-8 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*=size-])]:size-4',
+				'relative flex min-h-9 cursor-default items-center gap-2 rounded-lg py-2 pr-9 pl-2.5 text-[12px] leading-5 outline-hidden select-none hover:bg-legacy-muted/80 focus:bg-legacy-muted/80 focus:text-legacy-foreground data-inset:pl-8 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*=size-])]:size-4',
 				className,
 			)}
 			{...props}
@@ -213,7 +213,7 @@ function ContextMenuSeparator({
 	return (
 		<ContextMenuPrimitive.Separator
 			data-slot='context-menu-separator'
-			className={cn('-mx-1.5 my-1.5 h-px bg-border', className)}
+			className={cn('-mx-1.5 my-1.5 h-px bg-legacy-border', className)}
 			{...props}
 		/>
 	)
@@ -224,7 +224,7 @@ function ContextMenuShortcut({ className, ...props }: React.ComponentProps<'span
 		<span
 			data-slot='context-menu-shortcut'
 			className={cn(
-				'ml-auto pl-2.5 text-[10px] tracking-widest text-muted-foreground group-focus/context-menu-item:text-foreground',
+				'ml-auto pl-2.5 text-[10px] tracking-widest text-muted-foreground group-focus/context-menu-item:text-legacy-foreground',
 				className,
 			)}
 			{...props}

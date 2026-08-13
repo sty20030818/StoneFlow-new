@@ -49,7 +49,7 @@ export function AppBreadcrumb({ items }: AppBreadcrumbProps) {
 							: `${breadcrumbLeadClass} text-sf-text-tertiary`,
 						'h-5 items-center leading-none',
 						shouldTruncate ? 'min-w-0 max-w-full' : null,
-						isCurrent ? 'font-semibold text-foreground' : null,
+						isCurrent ? 'font-semibold text-legacy-foreground' : null,
 					)
 
 					return (

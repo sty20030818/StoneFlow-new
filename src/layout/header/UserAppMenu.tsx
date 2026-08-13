@@ -28,7 +28,7 @@ import { InfoIcon, HistoryIcon, KeyboardIcon, RefreshCwIcon, SettingsIcon } from
 
 /** 与 CommandMenu / ShortcutHelp 一致的 kbd 样式 */
 const menuShortcutKbdClassName =
-	'h-6 min-w-6 rounded-sm border border-sf-border-subtle bg-background/90 px-1.5 text-[11px] text-sf-text-secondary'
+	'h-6 min-w-6 rounded-sm border border-sf-border-subtle bg-legacy-background/90 px-1.5 text-[11px] text-sf-text-secondary'
 
 function MenuCommandShortcut({ commandId }: { commandId: CommandId }) {
 	const registry = useShortcutRegistry()

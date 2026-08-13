@@ -147,7 +147,10 @@ function SearchTaskResultRow({
 					<TaskStatusIndicator status={task.status} />
 				</span>
 				<div className='min-w-0 flex-1'>
-					<OverflowTooltip className='text-[13px] font-medium text-foreground' content={task.title}>
+					<OverflowTooltip
+						className='text-[13px] font-medium text-legacy-foreground'
+						content={task.title}
+					>
 						{task.title}
 					</OverflowTooltip>
 				</div>
@@ -195,7 +198,7 @@ function SearchProjectResultRow({
 				</span>
 				<div className='min-w-0 flex-1'>
 					<OverflowTooltip
-						className='text-[13px] font-medium text-foreground'
+						className='text-[13px] font-medium text-legacy-foreground'
 						content={project.name}
 					>
 						{project.name}

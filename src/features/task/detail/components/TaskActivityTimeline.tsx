@@ -137,7 +137,9 @@ export function TaskActivityTimeline({ spaceId, taskId }: TaskActivityTimelinePr
 								<span className='mt-1 flex size-4 shrink-0 items-center justify-center text-sf-icon-secondary'>
 									{item.icon}
 								</span>
-								<div className='min-w-0 flex-1 text-sm leading-6 text-foreground'>{item.text}</div>
+								<div className='min-w-0 flex-1 text-sm leading-6 text-legacy-foreground'>
+									{item.text}
+								</div>
 								<div className='shrink-0 pt-0.5 text-[12px] leading-5 text-sf-text-tertiary'>
 									{item.relativeTime}
 								</div>

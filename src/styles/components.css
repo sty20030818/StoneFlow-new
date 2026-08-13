@@ -1,0 +1,114 @@
+@layer components {
+	[data-theme="stoneflow-light"] .button--primary {
+		--button-bg-pressed: #5562c4;
+	}
+
+	[data-theme="stoneflow-light"] .button--secondary {
+		--button-bg: #ffffff;
+		--button-bg-hover: #f7f7f7;
+		--button-bg-pressed: #efeff0;
+		--button-fg: #303032;
+	}
+
+	[data-theme="stoneflow-light"] .button--outline {
+		--button-bg: #ffffff;
+		--button-bg-hover: #f3f3f4;
+		--button-bg-pressed: #efeff0;
+		--button-fg: #5d5d5f;
+		border-color: #dbdbdb;
+	}
+
+	@media (hover: hover) {
+		[data-theme="stoneflow-light"] .button--outline:is(:hover, [data-hovered="true"]) {
+			border-color: #cccccc;
+			color: #303032;
+		}
+	}
+
+	[data-theme="stoneflow-light"]
+		.button--outline:is(:active, [data-pressed="true"], [aria-expanded="true"]) {
+		background-color: var(--button-bg-pressed);
+		border-color: #d6d6d7;
+		color: #1b1b1b;
+	}
+
+	[data-theme="stoneflow-light"] .button--sm {
+		height: 2rem;
+		min-height: 2rem;
+		border-radius: 0.5rem;
+	}
+
+	[data-theme="stoneflow-light"] .input,
+	[data-theme="stoneflow-light"] .select__trigger {
+		min-height: 2rem;
+		padding-block: 0.25rem;
+	}
+
+	[data-theme="stoneflow-light"] .sidebar {
+		background-color: #f3f3f4;
+		color: #5a5a5c;
+	}
+
+	[data-theme="stoneflow-light"] .sidebar__provider:has(.sidebar--inset) .sidebar__main {
+		background-color: #fcfcfd;
+		border-color: #ffffff;
+		border-radius: 0.5rem;
+		box-shadow: none;
+	}
+
+	[data-theme="stoneflow-light"] .sidebar__menu-label,
+	[data-theme="stoneflow-light"] .sidebar__menu-icon,
+	[data-theme="stoneflow-light"] .sidebar__menu-chip {
+		color: #5a5a5c;
+	}
+
+	@media (hover: hover) {
+		[data-theme="stoneflow-light"]
+			.sidebar__menu-item:is(:hover, [data-hovered="true"])
+			.sidebar__menu-item-content {
+			background-color: #ebebec;
+		}
+	}
+
+	[data-theme="stoneflow-light"]
+		.sidebar__menu-item[data-current="true"]
+		.sidebar__menu-item-content {
+		background-color: #e5e5e6;
+	}
+
+	[data-theme="stoneflow-light"]
+		.sidebar__menu-item[data-current="true"]
+		:is(.sidebar__menu-label, .sidebar__menu-icon, .sidebar__menu-chip) {
+		color: #1b1b1b;
+	}
+
+	[data-theme="stoneflow-light"] :is(.menu-item, .list-box-item) {
+		min-height: 2rem;
+		padding-block: 0.25rem;
+	}
+
+	@media (hover: hover) {
+		[data-theme="stoneflow-light"]
+			:is(.menu-item, .list-box-item):is(:hover, [data-hovered="true"]) {
+			background-color: #f6f6f7;
+		}
+	}
+
+	[data-theme="stoneflow-light"]
+		:is(.menu-item, .list-box-item):is([aria-selected="true"], [data-selected="true"]),
+	[data-theme="stoneflow-light"] .list-view__item[data-selected="true"] {
+		background-color: #eef0ff;
+	}
+
+	[data-theme="stoneflow-light"] .list-view__item {
+		min-height: 2.25rem;
+		gap: 0.5rem;
+		padding: 0.375rem 0.75rem;
+	}
+
+	@media (hover: hover) {
+		[data-theme="stoneflow-light"] .list-view__item:is(:hover, [data-hovered="true"]) {
+			background-color: #f6f6f7;
+		}
+	}
+}

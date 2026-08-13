@@ -81,7 +81,7 @@ export function CreateDialogShell({
 							spaces={spaces}
 						/>
 						<ChevronRightIcon className='size-3.5 text-sf-icon-subtle' />
-						<span className='font-black text-foreground'>{title}</span>
+						<span className='font-black text-legacy-foreground'>{title}</span>
 					</div>
 
 					<div className='flex items-center gap-0.5'>

@@ -91,7 +91,10 @@ export function ShortcutHelp({
 					</ActionTooltip.Content>
 				</ActionTooltip>
 				<div className='px-5 pt-4 pb-3'>
-					<OverflowTooltip className='pr-9 text-[16px] font-medium text-foreground' content={title}>
+					<OverflowTooltip
+						className='pr-9 text-[16px] font-medium text-legacy-foreground'
+						content={title}
+					>
 						{title}
 					</OverflowTooltip>
 					<OverflowTooltip className='mt-1 text-[12px] text-sf-text-tertiary' content={description}>
@@ -132,7 +135,10 @@ function ShortcutHelpRow({
 	return (
 		<article className='mx-1 flex min-h-11 items-center gap-3 rounded-md bg-transparent px-3 py-2'>
 			<div className='min-w-0 flex-1'>
-				<OverflowTooltip className='text-[14px] font-medium text-foreground' content={entry.title}>
+				<OverflowTooltip
+					className='text-[14px] font-medium text-legacy-foreground'
+					content={entry.title}
+				>
 					{entry.title}
 				</OverflowTooltip>
 				{entry.description ? (
@@ -147,7 +153,7 @@ function ShortcutHelpRow({
 			<div className='ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2'>
 				{entry.shortcuts.map((shortcut) => (
 					<ShortcutTokens
-						kbdClassName='h-6 min-w-6 rounded-sm border border-sf-border-subtle bg-background/90 px-1.5 text-[11px] text-sf-text-secondary'
+						kbdClassName='h-6 min-w-6 rounded-sm border border-sf-border-subtle bg-legacy-background/90 px-1.5 text-[11px] text-sf-text-secondary'
 						key={shortcut.map((token) => `${token.type}:${token.value}`).join('|')}
 						separatorClassName='text-sf-text-quaternary'
 						tokens={shortcut}

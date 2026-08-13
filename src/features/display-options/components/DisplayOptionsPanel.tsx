@@ -256,7 +256,7 @@ export function DisplayOptionsPanel({
 			{/* 底栏：Reset 左 · 设为默认 右 */}
 			<div className='flex items-center justify-between gap-2 px-2 py-2'>
 				<button
-					className='text-[13px] text-sf-text-secondary transition-[color,transform] hover:text-foreground active:scale-[0.96] disabled:opacity-50'
+					className='text-[13px] text-sf-text-secondary hover:text-legacy-foreground disabled:opacity-50'
 					disabled={isPending}
 					onClick={() => void actions.resetToDefault()}
 					type='button'
@@ -264,7 +264,7 @@ export function DisplayOptionsPanel({
 					重置
 				</button>
 				<button
-					className='text-[13px] font-medium text-primary transition-transform hover:underline active:scale-[0.96] disabled:opacity-50'
+					className='text-[13px] font-medium text-primary hover:underline disabled:opacity-50'
 					disabled={isPending}
 					onClick={() => void actions.setAsDefault()}
 					type='button'
@@ -295,7 +295,7 @@ function OrderDirectionButton({
 	const button = (
 		<button
 			aria-label={label}
-			className='flex size-8 items-center justify-center rounded-md text-sf-text-tertiary transition-[color,background-color,transform] hover:bg-muted hover:text-foreground active:scale-[0.96]'
+			className='flex size-8 items-center justify-center rounded-md text-sf-text-tertiary hover:bg-legacy-muted hover:text-legacy-foreground'
 			disabled={disabled}
 			onClick={onToggle}
 			type='button'
@@ -361,7 +361,7 @@ function CompactSelect({
 		<Select disabled={disabled} onValueChange={onValueChange} value={value}>
 			<SelectTrigger
 				aria-label={ariaLabel}
-				className='h-8 w-auto min-w-30 max-w-40 justify-between rounded-full border-border/80 bg-muted/40 px-3 text-[13px] shadow-none'
+				className='h-8 w-auto min-w-30 max-w-40 justify-between rounded-full border-legacy-border/80 bg-legacy-muted/40 px-3 text-[13px] shadow-none'
 			>
 				<SelectValue />
 			</SelectTrigger>

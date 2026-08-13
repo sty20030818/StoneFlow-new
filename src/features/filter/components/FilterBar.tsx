@@ -64,7 +64,7 @@ export function FilterBar({ className }: { className?: string }) {
 
 	return (
 		<div className={cn('flex flex-col gap-1.5', className)}>
-			<div className='flex flex-wrap items-center gap-1.5 rounded-lg border border-border/80 bg-muted/30 px-2 py-1.5'>
+			<div className='flex flex-wrap items-center gap-1.5 rounded-lg border border-legacy-border/80 bg-legacy-muted/30 px-2 py-1.5'>
 				{effective.clauses.map((clause) => (
 					<FilterChip
 						clause={clause}
@@ -143,7 +143,7 @@ function FilterChip({
 }) {
 	const multi = clause.values.length > 1
 	return (
-		<div className='inline-flex max-w-full items-center gap-0.5 rounded-md border border-border bg-background px-1.5 py-0.5 text-[12px]'>
+		<div className='inline-flex max-w-full items-center gap-0.5 rounded-md border border-legacy-border bg-legacy-background px-1.5 py-0.5 text-[12px]'>
 			<span className='shrink-0 px-0.5 font-medium text-sf-text-secondary'>
 				{formatFilterFieldLabel(clause.field)}
 			</span>
@@ -159,7 +159,7 @@ function FilterChip({
 				<ActionTooltip.Trigger asChild>
 					<button
 						aria-label='删除筛选条件'
-						className='rounded p-0.5 text-sf-text-tertiary hover:bg-muted hover:text-foreground'
+						className='rounded p-0.5 text-sf-text-tertiary hover:bg-legacy-muted hover:text-legacy-foreground'
 						onClick={onRemove}
 						type='button'
 					>
@@ -188,7 +188,7 @@ function OpPicker({
 		<Popover onOpenChange={setOpen} open={open}>
 			<PopoverTrigger asChild>
 				<button
-					className='rounded px-1 text-sf-text-tertiary hover:bg-muted hover:text-foreground'
+					className='rounded px-1 text-sf-text-tertiary hover:bg-legacy-muted hover:text-legacy-foreground'
 					type='button'
 				>
 					{formatFilterOpLabel(op, multi)}
@@ -198,7 +198,7 @@ function OpPicker({
 				{(['is', 'is_not'] as const).map((value) => (
 					<button
 						className={cn(
-							'flex w-full rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted',
+							'flex w-full rounded-md px-2 py-1.5 text-left text-sm hover:bg-legacy-muted',
 							value === op && 'font-medium',
 						)}
 						key={value}
@@ -242,7 +242,7 @@ function ValuesPicker({
 		<Popover onOpenChange={setOpen} open={open}>
 			<PopoverTrigger asChild>
 				<button
-					className='flex max-w-35 min-w-0 rounded px-1 font-medium hover:bg-muted'
+					className='flex max-w-35 min-w-0 rounded px-1 font-medium hover:bg-legacy-muted'
 					type='button'
 				>
 					{open ? (
@@ -260,7 +260,7 @@ function ValuesPicker({
 					return (
 						<button
 							className={cn(
-								'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted',
+								'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-legacy-muted',
 								checked && 'font-medium',
 							)}
 							key={option.value}

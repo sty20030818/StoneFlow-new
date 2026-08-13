@@ -11,17 +11,17 @@ function Toaster({ position = 'bottom-right', ...props }: ToasterProps) {
 			position={position}
 			style={
 				{
-					'--normal-bg': 'var(--popover)',
-					'--normal-text': 'var(--popover-foreground)',
-					'--normal-border': 'var(--border)',
+					'--normal-bg': 'var(--sf-surface-raised)',
+					'--normal-text': 'var(--sf-text-primary)',
+					'--normal-border': 'var(--sf-border-secondary)',
 					'--border-radius': 'var(--radius-md)',
 				} as CSSProperties
 			}
 			toastOptions={{
 				classNames: {
 					toast:
-						'rounded-lg border border-border bg-popover text-popover-foreground shadow-(--sf-shadow-popover)',
-					title: 'text-[13px] font-medium text-foreground',
+						'rounded-lg border border-legacy-border bg-popover text-popover-foreground shadow-(--sf-shadow-popover)',
+					title: 'text-[13px] font-medium text-legacy-foreground',
 					description: 'text-[12px] text-muted-foreground',
 				},
 			}}

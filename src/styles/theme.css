@@ -1,0 +1,119 @@
+[data-theme="stoneflow-light"] {
+	color-scheme: light;
+
+	--white: #ffffff;
+	--black: #000000;
+	--snow: #fcfcfd;
+	--eclipse: #1b1b1b;
+
+	--spacing: 0.25rem;
+	--border-width: 1px;
+	--field-border-width: 1px;
+	--disabled-opacity: 0.5;
+	--ring-offset-width: 2px;
+	--cursor-interactive: pointer;
+	--cursor-disabled: not-allowed;
+	--radius: 0.5rem;
+	--field-radius: 0.5rem;
+
+	--background: #fcfcfd;
+	--foreground: #303032;
+	--background-secondary: #f3f3f4;
+	--background-tertiary: #f6f6f7;
+	--background-inverse: #303032;
+
+	--surface: #ffffff;
+	--surface-foreground: #303032;
+	--surface-hover: #f6f6f7;
+	--surface-secondary: #f3f3f4;
+	--surface-secondary-foreground: #5a5a5c;
+	--surface-tertiary: #e5e5e6;
+	--surface-tertiary-foreground: #1b1b1b;
+
+	--overlay: #ffffff;
+	--overlay-foreground: #303032;
+	--muted: #5a5a5c;
+
+	--default: #f3f3f4;
+	--default-foreground: #303032;
+	--default-hover: #e4e4e5;
+	--default-soft: color-mix(in srgb, #f3f3f4 50%, transparent);
+	--default-soft-foreground: #303032;
+	--default-soft-hover: color-mix(in srgb, #f3f3f4 60%, transparent);
+
+	--accent: #5e6ad2;
+	--accent-foreground: #ffffff;
+	--accent-hover: #6566df;
+	--accent-soft: #eef0ff;
+	--accent-soft-foreground: #4450b4;
+	--accent-soft-hover: color-mix(in srgb, #eef0ff 78%, #5e6ad2 22%);
+
+	--field-background: #ffffff;
+	--field-foreground: #303032;
+	--field-placeholder: #5a5a5c;
+	--field-border: #dbdbdb;
+	--field-hover: #f7f7f7;
+	--field-focus: #ffffff;
+	--field-border-hover: #cccccc;
+	--field-border-focus: #d6d6d7;
+
+	--success: #27a644;
+	--success-foreground: #1b1b1b;
+	--success-hover: color-mix(in srgb, #27a644 90%, #1b1b1b 10%);
+	--success-soft: #ecf8ef;
+	--success-soft-foreground: #176f2b;
+	--success-soft-hover: color-mix(in srgb, #ecf8ef 80%, #27a644 20%);
+
+	--warning: #b7791f;
+	--warning-foreground: #1b1b1b;
+	--warning-hover: color-mix(in srgb, #b7791f 90%, #1b1b1b 10%);
+	--warning-soft: #fff7e8;
+	--warning-soft-foreground: #835c17;
+	--warning-soft-hover: color-mix(in srgb, #fff7e8 80%, #b7791f 20%);
+
+	--danger: #d14343;
+	--danger-foreground: #ffffff;
+	--danger-hover: color-mix(in srgb, #d14343 90%, #1b1b1b 10%);
+	--danger-soft: #fff1f1;
+	--danger-soft-foreground: #a73535;
+	--danger-soft-hover: color-mix(in srgb, #fff1f1 80%, #d14343 20%);
+
+	--info: #3a72d8;
+	--info-foreground: #ffffff;
+	--info-hover: color-mix(in srgb, #3a72d8 90%, #1b1b1b 10%);
+	--info-soft: #eff5ff;
+	--info-soft-foreground: #2b59a8;
+	--info-soft-hover: color-mix(in srgb, #eff5ff 80%, #3a72d8 20%);
+
+	--segment: #ffffff;
+	--segment-foreground: #303032;
+	--border: #dbdbdb;
+	--border-secondary: #cccccc;
+	--border-tertiary: #d6d6d7;
+	--separator: #e5e5e6;
+	--separator-secondary: #dbdbdb;
+	--separator-tertiary: #e5e5e6;
+	--focus: #5e6ad2;
+	--link: #5e6ad2;
+	--backdrop: rgb(0 0 0 / 0.2);
+
+	--scrollbar-thumb: color-mix(in srgb, #303032 15%, transparent);
+	--scrollbar-track: transparent;
+	--scrollbar-gutter: auto;
+	--scrollbar-width: thin;
+	--scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+	--scrollbar: var(--scrollbar-thumb);
+
+	--surface-shadow: 0 0 0 transparent;
+	--field-shadow: 0 0 0 transparent;
+	--overlay-shadow: 0 8px 24px rgb(16 24 40 / 0.08), 0 2px 6px rgb(16 24 40 / 0.04);
+}
+
+@theme inline {
+	--color-info: var(--info);
+	--color-info-foreground: var(--info-foreground);
+	--color-info-hover: var(--info-hover);
+	--color-info-soft: var(--info-soft);
+	--color-info-soft-foreground: var(--info-soft-foreground);
+	--color-info-soft-hover: var(--info-soft-hover);
+}

@@ -1,10 +1,10 @@
 # HeroUI-only UI 平台、Linear 浅色设计系统与键盘交互重写 - Tasks
 
-> 当前状态：阶段 3。新版 SPEC 与 PLAN 已确认，阶段 A 已完成；下一项为阶段 B 的 T8。
+> 当前状态：阶段 3。阶段 B 已完成，下一项为阶段 C「StoneFlow 第一方动画清场」。
 
 ## 当前阶段
 
-- 阶段 A「决策固化、供应链与迁移基线」已完成；下一项为阶段 B 的 T8。Windows WebView2 不属于本任务验收范围，也不阻塞后续阶段。
+- 阶段 A「决策固化、供应链与迁移基线」和阶段 B「HeroUI 平台、主题与字体基础」已完成。Windows WebView2 不属于本任务验收范围，也不阻塞后续阶段。
 - 执行任意 task 前，必须重读 [SPEC.md](./SPEC.md) 对应 AC 与 [PLAN.md](./PLAN.md) 对应方案；后续 task 默认按编号顺序依赖。
 - 任一锁定包 API、供应链访问、性能或产品合同与 PLAN 冲突时，先在本文件「与 SPEC/PLAN 的实施偏差」登记并停止相关切片，不得静默增加兼容层。
 
@@ -43,35 +43,35 @@
 
 **阶段 B：HeroUI 平台、主题与字体基础**
 
-- [ ] T8 按 PLAN 锁定版本修改 `package.json`、`bun.lock` 与安装配置，通过 `bunx hpsetup@4.7.0 --auto --no-cache` 精确加入 HeroUI OSS/Pro、React Aria Components、`react-aria`、`react-stately` 及主项目实际必需的最小 trusted dependencies，并在全新隔离目录完成 frozen install、`bun run typecheck` 与 `bun run build`；不得照搬隔离 smoke 写入的 `@zowe/secrets-for-zowe-sdk`。
+- [x] T8 按 PLAN 锁定版本修改 `package.json`、`bun.lock` 与安装配置，通过 `bunx hpsetup@4.7.0 --auto` 精确加入 HeroUI OSS/Pro、React Aria Components、`react-aria`、`react-stately` 及主项目实际必需的最小 trusted dependencies，核对缓存恢复产物树 SHA-256，并在全新隔离目录完成 frozen install、`bun run typecheck` 与 `bun run build`；不得照搬隔离 smoke 写入的 `@zowe/secrets-for-zowe-sdk`。
   - 不引入 `HeroUIProvider`；供应商若要求 Motion 依赖可精确锁定，但 `src/**` 不得 import、调用或封装其 API。
   _对应验收标准：AC-1, AC-3, AC-40, AC-41_
 
-- [ ] T9 重构 `src/styles/index.css` 并新建 `src/styles/theme.css`、`src/styles/components.css`，收紧 `src/styles/base.css`，建立 PLAN 规定的 HeroUI 官方 CSS 顺序与五文件终态骨架；迁移期只继续导入尚有消费者的 legacy CSS。
+- [x] T9 重构 `src/styles/index.css` 并新建 `src/styles/theme.css`、`src/styles/components.css`，收紧 `src/styles/base.css`，建立 PLAN 规定的 HeroUI 官方 CSS 顺序与五文件终态骨架；迁移期只继续导入尚有消费者的 legacy CSS。
   - 新 theme 与旧 `--sf-*` 不双向映射，`components.css` 只接收 PLAN 明确允许的三类集中 recipe。
   _对应验收标准：AC-4, AC-5, AC-7, AC-12_
 
-- [ ] T10 在 `src/styles/theme.css` 与 `src/styles/components.css` 落地 SPEC 色彩、浅色状态、focus-visible、紧凑密度和公开 BEM/data-state 配方，并验证 Button、表单、Sidebar、Menu 与列表的状态对比度。
+- [x] T10 在 `src/styles/theme.css` 与 `src/styles/components.css` 落地 SPEC 色彩、浅色状态、focus-visible、紧凑密度和公开 BEM/data-state 配方，并验证 Button、表单、Sidebar、Menu 与列表的状态对比度。
   - 唯一允许的 transition 规则是 `[data-resizing="true"]` 临时关闭 HeroUI Sidebar 官方过渡，不定义替代动画。
   _对应验收标准：AC-6, AC-7, AC-8, AC-9, AC-13_
 
-- [ ] T11 在 `public/fonts/` 加入带 OFL 许可的 Inter Variable WOFF2，重写 `src/styles/fonts.css` 为真实 400/500/600 与固定系统中文 fallback，并删除零引用的 Maple Mono、霞鹜文楷资产。
+- [x] T11 在 `public/fonts/` 加入带 OFL 许可的 Inter Variable WOFF2，重写 `src/styles/fonts.css` 为真实 400/500/600 与固定系统中文 fallback，并删除零引用的 Maple Mono、霞鹜文楷资产。
   - 保留 `font-synthesis: none`，通过 production build 与 U1 实际字形检查验证字体文件、family、weight 和 fallback 合同。
   _对应验收标准：AC-10, AC-12_
 
-- [ ] T12 更新 `index.html`、`launcher.html`、`src/main.tsx` 与 `src/launcher.tsx`，统一 `class="light" data-theme="stoneflow-light"` 和 `src/styles/index.css`；新增 `scripts/check-shell-theme-sync.ts` 及测试，校验 CSS theme、HTML boot shell 与 `src-tauri/crates/runtime/src/window/main.rs` 的首帧颜色不漂移。
+- [x] T12 更新 `index.html`、`launcher.html`、`src/main.tsx` 与 `src/launcher.tsx`，统一 `class="light" data-theme="stoneflow-light"` 和 `src/styles/index.css`；新增 `scripts/check-shell-theme-sync.ts` 及测试，校验 CSS theme、HTML boot shell 与 `src-tauri/crates/runtime/src/window/main.rs` 的首帧颜色不漂移。
   - 不设置根级 `data-reduce-motion="true"`，不建设 token 生成器。
   _对应验收标准：AC-6, AC-10, AC-11, AC-12_
   _测试先行：`scripts/check-shell-theme-sync.test.ts`_
 
-- [ ] T13 同步 `Documents/99-素材/02-HTML原型/stoneflow_heroui_light_v1.html` 到已确认色板、Inter/中文 fallback、密度与 HeroUI 状态，覆盖 Shell、表单、Menu、集合、Sheet/Aside、Toast 与 Progress。
+- [x] T13 同步 `Documents/99-素材/02-HTML原型/stoneflow_heroui_light_v1.html` 到已确认色板、Inter/中文 fallback、密度与 HeroUI 状态，覆盖 Shell、表单、Menu、集合、Sheet/Aside、Toast 与 Progress。
   _对应验收标准：AC-6, AC-8, AC-9, AC-10, AC-13_
 
-- [ ] T14（任务发起人验收 U1）打开 T13 原型检查实际字形、色值层级、紧凑密度及 default/hover/pressed/open/focus/disabled/invalid 状态，并在本文件记录“通过”或精确偏差。
+- [x] T14（任务发起人验收 U1）打开 T13 原型检查实际字形、色值层级、紧凑密度及 default/hover/pressed/open/focus/disabled/invalid 状态，并在本文件记录“通过”或精确偏差。
   - 只验证已确认方向是否正确实现，不重新开启色板选择；AI 不得代为勾选。
   _对应验收标准：AC-6, AC-8, AC-9, AC-10, AC-13_
 
-- [ ] T15 完成阶段 B 收口：运行根级类型、lint、边界、格式、相关测试与 production build，登记干净安装、视觉 Gate 和零凭据证据；获准提交时引用 PLAN 的阶段 B 文案，不自动提交。
+- [x] T15 完成阶段 B 收口：运行根级类型、lint、边界、格式、相关测试与 production build，登记隔离安装、视觉 Gate 和零凭据证据；获准提交时引用 PLAN 的阶段 B 文案，不自动提交。
   _对应验收标准：AC-6, AC-10, AC-11, AC-40_
 
 **阶段 C：StoneFlow 第一方动画清场**
@@ -477,7 +477,7 @@
   - `tw-animate-css` 只允许锁定版 HeroUI 官方链路传入。
   _对应验收标准：AC-2, AC-40, AC-41_
 
-- [ ] T110 在全新隔离目录以进程环境注入 `HEROUI_KEY`，执行固定版 `hpsetup --no-cache`、frozen install、类型检查和 production build，并核对树 SHA-256；在本文件登记命令、锁定版本与脱敏结果，失败时登记阻塞，不改 lockfile 掩盖安装器、Key 或 peer 问题。
+- [ ] T110 在全新隔离目录以进程环境注入 `HEROUI_KEY`，执行固定版 `hpsetup`、frozen install、类型检查和 production build，并核对缓存恢复或源站取得产物的树 SHA-256；在本文件登记命令、锁定版本与脱敏结果，树哈希或构建失败时登记阻塞，不改 lockfile 掩盖安装器、Key 或 peer 问题。
   _对应验收标准：AC-2, AC-38, AC-40, AC-41_
 
 - [ ] T111 在 T4 登记的 macOS WKWebView 设备完成 Rust 默认 `1280×900` inner window 可得到的实际稳定 viewport、`1024×768`、`1023×768` 与最小窗口的视觉、键盘、焦点、VoiceOver 和 reduced-motion 验收，证据写入 `Documents/99-素材/03-验证/heroui-refactor/macos/`。
@@ -515,7 +515,7 @@
 ## 阻塞
 
 - 当前没有外部设备阻塞；Windows WebView2 不属于本任务验收范围。
-- T14、T45、T73、T105、T119 是尚未执行的人工 Gate，不在失败前视为阻塞。
+- T45、T73、T105、T119 是尚未执行的人工 Gate，不在失败前视为阻塞。
 
 ## 与 SPEC/PLAN 的实施偏差
 
@@ -525,6 +525,8 @@
 - 2026-08-13：任务发起人确认新版 SPEC 与 PLAN，授权进入阶段 3 拆分 TASKS；当前没有未决方案偏差。
 - 2026-08-13：任务发起人选择其自建 CollectUI `hpsetup` 工作流并明确接受供应链风险；ADR、SPEC、PLAN 与本 TASKS 已统一为固定安装器/组件版本、进程环境注入 Key、隔离 smoke 和树 SHA-256 合同，不声称 HeroUI 官方授权已验证。
 - 2026-08-13：任务发起人确认本任务只做 macOS WKWebView 验收；Windows 构建、平台分支与产品支持保留，但不采集、不阻塞、不宣称 Windows 已验证，也不为未实测行为新增专门兼容层。性能合同同步为同一 Mac、同一实际稳定 viewport 前后比较。
+- 2026-08-13：T8 的干净环境首次暴露旧 `src/shared/components/base/command.tsx` 直接 import `cmdk` 却未声明根依赖；阶段 J 才删除该消费者，因此本阶段精确直锁 `cmdk@1.1.1`，不靠传递依赖，仍由 T82 在旧 Command hard cut 后删除。
+- 2026-08-14：任务发起人确认源站无缓存下载是否成功与产品实现无关，接受固定版本缓存恢复作为当前供应链边界。T8 以已记录的 546 文件树 SHA-256、隔离 frozen install、typecheck 和 production build 为完成证据；仍保留源站与缓存同时不可用会阻断新环境安装的已知风险。
 
 ## 完成记录
 
@@ -534,7 +536,7 @@
 - 2026-08-13：完成 HeroUI 官方能力、Sidebar 组合限制、集合状态、样式架构与动画来源压力审查；新版 PLAN 获确认。
 - 2026-08-13：按《任务方案编写 SOP》完成 13 阶段、120 个 flat tasks、1 个供应链访问 Gate、5 个人工 Gate 与逐阶段收口拆分，进入阶段 3，尚未实施产品代码。
 - 2026-08-13：完成 T1。新增 ADR-0002，固化 HeroUI-only、Tailwind/HeroUI theme、产品例外、第一方零动画与 CollectUI 固定供应链决策。
-- 2026-08-13：完成 T2/U0。首轮位置参数诊断不计入验收；随后在新的仓库外临时目录以 `HEROUI_KEY` 进程环境变量重跑成功，记录 547 个文件、2,593,321 bytes、70 个 exports、30 个 peers 与当前 installed tree SHA-256。无缓存可重复性仍由 T8/T110 单独验收。
+- 2026-08-13：完成 T2/U0。首轮位置参数诊断不计入验收；随后在新的仓库外临时目录以 `HEROUI_KEY` 进程环境变量重跑成功，记录 547 个文件、2,593,321 bytes、70 个 exports、30 个 peers 与当前 installed tree SHA-256。该缓存 smoke 只证明固定产物可取得；T8/T110 另以树 SHA-256、隔离 frozen install/typecheck/build 验收。
 - 2026-08-13：完成 T3。首轮清单 213 条；T6 新增后又补入 7 个 benchmark route/page/access/fixture 条目，并统一交由 T113 在最终同合同比较后删除，当前共 220 条。
 - 2026-08-13：完成 T5。两份确定性 TaskBoard fixture 及定向测试通过，覆盖 `2,000/20×100` 与 `200/10,000` 合同。
 - 2026-08-13：完成 T4。现有 9 份有效 macOS 迁移前截图覆盖主壳/Sidebar、TaskBoard 稀疏/密集、Command、两张 ContextMenu、任务详情、Settings/Update 与 Launcher；迁移前证据不再承担终态精确视口验收。
@@ -543,3 +545,6 @@
 - 2026-08-13：阶段性工程门禁通过：6 个定向 Vitest、typecheck、lint、feature boundaries、format check 与 production Vite build；凭据/私有 CDN 模式扫描零命中。未提交、未改动 Git 暂存区。
 - 2026-08-13：完成 T6。移除精确 viewport 拒绝门后，以 commit `d545b99e0609f7e9213ac315e967510308794b34` 的 production Tauri bundle 在登记的 Mac 上重跑；实际 viewport 为 `1280×853@2x`。两份 fixture 各完成 5 次滚动和 50 次焦点采样，重复 fetch 均为 0；焦点恢复仅成功 `1/50` 与 `3/50`，作为旧交互实现的真实基线保留。
 - 2026-08-13：完成 T7。ADR、220 条迁移清单、供应链 smoke、9 份视觉证据和 macOS 性能报告均已复核；定向 Vitest 6/6、typecheck、lint、feature boundaries、format check、production Vite build、JSON 解析与 `git diff --check` 通过，凭据/私有 CDN 模式扫描零命中。Tauri 已生成并运行 production app bundle；本地 updater 签名阶段因未提供私钥退出，不影响本次已生成 bundle 的基线采集。未提交、未改动 Git 暂存区。
+- 2026-08-13：完成 T9–T13。建立 Tailwind → HeroUI OSS → HeroUI Pro 官方入口、light-only semantic theme、集中 BEM/data-state recipe、本地 Inter Variable/OFL、HTML/React/Rust 首帧同步检查和新版交互原型；旧字体引用归零并删除。迁移期旧 Tailwind 颜色 utility 已机械改名为 `legacy-*`，构建产物验证 HeroUI 官方 `--color-*` 与旧 `--sf-*` 不再互相覆盖。根级 typecheck、lint、边界、format check、967 项测试、同步测试、production build 与原型结构/脚本检查通过，凭据模式扫描零命中；T14/U1 等待任务发起人验收。
+- 2026-08-14：完成 T14/U1。任务发起人确认此前已审阅相同的 Linear 浅色方向与原型，本轮无新增视觉偏差，按已确认结果通过字形、色值层级、紧凑密度及组件状态验收。
+- 2026-08-14：完成 T8、T15与阶段 B 收口。任务发起人批准固定版本缓存恢复边界；依赖树哈希、隔离 frozen install/typecheck/build、根级 typecheck、lint、边界、format、967 项测试、production build、主题边界与零凭据扫描均通过。建议 commit 文案：`refactor(ui): 建立 HeroUI 浅色主题与字体基础`；未提交、未改动 Git 暂存区。

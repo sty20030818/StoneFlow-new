@@ -373,7 +373,7 @@ export function SettingsSyncPanel() {
 										credentialState={syncStatus?.credentialState ?? 'missing'}
 									/>
 								</div>
-								<h3 className='mt-3 text-base font-semibold tracking-tight text-foreground'>
+								<h3 className='mt-3 text-base font-semibold tracking-tight text-legacy-foreground'>
 									{syncStatusCopy.title}
 								</h3>
 								<p className='mt-1 max-w-2xl text-sm leading-6 text-muted-foreground'>
@@ -418,7 +418,7 @@ export function SettingsSyncPanel() {
 							<SyncMetricCard
 								label='待同步'
 								value={
-									<span className='font-medium text-foreground'>
+									<span className='font-medium text-legacy-foreground'>
 										{syncDiagnostics?.local.pendingMutationCount ?? 0} 条
 									</span>
 								}
@@ -436,7 +436,7 @@ export function SettingsSyncPanel() {
 											<button
 												aria-checked={selected}
 												className={cn(
-													'flex min-w-0 flex-col items-start gap-0.5 rounded-xl border px-3 py-2.5 text-left transition-colors',
+											'flex min-w-0 flex-col items-start gap-0.5 rounded-xl border px-3 py-2.5 text-left',
 													selected
 														? 'border-primary bg-primary/5 shadow-sm'
 														: 'border-sf-border-subtle bg-card hover:border-sf-border-secondary',
@@ -448,7 +448,9 @@ export function SettingsSyncPanel() {
 												role='radio'
 												type='button'
 											>
-												<span className='text-sm font-medium text-foreground'>{option.label}</span>
+												<span className='text-sm font-medium text-legacy-foreground'>
+													{option.label}
+												</span>
 												<span className='text-[11px] leading-4 text-muted-foreground'>
 													{option.description}
 												</span>
@@ -497,21 +499,21 @@ export function SettingsSyncPanel() {
 					<Collapsible onOpenChange={setSyncDetailsOpen} open={syncDetailsOpen}>
 						<CollapsibleTrigger
 							className={cn(
-								'flex w-full items-center justify-between border-t border-sf-border-subtle bg-muted/20 px-4 py-2.5 text-left text-sm text-muted-foreground transition-colors hover:bg-muted/35 hover:text-foreground',
-								syncDetailsOpen && 'bg-muted/30 text-foreground',
+								'flex w-full items-center justify-between border-t border-sf-border-subtle bg-legacy-muted/20 px-4 py-2.5 text-left text-sm text-muted-foreground hover:bg-legacy-muted/35 hover:text-legacy-foreground',
+								syncDetailsOpen && 'bg-legacy-muted/30 text-legacy-foreground',
 							)}
 							type='button'
 						>
 							<span className='font-medium'>详情与诊断</span>
 							<ChevronDownIcon
 								className={cn(
-									'size-4 shrink-0 transition-transform duration-200',
+									'size-4 shrink-0',
 									syncDetailsOpen && 'rotate-180',
 								)}
 							/>
 						</CollapsibleTrigger>
 						<CollapsibleContent className='overflow-hidden border-t border-sf-border-subtle'>
-							<div className='flex flex-col gap-4 bg-muted/10 p-4'>
+							<div className='flex flex-col gap-4 bg-legacy-muted/10 p-4'>
 								<StatusNotice
 									description={syncStatusCopy.summary}
 									title={syncStatusCopy.title}
@@ -540,7 +542,7 @@ export function SettingsSyncPanel() {
 								<div className='flex flex-col gap-3'>
 									<div className='flex items-center justify-between gap-3'>
 										<div className='min-w-0'>
-											<h3 className='text-sm font-semibold text-foreground'>同步诊断</h3>
+											<h3 className='text-sm font-semibold text-legacy-foreground'>同步诊断</h3>
 											<p className={formFieldHintClass}>
 												只读查看当前设备与云端副本的同步序号和工作集摘要，用于排查同步问题。
 											</p>
@@ -560,7 +562,7 @@ export function SettingsSyncPanel() {
 												description='当前保存并正在使用的云端副本地址（已脱敏）。'
 												label='云端副本'
 												value={
-													<span className='break-all font-medium text-foreground'>
+													<span className='break-all font-medium text-legacy-foreground'>
 														{syncDiagnostics.remoteHost ?? '未读取'}
 													</span>
 												}
@@ -581,7 +583,7 @@ export function SettingsSyncPanel() {
 												description='当前设备本地还没提交成功的 mutation 数量。'
 												label='待同步 mutation'
 												value={
-													<span className='font-medium text-foreground'>
+													<span className='font-medium text-legacy-foreground'>
 														{syncDiagnostics.local.pendingMutationCount} 条
 													</span>
 												}

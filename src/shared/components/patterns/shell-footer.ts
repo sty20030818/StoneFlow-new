@@ -32,7 +32,7 @@ export const shellFooterInteractiveTextClass =
  * 与相邻灯/文案分离，不与状态文字共用 click target。
  */
 export const shellFooterIconButtonClass =
-	'inline-flex size-7 shrink-0 items-center justify-center rounded-md text-sf-shell-text-tertiary transition-[color,background-color,transform] hover:bg-muted/50 hover:text-sf-shell-text-secondary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring active:scale-[0.96] disabled:pointer-events-none disabled:opacity-40'
+	'inline-flex size-7 shrink-0 items-center justify-center rounded-md text-sf-shell-text-tertiary transition-[color,background-color,transform] hover:bg-legacy-muted/50 hover:text-sf-shell-text-secondary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring active:scale-[0.96] disabled:pointer-events-none disabled:opacity-40'
 
 /**
  * 一体可点 hit 区（indicator + label 共用 click）。
@@ -49,7 +49,8 @@ export const shellFooterHitClass =
 export type ShellFooterHitTone = 'neutral' | 'success' | 'danger'
 
 export const shellFooterHitToneClass: Record<ShellFooterHitTone, string> = {
-	neutral: 'text-sf-shell-text-tertiary hover:bg-muted/50 hover:text-sf-shell-text-secondary',
+	neutral:
+		'text-sf-shell-text-tertiary hover:bg-legacy-muted/50 hover:text-sf-shell-text-secondary',
 	success: 'text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-400',
 	danger:
 		'text-red-600 hover:bg-red-500/10 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300',

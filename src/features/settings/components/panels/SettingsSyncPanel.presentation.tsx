@@ -16,9 +16,9 @@ import { Badge } from '@/shared/components/base/badge'
 
 export function SyncMetricCard({ label, value }: { label: string; value: ReactNode }) {
 	return (
-		<div className='rounded-2xl border border-sf-border-subtle bg-muted/25 px-3 py-2'>
+		<div className='rounded-2xl border border-sf-border-subtle bg-legacy-muted/25 px-3 py-2'>
 			<p className='text-[11px] font-medium text-muted-foreground'>{label}</p>
-			<div className='mt-1 text-sm text-foreground'>{value}</div>
+			<div className='mt-1 text-sm text-legacy-foreground'>{value}</div>
 		</div>
 	)
 }
@@ -36,7 +36,9 @@ export function SyncTimestampValue({
 
 	return (
 		<div className='flex flex-col gap-1'>
-			<span className='font-medium text-foreground'>{formatSyncRelativeTime(timestamp)}</span>
+			<span className='font-medium text-legacy-foreground'>
+				{formatSyncRelativeTime(timestamp)}
+			</span>
 			<span className='text-xs text-slate-500'>{formatSyncExactTime(timestamp)}</span>
 		</div>
 	)
@@ -47,7 +49,7 @@ export function SyncCursorValue({ value }: { value: number | null }) {
 		return <span className='text-slate-500'>未记录</span>
 	}
 
-	return <span className='font-medium text-foreground'>{value}</span>
+	return <span className='font-medium text-legacy-foreground'>{value}</span>
 }
 
 export function SyncCountsSummaryValue({
@@ -65,7 +67,7 @@ export function SyncCountsSummaryValue({
 }) {
 	return (
 		<div className='flex flex-col gap-1'>
-			<span className='font-medium text-foreground'>{formatSyncCountsSummary(counts)}</span>
+			<span className='font-medium text-legacy-foreground'>{formatSyncCountsSummary(counts)}</span>
 			<span className='text-xs text-slate-500'>总计 {counts.totalItems} 条主数据</span>
 		</div>
 	)
@@ -77,11 +79,7 @@ export function SyncStatusBadge({ status }: { status: SyncStatus }) {
 	return (
 		<Badge variant={tone.badgeVariant}>
 			<span
-				className={cn(
-					'size-2 shrink-0 rounded-full',
-					tone.dotClassName,
-					status === 'syncing' && 'animate-pulse',
-				)}
+				className={cn('size-2 shrink-0 rounded-full', tone.dotClassName)}
 			/>
 			{formatSyncStatus(status)}
 		</Badge>

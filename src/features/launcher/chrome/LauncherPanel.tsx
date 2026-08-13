@@ -49,12 +49,12 @@ export function LauncherPanel() {
 					</div>
 				</div>
 
-				<div className='shrink-0 bg-background/96'>
+				<div className='shrink-0 bg-legacy-background/96'>
 					<AdvancedCollapse />
 				</div>
 
 				{derived.hasTitle ? (
-					<div className='shrink-0 bg-background/88 px-2 pt-0.5'>
+					<div className='shrink-0 bg-legacy-background/88 px-2 pt-0.5'>
 						<CreateRow />
 					</div>
 				) : null}

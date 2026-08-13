@@ -30,7 +30,7 @@ function AvatarFallback({
 	return (
 		<AvatarPrimitive.Fallback
 			className={cn(
-				'flex size-full items-center justify-center overflow-hidden rounded-full bg-muted',
+				'flex size-full items-center justify-center overflow-hidden rounded-full bg-legacy-muted',
 				className,
 			)}
 			data-slot='avatar-fallback'
@@ -43,7 +43,7 @@ function AvatarBadge({ className, ...props }: React.HTMLAttributes<HTMLSpanEleme
 	return (
 		<span
 			className={cn(
-				'absolute -right-0.5 -bottom-0.5 size-3 rounded-full border-2 border-background',
+				'absolute -right-0.5 -bottom-0.5 size-3 rounded-full border-2 border-legacy-background',
 				className,
 			)}
 			data-slot='avatar-badge'

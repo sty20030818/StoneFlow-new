@@ -43,4 +43,4 @@ export const detailPageSidebarClass = 'min-w-0'
 export const detailPageSidebarInnerClass = 'flex flex-col gap-3 lg:sticky lg:top-0'
 
 export const detailPageStatusBlockClass =
-	'rounded-xl border border-sf-border-subtle bg-muted/35 px-3 py-3'
+	'rounded-xl border border-sf-border-subtle bg-legacy-muted/35 px-3 py-3'

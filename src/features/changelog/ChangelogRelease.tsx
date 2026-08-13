@@ -12,7 +12,7 @@ export function ChangelogRelease({ release }: { release: ChangelogReleaseModel }
 	return (
 		<section>
 			<div className='mb-4 flex items-baseline gap-2'>
-				<h3 className='text-[16px] font-semibold text-foreground'>v{release.version}</h3>
+				<h3 className='text-[16px] font-semibold text-legacy-foreground'>v{release.version}</h3>
 				<span className='text-[12px] text-sf-text-tertiary'>{release.date}</span>
 				{release.yanked ? <Badge variant='destructive'>已撤回</Badge> : null}
 			</div>

@@ -15,7 +15,7 @@ export function IconCell({ icon, className }: IconCellProps) {
 	return (
 		<span
 			className={cn(
-				'flex size-5 shrink-0 items-center justify-center rounded-full text-foreground',
+				'flex size-5 shrink-0 items-center justify-center rounded-full text-legacy-foreground',
 				className,
 			)}
 		>

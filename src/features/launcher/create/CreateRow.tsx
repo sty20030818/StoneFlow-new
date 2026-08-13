@@ -39,7 +39,7 @@ export function CreateRow() {
 					<RowShell.Title>
 						<div className='min-w-0'>
 							<OverflowTooltip
-								className='text-[12.5px] text-foreground'
+								className='text-[12.5px] text-legacy-foreground'
 								content={state.draft.title.trim()}
 							>
 								{state.draft.title.trim()}

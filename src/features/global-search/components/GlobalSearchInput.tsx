@@ -185,7 +185,7 @@ export function GlobalSearchInput({ onOpenTask, onOpenProject }: GlobalSearchInp
 						aria-expanded={isOpen}
 						aria-label='全局搜索'
 						autoComplete='off'
-						className='flex h-full min-w-0 flex-1 bg-transparent px-0 py-1 text-[12.5px] text-foreground outline-none placeholder:text-sf-text-quaternary'
+						className='flex h-full min-w-0 flex-1 bg-transparent px-0 py-1 text-[12.5px] text-legacy-foreground outline-none placeholder:text-sf-text-quaternary'
 						data-slot='input-group-control'
 						onChange={(event) => {
 							setQuery(event.target.value)

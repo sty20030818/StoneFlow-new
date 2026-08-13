@@ -124,7 +124,7 @@ function CommandMenuShortcut({ shortcut }: { shortcut: CommandMenuEntry['shortcu
 
 	return (
 		<ShortcutTokens
-			kbdClassName='h-6 min-w-6 rounded-sm border border-sf-border-subtle bg-background/90 px-1.5 text-[11px] text-sf-text-secondary'
+			kbdClassName='h-6 min-w-6 rounded-sm border border-sf-border-subtle bg-legacy-background/90 px-1.5 text-[11px] text-sf-text-secondary'
 			separatorClassName='text-sf-text-quaternary'
 			tokens={shortcut}
 		/>
@@ -185,7 +185,7 @@ export function CommandRow({
 		<div className='flex w-full min-w-0 items-center gap-3'>
 			<div className='flex size-4 shrink-0 items-center justify-center'>{leading}</div>
 			<OverflowTooltip
-				className='min-w-0 flex-1 text-[14px] font-medium text-foreground'
+				className='min-w-0 flex-1 text-[14px] font-medium text-legacy-foreground'
 				content={title}
 			>
 				{title}
@@ -242,7 +242,7 @@ export function CommandRowSelectionTrailing({
 
 export function CommandRowDigitHint({ digit }: { digit: string }) {
 	return (
-		<Kbd className='h-6 min-w-6 rounded-sm border border-sf-border-subtle bg-background/90 px-1.5 text-[11px] text-sf-text-secondary'>
+		<Kbd className='h-6 min-w-6 rounded-sm border border-sf-border-subtle bg-legacy-background/90 px-1.5 text-[11px] text-sf-text-secondary'>
 			{digit}
 		</Kbd>
 	)

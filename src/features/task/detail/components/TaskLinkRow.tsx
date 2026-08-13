@@ -9,7 +9,6 @@ import {
 	DropdownMenuTrigger,
 } from '@/shared/components/base/dropdown-menu'
 import { ActionTooltip, OverflowTooltip } from '@/shared/components/tooltip'
-import { cn } from '@/shared/lib/utils'
 import type { TaskLink } from '@/shared/types'
 
 import { TaskLinkEditorPopover, type TaskLinkEditorValue } from './TaskLinkEditorPopover'
@@ -31,14 +30,11 @@ export function TaskLinkRow({ link, onOpen, onEdit, onRemove }: TaskLinkRowProps
 		<TaskLinkEditorPopover
 			anchor={
 				<div
-					className={cn(
-						'flex items-start gap-3 rounded-xl border border-sf-border-subtle bg-card/70 px-3 py-2.5',
-						'transition-colors hover:border-sf-border-secondary',
-					)}
+					className='flex items-start gap-3 rounded-xl border border-sf-border-subtle bg-card/70 px-3 py-2.5 hover:border-sf-border-secondary'
 				>
 					<div className='min-w-0 flex-1'>
 						<OverflowTooltip
-							className='text-[12px] font-medium text-foreground'
+							className='text-[12px] font-medium text-legacy-foreground'
 							content={link.title}
 						>
 							{link.title}

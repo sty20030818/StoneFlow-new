@@ -78,11 +78,11 @@ flowchart TB
 - StoneFlow 源码不 import、调用或封装 `motion` / `framer-motion`。如果锁定版 HeroUI 官方安装合同要求动画 peer/direct dependency，则可精确锁定为供应商实现依赖，但不暴露给产品代码；`tw-animate-css` 从 StoneFlow 直接声明和样式入口删除，lockfile 只对 HeroUI 官方链路做精确 allowlist，不要求物理清除该包。
 - 只有真实采用 Pro Resizable 的非 Sidebar 分栏才从 `@heroui-pro/react/resizable` 导入；其余组件使用各自公开入口，不建立统一 barrel。
 - 组件交互使用 HeroUI/React Aria 的 `onPress`；只有拖拽、原生窗口和虚拟滚动等底层几何直接处理 pointer/scroll 事件。
-- 供应链预检先在仓库外隔离临时目录验证固定版 `hpsetup` 能取得锁定 Pro 包并记录树 SHA-256；精确依赖写入项目后，再以 `--no-cache` 在全新隔离目录完成 frozen install、typecheck 和生产构建，失败时停止后续迁移。
+- 供应链预检先在仓库外隔离临时目录验证固定版 `hpsetup` 能取得或从固定版本缓存恢复锁定 Pro 包并记录树 SHA-256；精确依赖写入项目后，在全新隔离目录完成 frozen install、typecheck 和生产构建。缓存回退本身不阻塞产品实现，树哈希不符或隔离构建失败才停止后续迁移。
 
 ### CollectUI 供应链
 
-- 本地与 CI 的常规安装固定执行 `bunx hpsetup@4.7.0 --auto`，通过进程环境注入 `HEROUI_KEY` 并允许复用固定版本缓存；只有 T8/T110 的供应链复核显式使用一次 `--no-cache`。Key 只存在于本机 secret store 或 CI encrypted secret，不写入命令参数、客户端环境、预览变量、仓库 `.npmrc`、日志、lockfile 或应用产物。
+- 本地与 CI 的安装固定执行 `bunx hpsetup@4.7.0 --auto`，通过进程环境注入 `HEROUI_KEY` 并允许复用固定版本缓存。T8/T110 复核隔离安装、树 SHA-256、frozen install、类型检查与生产构建，不要求源站绕过缓存成功。Key 只存在于本机 secret store 或 CI encrypted secret，不写入命令参数、客户端环境、预览变量、仓库 `.npmrc`、日志、lockfile 或应用产物。
 - `@heroui-pro/react` 固定为 `1.0.0-beta.8`。阶段 A 的脱敏证据写入 `Documents/99-素材/03-验证/heroui-refactor/supply-chain-smoke.json`；升级时同步更新安装器版本、Pro 版本、文件数、解包字节数、`package.json` SHA-256 与树 SHA-256。
 - Bun `trustedDependencies` 只接受当前 Pro 运行或安装实际必需且经 diff 复核的最小集合；不得因为隔离 smoke 被 `hpsetup` 写入了 `@zowe/secrets-for-zowe-sdk` 就照搬到主项目，也不扩大为通用 postinstall 白名单。
 - 本方案只验证 CollectUI 工作流可取得指定包及其完整性，不将其表述为 HeroUI 官方 license、owner、seat、entitlement 或 Updates Window 的证明。
@@ -377,7 +377,7 @@ Aside 非模态、不 trap focus。虚拟 trigger 的恢复由 collection bridge
 ### 阶段 B：HeroUI 平台、主题与字体基础
 
 - 精确锁定 HeroUI OSS/Pro、React Aria/React Stately，建立官方 CSS 顺序、五文件样式终态骨架、本地 Inter Variable 与 light-only theme。
-- 依赖写入项目后，在无本机缓存的干净目录完成 frozen install、类型检查和 production build；失败时停止后续迁移。
+- 依赖写入项目后，在仓库外隔离目录核对固定版本缓存产物的树 SHA-256，并完成 frozen install、类型检查和 production build；失败时停止后续迁移。
 - 只允许迁移期继续导入仍有消费者的 legacy CSS；新 theme 与旧 `--sf-*` 不互相映射，新表面不得回读 legacy token。
 - 同步 HTML 原型到 SPEC 已确认色板、字体、密度和 HeroUI 状态，覆盖 Shell、表单、菜单、集合、Sheet/Aside 与反馈组件。
 - 完成 User Gate U1 后，才允许把新版视觉扩展到产品表面；U1 验证已确认色值在 HeroUI 中的映射、实际字形、密度和状态表现，不重新开启色彩方向决策。
@@ -536,7 +536,7 @@ PLAN 获确认后再在 TASKS 中拆 flat `T1/T2/...`：每个任务限定一个
 | 风险 | 影响 | 控制方式 |
 |---|---|---|
 | HeroUI Pro 仍为 beta，API/CSS 变化 | 大面积类型或样式回归 | 精确锁版、以包 types 为真相、升级独立验收，不跟普通依赖批量升级 |
-| CollectUI `hpsetup`、CDN 或 Key 失效 | CI 无法安装、修复停滞 | 固定安装器与 Pro 版本、无缓存干净安装门禁、记录树 SHA-256、保留可重复 lockfile，不复制私有源码 |
+| CollectUI `hpsetup`、CDN、缓存或 Key 失效 | 新环境无法安装、修复停滞 | 固定安装器与 Pro 版本、记录并核对树 SHA-256、隔离 frozen install/build；接受源站与缓存同时不可用时的安装阻断，不复制私有源码 |
 | Sidebar icon 与 resize 非原生组合 | 宽度状态、焦点与 HeroUI 官方动效冲突 | 一个 Shell controller + 一个 rail + 一个 CSS 宽度输出；不叠 HeroUI Rail/Resizable/AppLayout resize，也不增加第一方宽度过渡 |
 | 1024px 与 HeroUI 内建 768px 移动断点冲突 | 双 Sidebar、闪烁、重复焦点 | 不使用 Sidebar.Mobile；单一 matchMedia source，compact 时只挂载 Sheet 导航 |
 | 集合与虚拟化出现双状态 | 丢焦点、错选、命令目标漂移 | SelectionManager 唯一 owner，TanStack 只管 geometry，key/ref bridge 恢复真实焦点 |
