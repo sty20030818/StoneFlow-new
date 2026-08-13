@@ -10,7 +10,6 @@ export const createDialogShellClass = cn(
 	'flex min-h-[30dvh] max-h-[70dvh] max-w-[calc(100%-1.5rem+8px)]',
 	'flex-col gap-0 overflow-hidden rounded-3xl border border-legacy-border',
 	'sm:max-w-3xl top-[15dvh] translate-y-0',
-	'transition-[width,max-width,height,max-height,top,border-radius] duration-200 ease-out motion-reduce:transition-none',
 	dialogShellFloatingBaseClass,
 )
 

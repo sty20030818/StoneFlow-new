@@ -230,7 +230,6 @@ export function UpdateDialog() {
 			<DialogContent
 				className={createDialogCompactShellClass}
 				showCloseButton={false}
-				disableAnimation
 				onEscapeKeyDown={(event) => {
 					if (isInstalling) event.preventDefault()
 				}}
@@ -349,7 +348,10 @@ export function UpdateDialog() {
 				<div className={cn(createDialogFooterClass, 'justify-end')}>
 					{isInstalling ? (
 						<Button disabled size='sm' type='button'>
-							<span aria-hidden className='-ml-0.5 mr-2 size-3 rounded-full border-2 border-current' />
+							<span
+								aria-hidden
+								className='-ml-0.5 mr-2 size-3 rounded-full border-2 border-current'
+							/>
 							正在安装...
 						</Button>
 					) : isReady ? (
@@ -389,13 +391,19 @@ export function UpdateDialog() {
 								后台继续
 							</Button>
 							<Button disabled size='sm' type='button'>
-								<span aria-hidden className='-ml-0.5 mr-2 size-3 rounded-full border-2 border-current' />
+								<span
+									aria-hidden
+									className='-ml-0.5 mr-2 size-3 rounded-full border-2 border-current'
+								/>
 								下载中
 							</Button>
 						</>
 					) : isChecking ? (
 						<Button disabled size='sm' type='button'>
-							<span aria-hidden className='-ml-0.5 mr-2 size-3 rounded-full border-2 border-current' />
+							<span
+								aria-hidden
+								className='-ml-0.5 mr-2 size-3 rounded-full border-2 border-current'
+							/>
 							正在检查...
 						</Button>
 					) : isCheckError ? (

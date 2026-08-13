@@ -1,10 +1,10 @@
 # HeroUI-only UI 平台、Linear 浅色设计系统与键盘交互重写 - Tasks
 
-> 当前状态：阶段 3。阶段 B 已完成，下一项为阶段 C「StoneFlow 第一方动画清场」。
+> 当前状态：阶段 3。阶段 C 已完成，下一项为阶段 D「Shell 与 Sidebar 三态」。
 
 ## 当前阶段
 
-- 阶段 A「决策固化、供应链与迁移基线」和阶段 B「HeroUI 平台、主题与字体基础」已完成。Windows WebView2 不属于本任务验收范围，也不阻塞后续阶段。
+- 阶段 A「决策固化、供应链与迁移基线」、阶段 B「HeroUI 平台、主题与字体基础」和阶段 C「StoneFlow 第一方动画清场」已完成。Windows WebView2 不属于本任务验收范围，也不阻塞后续阶段。
 - 执行任意 task 前，必须重读 [SPEC.md](./SPEC.md) 对应 AC 与 [PLAN.md](./PLAN.md) 对应方案；后续 task 默认按编号顺序依赖。
 - 任一锁定包 API、供应链访问、性能或产品合同与 PLAN 冲突时，先在本文件「与 SPEC/PLAN 的实施偏差」登记并停止相关切片，不得静默增加兼容层。
 
@@ -76,64 +76,64 @@
 
 **阶段 C：StoneFlow 第一方动画清场**
 
-- [ ] T16 在 `scripts/check-no-first-party-animation.ts` 与 `scripts/check-no-first-party-animation.test.ts` 建立最小正反例扫描器，并接入 `package.json` 根级检查命令，禁止直接动画依赖/import、CSS/Tailwind 动画与过渡、平滑滚动、WAAPI 和 View Transition。
+- [x] T16 在 `scripts/check-no-first-party-animation.ts` 与 `scripts/check-no-first-party-animation.test.ts` 建立最小正反例扫描器，并接入 `package.json` 根级检查命令，禁止直接动画依赖/import、CSS/Tailwind 动画与过渡、平滑滚动、WAAPI 和 View Transition。
   - 必须允许 `[data-resizing="true"] { transition: none }`、静态 transform、非动画 rAF 与领域字段 `transition_status`。
   _对应验收标准：AC-41, AC-42, AC-43_
   _测试先行：`scripts/check-no-first-party-animation.test.ts`_
 
-- [ ] T17 在 `src/shared/components/base/button.tsx`、`badge.tsx`、`breadcrumb.tsx`、`input.tsx`、`input-group.tsx`、`textarea.tsx`、`checkbox.tsx`、`switch.tsx`、`selection-indicator.tsx` 与 `tabs.tsx` 删除 StoneFlow 自写 transition、duration/easing 和 active scale，保留控件状态、表单语义与静态几何。
+- [x] T17 在 `src/shared/components/base/button.tsx`、`badge.tsx`、`breadcrumb.tsx`、`input.tsx`、`input-group.tsx`、`textarea.tsx`、`checkbox.tsx`、`switch.tsx`、`selection-indicator.tsx` 与 `tabs.tsx` 删除 StoneFlow 自写 transition、duration/easing 和 active scale，保留控件状态、表单语义与静态几何。
   _对应验收标准：AC-39, AC-41, AC-42, AC-43_
   _测试先行：`src/shared/components/row/RowShell.test.tsx`、`src/shared/components/row/cells/SharedRowCells.test.tsx`_
 
-- [ ] T18 在 `src/shared/components/base/alert-dialog.tsx`、`dialog.tsx`、`sheet.tsx`、`popover.tsx`、`select.tsx`、`dropdown-menu.tsx`、`context-menu.tsx` 与 `tooltip.tsx` 删除 Radix fade/zoom/slide 及 StoneFlow 过渡，保留开闭、外点、Escape 和焦点回归行为。
+- [x] T18 在 `src/shared/components/base/alert-dialog.tsx`、`dialog.tsx`、`sheet.tsx`、`popover.tsx`、`select.tsx`、`dropdown-menu.tsx`、`context-menu.tsx` 与 `tooltip.tsx` 删除 Radix fade/zoom/slide 及 StoneFlow 过渡，保留开闭、外点、Escape 和焦点回归行为。
   _对应验收标准：AC-39, AC-41, AC-42, AC-43_
   _测试先行：`src/shared/components/base/overlay-close-tooltip.test.tsx`、`src/layout/CreateDialogShell.test.tsx`_
 
-- [ ] T19 在 `src/shared/components/base/sidebar.tsx`、`sidebar-context.tsx`、`accordion.tsx` 与 `collapsible.tsx` 删除宽度插值、展开过渡与只为关闭过渡存在的双 rAF workaround，保留实时拖宽计算、持久化与焦点调度。
+- [x] T19 在 `src/shared/components/base/sidebar.tsx`、`sidebar-context.tsx`、`accordion.tsx` 与 `collapsible.tsx` 删除宽度插值、展开过渡与只为关闭过渡存在的双 rAF workaround，保留实时拖宽计算、持久化与焦点调度。
   _对应验收标准：AC-39, AC-41, AC-42, AC-43_
   _测试先行：`src/shared/components/base/sidebar.test.tsx`、`src/layout/ShellSidebar.test.tsx`_
 
-- [ ] T20 在 `src/shared/components/patterns/`、`src/shared/components/row/RowShell.tsx`、`src/shared/components/row/RowFieldCells.tsx` 与 `src/shared/components/row/cells/` 删除第一方 transition、spin/pulse 和 active scale，保留行选择几何、截断检测与状态语义。
+- [x] T20 在 `src/shared/components/patterns/`、`src/shared/components/row/RowShell.tsx`、`src/shared/components/row/RowFieldCells.tsx` 与 `src/shared/components/row/cells/` 删除第一方 transition、spin/pulse 和 active scale，保留行选择几何、截断检测与状态语义。
   _对应验收标准：AC-39, AC-41, AC-42, AC-43_
   _测试先行：`src/shared/components/row/RowShell.test.tsx`、`src/shared/components/patterns/ShellFooterTooltip.test.tsx`_
 
-- [ ] T21 在 `src/layout/ShellChrome.tsx`、`src/layout/ShellHeader.tsx` 与 `src/layout/` 扫描出的其余生产消费者中删除第一方过渡和平滑滚动，保留 Tauri 拖拽区、直接操纵、静态几何与焦点调度。
+- [x] T21 在 `src/layout/ShellChrome.tsx`、`src/layout/ShellHeader.tsx` 与 `src/layout/` 扫描出的其余生产消费者中删除第一方过渡和平滑滚动，保留 Tauri 拖拽区、直接操纵、静态几何与焦点调度。
   _对应验收标准：AC-39, AC-41, AC-42, AC-43_
   _测试先行：`src/layout/ShellSidebar.test.tsx`、`src/layout/ShellFooter.test.tsx`_
 
-- [ ] T22 在 `src/features/task/components/TaskBoard.tsx`、`src/features/task/detail/components/TaskLinkRow.tsx` 与 `src/features/task/` 扫描出的其余消费者中删除第一方过渡，保留 TanStack Virtual 的 transform、sticky/rAF 几何、焦点调度与领域 `transition_status`。
+- [x] T22 在 `src/features/task/components/TaskBoard.tsx`、`src/features/task/detail/components/TaskLinkRow.tsx` 与 `src/features/task/` 扫描出的其余消费者中删除第一方过渡，保留 TanStack Virtual 的 transform、sticky/rAF 几何、焦点调度与领域 `transition_status`。
   _对应验收标准：AC-39, AC-41, AC-42, AC-43_
   _测试先行：`src/features/task/components/TaskBoard.test.tsx`、`src/features/task/detail/components/TaskLinkRow.test.tsx`_
 
-- [ ] T23 在 `src/features/display-options/components/`、`src/features/metadata-fields/components/` 与两个 feature 的展示适配代码中删除第一方过渡与 active scale，保留 query/mutation、菜单选择与字段结果。
+- [x] T23 在 `src/features/display-options/components/`、`src/features/metadata-fields/components/` 与两个 feature 的展示适配代码中删除第一方过渡与 active scale，保留 query/mutation、菜单选择与字段结果。
   _对应验收标准：AC-39, AC-41, AC-42, AC-43_
   _测试先行：`src/features/display-options/components/DisplayOptionsPanel.test.tsx`、`src/features/metadata-fields/metadata-fields.test.tsx`_
 
-- [ ] T24 在 `src/features/launcher/chrome/`、`src/features/launcher/composer/`、`src/features/launcher/create/` 与 `src/features/launcher/results/` 删除第一方过渡和插值，保留 Launcher 透明窗口几何、搜索/创建状态与键盘行为。
+- [x] T24 在 `src/features/launcher/chrome/`、`src/features/launcher/composer/`、`src/features/launcher/create/` 与 `src/features/launcher/results/` 删除第一方过渡和插值，保留 Launcher 透明窗口几何、搜索/创建状态与键盘行为。
   _对应验收标准：AC-39, AC-41, AC-42, AC-43_
   _测试先行：`src/features/launcher/LauncherPage.test.tsx`、`src/features/launcher/composer/controls/LauncherActionControls.test.tsx`_
 
-- [ ] T25 在 `src/features/settings/components/`、`src/features/sync/components/` 与其状态展示适配中删除第一方 transition/spin/pulse，保留加载、错误、同步结果、`aria-busy` 和 `aria-live`。
+- [x] T25 在 `src/features/settings/components/`、`src/features/sync/components/` 与其状态展示适配中删除第一方 transition/spin/pulse，保留加载、错误、同步结果、`aria-busy` 和 `aria-live`。
   _对应验收标准：AC-39, AC-41, AC-42, AC-43_
   _测试先行：`src/features/settings/components/SettingsPage.test.tsx`、`src/features/sync/components/SyncFooterStatusItem.test.tsx`_
 
-- [ ] T26 在 `src/features/update/components/` 删除第一方 transition/spin/pulse 与 SVG 进度插值，需要反馈时改用 HeroUI 官方 ProgressBar/ProgressCircle/Spinner 或静态文字，保留更新状态机、百分比、`role="progressbar"` 与错误结果。
+- [x] T26 在 `src/features/update/components/` 删除第一方 transition/spin/pulse 与 SVG 进度插值，需要反馈时改用 HeroUI 官方 ProgressBar/ProgressCircle/Spinner 或静态文字，保留更新状态机、百分比、`role="progressbar"` 与错误结果。
   _对应验收标准：AC-39, AC-41, AC-42, AC-43_
   _测试先行：`src/features/update/components/UpdateDialog.test.tsx`、`src/features/update/components/UpdateFooterChip.test.tsx`_
 
-- [ ] T27 在 `src/features/app-info/components/`、`src/features/changelog/` 删除第一方过渡与 spin/pulse，保留版本加载、外链、Markdown、错误和空态。
+- [x] T27 在 `src/features/app-info/components/`、`src/features/changelog/` 删除第一方过渡与 spin/pulse，保留版本加载、外链、Markdown、错误和空态。
   _对应验收标准：AC-39, AC-41, AC-42, AC-43_
   _测试先行：`src/features/app-info/components/AboutDialog.test.tsx`、`src/features/changelog/ChangelogDialog.test.tsx`_
 
-- [ ] T28 运行 `scripts/check-no-first-party-animation.ts` 取得全仓剩余命中清单，逐项删除 T17–T27 未覆盖的生产动画消费者并为所有 rAF、静态 transform 和 `[data-resizing]` allowlist 记录非动画理由；不得以扩大目录 allowlist 代替清理。
+- [x] T28 运行 `scripts/check-no-first-party-animation.ts` 取得全仓剩余命中清单，逐项删除 T17–T27 未覆盖的生产动画消费者并为所有 rAF、静态 transform 和 `[data-resizing]` allowlist 记录非动画理由；不得以扩大目录 allowlist 代替清理。
   _对应验收标准：AC-39, AC-41, AC-42, AC-43_
 
-- [ ] T29 从 `src/styles/index.css` 与 `package.json` 删除 StoneFlow 对 `tw-animate-css` 的直接 import/声明并更新 `bun.lock`；在 `src/test/HeroUIMotionContract.test.tsx` 建立只使用官方组件的锁版 probe，覆盖 Modal、Popover、Tooltip、Sheet、Sidebar、Toast 与 Progress 的正常卸载和 reduced-motion CSS 合同。
+- [x] T29 从 `src/styles/index.css` 与 `package.json` 删除 StoneFlow 对 `tw-animate-css` 的直接 import/声明并更新 `bun.lock`；在 `src/test/HeroUIMotionContract.test.tsx` 建立只使用官方组件的锁版 probe，覆盖 Modal、Popover、Tooltip、Sheet、Sidebar、Toast 与 Progress 的正常卸载和 reduced-motion CSS 合同。
   - 产品集成与真实 WebView 动效留在所属迁移阶段和阶段 M 验收；锁定版 probe 失败时登记官方版本阻塞，不新增 feature 级动画补丁。
   _对应验收标准：AC-40, AC-41, AC-42, AC-44_
   _测试先行：`src/test/HeroUIMotionContract.test.tsx`_
 
-- [ ] T30 完成阶段 C 收口：运行动画扫描、根级检查和 production build，登记 HeroUI 传递依赖 allowlist 与 reduced-motion 证据；获准提交时引用 PLAN 的阶段 C 文案，不自动提交。
+- [x] T30 完成阶段 C 收口：运行动画扫描、根级检查和 production build，登记 HeroUI 传递依赖 allowlist 与 reduced-motion 证据；获准提交时引用 PLAN 的阶段 C 文案，不自动提交。
   _对应验收标准：AC-41, AC-42, AC-43, AC-44_
 
 **阶段 D：Shell 与 Sidebar 三态**
@@ -514,7 +514,8 @@
 
 ## 阻塞
 
-- 当前没有外部设备阻塞；Windows WebView2 不属于本任务验收范围。
+- 当前阶段没有外部设备阻塞；Windows WebView2 不属于本任务验收范围。
+- 已知非阶段 C 失败：根级 `bun run check` 的最后 Rust 阶段稳定失败于未改动的 `commands::spaces::tests::deleting_trashed_space_again_should_not_enqueue_another_operation` 文案断言；动画扫描、TypeScript、lint、模块边界、格式、970 项前端测试、146 项 release 测试与 production build 均通过。该失败不阻塞阶段 C，但必须在 T120 最终收口前另行解决。
 - T45、T73、T105、T119 是尚未执行的人工 Gate，不在失败前视为阻塞。
 
 ## 与 SPEC/PLAN 的实施偏差
@@ -527,6 +528,7 @@
 - 2026-08-13：任务发起人确认本任务只做 macOS WKWebView 验收；Windows 构建、平台分支与产品支持保留，但不采集、不阻塞、不宣称 Windows 已验证，也不为未实测行为新增专门兼容层。性能合同同步为同一 Mac、同一实际稳定 viewport 前后比较。
 - 2026-08-13：T8 的干净环境首次暴露旧 `src/shared/components/base/command.tsx` 直接 import `cmdk` 却未声明根依赖；阶段 J 才删除该消费者，因此本阶段精确直锁 `cmdk@1.1.1`，不靠传递依赖，仍由 T82 在旧 Command hard cut 后删除。
 - 2026-08-14：任务发起人确认源站无缓存下载是否成功与产品实现无关，接受固定版本缓存恢复作为当前供应链边界。T8 以已记录的 546 文件树 SHA-256、隔离 frozen install、typecheck 和 production build 为完成证据；仍保留源站与缓存同时不可用会阻断新环境安装的已知风险。
+- 2026-08-14：阶段 C 根级检查暴露一个与 UI 重构无关、在未改动 Rust 文件中可单独复现的 Space 删除错误文案断言失败；未将其混入 HeroUI 重构修改，登记为 T120 前必须处理的仓库既有失败。
 
 ## 完成记录
 
@@ -548,3 +550,4 @@
 - 2026-08-13：完成 T9–T13。建立 Tailwind → HeroUI OSS → HeroUI Pro 官方入口、light-only semantic theme、集中 BEM/data-state recipe、本地 Inter Variable/OFL、HTML/React/Rust 首帧同步检查和新版交互原型；旧字体引用归零并删除。迁移期旧 Tailwind 颜色 utility 已机械改名为 `legacy-*`，构建产物验证 HeroUI 官方 `--color-*` 与旧 `--sf-*` 不再互相覆盖。根级 typecheck、lint、边界、format check、967 项测试、同步测试、production build 与原型结构/脚本检查通过，凭据模式扫描零命中；T14/U1 等待任务发起人验收。
 - 2026-08-14：完成 T14/U1。任务发起人确认此前已审阅相同的 Linear 浅色方向与原型，本轮无新增视觉偏差，按已确认结果通过字形、色值层级、紧凑密度及组件状态验收。
 - 2026-08-14：完成 T8、T15与阶段 B 收口。任务发起人批准固定版本缓存恢复边界；依赖树哈希、隔离 frozen install/typecheck/build、根级 typecheck、lint、边界、format、967 项测试、production build、主题边界与零凭据扫描均通过。建议 commit 文案：`refactor(ui): 建立 HeroUI 浅色主题与字体基础`；未提交、未改动 Git 暂存区。
+- 2026-08-14：完成 T16–T30 与阶段 C 收口。全仓第一方动画扫描转绿并接入根级 `check`；删除 StoneFlow 的 transition/animation/spin/pulse/active scale、旧 motion token、Sidebar 动画 workaround 及 `tw-animate-css` 直接依赖，只保留 HeroUI `@heroui/styles@3.2.4 -> tw-animate-css@1.4.0` 传递链。Modal、Popover、Tooltip、Sheet、Sidebar、Toast、Progress 锁版 probe 3/3、扫描器 2/2、970 项前端测试、146 项 release 测试及 production build 通过；保留的 rAF 仅用于 Sidebar/Scrollbar/TaskBoard 几何批处理与输入焦点调度，静态 transform 只承担虚拟化、居中和 off-canvas 几何。建议 commit 文案：`refactor(ui): 清除 StoneFlow 第一方动画代码`；未提交、未改动 Git 暂存区。

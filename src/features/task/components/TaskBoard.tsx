@@ -765,10 +765,7 @@ function StatusSectionHeader({
 								data-chevron
 							>
 								<TriangleIcon
-									className={cn(
-										'size-1.5 text-sf-icon-subtle',
-										open ? 'rotate-180' : 'rotate-90',
-									)}
+									className={cn('size-1.5 text-sf-icon-subtle', open ? 'rotate-180' : 'rotate-90')}
 									fill='currentColor'
 								/>
 							</span>

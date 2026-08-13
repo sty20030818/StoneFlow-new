@@ -31,11 +31,7 @@ export function UpdateFooterChip({ view, onOpen }: UpdateFooterChipProps) {
 		return (
 			<ActionTooltip>
 				<ActionTooltip.Trigger asChild>
-					<Badge
-						asChild
-						variant='default'
-						className='max-w-38 cursor-pointer text-[11px]'
-					>
+					<Badge asChild variant='default' className='max-w-38 cursor-pointer text-[11px]'>
 						<button type='button' aria-label={view.title} onClick={onOpen}>
 							{/* 光学：箭头略偏下 */}
 							<DownloadIcon aria-hidden data-icon='inline-start' className='translate-y-px' />

@@ -65,7 +65,6 @@ export function CreateDialogShell({
 		<Dialog onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>
 			<DialogContent
 				className={cn(fullscreen ? createDialogShellFullscreenClass : createDialogShellClass)}
-				disableAnimation
 				showCloseButton={false}
 			>
 				<DialogTitle className='sr-only'>{title}</DialogTitle>

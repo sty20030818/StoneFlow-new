@@ -5,7 +5,7 @@
  * - 加载占位卡片
  */
 export const entityBoardSectionToggleClass =
-	'inline-flex size-4 shrink-0 items-center justify-center border-none bg-transparent p-0 text-sf-icon-subtle outline-none transition-none hover:bg-transparent hover:text-sf-icon-subtle focus-visible:border-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:outline-none'
+	'inline-flex size-4 shrink-0 items-center justify-center border-none bg-transparent p-0 text-sf-icon-subtle outline-none hover:bg-transparent hover:text-sf-icon-subtle focus-visible:border-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:outline-none'
 
 export const entityBoardMutedIconClass =
 	'flex size-4 shrink-0 items-center justify-center text-sf-text-secondary'

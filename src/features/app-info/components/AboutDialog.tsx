@@ -62,11 +62,7 @@ export function AboutDialog({ open, onOpenChange, onOpenChangelog }: AboutDialog
 
 	return (
 		<Dialog onOpenChange={handleOpenChange} open={open}>
-			<DialogContent
-				className={cn(dialogShellReadingClass, 'sm:max-w-lg')}
-				disableAnimation
-				showCloseButton={false}
-			>
+			<DialogContent className={cn(dialogShellReadingClass, 'sm:max-w-lg')} showCloseButton={false}>
 				<DialogTitle className='sr-only'>关于 StoneFlow</DialogTitle>
 				<DialogDescription className='sr-only'>
 					查看 StoneFlow 版本、更新和资料入口。

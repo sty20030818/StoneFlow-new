@@ -78,9 +78,7 @@ export function SyncStatusBadge({ status }: { status: SyncStatus }) {
 
 	return (
 		<Badge variant={tone.badgeVariant}>
-			<span
-				className={cn('size-2 shrink-0 rounded-full', tone.dotClassName)}
-			/>
+			<span className={cn('size-2 shrink-0 rounded-full', tone.dotClassName)} />
 			{formatSyncStatus(status)}
 		</Badge>
 	)

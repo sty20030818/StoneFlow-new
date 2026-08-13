@@ -95,18 +95,17 @@ describe('Sidebar primitive', () => {
 		)
 	})
 
-	it('断点切换首帧硬关闭 sidebar 面板过渡，避免宽 drawer 闪过', () => {
+	it('断点切换立即应用目标几何且不建立过渡状态机', () => {
 		const media = installMatchMedia(true)
 		renderSidebarFixture()
 
 		act(() => media.setMatches(false))
 
-		expect(getProvider()).toHaveAttribute('data-sidebar-breakpoint-switching', 'true')
-		expect(getSidebar().style.transition).toBe('none')
-		expect(getSidebar().className).toContain(
-			'group-data-[sidebar-layout=mobile]/sidebar-wrapper:transition-transform',
-		)
-		expect(getSidebar().className).not.toContain('transition-[transform,width]')
+		expect(getProvider()).toHaveAttribute('data-sidebar-layout', 'mobile')
+		expect(getProvider()).toHaveAttribute('data-sidebar-mode', 'mobile-closed')
+		expect(getProvider()).not.toHaveAttribute('data-sidebar-breakpoint-switching')
+		expect(getSidebar().className).not.toContain('transition-')
+		expect(getSidebar().style.transition).toBe('')
 	})
 
 	it('mobile trigger 切换同一份面板与遮罩', () => {

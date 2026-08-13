@@ -25,14 +25,14 @@ export const shellFooterStaticTextClass =
 
 /** 可点文案（更新态等） */
 export const shellFooterInteractiveTextClass =
-	'truncate text-[11px] leading-none text-sf-shell-text-tertiary transition-[color] hover:text-sf-shell-text-secondary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-sm'
+	'truncate text-[11px] leading-none text-sf-shell-text-tertiary hover:text-sf-shell-text-secondary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-sm'
 
 /**
  * 独立 icon 按钮：视觉 12px 图标、热区铺满 28px 底栏高度。
  * 与相邻灯/文案分离，不与状态文字共用 click target。
  */
 export const shellFooterIconButtonClass =
-	'inline-flex size-7 shrink-0 items-center justify-center rounded-md text-sf-shell-text-tertiary transition-[color,background-color,transform] hover:bg-legacy-muted/50 hover:text-sf-shell-text-secondary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring active:scale-[0.96] disabled:pointer-events-none disabled:opacity-40'
+	'inline-flex size-7 shrink-0 items-center justify-center rounded-md text-sf-shell-text-tertiary hover:bg-legacy-muted/50 hover:text-sf-shell-text-secondary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-40'
 
 /**
  * 一体可点 hit 区（indicator + label 共用 click）。
@@ -41,9 +41,7 @@ export const shellFooterIconButtonClass =
 export const shellFooterHitClass =
 	'inline-flex min-w-0 max-w-40 items-center gap-1.5 rounded-md ' +
 	'text-[11px] leading-none tabular-nums ' +
-	'transition-[color,background-color,transform] ' +
-	'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ' +
-	'active:scale-[0.96]'
+	'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring'
 
 /** Hit 语气色（无业务语义，仅视觉） */
 export type ShellFooterHitTone = 'neutral' | 'success' | 'danger'

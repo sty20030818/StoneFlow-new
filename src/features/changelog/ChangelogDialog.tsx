@@ -52,7 +52,6 @@ export function ChangelogDialog({
 		<Dialog onOpenChange={handleOpenChange} open={open}>
 			<DialogContent
 				className='top-[18%] max-sm:max-w-[calc(100%-1.5rem)] max-lg:max-w-[calc(100%-1.5rem)] sm:max-w-190 translate-y-0 overflow-hidden rounded-lg border border-sf-border-subtle bg-legacy-background/98 p-0 shadow-(--sf-shadow-popover)'
-				disableAnimation
 				showCloseButton={false}
 			>
 				<DialogTitle className='sr-only'>更新日志</DialogTitle>

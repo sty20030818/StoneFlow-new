@@ -45,10 +45,7 @@ function AccordionContent({
 }: React.ComponentProps<typeof AccordionPrimitive.Content>) {
 	return (
 		<AccordionPrimitive.Content
-			className={cn(
-				'overflow-hidden data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0',
-				className,
-			)}
+			className={cn('overflow-hidden', className)}
 			data-slot='accordion-content'
 			{...props}
 		/>

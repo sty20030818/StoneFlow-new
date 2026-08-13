@@ -63,7 +63,6 @@ export function ShortcutHelp({
 		<Dialog onOpenChange={handleOpenChange} open={open}>
 			<DialogContent
 				className={cn(dialogShellReadingClass, className)}
-				disableAnimation
 				onOpenAutoFocus={(event) => {
 					event.preventDefault()
 					contentRef.current?.focus({ preventScroll: true })

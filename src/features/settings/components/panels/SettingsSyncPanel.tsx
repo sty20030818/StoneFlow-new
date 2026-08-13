@@ -436,7 +436,7 @@ export function SettingsSyncPanel() {
 											<button
 												aria-checked={selected}
 												className={cn(
-											'flex min-w-0 flex-col items-start gap-0.5 rounded-xl border px-3 py-2.5 text-left',
+													'flex min-w-0 flex-col items-start gap-0.5 rounded-xl border px-3 py-2.5 text-left',
 													selected
 														? 'border-primary bg-primary/5 shadow-sm'
 														: 'border-sf-border-subtle bg-card hover:border-sf-border-secondary',
@@ -505,12 +505,7 @@ export function SettingsSyncPanel() {
 							type='button'
 						>
 							<span className='font-medium'>详情与诊断</span>
-							<ChevronDownIcon
-								className={cn(
-									'size-4 shrink-0',
-									syncDetailsOpen && 'rotate-180',
-								)}
-							/>
+							<ChevronDownIcon className={cn('size-4 shrink-0', syncDetailsOpen && 'rotate-180')} />
 						</CollapsibleTrigger>
 						<CollapsibleContent className='overflow-hidden border-t border-sf-border-subtle'>
 							<div className='flex flex-col gap-4 bg-legacy-muted/10 p-4'>

@@ -25,8 +25,6 @@ export type SidebarContextValue = {
 	panelOffsetX: string
 	reservedWidth: string
 	overlayOpacity: number
-	/** 断点切换的首帧防闪标记；只用于关闭 sidebar 面板自身过渡。 */
-	isBreakpointSwitching: boolean
 	sidebarWidth: number
 	isMobile: boolean
 	toggleSidebar: () => void

@@ -72,7 +72,7 @@ export function RowSelectionCell({
 	const cell = (
 		<span
 			className={cn(
-				'flex size-5 shrink-0 items-center justify-center transition-opacity',
+				'flex size-5 shrink-0 items-center justify-center',
 				forceVisible
 					? 'opacity-100'
 					: 'opacity-0 group-hover/row-shell:opacity-100 group-has-focus-visible/row-shell:opacity-100',
@@ -112,7 +112,7 @@ export function RowTitleCell({ title, doneLike = false, className }: RowTitleCel
 	return (
 		<OverflowTooltip
 			className={cn(
-				'truncate text-sm font-medium text-legacy-foreground transition-colors group-hover/row-shell:text-legacy-foreground',
+				'truncate text-sm font-medium text-legacy-foreground group-hover/row-shell:text-legacy-foreground',
 				doneLike ? 'text-sf-text-tertiary line-through' : null,
 				className,
 			)}

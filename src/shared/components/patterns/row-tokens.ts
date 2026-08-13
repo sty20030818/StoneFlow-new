@@ -5,7 +5,7 @@ export type RowSelectionGroupPosition = 'single' | 'first' | 'middle' | 'last'
  * 所有 row surface 常量统一以 ROW_SHELL_ 命名，不含实体前缀。
  */
 export const ROW_SHELL_BASE_CLASS =
-	'group/row-shell flex h-12 min-w-0 items-center gap-3 rounded-md border border-transparent bg-transparent px-3 text-left transition-colors'
+	'group/row-shell flex h-12 min-w-0 items-center gap-3 rounded-md border border-transparent bg-transparent px-3 text-left'
 
 export const ROW_SHELL_IDLE_CLASS = ''
 export const ROW_SHELL_ACTIVE_CLASS = 'border-sf-border-subtle bg-sf-list-row-selected'

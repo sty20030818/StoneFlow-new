@@ -29,9 +29,7 @@ export function TaskLinkRow({ link, onOpen, onEdit, onRemove }: TaskLinkRowProps
 	return (
 		<TaskLinkEditorPopover
 			anchor={
-				<div
-					className='flex items-start gap-3 rounded-xl border border-sf-border-subtle bg-card/70 px-3 py-2.5 hover:border-sf-border-secondary'
-				>
+				<div className='flex items-start gap-3 rounded-xl border border-sf-border-subtle bg-card/70 px-3 py-2.5 hover:border-sf-border-secondary'>
 					<div className='min-w-0 flex-1'>
 						<OverflowTooltip
 							className='text-[12px] font-medium text-legacy-foreground'

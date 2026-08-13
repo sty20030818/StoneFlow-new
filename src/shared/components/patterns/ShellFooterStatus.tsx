@@ -35,8 +35,9 @@ function Dot({
 }: Omit<ComponentPropsWithoutRef<'span'>, 'title'> & { busy?: boolean }) {
 	return (
 		<span
-			className={cn(shellFooterStatusDotClass, busy && 'animate-pulse', className)}
+			className={cn(shellFooterStatusDotClass, className)}
 			aria-hidden
+			data-busy={busy || undefined}
 			{...props}
 		/>
 	)
