@@ -1,0 +1,47 @@
+{
+	"schemaVersion": 1,
+	"recordedAt": "2026-08-13T13:26:39Z",
+	"workspaceCommit": "d545b99e0609f7e9213ac315e967510308794b34",
+	"status": "passed",
+	"workflow": {
+		"provider": "CollectUI",
+		"installer": "hpsetup",
+		"installerVersion": "4.7.0",
+		"packageManager": "bun",
+		"repositoryExternalProject": true,
+		"downloadObservation": "hpsetup restored the locked package from the local CollectUI cache",
+		"peerInstallCompleted": true,
+		"smokeTrustedDependencies": [
+			"@heroui-pro/react",
+			"@zowe/secrets-for-zowe-sdk"
+		],
+		"copySmokeTrustedDependenciesToMainProject": false
+	},
+	"credential": {
+		"environmentVariable": "HEROUI_KEY",
+		"injectionMethod": "process-environment",
+		"valueRecorded": false,
+		"repositoryMatchFiles": 0
+	},
+	"artifact": {
+		"name": "@heroui-pro/react",
+		"version": "1.0.0-beta.8",
+		"fileCount": 547,
+		"extractedBytes": 2593321,
+		"diskUsageKiB": 3940,
+		"exportCount": 70,
+		"peerDependencyCount": 30,
+		"scripts": null,
+		"packageJsonSha256": "9aba0a6842767eb89ed5938d84c0f666ba86eea16efbe9fbfdb40a960b1a8e95",
+		"treeSha256": "39485440382560c1becb520454fe8b605a761e5b996e90543c178bb5373b676f",
+		"treeHashScope": "installed node_modules/@heroui-pro/react regular-file tree",
+		"treeHashMethod": "Sort relative regular-file paths bytewise, hash each file with SHA-256, then SHA-256 the resulting manifest.",
+		"installedTreeDifference": "The environment-variable smoke restored 547 installed files, including dist/postinstall/index.js. A prior positional-key diagnostic produced 546 files and is not the accepted contract evidence; T8 and T110 own the required no-cache reproducibility check."
+	},
+	"claims": {
+		"collectUiPackageAccessVerified": true,
+		"packageIntegrityRecorded": true,
+		"heroUiOfficialLicenseVerified": false,
+		"freshNoCacheProjectInstall": "deferred-to-T8-and-T110"
+	}
+}

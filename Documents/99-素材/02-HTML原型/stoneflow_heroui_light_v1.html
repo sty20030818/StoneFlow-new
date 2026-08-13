@@ -1,0 +1,1920 @@
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>StoneFlow × HeroUI 浅色系统预览</title>
+		<style>
+			@font-face {
+				font-family: 'StoneFlow Current';
+				src: url('../../../public/fonts/MapleMono-Regular.ttf') format('truetype');
+				font-style: normal;
+				font-weight: 400;
+				font-display: swap;
+				unicode-range:
+					U+0000-00FF, U+0100-024F, U+0259, U+1E00-1EFF, U+2000-206F, U+20A0-20CF, U+2100-214F,
+					U+2190-21FF, U+2200-22FF, U+2460-24FF, U+25A0-25FF;
+			}
+
+			@font-face {
+				font-family: 'StoneFlow Current';
+				src: url('../../../public/fonts/LXGWWenKaiLite-Regular.ttf') format('truetype');
+				font-style: normal;
+				font-weight: 400;
+				font-display: swap;
+				unicode-range:
+					U+2E80-2EFF, U+2F00-2FDF, U+2FF0-2FFF, U+3000-303F, U+31C0-31EF, U+3400-4DBF, U+4E00-9FFF,
+					U+F900-FAFF, U+FE10-FE1F, U+FE30-FE4F, U+FF00-FFEF;
+			}
+
+			@font-face {
+				font-family: 'StoneFlow Current';
+				src: url('../../../public/fonts/LXGWWenKaiLite-Medium.ttf') format('truetype');
+				font-style: normal;
+				font-weight: 500;
+				font-display: swap;
+				unicode-range:
+					U+2E80-2EFF, U+2F00-2FDF, U+2FF0-2FFF, U+3000-303F, U+31C0-31EF, U+3400-4DBF, U+4E00-9FFF,
+					U+F900-FAFF, U+FE10-FE1F, U+FE30-FE4F, U+FF00-FFEF;
+			}
+
+			@font-face {
+				font-family: 'Inter Preview';
+				src: url('https://rsms.me/inter/font-files/InterVariable.woff2?v=4.1') format('woff2');
+				font-style: normal;
+				font-weight: 100 900;
+				font-display: swap;
+			}
+
+			:root {
+				color-scheme: light;
+				--page: #eeeeec;
+				--ink: #252526;
+				--ink-secondary: #5f6066;
+				--ink-muted: #6b6c73;
+				--line: #e2e2df;
+				--line-soft: #ececea;
+				--surface: #fafaf9;
+				--surface-raised: #ffffff;
+				--surface-soft: #f4f4f2;
+				--surface-hover: #efefed;
+				--sidebar: #efefed;
+				--accent: #5e6ad2;
+				--accent-hover: #5562c4;
+				--accent-soft: #eff0ff;
+				--accent-ink: #4f59b7;
+				--success: #2f7d4f;
+				--warning: #94601b;
+				--danger: #b74646;
+				--info: #456eb3;
+				--radius-sm: 6px;
+				--radius-md: 8px;
+				--radius-lg: 12px;
+				--shadow-panel: 0 1px 2px rgb(20 20 24 / 4%), 0 8px 24px rgb(20 20 24 / 5%);
+				--shadow-float: 0 18px 48px rgb(20 20 24 / 14%), 0 2px 8px rgb(20 20 24 / 8%);
+			}
+
+			* {
+				box-sizing: border-box;
+			}
+
+			html {
+				scroll-behavior: smooth;
+			}
+
+			body {
+				margin: 0;
+				background: var(--page);
+				color: var(--ink);
+				font-family:
+					Inter,
+					-apple-system,
+					BlinkMacSystemFont,
+					'Segoe UI',
+					'PingFang SC',
+					'Microsoft YaHei',
+					sans-serif;
+				font-size: 14px;
+				-webkit-font-smoothing: antialiased;
+				text-rendering: optimizeLegibility;
+			}
+
+			button,
+			input {
+				font: inherit;
+			}
+
+			button,
+			a {
+				-webkit-tap-highlight-color: transparent;
+			}
+
+			button:focus-visible,
+			a:focus-visible,
+			input:focus-visible {
+				outline: 2px solid color-mix(in srgb, var(--accent) 82%, white);
+				outline-offset: 2px;
+			}
+
+			.page {
+				width: min(1440px, calc(100% - 32px));
+				margin: 0 auto;
+				padding: 46px 0 72px;
+			}
+
+			.hero {
+				display: grid;
+				grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.7fr);
+				gap: 32px;
+				align-items: end;
+				padding: 0 2px 30px;
+			}
+
+			.eyebrow,
+			.section-kicker,
+			.source-label {
+				font-size: 11px;
+				font-weight: 650;
+				letter-spacing: 0.09em;
+				text-transform: uppercase;
+				color: var(--accent-ink);
+			}
+
+			h1 {
+				max-width: 820px;
+				margin: 10px 0 14px;
+				font-size: clamp(34px, 5vw, 68px);
+				font-weight: 560;
+				letter-spacing: -0.055em;
+				line-height: 0.98;
+			}
+
+			.hero-copy {
+				max-width: 760px;
+				margin: 0;
+				font-size: 16px;
+				line-height: 1.65;
+				color: var(--ink-secondary);
+			}
+
+			.hero-meta {
+				display: grid;
+				gap: 10px;
+				padding: 16px;
+				border: 1px solid var(--line);
+				border-radius: var(--radius-lg);
+				background: rgb(255 255 255 / 54%);
+			}
+
+			.meta-row {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 16px;
+				font-size: 12px;
+				color: var(--ink-secondary);
+			}
+
+			.meta-row strong {
+				color: var(--ink);
+				font-weight: 600;
+			}
+
+			.notice {
+				display: grid;
+				grid-template-columns: auto 1fr;
+				gap: 12px;
+				align-items: start;
+				margin-bottom: 18px;
+				padding: 14px 16px;
+				border: 1px solid #dfe1f5;
+				border-radius: var(--radius-md);
+				background: #f4f5ff;
+				color: #464c78;
+				font-size: 13px;
+				line-height: 1.6;
+			}
+
+			.notice-mark {
+				display: grid;
+				width: 22px;
+				height: 22px;
+				place-items: center;
+				border-radius: 50%;
+				background: var(--accent);
+				color: white;
+				font-size: 12px;
+				font-weight: 700;
+			}
+
+			.section {
+				margin-top: 18px;
+				padding: clamp(20px, 3vw, 34px);
+				border: 1px solid var(--line);
+				border-radius: 16px;
+				background: var(--surface);
+				box-shadow: var(--shadow-panel);
+			}
+
+			.section-head {
+				display: flex;
+				align-items: end;
+				justify-content: space-between;
+				gap: 24px;
+				margin-bottom: 22px;
+			}
+
+			.section h2 {
+				margin: 6px 0 0;
+				font-size: clamp(22px, 3vw, 32px);
+				font-weight: 570;
+				letter-spacing: -0.035em;
+			}
+
+			.section-intro {
+				max-width: 610px;
+				margin: 0;
+				color: var(--ink-secondary);
+				line-height: 1.65;
+			}
+
+			.badge {
+				display: inline-flex;
+				align-items: center;
+				min-height: 24px;
+				padding: 0 9px;
+				border: 1px solid var(--line);
+				border-radius: 999px;
+				background: var(--surface-raised);
+				color: var(--ink-secondary);
+				font-size: 11px;
+				font-weight: 600;
+				white-space: nowrap;
+			}
+
+			.badge.verified {
+				border-color: #d6eadf;
+				background: #f0faf4;
+				color: #25724a;
+			}
+
+			.badge.proposal {
+				border-color: #dcdef6;
+				background: var(--accent-soft);
+				color: var(--accent-ink);
+			}
+
+			.palette-grid {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+				gap: 10px;
+			}
+
+			.swatch {
+				position: relative;
+				display: grid;
+				grid-template-rows: 92px auto;
+				min-width: 0;
+				padding: 0;
+				overflow: hidden;
+				border: 1px solid var(--line-soft);
+				border-radius: var(--radius-md);
+				background: var(--surface-raised);
+				color: inherit;
+				text-align: left;
+				cursor: pointer;
+			}
+
+			.swatch:hover {
+				border-color: #cfcfd4;
+			}
+
+			.swatch-color {
+				border-bottom: 1px solid rgb(20 20 24 / 7%);
+			}
+
+			.swatch-copy {
+				display: grid;
+				gap: 4px;
+				padding: 11px 12px 12px;
+			}
+
+			.swatch-name {
+				overflow: hidden;
+				font-size: 12px;
+				font-weight: 620;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
+
+			.swatch-value {
+				font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+				font-size: 11px;
+				color: var(--ink-muted);
+			}
+
+			.subsection {
+				margin-top: 30px;
+			}
+
+			.subsection-head {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 16px;
+				margin-bottom: 12px;
+			}
+
+			.subsection h3 {
+				margin: 0;
+				font-size: 15px;
+				font-weight: 650;
+			}
+
+			.font-grid {
+				display: grid;
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+				gap: 12px;
+			}
+
+			.font-card {
+				min-width: 0;
+				padding: 20px;
+				border: 1px solid var(--line-soft);
+				border-radius: var(--radius-lg);
+				background: var(--surface-raised);
+			}
+
+			.font-card.current {
+				font-family: 'StoneFlow Current', 'PingFang SC', sans-serif;
+				font-synthesis: none;
+			}
+
+			.font-card.inter,
+			.shell-preview[data-font='inter'] {
+				font-family:
+					'Inter Preview',
+					Inter,
+					-apple-system,
+					BlinkMacSystemFont,
+					'Segoe UI',
+					'PingFang SC',
+					'Microsoft YaHei',
+					sans-serif;
+				font-optical-sizing: auto;
+			}
+
+			.font-card.system {
+				font-family:
+					-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei',
+					sans-serif;
+			}
+
+			.shell-preview[data-font='current'] {
+				font-family: 'StoneFlow Current', 'PingFang SC', sans-serif;
+				font-synthesis: none;
+			}
+
+			.font-card-head {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 10px;
+				margin-bottom: 24px;
+			}
+
+			.font-name {
+				font-size: 13px;
+				font-weight: 650;
+			}
+
+			.font-display {
+				margin-bottom: 18px;
+				font-size: clamp(26px, 4vw, 44px);
+				font-weight: 560;
+				letter-spacing: -0.045em;
+				line-height: 1.05;
+			}
+
+			.font-body {
+				margin: 0 0 20px;
+				font-size: 14px;
+				line-height: 1.65;
+				color: var(--ink-secondary);
+			}
+
+			.type-rows {
+				display: grid;
+				gap: 0;
+				border-top: 1px solid var(--line-soft);
+			}
+
+			.type-row {
+				display: grid;
+				grid-template-columns: 54px minmax(0, 1fr) auto;
+				gap: 12px;
+				align-items: center;
+				min-height: 38px;
+				border-bottom: 1px solid var(--line-soft);
+			}
+
+			.type-size,
+			.type-meta {
+				font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+				font-size: 10px;
+				color: var(--ink-muted);
+			}
+
+			.type-sample {
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
+
+			.control-bar {
+				display: flex;
+				flex-wrap: wrap;
+				align-items: center;
+				justify-content: space-between;
+				gap: 12px;
+				margin-bottom: 14px;
+			}
+
+			.control-group {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 6px;
+				align-items: center;
+			}
+
+			.control-label {
+				margin-right: 3px;
+				font-size: 11px;
+				font-weight: 600;
+				color: var(--ink-muted);
+			}
+
+			.control-button,
+			.icon-button,
+			.action-button {
+				border: 1px solid var(--line);
+				background: var(--surface-raised);
+				color: var(--ink-secondary);
+				cursor: pointer;
+			}
+
+			.control-button {
+				min-height: 30px;
+				padding: 0 10px;
+				border-radius: var(--radius-sm);
+				font-size: 11px;
+				font-weight: 600;
+			}
+
+			.control-button:hover,
+			.icon-button:hover,
+			.action-button:hover {
+				background: var(--surface-hover);
+			}
+
+			.control-button[aria-pressed='true'] {
+				border-color: #ced2f3;
+				background: var(--accent-soft);
+				color: var(--accent-ink);
+			}
+
+			.range-wrap {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				min-width: 220px;
+			}
+
+			.range-wrap input {
+				width: 150px;
+				accent-color: var(--accent);
+			}
+
+			.range-wrap input:disabled {
+				opacity: 0.38;
+			}
+
+			.range-value {
+				width: 42px;
+				font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+				font-size: 10px;
+				color: var(--ink-muted);
+			}
+
+			.demo-stage {
+				overflow-x: auto;
+				padding: 10px;
+				border: 1px solid #d6d6d9;
+				border-radius: 15px;
+				background: #dedee0;
+			}
+
+			.shell-preview {
+				--sidebar-demo-width: 280px;
+				min-width: 890px;
+				height: 610px;
+				overflow: hidden;
+				border: 1px solid #d0d0d3;
+				border-radius: 12px;
+				background: var(--sidebar);
+				box-shadow: 0 22px 60px rgb(20 20 24 / 14%);
+			}
+
+			.window-bar {
+				display: grid;
+				grid-template-columns: 1fr auto 1fr;
+				align-items: center;
+				height: 40px;
+				padding: 0 14px;
+				border-bottom: 1px solid var(--line);
+				background: var(--sidebar);
+			}
+
+			.traffic-lights {
+				display: flex;
+				gap: 7px;
+			}
+
+			.traffic-light {
+				width: 10px;
+				height: 10px;
+				border-radius: 50%;
+				background: #d1d1d4;
+			}
+
+			.window-title {
+				font-size: 11px;
+				font-weight: 600;
+				color: #77777e;
+			}
+
+			.window-actions {
+				display: flex;
+				justify-content: flex-end;
+				gap: 4px;
+			}
+
+			.app-body {
+				display: flex;
+				height: calc(100% - 40px);
+			}
+
+			.shell-sidebar {
+				position: relative;
+				flex: 0 0 244px;
+				width: 244px;
+				min-width: 0;
+				overflow: hidden;
+				background: var(--sidebar);
+				transition:
+					width 140ms ease,
+					flex-basis 140ms ease,
+					opacity 110ms ease;
+			}
+
+			.shell-preview[data-mode='icon'] .shell-sidebar {
+				flex-basis: 48px;
+				width: 48px;
+			}
+
+			.shell-preview[data-mode='hidden'] .shell-sidebar {
+				flex-basis: 0;
+				width: 0;
+				opacity: 0;
+			}
+
+			.shell-preview[data-mode='resize'] .shell-sidebar {
+				flex-basis: var(--sidebar-demo-width);
+				width: var(--sidebar-demo-width);
+			}
+
+			.sidebar-inner {
+				display: flex;
+				width: 100%;
+				height: 100%;
+				min-width: 48px;
+				flex-direction: column;
+				padding: 10px 8px 9px;
+			}
+
+			.workspace-switcher,
+			.nav-item {
+				display: flex;
+				align-items: center;
+				min-width: 0;
+				border-radius: 7px;
+				color: #68686f;
+			}
+
+			.workspace-switcher {
+				height: 36px;
+				gap: 9px;
+				padding: 0 8px;
+				color: #35353a;
+				font-size: 12px;
+				font-weight: 620;
+			}
+
+			.workspace-mark {
+				display: grid;
+				width: 20px;
+				height: 20px;
+				flex: 0 0 20px;
+				place-items: center;
+				border-radius: 6px;
+				background: var(--accent);
+				color: white;
+				font-size: 10px;
+				font-weight: 700;
+			}
+
+			.workspace-name,
+			.sidebar-label {
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
+
+			.sidebar-section-label {
+				margin: 17px 8px 6px;
+				font-size: 10px;
+				font-weight: 620;
+				color: #a0a0a6;
+			}
+
+			.nav-list {
+				display: grid;
+				gap: 2px;
+			}
+
+			.nav-item {
+				height: 31px;
+				gap: 10px;
+				padding: 0 8px;
+				font-size: 12px;
+			}
+
+			.nav-item.active {
+				background: rgb(255 255 255 / 64%);
+				color: #303036;
+				box-shadow: inset 0 0 0 1px rgb(40 40 46 / 5%);
+			}
+
+			.nav-icon,
+			.icon-button svg,
+			.action-button svg,
+			.row-icon svg {
+				width: 15px;
+				height: 15px;
+				flex: 0 0 15px;
+				stroke: currentColor;
+				stroke-width: 1.65;
+				fill: none;
+				stroke-linecap: round;
+				stroke-linejoin: round;
+			}
+
+			.sidebar-count {
+				margin-left: auto;
+				font-size: 10px;
+				color: #99999f;
+			}
+
+			.sidebar-bottom {
+				margin-top: auto;
+			}
+
+			.shell-preview[data-mode='icon'] .workspace-name,
+			.shell-preview[data-mode='icon'] .sidebar-label,
+			.shell-preview[data-mode='icon'] .sidebar-count,
+			.shell-preview[data-mode='icon'] .sidebar-section-label,
+			.shell-preview[data-mode='icon'] .sidebar-chevron {
+				display: none;
+			}
+
+			.shell-preview[data-mode='icon'] .workspace-switcher,
+			.shell-preview[data-mode='icon'] .nav-item {
+				justify-content: center;
+				padding: 0;
+			}
+
+			.resize-handle {
+				position: absolute;
+				top: 0;
+				right: -4px;
+				bottom: 0;
+				z-index: 2;
+				display: none;
+				width: 8px;
+				cursor: col-resize;
+			}
+
+			.resize-handle::after {
+				position: absolute;
+				top: 0;
+				bottom: 0;
+				left: 3px;
+				width: 1px;
+				background: #d7d7da;
+				content: '';
+			}
+
+			.shell-preview[data-mode='resize'] .resize-handle {
+				display: block;
+			}
+
+			.main-surface {
+				position: relative;
+				display: flex;
+				min-width: 0;
+				flex: 1;
+				margin: 8px 8px 8px 0;
+				overflow: hidden;
+				border: 1px solid var(--line);
+				border-radius: 12px;
+				background: var(--surface);
+				box-shadow: 0 1px 2px rgb(30 30 34 / 3%);
+				transition: margin-left 140ms ease;
+			}
+
+			.shell-preview[data-mode='hidden'] .main-surface {
+				margin-left: 8px;
+			}
+
+			.main-column {
+				display: flex;
+				min-width: 0;
+				flex: 1;
+				flex-direction: column;
+			}
+
+			.content-header {
+				display: flex;
+				min-height: 48px;
+				align-items: center;
+				gap: 8px;
+				padding: 0 13px;
+				border-bottom: 1px solid #e8e8e9;
+			}
+
+			.breadcrumb {
+				display: flex;
+				min-width: 0;
+				align-items: center;
+				gap: 7px;
+				font-size: 12px;
+				color: #77777e;
+			}
+
+			.breadcrumb strong {
+				overflow: hidden;
+				color: #303036;
+				font-weight: 620;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
+
+			.header-actions {
+				display: flex;
+				align-items: center;
+				gap: 5px;
+				margin-left: auto;
+			}
+
+			.icon-button {
+				display: grid;
+				width: 30px;
+				height: 30px;
+				place-items: center;
+				border-radius: 7px;
+			}
+
+			.action-button {
+				display: inline-flex;
+				height: 30px;
+				align-items: center;
+				gap: 6px;
+				padding: 0 10px;
+				border-radius: 7px;
+				font-size: 11px;
+				font-weight: 600;
+			}
+
+			.action-button.accent {
+				border-color: var(--accent);
+				background: var(--accent);
+				color: white;
+			}
+
+			.action-button.accent:hover {
+				background: var(--accent-hover);
+			}
+
+			.view-bar {
+				display: flex;
+				min-height: 42px;
+				align-items: center;
+				gap: 7px;
+				padding: 0 13px;
+				border-bottom: 1px solid #ededee;
+			}
+
+			.view-title {
+				font-size: 13px;
+				font-weight: 630;
+			}
+
+			.view-meta {
+				font-size: 10px;
+				color: #96969c;
+			}
+
+			.view-chip {
+				display: inline-flex;
+				height: 25px;
+				align-items: center;
+				gap: 5px;
+				margin-left: auto;
+				padding: 0 8px;
+				border: 1px solid #e1e1e3;
+				border-radius: 7px;
+				background: #ffffff;
+				font-size: 10px;
+				color: #68686f;
+			}
+
+			.task-list {
+				min-height: 0;
+				flex: 1;
+				overflow: hidden;
+				padding: 9px 8px 20px;
+			}
+
+			.group-header {
+				display: flex;
+				height: 34px;
+				align-items: center;
+				gap: 7px;
+				padding: 0 9px;
+				font-size: 11px;
+				font-weight: 620;
+				color: #595960;
+			}
+
+			.status-dot {
+				width: 8px;
+				height: 8px;
+				border: 2px solid #a1a1a8;
+				border-radius: 50%;
+			}
+
+			.task-row {
+				display: grid;
+				grid-template-columns: 22px minmax(0, 1fr) 78px 54px;
+				gap: 8px;
+				align-items: center;
+				height: 42px;
+				padding: 0 9px;
+				border-radius: 7px;
+				color: #404046;
+				font-size: 11px;
+			}
+
+			.task-row + .task-row {
+				margin-top: 1px;
+			}
+
+			.task-row:hover {
+				background: #f1f1f2;
+			}
+
+			.task-row.selected {
+				background: var(--accent-soft);
+				box-shadow: inset 0 0 0 1px rgb(94 106 210 / 9%);
+			}
+
+			.row-icon {
+				display: grid;
+				width: 18px;
+				height: 18px;
+				place-items: center;
+				color: #8e8e94;
+			}
+
+			.task-title {
+				overflow: hidden;
+				font-weight: 520;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
+
+			.task-project,
+			.task-id {
+				overflow: hidden;
+				font-size: 10px;
+				color: #9999a0;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
+
+			.detail-panel {
+				width: 322px;
+				min-width: 322px;
+				overflow: hidden;
+				border-left: 1px solid #e2e2e4;
+				background: #ffffff;
+				transition:
+					width 150ms ease,
+					min-width 150ms ease,
+					opacity 120ms ease;
+			}
+
+			.shell-preview[data-detail-layout='float'] .detail-panel {
+				position: absolute;
+				top: 8px;
+				right: 8px;
+				bottom: 8px;
+				z-index: 4;
+				border: 1px solid var(--line);
+				border-radius: 11px;
+				box-shadow: var(--shadow-float);
+			}
+
+			.shell-preview[data-detail-layout='float'] .detail-inner {
+				height: 100%;
+			}
+
+			.shell-preview[data-detail='closed'] .detail-panel {
+				width: 0;
+				min-width: 0;
+				opacity: 0;
+			}
+
+			.detail-inner {
+				display: flex;
+				width: 322px;
+				height: 100%;
+				flex-direction: column;
+			}
+
+			.detail-head {
+				display: flex;
+				height: 48px;
+				align-items: center;
+				gap: 8px;
+				padding: 0 12px;
+				border-bottom: 1px solid #ececee;
+			}
+
+			.detail-eyebrow {
+				font-size: 10px;
+				font-weight: 620;
+				color: var(--accent-ink);
+			}
+
+			.detail-close {
+				margin-left: auto;
+			}
+
+			.detail-body {
+				display: grid;
+				gap: 17px;
+				padding: 18px;
+			}
+
+			.detail-title {
+				margin: 0;
+				font-size: 19px;
+				font-weight: 580;
+				letter-spacing: -0.025em;
+				line-height: 1.35;
+			}
+
+			.detail-description {
+				margin: -6px 0 0;
+				font-size: 11px;
+				line-height: 1.6;
+				color: #77777e;
+			}
+
+			.detail-field {
+				display: grid;
+				grid-template-columns: 80px minmax(0, 1fr);
+				gap: 10px;
+				align-items: center;
+				min-height: 30px;
+				font-size: 11px;
+			}
+
+			.field-label {
+				color: #929298;
+			}
+
+			.field-value {
+				display: inline-flex;
+				width: fit-content;
+				align-items: center;
+				gap: 6px;
+				padding: 5px 7px;
+				border-radius: 6px;
+				color: #4d4d54;
+			}
+
+			.field-value:hover {
+				background: #f3f3f4;
+			}
+
+			.detail-footer {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 12px;
+				margin-top: auto;
+				padding: 12px 14px;
+				border-top: 1px solid #ececee;
+				font-size: 10px;
+				color: #99999f;
+			}
+
+			.decision-grid {
+				display: grid;
+				grid-template-columns: repeat(3, minmax(0, 1fr));
+				gap: 10px;
+				margin-top: 15px;
+			}
+
+			.decision-card {
+				padding: 15px;
+				border: 1px solid var(--line-soft);
+				border-radius: var(--radius-md);
+				background: var(--surface-raised);
+			}
+
+			.decision-card.recommended {
+				border-color: #d6d9f3;
+				box-shadow: inset 0 0 0 1px rgb(94 106 210 / 5%);
+			}
+
+			.decision-card h3 {
+				margin: 10px 0 7px;
+				font-size: 13px;
+				font-weight: 650;
+			}
+
+			.decision-card p {
+				margin: 0;
+				font-size: 12px;
+				line-height: 1.55;
+				color: var(--ink-secondary);
+			}
+
+			.sources {
+				display: grid;
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+				gap: 10px;
+			}
+
+			.source-card {
+				display: grid;
+				gap: 6px;
+				padding: 14px;
+				border: 1px solid var(--line-soft);
+				border-radius: var(--radius-md);
+				background: var(--surface-raised);
+				color: inherit;
+				text-decoration: none;
+			}
+
+			.source-card:hover {
+				border-color: #cfd1e7;
+			}
+
+			.source-title {
+				font-size: 12px;
+				font-weight: 630;
+			}
+
+			.source-copy {
+				font-size: 11px;
+				line-height: 1.55;
+				color: var(--ink-muted);
+			}
+
+			.toast {
+				position: fixed;
+				right: 18px;
+				bottom: 18px;
+				z-index: 10;
+				padding: 10px 13px;
+				border: 1px solid rgb(255 255 255 / 12%);
+				border-radius: 8px;
+				background: #29292d;
+				box-shadow: var(--shadow-float);
+				color: white;
+				font-size: 11px;
+				opacity: 0;
+				transform: translateY(6px);
+				transition:
+					opacity 120ms ease,
+					transform 120ms ease;
+				pointer-events: none;
+			}
+
+			.toast.show {
+				opacity: 1;
+				transform: translateY(0);
+			}
+
+			@media (max-width: 900px) {
+				.page {
+					width: min(100% - 20px, 1440px);
+					padding-top: 28px;
+				}
+
+				.hero,
+				.font-grid,
+				.sources {
+					grid-template-columns: 1fr;
+				}
+
+				.decision-grid {
+					grid-template-columns: 1fr;
+				}
+
+				.section-head {
+					align-items: start;
+					flex-direction: column;
+				}
+			}
+
+			@media (prefers-reduced-motion: reduce) {
+				*,
+				*::before,
+				*::after {
+					scroll-behavior: auto !important;
+					transition-duration: 0.01ms !important;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<svg aria-hidden="true" width="0" height="0" style="position: absolute">
+			<symbol id="icon-home" viewBox="0 0 24 24">
+				<path d="M3.5 10.5 12 3l8.5 7.5" />
+				<path d="M5.5 9.5v10h13v-10M9.5 19.5v-6h5v6" />
+			</symbol>
+			<symbol id="icon-inbox" viewBox="0 0 24 24">
+				<path d="M4 5.5h16v13H4z" />
+				<path d="M4 14h4l2 2h4l2-2h4" />
+			</symbol>
+			<symbol id="icon-check" viewBox="0 0 24 24">
+				<circle cx="12" cy="12" r="8.5" />
+				<path d="m8.5 12 2.3 2.4 4.9-5" />
+			</symbol>
+			<symbol id="icon-folder" viewBox="0 0 24 24">
+				<path d="M3.5 7h7l2-2h8v14h-17z" />
+			</symbol>
+			<symbol id="icon-settings" viewBox="0 0 24 24">
+				<circle cx="12" cy="12" r="3" />
+				<path
+					d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.4-2.4 1a8 8 0 0 0-1.7-1L14.5 3h-5l-.4 3a8 8 0 0 0-1.7 1L5 6.1 3 9.5 5.1 11a7 7 0 0 0 0 2L3 14.5 5 18l2.4-1a8 8 0 0 0 1.7 1l.4 3h5l.4-3a8 8 0 0 0 1.7-1l2.4 1 2-3.5-2.1-1.5a7 7 0 0 0 .1-1Z"
+				/>
+			</symbol>
+			<symbol id="icon-search" viewBox="0 0 24 24">
+				<circle cx="10.5" cy="10.5" r="6.5" />
+				<path d="m15.5 15.5 5 5" />
+			</symbol>
+			<symbol id="icon-sliders" viewBox="0 0 24 24">
+				<path d="M4 7h9M17 7h3M4 17h3M11 17h9" />
+				<circle cx="15" cy="7" r="2" />
+				<circle cx="9" cy="17" r="2" />
+			</symbol>
+			<symbol id="icon-plus" viewBox="0 0 24 24">
+				<path d="M12 5v14M5 12h14" />
+			</symbol>
+			<symbol id="icon-close" viewBox="0 0 24 24">
+				<path d="m7 7 10 10M17 7 7 17" />
+			</symbol>
+		</svg>
+
+		<main class="page">
+			<header class="hero">
+				<div>
+					<div class="eyebrow">StoneFlow / 视觉决策样张 v1</div>
+					<h1>先看见，再决定。</h1>
+					<p class="hero-copy">
+						这不是 Linear 源码复制品，也不是最终产品实现。它把当前可验证的 Linear
+						浅色样本、StoneFlow 的 HeroUI 主题方向、Sidebar 三态、详情双呈现和字体差异放在一页里。
+					</p>
+				</div>
+				<div class="hero-meta" aria-label="样张信息">
+					<div class="meta-row"><span>资料快照</span><strong>2026-08-13</strong></div>
+					<div class="meta-row"><span>视觉参考</span><strong>Linear 2026 Light</strong></div>
+					<div class="meta-row"><span>组件终态</span><strong>HeroUI OSS + Pro</strong></div>
+					<div class="meta-row"><span>实现状态</span><strong>仅静态交互原型</strong></div>
+				</div>
+			</header>
+
+			<div class="notice">
+				<span class="notice-mark">i</span>
+				<div>
+					<strong>Linear 没有公开完整 App token 文件。</strong>
+					下面第一组只有当前公开启动壳观察到的五个值；第二组才是我们基于 HeroUI
+					语义变量独立设计、并按可读性校准的 StoneFlow 色板。点击任意色块可复制色值。
+				</div>
+			</div>
+
+			<section class="section" aria-labelledby="linear-colors-title">
+				<div class="section-head">
+					<div>
+						<div class="section-kicker">01 / Evidence</div>
+						<h2 id="linear-colors-title">Linear 公开渲染观察样本</h2>
+					</div>
+					<span class="badge verified">公开渲染取样，非官方 token</span>
+				</div>
+				<p class="section-intro">
+					这些值来自 2026-08-13 的公开登录启动壳观察。官方 2026
+					设计文章确认方向是：从冷蓝灰转向更暖、低饱和但仍清脆的灰，Sidebar
+					更退后，主内容更突出。取样会受版本、浏览器、显示缩放和色彩管理影响，不是稳定 API
+					或逐像素验收值。
+				</p>
+				<div class="subsection">
+					<div id="linearPalette" class="palette-grid"></div>
+				</div>
+
+				<div class="subsection">
+					<div class="subsection-head">
+						<h3>StoneFlow × HeroUI 浅色方向</h3>
+						<span class="badge proposal">已确认方向 · 关键前景组合已校准</span>
+					</div>
+					<div id="proposalPalette" class="palette-grid"></div>
+				</div>
+			</section>
+
+			<section class="section" aria-labelledby="font-title">
+				<div class="section-head">
+					<div>
+						<div class="section-kicker">02 / Typography</div>
+						<h2 id="font-title">当前字体 vs Linear 风格字体</h2>
+					</div>
+					<span class="badge">同文案、同字号直接对比</span>
+				</div>
+				<p class="section-intro">
+					Linear 在 2024 年官方确认标题用 Inter Display、其他文字用
+					Inter；当前公开启动壳的网络资源观察到 Inter Variable。后者不是长期字体契约。StoneFlow
+					现在则用 Maple Mono 显示拉丁字符、霞鹜文楷显示中文。
+				</p>
+				<div class="subsection font-grid">
+					<article class="font-card current">
+						<div class="font-card-head">
+							<span class="font-name">StoneFlow Current</span>
+							<span class="badge">Maple Mono + 霞鹜文楷</span>
+						</div>
+						<div class="font-display">今天，把复杂的事做简单。</div>
+						<p class="font-body">
+							STO-128 · 重构 TaskBoard keyboard navigation，保持多选与 Peek 的行为一致。
+						</p>
+						<div class="type-rows">
+							<div class="type-row">
+								<span class="type-size">12 / 400</span
+								><span class="type-sample" style="font-size: 12px; font-weight: 400"
+									>任务详情 · Due Aug 18 · 12:48</span
+								><span class="type-meta">caption</span>
+							</div>
+							<div class="type-row">
+								<span class="type-size">13 / 500</span
+								><span class="type-sample" style="font-size: 13px; font-weight: 500"
+									>修复 Sidebar 收起后的焦点顺序</span
+								><span class="type-meta">row</span>
+							</div>
+							<div class="type-row">
+								<span class="type-size">14 / 600</span
+								><span class="type-sample" style="font-size: 14px; font-weight: 600"
+									>Project Aurora / In Progress</span
+								><span class="type-meta">label</span>
+							</div>
+							<div class="type-row">
+								<span class="type-size">18 / 600</span
+								><span class="type-sample" style="font-size: 18px; font-weight: 600"
+									>任务详情编辑器</span
+								><span class="type-meta">heading</span>
+							</div>
+						</div>
+					</article>
+
+					<article class="font-card inter">
+						<div class="font-card-head">
+							<span class="font-name">Inter Variable + 系统中文</span>
+							<span id="interStatus" class="badge proposal">推荐候选</span>
+						</div>
+						<div class="font-display">今天，把复杂的事做简单。</div>
+						<p class="font-body">
+							STO-128 · 重构 TaskBoard keyboard navigation，保持多选与 Peek 的行为一致。
+						</p>
+						<div class="type-rows">
+							<div class="type-row">
+								<span class="type-size">12 / 400</span
+								><span class="type-sample" style="font-size: 12px; font-weight: 400"
+									>任务详情 · Due Aug 18 · 12:48</span
+								><span class="type-meta">caption</span>
+							</div>
+							<div class="type-row">
+								<span class="type-size">13 / 500</span
+								><span class="type-sample" style="font-size: 13px; font-weight: 500"
+									>修复 Sidebar 收起后的焦点顺序</span
+								><span class="type-meta">row</span>
+							</div>
+							<div class="type-row">
+								<span class="type-size">14 / 600</span
+								><span class="type-sample" style="font-size: 14px; font-weight: 600"
+									>Project Aurora / In Progress</span
+								><span class="type-meta">label</span>
+							</div>
+							<div class="type-row">
+								<span class="type-size">18 / 600</span
+								><span class="type-sample" style="font-size: 18px; font-weight: 600"
+									>任务详情编辑器</span
+								><span class="type-meta">heading</span>
+							</div>
+						</div>
+					</article>
+
+					<article class="font-card system">
+						<div class="font-card-head">
+							<span class="font-name">纯系统 UI 字体</span>
+							<span class="badge">零字体资产</span>
+						</div>
+						<div class="font-display">今天，把复杂的事做简单。</div>
+						<p class="font-body">
+							STO-128 · 重构 TaskBoard keyboard navigation，保持多选与 Peek 的行为一致。
+						</p>
+						<div class="type-rows">
+							<div class="type-row">
+								<span class="type-size">12 / 400</span
+								><span class="type-sample" style="font-size: 12px; font-weight: 400"
+									>任务详情 · Due Aug 18 · 12:48</span
+								><span class="type-meta">caption</span>
+							</div>
+							<div class="type-row">
+								<span class="type-size">13 / 500</span
+								><span class="type-sample" style="font-size: 13px; font-weight: 500"
+									>修复 Sidebar 收起后的焦点顺序</span
+								><span class="type-meta">row</span>
+							</div>
+							<div class="type-row">
+								<span class="type-size">14 / 600</span
+								><span class="type-sample" style="font-size: 14px; font-weight: 600"
+									>Project Aurora / In Progress</span
+								><span class="type-meta">label</span>
+							</div>
+							<div class="type-row">
+								<span class="type-size">18 / 600</span
+								><span class="type-sample" style="font-size: 18px; font-weight: 600"
+									>任务详情编辑器</span
+								><span class="type-meta">heading</span>
+							</div>
+						</div>
+					</article>
+				</div>
+			</section>
+
+			<section class="section" aria-labelledby="shell-title">
+				<div class="section-head">
+					<div>
+						<div class="section-kicker">03 / Shell</div>
+						<h2 id="shell-title">HeroUI Inset、窄栏与任务详情区</h2>
+					</div>
+					<span class="badge verified">Sidebar 能力已按 Pro 当前文档核实</span>
+				</div>
+				<p class="section-intro">
+					你记得是对的：HeroUI Sidebar 有 <code>collapsible="icon"</code> 窄栏，默认约 48px；<code
+						>variant="inset"</code
+					>
+					是灰壳包住主工作面的外观。最终采用 Sidebar + Resizable
+					的薄编排，同时保留宽栏、窄栏和小窗隐藏。
+				</p>
+
+				<div class="subsection">
+					<div class="control-bar">
+						<div class="control-group" aria-label="Sidebar 演示状态">
+							<span class="control-label">Sidebar</span>
+							<button
+								class="control-button"
+								type="button"
+								data-shell-mode="expanded"
+								aria-pressed="true"
+							>
+								展开 256px
+							</button>
+							<button
+								class="control-button"
+								type="button"
+								data-shell-mode="icon"
+								aria-pressed="false"
+							>
+								HeroUI 窄栏 48px
+							</button>
+							<button
+								class="control-button"
+								type="button"
+								data-shell-mode="hidden"
+								aria-pressed="false"
+							>
+								完全隐藏
+							</button>
+							<button
+								class="control-button"
+								type="button"
+								data-shell-mode="resize"
+								aria-pressed="false"
+							>
+								展开态拖宽
+							</button>
+						</div>
+						<div class="control-group">
+							<label class="range-wrap">
+								<span class="control-label">宽度</span>
+								<input id="sidebarWidth" type="range" min="220" max="330" value="280" disabled />
+								<span id="sidebarWidthValue" class="range-value">280px</span>
+							</label>
+						</div>
+						<div class="control-group" aria-label="预览字体与详情区">
+							<span class="control-label">字体</span>
+							<button
+								class="control-button"
+								type="button"
+								data-shell-font="current"
+								aria-pressed="false"
+							>
+								当前
+							</button>
+							<button
+								class="control-button"
+								type="button"
+								data-shell-font="inter"
+								aria-pressed="true"
+							>
+								Inter
+							</button>
+							<span class="control-label" style="margin-left: 6px">任务详情</span>
+							<button
+								class="control-button"
+								type="button"
+								data-detail-layout="float"
+								aria-pressed="true"
+							>
+								Sheet 浮层
+							</button>
+							<button
+								class="control-button"
+								type="button"
+								data-detail-layout="panel"
+								aria-pressed="false"
+							>
+								Aside 右栏
+							</button>
+							<button id="detailToggle" class="control-button" type="button" aria-pressed="true">
+								关闭任务详情
+							</button>
+						</div>
+					</div>
+
+					<div class="demo-stage">
+						<div
+							id="shellPreview"
+							class="shell-preview"
+							data-mode="expanded"
+							data-font="inter"
+							data-detail="open"
+							data-detail-layout="float"
+						>
+							<div class="window-bar">
+								<div class="traffic-lights" aria-hidden="true">
+									<span class="traffic-light"></span><span class="traffic-light"></span
+									><span class="traffic-light"></span>
+								</div>
+								<div class="window-title">StoneFlow</div>
+								<div class="window-actions"><span class="view-meta">⌘ K</span></div>
+							</div>
+							<div class="app-body">
+								<aside class="shell-sidebar" aria-label="主导航预览">
+									<div class="sidebar-inner">
+										<div class="workspace-switcher">
+											<span class="workspace-mark">S</span>
+											<span class="workspace-name">StoneFlow</span>
+											<span class="sidebar-chevron" style="margin-left: auto; color: #99999f"
+												>⌄</span
+											>
+										</div>
+										<div class="sidebar-section-label">Workspace</div>
+										<nav class="nav-list">
+											<div class="nav-item">
+												<svg class="nav-icon"><use href="#icon-home"></use></svg
+												><span class="sidebar-label">主页</span>
+											</div>
+											<div class="nav-item">
+												<svg class="nav-icon"><use href="#icon-inbox"></use></svg
+												><span class="sidebar-label">收件箱</span
+												><span class="sidebar-count">8</span>
+											</div>
+											<div class="nav-item active">
+												<svg class="nav-icon"><use href="#icon-check"></use></svg
+												><span class="sidebar-label">任务</span
+												><span class="sidebar-count">24</span>
+											</div>
+											<div class="nav-item">
+												<svg class="nav-icon"><use href="#icon-folder"></use></svg
+												><span class="sidebar-label">项目</span>
+											</div>
+										</nav>
+										<div class="sidebar-section-label">Projects</div>
+										<nav class="nav-list">
+											<div class="nav-item">
+												<span
+													class="nav-icon"
+													style="display: grid; place-items: center; color: #8b5cf6"
+													>●</span
+												><span class="sidebar-label">Aurora</span>
+											</div>
+											<div class="nav-item">
+												<span
+													class="nav-icon"
+													style="display: grid; place-items: center; color: #2da44e"
+													>●</span
+												><span class="sidebar-label">Desktop v1</span>
+											</div>
+										</nav>
+										<nav class="nav-list sidebar-bottom">
+											<div class="nav-item">
+												<svg class="nav-icon"><use href="#icon-settings"></use></svg
+												><span class="sidebar-label">设置</span>
+											</div>
+										</nav>
+									</div>
+									<span class="resize-handle" aria-hidden="true"></span>
+								</aside>
+
+								<section class="main-surface" aria-label="主工作区预览">
+									<div class="main-column">
+										<header class="content-header">
+											<div class="breadcrumb">
+												<span>所有空间</span><span>/</span><strong>我的任务</strong>
+											</div>
+											<div class="header-actions">
+												<button class="icon-button" type="button" aria-label="搜索">
+													<svg><use href="#icon-search"></use></svg>
+												</button>
+												<button class="action-button accent" type="button">
+													<svg><use href="#icon-plus"></use></svg>新建任务
+												</button>
+											</div>
+										</header>
+										<div class="view-bar">
+											<span class="view-title">我的任务</span><span class="view-meta">24</span>
+											<span class="view-chip"
+												><svg class="nav-icon"><use href="#icon-sliders"></use></svg>显示</span
+											>
+										</div>
+										<div class="task-list">
+											<div class="group-header">
+												<span class="status-dot"></span><span>进行中</span
+												><span class="view-meta">3</span>
+											</div>
+											<div class="task-row selected">
+												<span class="row-icon"
+													><svg><use href="#icon-check"></use></svg></span
+												><span class="task-title">重构键盘导航与多选状态模型</span
+												><span class="task-project">Aurora</span
+												><span class="task-id">STO-128</span>
+											</div>
+											<div class="task-row">
+												<span class="row-icon"
+													><svg><use href="#icon-check"></use></svg></span
+												><span class="task-title">统一 Command Menu 与右键菜单动作来源</span
+												><span class="task-project">Desktop</span
+												><span class="task-id">STO-121</span>
+											</div>
+											<div class="task-row">
+												<span class="row-icon"
+													><svg><use href="#icon-check"></use></svg></span
+												><span class="task-title">为虚拟列表补充真实焦点回归</span
+												><span class="task-project">Aurora</span
+												><span class="task-id">STO-119</span>
+											</div>
+											<div class="group-header">
+												<span class="status-dot" style="border-color: #d19a44"></span
+												><span>待处理</span><span class="view-meta">4</span>
+											</div>
+											<div class="task-row">
+												<span class="row-icon"
+													><svg><use href="#icon-check"></use></svg></span
+												><span class="task-title">迁移 Task Detail 表单控件到 HeroUI</span
+												><span class="task-project">Desktop</span
+												><span class="task-id">STO-114</span>
+											</div>
+											<div class="task-row">
+												<span class="row-icon"
+													><svg><use href="#icon-check"></use></svg></span
+												><span class="task-title">清理旧 pattern class 与 sf token</span
+												><span class="task-project">Core</span><span class="task-id">STO-109</span>
+											</div>
+										</div>
+									</div>
+
+									<aside class="detail-panel" aria-label="任务详情编辑区预览">
+										<div class="detail-inner">
+											<header class="detail-head">
+												<span class="detail-eyebrow">这就是右侧任务详情区</span>
+												<button
+													class="icon-button detail-close"
+													type="button"
+													data-close-detail
+													aria-label="关闭任务详情"
+												>
+													<svg><use href="#icon-close"></use></svg>
+												</button>
+											</header>
+											<div class="detail-body">
+												<h3 class="detail-title">重构键盘导航与多选状态模型</h3>
+												<p class="detail-description">
+													这是可编辑、自动保存的 Task Detail Panel，不是按 Space 出现的只读 Peek
+													浮卡。
+												</p>
+												<div class="detail-field">
+													<span class="field-label">状态</span
+													><span class="field-value"
+														><span class="status-dot" style="border-color: var(--accent)"></span
+														>进行中</span
+													>
+												</div>
+												<div class="detail-field">
+													<span class="field-label">优先级</span
+													><span class="field-value">◒ 高</span>
+												</div>
+												<div class="detail-field">
+													<span class="field-label">项目</span
+													><span class="field-value"
+														><span style="color: #8b5cf6">●</span>Aurora</span
+													>
+												</div>
+												<div class="detail-field">
+													<span class="field-label">截止日期</span
+													><span class="field-value">Aug 18</span>
+												</div>
+												<div class="detail-field">
+													<span class="field-label">负责人</span
+													><span class="field-value">Stonefish</span>
+												</div>
+											</div>
+											<footer class="detail-footer">
+												<span>已自动保存</span><span>打开完整页面 ↗</span>
+											</footer>
+										</div>
+									</aside>
+								</section>
+							</div>
+						</div>
+					</div>
+
+					<div class="decision-grid">
+						<article class="decision-card recommended">
+							<span class="badge proposal">已确认 · 三态 Sidebar</span>
+							<h3>Inset + Sidebar + Resizable</h3>
+							<p>
+								桌面点按伸缩区切换 256px 宽栏与 48px 窄栏；宽栏可在 220–330px 拖动。小于 1024px
+								释放占位并用 Sheet 打开导航。
+							</p>
+						</article>
+						<article class="decision-card">
+							<span class="badge">实现边界</span>
+							<h3>薄产品编排，不重造 primitive</h3>
+							<p>
+								HeroUI 单个配置不原生组合 icon rail 与 resize；StoneFlow
+								只编排状态和几何，导航、Tree 与交互仍由 HeroUI 提供。
+							</p>
+						</article>
+						<article class="decision-card">
+							<span class="badge">右侧不是 Sidebar</span>
+							<h3>Task Detail Panel / Sheet</h3>
+							<p>
+								可选临时 Sheet 浮层或推挤内容的 Aside 右栏；窄窗口统一转 Sheet。Space Peek
+								仍是独立的快速只读预览。
+							</p>
+						</article>
+					</div>
+				</div>
+			</section>
+
+			<section class="section" aria-labelledby="sources-title">
+				<div class="section-head">
+					<div>
+						<div class="section-kicker">04 / Sources</div>
+						<h2 id="sources-title">事实边界与资料来源</h2>
+					</div>
+				</div>
+				<div class="sources">
+					<a
+						class="source-card"
+						href="https://linear.app/changelog/2026-03-12-ui-refresh"
+						target="_blank"
+						rel="noreferrer"
+					>
+						<span class="source-label">Linear 官方</span
+						><span class="source-title">2026 UI refresh</span
+						><span class="source-copy"
+							>确认 Sidebar 更暗、主内容更突出、图标重绘与跨页面结构统一。</span
+						>
+					</a>
+					<a
+						class="source-card"
+						href="https://linear.app/now/behind-the-latest-design-refresh"
+						target="_blank"
+						rel="noreferrer"
+					>
+						<span class="source-label">Linear 官方</span
+						><span class="source-title">A calmer interface for a product in motion</span
+						><span class="source-copy"
+							>确认暖灰方向、弱化边框、内部 token/color tool 与 2026 设计原则。</span
+						>
+					</a>
+					<a
+						class="source-card"
+						href="https://linear.app/now/how-we-redesigned-the-linear-ui"
+						target="_blank"
+						rel="noreferrer"
+					>
+						<span class="source-label">Linear 官方</span
+						><span class="source-title">2024 UI redesign</span
+						><span class="source-copy"
+							>确认 base/accent/contrast 主题模型，以及 Inter / Inter Display 字体选择。</span
+						>
+					</a>
+					<a
+						class="source-card"
+						href="https://heroui.pro/docs/react/components/sidebar"
+						target="_blank"
+						rel="noreferrer"
+					>
+						<span class="source-label">HeroUI Pro 官方</span
+						><span class="source-title">Sidebar</span
+						><span class="source-copy"
+							>核实 icon、offcanvas、none、inset、Rail 与移动 Sheet 能力。</span
+						>
+					</a>
+					<a
+						class="source-card"
+						href="https://heroui.pro/docs/react/components/app-layout"
+						target="_blank"
+						rel="noreferrer"
+					>
+						<span class="source-label">HeroUI Pro 官方</span
+						><span class="source-title">AppLayout</span
+						><span class="source-copy"
+							>核实 sidebarResizable 与 icon collapse 不兼容，以及 aside 的响应式能力。</span
+						>
+					</a>
+					<a class="source-card" href="https://rsms.me/inter/" target="_blank" rel="noreferrer">
+						<span class="source-label">Inter 官方</span
+						><span class="source-title">Inter Variable</span
+						><span class="source-copy"
+							>本原型仅从官方站点加载预览字体；产品落地时应本地打包，不依赖远程字体。</span
+						>
+					</a>
+				</div>
+			</section>
+		</main>
+
+		<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+		<script>
+			const linearColors = [
+				['Sidebar light', '#EFEFF0', '公开启动壳'],
+				['Main base', '#F9F9FA', '公开启动壳'],
+				['Border', '#E2E2E2', '公开启动壳'],
+				['Muted content', '#B0B5C0', '公开启动壳'],
+				['Strong content', '#23252A', '公开启动壳'],
+			]
+
+			const proposalColors = [
+				['App canvas', '#EEEEEC', 'background'],
+				['Navigation shell', '#EFEFED', 'surface tertiary'],
+				['Main surface', '#FAFAF9', 'surface'],
+				['Raised surface', '#FFFFFF', 'overlay / card'],
+				['Secondary surface', '#F4F4F2', 'surface secondary'],
+				['Hover surface', '#EFEFED', 'interactive hover'],
+				['Primary text', '#252526', 'foreground'],
+				['Secondary text', '#5F6066', 'foreground secondary'],
+				['Muted text', '#6B6C73', 'muted readable'],
+				['Border', '#E2E2DF', 'border'],
+				['Separator', '#ECECEA', 'separator'],
+				['Accent', '#5E6AD2', 'accent'],
+				['Accent hover', '#5562C4', 'accent hover'],
+				['Accent soft', '#EFF0FF', 'selection / soft'],
+				['Accent text', '#4F59B7', 'accent foreground'],
+				['Success', '#2F7D4F', 'success'],
+				['Warning', '#94601B', 'warning'],
+				['Danger', '#B74646', 'danger'],
+				['Info', '#456EB3', 'info'],
+			]
+
+			function renderPalette(targetId, colors) {
+				const target = document.getElementById(targetId)
+				target.replaceChildren(
+					...colors.map(([name, value, role]) => {
+						const button = document.createElement('button')
+						button.type = 'button'
+						button.className = 'swatch'
+						button.dataset.color = value
+						button.setAttribute('aria-label', `复制 ${name} 色值 ${value}`)
+						button.innerHTML = `<span class="swatch-color" style="background:${value}"></span><span class="swatch-copy"><span class="swatch-name">${name}</span><span class="swatch-value">${value} · ${role}</span></span>`
+						return button
+					}),
+				)
+			}
+
+			renderPalette('linearPalette', linearColors)
+			renderPalette('proposalPalette', proposalColors)
+
+			const toast = document.getElementById('toast')
+			let toastTimer
+			document.addEventListener('click', async (event) => {
+				const swatch = event.target.closest('[data-color]')
+				if (!swatch) return
+				const value = swatch.dataset.color
+				try {
+					await navigator.clipboard.writeText(value)
+					toast.textContent = `已复制 ${value}`
+				} catch {
+					toast.textContent = value
+				}
+				toast.classList.add('show')
+				window.clearTimeout(toastTimer)
+				toastTimer = window.setTimeout(() => toast.classList.remove('show'), 1200)
+			})
+
+			const shell = document.getElementById('shellPreview')
+			const widthInput = document.getElementById('sidebarWidth')
+			const widthValue = document.getElementById('sidebarWidthValue')
+
+			document.querySelectorAll('[data-shell-mode]').forEach((button) => {
+				button.addEventListener('click', () => {
+					const mode = button.dataset.shellMode
+					shell.dataset.mode = mode
+					widthInput.disabled = mode !== 'resize'
+					document.querySelectorAll('[data-shell-mode]').forEach((item) => {
+						item.setAttribute('aria-pressed', String(item === button))
+					})
+				})
+			})
+
+			widthInput.addEventListener('input', () => {
+				const value = `${widthInput.value}px`
+				shell.style.setProperty('--sidebar-demo-width', value)
+				widthValue.textContent = value
+			})
+
+			document.querySelectorAll('[data-shell-font]').forEach((button) => {
+				button.addEventListener('click', () => {
+					shell.dataset.font = button.dataset.shellFont
+					document.querySelectorAll('[data-shell-font]').forEach((item) => {
+						item.setAttribute('aria-pressed', String(item === button))
+					})
+				})
+			})
+
+			document.querySelectorAll('button[data-detail-layout]').forEach((button) => {
+				button.addEventListener('click', () => {
+					shell.dataset.detailLayout = button.dataset.detailLayout
+					setDetail(true)
+					document.querySelectorAll('button[data-detail-layout]').forEach((item) => {
+						item.setAttribute('aria-pressed', String(item === button))
+					})
+				})
+			})
+
+			const detailToggle = document.getElementById('detailToggle')
+			function setDetail(open) {
+				shell.dataset.detail = open ? 'open' : 'closed'
+				detailToggle.setAttribute('aria-pressed', String(open))
+				detailToggle.textContent = open ? '关闭任务详情' : '打开任务详情'
+			}
+
+			detailToggle.addEventListener('click', () => setDetail(shell.dataset.detail !== 'open'))
+			document
+				.querySelector('[data-close-detail]')
+				.addEventListener('click', () => setDetail(false))
+
+			if (document.fonts?.load) {
+				document.fonts.load('14px "Inter Preview"').then((fonts) => {
+					const status = document.getElementById('interStatus')
+					status.textContent = fonts.length ? 'Inter Variable 已加载' : '未加载，使用系统回退'
+				})
+			}
+		</script>
+	</body>
+</html>

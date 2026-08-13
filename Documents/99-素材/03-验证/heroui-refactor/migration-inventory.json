@@ -1,0 +1,1404 @@
+{
+	"schemaVersion": 1,
+	"generatedAt": "2026-08-13",
+	"source": {
+		"tasks": "Documents/03-重构任务/2026-08-12-heroui-ui-interaction-system-refactor/TASKS.md",
+		"taskRange": "T1-T120",
+		"entryEvidence": [
+			"src/routeTree.gen.ts",
+			"src/app/providers/AppProviders.tsx",
+			"src/layout/overlays/ShellOverlays.tsx",
+			"src/launcher.tsx"
+		]
+	},
+	"semantics": {
+		"ownerTask": "The single task that owns the final hard cut, deletion, or terminal audit for this path.",
+		"preflightTask": "An earlier cleanup task that may touch the path without taking final hard-cut ownership.",
+		"path": "Repository-relative exact file or directory. Directory entries own every current production file below that directory unless a more specific entry exists.",
+		"hardCutRule": "D, E, I, J, K and L own product surfaces. F and G own shared hosts only. No compatibility wrapper may extend a hard cut.",
+		"deleteRule": "Delete only after repository-wide imports and runtime consumers reach zero; Adapter or token in a filename is never deletion evidence."
+	},
+	"scanExceptions": [
+		{
+			"path": "src/features/changelog/contract.ts",
+			"kind": "animation-regex-false-positive",
+			"ownerTask": "T16",
+			"disposition": "exclude-only-with-token-boundary-aware-scanner",
+			"reason": "The substring ease[ occurs at the end of ChangelogRelease[] and is not an easing utility or animation API."
+		}
+	],
+	"reachableSurfaces": [
+		{
+			"path": "src/main.tsx",
+			"kind": "application-entry",
+			"ownerTask": "T12",
+			"disposition": "retain-and-sync-main-theme-bootstrap"
+		},
+		{
+			"path": "src/launcher.tsx",
+			"kind": "launcher-entry",
+			"ownerTask": "T101",
+			"preflightTask": "T52",
+			"disposition": "retain-launcher-entry-migrate-theme-and-remove-legacy-tooltip-provider"
+		},
+		{
+			"path": "src/app/App.tsx",
+			"kind": "application-composition-root",
+			"ownerTask": "T52",
+			"disposition": "retain-query-and-router-composition-remove-legacy-ui-provider-chain"
+		},
+		{
+			"path": "src/app/providers/AppProviders.tsx",
+			"kind": "shared-provider-host",
+			"ownerTask": "T52",
+			"disposition": "retain-command-registry-remove-tooltip-provider-and-sonner-host-after-official-feedback-cut"
+		},
+		{
+			"path": "src/app/router.tsx",
+			"kind": "router-runtime",
+			"ownerTask": "T96",
+			"disposition": "retain-router-contract-and-audit-all-reachable-routes"
+		},
+		{
+			"path": "src/routeTree.gen.ts",
+			"kind": "generated-route-tree",
+			"ownerTask": "T96",
+			"disposition": "retain-generated-file-never-hand-edit"
+		},
+		{
+			"path": "src/routes/index.tsx",
+			"kind": "startup-route-surface",
+			"ownerTask": "T37",
+			"disposition": "retain-startup-redirect-and-migrate-shell-skeleton"
+		},
+		{
+			"path": "src/routes/debug.task-board.tsx",
+			"kind": "production-gated-benchmark-route",
+			"ownerTask": "T113",
+			"disposition": "retain-through-final-performance-comparison-then-delete-with-benchmark-only-surface"
+		},
+		{
+			"path": "src/routes/-task-board-benchmark-access.ts",
+			"kind": "benchmark-route-access-gate",
+			"ownerTask": "T113",
+			"disposition": "retain-through-final-performance-comparison-then-delete-with-benchmark-route"
+		},
+		{
+			"path": "src/routes/-task-board-benchmark.test.tsx",
+			"kind": "benchmark-route-contract-test",
+			"ownerTask": "T113",
+			"disposition": "retain-through-final-performance-comparison-then-delete-with-benchmark-route"
+		},
+		{
+			"path": "src/features/task/page.ts",
+			"kind": "benchmark-page-boundary-entry",
+			"ownerTask": "T113",
+			"disposition": "retain-through-final-performance-comparison-then-delete-if-no-production-page-consumer-remains"
+		},
+		{
+			"path": "src/features/task/testing/TaskBoardPerformancePage.tsx",
+			"kind": "production-gated-benchmark-surface",
+			"ownerTask": "T113",
+			"disposition": "retain-and-migrate-only-as-needed-for-final-like-for-like-measurement-then-delete"
+		},
+		{
+			"path": "src/features/task/testing/taskBoardPerformanceFixtures.ts",
+			"kind": "benchmark-fixture",
+			"ownerTask": "T113",
+			"disposition": "retain-through-final-performance-comparison-then-delete-with-benchmark-surface"
+		},
+		{
+			"path": "src/features/task/testing/taskBoardPerformanceFixtures.test.ts",
+			"kind": "benchmark-fixture-test",
+			"ownerTask": "T113",
+			"disposition": "retain-through-final-performance-comparison-then-delete-with-benchmark-fixture"
+		},
+		{
+			"path": "src/routes/__root.tsx",
+			"kind": "root-feedback-surface",
+			"ownerTask": "T47",
+			"disposition": "hard-cut-standard-feedback-controls-to-heroui"
+		},
+		{
+			"path": "src/routes/_shell/route.tsx",
+			"kind": "shell-feedback-surface",
+			"ownerTask": "T47",
+			"disposition": "hard-cut-shell-error-and-not-found-controls-to-heroui"
+		},
+		{
+			"path": "src/routes/-router-feedback.tsx",
+			"kind": "shared-route-feedback-host",
+			"ownerTask": "T47",
+			"disposition": "hard-cut-feedback-host-to-heroui"
+		},
+		{
+			"path": "src/routes/-activity-debug-route.tsx",
+			"kind": "activity-debug-route-surface",
+			"ownerTask": "T47",
+			"disposition": "hard-cut-debug-form-controls-to-heroui"
+		},
+		{
+			"path": "src/routes/debug.activity.tsx",
+			"kind": "activity-debug-route-contract",
+			"ownerTask": "T47",
+			"disposition": "retain-route-contract"
+		},
+		{
+			"path": "src/features/activity/components/ActivityDebugPage.tsx",
+			"kind": "activity-debug-page",
+			"ownerTask": "T47",
+			"disposition": "hard-cut-standard-page-controls-to-heroui"
+		},
+		{
+			"path": "src/routes/_shell/-scoped-shell-route-layout.tsx",
+			"kind": "shell-route-layout-host",
+			"ownerTask": "T35",
+			"disposition": "retain-route-context-and-compose-single-heroui-shell"
+		},
+		{
+			"path": "src/routes/_shell/$scopeKey/route.tsx",
+			"kind": "scope-route-contract",
+			"ownerTask": "T35",
+			"disposition": "retain-scope-decoding-and-shell-layout"
+		},
+		{
+			"path": "src/routes/_shell/-workspace-task-list.tsx",
+			"kind": "task-list-route-surface",
+			"ownerTask": "T68",
+			"disposition": "retain-route-adapter-hard-cut-visible-collection-in-stage-i"
+		},
+		{
+			"path": "src/routes/_shell/$scopeKey/tasks",
+			"kind": "task-route-group",
+			"ownerTask": "T68",
+			"disposition": "retain-route-contracts-task-detail-file-is-overridden-by-t87"
+		},
+		{
+			"path": "src/routes/_shell/$scopeKey/standalone.tsx",
+			"kind": "standalone-task-list-route",
+			"ownerTask": "T68",
+			"disposition": "retain-route-contract-use-stage-i-task-collection"
+		},
+		{
+			"path": "src/routes/_shell/-workspace-task-detail.tsx",
+			"kind": "task-detail-route-surface",
+			"ownerTask": "T87",
+			"disposition": "retain-loader-and-hard-cut-task-detail-page-to-heroui"
+		},
+		{
+			"path": "src/routes/_shell/-detail-route-helpers.tsx",
+			"kind": "detail-route-feedback-host",
+			"ownerTask": "T87",
+			"disposition": "retain-loader-fallback-and-use-migrated-task-detail-state"
+		},
+		{
+			"path": "src/routes/_shell/$scopeKey/tasks/$taskId.tsx",
+			"kind": "task-detail-route-contract",
+			"ownerTask": "T87",
+			"disposition": "retain-route-contract"
+		},
+		{
+			"path": "src/routes/_shell/-workspace-project-overview.tsx",
+			"kind": "project-overview-route-surface",
+			"ownerTask": "T83",
+			"disposition": "retain-route-adapter-hard-cut-project-overview"
+		},
+		{
+			"path": "src/routes/_shell/$scopeKey/projects/index.tsx",
+			"kind": "project-overview-route-contract",
+			"ownerTask": "T83",
+			"disposition": "retain-route-contract"
+		},
+		{
+			"path": "src/routes/_shell/-workspace-project-detail.tsx",
+			"kind": "project-detail-route-surface",
+			"ownerTask": "T83",
+			"disposition": "retain-loader-and-hard-cut-project-detail-page"
+		},
+		{
+			"path": "src/routes/_shell/$scopeKey/projects/$projectId.tsx",
+			"kind": "project-detail-route-contract",
+			"ownerTask": "T83",
+			"disposition": "retain-route-contract"
+		},
+		{
+			"path": "src/routes/_shell/-workspace-lifecycle.tsx",
+			"kind": "archive-trash-route-surface",
+			"ownerTask": "T85",
+			"disposition": "retain-route-adapter-hard-cut-lifecycle-collection"
+		},
+		{
+			"path": "src/routes/_shell/$scopeKey/archive.tsx",
+			"kind": "archive-route-contract",
+			"ownerTask": "T85",
+			"disposition": "retain-route-contract"
+		},
+		{
+			"path": "src/routes/_shell/$scopeKey/trash.tsx",
+			"kind": "trash-route-contract",
+			"ownerTask": "T85",
+			"disposition": "retain-route-contract"
+		},
+		{
+			"path": "src/routes/_shell/-workspace-views.tsx",
+			"kind": "views-route-surface",
+			"ownerTask": "T94",
+			"disposition": "retain-route-adapter-hard-cut-views-page"
+		},
+		{
+			"path": "src/routes/_shell/$scopeKey/views",
+			"kind": "views-route-group",
+			"ownerTask": "T94",
+			"disposition": "retain-route-contracts"
+		},
+		{
+			"path": "src/routes/_shell/-workspace-settings-section.tsx",
+			"kind": "settings-route-surface",
+			"ownerTask": "T97",
+			"disposition": "retain-section-guard-hard-cut-settings-content"
+		},
+		{
+			"path": "src/routes/_shell/$scopeKey/settings",
+			"kind": "settings-route-group",
+			"ownerTask": "T97",
+			"disposition": "retain-route-contracts"
+		},
+		{
+			"path": "src/layout/ShellRouteLayout.tsx",
+			"kind": "shell-route-composition",
+			"ownerTask": "T35",
+			"disposition": "retain-and-compose-single-shell-layout"
+		},
+		{
+			"path": "src/layout/ShellProviders.tsx",
+			"kind": "shell-provider-host",
+			"ownerTask": "T35",
+			"disposition": "retain-domain-providers-remove-legacy-layout-provider-overlap"
+		},
+		{
+			"path": "src/layout/AppLayout.tsx",
+			"kind": "legacy-shell-layout",
+			"ownerTask": "T35",
+			"disposition": "delete-after-single-shell-main-cut"
+		},
+		{
+			"path": "src/layout/ShellLayoutContent.tsx",
+			"kind": "shell-layout-surface",
+			"ownerTask": "T35",
+			"disposition": "hard-cut-to-heroui-sidebar-inset-and-single-main"
+		},
+		{
+			"path": "src/layout/ShellChrome.tsx",
+			"kind": "shell-chrome-surface",
+			"ownerTask": "T35",
+			"preflightTask": "T21",
+			"disposition": "hard-cut-layout-geometry-remove-first-party-animation"
+		},
+		{
+			"path": "src/layout/ShellMain.tsx",
+			"kind": "shell-main-and-detail-aside-host",
+			"ownerTask": "T35",
+			"preflightTask": "T21",
+			"followupTasks": ["T40", "T43"],
+			"disposition": "hard-cut-single-main-then-host-non-modal-detail-aside"
+		},
+		{
+			"path": "src/layout/ShellSidebar.tsx",
+			"kind": "sidebar-navigation-surface",
+			"ownerTask": "T33",
+			"disposition": "hard-cut-to-single-heroui-sidebar-navigation"
+		},
+		{
+			"path": "src/layout/sidebar",
+			"kind": "sidebar-navigation-components",
+			"ownerTask": "T33",
+			"disposition": "hard-cut-navigation-menu-context-menu-and-badges-to-heroui"
+		},
+		{
+			"path": "src/features/settings/components/SettingsSidebar.tsx",
+			"kind": "settings-sidebar-surface",
+			"ownerTask": "T34",
+			"disposition": "hard-cut-container-to-shared-sidebar-and-compact-sheet-contract"
+		},
+		{
+			"path": "src/layout/ShellHeader.tsx",
+			"kind": "shell-header-surface",
+			"ownerTask": "T36",
+			"preflightTask": "T21",
+			"disposition": "hard-cut-standard-controls-retain-tauri-drag-region"
+		},
+		{
+			"path": "src/layout/ShellFooter.tsx",
+			"kind": "shell-footer-surface",
+			"ownerTask": "T36",
+			"disposition": "hard-cut-standard-controls-retain-status-slots"
+		},
+		{
+			"path": "src/layout/header",
+			"kind": "shell-header-controls",
+			"ownerTask": "T36",
+			"disposition": "hard-cut-history-navigation-and-user-menu-to-heroui"
+		},
+		{
+			"path": "src/layout/ShellLayoutSkeleton.tsx",
+			"kind": "startup-shell-skeleton",
+			"ownerTask": "T37",
+			"disposition": "retain-static-shared-startup-geometry"
+		},
+		{
+			"path": "src/layout/ShellDrawer.tsx",
+			"kind": "detail-container-host",
+			"ownerTask": "T42",
+			"disposition": "replace-legacy-drawer-with-effective-sheet-or-aside-host"
+		},
+		{
+			"path": "src/features/entity-detail/components/EntityDetailDrawerHost.tsx",
+			"kind": "entity-detail-container-host",
+			"ownerTask": "T42",
+			"disposition": "hard-cut-to-shared-sheet-or-aside-presentation"
+		},
+		{
+			"path": "src/layout/CreateDialogShell.tsx",
+			"kind": "shared-create-modal-host",
+			"ownerTask": "T55",
+			"disposition": "hard-cut-shared-host-to-controlled-heroui-modal"
+		},
+		{
+			"path": "src/layout/overlays/ShellOverlays.tsx",
+			"kind": "shared-overlay-composition-host",
+			"ownerTask": "T55",
+			"disposition": "retain-composition-only-product-dialogs-remain-owned-by-their-features"
+		},
+		{
+			"path": "src/features/danger-confirm/components/DangerConfirmDialog.tsx",
+			"kind": "shared-danger-confirm-host",
+			"ownerTask": "T54",
+			"disposition": "hard-cut-to-heroui-alert-dialog-or-modal"
+		},
+		{
+			"path": "src/shared/components/tooltip",
+			"kind": "shared-tooltip-hosts",
+			"ownerTask": "T51",
+			"disposition": "hard-cut-to-direct-heroui-tooltip-composition-delete-asChild-api"
+		},
+		{
+			"path": "src/shared/components/ShortcutTokens.tsx",
+			"kind": "shared-product-semantic",
+			"ownerTask": "T48",
+			"disposition": "retain-product-semantics-compose-heroui-kbd-directly"
+		},
+		{
+			"path": "src/shared/components/shortcut-menu",
+			"kind": "shared-shortcut-product-semantic",
+			"ownerTask": "T48",
+			"disposition": "retain-digit-selection-semantics-remove-legacy-skin"
+		},
+		{
+			"path": "src/shared/components/main-card",
+			"kind": "shared-page-shell-semantic",
+			"ownerTask": "T48",
+			"disposition": "retain-page-composition-delete-pattern-skin-and-compose-heroui"
+		},
+		{
+			"path": "src/shared/components/AppScrollArea.tsx",
+			"kind": "shared-scroll-host",
+			"ownerTask": "T49",
+			"disposition": "retain-only-while-real-consumers-require-it-prefer-native-overflow-or-scroll-shadow"
+		},
+		{
+			"path": "src/shared/components/OverlayScrollbar.tsx",
+			"kind": "shared-scroll-host",
+			"ownerTask": "T49",
+			"preflightTask": "T28",
+			"disposition": "delete-if-no-real-viewport-consumer-remains-otherwise-document-geometry-raf"
+		},
+		{
+			"path": "src/features/selection/model",
+			"kind": "collection-interaction-owner",
+			"ownerTask": "T60",
+			"followupTasks": ["T61", "T63"],
+			"disposition": "replace-legacy-selection-with-single-react-aria-collection-state"
+		},
+		{
+			"path": "src/features/selection/shortcuts",
+			"kind": "collection-keyboard-adapter",
+			"ownerTask": "T62",
+			"followupTasks": ["T78"],
+			"disposition": "retain-linear-key-adapter-without-second-selection-owner"
+		},
+		{
+			"path": "src/features/task/hooks/useTaskCollectionScene.ts",
+			"kind": "task-board-scene-state",
+			"ownerTask": "T67",
+			"disposition": "hard-cut-selection-focus-and-anchor-to-single-collection-owner"
+		},
+		{
+			"path": "src/features/task/hooks/useTaskSelection.ts",
+			"kind": "legacy-task-selection-state",
+			"ownerTask": "T67",
+			"disposition": "replace-writable-state-with-read-only-domain-snapshot"
+		},
+		{
+			"path": "src/features/task/components/TaskBoard.tsx",
+			"kind": "task-board-collection-surface",
+			"ownerTask": "T68",
+			"preflightTask": "T22",
+			"followupTasks": ["T69", "T71"],
+			"disposition": "hard-cut-to-react-aria-semantics-retain-tanstack-virtual-geometry"
+		},
+		{
+			"path": "src/features/task/components/TaskRowAdapter.tsx",
+			"kind": "task-row-product-adapter",
+			"ownerTask": "T68",
+			"followupTasks": ["T70", "T78"],
+			"disposition": "retain-product-adapter-hard-cut-row-semantics-focus-and-command-projection"
+		},
+		{
+			"path": "src/features/task/components/TaskContextMenu.tsx",
+			"kind": "task-context-menu-surface",
+			"ownerTask": "T70",
+			"disposition": "hard-cut-to-heroui-pro-context-menu"
+		},
+		{
+			"path": "src/features/task/components/task-context-menu-items.tsx",
+			"kind": "task-context-menu-projection",
+			"ownerTask": "T70",
+			"followupTasks": ["T78"],
+			"disposition": "retain-product-actions-consume-single-command-projection"
+		},
+		{
+			"path": "src/features/task/shortcuts",
+			"kind": "legacy-task-row-state-machine",
+			"ownerTask": "T71",
+			"disposition": "delete-replaced-hover-shift-dom-query-and-duplicate-shortcut-state-after-zero-consumers"
+		},
+		{
+			"path": "src/features/command/components/CommandMenu.tsx",
+			"kind": "command-surface",
+			"ownerTask": "T76",
+			"disposition": "hard-cut-to-heroui-pro-command-and-modal"
+		},
+		{
+			"path": "src/features/command/components/CommandMenuListPrimitives.tsx",
+			"kind": "legacy-command-view-primitives",
+			"ownerTask": "T76",
+			"disposition": "replace-with-heroui-pro-command-composition"
+		},
+		{
+			"path": "src/features/command/components/ScopedPickerCommandGroup.tsx",
+			"kind": "scoped-command-picker",
+			"ownerTask": "T76",
+			"disposition": "retain-product-scoping-compose-official-command"
+		},
+		{
+			"path": "src/features/command/components/CommandMenuSelectionChips.tsx",
+			"kind": "command-selection-summary",
+			"ownerTask": "T76",
+			"disposition": "retain-product-summary-compose-official-command"
+		},
+		{
+			"path": "src/features/command/components/ShortcutHelp.tsx",
+			"kind": "shortcut-help-surface",
+			"ownerTask": "T77",
+			"disposition": "hard-cut-to-heroui-pro-command-and-kbd"
+		},
+		{
+			"path": "src/features/command/components/ChordHint.tsx",
+			"kind": "command-chord-surface",
+			"ownerTask": "T77",
+			"disposition": "hard-cut-visuals-to-heroui-kbd-remove-sf-token-use"
+		},
+		{
+			"path": "src/shared/components/board/BoardSectionContextMenu.tsx",
+			"kind": "shared-board-context-menu-host",
+			"ownerTask": "T79",
+			"disposition": "hard-cut-shared-host-to-heroui-pro-context-menu"
+		},
+		{
+			"path": "src/features/bulk-action/components",
+			"kind": "bulk-action-surface",
+			"ownerTask": "T80",
+			"disposition": "hard-cut-action-bar-and-command-delete-duplicate-confirm-dialog"
+		},
+		{
+			"path": "src/layout/ShellBulkActionBoundary.tsx",
+			"kind": "bulk-action-shared-host",
+			"ownerTask": "T80",
+			"disposition": "compose-single-heroui-pro-action-bar"
+		},
+		{
+			"path": "src/features/task/detail/components/TaskActivityTimeline.tsx",
+			"kind": "task-activity-timeline-surface",
+			"ownerTask": "T81",
+			"disposition": "hard-cut-chronology-view-to-heroui-pro-timeline"
+		},
+		{
+			"path": "src/features/project-overview/components/ProjectOverviewPage.tsx",
+			"kind": "project-overview-page",
+			"ownerTask": "T83",
+			"disposition": "hard-cut-page-to-heroui"
+		},
+		{
+			"path": "src/features/project/components/ProjectBoard.tsx",
+			"kind": "project-board-surface",
+			"ownerTask": "T83",
+			"disposition": "hard-cut-board-to-heroui"
+		},
+		{
+			"path": "src/features/project/components/ProjectPage.tsx",
+			"kind": "project-detail-page",
+			"ownerTask": "T83",
+			"disposition": "hard-cut-detail-page-to-heroui"
+		},
+		{
+			"path": "src/features/project/components/ProjectRowAdapter.tsx",
+			"kind": "project-row-product-adapter",
+			"ownerTask": "T84",
+			"disposition": "retain-product-adapter-cut-to-shared-collection-and-command"
+		},
+		{
+			"path": "src/features/project/components/ProjectContextMenu.tsx",
+			"kind": "project-context-menu-surface",
+			"ownerTask": "T84",
+			"disposition": "hard-cut-to-heroui-pro-context-menu-and-command-projection"
+		},
+		{
+			"path": "src/features/project/components/ProjectCreateContent.tsx",
+			"kind": "project-create-form-surface",
+			"ownerTask": "T84",
+			"preflightTask": "T28",
+			"disposition": "hard-cut-form-to-heroui-retain-focus-scheduling-only-if-non-animation"
+		},
+		{
+			"path": "src/features/lifecycle/components",
+			"kind": "archive-trash-collection-surface",
+			"ownerTask": "T85",
+			"disposition": "hard-cut-list-board-row-and-context-menu-to-heroui"
+		},
+		{
+			"path": "src/features/lifecycle/hooks/useLifecycleScene.ts",
+			"kind": "lifecycle-scene-and-feedback",
+			"ownerTask": "T85",
+			"disposition": "retain-domain-scene-replace-sonner-with-official-toast"
+		},
+		{
+			"path": "src/features/task/components/TaskCreateContent.tsx",
+			"kind": "task-create-form-surface",
+			"ownerTask": "T86",
+			"preflightTask": "T22",
+			"disposition": "hard-cut-form-to-heroui-retain-focus-scheduling-only-if-non-animation"
+		},
+		{
+			"path": "src/features/task/components/TaskCreateMetaActions.tsx",
+			"kind": "task-create-metadata-surface",
+			"ownerTask": "T86",
+			"disposition": "hard-cut-controls-to-heroui"
+		},
+		{
+			"path": "src/features/task/detail/components/TaskDrawer.tsx",
+			"kind": "legacy-task-detail-container",
+			"ownerTask": "T41",
+			"disposition": "replace-with-container-neutral-task-detail-content"
+		},
+		{
+			"path": "src/features/task/detail/components/TaskDrawerHeader.tsx",
+			"kind": "legacy-task-detail-header",
+			"ownerTask": "T44",
+			"disposition": "replace-with-container-neutral-header-and-presentation-menu"
+		},
+		{
+			"path": "src/features/task/detail/components/TaskPage.tsx",
+			"kind": "task-detail-page-surface",
+			"ownerTask": "T87",
+			"disposition": "hard-cut-page-to-shared-detail-content-and-heroui"
+		},
+		{
+			"path": "src/features/task/detail/components/TaskPageMain.tsx",
+			"kind": "task-detail-main-surface",
+			"ownerTask": "T87",
+			"disposition": "hard-cut-main-content-to-heroui"
+		},
+		{
+			"path": "src/features/task/detail/components/TaskPageSidebar.tsx",
+			"kind": "task-detail-properties-surface",
+			"ownerTask": "T87",
+			"disposition": "hard-cut-page-sidebar-to-heroui"
+		},
+		{
+			"path": "src/features/task/detail/components/TaskPageState.tsx",
+			"kind": "task-detail-feedback-surface",
+			"ownerTask": "T87",
+			"disposition": "hard-cut-loading-error-and-empty-state-to-heroui"
+		},
+		{
+			"path": "src/features/task/detail/components/TaskTitleField.tsx",
+			"kind": "task-title-editor",
+			"ownerTask": "T87",
+			"disposition": "hard-cut-field-to-heroui-retain-autosave"
+		},
+		{
+			"path": "src/features/task/detail/components/TaskNoteField.tsx",
+			"kind": "task-note-editor",
+			"ownerTask": "T87",
+			"disposition": "hard-cut-field-to-heroui-retain-autosave"
+		},
+		{
+			"path": "src/features/task/detail/components/TaskPreview.tsx",
+			"kind": "task-peek-surface",
+			"ownerTask": "T87",
+			"disposition": "hard-cut-independent-peek-to-heroui-without-merging-detail-state"
+		},
+		{
+			"path": "src/features/task/detail/components/TaskPropertiesSection.tsx",
+			"kind": "task-properties-form-surface",
+			"ownerTask": "T88",
+			"disposition": "hard-cut-fields-to-heroui-retain-single-draft-controller"
+		},
+		{
+			"path": "src/features/task/detail/components/TaskPlacementSection.tsx",
+			"kind": "task-placement-form-surface",
+			"ownerTask": "T88",
+			"disposition": "hard-cut-fields-to-heroui-retain-domain-validation"
+		},
+		{
+			"path": "src/features/task/detail/components/TaskLinksSection.tsx",
+			"kind": "task-links-surface",
+			"ownerTask": "T89",
+			"disposition": "hard-cut-section-to-heroui"
+		},
+		{
+			"path": "src/features/task/detail/components/TaskLinkEditorPopover.tsx",
+			"kind": "task-link-editor-overlay",
+			"ownerTask": "T89",
+			"disposition": "hard-cut-to-heroui-popover-and-remove-sf-token-use"
+		},
+		{
+			"path": "src/features/task/detail/components/TaskLinkRow.tsx",
+			"kind": "task-link-row",
+			"ownerTask": "T89",
+			"preflightTask": "T22",
+			"disposition": "hard-cut-row-controls-to-heroui-remove-first-party-transition"
+		},
+		{
+			"path": "src/features/task/detail/model/useTaskLinksController.ts",
+			"kind": "task-link-feedback-adapter",
+			"ownerTask": "T89",
+			"disposition": "retain-domain-controller-replace-sonner-with-official-toast"
+		},
+		{
+			"path": "src/features/global-search/components",
+			"kind": "global-search-surface",
+			"ownerTask": "T90",
+			"disposition": "hard-cut-input-and-results-to-heroui-collection"
+		},
+		{
+			"path": "src/features/filter/components",
+			"kind": "filter-surface",
+			"ownerTask": "T91",
+			"disposition": "hard-cut-menu-submenu-bar-and-trigger-to-heroui"
+		},
+		{
+			"path": "src/features/display-options/components",
+			"kind": "display-options-surface",
+			"ownerTask": "T92",
+			"preflightTask": "T23",
+			"disposition": "hard-cut-popover-controls-to-heroui-remove-first-party-animation"
+		},
+		{
+			"path": "src/features/metadata-fields/components",
+			"kind": "metadata-field-surface",
+			"ownerTask": "T93",
+			"preflightTask": "T23",
+			"disposition": "hard-cut-field-menu-date-and-placement-controls-to-heroui"
+		},
+		{
+			"path": "src/features/metadata-fields/core/metadata-icon-tokens.tsx",
+			"kind": "metadata-product-icon-assembly",
+			"ownerTask": "T93",
+			"disposition": "retain-product-icon-assembly-do-not-delete-by-token-name"
+		},
+		{
+			"path": "src/features/metadata-fields/presentation.ts",
+			"kind": "metadata-product-presentation",
+			"ownerTask": "T93",
+			"disposition": "retain-product-projection-remove-generic-skin-values"
+		},
+		{
+			"path": "src/features/space/components/SpaceEditorDialog.tsx",
+			"kind": "space-editor-surface",
+			"ownerTask": "T94",
+			"disposition": "hard-cut-dialog-and-form-to-heroui"
+		},
+		{
+			"path": "src/features/view/components",
+			"kind": "view-page-editor-and-menu-surface",
+			"ownerTask": "T94",
+			"disposition": "hard-cut-page-dialog-and-actions-menu-to-heroui"
+		},
+		{
+			"path": "src/features/settings/components/SettingsPage.tsx",
+			"kind": "settings-page-surface",
+			"ownerTask": "T97",
+			"disposition": "hard-cut-settings-content-to-heroui"
+		},
+		{
+			"path": "src/features/settings/components/settingsShared.tsx",
+			"kind": "settings-shared-product-composition",
+			"ownerTask": "T97",
+			"disposition": "retain-semantic-composition-delete-legacy-skin"
+		},
+		{
+			"path": "src/features/settings/components/panels",
+			"kind": "settings-panel-surfaces",
+			"ownerTask": "T97",
+			"preflightTask": "T25",
+			"disposition": "hard-cut-forms-and-feedback-to-heroui-remove-first-party-animation"
+		},
+		{
+			"path": "src/features/sync/components",
+			"kind": "sync-config-and-status-surfaces",
+			"ownerTask": "T98",
+			"preflightTask": "T25",
+			"disposition": "hard-cut-modal-and-status-to-heroui-with-static-aria"
+		},
+		{
+			"path": "src/features/sync/model/syncStatusPresentation.ts",
+			"kind": "sync-product-presentation",
+			"ownerTask": "T98",
+			"preflightTask": "T25",
+			"disposition": "retain-domain-presentation-remove-sf-token-and-animation-values"
+		},
+		{
+			"path": "src/features/update/components",
+			"kind": "update-feedback-surfaces",
+			"ownerTask": "T99",
+			"preflightTask": "T26",
+			"disposition": "hard-cut-modal-progress-and-status-to-heroui-official-feedback"
+		},
+		{
+			"path": "src/features/update/hooks",
+			"kind": "update-feedback-adapters",
+			"ownerTask": "T99",
+			"disposition": "retain-update-state-machine-replace-sonner-with-official-toast"
+		},
+		{
+			"path": "src/features/app-info/components",
+			"kind": "about-and-version-surfaces",
+			"ownerTask": "T100",
+			"preflightTask": "T27",
+			"disposition": "hard-cut-dialog-and-footer-item-to-heroui"
+		},
+		{
+			"path": "src/features/changelog",
+			"kind": "changelog-surfaces",
+			"ownerTask": "T100",
+			"preflightTask": "T27",
+			"disposition": "hard-cut-dialog-release-and-feedback-to-heroui-retain-markdown-domain"
+		},
+		{
+			"path": "src/features/launcher/LauncherPage.tsx",
+			"kind": "launcher-page-surface",
+			"ownerTask": "T101",
+			"disposition": "hard-cut-launcher-composition-to-shared-heroui-theme"
+		},
+		{
+			"path": "src/features/launcher/chrome",
+			"kind": "launcher-shell-surface",
+			"ownerTask": "T101",
+			"preflightTask": "T24",
+			"disposition": "hard-cut-shell-and-feedback-to-heroui-retain-transparent-window-geometry"
+		},
+		{
+			"path": "src/features/launcher/create",
+			"kind": "launcher-create-result-surface",
+			"ownerTask": "T101",
+			"preflightTask": "T24",
+			"disposition": "hard-cut-create-row-to-heroui"
+		},
+		{
+			"path": "src/features/launcher/composer",
+			"kind": "launcher-composer-surface",
+			"ownerTask": "T102",
+			"preflightTask": "T24",
+			"disposition": "hard-cut-input-metadata-and-actions-to-heroui"
+		},
+		{
+			"path": "src/features/launcher/results",
+			"kind": "launcher-results-collection-surface",
+			"ownerTask": "T103",
+			"preflightTask": "T24",
+			"disposition": "hard-cut-results-to-heroui-collection-retain-product-adapters"
+		},
+		{
+			"path": "src-tauri/crates/runtime/src/window/launcher",
+			"kind": "launcher-native-runtime-boundary",
+			"ownerTask": "T104",
+			"disposition": "retain-native-protocol-verify-ui-migration-only"
+		},
+		{
+			"path": "src-tauri/crates/platform/src/launcher_window",
+			"kind": "launcher-platform-boundary",
+			"ownerTask": "T104",
+			"disposition": "retain-platform-protocol-verify-focus-and-geometry"
+		},
+		{
+			"path": "src-tauri/capabilities/launcher.json",
+			"kind": "launcher-capability-boundary",
+			"ownerTask": "T104",
+			"disposition": "retain-capabilities-verify-no-ui-migration-drift"
+		}
+	],
+	"legacyLayers": [
+		{
+			"path": "src/shared/components/base",
+			"kind": "legacy-primitive-layer",
+			"ownerTask": "T108",
+			"preflightTasks": ["T17", "T18", "T19", "T29"],
+			"disposition": "delete-entire-layer-after-all-direct-heroui-hard-cuts-and-zero-consumers"
+		},
+		{
+			"path": "src/shared/components/patterns",
+			"kind": "legacy-style-pattern-layer",
+			"ownerTask": "T108",
+			"preflightTask": "T20",
+			"disposition": "delete-style-only-patterns-after-product-semantics-move-to-owning-surfaces"
+		},
+		{
+			"path": "src/shared/components/row",
+			"kind": "legacy-row-style-layer",
+			"ownerTask": "T108",
+			"preflightTask": "T20",
+			"disposition": "delete-zero-consumer-skin-and-retain-only-proven-product-row-semantics"
+		},
+		{
+			"path": "src/shared/components/detail",
+			"kind": "legacy-detail-style-layer",
+			"ownerTask": "T108",
+			"disposition": "delete-zero-consumer-drawer-skin-and-retain-only-container-neutral-product-semantics"
+		},
+		{
+			"path": "src/styles/index.css",
+			"kind": "global-style-entry",
+			"ownerTask": "T9",
+			"preflightTask": "T29",
+			"disposition": "rewrite-to-five-file-heroui-order-remove-tw-animate-import"
+		},
+		{
+			"path": "src/styles/base.css",
+			"kind": "global-base-style",
+			"ownerTask": "T9",
+			"disposition": "retain-and-shrink-to-global-base-only"
+		},
+		{
+			"path": "src/styles/fonts.css",
+			"kind": "global-font-style",
+			"ownerTask": "T11",
+			"disposition": "retain-and-rewrite-for-inter-variable-and-system-cjk-fallback"
+		},
+		{
+			"path": "src/styles/adapters/shadcn.css",
+			"kind": "legacy-shadcn-token-adapter",
+			"ownerTask": "T108",
+			"disposition": "delete-after-last-legacy-class-and-token-consumer-reaches-zero"
+		},
+		{
+			"path": "src/styles/tokens/primitive.css",
+			"kind": "legacy-sf-token-source",
+			"ownerTask": "T108",
+			"disposition": "delete-after-confirmed-values-move-once-to-heroui-theme"
+		},
+		{
+			"path": "src/styles/tokens/semantic.css",
+			"kind": "legacy-sf-token-source",
+			"ownerTask": "T108",
+			"disposition": "delete-no-bidirectional-token-alias"
+		},
+		{
+			"path": "src/styles/tokens/layout.css",
+			"kind": "legacy-sf-layout-token-source",
+			"ownerTask": "T108",
+			"disposition": "delete-after-sidebar-detail-and-shell-hard-cuts"
+		},
+		{
+			"path": "src/styles/tokens/dark.css",
+			"kind": "unused-dark-scaffold",
+			"ownerTask": "T108",
+			"disposition": "delete-dark-scaffold"
+		},
+		{
+			"path": "src/styles/utilities.css",
+			"kind": "legacy-global-utility-layer",
+			"ownerTask": "T108",
+			"disposition": "delete-or-fold-only-approved-global-rules-into-five-file-architecture"
+		},
+		{
+			"path": "package.json",
+			"kind": "legacy-ui-dependency-manifest",
+			"ownerTask": "T109",
+			"preflightTasks": ["T8", "T29"],
+			"disposition": "remove-zero-consumer-radix-shadcn-cmdk-sonner-react-day-picker-cva-and-tw-animate-dependencies"
+		},
+		{
+			"path": "bun.lock",
+			"kind": "legacy-ui-dependency-lock",
+			"ownerTask": "T109",
+			"preflightTasks": ["T8", "T29"],
+			"disposition": "regenerate-without-zero-consumer-legacy-ui-and-direct-animation-dependencies"
+		}
+	],
+	"legacySfTokenInventory": [
+		{
+			"path": "src/styles/tokens",
+			"kind": "legacy-sf-token-definition-set",
+			"ownerTask": "T108",
+			"disposition": "remove-every---sf-*-definition-after-theme-hard-cut",
+			"match": "--sf-*"
+		},
+		{
+			"path": "src/styles/adapters/shadcn.css",
+			"kind": "legacy-sf-token-adapter-consumer",
+			"ownerTask": "T108",
+			"disposition": "delete-adapter-and-all---color-sf-*-aliases",
+			"match": "--sf-*"
+		},
+		{
+			"path": "src/styles/base.css",
+			"kind": "legacy-sf-token-consumer",
+			"ownerTask": "T9",
+			"disposition": "replace-shell-and-main-vars-with-heroui-theme-semantics",
+			"match": "--sf-*"
+		},
+		{
+			"path": "src/layout",
+			"kind": "legacy-sf-token-consumer-set",
+			"ownerTask": "T35",
+			"followupTasks": ["T36", "T42"],
+			"disposition": "remove-all---sf-*-uses-during-owned-shell-and-detail-hard-cuts",
+			"match": "--sf-*"
+		},
+		{
+			"path": "src/features/task",
+			"kind": "legacy-sf-token-consumer-set",
+			"ownerTask": "T71",
+			"followupTasks": ["T87", "T89"],
+			"disposition": "remove-all-visual---sf-*-uses-retain-domain-data-colors-only",
+			"match": "--sf-*"
+		},
+		{
+			"path": "src/features/settings",
+			"kind": "legacy-sf-token-consumer-set",
+			"ownerTask": "T97",
+			"disposition": "remove-all---sf-*-uses-during-settings-hard-cut",
+			"match": "--sf-*"
+		},
+		{
+			"path": "src/features/sync",
+			"kind": "legacy-sf-token-consumer-set",
+			"ownerTask": "T98",
+			"disposition": "remove-all---sf-*-uses-during-sync-hard-cut",
+			"match": "--sf-*"
+		},
+		{
+			"path": "src/features/update",
+			"kind": "legacy-sf-token-consumer-set",
+			"ownerTask": "T99",
+			"disposition": "remove-all---sf-*-uses-during-update-hard-cut",
+			"match": "--sf-*"
+		},
+		{
+			"path": "src/features/changelog",
+			"kind": "legacy-sf-token-consumer-set",
+			"ownerTask": "T100",
+			"disposition": "remove-all---sf-*-uses-during-changelog-hard-cut",
+			"match": "--sf-*"
+		},
+		{
+			"path": "src/features/metadata-fields",
+			"kind": "legacy-sf-token-consumer-set",
+			"ownerTask": "T93",
+			"disposition": "remove-all-generic---sf-*-skin-uses-retain-product-icon-assembly",
+			"match": "--sf-*"
+		},
+		{
+			"path": "src/features/space/components/SpaceEditorDialog.tsx",
+			"kind": "legacy-sf-token-consumer",
+			"ownerTask": "T94",
+			"disposition": "remove---sf-*-uses-during-space-editor-hard-cut",
+			"match": "--sf-*"
+		},
+		{
+			"path": "src/features/command/components/ChordHint.tsx",
+			"kind": "legacy-sf-token-consumer",
+			"ownerTask": "T77",
+			"disposition": "replace---sf-*-visuals-with-heroui-kbd",
+			"match": "--sf-*"
+		},
+		{
+			"path": "src/shared/components/base",
+			"kind": "legacy-sf-token-consumer-set",
+			"ownerTask": "T108",
+			"disposition": "delete-with-legacy-primitive-layer",
+			"match": "--sf-*"
+		},
+		{
+			"path": "src/shared/components/patterns",
+			"kind": "legacy-sf-token-consumer-set",
+			"ownerTask": "T108",
+			"disposition": "delete-with-legacy-pattern-layer",
+			"match": "--sf-*"
+		},
+		{
+			"path": "src/shared/lib/shellSidebarGeometry.ts",
+			"kind": "legacy-sf-layout-token-consumer",
+			"ownerTask": "T37",
+			"disposition": "retain-geometry-values-only-remove-css-token-coupling",
+			"match": "--sf-*"
+		}
+	],
+	"firstPartyAnimationConsumers": [
+		{
+			"path": "src/shared/components/base/button.tsx",
+			"kind": "first-party-transition-consumer",
+			"ownerTask": "T17",
+			"disposition": "remove-transition-and-active-scale-classes"
+		},
+		{
+			"path": "src/shared/components/base/badge.tsx",
+			"kind": "first-party-transition-consumer",
+			"ownerTask": "T17",
+			"disposition": "remove-transition-classes"
+		},
+		{
+			"path": "src/shared/components/base/breadcrumb.tsx",
+			"kind": "first-party-transition-consumer",
+			"ownerTask": "T17",
+			"disposition": "remove-transition-classes"
+		},
+		{
+			"path": "src/shared/components/base/input.tsx",
+			"kind": "first-party-transition-consumer",
+			"ownerTask": "T17",
+			"disposition": "remove-transition-classes"
+		},
+		{
+			"path": "src/shared/components/base/input-group.tsx",
+			"kind": "first-party-transition-consumer",
+			"ownerTask": "T17",
+			"disposition": "remove-transition-classes"
+		},
+		{
+			"path": "src/shared/components/base/textarea.tsx",
+			"kind": "first-party-transition-consumer",
+			"ownerTask": "T17",
+			"disposition": "remove-transition-classes"
+		},
+		{
+			"path": "src/shared/components/base/checkbox.tsx",
+			"kind": "first-party-transition-consumer",
+			"ownerTask": "T17",
+			"disposition": "remove-transition-classes"
+		},
+		{
+			"path": "src/shared/components/base/switch.tsx",
+			"kind": "first-party-transition-consumer",
+			"ownerTask": "T17",
+			"disposition": "remove-track-and-thumb-transition-classes"
+		},
+		{
+			"path": "src/shared/components/base/selection-indicator.tsx",
+			"kind": "first-party-transition-consumer",
+			"ownerTask": "T17",
+			"disposition": "remove-transition-classes"
+		},
+		{
+			"path": "src/shared/components/base/tabs.tsx",
+			"kind": "first-party-transition-consumer",
+			"ownerTask": "T17",
+			"disposition": "remove-transition-and-indicator-opacity-animation"
+		},
+		{
+			"path": "src/shared/components/base/alert-dialog.tsx",
+			"kind": "legacy-radix-animation-consumer",
+			"ownerTask": "T18",
+			"disposition": "remove-fade-zoom-duration-classes-retain-overlay-contract"
+		},
+		{
+			"path": "src/shared/components/base/dialog.tsx",
+			"kind": "legacy-radix-animation-consumer",
+			"ownerTask": "T18",
+			"disposition": "remove-fade-zoom-duration-classes-retain-overlay-contract"
+		},
+		{
+			"path": "src/shared/components/base/sheet.tsx",
+			"kind": "legacy-radix-animation-consumer",
+			"ownerTask": "T18",
+			"disposition": "remove-fade-slide-duration-easing-classes-retain-overlay-contract"
+		},
+		{
+			"path": "src/shared/components/base/popover.tsx",
+			"kind": "legacy-radix-animation-consumer",
+			"ownerTask": "T18",
+			"disposition": "remove-fade-zoom-slide-classes-retain-overlay-contract"
+		},
+		{
+			"path": "src/shared/components/base/select.tsx",
+			"kind": "legacy-radix-animation-consumer",
+			"ownerTask": "T18",
+			"disposition": "remove-fade-zoom-slide-classes-retain-selection-contract"
+		},
+		{
+			"path": "src/shared/components/base/dropdown-menu.tsx",
+			"kind": "legacy-radix-animation-consumer",
+			"ownerTask": "T18",
+			"disposition": "remove-fade-zoom-slide-classes-retain-menu-contract"
+		},
+		{
+			"path": "src/shared/components/base/context-menu.tsx",
+			"kind": "legacy-radix-animation-consumer",
+			"ownerTask": "T18",
+			"disposition": "remove-fade-zoom-slide-classes-retain-context-menu-contract"
+		},
+		{
+			"path": "src/shared/components/base/tooltip.tsx",
+			"kind": "legacy-radix-animation-consumer",
+			"ownerTask": "T18",
+			"disposition": "remove-fade-zoom-slide-classes-retain-tooltip-contract"
+		},
+		{
+			"path": "src/shared/components/base/accordion.tsx",
+			"kind": "legacy-radix-animation-consumer",
+			"ownerTask": "T19",
+			"disposition": "remove-open-close-animation-classes"
+		},
+		{
+			"path": "src/shared/components/base/sidebar.tsx",
+			"kind": "first-party-layout-animation-and-raf-consumer",
+			"ownerTask": "T19",
+			"disposition": "remove-layout-transitions-and-double-raf-workaround-retain-drag-raf-only-with-geometry-reason"
+		},
+		{
+			"path": "src/shared/components/patterns",
+			"kind": "first-party-pattern-animation-consumer-set",
+			"ownerTask": "T20",
+			"disposition": "remove-transition-spin-pulse-and-active-scale-from-every-pattern"
+		},
+		{
+			"path": "src/shared/components/row/RowFieldCells.tsx",
+			"kind": "first-party-transition-consumer",
+			"ownerTask": "T20",
+			"disposition": "remove-opacity-and-color-transition-classes"
+		},
+		{
+			"path": "src/layout/ShellChrome.tsx",
+			"kind": "first-party-layout-animation-consumer",
+			"ownerTask": "T21",
+			"disposition": "remove-layout-transition-retain-static-geometry"
+		},
+		{
+			"path": "src/layout/ShellHeader.tsx",
+			"kind": "first-party-scroll-animation-consumer",
+			"ownerTask": "T21",
+			"disposition": "remove-smooth-scroll-retain-direct-navigation"
+		},
+		{
+			"path": "src/features/task/components/TaskBoard.tsx",
+			"kind": "first-party-transition-consumer",
+			"ownerTask": "T22",
+			"disposition": "remove-transition-classes-retain-tanstack-virtual-static-transform"
+		},
+		{
+			"path": "src/features/task/detail/components/TaskLinkRow.tsx",
+			"kind": "first-party-transition-consumer",
+			"ownerTask": "T22",
+			"disposition": "remove-color-transition"
+		},
+		{
+			"path": "src/features/task/hooks/useTaskBoardSticky.ts",
+			"kind": "animation-scan-raf-hit",
+			"ownerTask": "T22",
+			"disposition": "retain-only-if-proven-sticky-geometry-scheduling-and-document-allowlist-reason"
+		},
+		{
+			"path": "src/features/task/components/TaskCreateContent.tsx",
+			"kind": "animation-scan-raf-hit",
+			"ownerTask": "T22",
+			"disposition": "retain-only-if-proven-one-shot-focus-scheduling-and-document-allowlist-reason"
+		},
+		{
+			"path": "src/features/display-options/components/DisplayOptionsPanel.tsx",
+			"kind": "first-party-transition-and-scale-consumer",
+			"ownerTask": "T23",
+			"disposition": "remove-transition-and-active-scale-classes"
+		},
+		{
+			"path": "src/features/display-options/components/PropertyToggleGrid.tsx",
+			"kind": "first-party-transition-and-scale-consumer",
+			"ownerTask": "T23",
+			"disposition": "remove-transition-and-active-scale-classes"
+		},
+		{
+			"path": "src/features/metadata-fields/components/MetadataFieldButton.tsx",
+			"kind": "first-party-transition-consumer",
+			"ownerTask": "T23",
+			"disposition": "remove-transition-classes"
+		},
+		{
+			"path": "src/features/launcher/chrome/LauncherSurface.tsx",
+			"kind": "first-party-opacity-animation-consumer",
+			"ownerTask": "T24",
+			"disposition": "remove-opacity-duration-easing-classes"
+		},
+		{
+			"path": "src/features/launcher/chrome/LauncherFooter.tsx",
+			"kind": "first-party-spin-consumer",
+			"ownerTask": "T24",
+			"disposition": "replace-spin-with-official-spinner-or-static-feedback"
+		},
+		{
+			"path": "src/features/launcher/composer/AdvancedCollapse.tsx",
+			"kind": "first-party-layout-animation-consumer",
+			"ownerTask": "T24",
+			"disposition": "remove-grid-duration-easing-transition"
+		},
+		{
+			"path": "src/features/launcher/composer/PrimaryMetaBar.tsx",
+			"kind": "first-party-transform-transition-consumer",
+			"ownerTask": "T24",
+			"disposition": "remove-transform-transition"
+		},
+		{
+			"path": "src/features/launcher/domain/useLauncherTransientUi.ts",
+			"kind": "animation-scan-raf-hit",
+			"ownerTask": "T24",
+			"disposition": "remove-double-raf-workaround-retain-only-proven-focus-scheduling-with-reason"
+		},
+		{
+			"path": "src/features/settings/components/panels/SettingsSyncPanel.tsx",
+			"kind": "first-party-transition-consumer",
+			"ownerTask": "T25",
+			"disposition": "remove-color-and-transform-transitions"
+		},
+		{
+			"path": "src/features/settings/components/panels/SettingsSyncPanel.presentation.tsx",
+			"kind": "first-party-pulse-consumer",
+			"ownerTask": "T25",
+			"disposition": "replace-pulse-with-static-aria-busy-feedback"
+		},
+		{
+			"path": "src/features/sync/components/SyncFooterStatusItem.tsx",
+			"kind": "first-party-spin-consumer",
+			"ownerTask": "T25",
+			"disposition": "replace-spin-with-official-spinner-or-static-feedback"
+		},
+		{
+			"path": "src/features/update/components/UpdateProgressRing.tsx",
+			"kind": "first-party-progress-animation-consumer",
+			"ownerTask": "T26",
+			"disposition": "replace-spin-and-stroke-interpolation-with-official-progress-or-static-text"
+		},
+		{
+			"path": "src/features/update/components/SystemStatusChip.tsx",
+			"kind": "first-party-spin-consumer",
+			"ownerTask": "T26",
+			"disposition": "replace-spin-with-official-spinner-or-static-feedback"
+		},
+		{
+			"path": "src/features/update/components/UpdateDialog.tsx",
+			"kind": "first-party-spin-consumer",
+			"ownerTask": "T26",
+			"disposition": "replace-spin-with-official-spinner-or-static-feedback"
+		},
+		{
+			"path": "src/features/update/components/UpdateSettingsSection.presentation.tsx",
+			"kind": "first-party-pulse-consumer",
+			"ownerTask": "T26",
+			"disposition": "replace-pulse-with-static-aria-busy-feedback"
+		},
+		{
+			"path": "src/features/update/components/UpdateSettingsSection.tsx",
+			"kind": "first-party-transition-consumer",
+			"ownerTask": "T26",
+			"disposition": "remove-first-party-transition"
+		},
+		{
+			"path": "src/features/app-info/components/AboutDialog.tsx",
+			"kind": "first-party-spin-consumer",
+			"ownerTask": "T27",
+			"disposition": "replace-spin-with-official-spinner-or-static-feedback"
+		},
+		{
+			"path": "src/features/project/components/ProjectCreateContent.tsx",
+			"kind": "animation-scan-raf-hit",
+			"ownerTask": "T28",
+			"disposition": "retain-only-if-proven-one-shot-focus-scheduling-and-document-allowlist-reason"
+		},
+		{
+			"path": "src/features/command/components/CommandMenu.tsx",
+			"kind": "animation-scan-raf-hit",
+			"ownerTask": "T28",
+			"disposition": "remove-official-command-owned-focus-workaround-or-document-non-animation-reason"
+		},
+		{
+			"path": "src/shared/components/OverlayScrollbar.tsx",
+			"kind": "animation-scan-raf-hit",
+			"ownerTask": "T28",
+			"disposition": "retain-only-if-proven-scrollbar-geometry-scheduling-and-document-allowlist-reason"
+		},
+		{
+			"path": "src/styles/index.css",
+			"kind": "direct-tailwind-animation-library-import",
+			"ownerTask": "T29",
+			"disposition": "remove-tw-animate-css-import"
+		}
+	],
+	"legacyDependencyConsumers": [
+		{
+			"path": "src/shared/components/base",
+			"kind": "radix-cmdk-day-picker-sonner-cva-consumer-set",
+			"ownerTask": "T108",
+			"disposition": "delete-after-direct-heroui-consumers-cut-over"
+		},
+		{
+			"path": "src/features/command/components/CommandActionTooltip.tsx",
+			"kind": "radix-slot-consumer",
+			"ownerTask": "T52",
+			"disposition": "remove-asChild-slot-compatibility-api"
+		},
+		{
+			"path": "src/features/bulk-action/components/bulk-action-result-toast.ts",
+			"kind": "sonner-consumer",
+			"ownerTask": "T80",
+			"disposition": "replace-with-heroui-official-toast"
+		},
+		{
+			"path": "src/features/lifecycle/hooks/useLifecycleScene.ts",
+			"kind": "sonner-consumer",
+			"ownerTask": "T85",
+			"disposition": "replace-with-heroui-official-toast"
+		},
+		{
+			"path": "src/features/task/detail/model/useTaskLinksController.ts",
+			"kind": "sonner-consumer",
+			"ownerTask": "T89",
+			"disposition": "replace-with-heroui-official-toast"
+		},
+		{
+			"path": "src/features/update",
+			"kind": "sonner-consumer-set",
+			"ownerTask": "T99",
+			"disposition": "replace-update-toasts-with-heroui-official-toast"
+		},
+		{
+			"path": "src/shared/components/StatusNotice.tsx",
+			"kind": "cva-consumer",
+			"ownerTask": "T108",
+			"disposition": "retain-only-if-product-semantic-and-rewrite-without-cva-otherwise-delete"
+		},
+		{
+			"path": "package.json",
+			"kind": "legacy-dependency-declarations",
+			"ownerTask": "T109",
+			"disposition": "remove-radix-ui-@radix-ui/react-avatar-cmdk-sonner-react-day-picker-class-variance-authority-and-tw-animate-css-after-zero-consumers"
+		}
+	]
+}

@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ShellRouteRouteImport } from './routes/_shell/route'
 import { Route as ShellScopeKeyRouteRouteImport } from './routes/_shell/$scopeKey/route'
 import { Route as DebugActivityRouteImport } from './routes/debug.activity'
+import { Route as DebugTaskBoardRouteImport } from './routes/debug.task-board'
 import { Route as ShellScopeKeyIndexRouteImport } from './routes/_shell/$scopeKey/index'
 import { Route as ShellScopeKeyArchiveRouteImport } from './routes/_shell/$scopeKey/archive'
 import { Route as ShellScopeKeyProjectsRouteRouteImport } from './routes/_shell/$scopeKey/projects/route'
@@ -47,6 +48,11 @@ const ShellScopeKeyRouteRoute = ShellScopeKeyRouteRouteImport.update({
 const DebugActivityRoute = DebugActivityRouteImport.update({
   id: '/debug/activity',
   path: '/debug/activity',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DebugTaskBoardRoute = DebugTaskBoardRouteImport.update({
+  id: '/debug/task-board',
+  path: '/debug/task-board',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ShellScopeKeyIndexRoute = ShellScopeKeyIndexRouteImport.update({
@@ -142,6 +148,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$scopeKey': typeof ShellScopeKeyRouteRouteWithChildren
   '/debug/activity': typeof DebugActivityRoute
+  '/debug/task-board': typeof DebugTaskBoardRoute
   '/$scopeKey/projects': typeof ShellScopeKeyProjectsRouteRouteWithChildren
   '/$scopeKey/settings': typeof ShellScopeKeySettingsRouteRouteWithChildren
   '/$scopeKey/tasks': typeof ShellScopeKeyTasksRouteRouteWithChildren
@@ -162,6 +169,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/debug/activity': typeof DebugActivityRoute
+  '/debug/task-board': typeof DebugTaskBoardRoute
   '/$scopeKey/archive': typeof ShellScopeKeyArchiveRoute
   '/$scopeKey/standalone': typeof ShellScopeKeyStandaloneRoute
   '/$scopeKey/trash': typeof ShellScopeKeyTrashRoute
@@ -181,6 +189,7 @@ export interface FileRoutesById {
   '/_shell': typeof ShellRouteRouteWithChildren
   '/_shell/$scopeKey': typeof ShellScopeKeyRouteRouteWithChildren
   '/debug/activity': typeof DebugActivityRoute
+  '/debug/task-board': typeof DebugTaskBoardRoute
   '/_shell/$scopeKey/projects': typeof ShellScopeKeyProjectsRouteRouteWithChildren
   '/_shell/$scopeKey/settings': typeof ShellScopeKeySettingsRouteRouteWithChildren
   '/_shell/$scopeKey/tasks': typeof ShellScopeKeyTasksRouteRouteWithChildren
@@ -204,6 +213,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$scopeKey'
     | '/debug/activity'
+    | '/debug/task-board'
     | '/$scopeKey/projects'
     | '/$scopeKey/settings'
     | '/$scopeKey/tasks'
@@ -224,6 +234,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/debug/activity'
+    | '/debug/task-board'
     | '/$scopeKey/archive'
     | '/$scopeKey/standalone'
     | '/$scopeKey/trash'
@@ -242,6 +253,7 @@ export interface FileRouteTypes {
     | '/_shell'
     | '/_shell/$scopeKey'
     | '/debug/activity'
+    | '/debug/task-board'
     | '/_shell/$scopeKey/projects'
     | '/_shell/$scopeKey/settings'
     | '/_shell/$scopeKey/tasks'
@@ -264,6 +276,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ShellRouteRoute: typeof ShellRouteRouteWithChildren
   DebugActivityRoute: typeof DebugActivityRoute
+  DebugTaskBoardRoute: typeof DebugTaskBoardRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -294,6 +307,13 @@ declare module '@tanstack/react-router' {
       path: '/debug/activity'
       fullPath: '/debug/activity'
       preLoaderRoute: typeof DebugActivityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/debug/task-board': {
+      id: '/debug/task-board'
+      path: '/debug/task-board'
+      fullPath: '/debug/task-board'
+      preLoaderRoute: typeof DebugTaskBoardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_shell/$scopeKey/': {
@@ -516,6 +536,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ShellRouteRoute: ShellRouteRouteWithChildren,
   DebugActivityRoute: DebugActivityRoute,
+  DebugTaskBoardRoute: DebugTaskBoardRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

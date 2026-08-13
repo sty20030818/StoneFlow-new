@@ -31,14 +31,15 @@
 
 ## 任务与归档
 
-- 非平凡功能任务使用 `02-开发任务/YYYY-MM-DD-task-slug/`，其中只放 `SPEC.md` 和 `TASKS.md`。
-- 重构任务使用 `03-重构任务/YYYY-MM-DD-task-slug/`；目录仅在有真实任务时创建。
+- 非平凡功能任务使用 `02-开发任务/YYYY-MM-DD-task-slug/`，固定维护 `SPEC.md`、`TASKS.md`，命中方案拆分门槛时增加 `PLAN.md`。
+- 重构任务使用 `03-重构任务/YYYY-MM-DD-task-slug/`，文档组成遵循相同门槛；目录仅在有真实任务时创建。
 - 已完成任务与过时方案进入 `98-归档/`，保留原主题结构，不作为当前实现依据。
 - 图片、原型等非文本文档素材进入 `99-素材/`。
 
 ## 当前活跃任务
 
 - [任务集合查询与虚拟列表性能重构](./02-开发任务/2026-07-31-task-collection-query-virtualization/SPEC.md)（[PLAN](./02-开发任务/2026-07-31-task-collection-query-virtualization/PLAN.md) · [TASKS](./02-开发任务/2026-07-31-task-collection-query-virtualization/TASKS.md)）— 待手工验收
+- [HeroUI-only UI 平台、Linear 浅色设计系统与键盘交互重写](./03-重构任务/2026-08-12-heroui-ui-interaction-system-refactor/SPEC.md)（[PLAN](./03-重构任务/2026-08-12-heroui-ui-interaction-system-refactor/PLAN.md) · [TASKS](./03-重构任务/2026-08-12-heroui-ui-interaction-system-refactor/TASKS.md)）— PLAN 已确认，待从阶段 A 实施
 
 ## 模块文档规则
 

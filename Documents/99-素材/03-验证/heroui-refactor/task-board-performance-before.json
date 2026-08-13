@@ -1,0 +1,217 @@
+{
+	"schemaVersion": 1,
+	"status": "captured",
+	"measurementContract": "same-mac-same-recorded-viewport",
+	"platforms": {
+		"macos": {
+			"schemaVersion": 1,
+			"generatedAt": "2026-08-13T14:31:07.792Z",
+			"buildMode": "production",
+			"viewport": {
+				"width": 1280,
+				"height": 853,
+				"devicePixelRatio": 2
+			},
+			"userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko)",
+			"hardwareConcurrency": 8,
+			"commit": "d545b99e0609f7e9213ac315e967510308794b34",
+			"device": "MacBook Air (Mac17,3)",
+			"os": "macOS 26.6.2 (25G82)",
+			"webview": "WebKit 21624.5.1.11.2",
+			"cpu": "Apple M5",
+			"memory": "16 GB",
+			"results": [
+				{
+					"fixture": "grouped",
+					"seed": 20260812,
+					"loadedCount": 2000,
+					"totalCount": 2000,
+					"hasNextPage": false,
+					"warmupCount": 1,
+					"scrollRuns": [
+						{
+							"durationMs": 6377,
+							"mountedRowPeak": 28,
+							"mountCount": 215,
+							"unmountCount": 215
+						},
+						{
+							"durationMs": 6942,
+							"mountedRowPeak": 28,
+							"mountCount": 107,
+							"unmountCount": 107
+						},
+						{
+							"durationMs": 6974,
+							"mountedRowPeak": 28,
+							"mountCount": 159,
+							"unmountCount": 159
+						},
+						{
+							"durationMs": 6083,
+							"mountedRowPeak": 28,
+							"mountCount": 132,
+							"unmountCount": 132
+						},
+						{
+							"durationMs": 5983,
+							"mountedRowPeak": 28,
+							"mountCount": 130,
+							"unmountCount": 130
+						}
+					],
+					"fetchRequestsBeforeMeasurement": 0,
+					"fetchRequestsDuringMeasurement": 0,
+					"duplicateFetchCount": 0,
+					"focusSamplesMs": [
+						123,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null
+					]
+				},
+				{
+					"fixture": "paged",
+					"seed": 20260812,
+					"loadedCount": 200,
+					"totalCount": 10000,
+					"hasNextPage": true,
+					"warmupCount": 1,
+					"scrollRuns": [
+						{
+							"durationMs": 6814,
+							"mountedRowPeak": 21,
+							"mountCount": 27,
+							"unmountCount": 27
+						},
+						{
+							"durationMs": 6059,
+							"mountedRowPeak": 21,
+							"mountCount": 27,
+							"unmountCount": 27
+						},
+						{
+							"durationMs": 6998,
+							"mountedRowPeak": 21,
+							"mountCount": 27,
+							"unmountCount": 27
+						},
+						{
+							"durationMs": 5999,
+							"mountedRowPeak": 21,
+							"mountCount": 27,
+							"unmountCount": 27
+						},
+						{
+							"durationMs": 5917,
+							"mountedRowPeak": 21,
+							"mountCount": 27,
+							"unmountCount": 27
+						}
+					],
+					"fetchRequestsBeforeMeasurement": 1,
+					"fetchRequestsDuringMeasurement": 0,
+					"duplicateFetchCount": 0,
+					"focusSamplesMs": [
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						9,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						2,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						3,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null
+					]
+				}
+			]
+		}
+	}
+}
