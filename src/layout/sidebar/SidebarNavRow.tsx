@@ -55,7 +55,7 @@ export function SidebarNavRow({
 	return (
 		<Sidebar.MenuItem
 			href={to}
-			id={`route:${to}`}
+			id={`nav:${commandId}`}
 			isCurrent={isActive}
 			textValue={label}
 			tooltipProps={{
@@ -79,16 +79,27 @@ export function SidebarNavRow({
 	)
 }
 
-export type SidebarProjectNavRowProps = Omit<SidebarNavRowProps, 'commandId' | 'contextMenuContent'>
+export type SidebarProjectNavRowProps = Omit<
+	SidebarNavRowProps,
+	'commandId' | 'contextMenuContent'
+> & {
+	projectId: string
+}
 
 /** 动态项目没有全局命令，但仍使用 HeroUI Sidebar 自带 Tooltip。 */
-export function SidebarProjectNavRow({ to, label, icon, badge }: SidebarProjectNavRowProps) {
+export function SidebarProjectNavRow({
+	to,
+	label,
+	icon,
+	badge,
+	projectId,
+}: SidebarProjectNavRowProps) {
 	const isActive = useSidebarNavIsActive(to)
 
 	return (
 		<Sidebar.MenuItem
 			href={to}
-			id={`project:${to}`}
+			id={`project:${projectId}`}
 			isCurrent={isActive}
 			textValue={label}
 			tooltipProps={{

@@ -80,6 +80,12 @@ describe('Shell 阶段 D 结构', () => {
 			'data-sidebar-mode',
 			'compact',
 		)
+		expect(document.querySelector('[data-slot="shell-workspace"]')).toHaveClass(
+			'grid-cols-[minmax(0,1fr)]',
+		)
+		expect(document.querySelector('[data-slot="shell-workspace"]')).not.toHaveClass(
+			'grid-cols-[auto_minmax(0,1fr)]',
+		)
 		expect(document.querySelectorAll('main')).toHaveLength(1)
 	})
 

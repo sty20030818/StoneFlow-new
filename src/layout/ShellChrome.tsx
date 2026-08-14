@@ -143,7 +143,9 @@ export function ShellChrome({
 				sidebar={sidebar}
 			/>
 			<div
-				className='relative grid min-h-0 min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)] overflow-hidden bg-sf-shell'
+				className={`relative grid min-h-0 min-w-0 flex-1 overflow-hidden bg-sf-shell ${
+					sidebar.isCompact ? 'grid-cols-[minmax(0,1fr)]' : 'grid-cols-[auto_minmax(0,1fr)]'
+				}`}
 				data-resizing={sidebar.isResizing ? 'true' : undefined}
 				data-sidebar-mode={sidebar.mode}
 				data-slot='shell-workspace'

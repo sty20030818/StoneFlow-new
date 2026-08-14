@@ -32,6 +32,7 @@ export function ProjectNavMenuItem({
 			badge={project.badge}
 			icon={FolderIcon}
 			label={project.label}
+			projectId={project.id}
 			to={projectPath}
 		/>
 	)
