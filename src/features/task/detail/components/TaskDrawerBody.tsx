@@ -1,3 +1,5 @@
+import type { Ref } from 'react'
+
 import type { AutosaveController } from '@/shared/autosave'
 import { DetailBody } from '@/shared/components/detail'
 import type { ProjectOption } from '@/features/project'
@@ -15,12 +17,19 @@ type TaskDrawerBodyProps = {
 	autosave: AutosaveController<TaskDetailDraft>
 	projects: ProjectOption[]
 	spaces: Array<Pick<Space, 'id' | 'name'>>
+	scrollRef?: Ref<HTMLDivElement>
 }
 
-export function TaskDrawerBody({ taskId, autosave, projects, spaces }: TaskDrawerBodyProps) {
+export function TaskDrawerBody({
+	taskId,
+	autosave,
+	projects,
+	spaces,
+	scrollRef,
+}: TaskDrawerBodyProps) {
 	return (
-		<DetailBody viewportClassName='px-3 pt-2 pb-20'>
-			<div className='flex flex-col' data-task-drawer-body='true'>
+		<DetailBody ref={scrollRef} viewportClassName='px-3 pt-2 pb-20'>
+			<div className='flex flex-col' data-task-detail-body='true'>
 				<TaskTitleField autosave={autosave} />
 				<TaskNoteField autosave={autosave} />
 				{/* 属性块：状态、优先级、日期、归属 */}

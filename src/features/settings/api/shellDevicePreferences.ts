@@ -13,11 +13,11 @@ import { readLocalStorageValue, writeLocalStorageValue } from '@/shared/lib/loca
 
 const SIDEBAR_DEVICE_KEY = 'stoneflow.shell.sidebar.device'
 const UI_DEVICE_KEY = 'stoneflow.shell.ui.device'
-const DEFAULT_TASK_DRAWER_WIDTH = 420
 
 export { DEFAULT_SIDEBAR_WIDTH } from '@/shared/lib/shellSidebarGeometry'
 
 export type SidebarDesktopPreference = 'expanded' | 'collapsed'
+export type DetailPresentation = 'sheet' | 'aside'
 
 export type ShellSidebarDevicePreferences = {
 	width: number
@@ -27,7 +27,7 @@ export type ShellSidebarDevicePreferences = {
 }
 
 export type ShellUiDevicePreferences = {
-	taskDrawerWidth: number
+	detailPresentation: DetailPresentation
 }
 
 export type ShellSidebarProjectSectionSettings = SidebarProjectSectionPreferenceConfig & {
@@ -123,10 +123,7 @@ function normalizeUiDevicePreferences(
 	candidate: ShellUiDevicePreferences,
 ): ShellUiDevicePreferences {
 	return {
-		taskDrawerWidth:
-			typeof candidate.taskDrawerWidth === 'number' && candidate.taskDrawerWidth > 0
-				? Math.round(candidate.taskDrawerWidth)
-				: DEFAULT_TASK_DRAWER_WIDTH,
+		detailPresentation: candidate.detailPresentation === 'aside' ? 'aside' : 'sheet',
 	}
 }
 
@@ -141,6 +138,6 @@ function defaultShellSidebarDevicePreferences(): ShellSidebarDevicePreferences {
 
 function defaultShellUiDevicePreferences(): ShellUiDevicePreferences {
 	return {
-		taskDrawerWidth: DEFAULT_TASK_DRAWER_WIDTH,
+		detailPresentation: 'sheet',
 	}
 }

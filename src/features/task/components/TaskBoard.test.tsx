@@ -91,6 +91,7 @@ describe('TaskBoard', () => {
 			screen.getAllByRole('button', { name: '在 待执行 中创建任务' }).length,
 		).toBeGreaterThanOrEqual(1)
 		expect(container.querySelector('[data-task-board-sticky-header]')).toBeTruthy()
+		expect(container.querySelector('[data-board-root="true"]')).toHaveAttribute('tabindex', '-1')
 		const root = container.querySelector('[data-task-board-virtual="sections"]')
 		// 续拉中：flat(1 header + 1 行) + 未加载 99 行占位
 		expect(root).toHaveAttribute('data-task-board-extent')

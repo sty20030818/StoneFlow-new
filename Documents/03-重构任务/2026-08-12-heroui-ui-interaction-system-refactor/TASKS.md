@@ -1,10 +1,10 @@
 # HeroUI-only UI 平台、Linear 浅色设计系统与键盘交互重写 - Tasks
 
-> 当前状态：阶段 3。阶段 D 已完成，下一项为阶段 E「任务详情 Sheet / Aside」。
+> 当前状态：阶段 3。阶段 E 的 T39–T44 已完成，等待任务发起人执行 U2 真实 Tauri 验收。
 
 ## 当前阶段
 
-- 阶段 A「决策固化、供应链与迁移基线」、阶段 B「HeroUI 平台、主题与字体基础」、阶段 C「StoneFlow 第一方动画清场」和阶段 D「Shell 与 Sidebar 三态」已完成。Windows WebView2 不属于本任务验收范围，也不阻塞后续阶段。
+- 阶段 A–D 已完成；阶段 E 已完成自动化实现与预检，当前停在 U2 人工 Gate。Windows WebView2 不属于本任务验收范围，也不阻塞后续阶段。
 - 执行任意 task 前，必须重读 [SPEC.md](./SPEC.md) 对应 AC 与 [PLAN.md](./PLAN.md) 对应方案；后续 task 默认按编号顺序依赖。
 - 任一锁定包 API、供应链访问、性能或产品合同与 PLAN 冲突时，先在本文件「与 SPEC/PLAN 的实施偏差」登记并停止相关切片，不得静默增加兼容层。
 
@@ -173,35 +173,37 @@
 
 **阶段 E：任务详情 Sheet / Aside**
 
-- [ ] T39 修改 `src/features/settings/api/shellDevicePreferences.ts`、`src/features/settings/model/useSidebarSettingsStore.ts` 及测试，新增 `detailPresentation: sheet | aside` 的默认值、读取和持久化，并删除零消费者旧 `taskDrawerWidth`。
+- [x] T39 修改 `src/features/settings/api/shellDevicePreferences.ts`、`src/features/settings/model/useSidebarSettingsStore.ts` 及测试，新增 `detailPresentation: sheet | aside` 的默认值、读取和持久化，并删除零消费者旧 `taskDrawerWidth`。
   - 不新增第二个 localStorage key 或 Rust schema，compact 临时回退不得改写偏好。
   _对应验收标准：AC-21, AC-22, AC-23_
   _测试先行：`src/features/settings/api/shellDevicePreferences.test.ts`、`src/features/settings/model/useSidebarSettingsStore.test.ts`_
 
-- [ ] T40 在 `src/layout/model/detailPresentation.ts`、`src/layout/model/detailPresentation.test.ts` 与 `src/layout/model/useDetailPresentation.ts` 建立详情呈现边界：纯函数只派生 Aside `clamp(400px,34vw,560px)`、主集合 `640px` 门槛与 compact Sheet，hook 由 `ShellMain` 挂载单一 ResizeObserver 并传入 panel width，不读取或写入持久化。
+- [x] T40 在 `src/layout/model/detailPresentation.ts`、`src/layout/model/detailPresentation.test.ts` 与 `src/layout/model/useDetailPresentation.ts` 建立详情呈现边界：纯函数只派生 Aside `clamp(400px,34vw,560px)`、主集合 `640px` 门槛与 compact Sheet，hook 由 `ShellMain` 挂载单一 ResizeObserver 并传入 panel width，不读取或写入持久化。
   - Aside 固定渲染在 `ShellMain` 的产品 `aside` 区域；不得引入 AppLayout、第二个 Sidebar owner 或额外布局状态。
   _对应验收标准：AC-21, AC-22, AC-23_
   _测试先行：`src/layout/model/detailPresentation.test.ts`_
 
-- [ ] T41 将 `src/features/task/detail/components/TaskDrawer.tsx` 重构为容器无关的 `TaskDetailContent.tsx`，并在 `src/features/task/detail/model/useTaskDetailViewModel.ts` 将 query、draft、autosave、mutation 与 busy state 提升到 Sheet/Aside 分支之上。
+- [x] T41 将 `src/features/task/detail/components/TaskDrawer.tsx` 重构为容器无关的 `TaskDetailContent.tsx`，并在 `src/features/task/detail/model/useTaskDetailViewModel.ts` 将 query、draft、autosave、mutation 与 busy state 提升到 Sheet/Aside 分支之上。
   _对应验收标准：AC-21, AC-23, AC-25, AC-39_
   _测试先行：`src/features/task/detail/components/TaskDetailContent.test.tsx`_
 
-- [ ] T42 重构 `src/layout/ShellDrawer.tsx` 与 `src/features/entity-detail/components/EntityDetailDrawerHost.tsx`，按 effective presentation 渲染宽 `min(640px, calc(100vw - 16px))` 的 HeroUI right Sheet 或 Main 内非模态 Aside，并复用前一项建立的同一详情 controller/content。
+- [x] T42 重构 `src/layout/ShellDrawer.tsx` 与 `src/features/entity-detail/components/EntityDetailDrawerHost.tsx`，按 effective presentation 渲染宽 `min(640px, calc(100vw - 16px))` 的 HeroUI right Sheet 或 Main 内非模态 Aside，并复用前一项建立的同一详情 controller/content。
   - Sheet 使用 modal focus；Aside 只有 separator，不使用 overlay 或 focus trap。
   _对应验收标准：AC-21, AC-22, AC-23, AC-24, AC-39_
   _测试先行：`src/features/entity-detail/components/EntityDetailDrawerHost.test.tsx`、`src/features/task/detail/components/TaskDetailContent.test.tsx`_
 
-- [ ] T43 在 `src/layout/ShellMain.tsx`、`src/features/entity-detail/model/useEntityDetailController.ts` 与详情 Host 中实现 taskId 级 scroll snapshot、容器切换恢复、路由 Back 和 trigger entity ID 恢复协议，删除旧 document pointer/querySelector Drawer guard。
+- [x] T43 在 `src/layout/ShellMain.tsx`、`src/features/entity-detail/model/useEntityDetailController.ts` 与详情 Host 中实现 taskId 级 scroll snapshot、容器切换恢复、路由 Back 和 trigger entity ID 恢复协议，删除旧 document pointer/querySelector Drawer guard。
   - 虚拟行恢复接口交给阶段 H/I bridge，实体消失时回 collection root。
   _对应验收标准：AC-23, AC-24, AC-25, AC-32, AC-43_
   _测试先行：`src/features/entity-detail/model/useEntityDetailController.test.tsx`、`src/features/entity-detail/model/entityDetailNavigation.test.ts`、`src/features/entity-detail/components/EntityDetailDrawerHost.test.tsx`_
 
-- [ ] T44 将 `src/features/task/detail/components/TaskDrawerHeader.tsx` 重构为 `TaskDetailHeader.tsx`，用 HeroUI Menu 提供 Sheet/Aside 单选偏好；在 `src/layout/ShellLayoutContent.tsx` 保证 compact 详情打开前先关闭导航 Sheet，并保持 Space Peek 独立。
+- [x] T44 将 `src/features/task/detail/components/TaskDrawerHeader.tsx` 重构为 `TaskDetailHeader.tsx`，用 HeroUI Menu 提供 Sheet/Aside 单选偏好；在 `src/layout/ShellLayoutContent.tsx` 保证 compact 详情打开前先关闭导航 Sheet，并保持 Space Peek 独立。
   _对应验收标准：AC-19, AC-21, AC-22, AC-25, AC-30_
   _测试先行：`src/features/task/detail/components/TaskDetailHeader.test.tsx`、`src/features/task/detail/components/TaskPreview.test.tsx`、`src/features/entity-detail/components/EntityDetailDrawerHost.test.tsx`_
 
 - [ ] T45（任务发起人验收 U2）在真实 Tauri 中验证 Sidebar 点按/拖动/键盘、1024px 两侧、重启恢复、详情 Sheet/Aside、窄窗回退、草稿、scroll 与焦点，并在本文件记录“通过”或精确问题；AI 不得代为勾选。
+	- 验收顺序：先在宽窗切换 Sheet/Aside 并重启，再跨过 `1024px` 确认窄窗只临时回退 Sheet；在编辑未完时切换容器、滚动后来回切换，最后用 Escape、显式关闭和浏览器 Back 检查路由与焦点恢复。
+	- compact 中先打开导航 Sheet 再打开任务详情，任一时刻不得同时存在两个 modal Sheet；Space 仍只打开 Peek。
   _对应验收标准：AC-14, AC-18, AC-21, AC-23, AC-24_
 
 - [ ] T46 完成阶段 E 收口：确认 U2 通过后运行详情/Sidebar 测试、根级门禁、production build 与 `bun run test:rust`；获准提交时引用 PLAN 的阶段 E 文案，不自动提交。
@@ -516,6 +518,7 @@
 
 - 当前阶段没有外部设备阻塞；Windows WebView2 不属于本任务验收范围。
 - 已知与 HeroUI 重构无关的失败：根级 `bun run check` 的最后 Rust 阶段稳定失败于未改动的 `commands::spaces::tests::deleting_trashed_space_again_should_not_enqueue_another_operation` 文案断言；动画扫描、TypeScript、lint、模块边界、格式、978 项前端测试、146 项 release 测试与 production build 均通过。该失败不阻塞阶段 D，但必须在 T120 最终收口前另行解决。
+- 阶段 E 最终全量并发测试共 996 项，其中 989 项通过，`LauncherPage` 与 `CustomDateDialog` 的 7 项异步用例超时；立即单独重跑这两个文件 26/26 通过，当前按测试并发抖动记录，不视为阶段 E 产品阻塞，T46 仍须在 U2 后重新执行根级测试。
 - T45、T73、T105、T119 是尚未执行的人工 Gate，不在失败前视为阻塞。
 
 ## 与 SPEC/PLAN 的实施偏差
@@ -529,6 +532,7 @@
 - 2026-08-13：T8 的干净环境首次暴露旧 `src/shared/components/base/command.tsx` 直接 import `cmdk` 却未声明根依赖；阶段 J 才删除该消费者，因此本阶段精确直锁 `cmdk@1.1.1`，不靠传递依赖，仍由 T82 在旧 Command hard cut 后删除。
 - 2026-08-14：任务发起人确认源站无缓存下载是否成功与产品实现无关，接受固定版本缓存恢复作为当前供应链边界。T8 以已记录的 546 文件树 SHA-256、隔离 frozen install、typecheck 和 production build 为完成证据；仍保留源站与缓存同时不可用会阻断新环境安装的已知风险。
 - 2026-08-14：阶段 C 根级检查暴露一个与 UI 重构无关、在未改动 Rust 文件中可单独复现的 Space 删除错误文案断言失败；未将其混入 HeroUI 重构修改，登记为 T120 前必须处理的仓库既有失败。
+- 2026-08-14：阶段 E 的已连接 trigger 使用真实 DOM ref 恢复，trigger 卸载时回退到打开时捕获的 collection root；虚拟行离屏后重挂载并恢复当前实体行，仍按 PLAN 由阶段 H/I 的 stable key/ref bridge 完成，本阶段不新增 querySelector 兼容桥。
 
 ## 完成记录
 
@@ -552,3 +556,4 @@
 - 2026-08-14：完成 T8、T15与阶段 B 收口。任务发起人批准固定版本缓存恢复边界；依赖树哈希、隔离 frozen install/typecheck/build、根级 typecheck、lint、边界、format、967 项测试、production build、主题边界与零凭据扫描均通过。建议 commit 文案：`refactor(ui): 建立 HeroUI 浅色主题与字体基础`；未提交、未改动 Git 暂存区。
 - 2026-08-14：完成 T16–T30 与阶段 C 收口。全仓第一方动画扫描转绿并接入根级 `check`；删除 StoneFlow 的 transition/animation/spin/pulse/active scale、旧 motion token、Sidebar 动画 workaround 及 `tw-animate-css` 直接依赖，只保留 HeroUI `@heroui/styles@3.2.4 -> tw-animate-css@1.4.0` 传递链。Modal、Popover、Tooltip、Sheet、Sidebar、Toast、Progress 锁版 probe 3/3、扫描器 2/2、970 项前端测试、146 项 release 测试及 production build 通过；保留的 rAF 仅用于 Sidebar/Scrollbar/TaskBoard 几何批处理与输入焦点调度，静态 transform 只承担虚拟化、居中和 off-canvas 几何。建议 commit 文案：`refactor(ui): 清除 StoneFlow 第一方动画代码`；未提交、未改动 Git 暂存区。
 - 2026-08-14：完成 T31–T38 与阶段 D 收口。Shell 以单一 controller 管理 expanded/icon/compact、`1024px` 断点、Sheet 和 live/committed width；HeroUI Sidebar/ContextMenu/Tooltip/Dropdown 接管导航与 Header 标准控件，唯一产品 separator 负责点按、拖动和键盘调宽。删除旧 Sidebar facade/context/pattern，Inset 主面由唯一 `Sidebar.Main` 提供，compact Sheet 复用同一导航树且显式覆盖 HeroUI 内建 `768px` 隐藏规则；冷启动骨架与设备偏好同步。严格审查发现并修复实际 Sidebar 被锁回 `240px`、`≤768px` Sheet 导航隐藏、`500–639px` 缺少可点击入口和 Sheet 无显式关闭按钮四项问题。根级 typecheck、lint、模块边界、format check、第一方动画扫描、978 项前端测试、146 项 release 测试和 production build 通过；`test:rust` 仍仅有已登记的 Space 文案断言失败。建议 commit 文案：`refactor(shell): 重建 HeroUI 侧边栏三态`；未提交、未改动 Git 暂存区。
+- 2026-08-14：完成 T39–T44 的实现与自动化预检。复用原 UI device key 持久化 Sheet/Aside，单一 ResizeObserver 按 compact、`640px` 主集合余量和 `400–560px` Aside 宽度派生有效呈现；删除旧 Radix `ShellDrawer`、`TaskDrawer`、document pointer/querySelector 守卫和零消费 `taskDrawerWidth`。HeroUI Pro Sheet 与非模态 Aside 共用单一 view model/content，taskId 级滚动快照、已连接焦点恢复、collection root 回退、compact 双 Sheet 互斥和 HeroUI 单选偏好菜单已有自动化覆盖。首轮全量前端测试 189 个文件/994 项通过；补齐路由 Back 与 collection-root 回退用例后，定向测试 18/18 通过，最终全量并发 996 项中 989 项通过、7 项无关异步用例超时，失败的两个文件立即单独重跑 26/26 通过。根级 typecheck、lint、模块边界、format check、第一方动画扫描和 production build 通过；T45/U2 与其后 T46/Rust 收口尚未执行，本阶段未提交。

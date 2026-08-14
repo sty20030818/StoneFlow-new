@@ -1,8 +1,9 @@
-import { useEffect, type MouseEvent, type PropsWithChildren } from 'react'
+import type { MouseEvent, PropsWithChildren } from 'react'
 
-import type { EntityDetailRouteState } from '@/features/entity-detail'
+import { EntityDetailDrawerHost, type EntityDetailRouteState } from '@/features/entity-detail'
+import type { DetailPresentation } from '@/features/settings'
 import { TaskPreview, useTaskPreviewController } from '@/features/task'
-import { ShellDrawer } from '@/layout/ShellDrawer'
+import { useDetailPresentation } from '@/layout/model/useDetailPresentation'
 import {
 	ContextMenu,
 	ContextMenuContent,
@@ -14,16 +15,18 @@ import { FolderPlusIcon, SquarePenIcon } from 'lucide-react'
 
 type ShellMainProps = PropsWithChildren<{
 	activeDetail: EntityDetailRouteState
+	detailPresentation: DetailPresentation
+	isCompact: boolean
 	isDrawerOpen: boolean
 	showPreview?: boolean
 	onCloseDrawer: () => void
+	onDetailPresentationChange: (presentation: DetailPresentation) => void
 	onOpenTaskCreateDialog: () => void
 	onOpenProjectCreateDialog: () => void
 }>
 
-const SHELL_DRAWER_ROOT_SELECTOR = '[data-shell-drawer-root="true"]'
+const ENTITY_DETAIL_ROOT_SELECTOR = '[data-entity-detail-root="true"]'
 const SHELL_TASK_CARD_SELECTOR = '[data-shell-task-card="true"]'
-const DRAWER_OWNED_OVERLAY_SELECTOR = '[data-drawer-owned-overlay="true"]'
 const INTERACTIVE_TARGET_SELECTOR = [
 	'button',
 	'a[href]',
@@ -50,13 +53,17 @@ const INTERACTIVE_TARGET_SELECTOR = [
 export function ShellMain({
 	children,
 	activeDetail,
+	detailPresentation,
+	isCompact,
 	isDrawerOpen,
 	showPreview = true,
 	onCloseDrawer,
+	onDetailPresentationChange,
 	onOpenTaskCreateDialog,
 	onOpenProjectCreateDialog,
 }: ShellMainProps) {
 	const preview = useTaskPreviewController()
+	const detail = useDetailPresentation({ detailPresentation, isCompact })
 
 	const handleMainPointerDownCapture = (event: MouseEvent<HTMLElement>) => {
 		if (!preview.previewState.open || isDrawerOpen) {
@@ -78,52 +85,6 @@ export function ShellMain({
 		preview.closePreview()
 	}
 
-	useEffect(() => {
-		if (!isDrawerOpen) {
-			return undefined
-		}
-
-		const handleDocumentPointerDown = (event: PointerEvent) => {
-			const target = event.target
-			if (!(target instanceof HTMLElement)) {
-				return
-			}
-
-			if (target.closest(SHELL_DRAWER_ROOT_SELECTOR)) {
-				return
-			}
-
-			if (target.closest(SHELL_TASK_CARD_SELECTOR)) {
-				return
-			}
-
-			if (target.closest(DRAWER_OWNED_OVERLAY_SELECTOR)) {
-				return
-			}
-
-			// 当 Drawer 自己的浮层打开时，外部空白优先让浮层按原语义收起，不直接关闭 Drawer。
-			const hasOpenDrawerOwnedOverlay = !!document.querySelector(
-				`${DRAWER_OWNED_OVERLAY_SELECTOR}[data-state="open"]`,
-			)
-
-			if (hasOpenDrawerOwnedOverlay) {
-				return
-			}
-
-			if (target.closest(INTERACTIVE_TARGET_SELECTOR)) {
-				return
-			}
-
-			onCloseDrawer()
-		}
-
-		document.addEventListener('pointerdown', handleDocumentPointerDown, true)
-
-		return () => {
-			document.removeEventListener('pointerdown', handleDocumentPointerDown, true)
-		}
-	}, [isDrawerOpen, onCloseDrawer])
-
 	const handleGlobalContextMenu = (event: MouseEvent<HTMLElement>) => {
 		const target = event.target
 		if (!(target instanceof HTMLElement)) {
@@ -132,10 +93,9 @@ export function ShellMain({
 		}
 
 		if (
-			target.closest(SHELL_DRAWER_ROOT_SELECTOR) ||
+			target.closest(ENTITY_DETAIL_ROOT_SELECTOR) ||
 			target.closest('[data-task-preview-root="true"]') ||
 			target.closest(SHELL_TASK_CARD_SELECTOR) ||
-			target.closest(DRAWER_OWNED_OVERLAY_SELECTOR) ||
 			target.closest(INTERACTIVE_TARGET_SELECTOR)
 		) {
 			event.preventDefault()
@@ -143,7 +103,10 @@ export function ShellMain({
 	}
 
 	return (
-		<div className='relative flex min-h-0 min-w-0 flex-1 overflow-hidden bg-transparent'>
+		<div
+			ref={detail.panelRef}
+			className='relative flex min-h-0 min-w-0 flex-1 overflow-hidden bg-transparent'
+		>
 			<div className='flex min-h-0 min-w-0 flex-1 overflow-hidden'>
 				<ContextMenu>
 					<ContextMenuTrigger asChild onContextMenu={handleGlobalContextMenu}>
@@ -165,10 +128,14 @@ export function ShellMain({
 								/>
 							) : null}
 
-							<ShellDrawer
+							<EntityDetailDrawerHost
 								activeDetail={activeDetail}
+								asideWidth={detail.asideWidth}
+								effectivePresentation={detail.effectivePresentation}
 								onClose={onCloseDrawer}
+								onPresentationPreferenceChange={onDetailPresentationChange}
 								open={isDrawerOpen}
+								presentationPreference={detailPresentation}
 							/>
 						</div>
 					</ContextMenuTrigger>

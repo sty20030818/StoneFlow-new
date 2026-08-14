@@ -13,6 +13,8 @@ import {
 	buildShellSidebarSettings,
 	loadShellDeviceState,
 	updateShellSidebarDevicePreferences,
+	updateShellUiDevicePreferences,
+	type DetailPresentation,
 	type ShellSidebarDevicePreferences,
 	type ShellSidebarProjectSectionSettings,
 	type ShellSidebarSettings,
@@ -35,6 +37,7 @@ type SidebarSettingsState = {
 	setSidebarPreferences: (
 		preferences: Pick<ShellSidebarDevicePreferences, 'width' | 'desktopPreference'>,
 	) => Promise<void>
+	setDetailPresentation: (presentation: DetailPresentation) => Promise<void>
 	setProjectSectionConfig: (config: ShellSidebarProjectSectionSettings) => Promise<void>
 }
 
@@ -96,6 +99,30 @@ export const useSidebarSettingsStore = create<SidebarSettingsState>((set, get) =
 			})
 		} catch (error) {
 			const message = error instanceof Error ? error.message : 'Sidebar 设备偏好更新失败'
+			set((state) => ({
+				status: state.settings ? 'ready' : 'error',
+				errorMessage: message,
+			}))
+			throw error
+		}
+	}
+
+	const commitUiDeviceUpdate = async (runner: () => Promise<ShellUiDevicePreferences>) => {
+		try {
+			const uiDevicePreferences = await runner()
+			const syncSettings = get().syncSettings
+			const sidebarDevicePreferences = get().sidebarDevicePreferences
+			if (!syncSettings || !sidebarDevicePreferences) {
+				throw new Error('Shell 设置尚未完成加载')
+			}
+
+			applyResolvedSettings({
+				syncSettings,
+				sidebarDevicePreferences,
+				uiDevicePreferences,
+			})
+		} catch (error) {
+			const message = error instanceof Error ? error.message : 'Shell 设备偏好更新失败'
 			set((state) => ({
 				status: state.settings ? 'ready' : 'error',
 				errorMessage: message,
@@ -173,6 +200,12 @@ export const useSidebarSettingsStore = create<SidebarSettingsState>((set, get) =
 
 		setSidebarPreferences: async (preferences) => {
 			await commitDeviceUpdate(() => updateShellSidebarDevicePreferences(preferences))
+		},
+
+		setDetailPresentation: async (presentation) => {
+			await commitUiDeviceUpdate(() =>
+				updateShellUiDevicePreferences({ detailPresentation: presentation }),
+			)
 		},
 
 		setProjectSectionConfig: async (config) => {

@@ -140,7 +140,6 @@ export function ShellLayoutContent({
 		settingsReturnPath,
 		toggleSidebar: sidebar.toggleSidebar,
 	})
-
 	if (!chrome.isChromeReady || !chrome.sidebarSettings) {
 		const sidebarSettings = chrome.sidebarSettings
 		return (

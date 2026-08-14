@@ -1,3 +1,4 @@
+import { createRef } from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -12,7 +13,8 @@ import { TooltipProvider } from '@/shared/components/base/tooltip'
 import type { TaskDetail } from '@/shared/types'
 
 import type { TaskDetailDraft } from '../model/taskDetailDraft'
-import { TaskDrawer } from './TaskDrawer'
+import { useTaskDetailViewModel } from '../model/useTaskDetailViewModel'
+import { TaskDetailContent } from './TaskDetailContent'
 
 const getEntityActivitiesMock = vi.hoisted(() => vi.fn<(input?: unknown) => Promise<unknown[]>>())
 const mockDetailController = vi.hoisted(() => ({
@@ -152,7 +154,7 @@ vi.mock('@/features/activity', async (importOriginal) => {
 	}
 })
 
-describe('TaskDrawer', () => {
+describe('TaskDetailContent', () => {
 	beforeEach(() => {
 		mockDetailController.value = {
 			task: createTaskDetail(),
@@ -192,7 +194,7 @@ describe('TaskDrawer', () => {
 			status: 'loading',
 		}
 
-		renderTaskDrawer(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
+		renderTaskDetailContent(<TaskDetailHarness onClose={() => undefined} taskId='task-1' />)
 
 		expect(screen.getByText('加载中...')).toBeInTheDocument()
 	})
@@ -205,14 +207,14 @@ describe('TaskDrawer', () => {
 			error: '任务详情加载失败',
 		}
 
-		renderTaskDrawer(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
+		renderTaskDetailContent(<TaskDetailHarness onClose={() => undefined} taskId='task-1' />)
 
 		expect(screen.getByText('任务详情加载失败')).toBeInTheDocument()
 		expect(screen.getByRole('button', { name: '关闭' })).toBeInTheDocument()
 	})
 
 	it('不渲染动态页签和手动保存按钮', () => {
-		renderTaskDrawer(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
+		renderTaskDetailContent(<TaskDetailHarness onClose={() => undefined} taskId='task-1' />)
 
 		expect(screen.queryByRole('button', { name: '动态' })).not.toBeInTheDocument()
 		expect(screen.queryByRole('button', { name: '保存' })).not.toBeInTheDocument()
@@ -220,20 +222,25 @@ describe('TaskDrawer', () => {
 	})
 
 	it('头部显示任务详情、保存状态和打开动作', () => {
-		const { container } = renderTaskDrawer(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
+		const { container } = renderTaskDetailContent(
+			<TaskDetailHarness onClose={() => undefined} taskId='task-1' />,
+		)
 
 		expect(screen.getByText('任务详情')).toBeInTheDocument()
-		expect(screen.getByRole('button', { name: '打开' })).toHaveAttribute('data-variant', 'outline')
+		expect(screen.getByRole('button', { name: '打开' })).toHaveClass('button--outline')
 		expect(screen.queryByRole('button', { name: '更多任务操作' })).not.toBeInTheDocument()
 		expect(screen.queryByRole('button', { name: '关闭任务详情' })).not.toBeInTheDocument()
-		expect(container.querySelector('[data-task-drawer-body="true"]')).toContainElement(
+		expect(container.querySelector('[data-task-detail-body="true"]')).toContainElement(
 			screen.getByLabelText('任务标题'),
 		)
+		expect(container.querySelector('[data-detail-drawer-shell="true"]')).not.toBeInTheDocument()
 	})
 
 	it('正文按文档顺序渲染标题、备注、属性、归属和链接', () => {
-		const { container } = renderTaskDrawer(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
-		const body = container.querySelector('[data-task-drawer-body="true"]')
+		const { container } = renderTaskDetailContent(
+			<TaskDetailHarness onClose={() => undefined} taskId='task-1' />,
+		)
+		const body = container.querySelector('[data-task-detail-body="true"]')
 
 		expect(body).toBeInTheDocument()
 		expect(screen.getByLabelText('任务标题')).toHaveClass('border-0')
@@ -249,7 +256,7 @@ describe('TaskDrawer', () => {
 	})
 
 	it('归属 dropdown 使用 grouped placement menu', async () => {
-		renderTaskDrawer(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
+		renderTaskDetailContent(<TaskDetailHarness onClose={() => undefined} taskId='task-1' />)
 
 		fireEvent.pointerDown(screen.getByRole('button', { name: '归属' }))
 
@@ -260,7 +267,7 @@ describe('TaskDrawer', () => {
 	})
 
 	it('链接区块不会接管 autosave', () => {
-		renderTaskDrawer(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
+		renderTaskDetailContent(<TaskDetailHarness onClose={() => undefined} taskId='task-1' />)
 
 		expect(screen.getByRole('button', { name: '添加链接' })).toHaveAttribute(
 			'data-variant',
@@ -276,14 +283,14 @@ describe('TaskDrawer', () => {
 			error: '网络错误',
 		})
 
-		renderTaskDrawer(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
+		renderTaskDetailContent(<TaskDetailHarness onClose={() => undefined} taskId='task-1' />)
 
 		expect(screen.getByText('保存失败')).toBeInTheDocument()
 		expect(screen.getByText('网络错误')).toBeInTheDocument()
 	})
 
 	it('底部展示更新时间、归档和移入回收站', () => {
-		renderTaskDrawer(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
+		renderTaskDetailContent(<TaskDetailHarness onClose={() => undefined} taskId='task-1' />)
 
 		const updatedAt = screen.getByText(/^更新于 /)
 		expect(updatedAt).toBeInTheDocument()
@@ -296,7 +303,7 @@ describe('TaskDrawer', () => {
 	})
 
 	it('归档和恢复走控制器动作', async () => {
-		renderTaskDrawer(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
+		renderTaskDetailContent(<TaskDetailHarness onClose={() => undefined} taskId='task-1' />)
 
 		fireEvent.click(screen.getByRole('button', { name: '归档' }))
 
@@ -308,7 +315,7 @@ describe('TaskDrawer', () => {
 
 	it('移入回收站前触发 flushNow 并走控制器动作', async () => {
 		const onClose = vi.fn<() => void>()
-		renderWithRouter(<TaskDrawer onClose={onClose} taskId='task-1' />)
+		renderWithRouter(<TaskDetailHarness onClose={onClose} taskId='task-1' />)
 
 		fireEvent.click(screen.getByRole('button', { name: '移入回收站' }))
 
@@ -320,7 +327,7 @@ describe('TaskDrawer', () => {
 	})
 
 	it('打开独立页面前先 flush 再导航', async () => {
-		renderWithRouter(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
+		renderWithRouter(<TaskDetailHarness onClose={() => undefined} taskId='task-1' />)
 
 		fireEvent.click(screen.getByRole('button', { name: '打开' }))
 
@@ -332,13 +339,45 @@ describe('TaskDrawer', () => {
 			})
 		})
 	})
+
+	it('把真实滚动 viewport ref 交给宿主', () => {
+		const scrollRef = createRef<HTMLDivElement>()
+
+		renderTaskDetailContent(
+			<TaskDetailHarness onClose={() => undefined} scrollRef={scrollRef} taskId='task-1' />,
+		)
+
+		expect(scrollRef.current).toHaveAttribute('data-scroll-container', 'true')
+	})
 })
 
-function renderWithRouter(node: React.ReactNode) {
-	return renderTaskDrawer(node)
+function TaskDetailHarness({
+	taskId,
+	onClose,
+	scrollRef,
+}: {
+	taskId: string
+	onClose: () => void
+	scrollRef?: React.Ref<HTMLDivElement>
+}) {
+	const viewModel = useTaskDetailViewModel({ taskId, onClose })
+
+	return (
+		<TaskDetailContent
+			onClose={onClose}
+			onPresentationPreferenceChange={() => undefined}
+			presentationPreference='sheet'
+			scrollRef={scrollRef}
+			viewModel={viewModel}
+		/>
+	)
 }
 
-function renderTaskDrawer(node: React.ReactNode) {
+function renderWithRouter(node: React.ReactNode) {
+	return renderTaskDetailContent(node)
+}
+
+function renderTaskDetailContent(node: React.ReactNode) {
 	return render(
 		<ShortcutRegistryProvider registry={testShortcutRegistry}>
 			<TooltipProvider delayDuration={0}>{node}</TooltipProvider>

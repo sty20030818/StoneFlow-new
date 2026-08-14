@@ -75,9 +75,16 @@ export { TaskPage } from './detail/components/TaskPage'
 export { TaskPageState } from './detail/components/TaskPageState'
 
 /**
- * URL/侧栏驱动的任务抽屉。
+ * Sheet / Aside 共用的任务详情内容与状态模型。
  */
-export { TaskDrawer } from './detail/components/TaskDrawer'
+export {
+	TaskDetailContent,
+	type TaskDetailPresentationPreference,
+} from './detail/components/TaskDetailContent'
+export {
+	useTaskDetailViewModel,
+	type TaskDetailViewModel,
+} from './detail/model/useTaskDetailViewModel'
 
 /**
  * 列表预览浮层。

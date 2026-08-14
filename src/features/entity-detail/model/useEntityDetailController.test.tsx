@@ -1,5 +1,5 @@
 import { useLocation } from '@tanstack/react-router'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { renderWithMatchedRoute } from '@/test/renderWithRouter'
@@ -41,6 +41,23 @@ describe('useEntityDetailController', () => {
 		await waitFor(() => {
 			expect(screen.getByTestId('location')).toHaveTextContent('/space-a/views/today')
 		})
+	})
+
+	it('首次打开后浏览器 Back 关闭详情', async () => {
+		const { router } = await renderController('/work/standalone')
+
+		fireEvent.click(screen.getByRole('button', { name: '打开任务' }))
+		await waitFor(() => {
+			expect(screen.getByTestId('location')).toHaveTextContent('/work/standalone?task=task-a')
+		})
+
+		await act(async () => {
+			router.history.back()
+			await router.load()
+		})
+
+		expect(screen.getByTestId('location')).toHaveTextContent('/work/standalone')
+		expect(screen.getByTestId('is-open')).toHaveTextContent('closed')
 	})
 
 	it('双 query 初始化后自动清理 project', async () => {

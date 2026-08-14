@@ -24,7 +24,7 @@ describe('shellDevicePreferences', () => {
 				projectSectionMaxVisible: null,
 			}),
 		)
-		localStorage.setItem(UI_DEVICE_KEY, JSON.stringify({ taskDrawerWidth: 420 }))
+		localStorage.setItem(UI_DEVICE_KEY, JSON.stringify({ detailPresentation: 'aside' }))
 
 		await expect(loadShellDeviceState()).resolves.toEqual({
 			sidebar: {
@@ -33,16 +33,28 @@ describe('shellDevicePreferences', () => {
 				projectSectionCollapsed: false,
 				projectSectionMaxVisible: null,
 			},
-			ui: { taskDrawerWidth: 420 },
+			ui: { detailPresentation: 'aside' },
 		})
 	})
 
-	it('updateShellUiDevicePreferences 规范化任务抽屉宽度并保存', async () => {
-		await expect(updateShellUiDevicePreferences({ taskDrawerWidth: 318.6 })).resolves.toEqual({
-			taskDrawerWidth: 319,
+	it('旧 UI 设备偏好没有呈现方式时默认为 sheet', async () => {
+		localStorage.setItem(UI_DEVICE_KEY, JSON.stringify({ taskDrawerWidth: 420 }))
+
+		await expect(loadShellDeviceState()).resolves.toMatchObject({
+			ui: { detailPresentation: 'sheet' },
+		})
+	})
+
+	it('updateShellUiDevicePreferences 只保存详情呈现偏好', async () => {
+		localStorage.setItem(UI_DEVICE_KEY, JSON.stringify({ taskDrawerWidth: 420 }))
+
+		await expect(updateShellUiDevicePreferences({ detailPresentation: 'aside' })).resolves.toEqual({
+			detailPresentation: 'aside',
 		})
 
-		expect(JSON.parse(localStorage.getItem(UI_DEVICE_KEY)!)).toEqual({ taskDrawerWidth: 319 })
+		expect(JSON.parse(localStorage.getItem(UI_DEVICE_KEY)!)).toEqual({
+			detailPresentation: 'aside',
+		})
 	})
 
 	it.each([

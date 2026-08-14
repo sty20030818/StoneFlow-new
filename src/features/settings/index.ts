@@ -21,7 +21,7 @@ export type {
 	SidebarItemVisibilityTarget,
 } from './api/sidebarSettings'
 
-export type { ShellSidebarSettings } from './api/shellDevicePreferences'
+export type { DetailPresentation, ShellSidebarSettings } from './api/shellDevicePreferences'
 /** 壳/骨架侧栏默认宽（与设备偏好默认一致）。 */
 export { DEFAULT_SIDEBAR_WIDTH } from './api/shellDevicePreferences'
 

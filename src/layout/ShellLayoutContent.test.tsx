@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
-import { type CSSProperties } from 'react'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { useState, type CSSProperties } from 'react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { Sidebar } from '@heroui-pro/react'
 
 import { ShellChrome } from '@/layout/ShellChrome'
@@ -11,8 +11,10 @@ vi.mock('@/layout/ShellHeader', () => ({
 }))
 
 vi.mock('@/layout/ShellMain', () => ({
-	ShellMain: ({ children }: { children: React.ReactNode }) => (
-		<div data-testid='shell-main-content'>{children}</div>
+	ShellMain: ({ children, isDrawerOpen }: { children: React.ReactNode; isDrawerOpen: boolean }) => (
+		<div data-detail-open={isDrawerOpen ? 'true' : 'false'} data-testid='shell-main-content'>
+			{children}
+		</div>
 	),
 }))
 
@@ -65,9 +67,24 @@ describe('Shell 阶段 D 结构', () => {
 		)
 		expect(document.querySelectorAll('main')).toHaveLength(1)
 	})
+
+	it('compact 打开详情前先关闭导航 Sheet', async () => {
+		installMatchMedia(false)
+		render(<CompactDetailFixture />)
+
+		fireEvent.click(screen.getByRole('button', { name: '打开导航' }))
+		expect(await screen.findByRole('dialog')).toBeInTheDocument()
+
+		fireEvent.click(screen.getByText('打开详情'))
+
+		await waitFor(() => {
+			expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+			expect(screen.getByTestId('shell-main-content')).toHaveAttribute('data-detail-open', 'true')
+		})
+	})
 })
 
-function Fixture() {
+function Fixture({ detailOpen = false }: { detailOpen?: boolean }) {
 	const sidebar = useShellSidebarController({
 		initialPreferences: { width: 256, desktopPreference: 'expanded' },
 		onPreferencesCommit: vi.fn(),
@@ -88,7 +105,7 @@ function Fixture() {
 			<ShellChrome
 				activeSection={'tasks' as never}
 				chrome={createChrome()}
-				command={createCommand()}
+				command={createCommand({ isDrawerOpen: detailOpen })}
 				createDialog={{ openProjectCreateDialog: vi.fn() } as never}
 				currentScope={{ type: 'all' }}
 				currentSpaceId={null}
@@ -105,6 +122,18 @@ function Fixture() {
 				<div>内容</div>
 			</ShellChrome>
 		</Sidebar.Provider>
+	)
+}
+
+function CompactDetailFixture() {
+	const [detailOpen, setDetailOpen] = useState(false)
+	return (
+		<>
+			<button onClick={() => setDetailOpen(true)} type='button'>
+				打开详情
+			</button>
+			<Fixture detailOpen={detailOpen} />
+		</>
 	)
 }
 
@@ -125,7 +154,7 @@ function createChrome() {
 	} as never
 }
 
-function createCommand() {
+function createCommand(overrides: Record<string, unknown> = {}) {
 	return {
 		activeDetail: null,
 		chordSession: null,
@@ -146,6 +175,7 @@ function createCommand() {
 		setCommandOpen: vi.fn(),
 		setShortcutHelpOpen: vi.fn(),
 		shouldTriggerCommandShortcut: vi.fn(),
+		...overrides,
 	} as never
 }
 

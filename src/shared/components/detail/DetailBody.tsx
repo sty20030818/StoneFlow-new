@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { forwardRef, type ReactNode } from 'react'
 
 import { cn } from '@/shared/lib/utils'
 import { AppScrollArea } from '@/shared/components/AppScrollArea'
@@ -11,13 +11,17 @@ type DetailBodyProps = {
 	viewportClassName?: string
 }
 
-export function DetailBody({ children, className, viewportClassName }: DetailBodyProps) {
+export const DetailBody = forwardRef<HTMLDivElement, DetailBodyProps>(function DetailBody(
+	{ children, className, viewportClassName },
+	ref,
+) {
 	return (
 		<AppScrollArea
 			className={cn(detailBodyWrapperClass, className)}
+			ref={ref}
 			viewportClassName={cn(detailBodyViewportClass, viewportClassName)}
 		>
 			{children}
 		</AppScrollArea>
 	)
-}
+})

@@ -13,6 +13,7 @@ import {
 import {
 	loadShellDeviceState,
 	updateShellSidebarDevicePreferences,
+	updateShellUiDevicePreferences,
 } from '../api/shellDevicePreferences'
 import { useSidebarSettingsStore } from './useSidebarSettingsStore'
 
@@ -42,6 +43,7 @@ vi.mock('./../api/shellDevicePreferences', async (importOriginal) => {
 		...actual,
 		loadShellDeviceState: vi.fn(),
 		updateShellSidebarDevicePreferences: vi.fn(),
+		updateShellUiDevicePreferences: vi.fn(),
 	}
 })
 
@@ -50,6 +52,7 @@ const mockedUpdateSidebarItemVisibility = vi.mocked(updateSidebarItemVisibility)
 const mockedUpdateSidebarProjectSection = vi.mocked(updateSidebarProjectSection)
 const mockedLoadShellDeviceState = vi.mocked(loadShellDeviceState)
 const mockedUpdateShellSidebarDevicePreferences = vi.mocked(updateShellSidebarDevicePreferences)
+const mockedUpdateShellUiDevicePreferences = vi.mocked(updateShellUiDevicePreferences)
 
 describe('useSidebarSettingsStore', () => {
 	beforeEach(() => {
@@ -58,6 +61,7 @@ describe('useSidebarSettingsStore', () => {
 		mockedUpdateSidebarProjectSection.mockReset()
 		mockedLoadShellDeviceState.mockReset()
 		mockedUpdateShellSidebarDevicePreferences.mockReset()
+		mockedUpdateShellUiDevicePreferences.mockReset()
 
 		useSidebarSettingsStore.setState({
 			status: 'idle',
@@ -81,6 +85,7 @@ describe('useSidebarSettingsStore', () => {
 		expect(state.status).toBe('ready')
 		expect(state.settings?.width).toBe(256)
 		expect(state.settings?.desktopPreference).toBe('expanded')
+		expect(state.uiDevicePreferences?.detailPresentation).toBe('sheet')
 	})
 
 	it('setItemVisibility 会提交更新后的 sync settings', async () => {
@@ -166,6 +171,22 @@ describe('useSidebarSettingsStore', () => {
 		expect(state.settings?.desktopPreference).toBe('collapsed')
 		expect(state.settings?.mainItems.allTasks.visible).toBe(true)
 	})
+
+	it('setDetailPresentation 只更新 UI 设备偏好', async () => {
+		useSidebarSettingsStore.setState(createReadyStoreState())
+		mockedUpdateShellUiDevicePreferences.mockResolvedValue({ detailPresentation: 'aside' })
+
+		await useSidebarSettingsStore.getState().setDetailPresentation('aside')
+
+		const state = useSidebarSettingsStore.getState()
+		expect(mockedUpdateShellUiDevicePreferences).toHaveBeenCalledOnce()
+		expect(mockedUpdateShellUiDevicePreferences).toHaveBeenCalledWith({
+			detailPresentation: 'aside',
+		})
+		expect(mockedUpdateShellSidebarDevicePreferences).not.toHaveBeenCalled()
+		expect(state.uiDevicePreferences).toEqual({ detailPresentation: 'aside' })
+		expect(state.settings?.width).toBe(256)
+	})
 })
 
 function createReadyStoreState() {
@@ -238,7 +259,7 @@ function createUiDevicePreferences(
 	overrides?: Partial<ShellUiDevicePreferences>,
 ): ShellUiDevicePreferences {
 	return {
-		taskDrawerWidth: overrides?.taskDrawerWidth ?? 420,
+		detailPresentation: overrides?.detailPresentation ?? 'sheet',
 	}
 }
 
