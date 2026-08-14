@@ -9,11 +9,10 @@ describe('SettingsSidebar', () => {
 	it('渲染返回应用与设置分区，并高亮当前分区', () => {
 		renderSettingsSidebar('sync')
 
-		expect(document.querySelector('[data-slot="sidebar"]')).toHaveAttribute(
-			'style',
-			expect.stringContaining('--sidebar-width: inherit'),
-		)
-		expect(document.querySelector('[data-slot="sidebar"]')).toHaveStyle({ display: 'flex' })
+		const sidebar = document.querySelector('[data-slot="sidebar"]')
+		expect(sidebar).toHaveAttribute('style', expect.stringContaining('--sidebar-width: inherit'))
+		expect(sidebar).toHaveStyle({ display: 'flex' })
+		expect(sidebar).not.toHaveClass('w-full')
 		expect(screen.getByRole('button', { name: '返回应用' })).toBeInTheDocument()
 		expect(screen.queryByText('设置')).not.toBeInTheDocument()
 		expect(screen.getByText('偏好')).toBeInTheDocument()

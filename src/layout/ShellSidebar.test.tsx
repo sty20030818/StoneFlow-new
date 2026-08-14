@@ -53,11 +53,19 @@ describe('ShellSidebar', () => {
 			desktopPreference: 'expanded',
 		})
 
-		expect(document.querySelector('[data-slot="sidebar"]')).toHaveAttribute(
-			'style',
-			expect.stringContaining('--sidebar-width: inherit'),
+		const sidebar = document.querySelector('[data-slot="sidebar"]')
+		expect(sidebar).toHaveAttribute('style', expect.stringContaining('--sidebar-width: inherit'))
+		expect(sidebar).toHaveStyle({ display: 'flex' })
+		expect(sidebar).not.toHaveClass('w-full')
+		expect(
+			document.querySelector('[data-slot="sidebar-menu-item"] [data-slot="context-menu-trigger"]'),
+		).toHaveClass(
+			'group-data-[sidebar-mode=icon]/sidebar-wrapper:justify-center',
+			'group-data-[sidebar-mode=icon]/sidebar-wrapper:gap-0',
 		)
-		expect(document.querySelector('[data-slot="sidebar"]')).toHaveStyle({ display: 'flex' })
+		expect(document.querySelector('[data-slot="sidebar-project-section"]')).toHaveClass(
+			'group-data-[sidebar-mode=icon]/sidebar-wrapper:hidden',
+		)
 		expect(screen.getByRole('row', { name: '独立事项' })).toBeInTheDocument()
 		expect(screen.queryByRole('row', { name: '所有任务' })).not.toBeInTheDocument()
 		expect(screen.getByRole('row', { name: '视图' })).toBeInTheDocument()

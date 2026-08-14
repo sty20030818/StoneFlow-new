@@ -14,6 +14,7 @@ const setItemVisibilitySpy =
 	vi.fn<(target: { kind: 'main'; key: string }, visible: boolean) => Promise<void>>()
 const setProjectSectionConfigSpy =
 	vi.fn<(config: ShellSidebarSettings['projectSection']) => Promise<void>>()
+const setDetailPresentationSpy = vi.fn<(value: 'sheet' | 'aside') => Promise<void>>()
 const loadSpacesSpy = vi.fn<() => Promise<void>>()
 const setDefaultSpaceSpy = vi.fn<(spaceId: string) => Promise<Space>>()
 const getSyncStatusSpy = vi.fn<() => Promise<unknown>>()
@@ -188,6 +189,8 @@ describe('SettingsPage', () => {
 		setItemVisibilitySpy.mockResolvedValue(undefined)
 		setProjectSectionConfigSpy.mockReset()
 		setProjectSectionConfigSpy.mockResolvedValue(undefined)
+		setDetailPresentationSpy.mockReset()
+		setDetailPresentationSpy.mockResolvedValue(undefined)
 		loadSpacesSpy.mockReset()
 		loadSpacesSpy.mockResolvedValue(undefined)
 		setDefaultSpaceSpy.mockReset()
@@ -376,6 +379,22 @@ describe('SettingsPage', () => {
 
 		await waitFor(() => {
 			expect(setDefaultSpaceSpy).toHaveBeenCalledWith('space-2')
+		})
+	})
+
+	it('在通用设置中配置宽屏任务详情呈现方式', async () => {
+		mockSettingsSection = 'general'
+		await renderSettingsPage()
+
+		expect(
+			screen.getByText(/窗口小于 1024px，或主列表可用宽度不足 640px 时，系统会自动使用 Sheet。/),
+		).toBeInTheDocument()
+		const asideRadio = screen.getByRole('radio', { name: /Aside/ })
+		expect(asideRadio.closest('label')?.querySelector('label')).not.toBeInTheDocument()
+		fireEvent.click(asideRadio)
+
+		await waitFor(() => {
+			expect(setDetailPresentationSpy).toHaveBeenCalledWith('aside')
 		})
 	})
 
@@ -995,10 +1014,12 @@ function createSidebarStoreState() {
 		status: 'ready' as const,
 		settings: createSidebarSettings(),
 		errorMessage: null,
+		uiDevicePreferences: { detailPresentation: 'sheet' as const },
 		load: loadSidebarSettingsSpy,
 		resetMainItemsVisibility: vi.fn(),
 		setItemVisibility: setItemVisibilitySpy,
 		setSidebarPreferences: vi.fn(),
+		setDetailPresentation: setDetailPresentationSpy,
 		setProjectSectionConfig: setProjectSectionConfigSpy,
 	}
 }

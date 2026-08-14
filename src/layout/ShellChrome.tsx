@@ -1,4 +1,4 @@
-import { useEffect, type CSSProperties, type ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { Sheet, Sidebar } from '@heroui-pro/react'
 
 import type { Scope } from '@/shared/types'
@@ -11,7 +11,7 @@ import { ShellSidebar } from '@/layout/ShellSidebar'
 import { ShellFooter } from '@/layout/ShellFooter'
 import { SidebarResizeRail } from '@/layout/sidebar/SidebarResizeRail'
 import { DEFAULT_SETTINGS_SECTION } from '@/features/settings'
-import { CommandShortcutLayer } from '@/features/command'
+import { COMMAND_IDS, CommandShortcutLayer, type CommandId } from '@/features/command'
 import type { useShellCommandSystem } from '@/layout/model/useShellCommandSystem'
 import type { useShellChromeData } from '@/layout/model/useShellChromeData'
 import type { useShellCreateDialogState } from '@/layout/model/useShellCreateDialogState'
@@ -96,19 +96,19 @@ export function ShellChrome({
 			spaces={chrome.spaces}
 		/>
 	)
-	const deferCompactDetail = sidebar.isCompact && sidebar.mobileSheetOpen && command.isDrawerOpen
-	const setMobileSheetOpen = sidebar.setMobileSheetOpen
-	useEffect(() => {
-		if (command.isDrawerOpen) {
-			setMobileSheetOpen(false)
-		}
-	}, [command.isDrawerOpen, setMobileSheetOpen])
+	const compactNavigationOpen = sidebar.isCompact && sidebar.mobileSheetOpen
+	const compactDetailModalOpen = sidebar.isCompact && command.isDrawerOpen && !compactNavigationOpen
+	const runShellCommand = (commandId: CommandId) => {
+		if (commandId === COMMAND_IDS.layoutToggleSidebar && compactDetailModalOpen) return
+
+		void command.runCommand(commandId)
+	}
 
 	return (
 		<>
 			<CommandShortcutLayer
 				onChordStateChange={command.setChordSession}
-				onTrigger={command.runCommand}
+				onTrigger={runShellCommand}
 				shouldTrigger={command.shouldTriggerCommandShortcut}
 			/>
 			<ShellHeader
@@ -131,7 +131,7 @@ export function ShellChrome({
 				onOpenTaskPage={(task) => {
 					command.openTaskPage({ taskId: task.id, spaceId: task.spaceId })
 				}}
-				onRunCommand={command.runCommand}
+				onRunCommand={runShellCommand}
 				onSelectTaskDate={command.onSelectTaskDate}
 				onSelectTaskPlacement={command.onSelectTaskPlacement}
 				onSelectTaskPriority={command.onSelectTaskPriority}
@@ -160,11 +160,8 @@ export function ShellChrome({
 						activeDetail={command.activeDetail}
 						detailPresentation={chrome.detailPresentation}
 						isCompact={sidebar.isCompact}
-						isDrawerOpen={command.isDrawerOpen && !deferCompactDetail}
+						isDrawerOpen={command.isDrawerOpen && !compactNavigationOpen}
 						onCloseDrawer={command.closeEntityDrawer}
-						onDetailPresentationChange={(presentation) => {
-							void chrome.setDetailPresentation(presentation)
-						}}
 						onOpenProjectCreateDialog={() => createDialog.openProjectCreateDialog()}
 						onOpenTaskCreateDialog={handleOpenTaskCreate}
 						showPreview
@@ -177,7 +174,7 @@ export function ShellChrome({
 				<Sheet
 					isDismissable
 					isModal
-					isOpen={sidebar.mobileSheetOpen && !command.isDrawerOpen}
+					isOpen={sidebar.mobileSheetOpen}
 					onOpenChange={sidebar.setMobileSheetOpen}
 					placement='left'
 					shouldAutoFocus
@@ -188,9 +185,8 @@ export function ShellChrome({
 							data-shell-sidebar-sheet='true'
 							style={{ '--sidebar-width': '100%' } as CSSProperties}
 						>
-							<Sheet.Dialog className='h-full overflow-hidden p-0'>
+							<Sheet.Dialog className='h-full overflow-hidden px-0 pb-0 pt-12'>
 								<Sheet.Heading className='sr-only'>导航</Sheet.Heading>
-								<Sheet.CloseTrigger aria-label='关闭导航' className='z-10' />
 								{sidebarNavigation}
 							</Sheet.Dialog>
 						</Sheet.Content>

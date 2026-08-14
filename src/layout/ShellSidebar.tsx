@@ -257,7 +257,7 @@ export function ShellSidebarNavigation({
 			<ContextMenu>
 				<ContextMenu.Trigger className='flex h-full min-h-0 w-full'>
 					<Sidebar
-						className='h-full min-h-0 w-full bg-transparent'
+						className='h-full min-h-0 bg-transparent'
 						style={{ '--sidebar-width': 'inherit', display: 'flex' } as CSSProperties}
 					>
 						<Sidebar.Header className='px-3 pb-2 pt-2'>
@@ -433,7 +433,10 @@ export function ShellSidebarNavigation({
 							</Sidebar.Group>
 
 							{showProjectSection ? (
-								<div data-sidebar='label'>
+								<div
+									className='group-data-[sidebar-mode=icon]/sidebar-wrapper:hidden'
+									data-slot='sidebar-project-section'
+								>
 									<Sidebar.Group>
 										<div className='flex h-8 items-center justify-between px-2'>
 											<Sidebar.GroupLabel className='px-0'>项目列表</Sidebar.GroupLabel>

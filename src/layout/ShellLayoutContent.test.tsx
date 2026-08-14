@@ -1,13 +1,19 @@
 /** @vitest-environment jsdom */
 import { useState, type CSSProperties } from 'react'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { Sidebar } from '@heroui-pro/react'
 
 import { ShellChrome } from '@/layout/ShellChrome'
 import { useShellSidebarController } from '@/layout/model/useShellSidebarController'
 
 vi.mock('@/layout/ShellHeader', () => ({
-	ShellHeader: () => <header data-testid='shell-header' />,
+	ShellHeader: ({ onRunCommand }: { onRunCommand: (id: string) => void }) => (
+		<header data-testid='shell-header'>
+			<button onClick={() => onRunCommand('layout.toggleSidebar')} type='button'>
+				侧边栏按钮
+			</button>
+		</header>
+	),
 }))
 
 vi.mock('@/layout/ShellMain', () => ({
@@ -31,9 +37,17 @@ vi.mock('@/layout/ShellFooter', () => ({
 	ShellFooter: () => <footer data-testid='shell-footer' />,
 }))
 
-vi.mock('@/features/command', () => ({
-	CommandShortcutLayer: () => null,
-}))
+vi.mock('@/features/command', async (importOriginal) => {
+	const actual = await importOriginal<typeof import('@/features/command')>()
+	return {
+		...actual,
+		CommandShortcutLayer: ({ onTrigger }: { onTrigger: (id: string) => void }) => (
+			<button onClick={() => onTrigger('layout.toggleSidebar')} type='button'>
+				左方括号快捷键
+			</button>
+		),
+	}
+})
 
 describe('Shell 阶段 D 结构', () => {
 	it('桌面只挂载一棵导航树，并由唯一 Sidebar.Main 提供 main landmark', () => {
@@ -56,7 +70,8 @@ describe('Shell 阶段 D 结构', () => {
 		fireEvent.click(screen.getByRole('button', { name: '打开导航' }))
 
 		expect(await screen.findByRole('dialog')).toBeInTheDocument()
-		expect(screen.getByRole('button', { name: '关闭导航' })).toBeInTheDocument()
+		expect(screen.queryByRole('button', { name: '关闭导航' })).not.toBeInTheDocument()
+		expect(screen.getByRole('dialog')).toHaveClass('pt-12')
 		expect(document.querySelector('[data-shell-sidebar-sheet="true"]')).toHaveStyle({
 			'--sidebar-width': '100%',
 		})
@@ -68,23 +83,28 @@ describe('Shell 阶段 D 结构', () => {
 		expect(document.querySelectorAll('main')).toHaveLength(1)
 	})
 
-	it('compact 打开详情前先关闭导航 Sheet', async () => {
-		installMatchMedia(false)
-		render(<CompactDetailFixture />)
+	it.each(['侧边栏按钮', '左方括号快捷键'])(
+		'compact 模态详情打开时忽略%s，避免穿透到导航 Sheet',
+		async (accessibleName) => {
+			installMatchMedia(false)
+			render(<CompactDetailFixture />)
 
-		fireEvent.click(screen.getByRole('button', { name: '打开导航' }))
-		expect(await screen.findByRole('dialog')).toBeInTheDocument()
+			expect(screen.getByTestId('shell-main-content')).toHaveAttribute('data-detail-open', 'true')
+			fireEvent.click(screen.getByRole('button', { name: accessibleName }))
 
-		fireEvent.click(screen.getByText('打开详情'))
-
-		await waitFor(() => {
 			expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 			expect(screen.getByTestId('shell-main-content')).toHaveAttribute('data-detail-open', 'true')
-		})
-	})
+		},
+	)
 })
 
-function Fixture({ detailOpen = false }: { detailOpen?: boolean }) {
+function Fixture({
+	detailOpen = false,
+	onCloseDetail = vi.fn(),
+}: {
+	detailOpen?: boolean
+	onCloseDetail?: () => void
+}) {
 	const sidebar = useShellSidebarController({
 		initialPreferences: { width: 256, desktopPreference: 'expanded' },
 		onPreferencesCommit: vi.fn(),
@@ -105,7 +125,7 @@ function Fixture({ detailOpen = false }: { detailOpen?: boolean }) {
 			<ShellChrome
 				activeSection={'tasks' as never}
 				chrome={createChrome()}
-				command={createCommand({ isDrawerOpen: detailOpen })}
+				command={createCommand({ closeEntityDrawer: onCloseDetail, isDrawerOpen: detailOpen })}
 				createDialog={{ openProjectCreateDialog: vi.fn() } as never}
 				currentScope={{ type: 'all' }}
 				currentSpaceId={null}
@@ -126,15 +146,8 @@ function Fixture({ detailOpen = false }: { detailOpen?: boolean }) {
 }
 
 function CompactDetailFixture() {
-	const [detailOpen, setDetailOpen] = useState(false)
-	return (
-		<>
-			<button onClick={() => setDetailOpen(true)} type='button'>
-				打开详情
-			</button>
-			<Fixture detailOpen={detailOpen} />
-		</>
-	)
+	const [detailOpen, setDetailOpen] = useState(true)
+	return <Fixture detailOpen={detailOpen} onCloseDetail={() => setDetailOpen(false)} />
 }
 
 function createChrome() {

@@ -362,15 +362,7 @@ function TaskDetailHarness({
 }) {
 	const viewModel = useTaskDetailViewModel({ taskId, onClose })
 
-	return (
-		<TaskDetailContent
-			onClose={onClose}
-			onPresentationPreferenceChange={() => undefined}
-			presentationPreference='sheet'
-			scrollRef={scrollRef}
-			viewModel={viewModel}
-		/>
-	)
+	return <TaskDetailContent onClose={onClose} scrollRef={scrollRef} viewModel={viewModel} />
 }
 
 function renderWithRouter(node: React.ReactNode) {

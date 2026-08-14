@@ -10,10 +10,7 @@
  * `@/features/task/detail` 由边界扫描禁止。
  */
 
-export {
-	TaskDetailContent,
-	type TaskDetailPresentationPreference,
-} from './components/TaskDetailContent'
+export { TaskDetailContent } from './components/TaskDetailContent'
 export { TaskPage } from './components/TaskPage'
 export { TaskPreview } from './components/TaskPreview'
 export { useTaskDetailViewModel, type TaskDetailViewModel } from './model/useTaskDetailViewModel'

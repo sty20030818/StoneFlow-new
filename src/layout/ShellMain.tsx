@@ -20,7 +20,6 @@ type ShellMainProps = PropsWithChildren<{
 	isDrawerOpen: boolean
 	showPreview?: boolean
 	onCloseDrawer: () => void
-	onDetailPresentationChange: (presentation: DetailPresentation) => void
 	onOpenTaskCreateDialog: () => void
 	onOpenProjectCreateDialog: () => void
 }>
@@ -58,7 +57,6 @@ export function ShellMain({
 	isDrawerOpen,
 	showPreview = true,
 	onCloseDrawer,
-	onDetailPresentationChange,
 	onOpenTaskCreateDialog,
 	onOpenProjectCreateDialog,
 }: ShellMainProps) {
@@ -133,9 +131,8 @@ export function ShellMain({
 								asideWidth={detail.asideWidth}
 								effectivePresentation={detail.effectivePresentation}
 								onClose={onCloseDrawer}
-								onPresentationPreferenceChange={onDetailPresentationChange}
 								open={isDrawerOpen}
-								presentationPreference={detailPresentation}
+								portalContainer={detail.panelElement}
 							/>
 						</div>
 					</ContextMenuTrigger>

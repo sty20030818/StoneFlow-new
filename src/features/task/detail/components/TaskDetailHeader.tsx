@@ -1,23 +1,20 @@
 import { startTransition } from 'react'
-import { Button, Dropdown } from '@heroui/react'
-import { CheckIcon, PanelRightIcon, SquareArrowOutUpRightIcon } from 'lucide-react'
+import { Button } from '@heroui/react'
+import { SquareArrowOutUpRightIcon } from 'lucide-react'
 
 import { useEntityDetailController } from '@/features/entity-detail'
 import type { AutosaveController } from '@/shared/autosave'
 import { DetailHeader, DetailSaveStatus } from '@/shared/components/detail'
 
 import type { TaskDetailDraft } from '../model/taskDetailDraft'
-import type { TaskDetailPresentationPreference } from './TaskDetailContent'
 
 type TaskDetailHeaderProps = {
 	autosave: AutosaveController<TaskDetailDraft>
 	taskId: string
-	presentationPreference: TaskDetailPresentationPreference
-	onPresentationPreferenceChange: (value: TaskDetailPresentationPreference) => void
 }
 
 export function TaskDetailHeader(props: TaskDetailHeaderProps) {
-	const { autosave, taskId, presentationPreference, onPresentationPreferenceChange } = props
+	const { autosave, taskId } = props
 	const entityDetailController = useEntityDetailController()
 
 	const handleOpenPage = async () => {
@@ -39,39 +36,6 @@ export function TaskDetailHeader(props: TaskDetailHeaderProps) {
 				/>
 			</div>
 			<div className='flex shrink-0 items-center gap-1'>
-				<Dropdown>
-					<Dropdown.Trigger
-						aria-label='详情呈现方式'
-						className='button button--outline button--sm size-8 p-0'
-					>
-						<PanelRightIcon className='size-4' />
-					</Dropdown.Trigger>
-					<Dropdown.Popover className='min-w-40' placement='bottom end'>
-						<Dropdown.Menu
-							aria-label='详情呈现方式'
-							onAction={(key) => {
-								if (key === 'sheet' || key === 'aside') {
-									onPresentationPreferenceChange(key)
-								}
-							}}
-							selectedKeys={[presentationPreference]}
-							selectionMode='single'
-						>
-							<Dropdown.Item id='sheet' textValue='Sheet'>
-								<Dropdown.ItemIndicator>
-									<CheckIcon />
-								</Dropdown.ItemIndicator>
-								<span>Sheet</span>
-							</Dropdown.Item>
-							<Dropdown.Item id='aside' textValue='Aside'>
-								<Dropdown.ItemIndicator>
-									<CheckIcon />
-								</Dropdown.ItemIndicator>
-								<span>Aside</span>
-							</Dropdown.Item>
-						</Dropdown.Menu>
-					</Dropdown.Popover>
-				</Dropdown>
 				<Button onPress={() => void handleOpenPage()} size='sm' variant='outline'>
 					<SquareArrowOutUpRightIcon className='size-3.5' />
 					打开

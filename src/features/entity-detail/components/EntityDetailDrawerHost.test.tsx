@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { EntityDetailDrawerHost } from './EntityDetailDrawerHost'
+import { isAnyModalOpen } from '@/shared/lib/modal-guard'
 
 const useTaskDetailViewModelMock = vi.hoisted(() => vi.fn(() => ({ status: 'ready' })))
 
@@ -24,27 +25,41 @@ vi.mock('@/features/task', () => ({
 
 describe('EntityDetailDrawerHost', () => {
 	const onClose = vi.fn<() => void>()
-	const onPresentationPreferenceChange = vi.fn<(value: 'sheet' | 'aside') => void>()
 
 	beforeEach(() => {
 		onClose.mockReset()
-		onPresentationPreferenceChange.mockReset()
 		useTaskDetailViewModelMock.mockClear()
 	})
 
-	it('使用受控 HeroUI right Sheet 呈现模态详情', async () => {
-		renderHost({ effectivePresentation: 'sheet' })
+	it('把透明模态 Sheet portal 到 Main card', async () => {
+		const portalContainer = document.createElement('div')
+		document.body.append(portalContainer)
+		const view = renderHost({ effectivePresentation: 'sheet', portalContainer })
 
 		expect(await screen.findByRole('dialog')).toBeInTheDocument()
 		expect(screen.getByRole('heading', { name: '任务详情' })).toBeInTheDocument()
-		expect(document.querySelector('[data-entity-detail-sheet="true"]')).toHaveClass(
-			'w-[min(40rem,calc(100vw-1rem))]',
-		)
+		const sheet = document.querySelector<HTMLElement>('[data-entity-detail-sheet="true"]')
+		expect(portalContainer).toContainElement(sheet)
+		expect(sheet).toHaveAttribute('data-sheet-detached')
+		expect(sheet).toHaveStyle({
+			top: '8px',
+			bottom: '8px',
+			height: 'auto',
+			position: 'absolute',
+			width: 'min(40rem, calc(100% - 1rem))',
+		})
+		const backdrop = document.querySelector('[data-slot="sheet-backdrop"]')
+		expect(backdrop).toHaveClass('sheet__backdrop--transparent')
+		expect(backdrop).toHaveStyle({ inset: '0', position: 'absolute' })
+		expect(isAnyModalOpen()).toBe(true)
 		expect(screen.getByRole('button', { name: '关闭任务详情' })).toBeInTheDocument()
 		expect(useTaskDetailViewModelMock).toHaveBeenCalledWith({ taskId: 'task-a', onClose })
 
 		fireEvent.click(screen.getByRole('button', { name: '关闭任务详情' }))
 		expect(onClose).toHaveBeenCalledTimes(1)
+		view.unmount()
+		expect(isAnyModalOpen()).toBe(false)
+		portalContainer.remove()
 	})
 
 	it('使用非模态 aside 与垂直 separator 呈现常驻详情', () => {
@@ -151,9 +166,8 @@ describe('EntityDetailDrawerHost', () => {
 				asideWidth={480}
 				effectivePresentation='sheet'
 				onClose={onClose}
-				onPresentationPreferenceChange={onPresentationPreferenceChange}
 				open
-				presentationPreference='sheet'
+				portalContainer={document.body}
 				{...overrides}
 			/>
 		)

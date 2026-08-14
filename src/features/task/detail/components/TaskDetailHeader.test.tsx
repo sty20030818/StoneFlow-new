@@ -14,26 +14,20 @@ vi.mock('@/features/entity-detail', () => ({
 
 describe('TaskDetailHeader', () => {
 	const flushNow = vi.fn<() => Promise<void>>()
-	const onPresentationPreferenceChange = vi.fn<(value: 'sheet' | 'aside') => void>()
 
 	beforeEach(() => {
 		flushNow.mockReset().mockResolvedValue(undefined)
-		onPresentationPreferenceChange.mockReset()
 		openPage.mockReset()
 	})
 
-	it('用 HeroUI 单选菜单切换 Sheet 与 Aside 偏好', async () => {
-		renderHeader('sheet')
+	it('详情头部不承载低频呈现方式设置', () => {
+		renderHeader()
 
-		fireEvent.click(screen.getByRole('button', { name: '详情呈现方式' }))
-		fireEvent.click(await screen.findByRole('menuitemradio', { name: 'Aside' }))
-
-		expect(onPresentationPreferenceChange).toHaveBeenCalledOnce()
-		expect(onPresentationPreferenceChange).toHaveBeenCalledWith('aside')
+		expect(screen.queryByRole('button', { name: '详情呈现方式' })).not.toBeInTheDocument()
 	})
 
 	it('打开独立页面前先 flush 自动保存', async () => {
-		renderHeader('aside')
+		renderHeader()
 
 		fireEvent.click(screen.getByRole('button', { name: '打开' }))
 
@@ -43,7 +37,7 @@ describe('TaskDetailHeader', () => {
 		})
 	})
 
-	function renderHeader(presentationPreference: 'sheet' | 'aside') {
+	function renderHeader() {
 		return render(
 			<TaskDetailHeader
 				autosave={
@@ -54,8 +48,6 @@ describe('TaskDetailHeader', () => {
 						status: 'idle',
 					} as unknown as AutosaveController<TaskDetailDraft>
 				}
-				onPresentationPreferenceChange={onPresentationPreferenceChange}
-				presentationPreference={presentationPreference}
 				taskId='task-a'
 			/>,
 		)

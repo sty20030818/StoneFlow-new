@@ -33,7 +33,6 @@ export function useShellChromeData(currentScope: Scope) {
 	const detailPresentation = useSidebarSettingsStore(
 		(state) => state.uiDevicePreferences?.detailPresentation ?? 'sheet',
 	)
-	const setDetailPresentation = useSidebarSettingsStore((state) => state.setDetailPresentation)
 	const setSidebarItemVisibility = useSidebarSettingsStore((state) => state.setItemVisibility)
 	const resetSidebarMainItemsVisibility = useSidebarSettingsStore(
 		(state) => state.resetMainItemsVisibility,
@@ -99,7 +98,6 @@ export function useShellChromeData(currentScope: Scope) {
 		deleteSpace,
 		setSidebarPreferences,
 		detailPresentation,
-		setDetailPresentation,
 		setSidebarItemVisibility,
 		resetSidebarMainItemsVisibility,
 	}

@@ -105,6 +105,7 @@ describe('useDetailPresentation', () => {
 			panelWidth: 1400,
 			effectivePresentation: 'aside',
 		})
+		expect(current?.panelElement).toBeInstanceOf(HTMLDivElement)
 		expect(current?.asideWidth).toBeCloseTo(476)
 
 		view.unmount()

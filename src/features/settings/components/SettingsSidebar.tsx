@@ -39,7 +39,7 @@ export function SettingsSidebar({
 
 	return (
 		<Sidebar
-			className='h-full min-h-0 w-full bg-transparent'
+			className='h-full min-h-0 bg-transparent'
 			style={{ '--sidebar-width': 'inherit', display: 'flex' } as CSSProperties}
 		>
 			<Sidebar.Header className='px-3 pb-1 pt-2'>

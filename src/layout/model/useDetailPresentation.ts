@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useState } from 'react'
 
 import { resolveDetailPresentation, type DetailPresentationInput } from './detailPresentation'
 
@@ -12,27 +12,27 @@ export function useDetailPresentation({
 	detailPresentation,
 	isCompact,
 }: UseDetailPresentationOptions) {
-	const panelRef = useRef<HTMLDivElement>(null)
+	const [panelElement, setPanelElement] = useState<HTMLDivElement | null>(null)
 	const [panelWidth, setPanelWidth] = useState(0)
 
 	useLayoutEffect(() => {
-		const panel = panelRef.current
-		if (!panel) return
+		if (!panelElement) return
 
-		setPanelWidth(panel.getBoundingClientRect().width)
+		setPanelWidth(panelElement.getBoundingClientRect().width)
 		if (typeof ResizeObserver === 'undefined') return
 
 		const observer = new ResizeObserver(([entry]) => {
-			setPanelWidth(entry?.contentRect.width ?? panel.getBoundingClientRect().width)
+			setPanelWidth(entry?.contentRect.width ?? panelElement.getBoundingClientRect().width)
 		})
-		observer.observe(panel)
+		observer.observe(panelElement)
 		return () => observer.disconnect()
-	}, [])
+	}, [panelElement])
 
 	const resolved = resolveDetailPresentation({ detailPresentation, panelWidth, isCompact })
 
 	return {
-		panelRef,
+		panelElement,
+		panelRef: setPanelElement,
 		panelWidth,
 		...resolved,
 	}

@@ -30,7 +30,7 @@ export function useTaskDetailViewModel({ taskId, onClose }: UseTaskDetailViewMod
 		base: baseDraft,
 		disabled: !autosaveTask,
 	})
-	const { flushNow, reset } = autosave
+	const { flushNow, isDirty, reset } = autosave
 	const lastTaskIdRef = useRef(taskId)
 	const flushRef = useRef(flushNow)
 	const [isArchiveBusy, setArchiveBusy] = useState(false)
@@ -51,7 +51,9 @@ export function useTaskDetailViewModel({ taskId, onClose }: UseTaskDetailViewMod
 		}
 
 		if (lastTaskIdRef.current === detail.task.id) {
-			reset(baseDraft)
+			if (!isDirty) {
+				reset(baseDraft)
+			}
 			return
 		}
 
@@ -59,7 +61,7 @@ export function useTaskDetailViewModel({ taskId, onClose }: UseTaskDetailViewMod
 			lastTaskIdRef.current = detail.task?.id ?? taskId
 			reset(baseDraft)
 		})
-	}, [baseDraft, detail.task, reset, taskId])
+	}, [baseDraft, detail.task, isDirty, reset, taskId])
 
 	useEffect(() => {
 		return () => {

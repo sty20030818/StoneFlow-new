@@ -67,7 +67,7 @@ export function SidebarNavRow({
 		>
 			{contextMenuContent ? (
 				<ContextMenu>
-					<ContextMenu.Trigger className='flex w-full min-w-0 items-center gap-3'>
+					<ContextMenu.Trigger className='flex w-full min-w-0 items-center gap-3 group-data-[sidebar-mode=icon]/sidebar-wrapper:justify-center group-data-[sidebar-mode=icon]/sidebar-wrapper:gap-0'>
 						{content}
 					</ContextMenu.Trigger>
 					{contextMenuContent}

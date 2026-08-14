@@ -1,38 +1,36 @@
 import { useCallback, useLayoutEffect, useRef } from 'react'
 import { CloseButton, Separator, Surface } from '@heroui/react'
 import { Sheet } from '@heroui-pro/react'
+import { UNSAFE_PortalProvider } from 'react-aria/PortalProvider'
 
-import {
-	TaskDetailContent,
-	useTaskDetailViewModel,
-	type TaskDetailPresentationPreference,
-} from '@/features/task'
+import { TaskDetailContent, useTaskDetailViewModel } from '@/features/task'
+import type { DetailPresentation } from '@/features/settings'
+import { useRegisterOpenModal } from '@/shared/lib/modal-guard'
 
 import type { EntityDetailRouteState } from '../model/entityDetailTypes'
 
 type EntityDetailDrawerHostProps = {
 	activeDetail: EntityDetailRouteState
 	open: boolean
-	effectivePresentation: TaskDetailPresentationPreference
-	presentationPreference: TaskDetailPresentationPreference
+	effectivePresentation: DetailPresentation
 	asideWidth: number
-	onPresentationPreferenceChange: (value: TaskDetailPresentationPreference) => void
 	onClose: () => void
+	portalContainer: HTMLElement | null
 }
 
 export function EntityDetailDrawerHost({
 	activeDetail,
 	open,
 	effectivePresentation,
-	presentationPreference,
 	asideWidth,
-	onPresentationPreferenceChange,
 	onClose,
+	portalContainer,
 }: EntityDetailDrawerHostProps) {
 	const scrollPositions = useRef(new Map<string, number>())
 	const returnFocusTarget = useRef<HTMLElement | null>(null)
 	const returnFocusCollectionRoot = useRef<HTMLElement | null>(null)
 	const wasOpen = useRef(false)
+	useRegisterOpenModal(Boolean(open && activeDetail && effectivePresentation === 'sheet'))
 
 	useLayoutEffect(() => {
 		if (open && !wasOpen.current) {
@@ -70,8 +68,7 @@ export function EntityDetailDrawerHost({
 			asideWidth={asideWidth}
 			effectivePresentation={effectivePresentation}
 			onClose={onClose}
-			onPresentationPreferenceChange={onPresentationPreferenceChange}
-			presentationPreference={presentationPreference}
+			portalContainer={portalContainer}
 			scrollPositions={scrollPositions.current}
 			taskId={activeDetail.id}
 		/>
@@ -86,10 +83,9 @@ type TaskEntityDetailProps = Omit<EntityDetailDrawerHostProps, 'activeDetail' | 
 function TaskEntityDetail({
 	taskId,
 	effectivePresentation,
-	presentationPreference,
 	asideWidth,
-	onPresentationPreferenceChange,
 	onClose,
+	portalContainer,
 	scrollPositions,
 }: TaskEntityDetailProps) {
 	const viewModel = useTaskDetailViewModel({ taskId, onClose })
@@ -109,40 +105,45 @@ function TaskEntityDetail({
 	)
 
 	const content = (
-		<TaskDetailContent
-			onClose={onClose}
-			onPresentationPreferenceChange={onPresentationPreferenceChange}
-			presentationPreference={presentationPreference}
-			scrollRef={setViewport}
-			viewModel={viewModel}
-		/>
+		<TaskDetailContent onClose={onClose} scrollRef={setViewport} viewModel={viewModel} />
 	)
 
 	if (effectivePresentation === 'sheet') {
 		return (
-			<Sheet
-				isDismissable
-				isModal
-				isOpen
-				onOpenChange={(nextOpen) => {
-					if (!nextOpen) onClose()
-				}}
-				placement='right'
-			>
-				<Sheet.Backdrop variant='opaque'>
-					<Sheet.Content
-						className='w-[min(40rem,calc(100vw-1rem))] max-w-[calc(100vw-1rem)]'
-						data-entity-detail-root='true'
-						data-entity-detail-sheet='true'
-					>
-						<Sheet.Dialog className='h-full overflow-hidden p-0'>
-							<Sheet.Heading className='sr-only'>任务详情</Sheet.Heading>
-							<Sheet.CloseTrigger aria-label='关闭任务详情' className='z-10' />
-							{content}
-						</Sheet.Dialog>
-					</Sheet.Content>
-				</Sheet.Backdrop>
-			</Sheet>
+			<UNSAFE_PortalProvider getContainer={() => portalContainer}>
+				<Sheet
+					isDismissable
+					isDetached
+					isModal
+					isOpen
+					onOpenChange={(nextOpen) => {
+						if (!nextOpen) onClose()
+					}}
+					placement='right'
+				>
+					<Sheet.Backdrop style={{ inset: 0, position: 'absolute' }} variant='transparent'>
+						<Sheet.Content
+							data-entity-detail-root='true'
+							data-entity-detail-sheet='true'
+							style={{
+								bottom: '0.5rem',
+								height: 'auto',
+								maxWidth: 'calc(100% - 1rem)',
+								position: 'absolute',
+								right: '0.5rem',
+								top: '0.5rem',
+								width: 'min(40rem, calc(100% - 1rem))',
+							}}
+						>
+							<Sheet.Dialog className='h-full overflow-hidden p-0'>
+								<Sheet.Heading className='sr-only'>任务详情</Sheet.Heading>
+								<Sheet.CloseTrigger aria-label='关闭任务详情' className='z-10' />
+								{content}
+							</Sheet.Dialog>
+						</Sheet.Content>
+					</Sheet.Backdrop>
+				</Sheet>
+			</UNSAFE_PortalProvider>
 		)
 	}
 

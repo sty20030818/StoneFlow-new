@@ -77,10 +77,7 @@ export { TaskPageState } from './detail/components/TaskPageState'
 /**
  * Sheet / Aside 共用的任务详情内容与状态模型。
  */
-export {
-	TaskDetailContent,
-	type TaskDetailPresentationPreference,
-} from './detail/components/TaskDetailContent'
+export { TaskDetailContent } from './detail/components/TaskDetailContent'
 export {
 	useTaskDetailViewModel,
 	type TaskDetailViewModel,

@@ -7,23 +7,13 @@ import { TaskDrawerBody } from './TaskDrawerBody'
 import { TaskDrawerFooter } from './TaskDrawerFooter'
 import { TaskDetailHeader } from './TaskDetailHeader'
 
-export type TaskDetailPresentationPreference = 'sheet' | 'aside'
-
 type TaskDetailContentProps = {
 	viewModel: TaskDetailViewModel
 	onClose: () => void
-	presentationPreference: TaskDetailPresentationPreference
-	onPresentationPreferenceChange: (value: TaskDetailPresentationPreference) => void
 	scrollRef?: Ref<HTMLDivElement>
 }
 
-export function TaskDetailContent({
-	viewModel,
-	onClose,
-	presentationPreference,
-	onPresentationPreferenceChange,
-	scrollRef,
-}: TaskDetailContentProps) {
+export function TaskDetailContent({ viewModel, onClose, scrollRef }: TaskDetailContentProps) {
 	if (viewModel.status === 'loading') {
 		return <TaskDetailState message='加载中...' />
 	}
@@ -38,12 +28,7 @@ export function TaskDetailContent({
 
 	return (
 		<div className='flex min-h-0 flex-1 flex-col' data-task-detail-content='true'>
-			<TaskDetailHeader
-				autosave={viewModel.autosave}
-				onPresentationPreferenceChange={onPresentationPreferenceChange}
-				presentationPreference={presentationPreference}
-				taskId={viewModel.task.id}
-			/>
+			<TaskDetailHeader autosave={viewModel.autosave} taskId={viewModel.task.id} />
 			<TaskDrawerBody
 				autosave={viewModel.autosave}
 				projects={viewModel.projects}
