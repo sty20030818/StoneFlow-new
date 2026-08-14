@@ -1,15 +1,24 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import {
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useMemo,
+	useState,
+	type CSSProperties,
+} from 'react'
+import { useNavigate } from '@tanstack/react-router'
+import { Sidebar } from '@heroui-pro/react'
 
 import type { AppLayoutProps } from '@/layout/appLayoutTypes'
 import { useShellSessionRouteHistory } from '@/app/navigation'
 import { useShellChromeData } from '@/layout/model/useShellChromeData'
 import { useShellCreateDialogState } from '@/layout/model/useShellCreateDialogState'
 import { useShellCommandSystem } from '@/layout/model/useShellCommandSystem'
+import { useShellSidebarController } from '@/layout/model/useShellSidebarController'
 import { useSettingsReturnPath } from '@/layout/model/useSettingsReturnPath'
 import { ShellChrome } from '@/layout/ShellChrome'
 import { ShellLayoutSkeleton } from '@/layout/ShellLayoutSkeleton'
 import { ShellOverlays } from '@/layout/overlays/ShellOverlays'
-import { SidebarProvider } from '@/shared/components/base/sidebar'
 import { SyncStatusProvider } from '@/features/sync'
 import { useUpdateEvents } from '@/features/update'
 import { getUpdateSettings, type UpdateChannel } from '@/features/update/contract'
@@ -70,6 +79,7 @@ export function ShellLayoutContent({
 	const settingsReturnPath = useSettingsReturnPath(shellRoute, currentScope)
 
 	const chrome = useShellChromeData(currentScope)
+	const navigate = useNavigate({ from: '/' })
 
 	const createDialog = useShellCreateDialogState({
 		currentScope,
@@ -101,6 +111,18 @@ export function ShellLayoutContent({
 		projects: chrome.sidebarProjectLinks,
 	})
 
+	const sidebar = useShellSidebarController({
+		initialPreferences: {
+			width: chrome.sidebarSettings?.width ?? 256,
+			desktopPreference: chrome.sidebarSettings?.desktopPreference ?? 'expanded',
+		},
+		onPreferencesCommit: (preferences) => {
+			void chrome.setSidebarPreferences(preferences)
+		},
+	})
+	const closeMobileSidebar = sidebar.setMobileSheetOpen
+	useEffect(() => closeMobileSidebar(false), [closeMobileSidebar, shellRoute.fullPath])
+
 	const command = useShellCommandSystem({
 		currentScope,
 		currentSpaceId,
@@ -116,6 +138,7 @@ export function ShellLayoutContent({
 		canGoBack: routeHistory.canGoBack,
 		isSettingsMode,
 		settingsReturnPath,
+		toggleSidebar: sidebar.toggleSidebar,
 	})
 
 	if (!chrome.isChromeReady || !chrome.sidebarSettings) {
@@ -135,16 +158,19 @@ export function ShellLayoutContent({
 		command.commandProjects.length > 0 ? command.commandProjects : chrome.sidebarProjectLinks
 
 	return (
-		<SidebarProvider
-			className='sf-shell-layout relative flex h-full min-h-0 flex-col overflow-hidden bg-legacy-background'
-			desktopPreference={chrome.sidebarSettings.desktopPreference}
-			onDesktopPreferenceChange={(next) => {
-				void chrome.setDesktopPreference(next)
+		<Sidebar.Provider
+			className='sf-shell-layout group/sidebar-wrapper relative flex h-full min-h-0 flex-col overflow-hidden bg-legacy-background'
+			collapsible='icon'
+			data-sidebar-mode={sidebar.mode}
+			navigate={(href) => {
+				sidebar.setMobileSheetOpen(false)
+				void navigate({ to: href as never })
 			}}
-			onSidebarWidthCommit={(width) => {
-				void chrome.setSidebarWidth(width)
-			}}
-			sidebarWidth={chrome.sidebarSettings.width}
+			onOpenChange={sidebar.setDesktopOpen}
+			open={sidebar.providerOpen}
+			style={{ '--sidebar-width': `${sidebar.liveWidth}px` } as CSSProperties}
+			toggleShortcut={false}
+			variant='inset'
 		>
 			<BootShellDismiss />
 			<SyncStatusProvider>
@@ -163,6 +189,7 @@ export function ShellLayoutContent({
 					routeHistory={routeHistory}
 					settingsReturnPath={settingsReturnPath}
 					shellRoute={shellRoute}
+					sidebar={sidebar}
 				>
 					{children}
 				</ShellChrome>
@@ -195,7 +222,7 @@ export function ShellLayoutContent({
 					toggleTaskCreatePresentation={createDialog.toggleTaskCreatePresentation}
 				/>
 			</SyncStatusProvider>
-		</SidebarProvider>
+		</Sidebar.Provider>
 	)
 }
 

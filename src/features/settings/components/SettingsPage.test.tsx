@@ -998,8 +998,7 @@ function createSidebarStoreState() {
 		load: loadSidebarSettingsSpy,
 		resetMainItemsVisibility: vi.fn(),
 		setItemVisibility: setItemVisibilitySpy,
-		setSidebarWidth: vi.fn(),
-		setDesktopPreference: vi.fn(),
+		setSidebarPreferences: vi.fn(),
 		setProjectSectionConfig: setProjectSectionConfigSpy,
 	}
 }

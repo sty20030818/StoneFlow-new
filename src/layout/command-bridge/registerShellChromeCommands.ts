@@ -3,7 +3,6 @@ import { startTransition } from 'react'
 import { openShellNavigationTarget } from '@/app/navigation'
 import type { CommandHostContext, ShellCommandActions } from '@/features/command'
 import { useDialogStore } from '@/features/shell-dialogs'
-import { requestSidebarToggle } from '@/shared/components/base/sidebar'
 import type { ShellNavigationTarget } from '@/shared/types'
 
 /**
@@ -26,6 +25,7 @@ export function registerShellChromeCommands(
 		| 'activeDetail'
 		| 'closeEntityDrawer'
 		| 'taskPreviewController'
+		| 'toggleSidebar'
 		| 'isCommandOpen'
 		| 'canGoBack'
 		| 'goBack'
@@ -94,9 +94,7 @@ export function registerShellChromeCommands(
 				host.goBack()
 			}
 		},
-		toggleSidebar: () => {
-			requestSidebarToggle()
-		},
+		toggleSidebar: host.toggleSidebar,
 		navigateTo: (target: ShellNavigationTarget) => {
 			startTransition(() => {
 				void host.navigate({

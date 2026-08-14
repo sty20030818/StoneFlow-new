@@ -56,5 +56,6 @@ export type ShellCommandBridgeDeps = {
 	settingsReturnPath?: string
 	submitRegistryActions: SubmitActions
 	taskPreviewController: TaskPreview
+	toggleSidebar: () => void
 	toggleShortcutHelp: () => void
 }

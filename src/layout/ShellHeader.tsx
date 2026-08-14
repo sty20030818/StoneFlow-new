@@ -1,5 +1,6 @@
 import { startTransition, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
+import { Avatar, Button, Tooltip } from '@heroui/react'
 
 import { getSectionLabel, getScopeLabel, type ShellProjectLink } from '@/layout/config'
 import { openProjectDetail } from '@/app/navigation'
@@ -8,19 +9,16 @@ import { HistoryDropdown } from '@/layout/header/HistoryDropdown'
 import { NavBackForward } from '@/layout/header/NavBackForward'
 import { UserAppMenu } from '@/layout/header/UserAppMenu'
 import type { ShellSectionKey } from '@/layout/types'
+import type { ShellSidebarController } from '@/layout/model/useShellSidebarController'
 import { GlobalSearchInput } from '@/features/global-search'
 import { resolveProjectSearchTargetPath } from '@/features/global-search'
 import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
 import type { Scope, Space, TaskStatus } from '@/shared/types'
-import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/base/avatar'
-import { Button } from '@/shared/components/base/button'
-import { useSidebar } from '@/shared/components/base/sidebar-context'
-import { ActionTooltip } from '@/shared/components/tooltip'
 import { cn } from '@/shared/lib/utils'
 import {
 	ChordHint,
-	CommandActionTooltip,
 	CommandMenu,
+	CommandTooltipRow,
 	ShortcutHelp,
 	type CommandMenuMode,
 } from '@/features/command'
@@ -78,6 +76,7 @@ type ShellHeaderProps = {
 	onSelectTaskPlacement: (target: TaskPlacementTarget) => void
 	onSelectTaskPriority: (priority: TaskPriorityValue) => void
 	onSelectTaskStatus: (status: TaskStatus) => void
+	sidebar: ShellSidebarController
 }
 
 export function ShellHeader({
@@ -107,6 +106,7 @@ export function ShellHeader({
 	onSelectTaskStatus,
 	projects,
 	spaces,
+	sidebar,
 }: ShellHeaderProps) {
 	const navigate = useNavigate({ from: '/' })
 	const [isMaximized, setIsMaximized] = useState(false)
@@ -115,9 +115,10 @@ export function ShellHeader({
 		() => /Windows/i.test(window.navigator.userAgent) || window.navigator.platform === 'Win32',
 		[],
 	)
-	const { visualState: sidebarVisualState, isMobile: isLayoutNarrow } = useSidebar()
-	const sidebarToggleOpen =
-		sidebarVisualState === 'desktop-expanded' || sidebarVisualState === 'mobile-open'
+	const isLayoutNarrow = sidebar.isCompact
+	const sidebarToggleOpen = sidebar.isCompact
+		? sidebar.mobileSheetOpen
+		: sidebar.mode === 'expanded'
 	const SidebarToggleIcon = sidebarToggleOpen ? PanelLeftCloseIcon : PanelLeftOpenIcon
 
 	/** 与 `max-sm` 同为 640px 阈；`display: contents` 与变体并用时纯 CSS 不可靠，故用媒体查询做显示开关 */
@@ -221,6 +222,29 @@ export function ShellHeader({
 		}
 	}
 
+	const sidebarToggleControl = (
+		<Tooltip>
+			<Button
+				aria-label={sidebarToggleOpen ? '收起侧边栏' : '展开侧边栏'}
+				className={cn('shrink-0', shellChromeNavCircleButtonClass)}
+				data-slot='sidebar-trigger'
+				isIconOnly
+				onPress={() => onRunCommand(COMMAND_IDS.layoutToggleSidebar)}
+				size='sm'
+				type='button'
+				variant='ghost'
+			>
+				<SidebarToggleIcon className='size-3.5' />
+			</Button>
+			<Tooltip.Content>
+				<CommandTooltipRow
+					commandId={COMMAND_IDS.layoutToggleSidebar}
+					label={sidebarToggleOpen ? '收起侧边栏' : '展开侧边栏'}
+				/>
+			</Tooltip.Content>
+		</Tooltip>
+	)
+
 	return (
 		<>
 			<div className='relative'>
@@ -237,14 +261,14 @@ export function ShellHeader({
 						<div
 							className={cn(
 								'flex h-full shrink-0 flex-nowrap items-center',
-								'group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:w-(--sf-shell-sidebar-reserved-width) group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:min-w-0',
-								'group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:pr-3',
-								'group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:w-max group-data-[sidebar-layout=mobile]/sidebar-wrapper:w-max',
+								'group-data-[sidebar-mode=expanded]/sidebar-wrapper:w-(--sidebar-width) group-data-[sidebar-mode=expanded]/sidebar-wrapper:min-w-0',
+								'group-data-[sidebar-mode=expanded]/sidebar-wrapper:pr-3',
+								'group-data-[sidebar-mode=icon]/sidebar-wrapper:w-max group-data-[sidebar-mode=compact]/sidebar-wrapper:w-max',
 								isMac
-									? 'pl-24 group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:pl-0'
-									: 'pl-5.5 group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:pl-3',
-								!isMac && 'group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:pl-3',
-								!isMac && 'group-data-[sidebar-layout=mobile]/sidebar-wrapper:pl-3',
+									? 'pl-24 group-data-[sidebar-mode=expanded]/sidebar-wrapper:pl-0'
+									: 'pl-5.5 group-data-[sidebar-mode=expanded]/sidebar-wrapper:pl-3',
+								!isMac && 'group-data-[sidebar-mode=icon]/sidebar-wrapper:pl-3',
+								!isMac && 'group-data-[sidebar-mode=compact]/sidebar-wrapper:pl-3',
 							)}
 							data-slot='shell-header-left'
 							data-tauri-drag-region
@@ -257,19 +281,19 @@ export function ShellHeader({
 							<div className='flex min-w-0 flex-1 items-center gap-1' data-tauri-drag-region>
 								{!isMac && (!isWin || !isLayoutNarrow) ? (
 									<Avatar className='size-7 shrink-0 rounded-lg ring-1 ring-sf-border-strong'>
-										<AvatarImage
+										<Avatar.Image
 											alt='StoneFlow'
 											className='rounded-lg'
 											draggable={false}
 											src='/StoneFlow.png'
 										/>
-										<AvatarFallback className='rounded-lg'>SF</AvatarFallback>
+										<Avatar.Fallback className='rounded-lg'>SF</Avatar.Fallback>
 									</Avatar>
 								) : null}
 
 								{/* 展开态把导航键推到 sidebar 右边界，拖拽空白只承担窗体 chrome。 */}
 								<div
-									className='hidden h-full min-w-0 flex-1 self-stretch group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:block group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:hidden group-data-[sidebar-layout=mobile]/sidebar-wrapper:hidden'
+									className='hidden h-full min-w-0 flex-1 self-stretch group-data-[sidebar-mode=expanded]/sidebar-wrapper:block group-data-[sidebar-mode=icon]/sidebar-wrapper:hidden group-data-[sidebar-mode=compact]/sidebar-wrapper:hidden'
 									data-slot='shell-header-left-drag'
 									data-tauri-drag-region
 								/>
@@ -280,26 +304,7 @@ export function ShellHeader({
 								data-slot='shell-header-nav'
 								data-tauri-drag-region
 							>
-								<CommandActionTooltip
-									commandId={COMMAND_IDS.layoutToggleSidebar}
-									label={sidebarToggleOpen ? '收起侧边栏' : '展开侧边栏'}
-								>
-									<Button
-										aria-label={sidebarToggleOpen ? '收起侧边栏' : '展开侧边栏'}
-										className={cn(
-											'hidden shrink-0 group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:hidden group-data-[sidebar-layout=mobile]/sidebar-wrapper:inline-flex group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:inline-flex',
-											shellChromeNavCircleButtonClass,
-											'focus-visible:ring-0',
-										)}
-										data-slot='sidebar-trigger'
-										onClick={() => onRunCommand(COMMAND_IDS.layoutToggleSidebar)}
-										size='icon-sm'
-										type='button'
-										variant='ghost'
-									>
-										<SidebarToggleIcon className='size-3.5' />
-									</Button>
-								</CommandActionTooltip>
+								{sidebar.mode !== 'expanded' ? sidebarToggleControl : null}
 
 								<HistoryDropdown
 									entries={routeHistoryEntries}
@@ -317,10 +322,11 @@ export function ShellHeader({
 					) : null}
 
 					<div
-						className='flex min-h-0 min-w-0 flex-1 flex-nowrap items-center gap-3 px-0 group-data-[sidebar-layout=mobile]/sidebar-wrapper:min-w-0'
+						className='flex min-h-0 min-w-0 flex-1 flex-nowrap items-center gap-3 px-0 group-data-[sidebar-mode=compact]/sidebar-wrapper:min-w-0'
 						data-slot='shell-header-main'
 						data-tauri-drag-region
 					>
+						{!isAtLeastSm && sidebar.isCompact ? sidebarToggleControl : null}
 						<div
 							className='flex min-h-0 min-w-0 flex-1 justify-center'
 							data-slot='shell-header-center'
@@ -344,18 +350,22 @@ export function ShellHeader({
 							data-tauri-drag-region
 						>
 							{/* 单一创建入口：与 C 键同源 quick task；完整任务/项目走 Command / 侧栏 */}
-							<CommandActionTooltip commandId={COMMAND_IDS.newQuickTask} label='快速新建任务'>
+							<Tooltip>
 								<Button
 									aria-label='快速新建任务'
 									className={shellChromeIconActionClass}
-									onClick={() => onRunCommand(COMMAND_IDS.newQuickTask)}
-									size='icon'
+									isIconOnly
+									onPress={() => onRunCommand(COMMAND_IDS.newQuickTask)}
+									size='sm'
 									type='button'
 									variant='outline'
 								>
 									<SquarePenIcon className='size-3.5' />
 								</Button>
-							</CommandActionTooltip>
+								<Tooltip.Content>
+									<CommandTooltipRow commandId={COMMAND_IDS.newQuickTask} label='快速新建任务' />
+								</Tooltip.Content>
+							</Tooltip>
 
 							<div className={shellChromeAvatarClusterClass}>
 								<UserAppMenu
@@ -376,51 +386,45 @@ export function ShellHeader({
 							{/* macOS 使用系统原生窗体控制，避免与页面内自绘按钮重复。 */}
 							{!isMac ? (
 								<div className={shellChromeWindowControlsRowClass} data-tauri-drag-region>
-									<ActionTooltip>
-										<ActionTooltip.Trigger asChild>
-											<Button
-												aria-label='最小化窗口'
-												className={shellChromeWindowControlClass}
-												onClick={() => void handleMinimize()}
-												variant='ghost'
-											>
-												<MinusIcon className='size-3.5' />
-											</Button>
-										</ActionTooltip.Trigger>
-										<ActionTooltip.Content>
-											<ActionTooltip.Row label='最小化窗口' />
-										</ActionTooltip.Content>
-									</ActionTooltip>
-									<ActionTooltip>
-										<ActionTooltip.Trigger asChild>
-											<Button
-												aria-label={isMaximized ? '还原窗口' : '最大化窗口'}
-												className={shellChromeWindowControlClass}
-												onClick={() => void handleToggleMaximize()}
-												variant='ghost'
-											>
-												<SquareIcon className={`size-3 ${isMaximized ? 'scale-[0.88]' : ''}`} />
-											</Button>
-										</ActionTooltip.Trigger>
-										<ActionTooltip.Content>
-											<ActionTooltip.Row label={isMaximized ? '还原窗口' : '最大化窗口'} />
-										</ActionTooltip.Content>
-									</ActionTooltip>
-									<ActionTooltip>
-										<ActionTooltip.Trigger asChild>
-											<Button
-												aria-label='关闭窗口'
-												className={`${shellChromeWindowControlClass} hover:bg-destructive hover:text-white`}
-												onClick={() => void handleClose()}
-												variant='ghost'
-											>
-												<XIcon className='size-3.5' />
-											</Button>
-										</ActionTooltip.Trigger>
-										<ActionTooltip.Content>
-											<ActionTooltip.Row label='关闭窗口' />
-										</ActionTooltip.Content>
-									</ActionTooltip>
+									<Tooltip>
+										<Button
+											aria-label='最小化窗口'
+											className={shellChromeWindowControlClass}
+											isIconOnly
+											onPress={() => void handleMinimize()}
+											size='sm'
+											variant='ghost'
+										>
+											<MinusIcon className='size-3.5' />
+										</Button>
+										<Tooltip.Content>最小化窗口</Tooltip.Content>
+									</Tooltip>
+									<Tooltip>
+										<Button
+											aria-label={isMaximized ? '还原窗口' : '最大化窗口'}
+											className={shellChromeWindowControlClass}
+											isIconOnly
+											onPress={() => void handleToggleMaximize()}
+											size='sm'
+											variant='ghost'
+										>
+											<SquareIcon className={`size-3 ${isMaximized ? 'scale-[0.88]' : ''}`} />
+										</Button>
+										<Tooltip.Content>{isMaximized ? '还原窗口' : '最大化窗口'}</Tooltip.Content>
+									</Tooltip>
+									<Tooltip>
+										<Button
+											aria-label='关闭窗口'
+											className={`${shellChromeWindowControlClass} hover:bg-destructive hover:text-white`}
+											isIconOnly
+											onPress={() => void handleClose()}
+											size='sm'
+											variant='ghost'
+										>
+											<XIcon className='size-3.5' />
+										</Button>
+										<Tooltip.Content>关闭窗口</Tooltip.Content>
+									</Tooltip>
 								</div>
 							) : null}
 						</div>

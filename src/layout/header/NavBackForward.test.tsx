@@ -6,8 +6,6 @@ import {
 	KeybindingRegistry,
 	ShortcutRegistryProvider,
 } from '@/features/command'
-import { TooltipProvider } from '@/shared/components/base/tooltip'
-
 import { NavBackForward } from './NavBackForward'
 
 const TEST_SHORTCUT_REGISTRY = new KeybindingRegistry(DEFAULT_KEYBINDINGS)
@@ -18,23 +16,23 @@ describe('NavBackForward', () => {
 		const onForward = vi.fn()
 		render(
 			<ShortcutRegistryProvider registry={TEST_SHORTCUT_REGISTRY}>
-				<TooltipProvider>
-					<NavBackForward canGoBack canGoForward={false} onBack={onBack} onForward={onForward} />
-				</TooltipProvider>
+				<NavBackForward canGoBack canGoForward={false} onBack={onBack} onForward={onForward} />
 			</ShortcutRegistryProvider>,
 		)
 
 		const backButton = screen.getByRole('button', { name: '后退' })
-		fireEvent.focus(backButton)
+		fireEvent.pointerMove(backButton, { pointerType: 'mouse' })
+		fireEvent.pointerEnter(backButton, { pointerType: 'mouse' })
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('后退')
 		expect(screen.getByLabelText(/^按 (?:Command|Control) \+ \[$/)).toBeInTheDocument()
 
 		fireEvent.click(backButton)
 		expect(onBack).toHaveBeenCalledOnce()
 
-		fireEvent.blur(backButton)
+		fireEvent.pointerLeave(backButton, { pointerType: 'mouse' })
 		const disabledForwardTrigger = screen.getByRole('group', { name: '前进' })
-		fireEvent.focus(disabledForwardTrigger)
+		fireEvent.pointerMove(disabledForwardTrigger, { pointerType: 'mouse' })
+		fireEvent.pointerEnter(disabledForwardTrigger, { pointerType: 'mouse' })
 		const disabledTooltip = await screen.findByRole('tooltip')
 		expect(disabledTooltip).toHaveTextContent('前进')
 		expect(disabledTooltip).toHaveTextContent('没有可前进的页面')

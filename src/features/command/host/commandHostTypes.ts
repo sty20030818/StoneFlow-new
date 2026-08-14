@@ -61,6 +61,7 @@ export type CommandHostContext = {
 		openPreview: (taskId: string, source: 'keyboard' | 'pointer') => void
 		closePreview: () => void
 	}
+	toggleSidebar: () => void
 	toggleShortcutHelp: () => void
 	/** Settings Mode：Esc / 关闭应走 returnPath，而非会话 goBack */
 	isSettingsMode?: boolean

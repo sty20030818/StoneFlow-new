@@ -1,34 +1,14 @@
 import { useNavigate } from '@tanstack/react-router'
+import { Button, Tooltip } from '@heroui/react'
+import { Sidebar } from '@heroui-pro/react'
+import { ChevronLeftIcon } from 'lucide-react'
+import type { CSSProperties } from 'react'
 
 import { openStartupFallback } from '@/app/navigation'
+import type { Scope } from '@/shared/types'
+
 import { writeLastSettingsSection, type SettingsSectionKey } from '../contract'
 import { SETTINGS_NAV_GROUPS } from '../model/settingsNav'
-import type { Scope } from '@/shared/types'
-import { cn } from '@/shared/lib/utils'
-import {
-	Sidebar,
-	SidebarContent,
-	SidebarGroup,
-	SidebarGroupContent,
-	SidebarHeader,
-	SidebarMenu,
-	SidebarMenuButton,
-	SidebarMenuItem,
-	SidebarRail,
-} from '@/shared/components/base/sidebar'
-import { ActionTooltip } from '@/shared/components/tooltip'
-import {
-	sidebarMenuIconClass,
-	sidebarMenuLabelClass,
-	sidebarShellNavLinkStretchClass,
-} from '@/shared/components/patterns/sidebar-item'
-import { ChevronLeftIcon } from 'lucide-react'
-
-/** 设置侧栏分区标题：与原「设置」主标题同级样式，左对齐 */
-const settingsSidebarSectionTitleClass = cn(
-	'px-2.5 pb-1 pt-3 text-left text-[13px] font-semibold tracking-tight text-legacy-foreground',
-	'group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:sr-only group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:sr-only',
-)
 
 type SettingsSidebarProps = {
 	currentScope: Scope
@@ -37,10 +17,7 @@ type SettingsSidebarProps = {
 	returnPath: string
 }
 
-/**
- * Settings Mode 侧栏：返回应用 + 分区导航（偏好 / 数据）。
- * 不渲染 Space switcher / 项目列表 / 同步底条。
- */
+/** Settings Mode 导航；容器由 Shell 决定是桌面 Sidebar 还是 compact Sheet。 */
 export function SettingsSidebar({
 	currentScope,
 	currentSpaceId,
@@ -56,79 +33,62 @@ export function SettingsSidebar({
 	}
 
 	function handleOpenSection(path: string, section: SettingsSectionKey) {
-		// 立即记住分区，避免仅依赖 SettingsPage effect
 		writeLastSettingsSection(section)
-		// 设置内分区间不堆 history
 		void navigate({ to: path as never, replace: true })
 	}
 
 	return (
-		<Sidebar collapsible='icon'>
-			<SidebarHeader className='gap-1 px-3 pb-1 pt-2 group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:px-2 group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:px-2'>
-				<div className={sidebarShellNavLinkStretchClass}>
-					<ActionTooltip>
-						<ActionTooltip.Trigger asChild>
-							<SidebarMenuButton
-								aria-label='返回应用'
-								className='h-10 min-h-10 justify-start text-left'
-								onClick={handleBack}
-								type='button'
-							>
-								<ChevronLeftIcon className={sidebarMenuIconClass} />
-								<span className={cn(sidebarMenuLabelClass, 'text-left')}>返回应用</span>
-							</SidebarMenuButton>
-						</ActionTooltip.Trigger>
-						<ActionTooltip.Content side='right' sideOffset={8}>
-							<ActionTooltip.Row label='返回应用' />
-						</ActionTooltip.Content>
-					</ActionTooltip>
-				</div>
-			</SidebarHeader>
-
-			<SidebarContent className='px-0'>
-				{SETTINGS_NAV_GROUPS.map((group) => (
-					<SidebarGroup
-						className='px-3 group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:px-2'
-						key={group.key}
+		<Sidebar
+			className='h-full min-h-0 w-full bg-transparent'
+			style={{ '--sidebar-width': 'inherit', display: 'flex' } as CSSProperties}
+		>
+			<Sidebar.Header className='px-3 pb-1 pt-2'>
+				<Tooltip closeDelay={0} delay={0}>
+					<Button
+						fullWidth
+						aria-label='返回应用'
+						className='h-10 justify-start px-2'
+						onPress={handleBack}
+						variant='ghost'
 					>
-						<p className={settingsSidebarSectionTitleClass}>{group.label}</p>
-						<SidebarGroupContent>
-							<SidebarMenu>
-								{group.items.map((item) => {
-									const to = item.to(currentScope, fallbackSpaceId)
-									const isActive = activeSettingsSection === item.key
-									const Icon = item.icon
-									return (
-										<SidebarMenuItem key={item.key}>
-											<div className={sidebarShellNavLinkStretchClass}>
-												<ActionTooltip>
-													<ActionTooltip.Trigger asChild>
-														<SidebarMenuButton
-															className='justify-start text-left'
-															isActive={isActive}
-															onClick={() => handleOpenSection(to, item.key)}
-															type='button'
-														>
-															<Icon className={sidebarMenuIconClass} />
-															<span className={cn(sidebarMenuLabelClass, 'text-left')}>
-																{item.label}
-															</span>
-														</SidebarMenuButton>
-													</ActionTooltip.Trigger>
-													<ActionTooltip.Content side='right' sideOffset={8}>
-														<ActionTooltip.Row label={item.label} />
-													</ActionTooltip.Content>
-												</ActionTooltip>
-											</div>
-										</SidebarMenuItem>
-									)
-								})}
-							</SidebarMenu>
-						</SidebarGroupContent>
-					</SidebarGroup>
+						<ChevronLeftIcon className='size-4 shrink-0' />
+						<span className='truncate text-left' data-sidebar='label'>
+							返回应用
+						</span>
+					</Button>
+					<Tooltip.Content placement='right'>返回应用</Tooltip.Content>
+				</Tooltip>
+			</Sidebar.Header>
+
+			<Sidebar.Content className='px-3'>
+				{SETTINGS_NAV_GROUPS.map((group) => (
+					<Sidebar.Group key={group.key}>
+						<Sidebar.GroupLabel>{group.label}</Sidebar.GroupLabel>
+						<Sidebar.Menu aria-label={`${group.label}设置`}>
+							{group.items.map((item) => {
+								const to = item.to(currentScope, fallbackSpaceId)
+								const Icon = item.icon
+
+								return (
+									<Sidebar.MenuItem
+										id={`settings:${item.key}`}
+										isCurrent={activeSettingsSection === item.key}
+										key={item.key}
+										onAction={() => handleOpenSection(to, item.key)}
+										textValue={item.label}
+										tooltip={item.label}
+									>
+										<Sidebar.MenuIcon>
+											<Icon className='size-4' />
+										</Sidebar.MenuIcon>
+										<Sidebar.MenuLabel>{item.label}</Sidebar.MenuLabel>
+									</Sidebar.MenuItem>
+								)
+							})}
+						</Sidebar.Menu>
+					</Sidebar.Group>
 				))}
-			</SidebarContent>
-			<SidebarRail />
+			</Sidebar.Content>
 		</Sidebar>
 	)
 }

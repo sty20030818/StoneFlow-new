@@ -55,6 +55,7 @@ export function useShellCommandSystem({
 	canGoBack,
 	isSettingsMode = false,
 	settingsReturnPath,
+	toggleSidebar,
 }: {
 	currentScope: Scope
 	currentSpaceId: string | null
@@ -71,6 +72,7 @@ export function useShellCommandSystem({
 	/** Settings Mode：Esc 关层无上层时可退出设置 */
 	isSettingsMode?: boolean
 	settingsReturnPath?: string
+	toggleSidebar: () => void
 }) {
 	const isCommandOpen = useDialogStore(selectIsCommandOpen)
 	const commandMenuMode = useDialogStore(selectCommandMenuMode)
@@ -138,6 +140,7 @@ export function useShellCommandSystem({
 		settingsReturnPath,
 		submitRegistryActions,
 		taskPreviewController,
+		toggleSidebar,
 		toggleShortcutHelp,
 	})
 

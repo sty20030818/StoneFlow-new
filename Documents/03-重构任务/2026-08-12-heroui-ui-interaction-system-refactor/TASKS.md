@@ -1,10 +1,10 @@
 # HeroUI-only UI 平台、Linear 浅色设计系统与键盘交互重写 - Tasks
 
-> 当前状态：阶段 3。阶段 C 已完成，下一项为阶段 D「Shell 与 Sidebar 三态」。
+> 当前状态：阶段 3。阶段 D 已完成，下一项为阶段 E「任务详情 Sheet / Aside」。
 
 ## 当前阶段
 
-- 阶段 A「决策固化、供应链与迁移基线」、阶段 B「HeroUI 平台、主题与字体基础」和阶段 C「StoneFlow 第一方动画清场」已完成。Windows WebView2 不属于本任务验收范围，也不阻塞后续阶段。
+- 阶段 A「决策固化、供应链与迁移基线」、阶段 B「HeroUI 平台、主题与字体基础」、阶段 C「StoneFlow 第一方动画清场」和阶段 D「Shell 与 Sidebar 三态」已完成。Windows WebView2 不属于本任务验收范围，也不阻塞后续阶段。
 - 执行任意 task 前，必须重读 [SPEC.md](./SPEC.md) 对应 AC 与 [PLAN.md](./PLAN.md) 对应方案；后续 task 默认按编号顺序依赖。
 - 任一锁定包 API、供应链访问、性能或产品合同与 PLAN 冲突时，先在本文件「与 SPEC/PLAN 的实施偏差」登记并停止相关切片，不得静默增加兼容层。
 
@@ -138,37 +138,37 @@
 
 **阶段 D：Shell 与 Sidebar 三态**
 
-- [ ] T31 在 `src/layout/model/useShellSidebarController.ts` 与 `src/layout/model/shellSidebarController.test.ts` 建立 Sidebar 唯一状态 owner，覆盖 expanded/icon/compact、单一 `matchMedia(1024px)`、mobile Sheet、live/committed width 与响应式不覆盖持久偏好。
+- [x] T31 在 `src/layout/model/useShellSidebarController.ts` 与 `src/layout/model/shellSidebarController.test.ts` 建立 Sidebar 唯一状态 owner，覆盖 expanded/icon/compact、单一 `matchMedia(1024px)`、mobile Sheet、live/committed width 与响应式不覆盖持久偏好。
   _对应验收标准：AC-14, AC-15, AC-18, AC-19, AC-20_
   _测试先行：`src/layout/model/shellSidebarController.test.ts`_
 
-- [ ] T32 在 `src/layout/sidebar/SidebarResizeRail.tsx` 与 `src/layout/sidebar/SidebarResizeRail.test.tsx` 实现唯一可聚焦 separator，覆盖 `4px` click/drag 阈值、pointer capture、icon 拖动恢复、cancel 回滚、单次提交及 Enter/Space、Arrow、Shift+Arrow、Home/End。
+- [x] T32 在 `src/layout/sidebar/SidebarResizeRail.tsx` 与 `src/layout/sidebar/SidebarResizeRail.test.tsx` 实现唯一可聚焦 separator，覆盖 `4px` click/drag 阈值、pointer capture、icon 拖动恢复、cancel 回滚、单次提交及 Enter/Space、Arrow、Shift+Arrow、Home/End。
   - 暴露可访问名称、当前宽度和 expanded/icon 状态；拖动期间只设置并清除 `data-resizing`。
   _对应验收标准：AC-15, AC-16, AC-17, AC-18, AC-42_
   _测试先行：`src/layout/sidebar/SidebarResizeRail.test.tsx`_
 
-- [ ] T33 将 `src/layout/ShellSidebar.tsx` 与 `src/layout/sidebar/` 重构为单一 `ShellSidebarNavigation`，直接组合 HeroUI Sidebar、Button、Tooltip、Menu、ContextMenu，保留 Space/Project/Settings 路由、badge、定制入口与危险确认，不创建 HeroUI 同名 wrapper；`<1024px` 不渲染 HeroUI 内建 `Sidebar.Mobile`，而由 T31 的唯一 compact 状态驱动导航 Sheet。
+- [x] T33 将 `src/layout/ShellSidebar.tsx` 与 `src/layout/sidebar/` 重构为单一 `ShellSidebarNavigation`，直接组合 HeroUI Sidebar、Button、Tooltip、Menu、ContextMenu，保留 Space/Project/Settings 路由、badge、定制入口与危险确认，不创建 HeroUI 同名 wrapper；`<1024px` 不渲染 HeroUI 内建 `Sidebar.Mobile`，而由 T31 的唯一 compact 状态驱动导航 Sheet。
   _对应验收标准：AC-1, AC-3, AC-14, AC-19, AC-39_
   _测试先行：`src/layout/ShellSidebar.test.tsx`_
 
-- [ ] T34 将 `src/features/settings/components/SettingsSidebar.tsx` 的设置导航容器切到阶段 D 的 HeroUI Sidebar/compact Sheet 合同，保留 section route 与返回路径；设置表单内容仍归阶段 L。
+- [x] T34 将 `src/features/settings/components/SettingsSidebar.tsx` 的设置导航容器切到阶段 D 的 HeroUI Sidebar/compact Sheet 合同，保留 section route 与返回路径；设置表单内容仍归阶段 L。
   _对应验收标准：AC-1, AC-14, AC-19, AC-38, AC-39_
   _测试先行：`src/features/settings/components/SettingsSidebar.test.tsx`_
 
-- [ ] T35 在 `src/layout/ShellLayoutContent.tsx`、`src/layout/ShellChrome.tsx` 与 `src/layout/ShellMain.tsx` 组合 HeroUI `Sidebar.Provider`、Inset 与唯一 `Sidebar.Main`，让 grid 由 Sidebar 实际盒宽的 `auto` 轨道驱动；compact 时以 HeroUI Sheet 呈现同一导航且桌面占位为零，并新增 `src/layout/ShellLayoutContent.test.tsx` 验证结构。
+- [x] T35 在 `src/layout/ShellLayoutContent.tsx`、`src/layout/ShellChrome.tsx` 与 `src/layout/ShellMain.tsx` 组合 HeroUI `Sidebar.Provider`、Inset 与唯一 `Sidebar.Main`，让 grid 由 Sidebar 实际盒宽的 `auto` 轨道驱动；compact 时以 HeroUI Sheet 呈现同一导航且桌面占位为零，并新增 `src/layout/ShellLayoutContent.test.tsx` 验证结构。
   - 删除嵌套 `<main>`、第二份 reserved-width 几何和双导航挂载。
   _对应验收标准：AC-6, AC-14, AC-19, AC-20, AC-42_
   _测试先行：`src/layout/ShellLayoutContent.test.tsx`、`src/layout/ShellSidebar.test.tsx`_
 
-- [ ] T36 将 `src/layout/ShellHeader.tsx`、`src/layout/ShellFooter.tsx` 与 `src/layout/header/` 的标准控件切到 HeroUI，保留 Tauri drag region、窗口控制、历史导航与 Command Registry；`layout.toggleSidebar` 仍是唯一快捷键 owner。
+- [x] T36 将 `src/layout/ShellHeader.tsx` 与 `src/layout/header/` 的标准控件切到 HeroUI，保留 Tauri drag region、窗口控制、历史导航与 Command Registry；复核 `src/layout/ShellFooter.tsx` 仅负责产品组件编排、没有本阶段可迁移的通用控件；`layout.toggleSidebar` 仍是唯一快捷键 owner。
   _对应验收标准：AC-1, AC-3, AC-20, AC-31, AC-39_
   _测试先行：`src/layout/ShellFooter.test.tsx`、`src/layout/header/NavBackForward.test.tsx`、`src/layout/header/UserAppMenu.test.tsx`_
 
-- [ ] T37 更新 `src/features/settings/api/shellDevicePreferences.ts`、`src/features/settings/model/useSidebarSettingsStore.ts`、`src/layout/ShellLayoutSkeleton.tsx` 与 `index.html`，复用现有 device port 持久化 `220–330px` 和 expanded/collapsed，统一冷启动骨架且不新增第一方过渡。
+- [x] T37 更新 `src/features/settings/api/shellDevicePreferences.ts`、`src/features/settings/model/useSidebarSettingsStore.ts`、`src/layout/ShellLayoutSkeleton.tsx` 与 `index.html`，复用现有 device port 持久化 `220–330px` 和 expanded/collapsed，统一冷启动骨架且不新增第一方过渡。
   _对应验收标准：AC-15, AC-18, AC-20, AC-42, AC-43_
   _测试先行：`src/features/settings/api/shellDevicePreferences.test.ts`、`src/features/settings/model/useSidebarSettingsStore.test.ts`_
 
-- [ ] T38 完成阶段 D 收口：验证 1024px 两侧、pointer/keyboard rail、单导航树、冷启动与 Tauri Header/Footer，运行根级门禁和 `bun run test:rust`；获准提交时引用 PLAN 的阶段 D 文案，不自动提交。
+- [x] T38 完成阶段 D 收口：验证 1024px 两侧、pointer/keyboard rail、单导航树、冷启动与 Tauri Header/Footer，运行根级门禁和 `bun run test:rust`；获准提交时引用 PLAN 的阶段 D 文案，不自动提交。
   _对应验收标准：AC-14, AC-16, AC-17, AC-19, AC-20_
 
 **阶段 E：任务详情 Sheet / Aside**
@@ -515,7 +515,7 @@
 ## 阻塞
 
 - 当前阶段没有外部设备阻塞；Windows WebView2 不属于本任务验收范围。
-- 已知非阶段 C 失败：根级 `bun run check` 的最后 Rust 阶段稳定失败于未改动的 `commands::spaces::tests::deleting_trashed_space_again_should_not_enqueue_another_operation` 文案断言；动画扫描、TypeScript、lint、模块边界、格式、970 项前端测试、146 项 release 测试与 production build 均通过。该失败不阻塞阶段 C，但必须在 T120 最终收口前另行解决。
+- 已知与 HeroUI 重构无关的失败：根级 `bun run check` 的最后 Rust 阶段稳定失败于未改动的 `commands::spaces::tests::deleting_trashed_space_again_should_not_enqueue_another_operation` 文案断言；动画扫描、TypeScript、lint、模块边界、格式、978 项前端测试、146 项 release 测试与 production build 均通过。该失败不阻塞阶段 D，但必须在 T120 最终收口前另行解决。
 - T45、T73、T105、T119 是尚未执行的人工 Gate，不在失败前视为阻塞。
 
 ## 与 SPEC/PLAN 的实施偏差
@@ -551,3 +551,4 @@
 - 2026-08-14：完成 T14/U1。任务发起人确认此前已审阅相同的 Linear 浅色方向与原型，本轮无新增视觉偏差，按已确认结果通过字形、色值层级、紧凑密度及组件状态验收。
 - 2026-08-14：完成 T8、T15与阶段 B 收口。任务发起人批准固定版本缓存恢复边界；依赖树哈希、隔离 frozen install/typecheck/build、根级 typecheck、lint、边界、format、967 项测试、production build、主题边界与零凭据扫描均通过。建议 commit 文案：`refactor(ui): 建立 HeroUI 浅色主题与字体基础`；未提交、未改动 Git 暂存区。
 - 2026-08-14：完成 T16–T30 与阶段 C 收口。全仓第一方动画扫描转绿并接入根级 `check`；删除 StoneFlow 的 transition/animation/spin/pulse/active scale、旧 motion token、Sidebar 动画 workaround 及 `tw-animate-css` 直接依赖，只保留 HeroUI `@heroui/styles@3.2.4 -> tw-animate-css@1.4.0` 传递链。Modal、Popover、Tooltip、Sheet、Sidebar、Toast、Progress 锁版 probe 3/3、扫描器 2/2、970 项前端测试、146 项 release 测试及 production build 通过；保留的 rAF 仅用于 Sidebar/Scrollbar/TaskBoard 几何批处理与输入焦点调度，静态 transform 只承担虚拟化、居中和 off-canvas 几何。建议 commit 文案：`refactor(ui): 清除 StoneFlow 第一方动画代码`；未提交、未改动 Git 暂存区。
+- 2026-08-14：完成 T31–T38 与阶段 D 收口。Shell 以单一 controller 管理 expanded/icon/compact、`1024px` 断点、Sheet 和 live/committed width；HeroUI Sidebar/ContextMenu/Tooltip/Dropdown 接管导航与 Header 标准控件，唯一产品 separator 负责点按、拖动和键盘调宽。删除旧 Sidebar facade/context/pattern，Inset 主面由唯一 `Sidebar.Main` 提供，compact Sheet 复用同一导航树且显式覆盖 HeroUI 内建 `768px` 隐藏规则；冷启动骨架与设备偏好同步。严格审查发现并修复实际 Sidebar 被锁回 `240px`、`≤768px` Sheet 导航隐藏、`500–639px` 缺少可点击入口和 Sheet 无显式关闭按钮四项问题。根级 typecheck、lint、模块边界、format check、第一方动画扫描、978 项前端测试、146 项 release 测试和 production build 通过；`test:rust` 仍仅有已登记的 Space 文案断言失败。建议 commit 文案：`refactor(shell): 重建 HeroUI 侧边栏三态`；未提交、未改动 Git 暂存区。

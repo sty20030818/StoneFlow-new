@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
+import { Sheet, Sidebar } from '@heroui-pro/react'
 
 import type { Scope } from '@/shared/types'
 import type { ShellRoute } from '@/app/navigation'
@@ -8,12 +9,14 @@ import { ShellMain } from '@/layout/ShellMain'
 import { SettingsSidebar } from '@/features/settings'
 import { ShellSidebar } from '@/layout/ShellSidebar'
 import { ShellFooter } from '@/layout/ShellFooter'
+import { SidebarResizeRail } from '@/layout/sidebar/SidebarResizeRail'
 import { DEFAULT_SETTINGS_SECTION } from '@/features/settings'
 import { CommandShortcutLayer } from '@/features/command'
 import type { useShellCommandSystem } from '@/layout/model/useShellCommandSystem'
 import type { useShellChromeData } from '@/layout/model/useShellChromeData'
 import type { useShellCreateDialogState } from '@/layout/model/useShellCreateDialogState'
 import type { useShellSessionRouteHistory } from '@/app/navigation'
+import type { ShellSidebarController } from '@/layout/model/useShellSidebarController'
 
 type CommandHost = ReturnType<typeof useShellCommandSystem>
 type ChromeData = ReturnType<typeof useShellChromeData>
@@ -39,6 +42,7 @@ type ShellChromeProps = {
 	handleOpenTaskCreate: () => void
 	onOpenChangelog: () => void
 	onOpenAbout: () => void
+	sidebar: ShellSidebarController
 }
 
 /**
@@ -61,7 +65,38 @@ export function ShellChrome({
 	handleOpenTaskCreate,
 	onOpenChangelog,
 	onOpenAbout,
+	sidebar,
 }: ShellChromeProps) {
+	const sidebarNavigation = isSettingsMode ? (
+		<SettingsSidebar
+			activeSettingsSection={shellRoute.settingsSection ?? DEFAULT_SETTINGS_SECTION}
+			currentScope={currentScope}
+			currentSpaceId={currentSpaceId}
+			returnPath={settingsReturnPath}
+		/>
+	) : (
+		<ShellSidebar
+			currentScope={currentScope}
+			currentSpaceId={currentSpaceId}
+			navBadges={chrome.navBadges}
+			onArchiveSpace={(spaceId) => chrome.archiveSpace.mutateAsync(spaceId)}
+			onCreateSpace={(input) => chrome.createSpace.mutateAsync(input)}
+			onDeleteSpace={(spaceId) => chrome.deleteSpace.mutateAsync(spaceId)}
+			onOpenProjectCreateDialog={createDialog.openProjectCreateDialog}
+			onResetMainItemsVisibility={() => {
+				void chrome.resetSidebarMainItemsVisibility()
+			}}
+			onSetDefaultSpace={(spaceId) => chrome.setDefaultSpace.mutateAsync(spaceId)}
+			onUpdateItemVisibility={(target, visible) => {
+				void chrome.setSidebarItemVisibility(target, visible)
+			}}
+			onUpdateSpace={(input) => chrome.updateSpace.mutateAsync(input)}
+			projects={chrome.sidebarProjectLinks}
+			settings={chrome.sidebarSettings!}
+			spaces={chrome.spaces}
+		/>
+	)
+
 	return (
 		<>
 			<CommandShortcutLayer
@@ -98,41 +133,22 @@ export function ShellChrome({
 				projects={headerProjects}
 				routeHistoryEntries={routeHistory.entries}
 				spaces={chrome.spaces}
+				sidebar={sidebar}
 			/>
-			<div className='relative flex min-h-0 min-w-0 flex-1 overflow-hidden bg-sf-shell'>
-				<div className='flex min-h-0 w-(--sf-shell-sidebar-reserved-width) shrink-0 flex-col overflow-hidden'>
-					{isSettingsMode ? (
-						<SettingsSidebar
-							activeSettingsSection={shellRoute.settingsSection ?? DEFAULT_SETTINGS_SECTION}
-							currentScope={currentScope}
-							currentSpaceId={currentSpaceId}
-							returnPath={settingsReturnPath}
-						/>
-					) : (
-						<ShellSidebar
-							currentScope={currentScope}
-							currentSpaceId={currentSpaceId}
-							navBadges={chrome.navBadges}
-							onArchiveSpace={(spaceId) => chrome.archiveSpace.mutateAsync(spaceId)}
-							onCreateSpace={(input) => chrome.createSpace.mutateAsync(input)}
-							onDeleteSpace={(spaceId) => chrome.deleteSpace.mutateAsync(spaceId)}
-							onOpenProjectCreateDialog={createDialog.openProjectCreateDialog}
-							onResetMainItemsVisibility={() => {
-								void chrome.resetSidebarMainItemsVisibility()
-							}}
-							onSetDefaultSpace={(spaceId) => chrome.setDefaultSpace.mutateAsync(spaceId)}
-							onUpdateItemVisibility={(target, visible) => {
-								void chrome.setSidebarItemVisibility(target, visible)
-							}}
-							onUpdateSpace={(input) => chrome.updateSpace.mutateAsync(input)}
-							projects={chrome.sidebarProjectLinks}
-							settings={chrome.sidebarSettings!}
-							spaces={chrome.spaces}
-						/>
-					)}
-				</div>
+			<div
+				className='relative grid min-h-0 min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)] overflow-hidden bg-sf-shell'
+				data-resizing={sidebar.isResizing ? 'true' : undefined}
+				data-sidebar-mode={sidebar.mode}
+				data-slot='shell-workspace'
+			>
+				{sidebar.isCompact ? null : (
+					<div className='relative flex min-h-0 min-w-0 flex-col overflow-visible'>
+						{sidebarNavigation}
+						<SidebarResizeRail controller={sidebar} />
+					</div>
+				)}
 
-				<div className='relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sf-shell'>
+				<Sidebar.Main className='min-h-0 overflow-hidden'>
 					<ShellMain
 						activeDetail={command.activeDetail}
 						isDrawerOpen={command.isDrawerOpen}
@@ -143,8 +159,32 @@ export function ShellChrome({
 					>
 						{children}
 					</ShellMain>
-				</div>
+				</Sidebar.Main>
 			</div>
+			{sidebar.isCompact ? (
+				<Sheet
+					isDismissable
+					isModal
+					isOpen={sidebar.mobileSheetOpen}
+					onOpenChange={sidebar.setMobileSheetOpen}
+					placement='left'
+					shouldAutoFocus
+				>
+					<Sheet.Backdrop variant='opaque'>
+						<Sheet.Content
+							className='w-[min(20rem,calc(100vw-1rem))]'
+							data-shell-sidebar-sheet='true'
+							style={{ '--sidebar-width': '100%' } as CSSProperties}
+						>
+							<Sheet.Dialog className='h-full overflow-hidden p-0'>
+								<Sheet.Heading className='sr-only'>导航</Sheet.Heading>
+								<Sheet.CloseTrigger aria-label='关闭导航' className='z-10' />
+								{sidebarNavigation}
+							</Sheet.Dialog>
+						</Sheet.Content>
+					</Sheet.Backdrop>
+				</Sheet>
+			) : null}
 			<ShellFooter />
 		</>
 	)

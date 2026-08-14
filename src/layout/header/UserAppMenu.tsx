@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Avatar, Badge, Dropdown, Tooltip } from '@heroui/react'
 
 import {
 	COMMAND_IDS,
@@ -9,26 +10,11 @@ import {
 import { useManualUpdateCheck } from '@/features/update'
 import { ShortcutTokens } from '@/shared/components/ShortcutTokens'
 import { cn } from '@/shared/lib/utils'
-import { Avatar, AvatarBadge, AvatarFallback, AvatarImage } from '@/shared/components/base/avatar'
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuGroup,
-	DropdownMenuItem,
-	DropdownMenuSeparator,
-	DropdownMenuShortcut,
-	DropdownMenuTrigger,
-} from '@/shared/components/base/dropdown-menu'
 import {
 	shellChromeNavCircleButtonClass,
 	shellChromeNavCircleButtonExpandedClass,
 } from '@/shared/components/patterns/shell-chrome'
-import { ActionTooltip } from '@/shared/components/tooltip'
 import { InfoIcon, HistoryIcon, KeyboardIcon, RefreshCwIcon, SettingsIcon } from 'lucide-react'
-
-/** 与 CommandMenu / ShortcutHelp 一致的 kbd 样式 */
-const menuShortcutKbdClassName =
-	'h-6 min-w-6 rounded-sm border border-sf-border-subtle bg-legacy-background/90 px-1.5 text-[11px] text-sf-text-secondary'
 
 function MenuCommandShortcut({ commandId }: { commandId: CommandId }) {
 	const registry = useShortcutRegistry()
@@ -42,15 +28,7 @@ function MenuCommandShortcut({ commandId }: { commandId: CommandId }) {
 		return null
 	}
 
-	return (
-		<DropdownMenuShortcut className='tracking-normal'>
-			<ShortcutTokens
-				kbdClassName={menuShortcutKbdClassName}
-				separatorClassName='text-sf-text-quaternary'
-				tokens={tokens}
-			/>
-		</DropdownMenuShortcut>
-	)
+	return <ShortcutTokens className='ml-auto' tokens={tokens} />
 }
 
 export type UserAppMenuProps = {
@@ -83,80 +61,80 @@ export function UserAppMenu({
 	}
 
 	return (
-		<DropdownMenu onOpenChange={handleMenuOpenChange} open={menuOpen}>
-			<ActionTooltip
+		<Dropdown isOpen={menuOpen} onOpenChange={handleMenuOpenChange}>
+			<Tooltip
+				delay={0}
+				isOpen={tooltipOpen}
 				onOpenChange={(nextOpen) => setTooltipOpen(menuOpen ? false : nextOpen)}
-				open={tooltipOpen}
 			>
-				<ActionTooltip.Trigger asChild>
-					<DropdownMenuTrigger asChild>
-						<button
-							aria-label='应用菜单'
-							className={cn(
-								shellChromeNavCircleButtonClass,
-								shellChromeNavCircleButtonExpandedClass,
-								'relative size-7.5 shrink-0 rounded-full p-0',
-								'focus-visible:ring-0 data-[state=open]:bg-sf-shell-hover-strong',
-							)}
-							type='button'
-						>
+				<Dropdown.Trigger
+					aria-label='应用菜单'
+					className={cn(
+						shellChromeNavCircleButtonClass,
+						shellChromeNavCircleButtonExpandedClass,
+						'relative size-7.5 shrink-0 rounded-full p-0',
+						'focus-visible:ring-0 data-[state=open]:bg-sf-shell-hover-strong',
+					)}
+					onBlur={() => setTooltipOpen(false)}
+					onFocus={() => setTooltipOpen(!menuOpen)}
+					onPointerEnter={() => setTooltipOpen(!menuOpen)}
+					onPointerLeave={() => setTooltipOpen(false)}
+				>
+					<Badge color='success' placement='bottom-right' size='sm'>
+						<Badge.Anchor>
 							<Avatar className='size-7.5'>
-								<AvatarImage alt='' src='/avatar.jpg' />
-								<AvatarFallback>U</AvatarFallback>
-								<AvatarBadge className='bg-green-600 dark:bg-green-800' />
+								<Avatar.Image alt='' src='/avatar.jpg' />
+								<Avatar.Fallback>U</Avatar.Fallback>
 							</Avatar>
-						</button>
-					</DropdownMenuTrigger>
-				</ActionTooltip.Trigger>
-				<ActionTooltip.Content>
-					<ActionTooltip.Row label='应用菜单' />
-				</ActionTooltip.Content>
-			</ActionTooltip>
+						</Badge.Anchor>
+						<Badge.Label aria-label='在线' />
+					</Badge>
+				</Dropdown.Trigger>
+				<Tooltip.Content>应用菜单</Tooltip.Content>
+			</Tooltip>
 
-			<DropdownMenuContent align='end' className='min-w-56' sideOffset={6}>
-				{/* 偏好 */}
-				<DropdownMenuGroup>
-					<DropdownMenuItem
-						data-active={isSettingsActive || undefined}
-						onSelect={() => onRunCommand(COMMAND_IDS.openSettings)}
+			<Dropdown.Popover className='min-w-56' offset={6} placement='bottom end'>
+				<Dropdown.Menu aria-label='应用菜单'>
+					<Dropdown.Item
+						id='settings'
+						onAction={() => onRunCommand(COMMAND_IDS.openSettings)}
+						textValue='设置'
+						className={isSettingsActive ? 'bg-default' : undefined}
 					>
 						<SettingsIcon />
 						<span>设置</span>
 						<MenuCommandShortcut commandId={COMMAND_IDS.openSettings} />
-					</DropdownMenuItem>
-				</DropdownMenuGroup>
-
-				<DropdownMenuSeparator />
-
-				{/* 帮助 */}
-				<DropdownMenuGroup>
-					<DropdownMenuItem onSelect={() => onRunCommand(COMMAND_IDS.openShortcutHelp)}>
+					</Dropdown.Item>
+					<Dropdown.Item
+						id='shortcuts'
+						onAction={() => onRunCommand(COMMAND_IDS.openShortcutHelp)}
+						textValue='键盘快捷键'
+					>
 						<KeyboardIcon />
 						<span>键盘快捷键</span>
 						<MenuCommandShortcut commandId={COMMAND_IDS.openShortcutHelp} />
-					</DropdownMenuItem>
-				</DropdownMenuGroup>
-
-				<DropdownMenuSeparator />
-
-				{/* 应用 */}
-				<DropdownMenuGroup>
-					<DropdownMenuItem disabled={disabled} onSelect={() => void checkNow()}>
+					</Dropdown.Item>
+					<Dropdown.Item
+						id='check-update'
+						isDisabled={disabled}
+						onAction={() => void checkNow()}
+						textValue='检查更新'
+					>
 						<RefreshCwIcon />
 						<span>
 							{isChecking ? '正在检查更新...' : disabled ? '正在安装更新...' : '检查更新'}
 						</span>
-					</DropdownMenuItem>
-					<DropdownMenuItem onSelect={onOpenChangelog}>
+					</Dropdown.Item>
+					<Dropdown.Item id='changelog' onAction={onOpenChangelog} textValue='更新日志'>
 						<HistoryIcon />
 						<span>更新日志</span>
-					</DropdownMenuItem>
-					<DropdownMenuItem onSelect={onOpenAbout}>
+					</Dropdown.Item>
+					<Dropdown.Item id='about' onAction={onOpenAbout} textValue='关于 StoneFlow'>
 						<InfoIcon />
 						<span>关于 StoneFlow</span>
-					</DropdownMenuItem>
-				</DropdownMenuGroup>
-			</DropdownMenuContent>
-		</DropdownMenu>
+					</Dropdown.Item>
+				</Dropdown.Menu>
+			</Dropdown.Popover>
+		</Dropdown>
 	)
 }

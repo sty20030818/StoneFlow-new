@@ -58,6 +58,7 @@ export function useShellCommandActions(deps: ShellCommandBridgeDeps): ShellComma
 			deps.settingsReturnPath,
 			deps.submitRegistryActions,
 			deps.taskPreviewController,
+			deps.toggleSidebar,
 			deps.toggleShortcutHelp,
 		],
 	)

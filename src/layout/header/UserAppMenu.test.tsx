@@ -27,7 +27,7 @@ describe('UserAppMenu', () => {
 			</>,
 		)
 
-		fireEvent.pointerDown(screen.getByRole('button', { name: '应用菜单' }))
+		fireEvent.click(screen.getByRole('button', { name: '应用菜单' }))
 
 		expect(await screen.findByRole('menuitem', { name: /设置/ })).toBeInTheDocument()
 		expect(screen.getByRole('menuitem', { name: /键盘快捷键/ })).toBeInTheDocument()
@@ -58,19 +58,19 @@ describe('UserAppMenu', () => {
 			</>,
 		)
 
-		fireEvent.pointerDown(screen.getByRole('button', { name: '应用菜单' }))
+		fireEvent.click(screen.getByRole('button', { name: '应用菜单' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /设置/ }))
 		expect(onRunCommand).toHaveBeenCalledWith(COMMAND_IDS.openSettings)
 
-		fireEvent.pointerDown(screen.getByRole('button', { name: '应用菜单' }))
+		fireEvent.click(screen.getByRole('button', { name: '应用菜单' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /键盘快捷键/ }))
 		expect(onRunCommand).toHaveBeenCalledWith(COMMAND_IDS.openShortcutHelp)
 
-		fireEvent.pointerDown(screen.getByRole('button', { name: '应用菜单' }))
+		fireEvent.click(screen.getByRole('button', { name: '应用菜单' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /更新日志/ }))
 		expect(onOpenChangelog).toHaveBeenCalledTimes(1)
 
-		fireEvent.pointerDown(screen.getByRole('button', { name: '应用菜单' }))
+		fireEvent.click(screen.getByRole('button', { name: '应用菜单' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /关于 StoneFlow/ }))
 		expect(onOpenAbout).toHaveBeenCalledTimes(1)
 	})
@@ -81,7 +81,7 @@ describe('UserAppMenu', () => {
 		)
 
 		const trigger = screen.getByRole('button', { name: '应用菜单' })
-		fireEvent.focus(trigger)
+		fireEvent.pointerEnter(trigger)
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('应用菜单')
 
 		fireEvent.pointerDown(trigger)

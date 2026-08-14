@@ -1,19 +1,11 @@
 import { memo, useState } from 'react'
+import { Dropdown, Tooltip } from '@heroui/react'
+import { Header } from 'react-aria-components'
 
 import { getSpaceVisual } from '@/features/space'
 import type { ShellRouteHistoryEntry } from '@/app/navigation'
 import type { Space } from '@/shared/types'
 import { cn } from '@/shared/lib/utils'
-import { Button } from '@/shared/components/base/button'
-import { ActionTooltip } from '@/shared/components/tooltip'
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuGroup,
-	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuTrigger,
-} from '@/shared/components/base/dropdown-menu'
 import {
 	shellChromeNavCircleButtonClass,
 	shellChromeNavCircleButtonExpandedClass,
@@ -48,45 +40,41 @@ export function HistoryDropdown({ entries, spaces, onNavigate }: HistoryDropdown
 	}
 
 	return (
-		<DropdownMenu onOpenChange={handleMenuOpenChange} open={menuOpen}>
-			<ActionTooltip
+		<Dropdown isOpen={menuOpen} onOpenChange={handleMenuOpenChange}>
+			<Tooltip
+				isOpen={tooltipOpen}
 				onOpenChange={(nextOpen) => setTooltipOpen(menuOpen ? false : nextOpen)}
-				open={tooltipOpen}
 			>
-				<ActionTooltip.Trigger asChild>
-					<DropdownMenuTrigger asChild>
-						<Button
-							aria-label='打开历史记录'
-							className={`${shellChromeNavCircleButtonClass} ${shellChromeNavCircleButtonExpandedClass}`}
-							size='icon-sm'
-							variant='ghost'
-						>
-							<HistoryIcon className='size-3.5' />
-						</Button>
-					</DropdownMenuTrigger>
-				</ActionTooltip.Trigger>
-				<ActionTooltip.Content>
-					<ActionTooltip.Row label='打开历史记录' />
-				</ActionTooltip.Content>
-			</ActionTooltip>
-			<DropdownMenuContent align='start' className='min-w-68'>
-				<DropdownMenuLabel>最近浏览</DropdownMenuLabel>
-				<DropdownMenuGroup>
-					{entries.length > 0 ? (
-						entries.map((entry) => (
-							<HistoryEntryItem
-								entry={entry}
-								key={entry.path}
-								onSelect={onNavigate}
-								spaces={spaces}
-							/>
-						))
-					) : (
-						<DropdownMenuItem disabled>暂无历史记录</DropdownMenuItem>
-					)}
-				</DropdownMenuGroup>
-			</DropdownMenuContent>
-		</DropdownMenu>
+				<Dropdown.Trigger
+					aria-label='打开历史记录'
+					className={`${shellChromeNavCircleButtonClass} ${shellChromeNavCircleButtonExpandedClass}`}
+				>
+					<HistoryIcon className='size-3.5' />
+				</Dropdown.Trigger>
+				<Tooltip.Content>打开历史记录</Tooltip.Content>
+			</Tooltip>
+			<Dropdown.Popover className='min-w-68' placement='bottom start'>
+				<Dropdown.Menu aria-label='最近浏览'>
+					<Dropdown.Section>
+						<Header className='px-2 py-1 text-xs font-medium text-muted'>最近浏览</Header>
+						{entries.length > 0 ? (
+							entries.map((entry) => (
+								<HistoryEntryItem
+									entry={entry}
+									key={entry.path}
+									onSelect={onNavigate}
+									spaces={spaces}
+								/>
+							))
+						) : (
+							<Dropdown.Item id='empty' isDisabled textValue='暂无历史记录'>
+								暂无历史记录
+							</Dropdown.Item>
+						)}
+					</Dropdown.Section>
+				</Dropdown.Menu>
+			</Dropdown.Popover>
+		</Dropdown>
 	)
 }
 
@@ -111,7 +99,7 @@ const HistoryEntryItem = memo(function HistoryEntryItem({
 	const SpaceIcon = entryVisual?.icon
 
 	return (
-		<DropdownMenuItem onSelect={() => onSelect(entry)}>
+		<Dropdown.Item id={entry.path} onAction={() => onSelect(entry)} textValue={entry.label}>
 			<EntryIcon className='size-3.5 shrink-0' />
 			<span className={shellChromeTruncateLabelClass}>{entry.label}</span>
 			{SpaceIcon && entryVisual ? (
@@ -120,6 +108,6 @@ const HistoryEntryItem = memo(function HistoryEntryItem({
 					<span className='max-w-20 truncate'>{entry.spaceName}</span>
 				</span>
 			) : null}
-		</DropdownMenuItem>
+		</Dropdown.Item>
 	)
 })

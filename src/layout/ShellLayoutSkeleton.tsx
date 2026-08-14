@@ -23,9 +23,10 @@ type ShellLayoutSkeletonProps = {
 /**
  * 开屏骨架：灰壳 + 白主卡。
  *
- * 宽度算法（与真壳 ShellChrome + ShellMain 一致）：
- * - 左侧 reserved：有 settings 时用真实 width / 折叠态 icon 轨；否则 DEFAULT_SIDEBAR_WIDTH。
- * - 右侧 gutter = `pr-2`（8px），仅右、不左。
+ * 几何合同（与真壳 HeroUI Sidebar + Inset 一致）：
+ * - `auto + minmax(0, 1fr)` 由 Sidebar 占位元素的实际宽度驱动，不维护第二份 grid 列宽。
+ * - 桌面用真实 width / 折叠态 48px icon rail；小于 1024px 时侧栏占位为零。
+ * - 桌面 Inset 主面仅保留右侧 8px gutter；窄窗口去掉 gutter、边框和圆角。
  * - 顶 Header `h-12` / 底 Footer `h-7`。
  *
  * 同步契约：`index.html` `#sf-boot-shell` 是同结构的静态首帧遮罩（仅默认 256、无用户宽）。
@@ -54,21 +55,26 @@ export function ShellLayoutSkeleton({
 			aria-busy={status !== 'ready'}
 			aria-label={statusText}
 			className='relative flex h-full min-h-0 flex-col overflow-hidden bg-sf-shell'
-			style={
-				{
-					['--sf-shell-sidebar-reserved-width']: `${reservedWidthPx}px`,
-				} as CSSProperties
-			}
+			data-slot='shell-layout-skeleton'
 		>
 			<div className='h-12 shrink-0 bg-sf-shell' />
 
-			<div className='flex min-h-0 flex-1 overflow-hidden bg-sf-shell'>
-				{/* 与 ShellChrome 侧栏列同一套宽度变量 */}
-				<div className='w-(--sf-shell-sidebar-reserved-width) shrink-0 bg-sf-shell' />
+			<div
+				className='grid min-h-0 min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)] overflow-hidden bg-sf-shell'
+				data-slot='shell-layout-skeleton-body'
+			>
+				{/* 真实占位元素驱动 auto 轨道；compact 时不保留桌面几何。 */}
+				<div
+					className='w-0 shrink-0 bg-sf-shell min-[1024px]:w-(--sidebar-width)'
+					data-slot='shell-layout-skeleton-sidebar'
+					style={{ '--sidebar-width': `${reservedWidthPx}px` } as CSSProperties}
+				/>
 
-				{/* 与 ShellMain 同：仅 pr-2 */}
-				<div className='flex min-h-0 min-w-0 flex-1 overflow-hidden bg-sf-shell pr-2'>
-					<div className='relative flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-lg border border-sf-border-subtle bg-card'>
+				<div className='flex min-h-0 min-w-0 overflow-hidden bg-sf-shell min-[1024px]:pr-2'>
+					<div
+						className='relative flex min-h-0 min-w-0 flex-1 overflow-hidden bg-card min-[1024px]:rounded-lg min-[1024px]:border min-[1024px]:border-white'
+						data-slot='shell-layout-skeleton-main'
+					>
 						<span className='sr-only'>{statusText}</span>
 					</div>
 				</div>

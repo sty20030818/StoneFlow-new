@@ -1,80 +1,7 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState, type CSSProperties } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-
-import { openSection, openStartupFallback } from '@/app/navigation'
-import { COMMAND_IDS, CommandActionTooltip } from '@/features/command'
-import { SHELL_FOOTER_ITEMS, SHELL_NAV_ITEMS, type ShellProjectLink } from '@/layout/config'
-import {
-	isAllScope,
-	isShellMainNavAllowed,
-	shouldShowSidebarProjectSection,
-} from '@/layout/model/scopeNavPolicy'
-import {
-	SIDEBAR_ENTITY_SELECTOR,
-	MainNavSidebarMenuItem,
-	StandaloneNavMenuItem,
-	ProjectNavMenuItem,
-	SidebarCustomizeSubmenu,
-	SidebarItemContextMenu,
-	SidebarNavRow,
-	SpaceIconBadge,
-	type MainNavItemViewModel,
-} from '@/layout/sidebar'
-import type { ShellSectionKey } from '@/layout/types'
-import type { SidebarItemVisibilityTarget, SidebarMainItemKey } from '@/features/settings'
-import { type ShellSidebarSettings } from '@/features/settings'
-import { resolveRememberedPathForScope } from '@/app/navigation'
-import { getSpaceVisual } from '@/features/space'
-import { SpaceEditorDialog } from '@/features/space'
-import type { Scope, Space } from '@/shared/types'
-import { useDangerConfirm } from '@/features/danger-confirm'
-import { cn } from '@/shared/lib/utils'
-import { AppScrollArea } from '@/shared/components/AppScrollArea'
-import { Button } from '@/shared/components/base/button'
-import { ActionTooltip } from '@/shared/components/tooltip'
-import {
-	ContextMenu,
-	ContextMenuContent,
-	ContextMenuGroup,
-	ContextMenuTrigger,
-} from '@/shared/components/base/context-menu'
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuGroup,
-	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuSeparator,
-	DropdownMenuSub,
-	DropdownMenuSubContent,
-	DropdownMenuSubTrigger,
-	DropdownMenuTrigger,
-} from '@/shared/components/base/dropdown-menu'
-import {
-	Sidebar,
-	SidebarContent,
-	SidebarFooter,
-	SidebarGroup,
-	SidebarGroupContent,
-	SidebarGroupLabel,
-	SidebarHeader,
-	SidebarMenu,
-	SidebarMenuButton,
-	SidebarMenuItem,
-	SidebarRail,
-} from '@/shared/components/base/sidebar'
-import { useSidebar } from '@/shared/components/base/sidebar-context'
-import {
-	sidebarDropdownItemClass,
-	sidebarFooterContainerClass,
-	sidebarSectionHeaderRowClass,
-	sidebarInlineBadgeClass,
-} from '@/shared/components/patterns/sidebar-item'
-import {
-	shellChromeIconSecondaryClass,
-	shellChromeIconSubtleClass,
-	shellChromeInlineGroupClass,
-} from '@/shared/components/patterns/shell-chrome'
+import { Button, Dropdown, Tooltip } from '@heroui/react'
+import { ContextMenu, Sidebar } from '@heroui-pro/react'
 import {
 	CheckIcon,
 	ChevronsUpDownIcon,
@@ -86,10 +13,39 @@ import {
 	Trash2Icon,
 } from 'lucide-react'
 
+import { openSection, openStartupFallback, resolveRememberedPathForScope } from '@/app/navigation'
+import { COMMAND_IDS, CommandTooltipRow } from '@/features/command'
+import { useDangerConfirm } from '@/features/danger-confirm'
+import type {
+	ShellSidebarSettings,
+	SidebarItemVisibilityTarget,
+	SidebarMainItemKey,
+} from '@/features/settings'
+import { getSpaceVisual, SpaceEditorDialog } from '@/features/space'
+import { SHELL_FOOTER_ITEMS, SHELL_NAV_ITEMS, type ShellProjectLink } from '@/layout/config'
+import {
+	isAllScope,
+	isShellMainNavAllowed,
+	shouldShowSidebarProjectSection,
+} from '@/layout/model/scopeNavPolicy'
+import {
+	MainNavSidebarMenuItem,
+	ProjectNavMenuItem,
+	SidebarCustomizeSubmenu,
+	SidebarItemContextMenu,
+	SidebarNavRow,
+	SpaceIconBadge,
+	StandaloneNavMenuItem,
+	type MainNavItemViewModel,
+} from '@/layout/sidebar'
+import type { ShellSectionKey } from '@/layout/types'
+import { cn } from '@/shared/lib/utils'
+import type { Scope, Space } from '@/shared/types'
+
 type ShellNavBadges = Partial<Record<ShellSectionKey, string>>
 type SpaceRemovalResult = { defaultSpaceId: string | null }
 
-type ShellSidebarProps = {
+export type ShellSidebarProps = {
 	currentScope: Scope
 	currentSpaceId: string | null
 	spaces: Space[]
@@ -111,7 +67,13 @@ type ShellSidebarProps = {
 	onResetMainItemsVisibility: () => void
 }
 
-export function ShellSidebar({
+/** 保留壳层入口；导航实现独立导出，供 desktop 与 compact 容器复用。 */
+export function ShellSidebar(props: ShellSidebarProps) {
+	return <ShellSidebarNavigation {...props} />
+}
+
+/** 唯一的 Shell 导航树；不负责桌面、窄栏或 Sheet 容器切换。 */
+export function ShellSidebarNavigation({
 	currentScope,
 	currentSpaceId,
 	spaces,
@@ -128,12 +90,10 @@ export function ShellSidebar({
 	onResetMainItemsVisibility,
 }: ShellSidebarProps) {
 	const navigate = useNavigate({ from: '/' })
-	const { isMobile } = useSidebar()
 	const { requestDangerConfirm } = useDangerConfirm()
 	const [editorMode, setEditorMode] = useState<'create' | 'edit'>('create')
 	const [editorOpen, setEditorOpen] = useState(false)
 	const [spaceSwitcherMenuOpen, setSpaceSwitcherMenuOpen] = useState(false)
-	const [spaceSwitcherTooltipOpen, setSpaceSwitcherTooltipOpen] = useState(false)
 	const [dropdownError, setDropdownError] = useState<string | null>(null)
 	const fallbackSpaceId =
 		currentSpaceId ?? spaces.find((space) => space.isDefault)?.id ?? spaces[0]?.id ?? null
@@ -145,7 +105,6 @@ export function ShellSidebar({
 		null
 	const canArchiveOrDeleteActiveSpace = Boolean(activeSpace && !activeSpace.isDefault)
 	const allScope = isAllScope(currentScope)
-	// All 下不承载项目树；单 Space 才展示 projects
 	const scopedProjectLinks = allScope ? [] : projects
 	const currentScopeLabel = allScope ? '所有空间' : (activeSpace?.name ?? '未选择 Space')
 	const showProjectSection = shouldShowSidebarProjectSection(
@@ -155,13 +114,13 @@ export function ShellSidebar({
 
 	const mainNavItems = SHELL_NAV_ITEMS.map((item) => {
 		const settingsKey = (item.key === 'tasks' ? 'allTasks' : item.key) as SidebarMainItemKey
-		const settingsVisible = settings.mainItems[settingsKey].visible
 		return {
 			...item,
 			badge: navBadges[item.section],
 			to: item.to(currentScope, currentSpaceId),
 			settingsKey,
-			visible: settingsVisible && isShellMainNavAllowed(currentScope, item.key),
+			visible:
+				settings.mainItems[settingsKey].visible && isShellMainNavAllowed(currentScope, item.key),
 			order: settings.mainItems[settingsKey].order,
 		}
 	}) satisfies MainNavItemViewModel[]
@@ -175,37 +134,22 @@ export function ShellSidebar({
 		icon: item.icon,
 		visible: settings.footerItems[item.key].visible,
 	}))
-	// 合并 map + filter 为单次遍历
-	const footerItems: Array<
-		Omit<(typeof SHELL_FOOTER_ITEMS)[number], 'to'> & {
-			badge?: string
-			to: string
-			visible: boolean
-			order: number
-		}
-	> = []
-	for (const item of SHELL_FOOTER_ITEMS) {
-		const visible = settings.footerItems[item.key].visible
-		if (!visible) {
-			continue
-		}
-		footerItems.push({
+	const footerItems = SHELL_FOOTER_ITEMS.filter((item) => settings.footerItems[item.key].visible)
+		.map((item) => ({
 			...item,
 			badge: navBadges[item.section],
 			to: item.to(currentScope, currentSpaceId),
-			visible,
 			order: settings.footerItems[item.key].order,
-		})
-	}
-	footerItems.sort((left, right) => left.order - right.order)
+		}))
+		.sort((left, right) => left.order - right.order)
 	const projectLinks = settings.projectSection.maxVisible
 		? scopedProjectLinks.slice(0, settings.projectSection.maxVisible)
 		: scopedProjectLinks
-
 	const activeSpaceVisual = useMemo(
 		() => (activeSpace ? getSpaceVisual(activeSpace) : null),
 		[activeSpace],
 	)
+
 	const resolvePostSpaceRemovalPath = useCallback(
 		(defaultSpaceId: string | null) => {
 			const nextDefaultSpaceId =
@@ -232,22 +176,11 @@ export function ShellSidebar({
 		}
 	}
 
-	const handleSpaceEditorClose = useCallback(() => {
-		setEditorOpen(false)
-	}, [])
-
 	const navigateToRememberedScope = useCallback(
 		(scopeKey: 'all' | `space:${string}`, defaultPath: string) => {
 			setDropdownError(null)
-
-			void resolveRememberedPathForScope({
-				scopeKey,
-				spaces,
-				defaultPath,
-			})
-				.then((path) => {
-					void navigate({ to: path as never })
-				})
+			void resolveRememberedPathForScope({ scopeKey, spaces, defaultPath })
+				.then((path) => void navigate({ to: path as never }))
 				.catch((error) => {
 					console.error('space switch restore failed', {
 						scopeKey,
@@ -260,13 +193,6 @@ export function ShellSidebar({
 		},
 		[navigate, spaces],
 	)
-
-	const handleSpaceSwitcherMenuOpenChange = useCallback((open: boolean) => {
-		setSpaceSwitcherMenuOpen(open)
-		if (open) {
-			setSpaceSwitcherTooltipOpen(false)
-		}
-	}, [])
 
 	const handleSpaceEditorSubmit = useCallback(
 		async (input: { name: string; iconKey: string; colorKey: string }) => {
@@ -282,314 +208,258 @@ export function ShellSidebar({
 				return
 			}
 
-			if (!activeSpace) {
-				throw new Error('当前没有可编辑的 Space')
-			}
-
-			await onUpdateSpace({
-				spaceId: activeSpace.id,
-				...input,
-			})
+			if (!activeSpace) throw new Error('当前没有可编辑的 Space')
+			await onUpdateSpace({ spaceId: activeSpace.id, ...input })
 		},
 		[activeSpace, editorMode, navigate, onCreateSpace, onUpdateSpace],
 	)
 
-	const handleSidebarContextMenu = (event: React.MouseEvent<HTMLElement>) => {
-		const target = event.target
-		if (!(target instanceof HTMLElement)) {
-			event.preventDefault()
-			return
-		}
+	async function handleArchiveActiveSpace() {
+		if (!activeSpace) return
+		const confirmed = await requestDangerConfirm({
+			intent: 'archive',
+			entityType: 'space',
+			count: 1,
+			entityLabel: activeSpace.name,
+		})
+		if (!confirmed) return
+		await runSpaceMutation(async () => {
+			const result = await onArchiveSpace(activeSpace.id)
+			if (currentScope.type === 'space') {
+				void navigate({
+					to: resolvePostSpaceRemovalPath(result.defaultSpaceId) as never,
+				})
+			}
+		})
+	}
 
-		if (target.closest(SIDEBAR_ENTITY_SELECTOR)) {
-			event.preventDefault()
-		}
+	async function handleDeleteActiveSpace() {
+		if (!activeSpace) return
+		const confirmed = await requestDangerConfirm({
+			intent: 'trash',
+			entityType: 'space',
+			count: 1,
+			entityLabel: activeSpace.name,
+		})
+		if (!confirmed) return
+		await runSpaceMutation(async () => {
+			const result = await onDeleteSpace(activeSpace.id)
+			if (currentScope.type === 'space') {
+				void navigate({
+					to: resolvePostSpaceRemovalPath(result.defaultSpaceId) as never,
+				})
+			}
+		})
 	}
 
 	return (
-		<ContextMenu>
-			<ContextMenuTrigger asChild onContextMenu={handleSidebarContextMenu}>
-				<Sidebar collapsible='icon'>
-					<SidebarHeader className='px-3 pb-4 pt-2 group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:px-2 group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:px-2'>
-						<div className={shellChromeInlineGroupClass}>
-							<SidebarMenu className='flex-1'>
-								<SidebarMenuItem>
-									<DropdownMenu
-										open={spaceSwitcherMenuOpen}
-										onOpenChange={handleSpaceSwitcherMenuOpenChange}
+		<>
+			<ContextMenu>
+				<ContextMenu.Trigger className='flex h-full min-h-0 w-full'>
+					<Sidebar
+						className='h-full min-h-0 w-full bg-transparent'
+						style={{ '--sidebar-width': 'inherit', display: 'flex' } as CSSProperties}
+					>
+						<Sidebar.Header className='px-3 pb-2 pt-2'>
+							<Dropdown isOpen={spaceSwitcherMenuOpen} onOpenChange={setSpaceSwitcherMenuOpen}>
+								<Button
+									fullWidth
+									aria-label='切换 Space'
+									className='h-11 justify-start px-2'
+									onContextMenu={(event) => event.stopPropagation()}
+									variant='ghost'
+								>
+									{allScope ? (
+										<SpaceIconBadge
+											visual={{
+												label: '所有空间',
+												icon: OrbitIcon,
+												iconClassName: 'text-[#8b5cf6]',
+												iconBadgeClassName: 'bg-[#8b5cf6]',
+												swatchClassName: 'bg-[#8b5cf6]',
+											}}
+										/>
+									) : activeSpaceVisual ? (
+										<SpaceIconBadge visual={activeSpaceVisual} />
+									) : null}
+									<span
+										className='min-w-0 flex-1 truncate text-left font-semibold'
+										data-sidebar='label'
 									>
-										<ActionTooltip
-											onOpenChange={(open) =>
-												setSpaceSwitcherTooltipOpen(open && !spaceSwitcherMenuOpen && !editorOpen)
+										{currentScopeLabel}
+									</span>
+									<ChevronsUpDownIcon className='size-4 text-muted' data-sidebar='label' />
+								</Button>
+								<Dropdown.Popover className='w-64' offset={6} placement='right top'>
+									<Dropdown.Menu aria-label='切换 Space'>
+										<Dropdown.Item
+											id='scope-all'
+											onAction={() =>
+												navigateToRememberedScope('all', openStartupFallback({ type: 'all' }))
 											}
-											open={spaceSwitcherTooltipOpen && !spaceSwitcherMenuOpen && !editorOpen}
+											textValue='所有空间'
 										>
-											<ActionTooltip.Trigger asChild>
-												<DropdownMenuTrigger asChild>
-													<SidebarMenuButton aria-label='切换 Space' size='lg'>
-														{allScope ? (
-															<SpaceIconBadge
-																visual={{
-																	label: '所有空间',
-																	icon: OrbitIcon,
-																	iconClassName: 'text-[#8b5cf6]',
-																	iconBadgeClassName: 'bg-[#8b5cf6]',
-																	swatchClassName: 'bg-[#8b5cf6]',
-																}}
-															/>
-														) : activeSpaceVisual ? (
-															<SpaceIconBadge visual={activeSpaceVisual} />
-														) : null}
-														<span className='min-w-0 flex-1 truncate text-left font-semibold'>
-															{currentScopeLabel}
-														</span>
-														<ChevronsUpDownIcon
-															className={`${shellChromeIconSubtleClass} group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:hidden group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:hidden`}
-														/>
-													</SidebarMenuButton>
-												</DropdownMenuTrigger>
-											</ActionTooltip.Trigger>
-											<ActionTooltip.Content side='right' sideOffset={8}>
-												<ActionTooltip.Row label={currentScopeLabel} />
-											</ActionTooltip.Content>
-										</ActionTooltip>
-										<DropdownMenuContent
-											align='start'
-											side={isMobile ? 'bottom' : 'right'}
-											sideOffset={6}
-										>
-											<DropdownMenuGroup>
-												<DropdownMenuItem
-													className={sidebarDropdownItemClass}
-													onSelect={() => {
-														navigateToRememberedScope('all', openStartupFallback({ type: 'all' }))
-													}}
+											<OrbitIcon className='size-4 shrink-0 text-[#8b5cf6]' />
+											<span>所有空间</span>
+											{allScope ? <CheckIcon className='ml-auto size-4' /> : null}
+										</Dropdown.Item>
+										{spaces.map((space) => {
+											const isActive =
+												currentScope.type === 'space' && space.id === currentScope.spaceId
+											const visual = getSpaceVisual(space)
+											const SpaceIcon = visual.icon
+											return (
+												<Dropdown.Item
+													id={`space-${space.id}`}
+													key={space.id}
+													onAction={() =>
+														navigateToRememberedScope(
+															`space:${space.id}`,
+															openSection(
+																{ type: 'space', spaceId: space.id },
+																'standalone',
+																space.id,
+															),
+														)
+													}
+													textValue={space.name}
 												>
-													<OrbitIcon className='size-3.5 shrink-0 text-[#8b5cf6]' />
-													<span>所有空间</span>
-													{allScope ? (
-														<CheckIcon
-															className={`ml-auto size-3.5 ${shellChromeIconSecondaryClass}`}
-														/>
+													<SpaceIcon className={cn('size-4 shrink-0', visual.iconClassName)} />
+													<span className='truncate'>{space.name}</span>
+													{space.isDefault ? (
+														<span className='text-xs text-muted'>默认</span>
 													) : null}
-												</DropdownMenuItem>
-												{spaces.map((space) => {
-													const isActive =
-														currentScope.type === 'space' && space.id === currentScope.spaceId
-													const visual = getSpaceVisual(space)
-													const SpaceIcon = visual.icon
-
-													return (
-														<DropdownMenuItem
-															className={sidebarDropdownItemClass}
-															key={space.id}
-															onSelect={() => {
-																navigateToRememberedScope(
-																	`space:${space.id}`,
-																	openSection(
-																		{ type: 'space', spaceId: space.id },
-																		'standalone',
-																		space.id,
-																	),
+													{isActive ? <CheckIcon className='ml-auto size-4' /> : null}
+												</Dropdown.Item>
+											)
+										})}
+										<Dropdown.Item
+											id='create-space'
+											onAction={() => {
+												setEditorMode('create')
+												setEditorOpen(true)
+											}}
+											textValue='新建空间'
+										>
+											<PlusIcon className='size-4 text-muted' />
+											<span>新建空间</span>
+										</Dropdown.Item>
+										<Dropdown.SubmenuTrigger>
+											<Dropdown.Item id='edit-space-actions' textValue='编辑空间'>
+												<Settings2Icon className='size-4 text-muted' />
+												<span>编辑空间</span>
+												<Dropdown.SubmenuIndicator />
+											</Dropdown.Item>
+											<Dropdown.Popover className='w-52' placement='right top'>
+												<Dropdown.Menu aria-label='编辑空间'>
+													<Dropdown.Item
+														id='edit-active-space'
+														isDisabled={!activeSpace}
+														onAction={() => {
+															setEditorMode('edit')
+															setEditorOpen(true)
+														}}
+														textValue='编辑当前空间'
+													>
+														<FolderIcon className='size-4 text-muted' />
+														<span>编辑当前空间</span>
+													</Dropdown.Item>
+													<Dropdown.Item
+														id='set-default-space'
+														isDisabled={!activeSpace || activeSpace.isDefault}
+														onAction={() => {
+															if (activeSpace)
+																void runSpaceMutation(
+																	async () => void (await onSetDefaultSpace(activeSpace.id)),
 																)
-															}}
-														>
-															<SpaceIcon className={cn('shrink-0', visual.iconClassName)} />
-															<div className='flex min-w-0 items-center gap-2'>
-																<span className='truncate'>{space.name}</span>
-																{space.isDefault ? (
-																	<span className={sidebarInlineBadgeClass}>默认</span>
-																) : null}
-															</div>
-															{isActive ? (
-																<CheckIcon
-																	className={`ml-auto size-3.5 ${shellChromeIconSecondaryClass}`}
-																/>
-															) : null}
-														</DropdownMenuItem>
-													)
-												})}
-											</DropdownMenuGroup>
-											<DropdownMenuSeparator />
-											<DropdownMenuGroup>
-												<DropdownMenuItem
-													className={sidebarDropdownItemClass}
-													onSelect={() => {
-														setEditorMode('create')
-														setEditorOpen(true)
-													}}
-												>
-													<PlusIcon className={shellChromeIconSecondaryClass} />
-													<span>新建空间</span>
-												</DropdownMenuItem>
-												<DropdownMenuSub>
-													<DropdownMenuSubTrigger className={sidebarDropdownItemClass}>
-														<Settings2Icon className={shellChromeIconSecondaryClass} />
-														<span>编辑空间</span>
-													</DropdownMenuSubTrigger>
-													<DropdownMenuSubContent>
-														<DropdownMenuItem
-															disabled={!activeSpace}
-															onSelect={() => {
-																setEditorMode('edit')
-																setEditorOpen(true)
-															}}
-														>
-															<FolderIcon className={shellChromeIconSecondaryClass} />
-															<span>编辑当前空间</span>
-														</DropdownMenuItem>
-														<DropdownMenuItem
-															disabled={!activeSpace || activeSpace.isDefault}
-															onSelect={() => {
-																if (!activeSpace) {
-																	return
-																}
-																void runSpaceMutation(async () => {
-																	await onSetDefaultSpace(activeSpace.id)
-																})
-															}}
-														>
-															<CheckIcon className={shellChromeIconSecondaryClass} />
-															<span>设为默认</span>
-														</DropdownMenuItem>
-														<DropdownMenuItem
-															disabled={!activeSpace || !canArchiveOrDeleteActiveSpace}
-															onSelect={async () => {
-																if (!activeSpace) {
-																	return
-																}
-																const confirmed = await requestDangerConfirm({
-																	intent: 'archive',
-																	entityType: 'space',
-																	count: 1,
-																	entityLabel: activeSpace.name,
-																})
-																if (!confirmed) {
-																	return
-																}
-																await runSpaceMutation(async () => {
-																	const result = await onArchiveSpace(activeSpace.id)
-																	if (currentScope.type === 'space') {
-																		void navigate({
-																			to: resolvePostSpaceRemovalPath(
-																				getDefaultSpaceId(result),
-																			) as never,
-																		})
-																	}
-																})
-															}}
-														>
-															<ExternalLinkIcon className={shellChromeIconSecondaryClass} />
-															<span>归档</span>
-														</DropdownMenuItem>
-														<DropdownMenuItem
-															className='text-destructive'
-															disabled={!activeSpace || !canArchiveOrDeleteActiveSpace}
-															onSelect={async () => {
-																if (!activeSpace) {
-																	return
-																}
-																const confirmed = await requestDangerConfirm({
-																	intent: 'trash',
-																	entityType: 'space',
-																	count: 1,
-																	entityLabel: activeSpace.name,
-																})
-																if (!confirmed) {
-																	return
-																}
-																await runSpaceMutation(async () => {
-																	const result = await onDeleteSpace(activeSpace.id)
-																	if (currentScope.type === 'space') {
-																		void navigate({
-																			to: resolvePostSpaceRemovalPath(
-																				getDefaultSpaceId(result),
-																			) as never,
-																		})
-																	}
-																})
-															}}
-														>
-															<Trash2Icon className='shrink-0' />
-															<span>删除</span>
-														</DropdownMenuItem>
-													</DropdownMenuSubContent>
-												</DropdownMenuSub>
-											</DropdownMenuGroup>
-											{dropdownError ? (
-												<>
-													<DropdownMenuSeparator />
-													<DropdownMenuLabel className='max-w-64 whitespace-normal text-destructive'>
-														{dropdownError}
-													</DropdownMenuLabel>
-												</>
-											) : null}
-										</DropdownMenuContent>
-									</DropdownMenu>
-								</SidebarMenuItem>
-							</SidebarMenu>
-						</div>
-					</SidebarHeader>
+														}}
+														textValue='设为默认'
+													>
+														<CheckIcon className='size-4 text-muted' />
+														<span>设为默认</span>
+													</Dropdown.Item>
+													<Dropdown.Item
+														id='archive-space'
+														isDisabled={!canArchiveOrDeleteActiveSpace}
+														onAction={() => void handleArchiveActiveSpace()}
+														textValue='归档'
+													>
+														<ExternalLinkIcon className='size-4 text-muted' />
+														<span>归档</span>
+													</Dropdown.Item>
+													<Dropdown.Item
+														id='delete-space'
+														isDisabled={!canArchiveOrDeleteActiveSpace}
+														onAction={() => void handleDeleteActiveSpace()}
+														textValue='删除'
+														variant='danger'
+													>
+														<Trash2Icon className='size-4' />
+														<span>删除</span>
+													</Dropdown.Item>
+												</Dropdown.Menu>
+											</Dropdown.Popover>
+										</Dropdown.SubmenuTrigger>
+										{dropdownError ? (
+											<Dropdown.Item id='space-error' isDisabled textValue={dropdownError}>
+												<span className='whitespace-normal text-danger'>{dropdownError}</span>
+											</Dropdown.Item>
+										) : null}
+									</Dropdown.Menu>
+								</Dropdown.Popover>
+							</Dropdown>
+						</Sidebar.Header>
 
-					<SidebarContent className='overflow-y-hidden'>
-						<AppScrollArea
-							className='flex-1'
-							scrollbarClassName='right-1'
-							viewportClassName='flex min-h-0 flex-col gap-4'
-						>
-							<SidebarGroup>
-								<SidebarGroupContent>
-									<SidebarMenu>
-										{visibleNavItems.map((item) => (
-											<MainNavSidebarMenuItem
-												badge={item.badge}
-												commandId={item.commandId}
-												footerItems={footerCustomizeItems}
-												icon={item.icon}
-												itemKey={item.settingsKey}
-												key={item.key}
-												label={item.label}
-												navItems={mainNavItems}
-												onResetMainItemsVisibility={onResetMainItemsVisibility}
-												onUpdateItemVisibility={onUpdateItemVisibility}
-												to={item.to}
-												visibleNavItemCount={visibleNavItemCount}
-											/>
-										))}
-									</SidebarMenu>
-								</SidebarGroupContent>
-							</SidebarGroup>
+						<Sidebar.Content className='gap-4 px-3'>
+							<Sidebar.Group>
+								<Sidebar.Menu aria-label='主要导航'>
+									{visibleNavItems.map((item) => (
+										<MainNavSidebarMenuItem
+											badge={item.badge}
+											commandId={item.commandId}
+											footerItems={footerCustomizeItems}
+											icon={item.icon}
+											itemKey={item.settingsKey}
+											key={item.key}
+											label={item.label}
+											navItems={mainNavItems}
+											onResetMainItemsVisibility={onResetMainItemsVisibility}
+											onUpdateItemVisibility={onUpdateItemVisibility}
+											to={item.to}
+											visibleNavItemCount={visibleNavItemCount}
+										/>
+									))}
+								</Sidebar.Menu>
+							</Sidebar.Group>
 
 							{showProjectSection ? (
-								<SidebarGroup className='group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:hidden group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:hidden'>
-									<div className={sidebarSectionHeaderRowClass}>
-										<SidebarGroupLabel className='px-0'>项目列表</SidebarGroupLabel>
-										<CommandActionTooltip
-											commandId={COMMAND_IDS.newProject}
-											contentProps={{ side: 'right', sideOffset: 8 }}
-											label='创建项目'
-										>
-											<Button
-												aria-label='创建项目'
-												className='size-6 hover:bg-sf-shell-hover-strong focus-visible:bg-sf-shell-hover-strong'
-												onClick={() => onOpenProjectCreateDialog()}
-												size='icon'
-												type='button'
-												variant='ghost'
-											>
-												<PlusIcon />
-											</Button>
-										</CommandActionTooltip>
-									</div>
-
-									{!settings.projectSection.collapsed ? (
-										<SidebarGroupContent>
-											<SidebarMenu>
+								<div data-sidebar='label'>
+									<Sidebar.Group>
+										<div className='flex h-8 items-center justify-between px-2'>
+											<Sidebar.GroupLabel className='px-0'>项目列表</Sidebar.GroupLabel>
+											<Tooltip closeDelay={0} delay={0}>
+												<Button
+													isIconOnly
+													aria-label='创建项目'
+													onContextMenu={(event) => event.stopPropagation()}
+													onPress={onOpenProjectCreateDialog}
+													size='sm'
+													variant='ghost'
+												>
+													<PlusIcon className='size-4' />
+												</Button>
+												<Tooltip.Content placement='right'>
+													<CommandTooltipRow commandId={COMMAND_IDS.newProject} label='创建项目' />
+												</Tooltip.Content>
+											</Tooltip>
+										</div>
+										{!settings.projectSection.collapsed ? (
+											<Sidebar.Menu aria-label='项目导航'>
 												<StandaloneNavMenuItem
 													badge={navBadges.standalone}
 													contextMenuContent={
-														<ContextMenuContent className='w-52'>
-															<ContextMenuGroup>
+														<ContextMenu.Popover className='w-52'>
+															<ContextMenu.Menu aria-label='独立事项操作'>
 																<SidebarCustomizeSubmenu
 																	footerItems={footerCustomizeItems}
 																	navItems={mainNavItems}
@@ -597,8 +467,8 @@ export function ShellSidebar({
 																	onUpdateItemVisibility={onUpdateItemVisibility}
 																	visibleNavItemCount={visibleNavItemCount}
 																/>
-															</ContextMenuGroup>
-														</ContextMenuContent>
+															</ContextMenu.Menu>
+														</ContextMenu.Popover>
 													}
 													currentScope={currentScope}
 													fallbackSpaceId={fallbackSpaceId}
@@ -611,70 +481,63 @@ export function ShellSidebar({
 														project={project}
 													/>
 												))}
-											</SidebarMenu>
-										</SidebarGroupContent>
-									) : null}
-								</SidebarGroup>
+											</Sidebar.Menu>
+										) : null}
+									</Sidebar.Group>
+								</div>
 							) : null}
+						</Sidebar.Content>
 
-							<SidebarFooter className={`mt-auto ${sidebarFooterContainerClass}`}>
-								<SidebarMenu>
-									{footerItems.map((item) => (
-										<SidebarMenuItem key={item.key}>
-											<SidebarNavRow
-												badge={item.badge}
-												commandId={item.commandId}
-												contextMenuContent={
-													<SidebarItemContextMenu
-														footerItems={footerCustomizeItems}
-														isLastVisible={
-															visibleNavItemCount === 1 && settings.footerItems[item.key].visible
-														}
-														navItems={mainNavItems}
-														onResetMainItemsVisibility={onResetMainItemsVisibility}
-														onUpdateItemVisibility={onUpdateItemVisibility}
-														target={{ kind: 'footer', key: item.key }}
-														visible={settings.footerItems[item.key].visible}
-														visibleNavItemCount={visibleNavItemCount}
-													/>
+						<Sidebar.Footer className='border-t border-separator px-3 py-2'>
+							<Sidebar.Menu aria-label='辅助导航'>
+								{footerItems.map((item) => (
+									<SidebarNavRow
+										badge={item.badge}
+										commandId={item.commandId}
+										contextMenuContent={
+											<SidebarItemContextMenu
+												footerItems={footerCustomizeItems}
+												isLastVisible={
+													visibleNavItemCount === 1 && settings.footerItems[item.key].visible
 												}
-												icon={item.icon}
-												label={item.label}
-												to={item.to}
+												navItems={mainNavItems}
+												onResetMainItemsVisibility={onResetMainItemsVisibility}
+												onUpdateItemVisibility={onUpdateItemVisibility}
+												target={{ kind: 'footer', key: item.key }}
+												visible={settings.footerItems[item.key].visible}
+												visibleNavItemCount={visibleNavItemCount}
 											/>
-										</SidebarMenuItem>
-									))}
-								</SidebarMenu>
-							</SidebarFooter>
-						</AppScrollArea>
-					</SidebarContent>
-					<SidebarRail />
-				</Sidebar>
-			</ContextMenuTrigger>
-
-			<ContextMenuContent className='w-52'>
-				<ContextMenuGroup>
-					<SidebarCustomizeSubmenu
-						footerItems={footerCustomizeItems}
-						navItems={mainNavItems}
-						onResetMainItemsVisibility={onResetMainItemsVisibility}
-						onUpdateItemVisibility={onUpdateItemVisibility}
-						visibleNavItemCount={visibleNavItemCount}
-					/>
-				</ContextMenuGroup>
-			</ContextMenuContent>
+										}
+										icon={item.icon}
+										key={item.key}
+										label={item.label}
+										to={item.to}
+									/>
+								))}
+							</Sidebar.Menu>
+						</Sidebar.Footer>
+					</Sidebar>
+				</ContextMenu.Trigger>
+				<ContextMenu.Popover className='w-52'>
+					<ContextMenu.Menu aria-label='侧边栏操作'>
+						<SidebarCustomizeSubmenu
+							footerItems={footerCustomizeItems}
+							navItems={mainNavItems}
+							onResetMainItemsVisibility={onResetMainItemsVisibility}
+							onUpdateItemVisibility={onUpdateItemVisibility}
+							visibleNavItemCount={visibleNavItemCount}
+						/>
+					</ContextMenu.Menu>
+				</ContextMenu.Popover>
+			</ContextMenu>
 
 			<SpaceEditorDialog
 				mode={editorMode}
-				onClose={handleSpaceEditorClose}
+				onClose={() => setEditorOpen(false)}
 				onSubmit={handleSpaceEditorSubmit}
 				open={editorOpen}
 				space={editorMode === 'edit' ? activeSpace : null}
 			/>
-		</ContextMenu>
+		</>
 	)
-}
-
-function getDefaultSpaceId(result: SpaceRemovalResult): string | null {
-	return result.defaultSpaceId
 }

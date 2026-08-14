@@ -1,7 +1,6 @@
 import { openProjectDetail } from '@/app/navigation'
 import type { ShellProjectLink } from '@/layout/config'
 import type { Scope } from '@/shared/types'
-import { SidebarMenuItem } from '@/shared/components/base/sidebar'
 import { FolderIcon } from 'lucide-react'
 
 import { SidebarProjectNavRow } from './SidebarNavRow'
@@ -29,13 +28,11 @@ export function ProjectNavMenuItem({
 	})
 
 	return (
-		<SidebarMenuItem>
-			<SidebarProjectNavRow
-				badge={project.badge}
-				icon={FolderIcon}
-				label={project.label}
-				to={projectPath}
-			/>
-		</SidebarMenuItem>
+		<SidebarProjectNavRow
+			badge={project.badge}
+			icon={FolderIcon}
+			label={project.label}
+			to={projectPath}
+		/>
 	)
 }

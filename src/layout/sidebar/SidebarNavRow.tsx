@@ -1,16 +1,8 @@
-import { useState, type ComponentType, type ReactNode } from 'react'
-import { Link, useMatchRoute, useRouterState } from '@tanstack/react-router'
+import type { ComponentType, ReactNode } from 'react'
+import { useMatchRoute, useRouterState } from '@tanstack/react-router'
+import { ContextMenu, Sidebar } from '@heroui-pro/react'
 
 import { CommandTooltipRow, type CommandId } from '@/features/command'
-import { ContextMenu, ContextMenuTrigger } from '@/shared/components/base/context-menu'
-import { SidebarMenuBadge, SidebarMenuButton } from '@/shared/components/base/sidebar'
-import {
-	sidebarMenuIconClass,
-	sidebarMenuLabelClass,
-	sidebarNavBadgeSlotClass,
-	sidebarShellNavLinkStretchClass,
-} from '@/shared/components/patterns/sidebar-item'
-import { ActionTooltip } from '@/shared/components/tooltip'
 
 type SidebarNavRowLayoutProps = {
 	icon: ComponentType<{ className?: string }>
@@ -18,22 +10,23 @@ type SidebarNavRowLayoutProps = {
 	badge?: string
 }
 
-/** 仅负责三列内容（图标 / 标题 / 数字槽），不关心路由与菜单。 */
 function SidebarNavRowLayout({ icon: Icon, label, badge }: SidebarNavRowLayoutProps) {
 	return (
 		<>
-			<Icon className={sidebarMenuIconClass} />
-			{label}
-			<span className={sidebarNavBadgeSlotClass}>
-				{badge ? <SidebarMenuBadge>{badge}</SidebarMenuBadge> : null}
-			</span>
+			<Sidebar.MenuIcon>
+				<Icon className='size-4' />
+			</Sidebar.MenuIcon>
+			<Sidebar.MenuLabel>{label}</Sidebar.MenuLabel>
+			{badge ? <Sidebar.MenuChip>{badge}</Sidebar.MenuChip> : null}
 		</>
 	)
 }
 
 function useSidebarNavIsActive(to: string) {
 	const matchRoute = useMatchRoute()
-	const pathname = useRouterState({ select: (state) => state.location.pathname })
+	const pathname = useRouterState({
+		select: (state) => state.location.pathname,
+	})
 	return Boolean(matchRoute({ to: to as never, pending: false })) || pathname === to
 }
 
@@ -43,14 +36,11 @@ export type SidebarNavRowProps = {
 	icon: ComponentType<{ className?: string }>
 	commandId: CommandId
 	badge?: string
-	/** 须自带 ContextMenuContent；不传则不包裹 ContextMenu。 */
+	/** HeroUI ContextMenu.Popover；不传则仅渲染导航项。 */
 	contextMenuContent?: ReactNode
 }
 
-/**
- * 固定导航动作：Tooltip 始终从 Command Registry 解析主快捷键。
- * 右键菜单打开时显式关闭 Tooltip，避免两个浮层争夺焦点与锚点。
- */
+/** HeroUI Sidebar 导航项；路由高亮、Tooltip 与右键菜单共用一个 TreeItem。 */
 export function SidebarNavRow({
 	to,
 	label,
@@ -60,87 +50,55 @@ export function SidebarNavRow({
 	contextMenuContent,
 }: SidebarNavRowProps) {
 	const isActive = useSidebarNavIsActive(to)
-	const [contextMenuOpen, setContextMenuOpen] = useState(false)
-	const [tooltipOpen, setTooltipOpen] = useState(false)
-	const buttonRow = (
-		<SidebarMenuButton asChild isActive={isActive}>
-			<Link from='/' to={to as never}>
-				<SidebarNavRowLayout
-					badge={badge}
-					icon={icon}
-					label={<span className={sidebarMenuLabelClass}>{label}</span>}
-				/>
-			</Link>
-		</SidebarMenuButton>
-	)
-
-	const tooltip = (
-		<ActionTooltip
-			onOpenChange={(open) => setTooltipOpen(open && !contextMenuOpen)}
-			open={tooltipOpen && !contextMenuOpen}
-		>
-			<ActionTooltip.Trigger asChild>
-				{contextMenuContent ? (
-					<ContextMenuTrigger asChild onContextMenu={(event) => event.stopPropagation()}>
-						{buttonRow}
-					</ContextMenuTrigger>
-				) : (
-					buttonRow
-				)}
-			</ActionTooltip.Trigger>
-			<ActionTooltip.Content side='right' sideOffset={8}>
-				<CommandTooltipRow commandId={commandId} label={label} />
-			</ActionTooltip.Content>
-		</ActionTooltip>
-	)
+	const content = <SidebarNavRowLayout badge={badge} icon={icon} label={label} />
 
 	return (
-		<div className={sidebarShellNavLinkStretchClass}>
+		<Sidebar.MenuItem
+			href={to}
+			id={`route:${to}`}
+			isCurrent={isActive}
+			textValue={label}
+			tooltipProps={{
+				content: <CommandTooltipRow commandId={commandId} label={label} />,
+				closeDelay: 0,
+				delay: 0,
+				placement: 'right',
+			}}
+		>
 			{contextMenuContent ? (
-				<ContextMenu
-					onOpenChange={(open) => {
-						setContextMenuOpen(open)
-						if (open) {
-							setTooltipOpen(false)
-						}
-					}}
-					open={contextMenuOpen}
-				>
-					{tooltip}
+				<ContextMenu>
+					<ContextMenu.Trigger className='flex w-full min-w-0 items-center gap-3'>
+						{content}
+					</ContextMenu.Trigger>
 					{contextMenuContent}
 				</ContextMenu>
 			) : (
-				tooltip
+				content
 			)}
-		</div>
+		</Sidebar.MenuItem>
 	)
 }
 
 export type SidebarProjectNavRowProps = Omit<SidebarNavRowProps, 'commandId' | 'contextMenuContent'>
 
-/** 动态项目不是全局命令；仍按 Sidebar 导航口径始终展示名称 Tooltip。 */
+/** 动态项目没有全局命令，但仍使用 HeroUI Sidebar 自带 Tooltip。 */
 export function SidebarProjectNavRow({ to, label, icon, badge }: SidebarProjectNavRowProps) {
 	const isActive = useSidebarNavIsActive(to)
-	const buttonRow = (
-		<SidebarMenuButton asChild isActive={isActive}>
-			<Link from='/' to={to as never}>
-				<SidebarNavRowLayout
-					badge={badge}
-					icon={icon}
-					label={<span className={sidebarMenuLabelClass}>{label}</span>}
-				/>
-			</Link>
-		</SidebarMenuButton>
-	)
 
 	return (
-		<div className={sidebarShellNavLinkStretchClass}>
-			<ActionTooltip>
-				<ActionTooltip.Trigger asChild>{buttonRow}</ActionTooltip.Trigger>
-				<ActionTooltip.Content side='right' sideOffset={8}>
-					<ActionTooltip.Row label={label} />
-				</ActionTooltip.Content>
-			</ActionTooltip>
-		</div>
+		<Sidebar.MenuItem
+			href={to}
+			id={`project:${to}`}
+			isCurrent={isActive}
+			textValue={label}
+			tooltipProps={{
+				content: label,
+				closeDelay: 0,
+				delay: 0,
+				placement: 'right',
+			}}
+		>
+			<SidebarNavRowLayout badge={badge} icon={icon} label={label} />
+		</Sidebar.MenuItem>
 	)
 }

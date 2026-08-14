@@ -45,8 +45,6 @@
 		var(--sf-accent-primary) 22%
 	);
 
-	/* Shared geometry and motion
-	 * 侧栏展开宽运行时真源：`--sf-shell-sidebar-reserved-width`（SidebarProvider 写入）。
-	 * 默认数值见 `shared/lib/shellSidebarGeometry.ts`，勿在 CSS 再维护一份默认宽。 */
+	/* 详情面板几何；Sidebar 宽度已由 HeroUI `--sidebar-width` 直接拥有。 */
 	--sf-shell-drawer-width: 40rem;
 }

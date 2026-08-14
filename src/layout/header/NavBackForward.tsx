@@ -1,7 +1,6 @@
-import { COMMAND_IDS, CommandActionTooltip, CommandShortcut } from '@/features/command'
-import { Button } from '@/shared/components/base/button'
+import { COMMAND_IDS, CommandTooltipRow } from '@/features/command'
+import { Button, Tooltip } from '@heroui/react'
 import { shellChromeNavCircleButtonClass } from '@/shared/components/patterns/shell-chrome'
-import { DisabledActionTooltip } from '@/shared/components/tooltip'
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 
 type NavBackForwardProps = {
@@ -20,62 +19,88 @@ export function NavBackForward({
 	return (
 		<>
 			{canGoBack ? (
-				<CommandActionTooltip commandId={COMMAND_IDS.goBack} label='后退'>
+				<Tooltip closeDelay={0} delay={0}>
 					<Button
 						aria-label='后退'
 						className={shellChromeNavCircleButtonClass}
-						onClick={onBack}
-						size='icon-sm'
+						isIconOnly
+						onPress={onBack}
+						size='sm'
 						variant='ghost'
 					>
 						<ChevronLeftIcon className='size-3.5' />
 					</Button>
-				</CommandActionTooltip>
+					<Tooltip.Content>
+						<CommandTooltipRow commandId={COMMAND_IDS.goBack} label='后退' />
+					</Tooltip.Content>
+				</Tooltip>
 			) : (
-				<DisabledActionTooltip
-					label='后退'
-					reason='没有可返回的页面'
-					shortcut={<CommandShortcut commandId={COMMAND_IDS.goBack} />}
-				>
-					<Button
+				<Tooltip closeDelay={0} delay={0}>
+					<Tooltip.Trigger
+						aria-disabled='true'
 						aria-label='后退'
-						className={shellChromeNavCircleButtonClass}
-						disabled
-						size='icon-sm'
-						variant='ghost'
+						className='inline-flex cursor-not-allowed'
+						role='group'
+						tabIndex={0}
 					>
-						<ChevronLeftIcon className='size-3.5' />
-					</Button>
-				</DisabledActionTooltip>
+						<Button
+							aria-label='后退'
+							className={shellChromeNavCircleButtonClass}
+							isDisabled
+							isIconOnly
+							size='sm'
+							variant='ghost'
+						>
+							<ChevronLeftIcon className='size-3.5' />
+						</Button>
+					</Tooltip.Trigger>
+					<Tooltip.Content>
+						<CommandTooltipRow commandId={COMMAND_IDS.goBack} label='后退' />
+						<p className='text-xs text-muted'>没有可返回的页面</p>
+					</Tooltip.Content>
+				</Tooltip>
 			)}
 			{canGoForward ? (
-				<CommandActionTooltip commandId={COMMAND_IDS.goForward} label='前进'>
+				<Tooltip closeDelay={0} delay={0}>
 					<Button
 						aria-label='前进'
 						className={shellChromeNavCircleButtonClass}
-						onClick={onForward}
-						size='icon-sm'
+						isIconOnly
+						onPress={onForward}
+						size='sm'
 						variant='ghost'
 					>
 						<ChevronRightIcon className='size-3.5' />
 					</Button>
-				</CommandActionTooltip>
+					<Tooltip.Content>
+						<CommandTooltipRow commandId={COMMAND_IDS.goForward} label='前进' />
+					</Tooltip.Content>
+				</Tooltip>
 			) : (
-				<DisabledActionTooltip
-					label='前进'
-					reason='没有可前进的页面'
-					shortcut={<CommandShortcut commandId={COMMAND_IDS.goForward} />}
-				>
-					<Button
+				<Tooltip closeDelay={0} delay={0}>
+					<Tooltip.Trigger
+						aria-disabled='true'
 						aria-label='前进'
-						className={shellChromeNavCircleButtonClass}
-						disabled
-						size='icon-sm'
-						variant='ghost'
+						className='inline-flex cursor-not-allowed'
+						role='group'
+						tabIndex={0}
 					>
-						<ChevronRightIcon className='size-3.5' />
-					</Button>
-				</DisabledActionTooltip>
+						<Button
+							aria-label='前进'
+							className={shellChromeNavCircleButtonClass}
+							isDisabled
+							isIconOnly
+							size='sm'
+							variant='ghost'
+						>
+							<ChevronRightIcon className='size-3.5' />
+						</Button>
+					</Tooltip.Trigger>
+					<Tooltip.Content>
+						<CommandTooltipRow commandId={COMMAND_IDS.goForward} label='前进' />
+						<p className='text-xs text-muted'>没有可前进的页面</p>
+					</Tooltip.Content>
+				</Tooltip>
 			)}
 		</>
 	)

@@ -10,7 +10,6 @@ import {
 	ContextMenuItem,
 	ContextMenuTrigger,
 } from '@/shared/components/base/context-menu'
-import { cn } from '@/shared/lib/utils'
 import { FolderPlusIcon, SquarePenIcon } from 'lucide-react'
 
 type ShellMainProps = PropsWithChildren<{
@@ -144,18 +143,12 @@ export function ShellMain({
 	}
 
 	return (
-		<main className='relative flex min-w-0 flex-1 overflow-hidden bg-transparent'>
-			{/* mobile：仅去掉主卡左右 gutter（pr-2）与圆角；卡片边框/阴影/底色保持不动 */}
-			<div className='flex min-w-0 flex-1 overflow-hidden px-0 pr-2 group-data-[sidebar-layout=mobile]/sidebar-wrapper:px-0'>
+		<div className='relative flex min-h-0 min-w-0 flex-1 overflow-hidden bg-transparent'>
+			<div className='flex min-h-0 min-w-0 flex-1 overflow-hidden'>
 				<ContextMenu>
 					<ContextMenuTrigger asChild onContextMenu={handleGlobalContextMenu}>
 						<div
-							className={cn(
-								'relative flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-lg border border-sf-border-subtle bg-card group-data-[sidebar-layout=mobile]/sidebar-wrapper:rounded-none',
-								// 桌面：外阴影会落到下方 Footer；壳内主卡保持平面（mobile 仍保留轻微层次）
-								'group-data-[sidebar-layout=desktop]/sidebar-wrapper:shadow-none',
-								'group-data-[sidebar-layout=mobile]/sidebar-wrapper:shadow-(--sf-shadow-panel)',
-							)}
+							className='relative flex min-h-0 min-w-0 flex-1 overflow-hidden'
 							onPointerDownCapture={handleMainPointerDownCapture}
 						>
 							<div className='flex min-w-0 flex-1 flex-col overflow-hidden'>{children}</div>
@@ -193,6 +186,6 @@ export function ShellMain({
 					</ContextMenuContent>
 				</ContextMenu>
 			</div>
-		</main>
+		</div>
 	)
 }

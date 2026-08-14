@@ -142,21 +142,28 @@ describe('useSidebarSettingsStore', () => {
 		expect(mockedUpdateShellSidebarDevicePreferences).not.toHaveBeenCalled()
 	})
 
-	it('setSidebarWidth 会写入 device preferences 并保留 sync settings', async () => {
+	it('setSidebarPreferences 会用一次 device port 调用原子更新宽度与桌面状态', async () => {
 		useSidebarSettingsStore.setState(createReadyStoreState())
 		mockedUpdateShellSidebarDevicePreferences.mockResolvedValue(
 			createSidebarDevicePreferences({
-				width: 320,
+				width: 330,
+				desktopPreference: 'collapsed',
 			}),
 		)
 
-		await useSidebarSettingsStore.getState().setSidebarWidth(320)
+		await useSidebarSettingsStore.getState().setSidebarPreferences({
+			width: 330,
+			desktopPreference: 'collapsed',
+		})
 
 		const state = useSidebarSettingsStore.getState()
+		expect(mockedUpdateShellSidebarDevicePreferences).toHaveBeenCalledOnce()
 		expect(mockedUpdateShellSidebarDevicePreferences).toHaveBeenCalledWith({
-			width: 320,
+			width: 330,
+			desktopPreference: 'collapsed',
 		})
-		expect(state.settings?.width).toBe(320)
+		expect(state.settings?.width).toBe(330)
+		expect(state.settings?.desktopPreference).toBe('collapsed')
 		expect(state.settings?.mainItems.allTasks.visible).toBe(true)
 	})
 })

@@ -1,14 +1,7 @@
-import type { SidebarFooterItemKey, SidebarItemVisibilityTarget } from '@/features/settings'
-import {
-	ContextMenuContent,
-	ContextMenuGroup,
-	ContextMenuSeparator,
-	ContextMenuSub,
-	ContextMenuSubContent,
-	ContextMenuSubTrigger,
-	ContextMenuItem,
-} from '@/shared/components/base/context-menu'
+import { ContextMenu } from '@heroui-pro/react'
 import { CheckIcon, EyeIcon, EyeOffIcon } from 'lucide-react'
+
+import type { SidebarFooterItemKey, SidebarItemVisibilityTarget } from '@/features/settings'
 
 import { SidebarCustomizeSubmenu } from './SidebarCustomizeSubmenu'
 import type { MainNavItemViewModel } from './types'
@@ -20,15 +13,11 @@ type FooterCustomizeItem = {
 	icon: React.ComponentType<{ className?: string }>
 }
 
-// 模块级空数组常量，避免每次渲染都创建新的默认值引用
 const EMPTY_FOOTER_ITEMS: FooterCustomizeItem[] = []
 
 export type SidebarItemContextMenuProps = {
-	/** 当前右键项的可见性目标 */
 	target: SidebarItemVisibilityTarget
-	/** 当前右键项是否可见 */
 	visible: boolean
-	/** 是否是最后一个可见项（禁止隐藏） */
 	isLastVisible: boolean
 	navItems: MainNavItemViewModel[]
 	footerItems?: FooterCustomizeItem[]
@@ -37,7 +26,7 @@ export type SidebarItemContextMenuProps = {
 	onResetMainItemsVisibility: () => void
 }
 
-/** 通用侧边栏项右键菜单：可见性子菜单 + 自定义侧边栏子菜单 */
+/** HeroUI ContextMenu：当前入口可见性与侧栏定制。 */
 export function SidebarItemContextMenu({
 	target,
 	visible,
@@ -49,30 +38,45 @@ export function SidebarItemContextMenu({
 	onResetMainItemsVisibility,
 }: SidebarItemContextMenuProps) {
 	return (
-		<ContextMenuContent className='w-52'>
-			<ContextMenuGroup>
-				<ContextMenuSub>
-					<ContextMenuSubTrigger>
-						{visible ? <EyeIcon /> : <EyeOffIcon />}
-						可见性
-					</ContextMenuSubTrigger>
-					<ContextMenuSubContent>
-						<ContextMenuItem onSelect={() => onUpdateItemVisibility(target, true)}>
-							{visible ? <CheckIcon className='size-3.5' /> : <span className='size-3.5' />}
-							永远可见
-						</ContextMenuItem>
-						<ContextMenuItem
-							disabled={isLastVisible}
-							onSelect={() => onUpdateItemVisibility(target, false)}
-						>
-							{!visible ? <CheckIcon className='size-3.5' /> : <span className='size-3.5' />}
-							不可见
-						</ContextMenuItem>
-					</ContextMenuSubContent>
-				</ContextMenuSub>
-			</ContextMenuGroup>
-			<ContextMenuSeparator />
-			<ContextMenuGroup>
+		<ContextMenu.Popover className='w-52'>
+			<ContextMenu.Menu aria-label='侧边栏入口操作'>
+				<ContextMenu.SubmenuTrigger>
+					<ContextMenu.Item id='visibility' textValue='可见性'>
+						{visible ? (
+							<EyeIcon className='size-4 text-muted' />
+						) : (
+							<EyeOffIcon className='size-4 text-muted' />
+						)}
+						<span>可见性</span>
+						<ContextMenu.SubmenuIndicator />
+					</ContextMenu.Item>
+					<ContextMenu.Popover className='w-40' placement='right top'>
+						<ContextMenu.Menu aria-label='设置可见性'>
+							<ContextMenu.Item
+								id='always-visible'
+								onAction={() => onUpdateItemVisibility(target, true)}
+								textValue='永远可见'
+							>
+								<span className='flex size-4 items-center justify-center'>
+									{visible ? <CheckIcon className='size-3.5' /> : null}
+								</span>
+								<span>永远可见</span>
+							</ContextMenu.Item>
+							<ContextMenu.Item
+								id='hidden'
+								isDisabled={isLastVisible}
+								onAction={() => onUpdateItemVisibility(target, false)}
+								textValue='不可见'
+							>
+								<span className='flex size-4 items-center justify-center'>
+									{!visible ? <CheckIcon className='size-3.5' /> : null}
+								</span>
+								<span>不可见</span>
+							</ContextMenu.Item>
+						</ContextMenu.Menu>
+					</ContextMenu.Popover>
+				</ContextMenu.SubmenuTrigger>
+				<ContextMenu.Separator />
 				<SidebarCustomizeSubmenu
 					footerItems={footerItems}
 					navItems={navItems}
@@ -80,7 +84,7 @@ export function SidebarItemContextMenu({
 					onUpdateItemVisibility={onUpdateItemVisibility}
 					visibleNavItemCount={visibleNavItemCount}
 				/>
-			</ContextMenuGroup>
-		</ContextMenuContent>
+			</ContextMenu.Menu>
+		</ContextMenu.Popover>
 	)
 }

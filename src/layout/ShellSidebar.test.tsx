@@ -1,5 +1,6 @@
 import { useLocation } from '@tanstack/react-router'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { Sidebar } from '@heroui-pro/react'
 
 import { ShellSidebar } from '@/layout/ShellSidebar'
 import { resolveRememberedPathForScope } from '@/app/navigation'
@@ -11,8 +12,6 @@ import {
 } from '@/features/command'
 import { SubmitRegistryProvider } from '@/features/submit'
 import { SyncStatusProvider } from '@/features/sync'
-import { SidebarProvider } from '@/shared/components/base/sidebar'
-import { TooltipProvider } from '@/shared/components/base/tooltip'
 import { renderWithRouterContext } from '@/test/renderWithRouter'
 
 vi.mock('@/app/navigation', async (importOriginal) => {
@@ -54,13 +53,18 @@ describe('ShellSidebar', () => {
 			desktopPreference: 'expanded',
 		})
 
-		expect(screen.getByRole('link', { name: '独立事项' })).toBeInTheDocument()
-		expect(screen.queryByRole('link', { name: '所有任务' })).not.toBeInTheDocument()
-		expect(screen.getByRole('link', { name: '视图' })).toBeInTheDocument()
-		expect(screen.getByRole('link', { name: '项目总览' })).toBeInTheDocument()
-		expect(screen.getByRole('link', { name: '归档' })).toBeInTheDocument()
-		expect(screen.getByRole('link', { name: '回收站' })).toBeInTheDocument()
-		expect(screen.queryByRole('link', { name: '设置' })).not.toBeInTheDocument()
+		expect(document.querySelector('[data-slot="sidebar"]')).toHaveAttribute(
+			'style',
+			expect.stringContaining('--sidebar-width: inherit'),
+		)
+		expect(document.querySelector('[data-slot="sidebar"]')).toHaveStyle({ display: 'flex' })
+		expect(screen.getByRole('row', { name: '独立事项' })).toBeInTheDocument()
+		expect(screen.queryByRole('row', { name: '所有任务' })).not.toBeInTheDocument()
+		expect(screen.getByRole('row', { name: '视图' })).toBeInTheDocument()
+		expect(screen.getByRole('row', { name: '项目总览' })).toBeInTheDocument()
+		expect(screen.getByRole('row', { name: '归档' })).toBeInTheDocument()
+		expect(screen.getByRole('row', { name: '回收站' })).toBeInTheDocument()
+		expect(screen.queryByRole('row', { name: '设置' })).not.toBeInTheDocument()
 	})
 
 	it('固定导航 Tooltip 从 Registry 展示箭头序列', async () => {
@@ -86,10 +90,12 @@ describe('ShellSidebar', () => {
 			desktopPreference: 'expanded',
 		})
 
-		fireEvent.focus(screen.getByRole('link', { name: '所有任务' }))
+		const tasksTrigger = screen.getByRole('button', { name: '所有任务' })
+		fireEvent.pointerMove(tasksTrigger, { pointerType: 'mouse' })
+		fireEvent.pointerEnter(tasksTrigger, { pointerType: 'mouse' })
 
 		const tooltip = await screen.findByRole('tooltip')
-		expect(tooltip).toHaveAttribute('data-side', 'right')
+		expect(tooltip).toHaveAttribute('data-placement', 'right')
 		expect(tooltip).toHaveTextContent('所有任务GT')
 		expect(screen.getByLabelText('依次按 G、T')).toBeInTheDocument()
 		expect(document.querySelector('.lucide-arrow-right')).toBeInTheDocument()
@@ -125,11 +131,11 @@ describe('ShellSidebar', () => {
 			},
 		)
 
-		expect(screen.getByRole('link', { name: '所有任务' })).toBeInTheDocument()
-		expect(screen.getByRole('link', { name: '视图' })).toBeInTheDocument()
-		expect(screen.queryByRole('link', { name: '项目总览' })).not.toBeInTheDocument()
-		expect(screen.queryByRole('link', { name: '独立事项' })).not.toBeInTheDocument()
-		expect(screen.queryByRole('link', { name: 'StoneFlow VNext' })).not.toBeInTheDocument()
+		expect(screen.getByRole('row', { name: '所有任务' })).toBeInTheDocument()
+		expect(screen.getByRole('row', { name: '视图' })).toBeInTheDocument()
+		expect(screen.queryByRole('row', { name: '项目总览' })).not.toBeInTheDocument()
+		expect(screen.queryByRole('row', { name: '独立事项' })).not.toBeInTheDocument()
+		expect(screen.queryByRole('row', { name: 'StoneFlow VNext' })).not.toBeInTheDocument()
 		expect(screen.getByRole('button', { name: '切换 Space' })).toHaveAccessibleName('切换 Space')
 		expect(screen.getByText('所有空间')).toBeInTheDocument()
 	})
@@ -167,7 +173,11 @@ describe('ShellSidebar', () => {
 		)
 
 		expect(screen.getByText('7')).toBeInTheDocument()
-		fireEvent.focus(screen.getByRole('link', { name: /StoneFlow VNext/ }))
+		const projectTrigger = screen.getByRole('button', {
+			name: /StoneFlow VNext/,
+		})
+		fireEvent.pointerMove(projectTrigger, { pointerType: 'mouse' })
+		fireEvent.pointerEnter(projectTrigger, { pointerType: 'mouse' })
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('StoneFlow VNext')
 	})
 
@@ -202,8 +212,10 @@ describe('ShellSidebar', () => {
 			},
 		)
 
-		fireEvent.pointerDown(screen.getByRole('button', { name: '切换 Space' }))
-		fireEvent.click(await screen.findByRole('menuitem', { name: '编辑空间' }))
+		fireEvent.click(screen.getByRole('button', { name: '切换 Space' }))
+		fireEvent.keyDown(await screen.findByRole('menuitem', { name: '编辑空间' }), {
+			key: 'ArrowRight',
+		})
 		fireEvent.pointerMove(await screen.findByRole('menuitem', { name: '删除' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: '删除' }))
 
@@ -251,8 +263,10 @@ describe('ShellSidebar', () => {
 			},
 		)
 
-		fireEvent.pointerDown(screen.getByRole('button', { name: '切换 Space' }))
-		fireEvent.click(await screen.findByRole('menuitem', { name: '编辑空间' }))
+		fireEvent.click(screen.getByRole('button', { name: '切换 Space' }))
+		fireEvent.keyDown(await screen.findByRole('menuitem', { name: '编辑空间' }), {
+			key: 'ArrowRight',
+		})
 
 		const archiveItem = await screen.findByRole('menuitem', { name: '归档' })
 		const deleteItem = await screen.findByRole('menuitem', { name: '删除' })
@@ -289,7 +303,7 @@ describe('ShellSidebar', () => {
 			desktopPreference: 'expanded',
 		})
 
-		fireEvent.pointerDown(screen.getByRole('button', { name: '切换 Space' }))
+		fireEvent.click(screen.getByRole('button', { name: '切换 Space' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: '新建空间' }))
 		expect(await screen.findByRole('dialog', { name: '新建 Space' })).toBeInTheDocument()
 
@@ -298,13 +312,15 @@ describe('ShellSidebar', () => {
 			expect(screen.queryByRole('dialog', { name: '新建 Space' })).not.toBeInTheDocument()
 		})
 
-		fireEvent.pointerDown(screen.getByRole('button', { name: '切换 Space' }))
-		fireEvent.click(await screen.findByRole('menuitem', { name: '编辑空间' }))
+		fireEvent.click(screen.getByRole('button', { name: '切换 Space' }))
+		fireEvent.keyDown(await screen.findByRole('menuitem', { name: '编辑空间' }), {
+			key: 'ArrowRight',
+		})
 		fireEvent.click(await screen.findByRole('menuitem', { name: '编辑当前空间' }))
 		expect(await screen.findByRole('dialog', { name: '编辑 Space' })).toBeInTheDocument()
 	})
 
-	it('项目区和 footer 一起位于 AppScrollArea 滚动容器内，内容不足时 footer 仍可贴底', () => {
+	it('项目区位于 Content，辅助导航使用 HeroUI Sidebar.Footer 独立贴底', () => {
 		renderShellSidebar({
 			mainItems: {
 				allTasks: { visible: true, order: 200 },
@@ -327,16 +343,15 @@ describe('ShellSidebar', () => {
 			desktopPreference: 'expanded',
 		})
 
-		const projectLink = screen.getByRole('link', { name: 'StoneFlow VNext' })
-		const scrollContainer = projectLink.closest('[data-scroll-container="true"]')
-		const footerLink = screen.getByRole('link', { name: '归档' })
+		const projectLink = screen.getByRole('row', { name: 'StoneFlow VNext' })
+		const footerLink = screen.getByRole('row', { name: '归档' })
 		const sidebarContent = projectLink.closest('[data-slot="sidebar-content"]')
 		const footer = footerLink.closest('[data-slot="sidebar-footer"]')
 
-		expect(scrollContainer).toHaveAttribute('data-scroll-container', 'true')
-		expect(sidebarContent).toHaveClass('overflow-y-hidden')
-		expect(footerLink.closest('[data-scroll-container="true"]')).toBe(scrollContainer)
-		expect(footer).toHaveClass('mt-auto')
+		expect(sidebarContent).not.toBeNull()
+		expect(footerLink.closest('[data-slot="sidebar-content"]')).toBeNull()
+		expect(footer).not.toBeNull()
+		expect(footer?.parentElement).toBe(sidebarContent?.parentElement)
 	})
 
 	it('从顶部 Space 下拉选择其他 space 后会导航到该 space 的工作页', async () => {
@@ -424,7 +439,9 @@ describe('ShellSidebar', () => {
 		)
 
 		fireEvent.pointerDown(screen.getByRole('button', { name: '切换 Space' }))
-		fireEvent.click(await screen.findByRole('menuitem', { name: '编辑空间' }))
+		fireEvent.keyDown(await screen.findByRole('menuitem', { name: '编辑空间' }), {
+			key: 'ArrowRight',
+		})
 		fireEvent.pointerMove(await screen.findByRole('menuitem', { name: '删除' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: '删除' }))
 		fireEvent.click(await screen.findByRole('button', { name: '移入回收站' }))
@@ -453,27 +470,25 @@ function renderShellSidebar(
 			<SubmitRegistryProvider>
 				<DangerConfirmProvider>
 					<SyncStatusProvider>
-						<TooltipProvider delayDuration={0}>
-							<SidebarProvider desktopPreference='expanded' sidebarWidth={settings.width}>
-								<LocationProbe />
-								<ShellSidebar
-									currentScope={{ type: 'space', spaceId: 'space-personal' }}
-									currentSpaceId='space-personal'
-									onArchiveSpace={async () => mockSpaceRemovalResult(null)}
-									onCreateSpace={async () => mockSpace}
-									onDeleteSpace={async () => mockSpaceRemovalResult(null)}
-									onOpenProjectCreateDialog={() => undefined}
-									onResetMainItemsVisibility={() => undefined}
-									onSetDefaultSpace={async () => mockSpace}
-									onUpdateItemVisibility={() => undefined}
-									onUpdateSpace={async () => mockSpace}
-									projects={projects}
-									spaces={[mockSpace]}
-									settings={settings}
-									{...overrides}
-								/>
-							</SidebarProvider>
-						</TooltipProvider>
+						<Sidebar.Provider defaultOpen toggleShortcut={false}>
+							<LocationProbe />
+							<ShellSidebar
+								currentScope={{ type: 'space', spaceId: 'space-personal' }}
+								currentSpaceId='space-personal'
+								onArchiveSpace={async () => mockSpaceRemovalResult(null)}
+								onCreateSpace={async () => mockSpace}
+								onDeleteSpace={async () => mockSpaceRemovalResult(null)}
+								onOpenProjectCreateDialog={() => undefined}
+								onResetMainItemsVisibility={() => undefined}
+								onSetDefaultSpace={async () => mockSpace}
+								onUpdateItemVisibility={() => undefined}
+								onUpdateSpace={async () => mockSpace}
+								projects={projects}
+								spaces={[mockSpace]}
+								settings={settings}
+								{...overrides}
+							/>
+						</Sidebar.Provider>
 					</SyncStatusProvider>
 				</DangerConfirmProvider>
 			</SubmitRegistryProvider>

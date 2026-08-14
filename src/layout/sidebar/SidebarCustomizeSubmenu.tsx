@@ -1,15 +1,7 @@
+import { ContextMenu } from '@heroui-pro/react'
+import { CheckIcon, PanelLeftIcon, RotateCcwIcon } from 'lucide-react'
+
 import type { SidebarFooterItemKey, SidebarItemVisibilityTarget } from '@/features/settings'
-import {
-	ContextMenuCheckboxItem,
-	ContextMenuGroup,
-	ContextMenuItem,
-	ContextMenuLabel,
-	ContextMenuSeparator,
-	ContextMenuSub,
-	ContextMenuSubContent,
-	ContextMenuSubTrigger,
-} from '@/shared/components/base/context-menu'
-import { PanelLeftIcon, RotateCcwIcon } from 'lucide-react'
 
 import type { MainNavItemViewModel } from './types'
 
@@ -28,7 +20,7 @@ export type SidebarCustomizeSubmenuProps = {
 	onResetMainItemsVisibility: () => void
 }
 
-/** 「自定义侧栏」子菜单：勾选主导航 + 底部导航显示 / 恢复默认 */
+/** HeroUI ContextMenu 内的「自定义侧栏」子菜单。 */
 export function SidebarCustomizeSubmenu({
 	navItems,
 	footerItems = [],
@@ -36,68 +28,72 @@ export function SidebarCustomizeSubmenu({
 	onUpdateItemVisibility,
 	onResetMainItemsVisibility,
 }: SidebarCustomizeSubmenuProps) {
-	const allMainVisible = navItems.every((item) => item.visible)
-	const allFooterVisible = footerItems.every((item) => item.visible)
+	const allVisible =
+		navItems.every((item) => item.visible) && footerItems.every((item) => item.visible)
 
 	return (
-		<ContextMenuSub>
-			<ContextMenuSubTrigger>
-				<PanelLeftIcon />
-				自定义侧边栏
-			</ContextMenuSubTrigger>
-			<ContextMenuSubContent className='w-52'>
-				<ContextMenuLabel>显示入口</ContextMenuLabel>
-				<ContextMenuGroup>
+		<ContextMenu.SubmenuTrigger>
+			<ContextMenu.Item id='customize-sidebar' textValue='自定义侧边栏'>
+				<PanelLeftIcon className='size-4 text-muted' />
+				<span>自定义侧边栏</span>
+				<ContextMenu.SubmenuIndicator />
+			</ContextMenu.Item>
+			<ContextMenu.Popover className='w-52' placement='right top'>
+				<ContextMenu.Menu aria-label='自定义侧边栏'>
 					{navItems.map((item) => {
 						const isLastVisibleItem = item.visible && visibleNavItemCount === 1
 
 						return (
-							<ContextMenuCheckboxItem
-								checked={item.visible}
-								disabled={isLastVisibleItem}
+							<ContextMenu.Item
+								id={`main-${item.settingsKey}`}
+								isDisabled={isLastVisibleItem}
 								key={item.key}
-								onCheckedChange={(checked) =>
-									onUpdateItemVisibility({ kind: 'main', key: item.settingsKey }, checked === true)
+								onAction={() =>
+									onUpdateItemVisibility({ kind: 'main', key: item.settingsKey }, !item.visible)
 								}
+								textValue={item.label}
 							>
-								<item.icon className='size-4' />
-								{item.label}
-							</ContextMenuCheckboxItem>
+								<span className='flex size-4 items-center justify-center'>
+									{item.visible ? <CheckIcon className='size-3.5' /> : null}
+								</span>
+								<item.icon className='size-4 text-muted' />
+								<span>{item.label}</span>
+							</ContextMenu.Item>
 						)
 					})}
-				</ContextMenuGroup>
-				{footerItems.length > 0 ? (
-					<ContextMenuGroup>
-						{footerItems.map((item) => {
-							const isLastVisibleItem = item.visible && visibleNavItemCount === 1
+					{footerItems.map((item) => {
+						const isLastVisibleItem = item.visible && visibleNavItemCount === 1
 
-							return (
-								<ContextMenuCheckboxItem
-									checked={item.visible}
-									disabled={isLastVisibleItem}
-									key={item.key}
-									onCheckedChange={(checked) =>
-										onUpdateItemVisibility({ kind: 'footer', key: item.key }, checked === true)
-									}
-								>
-									<item.icon className='size-4' />
-									{item.label}
-								</ContextMenuCheckboxItem>
-							)
-						})}
-					</ContextMenuGroup>
-				) : null}
-				<ContextMenuSeparator />
-				<ContextMenuGroup>
-					<ContextMenuItem
-						disabled={allMainVisible && allFooterVisible}
-						onSelect={onResetMainItemsVisibility}
+						return (
+							<ContextMenu.Item
+								id={`footer-${item.key}`}
+								isDisabled={isLastVisibleItem}
+								key={item.key}
+								onAction={() =>
+									onUpdateItemVisibility({ kind: 'footer', key: item.key }, !item.visible)
+								}
+								textValue={item.label}
+							>
+								<span className='flex size-4 items-center justify-center'>
+									{item.visible ? <CheckIcon className='size-3.5' /> : null}
+								</span>
+								<item.icon className='size-4 text-muted' />
+								<span>{item.label}</span>
+							</ContextMenu.Item>
+						)
+					})}
+					<ContextMenu.Separator />
+					<ContextMenu.Item
+						id='reset-sidebar'
+						isDisabled={allVisible}
+						onAction={onResetMainItemsVisibility}
+						textValue='恢复默认侧栏'
 					>
-						<RotateCcwIcon />
-						恢复默认侧栏
-					</ContextMenuItem>
-				</ContextMenuGroup>
-			</ContextMenuSubContent>
-		</ContextMenuSub>
+						<RotateCcwIcon className='size-4 text-muted' />
+						<span>恢复默认侧栏</span>
+					</ContextMenu.Item>
+				</ContextMenu.Menu>
+			</ContextMenu.Popover>
+		</ContextMenu.SubmenuTrigger>
 	)
 }

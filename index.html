@@ -43,9 +43,11 @@
 			}
 
 			#sf-boot-shell .sf-boot-body {
-				display: flex;
+				display: grid;
+				grid-template-columns: auto minmax(0, 1fr);
 				flex: 1;
 				min-height: 0;
+				min-width: 0;
 				overflow: hidden;
 				background: #f3f3f4;
 			}
@@ -72,8 +74,24 @@
 				min-height: 0;
 				overflow: hidden;
 				border-radius: 8px; /* rounded-lg */
-				border: 1px solid #e5e5e6; /* theme.css --separator */
+				border: 1px solid #ffffff; /* HeroUI Inset 主面边界 */
 				background: #fcfcfd; /* theme.css --background */
+			}
+
+			/* 与 Shell controller 的 `(min-width: 1024px)` 取反一致。 */
+			@media not all and (min-width: 1024px) {
+				#sf-boot-shell .sf-boot-sidebar {
+					width: 0;
+				}
+
+				#sf-boot-shell .sf-boot-main {
+					padding-right: 0;
+				}
+
+				#sf-boot-shell .sf-boot-card {
+					border: 0;
+					border-radius: 0;
+				}
 			}
 
 			#sf-boot-shell .sf-boot-footer {

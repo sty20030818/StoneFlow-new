@@ -29,8 +29,7 @@ export function useShellChromeData(currentScope: Scope) {
 	const sidebarSettings = useSidebarSettingsStore(selectSidebarSettings)
 	const sidebarSettingsError = useSidebarSettingsStore(selectSidebarSettingsError)
 	const loadSidebarSettings = useSidebarSettingsStore((state) => state.load)
-	const setSidebarWidth = useSidebarSettingsStore((state) => state.setSidebarWidth)
-	const setDesktopPreference = useSidebarSettingsStore((state) => state.setDesktopPreference)
+	const setSidebarPreferences = useSidebarSettingsStore((state) => state.setSidebarPreferences)
 	const setSidebarItemVisibility = useSidebarSettingsStore((state) => state.setItemVisibility)
 	const resetSidebarMainItemsVisibility = useSidebarSettingsStore(
 		(state) => state.resetMainItemsVisibility,
@@ -94,8 +93,7 @@ export function useShellChromeData(currentScope: Scope) {
 		setDefaultSpace,
 		archiveSpace,
 		deleteSpace,
-		setSidebarWidth,
-		setDesktopPreference,
+		setSidebarPreferences,
 		setSidebarItemVisibility,
 		resetSidebarMainItemsVisibility,
 	}

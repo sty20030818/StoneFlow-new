@@ -3,8 +3,6 @@ import type {
 	SidebarItemVisibilityTarget,
 	SidebarMainItemKey,
 } from '@/features/settings'
-import { SidebarMenuItem } from '@/shared/components/base/sidebar'
-
 import { MainNavRowContextMenu } from './MainNavRowContextMenu'
 import { SidebarNavRow } from './SidebarNavRow'
 import type { MainNavItemViewModel } from './types'
@@ -44,24 +42,22 @@ export function MainNavSidebarMenuItem({
 	onResetMainItemsVisibility,
 }: MainNavSidebarMenuItemProps) {
 	return (
-		<SidebarMenuItem>
-			<SidebarNavRow
-				badge={badge}
-				commandId={commandId}
-				contextMenuContent={
-					<MainNavRowContextMenu
-						footerItems={footerItems}
-						itemKey={itemKey}
-						navItems={navItems}
-						onResetMainItemsVisibility={onResetMainItemsVisibility}
-						onUpdateItemVisibility={onUpdateItemVisibility}
-						visibleNavItemCount={visibleNavItemCount}
-					/>
-				}
-				icon={icon}
-				label={label}
-				to={to}
-			/>
-		</SidebarMenuItem>
+		<SidebarNavRow
+			badge={badge}
+			commandId={commandId}
+			contextMenuContent={
+				<MainNavRowContextMenu
+					footerItems={footerItems}
+					itemKey={itemKey}
+					navItems={navItems}
+					onResetMainItemsVisibility={onResetMainItemsVisibility}
+					onUpdateItemVisibility={onUpdateItemVisibility}
+					visibleNavItemCount={visibleNavItemCount}
+				/>
+			}
+			icon={icon}
+			label={label}
+			to={to}
+		/>
 	)
 }
