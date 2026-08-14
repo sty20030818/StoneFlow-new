@@ -121,7 +121,11 @@ function TaskEntityDetail({
 					}}
 					placement='right'
 				>
-					<Sheet.Backdrop style={{ inset: 0, position: 'absolute' }} variant='transparent'>
+					<Sheet.Backdrop
+						className='sf-entity-detail-backdrop'
+						style={{ inset: 0, position: 'absolute' }}
+						variant='opaque'
+					>
 						<Sheet.Content
 							data-entity-detail-root='true'
 							data-entity-detail-sheet='true'

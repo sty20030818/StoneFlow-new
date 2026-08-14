@@ -31,7 +31,7 @@ describe('EntityDetailDrawerHost', () => {
 		useTaskDetailViewModelMock.mockClear()
 	})
 
-	it('把透明模态 Sheet portal 到 Main card', async () => {
+	it('把 Main card 内的灰色模态 Sheet portal 到 Main card', async () => {
 		const portalContainer = document.createElement('div')
 		document.body.append(portalContainer)
 		const view = renderHost({ effectivePresentation: 'sheet', portalContainer })
@@ -49,7 +49,7 @@ describe('EntityDetailDrawerHost', () => {
 			width: 'min(40rem, calc(100% - 1rem))',
 		})
 		const backdrop = document.querySelector('[data-slot="sheet-backdrop"]')
-		expect(backdrop).toHaveClass('sheet__backdrop--transparent')
+		expect(backdrop).toHaveClass('sheet__backdrop--opaque', 'sf-entity-detail-backdrop')
 		expect(backdrop).toHaveStyle({ inset: '0', position: 'absolute' })
 		expect(isAnyModalOpen()).toBe(true)
 		expect(screen.getByRole('button', { name: '关闭任务详情' })).toBeInTheDocument()

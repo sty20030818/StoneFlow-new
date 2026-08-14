@@ -21,9 +21,11 @@ describe('TaskDetailHeader', () => {
 	})
 
 	it('详情头部不承载低频呈现方式设置', () => {
-		renderHeader()
+		const { container } = renderHeader()
 
 		expect(screen.queryByRole('button', { name: '详情呈现方式' })).not.toBeInTheDocument()
+		expect(container.firstElementChild).toHaveClass('h-12', 'border-sf-border-subtle', 'py-0')
+		expect(container.firstElementChild).not.toHaveClass('min-h-12')
 	})
 
 	it('打开独立页面前先 flush 自动保存', async () => {
