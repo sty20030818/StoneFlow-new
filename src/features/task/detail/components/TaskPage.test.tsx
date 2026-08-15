@@ -179,6 +179,14 @@ describe('TaskPage', () => {
 		expect(screen.getByLabelText('任务标题')).toBeDisabled()
 		expect(screen.getByLabelText('任务备注')).toBeDisabled()
 	})
+
+	it('离开完整详情页时 flush 尚未到期的编辑', async () => {
+		const view = await renderTaskPage()
+
+		view.unmount()
+
+		expect(mockAutosave.value.flushNow).toHaveBeenCalledOnce()
+	})
 })
 
 async function renderTaskPage() {
@@ -230,7 +238,7 @@ function createAutosaveController(
 		isDirty: false,
 		setField: vi.fn<AutosaveController<TaskDetailDraft>['setField']>(),
 		setDraft: vi.fn<AutosaveController<TaskDetailDraft>['setDraft']>(),
-		flushNow: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+		flushNow: vi.fn<() => Promise<boolean>>().mockResolvedValue(true),
 		retry: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
 		discard: vi.fn<() => void>(),
 		reset: vi.fn<AutosaveController<TaskDetailDraft>['reset']>(),

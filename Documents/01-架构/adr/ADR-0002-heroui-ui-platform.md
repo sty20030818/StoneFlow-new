@@ -15,7 +15,7 @@ StoneFlow 当前同时存在 Radix/shadcn primitive、`shared/components/base`�
 1. 所有已有用户可达的标准控件、表单、导航、Overlay、反馈和 HeroUI Pro 已提供的高阶表面，统一使用 HeroUI OSS v3 或 HeroUI Pro；不再混用 shadcn/Radix 或建立同名透传 wrapper。
 2. 样式引擎统一为 Tailwind CSS v4 + HeroUI semantic theme + 一份集中组件状态 recipe。旧 token/pattern/adapter 在消费者归零后删除，不双轨兼容。
 3. 依赖方向固定为“StoneFlow 产品组件 → 应用用例/领域接口”与“StoneFlow 产品组件 → HeroUI/React Aria → DOM”；领域和应用层不得反向依赖 UI，也不得导入 HeroUI 类型。
-4. HeroUI 管理标准组件交互和视觉；StoneFlow 只保留产品语义、业务状态、Tauri 原生窗口几何、Sidebar 已确认三态、Task Detail Sheet/Aside 容器选择、TaskBoard 特殊虚拟几何与 Command/selection 产品合同。
+4. HeroUI 管理标准组件交互和视觉；StoneFlow 只保留产品语义、业务状态、Tauri 原生窗口几何、Sidebar 已确认三态、Task Detail 宽屏非模态 Aside / 窄屏 canonical 完整页合同、TaskBoard 特殊虚拟几何与 Command/selection 产品合同。
 5. TaskBoard 的焦点与选择由 React Aria/React Stately 的单一 collection state 拥有，现有 TanStack Virtual 只保留分组、sticky、总高度、增量加载和滚动几何职责。
 6. StoneFlow 不编写或消费 Motion/Framer Motion、CSS/Tailwind 动画与过渡。HeroUI OSS/Pro 包内动效是唯一组件动效来源，并由其处理 reduced motion。
 7. HeroUI Pro 作为私有依赖精确锁版。当前供应链固定使用 CollectUI `hpsetup@4.7.0` 获取 `@heroui-pro/react@1.0.0-beta.8`；本地与 CI 只通过进程环境或 secret store 注入 `HEROUI_KEY`，Key 不得进入源码、lockfile、客户端环境、日志或构建产物。允许安装器复用固定版本缓存，但必须在仓库外完成隔离 frozen install、类型检查与生产构建，并记录解包后的树 SHA-256。
@@ -36,6 +36,7 @@ StoneFlow 当前同时存在 Radix/shadcn primitive、`shared/components/base`�
 - CollectUI Key 可用与包完整性不构成 HeroUI 官方 license、seat、entitlement 或 Updates Window 的验证，本 ADR 不作这些声明。
 - 迁移为 hard cut，不保留 Radix/shadcn 兼容层；中间切片可能破坏，每个阶段必须以无旧消费者、行为回归和构建门禁收口。
 - HeroUI 无法也不应取代 Tauri 平台窗口契约、虚拟列表几何或 StoneFlow 领域命令；这些例外必须保持小而明确，不得成为继续自建通用 UI 的借口。
+- 任务详情不建立 Sheet、用户呈现偏好或基于 `ResizeObserver` / 剩余宽度的几何回退层；Sidebar 与详情只共享 `1024px` media query 常量，不共享响应式状态/store。active Aside 可在自身生命周期内订阅该 query：从桌面宽度进入 compact 后先 flush，成功且完成时仍 compact 才复用标准 `onClose` 清除 `?task=` 返回列表，失败或已重新变宽则保留 Aside；窗口变宽本身无动作。宽屏 Aside 的 `400–560px` 尺寸仍由唯一容器就近拥有。
 
 ## 放弃的方案
 

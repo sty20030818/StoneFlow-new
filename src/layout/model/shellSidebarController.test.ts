@@ -1,5 +1,6 @@
 import { act, renderHook } from '@testing-library/react'
 
+import { SHELL_DESKTOP_MEDIA_QUERY } from '@/shared/lib/shellSidebarGeometry'
 import { useShellSidebarController } from './useShellSidebarController'
 
 type MatchMediaController = {
@@ -18,7 +19,7 @@ describe('useShellSidebarController', () => {
 		)
 
 		expect(window.matchMedia).toHaveBeenCalledTimes(1)
-		expect(window.matchMedia).toHaveBeenCalledWith('(min-width: 1024px)')
+		expect(window.matchMedia).toHaveBeenCalledWith(SHELL_DESKTOP_MEDIA_QUERY)
 		expect(result.current.mode).toBe('icon')
 		expect(result.current.visibleWidth).toBe(48)
 
@@ -130,7 +131,7 @@ function installMatchMedia(initialDesktop: boolean): MatchMediaController {
 		get matches() {
 			return matches
 		},
-		media: '(min-width: 1024px)',
+		media: SHELL_DESKTOP_MEDIA_QUERY,
 		onchange: null,
 		addEventListener: (_type: string, listener: EventListenerOrEventListenerObject) => {
 			listeners.add(listener as (event: MediaQueryListEvent) => void)

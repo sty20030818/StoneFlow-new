@@ -26,7 +26,7 @@ export function useAutosaveController<TDraft, TPatch>({
 	const draftVersionRef = useRef(0)
 	const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 	const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-	const savePromiseRef = useRef<Promise<void> | null>(null)
+	const savePromiseRef = useRef<Promise<boolean> | null>(null)
 	const pendingAfterSaveModeRef = useRef<AutosaveSaveMode | null>(null)
 
 	const normalize = useCallback(
@@ -60,12 +60,11 @@ export function useAutosaveController<TDraft, TPatch>({
 		return getPatch(baseRef.current, normalize(draftRef.current))
 	}, [getPatch, normalize])
 
-	const runSave = useCallback(async (): Promise<void> => {
+	const runSave = useCallback(async (): Promise<boolean> => {
 		clearDebounceTimer()
 
 		if (savePromiseRef.current) {
-			await savePromiseRef.current
-			return
+			return await savePromiseRef.current
 		}
 
 		const normalizedDraft = normalize(draftRef.current)
@@ -75,14 +74,14 @@ export function useAutosaveController<TDraft, TPatch>({
 			draftRef.current = normalizedDraft
 			setDraftState(normalizedDraft)
 			dispatch({ type: 'RESET_FROM_REMOTE' })
-			return
+			return true
 		}
 
 		clearSavedTimer()
 		dispatch({ type: 'SAVE_START' })
 
 		const saveStartVersion = draftVersionRef.current
-		const savePromise = (async () => {
+		const savePromise = (async (): Promise<boolean> => {
 			try {
 				const nextBase = await savePatch(patch)
 				baseRef.current = nextBase
@@ -99,7 +98,7 @@ export function useAutosaveController<TDraft, TPatch>({
 				const message = error instanceof Error ? error.message : '保存失败'
 				clearSavedTimer()
 				dispatch({ type: 'SAVE_FAILURE', error: message })
-				return
+				return false
 			} finally {
 				savePromiseRef.current = null
 			}
@@ -107,7 +106,7 @@ export function useAutosaveController<TDraft, TPatch>({
 			const nextPatch = getPatch(baseRef.current, normalize(draftRef.current))
 			if (!nextPatch) {
 				pendingAfterSaveModeRef.current = null
-				return
+				return true
 			}
 
 			const nextMode = pendingAfterSaveModeRef.current ?? 'debounced'
@@ -116,7 +115,7 @@ export function useAutosaveController<TDraft, TPatch>({
 			if (nextMode === 'manual') {
 				clearSavedTimer()
 				dispatch({ type: 'CHANGE_FIELD' })
-				return
+				return true
 			}
 
 			if (nextMode === 'immediate') {
@@ -126,7 +125,7 @@ export function useAutosaveController<TDraft, TPatch>({
 					debounceTimerRef.current = null
 					void runSave()
 				}, 0)
-				return
+				return true
 			}
 
 			clearSavedTimer()
@@ -135,10 +134,11 @@ export function useAutosaveController<TDraft, TPatch>({
 				debounceTimerRef.current = null
 				void runSave()
 			}, debounceMs)
+			return true
 		})()
 
 		savePromiseRef.current = savePromise
-		await savePromise
+		return await savePromise
 	}, [
 		clearDebounceTimer,
 		clearSavedTimer,
@@ -218,8 +218,13 @@ export function useAutosaveController<TDraft, TPatch>({
 
 	const flushNow = useCallback(async () => {
 		dispatch({ type: 'FLUSH_NOW' })
-		await runSave()
-	}, [runSave])
+		do {
+			if (!(await runSave())) {
+				return false
+			}
+		} while (getCurrentPatch())
+		return true
+	}, [getCurrentPatch, runSave])
 
 	const retry = useCallback(async () => {
 		dispatch({ type: 'RETRY' })

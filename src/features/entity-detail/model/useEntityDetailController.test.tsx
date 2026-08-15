@@ -3,6 +3,7 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { renderWithMatchedRoute } from '@/test/renderWithRouter'
+import { SHELL_DESKTOP_MEDIA_QUERY } from '@/shared/lib/shellSidebarGeometry'
 import { useEntityDetailController } from './useEntityDetailController'
 
 const getTaskDetailMock = vi.hoisted(() => vi.fn())
@@ -14,6 +15,7 @@ vi.mock('@/features/task', () => ({
 describe('useEntityDetailController', () => {
 	beforeEach(() => {
 		getTaskDetailMock.mockReset()
+		installViewportWidth(1024)
 	})
 
 	it('从 URL 恢复 active detail', async () => {
@@ -23,7 +25,7 @@ describe('useEntityDetailController', () => {
 		expect(screen.getByTestId('is-open')).toHaveTextContent('open')
 	})
 
-	it('openDrawer 更新 URL', async () => {
+	it('openTaskDetail 在 1024px 通过 query 打开 Aside', async () => {
 		await renderController('/work/standalone')
 
 		fireEvent.click(screen.getByRole('button', { name: '打开任务' }))
@@ -31,6 +33,25 @@ describe('useEntityDetailController', () => {
 		await waitFor(() => {
 			expect(screen.getByTestId('location')).toHaveTextContent('/work/standalone?task=task-a')
 		})
+		expect(getTaskDetailMock).not.toHaveBeenCalled()
+		expect(window.matchMedia).toHaveBeenCalledWith(SHELL_DESKTOP_MEDIA_QUERY)
+	})
+
+	it('openTaskDetail 在 1023px 直接打开独立详情页', async () => {
+		installViewportWidth(1023)
+		getTaskDetailMock.mockResolvedValue({
+			id: 'task-a',
+			spaceId: 'space-work',
+		})
+		await renderController('/work/standalone')
+
+		fireEvent.click(screen.getByRole('button', { name: '打开任务' }))
+
+		await waitFor(() => {
+			expect(screen.getByTestId('location')).toHaveTextContent('/space-work/tasks/task-a')
+		})
+		expect(getTaskDetailMock).toHaveBeenCalledWith('task-a')
+		expect(window.matchMedia).toHaveBeenCalledWith(SHELL_DESKTOP_MEDIA_QUERY)
 	})
 
 	it('closeDrawer 清理 URL 并保留其他 query', async () => {
@@ -118,7 +139,7 @@ function ControllerProbe() {
 				{location.pathname}
 				{location.searchStr}
 			</div>
-			<button onClick={() => controller.openDrawer({ kind: 'task', id: 'task-a' })} type='button'>
+			<button onClick={() => controller.openTaskDetail('task-a')} type='button'>
 				打开任务
 			</button>
 			<button onClick={controller.closeDrawer} type='button'>
@@ -129,4 +150,22 @@ function ControllerProbe() {
 			</button>
 		</div>
 	)
+}
+
+function installViewportWidth(width: number) {
+	const mediaQuery = {
+		matches: width >= 1024,
+		media: SHELL_DESKTOP_MEDIA_QUERY,
+		onchange: null,
+		addEventListener: vi.fn(),
+		removeEventListener: vi.fn(),
+		addListener: vi.fn(),
+		removeListener: vi.fn(),
+		dispatchEvent: vi.fn(() => false),
+	} satisfies MediaQueryList
+
+	Object.defineProperty(window, 'matchMedia', {
+		configurable: true,
+		value: vi.fn(() => mediaQuery),
+	})
 }

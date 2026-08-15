@@ -115,7 +115,7 @@ function createAutosaveController(
 		isDirty: false,
 		setField: vi.fn<AutosaveController<TaskDetailDraft>['setField']>(),
 		setDraft: vi.fn<AutosaveController<TaskDetailDraft>['setDraft']>(),
-		flushNow: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+		flushNow: vi.fn<() => Promise<boolean>>().mockResolvedValue(true),
 		retry: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
 		discard: vi.fn<() => void>(),
 		reset: vi.fn<AutosaveController<TaskDetailDraft>['reset']>(),

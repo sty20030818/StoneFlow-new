@@ -1,20 +1,18 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import {
-	loadShellDeviceState,
+	loadShellSidebarDevicePreferences,
 	updateShellSidebarDevicePreferences,
-	updateShellUiDevicePreferences,
 } from './shellDevicePreferences'
 
 const SIDEBAR_DEVICE_KEY = 'stoneflow.shell.sidebar.device'
-const UI_DEVICE_KEY = 'stoneflow.shell.ui.device'
 
 describe('shellDevicePreferences', () => {
 	beforeEach(() => {
 		localStorage.clear()
 	})
 
-	it('loadShellDeviceState 只加载 sidebar/ui 设备偏好', async () => {
+	it('加载并规范化 sidebar 设备偏好', async () => {
 		localStorage.setItem(
 			SIDEBAR_DEVICE_KEY,
 			JSON.stringify({
@@ -24,36 +22,12 @@ describe('shellDevicePreferences', () => {
 				projectSectionMaxVisible: null,
 			}),
 		)
-		localStorage.setItem(UI_DEVICE_KEY, JSON.stringify({ detailPresentation: 'aside' }))
 
-		await expect(loadShellDeviceState()).resolves.toEqual({
-			sidebar: {
-				width: 256,
-				desktopPreference: 'expanded',
-				projectSectionCollapsed: false,
-				projectSectionMaxVisible: null,
-			},
-			ui: { detailPresentation: 'aside' },
-		})
-	})
-
-	it('旧 UI 设备偏好没有呈现方式时默认为 sheet', async () => {
-		localStorage.setItem(UI_DEVICE_KEY, JSON.stringify({ taskDrawerWidth: 420 }))
-
-		await expect(loadShellDeviceState()).resolves.toMatchObject({
-			ui: { detailPresentation: 'sheet' },
-		})
-	})
-
-	it('updateShellUiDevicePreferences 只保存详情呈现偏好', async () => {
-		localStorage.setItem(UI_DEVICE_KEY, JSON.stringify({ taskDrawerWidth: 420 }))
-
-		await expect(updateShellUiDevicePreferences({ detailPresentation: 'aside' })).resolves.toEqual({
-			detailPresentation: 'aside',
-		})
-
-		expect(JSON.parse(localStorage.getItem(UI_DEVICE_KEY)!)).toEqual({
-			detailPresentation: 'aside',
+		await expect(loadShellSidebarDevicePreferences()).resolves.toEqual({
+			width: 256,
+			desktopPreference: 'expanded',
+			projectSectionCollapsed: false,
+			projectSectionMaxVisible: null,
 		})
 	})
 

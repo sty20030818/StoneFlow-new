@@ -11,14 +11,11 @@ import {
 } from '../api/sidebarSettings'
 import {
 	buildShellSidebarSettings,
-	loadShellDeviceState,
+	loadShellSidebarDevicePreferences,
 	updateShellSidebarDevicePreferences,
-	updateShellUiDevicePreferences,
-	type DetailPresentation,
 	type ShellSidebarDevicePreferences,
 	type ShellSidebarProjectSectionSettings,
 	type ShellSidebarSettings,
-	type ShellUiDevicePreferences,
 } from '../api/shellDevicePreferences'
 
 type SidebarSettingsStatus = 'idle' | 'loading' | 'ready' | 'error'
@@ -28,7 +25,6 @@ type SidebarSettingsState = {
 	settings: ShellSidebarSettings | null
 	syncSettings: SidebarPreferenceSettings | null
 	sidebarDevicePreferences: ShellSidebarDevicePreferences | null
-	uiDevicePreferences: ShellUiDevicePreferences | null
 	errorMessage: string | null
 
 	load: () => Promise<void>
@@ -37,7 +33,6 @@ type SidebarSettingsState = {
 	setSidebarPreferences: (
 		preferences: Pick<ShellSidebarDevicePreferences, 'width' | 'desktopPreference'>,
 	) => Promise<void>
-	setDetailPresentation: (presentation: DetailPresentation) => Promise<void>
 	setProjectSectionConfig: (config: ShellSidebarProjectSectionSettings) => Promise<void>
 }
 
@@ -47,14 +42,12 @@ export const useSidebarSettingsStore = create<SidebarSettingsState>((set, get) =
 	const applyResolvedSettings = (payload: {
 		syncSettings: SidebarPreferenceSettings
 		sidebarDevicePreferences: ShellSidebarDevicePreferences
-		uiDevicePreferences: ShellUiDevicePreferences
 	}) => {
 		set({
 			status: 'ready',
 			settings: buildShellSidebarSettings(payload.syncSettings, payload.sidebarDevicePreferences),
 			syncSettings: payload.syncSettings,
 			sidebarDevicePreferences: payload.sidebarDevicePreferences,
-			uiDevicePreferences: payload.uiDevicePreferences,
 			errorMessage: null,
 		})
 	}
@@ -63,15 +56,13 @@ export const useSidebarSettingsStore = create<SidebarSettingsState>((set, get) =
 		try {
 			const syncSettings = await runner()
 			const sidebarDevicePreferences = get().sidebarDevicePreferences
-			const uiDevicePreferences = get().uiDevicePreferences
-			if (!sidebarDevicePreferences || !uiDevicePreferences) {
+			if (!sidebarDevicePreferences) {
 				throw new Error('Sidebar 设备偏好尚未完成加载')
 			}
 
 			applyResolvedSettings({
 				syncSettings,
 				sidebarDevicePreferences,
-				uiDevicePreferences,
 			})
 		} catch (error) {
 			const message = error instanceof Error ? error.message : 'Sidebar 设置更新失败'
@@ -87,42 +78,16 @@ export const useSidebarSettingsStore = create<SidebarSettingsState>((set, get) =
 		try {
 			const sidebarDevicePreferences = await runner()
 			const syncSettings = get().syncSettings
-			const uiDevicePreferences = get().uiDevicePreferences
-			if (!syncSettings || !uiDevicePreferences) {
+			if (!syncSettings) {
 				throw new Error('Sidebar 同步设置尚未完成加载')
 			}
 
 			applyResolvedSettings({
 				syncSettings,
 				sidebarDevicePreferences,
-				uiDevicePreferences,
 			})
 		} catch (error) {
 			const message = error instanceof Error ? error.message : 'Sidebar 设备偏好更新失败'
-			set((state) => ({
-				status: state.settings ? 'ready' : 'error',
-				errorMessage: message,
-			}))
-			throw error
-		}
-	}
-
-	const commitUiDeviceUpdate = async (runner: () => Promise<ShellUiDevicePreferences>) => {
-		try {
-			const uiDevicePreferences = await runner()
-			const syncSettings = get().syncSettings
-			const sidebarDevicePreferences = get().sidebarDevicePreferences
-			if (!syncSettings || !sidebarDevicePreferences) {
-				throw new Error('Shell 设置尚未完成加载')
-			}
-
-			applyResolvedSettings({
-				syncSettings,
-				sidebarDevicePreferences,
-				uiDevicePreferences,
-			})
-		} catch (error) {
-			const message = error instanceof Error ? error.message : 'Shell 设备偏好更新失败'
 			set((state) => ({
 				status: state.settings ? 'ready' : 'error',
 				errorMessage: message,
@@ -136,7 +101,6 @@ export const useSidebarSettingsStore = create<SidebarSettingsState>((set, get) =
 		settings: null,
 		syncSettings: null,
 		sidebarDevicePreferences: null,
-		uiDevicePreferences: null,
 		errorMessage: null,
 
 		load: async () => {
@@ -156,14 +120,13 @@ export const useSidebarSettingsStore = create<SidebarSettingsState>((set, get) =
 
 			pendingLoad = (async () => {
 				try {
-					const [syncSettings, deviceState] = await Promise.all([
+					const [syncSettings, sidebarDevicePreferences] = await Promise.all([
 						getSidebarSettings(),
-						loadShellDeviceState(),
+						loadShellSidebarDevicePreferences(),
 					])
 					applyResolvedSettings({
 						syncSettings,
-						sidebarDevicePreferences: deviceState.sidebar,
-						uiDevicePreferences: deviceState.ui,
+						sidebarDevicePreferences,
 					})
 				} catch (error) {
 					const message = error instanceof Error ? error.message : 'Sidebar 设置加载失败'
@@ -172,7 +135,6 @@ export const useSidebarSettingsStore = create<SidebarSettingsState>((set, get) =
 						settings: null,
 						syncSettings: null,
 						sidebarDevicePreferences: null,
-						uiDevicePreferences: null,
 						errorMessage: message,
 					})
 					throw error
@@ -202,12 +164,6 @@ export const useSidebarSettingsStore = create<SidebarSettingsState>((set, get) =
 			await commitDeviceUpdate(() => updateShellSidebarDevicePreferences(preferences))
 		},
 
-		setDetailPresentation: async (presentation) => {
-			await commitUiDeviceUpdate(() =>
-				updateShellUiDevicePreferences({ detailPresentation: presentation }),
-			)
-		},
-
 		setProjectSectionConfig: async (config) => {
 			const syncConfig: SidebarProjectSectionPreferenceConfig = {
 				visible: config.visible,
@@ -217,8 +173,7 @@ export const useSidebarSettingsStore = create<SidebarSettingsState>((set, get) =
 			}
 			const syncSettings = get().syncSettings
 			const currentDevice = get().sidebarDevicePreferences
-			const currentUi = get().uiDevicePreferences
-			if (!syncSettings || !currentDevice || !currentUi) {
+			if (!syncSettings || !currentDevice) {
 				throw new Error('Sidebar 设置尚未完成加载')
 			}
 
@@ -251,7 +206,6 @@ export const useSidebarSettingsStore = create<SidebarSettingsState>((set, get) =
 				applyResolvedSettings({
 					syncSettings: nextSyncSettings,
 					sidebarDevicePreferences: nextDeviceSettings,
-					uiDevicePreferences: currentUi,
 				})
 			} catch (error) {
 				const message = error instanceof Error ? error.message : 'Projects 分区设置更新失败'

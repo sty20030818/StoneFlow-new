@@ -24,7 +24,7 @@ const runTaskViewSpy =
 	>()
 const refreshTaskRunSpy = vi.fn<() => Promise<void>>()
 const loadSidebarSpy = vi.fn<(scope: { type: string }) => Promise<void>>()
-const openDrawerSpy = vi.fn<(kind: string, id: string) => void>()
+const openTaskDetailSpy = vi.fn<(taskId: string) => void>()
 const openTaskCreateDialogSpy = vi.fn<(draft?: unknown) => void>()
 
 const mockViews = [
@@ -110,7 +110,7 @@ vi.mock('@/features/entity-detail', () => ({
 	useEntityDetailController: () => ({
 		activeDetail: null,
 		isOpen: false,
-		openDrawer: openDrawerSpy,
+		openTaskDetail: openTaskDetailSpy,
 		closeDrawer: vi.fn(),
 		openPage: vi.fn(),
 	}),

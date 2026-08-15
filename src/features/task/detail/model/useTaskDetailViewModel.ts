@@ -72,7 +72,9 @@ export function useTaskDetailViewModel({ taskId, onClose }: UseTaskDetailViewMod
 	const archiveOrRestore = async () => {
 		setArchiveBusy(true)
 		try {
-			await flushNow()
+			if (!(await flushNow())) {
+				return
+			}
 			await detail.archiveOrRestore()
 		} finally {
 			setArchiveBusy(false)
@@ -82,7 +84,9 @@ export function useTaskDetailViewModel({ taskId, onClose }: UseTaskDetailViewMod
 	const moveToTrash = async () => {
 		setDeleteBusy(true)
 		try {
-			await flushNow()
+			if (!(await flushNow())) {
+				return
+			}
 			await detail.moveToTrash()
 			onClose()
 		} finally {

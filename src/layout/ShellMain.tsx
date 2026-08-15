@@ -1,9 +1,7 @@
 import type { MouseEvent, PropsWithChildren } from 'react'
 
 import { EntityDetailDrawerHost, type EntityDetailRouteState } from '@/features/entity-detail'
-import type { DetailPresentation } from '@/features/settings'
 import { TaskPreview, useTaskPreviewController } from '@/features/task'
-import { useDetailPresentation } from '@/layout/model/useDetailPresentation'
 import {
 	ContextMenu,
 	ContextMenuContent,
@@ -15,8 +13,6 @@ import { FolderPlusIcon, SquarePenIcon } from 'lucide-react'
 
 type ShellMainProps = PropsWithChildren<{
 	activeDetail: EntityDetailRouteState
-	detailPresentation: DetailPresentation
-	isCompact: boolean
 	isDrawerOpen: boolean
 	showPreview?: boolean
 	onCloseDrawer: () => void
@@ -52,8 +48,6 @@ const INTERACTIVE_TARGET_SELECTOR = [
 export function ShellMain({
 	children,
 	activeDetail,
-	detailPresentation,
-	isCompact,
 	isDrawerOpen,
 	showPreview = true,
 	onCloseDrawer,
@@ -61,7 +55,6 @@ export function ShellMain({
 	onOpenProjectCreateDialog,
 }: ShellMainProps) {
 	const preview = useTaskPreviewController()
-	const detail = useDetailPresentation({ detailPresentation, isCompact })
 
 	const handleMainPointerDownCapture = (event: MouseEvent<HTMLElement>) => {
 		if (!preview.previewState.open || isDrawerOpen) {
@@ -101,41 +94,35 @@ export function ShellMain({
 	}
 
 	return (
-		<div
-			ref={detail.panelRef}
-			className='relative flex min-h-0 min-w-0 flex-1 overflow-hidden bg-transparent'
-		>
+		<div className='relative flex min-h-0 min-w-0 flex-1 overflow-hidden bg-transparent'>
 			<div className='flex min-h-0 min-w-0 flex-1 overflow-hidden'>
 				<ContextMenu>
-					<ContextMenuTrigger asChild onContextMenu={handleGlobalContextMenu}>
-						<div
-							className='relative flex min-h-0 min-w-0 flex-1 overflow-hidden'
-							onPointerDownCapture={handleMainPointerDownCapture}
-						>
-							<div className='flex min-w-0 flex-1 flex-col overflow-hidden'>{children}</div>
+					<EntityDetailDrawerHost
+						activeDetail={activeDetail}
+						onClose={onCloseDrawer}
+						open={isDrawerOpen}
+					>
+						<ContextMenuTrigger asChild onContextMenu={handleGlobalContextMenu}>
+							<div
+								className='relative flex min-h-0 min-w-0 flex-1 overflow-hidden'
+								onPointerDownCapture={handleMainPointerDownCapture}
+							>
+								<div className='flex min-w-0 flex-1 flex-col overflow-hidden'>{children}</div>
 
-							{showPreview && !isDrawerOpen && preview.previewState.open ? (
-								<TaskPreview
-									linkSummary={preview.linkSummary}
-									onPointerEnter={() => preview.setPreviewPointerInside(true)}
-									onPointerLeave={() => {
-										preview.setPreviewPointerInside(false)
-										preview.scheduleClosePreview()
-									}}
-									task={preview.targetTask}
-								/>
-							) : null}
-
-							<EntityDetailDrawerHost
-								activeDetail={activeDetail}
-								asideWidth={detail.asideWidth}
-								effectivePresentation={detail.effectivePresentation}
-								onClose={onCloseDrawer}
-								open={isDrawerOpen}
-								portalContainer={detail.panelElement}
-							/>
-						</div>
-					</ContextMenuTrigger>
+								{showPreview && !isDrawerOpen && preview.previewState.open ? (
+									<TaskPreview
+										linkSummary={preview.linkSummary}
+										onPointerEnter={() => preview.setPreviewPointerInside(true)}
+										onPointerLeave={() => {
+											preview.setPreviewPointerInside(false)
+											preview.scheduleClosePreview()
+										}}
+										task={preview.targetTask}
+									/>
+								) : null}
+							</div>
+						</ContextMenuTrigger>
+					</EntityDetailDrawerHost>
 					<ContextMenuContent className='w-40'>
 						<ContextMenuGroup>
 							<ContextMenuItem onSelect={onOpenTaskCreateDialog}>

@@ -12,22 +12,16 @@ import type {
 import { readLocalStorageValue, writeLocalStorageValue } from '@/shared/lib/localStorageValue'
 
 const SIDEBAR_DEVICE_KEY = 'stoneflow.shell.sidebar.device'
-const UI_DEVICE_KEY = 'stoneflow.shell.ui.device'
 
 export { DEFAULT_SIDEBAR_WIDTH } from '@/shared/lib/shellSidebarGeometry'
 
 export type SidebarDesktopPreference = 'expanded' | 'collapsed'
-export type DetailPresentation = 'sheet' | 'aside'
 
 export type ShellSidebarDevicePreferences = {
 	width: number
 	desktopPreference: SidebarDesktopPreference
 	projectSectionCollapsed: boolean
 	projectSectionMaxVisible: number | null
-}
-
-export type ShellUiDevicePreferences = {
-	detailPresentation: DetailPresentation
 }
 
 export type ShellSidebarProjectSectionSettings = SidebarProjectSectionPreferenceConfig & {
@@ -41,21 +35,9 @@ export type ShellSidebarSettings = SidebarPreferenceSettings & {
 	projectSection: ShellSidebarProjectSectionSettings
 }
 
-export type ShellDeviceState = {
-	sidebar: ShellSidebarDevicePreferences
-	ui: ShellUiDevicePreferences
-}
-
-export async function loadShellDeviceState(): Promise<ShellDeviceState> {
-	const [sidebar, ui] = await Promise.all([
-		readLocalStorageValue<ShellSidebarDevicePreferences>(SIDEBAR_DEVICE_KEY),
-		readLocalStorageValue<ShellUiDevicePreferences>(UI_DEVICE_KEY),
-	])
-
-	return {
-		sidebar: normalizeSidebarDevicePreferences(sidebar ?? defaultShellSidebarDevicePreferences()),
-		ui: normalizeUiDevicePreferences(ui ?? defaultShellUiDevicePreferences()),
-	}
+export async function loadShellSidebarDevicePreferences(): Promise<ShellSidebarDevicePreferences> {
+	const stored = readLocalStorageValue<ShellSidebarDevicePreferences>(SIDEBAR_DEVICE_KEY)
+	return normalizeSidebarDevicePreferences(stored ?? defaultShellSidebarDevicePreferences())
 }
 
 export function buildShellSidebarSettings(
@@ -89,21 +71,6 @@ export async function updateShellSidebarDevicePreferences(
 	return next
 }
 
-export async function updateShellUiDevicePreferences(
-	patch: Partial<ShellUiDevicePreferences>,
-): Promise<ShellUiDevicePreferences> {
-	const current = readLocalStorageValue<ShellUiDevicePreferences>(UI_DEVICE_KEY) ?? {
-		...defaultShellUiDevicePreferences(),
-	}
-	const next = normalizeUiDevicePreferences({
-		...current,
-		...patch,
-	})
-
-	writeLocalStorageValue(UI_DEVICE_KEY, next)
-	return next
-}
-
 function normalizeSidebarDevicePreferences(
 	candidate: ShellSidebarDevicePreferences,
 ): ShellSidebarDevicePreferences {
@@ -119,25 +86,11 @@ function normalizeSidebarDevicePreferences(
 	}
 }
 
-function normalizeUiDevicePreferences(
-	candidate: ShellUiDevicePreferences,
-): ShellUiDevicePreferences {
-	return {
-		detailPresentation: candidate.detailPresentation === 'aside' ? 'aside' : 'sheet',
-	}
-}
-
 function defaultShellSidebarDevicePreferences(): ShellSidebarDevicePreferences {
 	return {
 		width: DEFAULT_SIDEBAR_WIDTH,
 		desktopPreference: 'expanded',
 		projectSectionCollapsed: false,
 		projectSectionMaxVisible: null,
-	}
-}
-
-function defaultShellUiDevicePreferences(): ShellUiDevicePreferences {
-	return {
-		detailPresentation: 'sheet',
 	}
 }

@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AutosaveController } from '@/shared/autosave'
@@ -100,6 +100,19 @@ describe('useTaskDetailViewModel', () => {
 				Number.POSITIVE_INFINITY,
 		)
 	})
+
+	it('保存失败时不执行归档或删除', async () => {
+		autosaveAdapter.value.flushNow = vi.fn<() => Promise<boolean>>().mockResolvedValue(false)
+		const { result } = renderViewModel()
+
+		await act(async () => {
+			await result.current.archiveOrRestore()
+			await result.current.moveToTrash()
+		})
+
+		expect(detailController.value.archiveOrRestore).not.toHaveBeenCalled()
+		expect(detailController.value.moveToTrash).not.toHaveBeenCalled()
+	})
 })
 
 function renderViewModel() {
@@ -119,7 +132,7 @@ function createAutosaveController(): AutosaveController<TaskDetailDraft> {
 		isDirty: false,
 		setField: vi.fn(),
 		setDraft: vi.fn(),
-		flushNow: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+		flushNow: vi.fn<() => Promise<boolean>>().mockResolvedValue(true),
 		retry: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
 		discard: vi.fn(),
 		reset: vi.fn(),

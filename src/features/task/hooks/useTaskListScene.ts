@@ -50,7 +50,7 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 	const entityDetailController = useEntityDetailController()
 	const activeDetail = entityDetailController.activeDetail
-	const openEntityDrawer = entityDetailController.openDrawer
+	const openTaskDetail = entityDetailController.openTaskDetail
 	const taskPreviewController = useTaskPreviewController()
 
 	const display = useTaskDisplayOptions(config.displayPageKey)
@@ -120,7 +120,7 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 		onCreateTask: openCreate,
 		onOpenTask: (taskId) => {
 			taskPreviewController.closePreview()
-			openEntityDrawer({ kind: 'task', id: taskId })
+			openTaskDetail(taskId)
 		},
 		onPeekTask: (taskId, source) => {
 			if (activeDetail?.kind === 'task') {

@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { useState, type CSSProperties } from 'react'
+import type { CSSProperties } from 'react'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { Sidebar } from '@heroui-pro/react'
 
@@ -89,28 +89,18 @@ describe('Shell 阶段 D 结构', () => {
 		expect(document.querySelectorAll('main')).toHaveLength(1)
 	})
 
-	it.each(['侧边栏按钮', '左方括号快捷键'])(
-		'compact 模态详情打开时忽略%s，避免穿透到导航 Sheet',
-		async (accessibleName) => {
-			installMatchMedia(false)
-			render(<CompactDetailFixture />)
+	it('导航 Sheet 打开时不卸载已经存在的任务 Aside', async () => {
+		installMatchMedia(false)
+		render(<Fixture detailOpen />)
 
-			expect(screen.getByTestId('shell-main-content')).toHaveAttribute('data-detail-open', 'true')
-			fireEvent.click(screen.getByRole('button', { name: accessibleName }))
+		fireEvent.click(screen.getByRole('button', { name: '打开导航' }))
 
-			expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-			expect(screen.getByTestId('shell-main-content')).toHaveAttribute('data-detail-open', 'true')
-		},
-	)
+		expect(await screen.findByRole('dialog')).toBeInTheDocument()
+		expect(screen.getByTestId('shell-main-content')).toHaveAttribute('data-detail-open', 'true')
+	})
 })
 
-function Fixture({
-	detailOpen = false,
-	onCloseDetail = vi.fn(),
-}: {
-	detailOpen?: boolean
-	onCloseDetail?: () => void
-}) {
+function Fixture({ detailOpen = false }: { detailOpen?: boolean }) {
 	const sidebar = useShellSidebarController({
 		initialPreferences: { width: 256, desktopPreference: 'expanded' },
 		onPreferencesCommit: vi.fn(),
@@ -131,7 +121,7 @@ function Fixture({
 			<ShellChrome
 				activeSection={'tasks' as never}
 				chrome={createChrome()}
-				command={createCommand({ closeEntityDrawer: onCloseDetail, isDrawerOpen: detailOpen })}
+				command={createCommand({ isDrawerOpen: detailOpen })}
 				createDialog={{ openProjectCreateDialog: vi.fn() } as never}
 				currentScope={{ type: 'all' }}
 				currentSpaceId={null}
@@ -149,11 +139,6 @@ function Fixture({
 			</ShellChrome>
 		</Sidebar.Provider>
 	)
-}
-
-function CompactDetailFixture() {
-	const [detailOpen, setDetailOpen] = useState(true)
-	return <Fixture detailOpen={detailOpen} onCloseDetail={() => setDetailOpen(false)} />
 }
 
 function createChrome() {

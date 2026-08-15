@@ -1,36 +1,28 @@
-import { useCallback, useLayoutEffect, useRef } from 'react'
-import { CloseButton, Separator, Surface } from '@heroui/react'
-import { Sheet } from '@heroui-pro/react'
-import { UNSAFE_PortalProvider } from 'react-aria/PortalProvider'
+import { useCallback, useEffect, useLayoutEffect, useRef, type PropsWithChildren } from 'react'
+import { CloseButton, Surface } from '@heroui/react'
+import { Resizable } from '@heroui-pro/react/resizable'
 
 import { TaskDetailContent, useTaskDetailViewModel } from '@/features/task'
-import type { DetailPresentation } from '@/features/settings'
-import { useRegisterOpenModal } from '@/shared/lib/modal-guard'
+import { SHELL_DESKTOP_MEDIA_QUERY } from '@/shared/lib/shellSidebarGeometry'
 
 import type { EntityDetailRouteState } from '../model/entityDetailTypes'
 
-type EntityDetailDrawerHostProps = {
+type EntityDetailDrawerHostProps = PropsWithChildren<{
 	activeDetail: EntityDetailRouteState
 	open: boolean
-	effectivePresentation: DetailPresentation
-	asideWidth: number
 	onClose: () => void
-	portalContainer: HTMLElement | null
-}
+}>
 
 export function EntityDetailDrawerHost({
 	activeDetail,
 	open,
-	effectivePresentation,
-	asideWidth,
 	onClose,
-	portalContainer,
+	children,
 }: EntityDetailDrawerHostProps) {
 	const scrollPositions = useRef(new Map<string, number>())
 	const returnFocusTarget = useRef<HTMLElement | null>(null)
 	const returnFocusCollectionRoot = useRef<HTMLElement | null>(null)
 	const wasOpen = useRef(false)
-	useRegisterOpenModal(Boolean(open && activeDetail && effectivePresentation === 'sheet'))
 
 	useLayoutEffect(() => {
 		if (open && !wasOpen.current) {
@@ -59,36 +51,37 @@ export function EntityDetailDrawerHost({
 		wasOpen.current = open
 	}, [open])
 
-	if (!open || !activeDetail) {
+	if ((!open || !activeDetail) && children == null) {
 		return null
 	}
 
 	return (
-		<TaskEntityDetail
-			asideWidth={asideWidth}
-			effectivePresentation={effectivePresentation}
-			onClose={onClose}
-			portalContainer={portalContainer}
-			scrollPositions={scrollPositions.current}
-			taskId={activeDetail.id}
-		/>
+		<Resizable className='min-h-0 min-w-0 flex-1' orientation='horizontal'>
+			<Resizable.Panel className='flex min-h-0 min-w-0' id='task-list'>
+				{children}
+			</Resizable.Panel>
+			{open && activeDetail ? (
+				<TaskEntityDetail
+					onClose={onClose}
+					scrollPositions={scrollPositions.current}
+					taskId={activeDetail.id}
+				/>
+			) : null}
+		</Resizable>
 	)
 }
 
-type TaskEntityDetailProps = Omit<EntityDetailDrawerHostProps, 'activeDetail' | 'open'> & {
+type TaskEntityDetailProps = Omit<
+	EntityDetailDrawerHostProps,
+	'activeDetail' | 'children' | 'open'
+> & {
 	taskId: string
 	scrollPositions: Map<string, number>
 }
 
-function TaskEntityDetail({
-	taskId,
-	effectivePresentation,
-	asideWidth,
-	onClose,
-	portalContainer,
-	scrollPositions,
-}: TaskEntityDetailProps) {
+function TaskEntityDetail({ taskId, onClose, scrollPositions }: TaskEntityDetailProps) {
 	const viewModel = useTaskDetailViewModel({ taskId, onClose })
+	const flushNow = viewModel.autosave.flushNow
 	const viewport = useRef<HTMLDivElement | null>(null)
 	const setViewport = useCallback(
 		(node: HTMLDivElement | null) => {
@@ -103,71 +96,71 @@ function TaskEntityDetail({
 		},
 		[scrollPositions, taskId],
 	)
+	useEffect(() => {
+		if (typeof window.matchMedia !== 'function') {
+			return
+		}
 
-	const content = (
-		<TaskDetailContent onClose={onClose} scrollRef={setViewport} viewModel={viewModel} />
-	)
+		const mediaQuery = window.matchMedia(SHELL_DESKTOP_MEDIA_QUERY)
+		let cancelled = false
+		let closing = false
+		const closeForCompact = async () => {
+			if (closing) {
+				return
+			}
 
-	if (effectivePresentation === 'sheet') {
-		return (
-			<UNSAFE_PortalProvider getContainer={() => portalContainer}>
-				<Sheet
-					isDismissable
-					isDetached
-					isModal
-					isOpen
-					onOpenChange={(nextOpen) => {
-						if (!nextOpen) onClose()
-					}}
-					placement='right'
-				>
-					<Sheet.Backdrop
-						className='sf-entity-detail-backdrop'
-						style={{ inset: 0, position: 'absolute' }}
-						variant='opaque'
-					>
-						<Sheet.Content
-							data-entity-detail-root='true'
-							data-entity-detail-sheet='true'
-							style={{
-								bottom: '0.5rem',
-								height: 'auto',
-								maxWidth: 'calc(100% - 1rem)',
-								position: 'absolute',
-								right: '0.5rem',
-								top: '0.5rem',
-								width: 'min(40rem, calc(100% - 1rem))',
-							}}
-						>
-							<Sheet.Dialog className='h-full overflow-hidden p-0'>
-								<Sheet.Heading className='sr-only'>任务详情</Sheet.Heading>
-								<Sheet.CloseTrigger aria-label='关闭任务详情' className='z-10' />
-								{content}
-							</Sheet.Dialog>
-						</Sheet.Content>
-					</Sheet.Backdrop>
-				</Sheet>
-			</UNSAFE_PortalProvider>
-		)
-	}
+			closing = true
+			const saved = await flushNow()
+			if (saved && !cancelled && !mediaQuery.matches) {
+				onClose()
+			}
+			closing = false
+		}
+		const handleChange = (event: MediaQueryListEvent) => {
+			if (!event.matches) {
+				void closeForCompact()
+			}
+		}
+
+		mediaQuery.addEventListener('change', handleChange)
+		if (!mediaQuery.matches) {
+			void closeForCompact()
+		}
+
+		return () => {
+			cancelled = true
+			mediaQuery.removeEventListener('change', handleChange)
+		}
+	}, [flushNow, onClose, taskId])
 
 	return (
-		<div
-			className='flex min-h-0 shrink-0 overflow-hidden'
-			data-entity-detail-root='true'
-			data-entity-detail-aside='true'
-		>
-			<Separator orientation='vertical' />
-			<aside aria-label='任务详情' className='min-h-0 shrink-0' style={{ width: asideWidth }}>
-				<Surface className='relative flex h-full min-h-0 overflow-hidden rounded-none'>
-					<CloseButton
-						aria-label='关闭任务详情'
-						className='absolute right-2 top-2 z-10'
-						onPress={onClose}
-					/>
-					{content}
-				</Surface>
-			</aside>
-		</div>
+		<>
+			<Resizable.Handle aria-label='调整任务详情宽度' type='line' variant='secondary' />
+			<Resizable.Panel
+				className='flex min-h-0'
+				defaultSize='400px'
+				groupResizeBehavior='preserve-pixel-size'
+				id='task-detail'
+				maxSize='560px'
+				minSize='400px'
+			>
+				<aside
+					aria-label='任务详情'
+					className='h-full min-h-0 w-full'
+					data-entity-detail-aside='true'
+					data-entity-detail-root='true'
+					onContextMenu={(event) => event.preventDefault()}
+				>
+					<Surface className='relative flex h-full min-h-0 overflow-hidden rounded-none'>
+						<CloseButton
+							aria-label='关闭任务详情'
+							className='absolute right-2 top-2 z-10'
+							onPress={onClose}
+						/>
+						<TaskDetailContent onClose={onClose} scrollRef={setViewport} viewModel={viewModel} />
+					</Surface>
+				</aside>
+			</Resizable.Panel>
+		</>
 	)
 }

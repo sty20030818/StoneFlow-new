@@ -16,7 +16,7 @@ const permanentlyDeleteEntrySpy = vi.fn<(entry: LifecycleEntry) => Promise<void>
 const restoreLifecycleEntrySpy = vi.fn<(entry: LifecycleEntry) => Promise<unknown>>()
 const permanentlyDeleteLifecycleEntrySpy = vi.fn<(entry: LifecycleEntry) => Promise<unknown>>()
 const refreshLoadedSlicesSpy = vi.fn<() => Promise<void>>()
-const openDrawerSpy = vi.fn<(kind: string, id: string) => void>()
+const openTaskDetailSpy = vi.fn<(taskId: string) => void>()
 const toastSuccessSpy = vi.fn<(message: string) => void>()
 const toastErrorSpy = vi.fn<(message: string) => void>()
 
@@ -48,7 +48,7 @@ vi.mock('@/features/entity-detail', () => ({
 	useEntityDetailController: () => ({
 		activeDetail: null,
 		isOpen: false,
-		openDrawer: openDrawerSpy,
+		openTaskDetail: openTaskDetailSpy,
 		closeDrawer: vi.fn(),
 		openPage: vi.fn(),
 	}),
@@ -122,7 +122,7 @@ describe('LifecycleList', () => {
 		permanentlyDeleteLifecycleEntrySpy.mockResolvedValue({})
 		refreshLoadedSlicesSpy.mockReset()
 		refreshLoadedSlicesSpy.mockResolvedValue()
-		openDrawerSpy.mockReset()
+		openTaskDetailSpy.mockReset()
 		toastSuccessSpy.mockReset()
 		toastErrorSpy.mockReset()
 	})

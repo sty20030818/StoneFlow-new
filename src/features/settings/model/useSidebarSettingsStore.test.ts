@@ -2,7 +2,6 @@ import type {
 	ShellSidebarDevicePreferences,
 	ShellSidebarProjectSectionSettings,
 	ShellSidebarSettings,
-	ShellUiDevicePreferences,
 } from '../api/shellDevicePreferences'
 import type { SidebarPreferenceSettings } from '../api/sidebarSettings'
 import {
@@ -11,9 +10,8 @@ import {
 	updateSidebarProjectSection,
 } from '../api/sidebarSettings'
 import {
-	loadShellDeviceState,
+	loadShellSidebarDevicePreferences,
 	updateShellSidebarDevicePreferences,
-	updateShellUiDevicePreferences,
 } from '../api/shellDevicePreferences'
 import { useSidebarSettingsStore } from './useSidebarSettingsStore'
 
@@ -41,51 +39,46 @@ vi.mock('./../api/shellDevicePreferences', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('../api/shellDevicePreferences')>()
 	return {
 		...actual,
-		loadShellDeviceState: vi.fn(),
+		loadShellSidebarDevicePreferences: vi.fn(),
 		updateShellSidebarDevicePreferences: vi.fn(),
-		updateShellUiDevicePreferences: vi.fn(),
 	}
 })
 
 const mockedGetSidebarSettings = vi.mocked(getSidebarSettings)
 const mockedUpdateSidebarItemVisibility = vi.mocked(updateSidebarItemVisibility)
 const mockedUpdateSidebarProjectSection = vi.mocked(updateSidebarProjectSection)
-const mockedLoadShellDeviceState = vi.mocked(loadShellDeviceState)
+const mockedLoadShellSidebarDevicePreferences = vi.mocked(loadShellSidebarDevicePreferences)
 const mockedUpdateShellSidebarDevicePreferences = vi.mocked(updateShellSidebarDevicePreferences)
-const mockedUpdateShellUiDevicePreferences = vi.mocked(updateShellUiDevicePreferences)
 
 describe('useSidebarSettingsStore', () => {
 	beforeEach(() => {
 		mockedGetSidebarSettings.mockReset()
 		mockedUpdateSidebarItemVisibility.mockReset()
 		mockedUpdateSidebarProjectSection.mockReset()
-		mockedLoadShellDeviceState.mockReset()
+		mockedLoadShellSidebarDevicePreferences.mockReset()
 		mockedUpdateShellSidebarDevicePreferences.mockReset()
-		mockedUpdateShellUiDevicePreferences.mockReset()
 
 		useSidebarSettingsStore.setState({
 			status: 'idle',
 			settings: null,
 			syncSettings: null,
 			sidebarDevicePreferences: null,
-			uiDevicePreferences: null,
 			errorMessage: null,
 		})
 	})
 
-	it('load 会并行拉取 sync settings 和 device state', async () => {
+	it('load 会并行拉取 sync settings 和 sidebar device preferences', async () => {
 		mockedGetSidebarSettings.mockResolvedValue(createSidebarPreferenceSettings())
-		mockedLoadShellDeviceState.mockResolvedValue(createShellDeviceState())
+		mockedLoadShellSidebarDevicePreferences.mockResolvedValue(createSidebarDevicePreferences())
 
 		await useSidebarSettingsStore.getState().load()
 
 		const state = useSidebarSettingsStore.getState()
 		expect(mockedGetSidebarSettings).toHaveBeenCalledTimes(1)
-		expect(mockedLoadShellDeviceState).toHaveBeenCalledTimes(1)
+		expect(mockedLoadShellSidebarDevicePreferences).toHaveBeenCalledTimes(1)
 		expect(state.status).toBe('ready')
 		expect(state.settings?.width).toBe(256)
 		expect(state.settings?.desktopPreference).toBe('expanded')
-		expect(state.uiDevicePreferences?.detailPresentation).toBe('sheet')
 	})
 
 	it('setItemVisibility 会提交更新后的 sync settings', async () => {
@@ -171,34 +164,16 @@ describe('useSidebarSettingsStore', () => {
 		expect(state.settings?.desktopPreference).toBe('collapsed')
 		expect(state.settings?.mainItems.allTasks.visible).toBe(true)
 	})
-
-	it('setDetailPresentation 只更新 UI 设备偏好', async () => {
-		useSidebarSettingsStore.setState(createReadyStoreState())
-		mockedUpdateShellUiDevicePreferences.mockResolvedValue({ detailPresentation: 'aside' })
-
-		await useSidebarSettingsStore.getState().setDetailPresentation('aside')
-
-		const state = useSidebarSettingsStore.getState()
-		expect(mockedUpdateShellUiDevicePreferences).toHaveBeenCalledOnce()
-		expect(mockedUpdateShellUiDevicePreferences).toHaveBeenCalledWith({
-			detailPresentation: 'aside',
-		})
-		expect(mockedUpdateShellSidebarDevicePreferences).not.toHaveBeenCalled()
-		expect(state.uiDevicePreferences).toEqual({ detailPresentation: 'aside' })
-		expect(state.settings?.width).toBe(256)
-	})
 })
 
 function createReadyStoreState() {
 	const syncSettings = createSidebarPreferenceSettings()
 	const sidebarDevicePreferences = createSidebarDevicePreferences()
-	const uiDevicePreferences = createUiDevicePreferences()
 
 	return {
 		status: 'ready' as const,
 		syncSettings,
 		sidebarDevicePreferences,
-		uiDevicePreferences,
 		settings: createShellSidebarSettings({
 			width: sidebarDevicePreferences.width,
 			desktopPreference: sidebarDevicePreferences.desktopPreference,
@@ -209,13 +184,6 @@ function createReadyStoreState() {
 			},
 		}),
 		errorMessage: null,
-	}
-}
-
-function createShellDeviceState() {
-	return {
-		sidebar: createSidebarDevicePreferences(),
-		ui: createUiDevicePreferences(),
 	}
 }
 
@@ -252,14 +220,6 @@ function createSidebarDevicePreferences(
 		desktopPreference: overrides?.desktopPreference ?? 'expanded',
 		projectSectionCollapsed: overrides?.projectSectionCollapsed ?? false,
 		projectSectionMaxVisible: overrides?.projectSectionMaxVisible ?? null,
-	}
-}
-
-function createUiDevicePreferences(
-	overrides?: Partial<ShellUiDevicePreferences>,
-): ShellUiDevicePreferences {
-	return {
-		detailPresentation: overrides?.detailPresentation ?? 'sheet',
 	}
 }
 

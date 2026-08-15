@@ -1,6 +1,6 @@
 # task · 任务域
 
-> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-08-04
+> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-08-15
 
 ---
 
@@ -13,7 +13,8 @@
   → TaskBoard + filter / display / selection / preview
 
 详情
-  → TaskPage | TaskDrawer | TaskPreview（detail/）
+  → TaskPage | TaskDetailContent | TaskPreview（detail/）
+  → 宽屏 Aside 容器与响应式打开策略由 entity-detail 拥有
 
 创建
   → 壳 Overlays 挂 TaskCreateContent
@@ -71,7 +72,7 @@ src/features/task/
 | 展示 | status / priority 文案与指示器 · `./presentation` |
 | 批量 | `taskBulkActions` · `createTaskBulkAdapter` |
 | 命令 | `registerTaskCommands`（行快捷键包内调 handlers） |
-| 详情 | `TaskPage` · `TaskDrawer` · `TaskPreview` · Preview Provider/controller |
+| 详情 | `TaskPage` · `TaskDetailContent` · `TaskPreview` · Preview Provider/controller |
 | 列表编排 | `useTaskListController` · `useTaskSelection` · `useTaskListData` / Query |
 | 展示 | `PriorityIcon` · `TaskStatusIndicator` · 标签 formatters |
 | IO | `getTaskDetail` · `createTask` · `deleteTask` · `restoreTask` 等（仅已有外消费者） |
@@ -90,7 +91,9 @@ src/features/task/
 | shell-dialogs | 创建对话框状态在壳；本域只出表单内容 |
 | metadata-fields | placement 归本域；status/priority 图标由本域注入 |
 | launcher | 创建内核 / 标签 formatters 复用本域 public |
-| navigation | 换页只 path-only intent；open 策略在本域 |
+| navigation | 命令的 path-only open 策略在本域；列表详情的响应式 Aside / canonical 路由由 `entity-detail` 拥有 |
+
+任务正式详情合同：`Space` 只打开只读 Peek；列表点击或 `Enter` 在 `>=1024px` 打开非模态 Aside，在 `<1024px` 直接进入 canonical `TaskPage`。active Aside 缩窄时先 flush，成功且完成时仍 compact 才复用标准关闭路径返回原列表；失败或完成时已重新变宽则保留 Aside 与 dirty draft，窗口变宽本身不触发详情行为。Aside 与完整页复用任务详情 query、draft、autosave 和 mutation 能力；Aside Header 在 flush autosave 后可显式打开完整页。任务域不拥有 Sheet、详情呈现偏好或共享响应式 state。
 
 ---
 

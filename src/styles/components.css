@@ -75,10 +75,6 @@
 		margin: 0 0.5rem 0 0;
 	}
 
-	[data-theme="stoneflow-light"] .sf-entity-detail-backdrop::before {
-		position: absolute;
-	}
-
 	[data-theme="stoneflow-light"]
 		.sf-shell-layout.sidebar__provider[data-state="collapsed"]:has(.sidebar--inset)
 		.sidebar__main {

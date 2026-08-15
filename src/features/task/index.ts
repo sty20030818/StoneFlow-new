@@ -75,7 +75,7 @@ export { TaskPage } from './detail/components/TaskPage'
 export { TaskPageState } from './detail/components/TaskPageState'
 
 /**
- * Sheet / Aside 共用的任务详情内容与状态模型。
+ * Aside / 完整页共用的任务详情内容与状态模型。
  */
 export { TaskDetailContent } from './detail/components/TaskDetailContent'
 export {

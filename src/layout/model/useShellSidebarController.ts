@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import {
 	DEFAULT_SIDEBAR_WIDTH,
+	SHELL_DESKTOP_MEDIA_QUERY,
 	SIDEBAR_ICON_RAIL_PX,
 	SIDEBAR_WIDTH_MAX,
 	SIDEBAR_WIDTH_MIN,
@@ -20,8 +21,6 @@ type UseShellSidebarControllerOptions = {
 	onPreferencesCommit: (preferences: ShellSidebarPreferences) => void
 }
 
-const DESKTOP_MEDIA_QUERY = '(min-width: 1024px)'
-
 function clampWidth(width: number) {
 	return Math.min(SIDEBAR_WIDTH_MAX, Math.max(SIDEBAR_WIDTH_MIN, Math.round(width)))
 }
@@ -30,7 +29,7 @@ function createDesktopMediaQuery() {
 	if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
 		return null
 	}
-	return window.matchMedia(DESKTOP_MEDIA_QUERY)
+	return window.matchMedia(SHELL_DESKTOP_MEDIA_QUERY)
 }
 
 /**

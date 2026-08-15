@@ -44,7 +44,7 @@ export type AutosaveController<TDraft> = {
 	isDirty: boolean
 	setField: <K extends keyof TDraft>(key: K, value: TDraft[K], options?: AutosaveSetOptions) => void
 	setDraft: (updater: TDraft | ((current: TDraft) => TDraft), options?: AutosaveSetOptions) => void
-	flushNow: () => Promise<void>
+	flushNow: () => Promise<boolean>
 	retry: () => Promise<void>
 	discard: () => void
 	reset: (nextBase: TDraft) => void

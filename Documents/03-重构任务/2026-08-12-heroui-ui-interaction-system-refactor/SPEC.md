@@ -97,14 +97,14 @@ StoneFlow 已具备较完整的桌面产品能力，但 UI 实现形成了多条
 - 保留 Space/项目/设置导航、badge、路由、危险操作确认、Tauri drag region、窗口控制、Header、Footer、启动骨架和断点切换无闪烁契约。
 - “宽栏可拖拽 + icon rail”是 StoneFlow 对 HeroUI Sidebar、Resizable 与 Sheet 的薄产品编排；不得伪称为 HeroUI 单个配置，也不得因此重建一套通用 Sidebar primitive。
 
-### 6. 任务详情 Sheet / Aside 与 Peek
+### 6. 任务详情 Aside、完整页与 Peek
 
-- 完整任务详情与 Space Peek 是两个独立产品能力：Peek 是快速只读预览；完整详情保留编辑、自动保存和打开独立页面能力。
-- `>=1024px` 时，用户可以选择完整详情以 Sheet 或 Aside 呈现，偏好跨重启恢复；只有剩余主工作区满足技术方案定义并经方案 Gate 确认的最小可用宽度时才采用 Aside，否则临时回退 Sheet。
-- `<1024px` 时，完整详情统一使用 Sheet，但不得改写用户保存的桌面 Sheet/Aside 偏好。
-- Sheet 模式覆盖主内容而不永久压缩列表；Aside 模式与主集合并列、允许继续操作主集合且不形成模态焦点陷阱。
-- 当窗口变化导致承载方式切换时，当前任务、路由真相、编辑草稿、自动保存状态和详情滚动上下文不得丢失。
-- Sheet/Aside 只负责呈现容器；详情查询、表单模型、领域 mutation、确认和错误处理仍由现有 feature/application 边界拥有。
+- Space Peek 是快速只读预览；正式详情是可编辑、自动保存的 Aside 或 canonical 完整页，两者不共用 open state。
+- `>=1024px` 时，从任务列表点击或按 `Enter` 在 Main surface 内打开非模态 Aside；列表仍可操作，Aside 不使用 overlay 或 focus trap。
+- Aside 初始宽度固定为 `400px`，使用 HeroUI Pro Resizable 在 `400–560px` 内会话级拖宽；宽度不持久化，不再根据比例或剩余主区宽度自动改换容器。
+- `<1024px` 时，从列表首次打开正式详情直接导航到 `/$scopeKey/tasks/$taskId` canonical 完整页；不渲染任务 Sheet。
+- active Aside 从桌面宽度进入 `<1024px` 时先 flush 当前草稿；flush 成功且完成时仍处于 compact，才复用标准 `onClose` 路径清除 `?task=` 并返回原列表；保存失败或完成时已重新变宽则保留 Aside。窗口变宽本身不触发详情行为。
+- Aside Header 保留“打开完整页”动作，必须先 flush 当前草稿再导航；详情查询、表单模型、领域 mutation、确认和错误处理仍由现有 feature/application 边界拥有。
 
 ### 7. 键盘、焦点、选择与命令重写
 
@@ -112,7 +112,7 @@ StoneFlow 已具备较完整的桌面产品能力，但 UI 实现形成了多条
 - 集合焦点与 pointer 临时高亮必须分离；pointer hover 不得改变键盘命令目标。
 - `↑/↓`、`J/K` 与 `Home/End` 移动真实焦点并将目标滚入视野。
 - `X` 切换当前焦点项；`Shift+方向键` 从固定 anchor 扩展或收缩连续范围。
-- `Space` 控制 Peek，`Enter` 打开完整详情；关闭后恢复原集合焦点。
+- `Space` 只控制 Peek，`Enter` 按 `1024px` 响应式合同打开 Aside 或 canonical 完整页；关闭 Aside 后恢复原集合焦点。
 - `Cmd/Ctrl+A` 只选择按键时当前视图中已经加载且可操作的项目；之后增量加载的项目不自动加入。查询级“包含尚未加载结果的全选”不在本 UI 重构内隐式引入。
 - 右键已选项时，以整个 selection 为目标；右键未选项时，仅以该项作为目标并避免视觉选择与动作目标冲突。
 - Escape 按“输入法/编辑 → 当前 Menu/Dialog/Sheet → Detail Aside → Peek → Selection → 页面”的固定优先级消费。
@@ -165,7 +165,7 @@ StoneFlow 已具备较完整的桌面产品能力，但 UI 实现形成了多条
 - 作为多选用户，我想让 Command、右键菜单、ActionBar 和直接快捷键始终作用于同一批目标，避免不同入口产生不同结果。
 - 作为 TaskBoard 用户，我想在大数据、分组折叠、虚拟滚动和增量加载下仍获得真实焦点、可预测选择和流畅滚动。
 - 作为桌面用户，我想在宽窗口点按控制区切换宽栏与窄栏、拖动宽栏调整空间，在窄窗口让 Sidebar 完全让出工作区。
-- 作为任务编辑用户，我想在桌面选择临时 Sheet 或常驻 Aside，并在窄窗口自动使用 Sheet，同时不丢失编辑状态。
+- 作为任务编辑用户，我想在宽窗口不离开列表就能轻量查看和编辑，在窄窗口直接获得完整页空间，而不需要管理呈现偏好。
 - 作为视觉用户，我想获得接近当前 Linear 的近中性灰、低噪音、高密度浅色体验，但仍保留 StoneFlow 自己的 Accent 和产品身份。
 - 作为减少视觉噪音的用户，我想让产品只使用 HeroUI 一致的标准动效，不再叠加 StoneFlow 各 feature 自写的旋转、脉冲、缩放和过渡。
 - 作为跨平台用户，我想让 macOS 与 Windows 都保留原生窗口习惯、清晰焦点、正确快捷键和无闪烁启动体验。
@@ -180,12 +180,12 @@ StoneFlow 已具备较完整的桌面产品能力，但 UI 实现形成了多条
 | Tailwind CSS v4 | 产品结构、布局、尺寸、响应式和少量语义 utility；不建立第二套组件皮肤或 token 系统 |
 | 第一方零动画合同 | 应用源码零自建动画，HeroUI 官方动效为唯一组件动效来源；不删除焦点、滚动和虚拟几何调度 |
 | StoneFlow 产品组件 | Shell、TaskBoard、Command、详情等稳定产品契约；不镜像 HeroUI primitive API |
-| Shell 响应式状态 | 只拥有宽/窄/响应式隐藏、宽度和详情呈现偏好；不得扩张为通用组件库 |
+| Shell 响应式状态 | 只拥有宽/窄/响应式隐藏、宽度与唯一 `1024px` 断点；不持久化详情呈现方式 |
 | React Aria collection | 集合语义、真实焦点与标准选择基础；StoneFlow 只适配 Linear 键位和业务目标 |
 | Command Registry / Runtime | 快捷键目录、可用性、目标解析、disabled reason 和执行的唯一真相；UI 只是投影 |
 | Selection / Bulk snapshot | 将集合选择转成领域操作目标；不与 collection 并行维护第二份选择状态 |
 | TanStack Virtual / TaskBoard model | 虚拟几何、sticky、总高度、分页和滚动定位；不再拥有重复焦点状态机 |
-| Detail route / feature model | 当前实体、编辑、自动保存和业务 mutation；Sheet/Aside 只负责呈现 |
+| Detail route / feature model | URL search 拥有宽屏 Aside 当前实体，canonical path 拥有完整页；编辑、自动保存和业务 mutation 仍属任务域 |
 | Shell / Tauri | 窗口控制、drag region、启动骨架、Header/Footer、Launcher 和平台生命周期 |
 | 局部样式例外 | 虚拟坐标、动态尺寸、Tauri 几何、业务实体色和运行时进度；不得扩张为 feature 私有主题 |
 | Linear 参考 | 提供视觉与交互方向、公开可测结果和人工评审基线；不是代码、token 或品牌依赖 |
@@ -199,7 +199,7 @@ StoneFlow 已具备较完整的桌面产品能力，但 UI 实现形成了多条
 - 生产依赖和源码不再引用 Radix、shadcn、cmdk、旧 base primitive、旧 adapter、旧 pattern class 或旧 `--sf-*` UI token。
 - `package.json` 与应用源码不再由 StoneFlow 直接声明或调用 `tw-animate-css`、Motion/Framer Motion、CSS/Tailwind 动画或过渡；HeroUI 官方安装合同要求的供应商实现依赖及其传递依赖按精确锁定链路允许，StoneFlow 不消费其动画 API。
 - HeroUI semantic theme 成为唯一 UI 视觉真相，局部样式例外有可审计边界，不存在第二套隐形 design system。
-- Linear-inspired Light 视觉、Inter Variable 字体、Sidebar 三态、详情双呈现和键盘合同通过已批准基线与 macOS WKWebView 验收；Windows 支持保留，但不属于本任务的验收结论。
+- Linear-inspired Light 视觉、Inter Variable 字体、Sidebar 三态、宽屏 Aside / 窄屏完整页详情合同和键盘合同通过已批准基线与 macOS WKWebView 验收；Windows 支持保留，但不属于本任务的验收结论。
 - HeroUI Pro 的 CollectUI 安装器、组件版本和树 SHA-256 均已锁定，干净环境构建可重复，仓库、日志和产物不包含 Key 或不可再分发资产。
 - TypeScript、lint、格式、模块边界、相关组件测试、生产构建和 Rust 测试通过；无阻塞或高严重度的视觉、交互或可访问性缺陷。
 - 所有在 PLAN 登记的长期文档已同步为落地后的当前真相，任务偏差已记录后归档。
@@ -237,11 +237,11 @@ StoneFlow 已具备较完整的桌面产品能力，但 UI 实现形成了多条
 
 ### 任务详情与 Peek
 
-- **AC-21**：当窗口宽度 `>=1024px`、用户偏好 Aside 且剩余主工作区达到技术方案确认的最小可用宽度时，完整任务详情应当呈现为 Aside；否则应当使用 Sheet，并跨重启保留用户偏好。
-- **AC-22**：当窗口宽度 `<1024px` 时，完整任务详情应当统一使用 Sheet，同时保留而不改写用户保存的桌面 Sheet/Aside 偏好。
-- **AC-23**：当详情打开期间窗口跨越 `1024px` 时，系统应当保留同一任务、路由真相、编辑草稿、自动保存状态和详情滚动上下文，只替换呈现容器。
-- **AC-24**：当用户关闭 Sheet 时，如果原触发项仍存在，系统应当恢复原触发项；否则恢复当前实体行，实体已不存在时恢复集合根。详情使用 Aside 时不得形成模态焦点陷阱。
-- **AC-25**：当用户按 `Space` 时，系统应当只控制 Peek；当用户按 `Enter` 或执行“打开完整详情”时，系统应当按当前 Sheet/Aside 规则呈现完整详情。
+- **AC-21**：当窗口宽度 `>=1024px` 且用户从任务集合点击任务或按 `Enter` 时，系统应当在 Main surface 内打开可编辑的非模态 Aside，列表仍可操作；Aside 初始 `400px`，可在 `400–560px` 内会话级拖宽。
+- **AC-22**：当窗口宽度 `<1024px` 且用户从任务集合首次打开正式详情时，系统应当直接导航到 `/$scopeKey/tasks/$taskId` canonical 完整页，不渲染任务 Sheet。
+- **AC-23**：当 active `?task=` Aside 从桌面宽度进入 `<1024px` 时，系统应当先 flush 当前草稿；只有 flush 成功且完成时仍处于 compact，才通过标准 `onClose` 路径清除 `?task=` 并返回原列表。保存失败或完成时已重新变宽应当保留 Aside 与草稿；窗口变宽本身不得触发详情行为。
+- **AC-24**：当用户关闭 Aside 时，如果原触发项仍存在，系统应当恢复原触发项；否则恢复当前实体行，实体已不存在时恢复集合根。Aside 不得形成模态焦点陷阱。
+- **AC-25**：当用户按 `Space` 时，系统应当只控制 Peek；当用户按 `Enter` 时，系统应当按 `1024px` 合同打开 Aside 或 canonical 完整页；当用户在 Aside Header 打开完整页时，系统应当先 flush 当前草稿再导航。
 
 ### 键盘、焦点与命令
 
@@ -283,7 +283,7 @@ StoneFlow 已具备较完整的桌面产品能力，但 UI 实现形成了多条
 | `src/shared/components/base/` | 旧 Radix/shadcn/cmdk primitive 的完整迁移与删除范围 |
 | `src/shared/components/patterns/`、detail/preview tokens | 纯样式中间层删除与真实产品组件归位 |
 | `src/shared/components/row/`、Tooltip/scroll infrastructure | 行交互、焦点、选择、虚拟 viewport 与必要基础设施例外 |
-| `src/layout/` | Inset Shell、Sidebar 三态、Header/Footer、Peek、详情 Sheet/Aside 与 overlay 层级 |
+| `src/layout/` | Inset Shell、Sidebar 三态、Header/Footer、Peek、任务详情 Aside 与 overlay 层级 |
 | `src/features/command/` | Command UI、Registry、Runtime、keybinding、目标解析和 Escape 作用域 |
 | `src/features/selection/`、`src/features/bulk-action/` | 单一 collection selection、领域快照与 HeroUI Pro ActionBar |
 | `src/features/task/` | TaskBoard 虚拟集合、Linear 键盘合同、Peek、完整详情和 ContextMenu |
@@ -296,7 +296,7 @@ StoneFlow 已具备较完整的桌面产品能力，但 UI 实现形成了多条
 
 ## 当前技术方案
 
-本任务命中独立 PLAN 门槛：涉及 HeroUI Pro 第三方集成、全局样式架构、Sidebar 组合限制、详情偏好、集合状态机、迁移顺序与不可逆清理。技术方案由 [PLAN.md](./PLAN.md) 维护，执行状态与阻塞由 [TASKS.md](./TASKS.md) 维护。
+本任务命中独立 PLAN 门槛：涉及 HeroUI Pro 第三方集成、全局样式架构、Sidebar 组合限制、详情响应式路由、集合状态机、迁移顺序与不可逆清理。技术方案由 [PLAN.md](./PLAN.md) 维护，执行状态与阻塞由 [TASKS.md](./TASKS.md) 维护。
 
 已锁定的技术约束包括：`HeroUI OSS + HeroUI Pro + Tailwind CSS v4`、HeroUI semantic theme 单一真相、本 SPEC 已确认的浅色色彩合同、Inter Variable、HeroUI 官方动效唯一来源与 StoneFlow 第一方零动画、`1024px` 响应式边界、不采用 StyleX、不长期保留旧 UI 平台。
 

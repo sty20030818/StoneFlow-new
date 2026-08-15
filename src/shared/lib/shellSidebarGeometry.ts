@@ -12,3 +12,4 @@ export const DEFAULT_SIDEBAR_WIDTH = 256
 export const SIDEBAR_WIDTH_MIN = 220
 export const SIDEBAR_WIDTH_MAX = 330
 export const SIDEBAR_ICON_RAIL_PX = 48
+export const SHELL_DESKTOP_MEDIA_QUERY = '(min-width: 1024px)'

@@ -1,4 +1,3 @@
-import { startTransition } from 'react'
 import { Button } from '@heroui/react'
 import { SquareArrowOutUpRightIcon } from 'lucide-react'
 
@@ -18,10 +17,9 @@ export function TaskDetailHeader(props: TaskDetailHeaderProps) {
 	const entityDetailController = useEntityDetailController()
 
 	const handleOpenPage = async () => {
-		await autosave.flushNow()
-		startTransition(() => {
-			entityDetailController.openPage({ kind: 'task', id: taskId })
-		})
+		if (await autosave.flushNow()) {
+			void entityDetailController.openPage({ kind: 'task', id: taskId })
+		}
 	}
 
 	return (

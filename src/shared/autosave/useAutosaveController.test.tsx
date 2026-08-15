@@ -139,6 +139,96 @@ describe('useAutosaveController', () => {
 		expect(savePatch).toHaveBeenCalledWith({ title: 'flushed' })
 	})
 
+	it('flushNow 返回保存结果，失败时保留 dirty draft', async () => {
+		const savePatch = vi
+			.fn<(patch: Patch) => Promise<Draft>>()
+			.mockRejectedValue(new Error('network'))
+		const { result } = renderHook(() =>
+			useAutosaveController({
+				base: { title: 'old', note: null },
+				getPatch,
+				savePatch,
+			}),
+		)
+
+		act(() => {
+			result.current.setField('title', 'new', { saveMode: 'manual' })
+		})
+
+		let saved = true
+		await act(async () => {
+			saved = await result.current.flushNow()
+		})
+
+		expect(saved).toBe(false)
+		expect(result.current.status).toBe('failed')
+		expect(result.current.isDirty).toBe(true)
+		expect(result.current.draft.title).toBe('new')
+	})
+
+	it('干净 draft flushNow 后保持 idle', async () => {
+		const savePatch = vi.fn<(patch: Patch) => Promise<Draft>>()
+		const { result } = renderHook(() =>
+			useAutosaveController({
+				base: { title: 'old', note: null },
+				getPatch,
+				savePatch,
+			}),
+		)
+
+		await act(async () => {
+			expect(await result.current.flushNow()).toBe(true)
+		})
+
+		expect(savePatch).not.toHaveBeenCalled()
+		expect(result.current.status).toBe('idle')
+	})
+
+	it('flushNow 会等待保存中的后续 patch 一并落盘', async () => {
+		let resolveFirstSave: ((value: Draft) => void) | null = null
+		const savePatch = vi
+			.fn<(patch: Patch) => Promise<Draft>>()
+			.mockImplementationOnce(
+				(patch) =>
+					new Promise<Draft>((resolve) => {
+						resolveFirstSave = () =>
+							resolve({
+								title: patch.title ?? 'old',
+								note: patch.note ?? null,
+							})
+					}),
+			)
+			.mockImplementationOnce(async (patch) => ({
+				title: patch.title ?? 'first',
+				note: patch.note ?? null,
+			}))
+		const { result } = renderHook(() =>
+			useAutosaveController({
+				base: { title: 'old', note: null },
+				getPatch,
+				savePatch,
+			}),
+		)
+
+		act(() => {
+			result.current.setField('title', 'first', { saveMode: 'immediate' })
+			result.current.setField('note', 'second')
+		})
+
+		let flushPromise: Promise<boolean> | null = null
+		act(() => {
+			flushPromise = result.current.flushNow()
+		})
+		await act(async () => {
+			resolveFirstSave?.({ title: 'first', note: null })
+			expect(await flushPromise).toBe(true)
+		})
+
+		expect(savePatch).toHaveBeenCalledTimes(2)
+		expect(savePatch).toHaveBeenNthCalledWith(2, { note: 'second' })
+		expect(result.current.isDirty).toBe(false)
+	})
+
 	it('savePatch 返回的新 base 会成为后续 diff 基准', async () => {
 		const savePatch = vi.fn(async (patch: Patch): Promise<Draft> => ({
 			title: patch.title ?? 'old',

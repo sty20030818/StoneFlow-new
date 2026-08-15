@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 
 import { MainCard } from '@/shared/components/main-card/MainCardLayout'
@@ -61,6 +61,16 @@ function TaskPageLoaded({ task, projects, spaces, isReadOnly }: TaskPageLoadedPr
 		base: autosaveBase,
 		disabled: isReadOnly,
 	})
+	const flushRef = useRef(autosave.flushNow)
+	useEffect(() => {
+		flushRef.current = autosave.flushNow
+	}, [autosave.flushNow])
+	useEffect(
+		() => () => {
+			void flushRef.current()
+		},
+		[],
+	)
 	const breadcrumbItems = useMemo(
 		() =>
 			resolveBreadcrumb({

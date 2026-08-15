@@ -13,10 +13,10 @@ vi.mock('@/features/entity-detail', () => ({
 }))
 
 describe('TaskDetailHeader', () => {
-	const flushNow = vi.fn<() => Promise<void>>()
+	const flushNow = vi.fn<() => Promise<boolean>>()
 
 	beforeEach(() => {
-		flushNow.mockReset().mockResolvedValue(undefined)
+		flushNow.mockReset().mockResolvedValue(true)
 		openPage.mockReset()
 	})
 
@@ -37,6 +37,16 @@ describe('TaskDetailHeader', () => {
 			expect(flushNow).toHaveBeenCalledOnce()
 			expect(openPage).toHaveBeenCalledWith({ kind: 'task', id: 'task-a' })
 		})
+	})
+
+	it('自动保存失败时不打开独立页面', async () => {
+		flushNow.mockResolvedValue(false)
+		renderHeader()
+
+		fireEvent.click(screen.getByRole('button', { name: '打开' }))
+
+		await waitFor(() => expect(flushNow).toHaveBeenCalledOnce())
+		expect(openPage).not.toHaveBeenCalled()
 	})
 
 	function renderHeader() {

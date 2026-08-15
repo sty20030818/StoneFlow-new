@@ -12,6 +12,7 @@ import {
 	parseEntityDetailRouteState,
 } from './entityDetailRouteState'
 import type { EntityDetailDrawerTarget, EntityDetailTarget } from './entityDetailTypes'
+import { SHELL_DESKTOP_MEDIA_QUERY } from '@/shared/lib/shellSidebarGeometry'
 
 export function useEntityDetailController() {
 	const location = useLocation()
@@ -50,7 +51,7 @@ export function useEntityDetailController() {
 		parsedRouteState.shouldCleanSearch,
 	])
 
-	const openDrawer = useCallback(
+	const openAside = useCallback(
 		(target: EntityDetailDrawerTarget) => {
 			const nextTarget = openEntityDrawerTarget(locationTarget, target)
 			startTransition(() => {
@@ -94,13 +95,34 @@ export function useEntityDetailController() {
 		[navigate],
 	)
 
+	const openTaskDetail = useCallback(
+		(taskId: string) => {
+			const target = { kind: 'task', id: taskId } as const
+			if (shouldOpenTaskAside()) {
+				openAside(target)
+				return
+			}
+
+			void openPage(target)
+		},
+		[openAside, openPage],
+	)
+
 	return {
 		activeDetail,
 		isOpen: Boolean(activeDetail),
-		openDrawer,
+		openTaskDetail,
 		closeDrawer,
 		openPage,
 	}
+}
+
+function shouldOpenTaskAside() {
+	if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+		return true
+	}
+
+	return window.matchMedia(SHELL_DESKTOP_MEDIA_QUERY).matches
 }
 
 function searchRecord(search: string) {

@@ -132,7 +132,7 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 		onCreateTask: () => openTaskCreateDialog({ projectId }),
 		onOpenTask: (taskId) => {
 			taskPreviewController.closePreview()
-			entityDetailController.openDrawer({ kind: 'task', id: taskId })
+			entityDetailController.openTaskDetail(taskId)
 		},
 		onPeekTask: (taskId, source) => {
 			if (activeDetail?.kind !== 'task') {

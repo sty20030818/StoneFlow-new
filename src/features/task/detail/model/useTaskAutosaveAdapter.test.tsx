@@ -182,6 +182,20 @@ describe('useTaskAutosaveAdapter', () => {
 		})
 	})
 
+	it('内部状态更新不改变 flushNow 引用', () => {
+		const base = createTaskDetailDraft(baseTask)
+		const { result } = renderHook(() => useTaskAutosaveAdapter({ base }), {
+			wrapper: createQueryWrapper(),
+		})
+		const flushNow = result.current.flushNow
+
+		act(() => {
+			result.current.setField('note', '待保存备注', { saveMode: 'manual' })
+		})
+
+		expect(result.current.flushNow).toBe(flushNow)
+	})
+
 	it('placement 变化同步 spaceId / projectId', () => {
 		const draft = createTaskDetailDraft(baseTask)
 

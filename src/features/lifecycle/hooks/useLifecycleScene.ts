@@ -39,7 +39,7 @@ const EMPTY_LIFECYCLE_ENTRIES: LifecycleEntry[] = []
  */
 export function useLifecycleScene(mode: LifecycleMode) {
 	const navigate = useNavigate({ from: '/' })
-	const openEntityDrawer = useEntityDetailController().openDrawer
+	const openTaskDetail = useEntityDetailController().openTaskDetail
 	const shellRoute = useCurrentShellRoute()
 	const scope = resolveShellRouteScope(shellRoute)
 	const spaceId = shellRoute.spaceId
@@ -122,7 +122,7 @@ export function useLifecycleScene(mode: LifecycleMode) {
 
 	function handleOpenDetail(entry: LifecycleEntry) {
 		if (entry.entityType === 'task') {
-			openEntityDrawer({ kind: 'task', id: entry.id })
+			openTaskDetail(entry.id)
 			return
 		}
 

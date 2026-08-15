@@ -17,16 +17,16 @@ type UseTaskAutosaveAdapterOptions = {
 }
 
 export function useTaskAutosaveAdapter({ base, disabled = false }: UseTaskAutosaveAdapterOptions) {
-	const updateTask = useUpdateTaskMutation()
+	const { mutateAsync } = useUpdateTaskMutation()
 	const savePatch = useCallback(
 		async (patch: TaskDetailPatch) => {
 			if (disabled) {
 				return base
 			}
-			const nextDetail = await updateTask.mutateAsync(patch)
+			const nextDetail = await mutateAsync(patch)
 			return createTaskDetailDraft(nextDetail)
 		},
-		[base, disabled, updateTask],
+		[base, disabled, mutateAsync],
 	)
 
 	return useAutosaveController<TaskDetailDraft, TaskDetailPatch>({

@@ -11,7 +11,7 @@ import { ShellSidebar } from '@/layout/ShellSidebar'
 import { ShellFooter } from '@/layout/ShellFooter'
 import { SidebarResizeRail } from '@/layout/sidebar/SidebarResizeRail'
 import { DEFAULT_SETTINGS_SECTION } from '@/features/settings'
-import { COMMAND_IDS, CommandShortcutLayer, type CommandId } from '@/features/command'
+import { CommandShortcutLayer, type CommandId } from '@/features/command'
 import type { useShellCommandSystem } from '@/layout/model/useShellCommandSystem'
 import type { useShellChromeData } from '@/layout/model/useShellChromeData'
 import type { useShellCreateDialogState } from '@/layout/model/useShellCreateDialogState'
@@ -96,11 +96,7 @@ export function ShellChrome({
 			spaces={chrome.spaces}
 		/>
 	)
-	const compactNavigationOpen = sidebar.isCompact && sidebar.mobileSheetOpen
-	const compactDetailModalOpen = sidebar.isCompact && command.isDrawerOpen && !compactNavigationOpen
 	const runShellCommand = (commandId: CommandId) => {
-		if (commandId === COMMAND_IDS.layoutToggleSidebar && compactDetailModalOpen) return
-
 		void command.runCommand(commandId)
 	}
 
@@ -160,9 +156,7 @@ export function ShellChrome({
 				<Sidebar.Main className='min-h-0 overflow-hidden'>
 					<ShellMain
 						activeDetail={command.activeDetail}
-						detailPresentation={chrome.detailPresentation}
-						isCompact={sidebar.isCompact}
-						isDrawerOpen={command.isDrawerOpen && !compactNavigationOpen}
+						isDrawerOpen={command.isDrawerOpen}
 						onCloseDrawer={command.closeEntityDrawer}
 						onOpenProjectCreateDialog={() => createDialog.openProjectCreateDialog()}
 						onOpenTaskCreateDialog={handleOpenTaskCreate}
