@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react'
+import { useEffect, type CSSProperties, type ReactNode } from 'react'
 import { Sheet, Sidebar } from '@heroui-pro/react'
 
 import type { Scope } from '@/shared/types'
@@ -99,6 +99,13 @@ export function ShellChrome({
 	const runShellCommand = (commandId: CommandId) => {
 		void command.runCommand(commandId)
 	}
+	const { isCompact: isSidebarCompact, mobileSheetOpen, setMobileSheetOpen } = sidebar
+
+	useEffect(() => {
+		if (isSidebarCompact && command.isDrawerOpen && mobileSheetOpen) {
+			setMobileSheetOpen(false)
+		}
+	}, [command.isDrawerOpen, isSidebarCompact, mobileSheetOpen, setMobileSheetOpen])
 
 	return (
 		<>
@@ -156,6 +163,7 @@ export function ShellChrome({
 				<Sidebar.Main className='min-h-0 overflow-hidden'>
 					<ShellMain
 						activeDetail={command.activeDetail}
+						isCompact={sidebar.isCompact}
 						isDrawerOpen={command.isDrawerOpen}
 						onCloseDrawer={command.closeEntityDrawer}
 						onOpenProjectCreateDialog={() => createDialog.openProjectCreateDialog()}
@@ -170,7 +178,7 @@ export function ShellChrome({
 				<Sheet
 					isDismissable
 					isModal
-					isOpen={sidebar.mobileSheetOpen}
+					isOpen={sidebar.mobileSheetOpen && !command.isDrawerOpen}
 					onOpenChange={sidebar.setMobileSheetOpen}
 					placement='left'
 					shouldAutoFocus

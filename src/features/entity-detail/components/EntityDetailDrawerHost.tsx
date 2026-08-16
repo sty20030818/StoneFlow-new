@@ -1,24 +1,33 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, type PropsWithChildren } from 'react'
+import { useCallback, useLayoutEffect, useRef, useState, type PropsWithChildren } from 'react'
 import { CloseButton, Surface } from '@heroui/react'
+import { Sheet } from '@heroui-pro/react'
 import { Resizable } from '@heroui-pro/react/resizable'
 
 import { TaskDetailContent, useTaskDetailViewModel } from '@/features/task'
-import { SHELL_DESKTOP_MEDIA_QUERY } from '@/shared/lib/shellSidebarGeometry'
+import { useRegisterOpenModal } from '@/shared/lib/modal-guard'
 
 import type { EntityDetailRouteState } from '../model/entityDetailTypes'
 
+const TASK_LIST_MIN_WIDTH = 352
+const TASK_DETAIL_MIN_WIDTH = 320
+const TASK_DETAIL_DEFAULT_WIDTH = 360
+const TASK_DETAIL_MAX_WIDTH = 440
+
 type EntityDetailDrawerHostProps = PropsWithChildren<{
 	activeDetail: EntityDetailRouteState
+	isCompact: boolean
 	open: boolean
 	onClose: () => void
 }>
 
 export function EntityDetailDrawerHost({
 	activeDetail,
+	isCompact,
 	open,
 	onClose,
 	children,
 }: EntityDetailDrawerHostProps) {
+	const [sheetContainer, setSheetContainer] = useState<HTMLDivElement | null>(null)
 	const scrollPositions = useRef(new Map<string, number>())
 	const returnFocusTarget = useRef<HTMLElement | null>(null)
 	const returnFocusCollectionRoot = useRef<HTMLElement | null>(null)
@@ -55,33 +64,52 @@ export function EntityDetailDrawerHost({
 		return null
 	}
 
+	const detail = open ? activeDetail : null
+
 	return (
-		<Resizable className='min-h-0 min-w-0 flex-1' orientation='horizontal'>
-			<Resizable.Panel className='flex min-h-0 min-w-0' id='task-list'>
-				{children}
-			</Resizable.Panel>
-			{open && activeDetail ? (
-				<TaskEntityDetail
-					onClose={onClose}
-					scrollPositions={scrollPositions.current}
-					taskId={activeDetail.id}
-				/>
-			) : null}
-		</Resizable>
+		<div
+			className='relative isolate flex min-h-0 min-w-0 flex-1 overflow-hidden'
+			data-entity-detail-layout='true'
+			ref={setSheetContainer}
+		>
+			<Resizable className='min-h-0 min-w-0 flex-1' orientation='horizontal'>
+				<Resizable.Panel
+					className='flex min-h-0 min-w-0'
+					id='task-list'
+					minSize={detail && !isCompact ? `${TASK_LIST_MIN_WIDTH}px` : undefined}
+				>
+					{children}
+				</Resizable.Panel>
+				{detail ? (
+					<TaskEntityDetail
+						isCompact={isCompact}
+						onClose={onClose}
+						scrollPositions={scrollPositions.current}
+						sheetContainer={sheetContainer}
+						taskId={detail.id}
+					/>
+				) : null}
+			</Resizable>
+		</div>
 	)
 }
 
-type TaskEntityDetailProps = Omit<
-	EntityDetailDrawerHostProps,
-	'activeDetail' | 'children' | 'open'
-> & {
-	taskId: string
+type TaskEntityDetailProps = {
+	isCompact: boolean
+	onClose: () => void
 	scrollPositions: Map<string, number>
+	sheetContainer: HTMLDivElement | null
+	taskId: string
 }
 
-function TaskEntityDetail({ taskId, onClose, scrollPositions }: TaskEntityDetailProps) {
+function TaskEntityDetail({
+	isCompact,
+	onClose,
+	scrollPositions,
+	sheetContainer,
+	taskId,
+}: TaskEntityDetailProps) {
 	const viewModel = useTaskDetailViewModel({ taskId, onClose })
-	const flushNow = viewModel.autosave.flushNow
 	const viewport = useRef<HTMLDivElement | null>(null)
 	const setViewport = useCallback(
 		(node: HTMLDivElement | null) => {
@@ -96,53 +124,66 @@ function TaskEntityDetail({ taskId, onClose, scrollPositions }: TaskEntityDetail
 		},
 		[scrollPositions, taskId],
 	)
-	useEffect(() => {
-		if (typeof window.matchMedia !== 'function') {
-			return
+
+	useRegisterOpenModal(isCompact)
+
+	if (isCompact) {
+		if (!sheetContainer) {
+			return null
 		}
 
-		const mediaQuery = window.matchMedia(SHELL_DESKTOP_MEDIA_QUERY)
-		let cancelled = false
-		let closing = false
-		const closeForCompact = async () => {
-			if (closing) {
-				return
-			}
-
-			closing = true
-			const saved = await flushNow()
-			if (saved && !cancelled && !mediaQuery.matches) {
-				onClose()
-			}
-			closing = false
-		}
-		const handleChange = (event: MediaQueryListEvent) => {
-			if (!event.matches) {
-				void closeForCompact()
-			}
-		}
-
-		mediaQuery.addEventListener('change', handleChange)
-		if (!mediaQuery.matches) {
-			void closeForCompact()
-		}
-
-		return () => {
-			cancelled = true
-			mediaQuery.removeEventListener('change', handleChange)
-		}
-	}, [flushNow, onClose, taskId])
+		return (
+			<Sheet
+				container={sheetContainer}
+				isDismissable
+				isModal
+				isOpen
+				onOpenChange={(nextOpen) => {
+					if (!nextOpen) {
+						onClose()
+					}
+				}}
+				placement='right'
+				shouldAutoFocus
+			>
+				<Sheet.Backdrop
+					UNSTABLE_portalContainer={sheetContainer}
+					className='absolute inset-0 overflow-hidden before:absolute before:inset-0'
+					variant='opaque'
+				>
+					<Sheet.Content
+						className='absolute inset-y-0 right-0 h-full w-[min(420px,calc(100%_-_16px))] max-w-none'
+						data-entity-detail-root='true'
+						data-entity-detail-sheet='true'
+						onContextMenu={(event) => event.preventDefault()}
+					>
+						<Sheet.Dialog className='h-full min-h-0 rounded-none'>
+							<Sheet.Heading className='sr-only'>任务详情</Sheet.Heading>
+							<Sheet.CloseTrigger aria-label='关闭任务详情' className='z-10' />
+							<Surface className='relative flex h-full min-h-0 overflow-hidden rounded-none'>
+								<TaskDetailContent
+									onClose={onClose}
+									scrollRef={setViewport}
+									viewModel={viewModel}
+								/>
+							</Surface>
+						</Sheet.Dialog>
+					</Sheet.Content>
+				</Sheet.Backdrop>
+			</Sheet>
+		)
+	}
 
 	return (
 		<>
 			<Resizable.Handle aria-label='调整任务详情宽度' type='line' variant='secondary' />
 			<Resizable.Panel
 				className='flex min-h-0'
-				defaultSize='400px'
+				defaultSize={`${TASK_DETAIL_DEFAULT_WIDTH}px`}
 				groupResizeBehavior='preserve-pixel-size'
 				id='task-detail'
-				maxSize='560px'
-				minSize='400px'
+				maxSize={`${TASK_DETAIL_MAX_WIDTH}px`}
+				minSize={`${TASK_DETAIL_MIN_WIDTH}px`}
 			>
 				<aside
 					aria-label='任务详情'

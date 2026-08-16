@@ -1,10 +1,10 @@
 # HeroUI-only UI 平台、Linear 浅色设计系统与键盘交互重写 - Tasks
 
-> 当前状态：阶段 3。阶段 E 的 T39–T44 已完成，等待任务发起人执行 U2 真实 Tauri 验收。
+> 当前状态：阶段 3。阶段 E 的 T43 实现与自动验证已完成，等待 T45/U2 真实 Tauri 验收。
 
 ## 当前阶段
 
-- 阶段 A–D 已完成；阶段 E 已完成自动化实现与预检，当前停在 U2 人工 Gate。Windows WebView2 不属于本任务验收范围，也不阻塞后续阶段。
+- 阶段 A–D 已完成；阶段 E 的 T39–T44 已完成，当前进入 T45/U2 真实 Tauri 验收。Windows WebView2 不属于本任务验收范围，也不阻塞后续阶段。
 - 执行任意 task 前，必须重读 [SPEC.md](./SPEC.md) 对应 AC 与 [PLAN.md](./PLAN.md) 对应方案；后续 task 默认按编号顺序依赖。
 - 任一锁定包 API、供应链访问、性能或产品合同与 PLAN 冲突时，先在本文件「与 SPEC/PLAN 的实施偏差」登记并停止相关切片，不得静默增加兼容层。
 
@@ -171,43 +171,44 @@
 - [x] T38 完成阶段 D 收口：验证 1024px 两侧、pointer/keyboard rail、单导航树、冷启动与 Tauri Header/Footer，运行根级门禁和 `bun run test:rust`；获准提交时引用 PLAN 的阶段 D 文案，不自动提交。
   _对应验收标准：AC-14, AC-16, AC-17, AC-19, AC-20_
 
-**阶段 E：任务详情 Aside 与完整页**
+**阶段 E：任务详情 Aside、Sheet 与完整页**
 
 - [x] T39 修改 `src/features/settings/api/shellDevicePreferences.ts`、`src/features/settings/model/useSidebarSettingsStore.ts`、`src/features/settings/components/panels/SettingsGeneralPanel.tsx` 及测试，删除 `detailPresentation`、UI device preference、对应更新 action 与 Sheet/Aside 设置表面。
   - 旧 `stoneflow.shell.ui.device` 数据不迁移、不清理、不建兼容读取；零消费者后直接删除该链路。
   _对应验收标准：AC-21, AC-22, AC-23_
   _测试先行：`src/features/settings/api/shellDevicePreferences.test.ts`、`src/features/settings/model/useSidebarSettingsStore.test.ts`、`src/features/settings/components/SettingsPage.test.tsx`_
 
-- [x] T40 删除 `src/layout/model/detailPresentation.ts`、`src/layout/model/detailPresentation.test.ts`、`src/layout/model/useDetailPresentation.ts` 与 `src/shared/lib/shellDetailGeometry.ts`；Sidebar controller 与任务详情只共享 `SHELL_DESKTOP_MEDIA_QUERY`，详情用它判断首次落点并在 active Aside 生命周期内处理缩窄后的安全关闭，不消费或复制 Sidebar 的 `isCompact` state/store。
-  - 删除 `ResizeObserver`、34% 比例、`640px` 主集合门槛和自动 Sheet 回退；Aside 尺寸就近由唯一容器拥有，不为少数常量新建共享模块。
+- [x] T40 删除 `src/layout/model/detailPresentation.ts`、`src/layout/model/detailPresentation.test.ts`、`src/layout/model/useDetailPresentation.ts` 与 `src/shared/lib/shellDetailGeometry.ts`，并清除详情呈现偏好、UI device preference 与共享详情几何模块。
+  - T43 直接复用 Shell controller 的单一 `isCompact`，详情与 Sidebar 只分开拥有 open state，不恢复呈现偏好或第二份响应式 store。
   _对应验收标准：AC-21, AC-22, AC-23_
   _测试先行：`src/layout/model/shellSidebarController.test.ts`、`src/features/entity-detail/model/useEntityDetailController.test.tsx`_
 
-- [x] T41 将 `src/features/task/detail/components/TaskDrawer.tsx` 重构为容器无关的 `TaskDetailContent.tsx`，并在 `src/features/task/detail/model/useTaskDetailViewModel.ts` 收敛 query、draft、autosave、mutation 与 busy state，使 Aside 不复制领域逻辑。
+- [x] T41 将 `src/features/task/detail/components/TaskDrawer.tsx` 重构为容器无关的 `TaskDetailContent.tsx`，并在 `src/features/task/detail/model/useTaskDetailViewModel.ts` 收敛 query、draft、autosave、mutation 与 busy state，使 Aside / Sheet 不复制领域逻辑。
   _对应验收标准：AC-21, AC-23, AC-25, AC-39_
   _测试先行：`src/features/task/detail/components/TaskDetailContent.test.tsx`_
 
-- [x] T42 重构 `src/layout/ShellMain.tsx` 与 `src/features/entity-detail/components/EntityDetailDrawerHost.tsx`，删除任务 HeroUI Sheet、Portal、Backdrop、modal guard 与 effective-presentation 分支，只在 Main surface 内渲染非模态 Aside。
-  - Aside 使用 HeroUI Pro Resizable，初始 `400px`、会话内限制 `400–560px`；可访问 separator 承担拖宽，不使用 overlay 或 focus trap。
+- [x] T42 重构 `src/layout/ShellMain.tsx` 与 `src/features/entity-detail/components/EntityDetailDrawerHost.tsx`，建立 Main surface 内的 HeroUI Pro Resizable 非模态 Aside 基础，并保留容器无关详情内容。
+  - 最终 Aside 几何、HeroUI Sheet 与断点互换由重开的 T43 收口。
   _对应验收标准：AC-21, AC-22, AC-23, AC-24, AC-39_
   _测试先行：`src/features/entity-detail/components/EntityDetailDrawerHost.test.tsx`、`src/features/task/detail/components/TaskDetailContent.test.tsx`_
 
-- [x] T43 在 `src/features/entity-detail/model/useEntityDetailController.ts`、列表 scene 打开策略与 `src/features/entity-detail/components/EntityDetailDrawerHost.tsx` 中实现唯一响应式路由：`>=1024px` 以 `?task=` 打开 Aside，`<1024px` 首次打开直达 canonical 完整页；active Aside 缩窄时先 flush，成功且完成时仍 compact 才复用标准 `onClose` 清除 `?task=` 返回列表，失败或已重新变宽则留在 Aside。
-  - 窗口变宽本身不触发详情行为；删除 compact canonical promotion、晚到导航 guard 与 session history task promotion 特判。保留 taskId 级 scroll snapshot、路由 Back 和 trigger entity ID 恢复协议，虚拟行恢复交给阶段 H/I bridge。
-  - 虚拟行恢复接口交给阶段 H/I bridge，实体消失时回 collection root。
+- [x] T43 在 `src/features/entity-detail/components/EntityDetailDrawerHost.tsx`、`src/features/entity-detail/model/useEntityDetailController.ts`、`src/layout/ShellMain.tsx` 及列表 scene 中收口唯一详情容器合同：所有列表打开只写 `?task=`；窗口 `>=1024px` 渲染 HeroUI Pro Resizable Aside，`<1024px` 渲染 HeroUI Sheet。
+  - Aside 中列表 Panel 最小 `352px`；Aside 最小 `320px`、默认 `360px`、最大 `440px`。任务列表只用 CSS container query 在 `<560px` 进入唯一紧凑档。
+  - active 详情跨过 `1024px` 时只替换 Aside / Sheet 容器，保留 `?task=`、taskId、draft、autosave、scroll 与正常 Back/Forward；不导航、不自动关闭、不触发完整页。
+  - 删除局部宽度观测、容器可分栏状态机、自动完整页导航及其 preflight / history 特例；保留 taskId 级 scroll snapshot、trigger entity ID 恢复协议。canonical 完整页只保留 Header 显式 flush 后打开入口。
   _对应验收标准：AC-23, AC-24, AC-25, AC-32, AC-43_
   _测试先行：`src/shared/autosave/useAutosaveController.test.tsx`、`src/features/entity-detail/model/useEntityDetailController.test.tsx`、`src/features/entity-detail/model/entityDetailNavigation.test.ts`、`src/features/entity-detail/components/EntityDetailDrawerHost.test.tsx`_
 
 - [x] T44 将 `src/features/task/detail/components/TaskDetailHeader.tsx` 收口为任务标题、保存状态和“打开完整页”动作；导航前必须先 flush autosave，不承载呈现偏好。
-  - 删除任务 Sheet 专属 modal guard 接线；导航 Sheet 继续由 Sidebar 自身拥有，`Space` 仍只打开 Peek。
+  - `Space` 仍只打开 Peek；任务 Sheet 的 modal、Backdrop、Escape、外点关闭与焦点管理由 HeroUI 拥有。
   _对应验收标准：AC-19, AC-21, AC-22, AC-25, AC-30_
   _测试先行：`src/features/task/detail/components/TaskDetailHeader.test.tsx`、`src/features/task/detail/components/TaskPreview.test.tsx`、`src/features/entity-detail/components/EntityDetailDrawerHost.test.tsx`_
 
-- [ ] T45（任务发起人验收 U2）在真实 Tauri 中验证 Sidebar 点按/拖动/键盘、`1024px` 两侧的详情落点、Aside 拖宽、完整页、草稿、scroll 与焦点，并在本文件记录“通过”或精确问题；AI 不得代为勾选。
-	- 在 `1024px` 及以上从任务行点击与按 `Enter`，应打开初始 `400px` 的非模态 Aside；拖动必须限制在 `400–560px`，主列表仍可操作。
-	- 在 `1023px` 及以下首次打开任务应直达 canonical 完整页，不出现任务 Sheet；active Aside 缩窄时应先 flush，成功且完成时仍 compact 才复用标准关闭路径返回原列表。
-	- 验证保存失败或完成时已重新变宽会保留 Aside 与草稿，窗口变宽本身不触发详情行为；同时验证 `Space` 只打开 Peek，Aside Header 显式打开完整页前先 flush，Escape、显式关闭和浏览器 Back 恢复正确路由、scroll 与焦点。
-	- 2026-08-14 首轮 U2 的导航 Sidebar、dirty 备注和焦点问题仍需回归；当时的任务 Sheet、Backdrop、偏好和双 Sheet 问题已由 2026-08-15 终态决策删除，不再作为验收对象。
+- [ ] T45（任务发起人验收 U2）在真实 Tauri 中验证 Sidebar 点按/拖动/键盘、窗口 `1024px` 两侧的 Aside / Sheet、Aside 拖宽、列表容器紧凑档、显式完整页、草稿、scroll 与焦点，并在本文件记录“通过”或精确问题；AI 不得代为勾选。
+	- `>=1024px` 应打开非模态 Aside：列表不小于 `352px`，Aside 可在 `320–440px` 拖宽且默认 `360px`，分隔区可键盘操作。`<1024px` 应使用带 Backdrop、Escape、外点关闭和焦点管理的 HeroUI Sheet。
+	- 打开详情后反复跨过 `1024px`，应只替换 Aside / Sheet 容器；`?task=`、任务、草稿、autosave、scroll 和 history 保持，不自动关闭或跳完整页。Sidebar 同断点切换不得改写详情 open state。
+	- 将列表容器调到 `560px` 两侧，只能出现一次紧凑/默认排版切换。同时验证 `Space` 只打开 Peek，Aside / Sheet Header 显式打开完整页前先 flush，Escape、显式关闭和浏览器 Back 恢复正确列表、scroll 与焦点。
+	- 2026-08-14 首轮 U2 的导航 Sidebar、dirty 备注和焦点问题仍需回归；当时的偏好和双容器 open-state 问题不得回流。
   _对应验收标准：AC-14, AC-18, AC-21, AC-23, AC-24_
 
 - [ ] T46 完成阶段 E 收口：确认 U2 通过后运行详情/Sidebar 测试、根级门禁、production build 与 `bun run test:rust`；获准提交时引用 PLAN 的阶段 E 文案，不自动提交。
@@ -486,7 +487,7 @@
 - [ ] T110 在全新隔离目录以进程环境注入 `HEROUI_KEY`，执行固定版 `hpsetup`、frozen install、类型检查和 production build，并核对缓存恢复或源站取得产物的树 SHA-256；在本文件登记命令、锁定版本与脱敏结果，树哈希或构建失败时登记阻塞，不改 lockfile 掩盖安装器、Key 或 peer 问题。
   _对应验收标准：AC-2, AC-38, AC-40, AC-41_
 
-- [ ] T111 在 T4 登记的 macOS WKWebView 设备完成 Rust 默认 `1280×900` inner window 可得到的实际稳定 viewport、`1024×768`、`1023×768` 与最小窗口的视觉、键盘、焦点、VoiceOver 和 reduced-motion 验收，证据写入 `Documents/99-素材/03-验证/heroui-refactor/macos/`。
+- [ ] T111 在 T4 登记的 macOS WKWebView 设备完成 Rust 默认 `1280×900` inner window 可得到的实际稳定 viewport、窗口 `1024px` 两侧的 Sidebar 与详情容器、列表 `560px` 容器两侧与最小窗口的视觉、键盘、焦点、VoiceOver 和 reduced-motion 验收，证据写入 `Documents/99-素材/03-验证/heroui-refactor/macos/`。
   _对应验收标准：AC-8, AC-11, AC-32, AC-44_
 
 - [ ] T112 确认 Windows WebView2 不在本任务验收范围：复核现有 Windows 构建入口、Tauri 平台分支与产品支持未因迁移被删除，同时不得为未实测的 Windows 行为新增专门兼容层；本任务不采集 Windows 证据、不以 Windows 设备为阻塞，也不得宣称 Windows 已验证。
@@ -504,7 +505,7 @@
 - [ ] T116 将单一 collection、Command 投影与 ActionBar snapshot 边界同步到 `src/features/selection/ARCHITECTURE.md`、`src/features/command/ARCHITECTURE.md` 与 `src/features/bulk-action/ARCHITECTURE.md`，删除旧 keyboard-hover、重复 selection 与 cmdk 陈述。
   _对应验收标准：AC-2, AC-31, AC-34, AC-38_
 
-- [ ] T117 将 Sidebar/Detail Shell 与 TaskBoard virtual bridge 的最终边界同步到 `src/layout/ARCHITECTURE.md`、新建的 `src/layout/DESIGN.md`、`src/features/task/ARCHITECTURE.md` 与新建的 `src/features/task/DESIGN.md`，删除旧 Radix Drawer、双焦点与自写动画陈述。
+- [ ] T117 将 Sidebar/Detail Shell 与 TaskBoard virtual bridge 的最终边界同步到 `src/layout/ARCHITECTURE.md`、新建的 `src/layout/DESIGN.md`、`src/features/entity-detail/ARCHITECTURE.md`、`src/features/task/ARCHITECTURE.md` 与新建的 `src/features/task/DESIGN.md`，删除旧 Radix Drawer、双焦点、窗口断点详情分流与自写动画陈述。
   _对应验收标准：AC-2, AC-21, AC-33, AC-34, AC-38_
 
 - [ ] T118 将偏好、系统反馈与 Launcher 最终边界同步到 `src/features/settings/ARCHITECTURE.md`、`src/features/update/ARCHITECTURE.md` 与 `src/features/launcher/ARCHITECTURE.md`，不扩大到未改变的领域或 Rust 协议。
@@ -522,7 +523,6 @@
 
 - 当前阶段没有外部设备阻塞；Windows WebView2 不属于本任务验收范围。
 - 已知与 HeroUI 重构无关的失败：根级 `bun run check` 的最后 Rust 阶段稳定失败于未改动的 `commands::spaces::tests::deleting_trashed_space_again_should_not_enqueue_another_operation` 文案断言；动画扫描、TypeScript、lint、模块边界、格式、978 项前端测试、146 项 release 测试与 production build 均通过。该失败不阻塞阶段 D，但必须在 T120 最终收口前另行解决。
-- 阶段 E 终态代码自动化复核已通过：聚焦测试 `59/59`、全量前端测试 `190 files / 992 tests`，以及 typecheck、lint、模块边界和 production build 均通过；P0/P1 复核清零。T45/U2 仍须在真实 Tauri 中人工验收，T46 仍须在 U2 后执行包含 Rust 在内的最终阶段收口。
 - T45、T73、T105、T119 是尚未执行的人工 Gate，不在失败前视为阻塞。
 
 ## 与 SPEC/PLAN 的实施偏差
@@ -537,10 +537,7 @@
 - 2026-08-14：任务发起人确认源站无缓存下载是否成功与产品实现无关，接受固定版本缓存恢复作为当前供应链边界。T8 以已记录的 546 文件树 SHA-256、隔离 frozen install、typecheck 和 production build 为完成证据；仍保留源站与缓存同时不可用会阻断新环境安装的已知风险。
 - 2026-08-14：阶段 C 根级检查暴露一个与 UI 重构无关、在未改动 Rust 文件中可单独复现的 Space 删除错误文案断言失败；未将其混入 HeroUI 重构修改，登记为 T120 前必须处理的仓库既有失败。
 - 2026-08-14：阶段 E 的已连接 trigger 使用真实 DOM ref 恢复，trigger 卸载时回退到打开时捕获的 collection root；虚拟行离屏后重挂载并恢复当前实体行，仍按 PLAN 由阶段 H/I 的 stable key/ref bridge 完成，本阶段不新增 querySelector 兼容桥。
-- 2026-08-14：任务发起人在 U2 将详情呈现方式确认为设置页低频偏好，并确认 Sheet 保留模态语义、Aside 承担连续切换任务；实现改为 portal 到 Main card 的透明 HeroUI Sheet，不提供可穿透的第二套非模态 Sheet。
-- 2026-08-15：任务发起人批准简化任务详情终态，本条取代 2026-08-13 至 2026-08-14 的任务 Sheet/Aside 双呈现与设置偏好决策：`>=1024px` 从任务列表点击或按 `Enter` 打开 Main 内非模态 Aside，初始 `400px`、会话拖宽限制 `400–560px`；`<1024px` 首次打开直接进入 canonical 完整页。删除任务 Sheet、`detailPresentation`、UI device preference、`ResizeObserver`、34% 比例和 `640px` 自动回退；`Space` 只负责 Peek，Aside Header 在 flush autosave 后可打开完整页。
-- 2026-08-15：U2 继续验收发现 active Aside 在 compact 下挤压主列表，任务发起人确认改为单向升格合同：进入或恢复 compact 后发起 flush，成功且完成时仍 compact 才 canonical `replace`；失败留在 Aside，保存期间变宽取消待执行升格，已经进入完整页后不自动回 Aside。本条取代同日“已打开 Aside 缩窄不跳页”的短暂决定，不恢复任务 Sheet、呈现偏好、`ResizeObserver` 或共享响应式 store。
-- 2026-08-15：任务发起人再次简化 active Aside 的响应式终态，本条取代同日 compact 单向升格合同：首次在 `<1024px` 打开任务仍直达 canonical 完整页；已打开 Aside 缩窄时先 flush，成功且完成时仍 compact 才复用标准 `onClose` 清除 `?task=` 返回列表，失败或已重新变宽则保留 Aside；窗口变宽本身不触发详情行为。删除 promotion、晚到导航和 session history 兼容分支，不恢复任务 Sheet、呈现偏好、`ResizeObserver` 或共享响应式 store。
+- 2026-08-16：任务发起人确认最终合同：列表打开只写 `?task=`；窗口 `<1024px` 始终使用 HeroUI Sheet，`>=1024px` 始终使用 Aside；跨断点只换容器，不改 URL、不关闭、不跳页。Sidebar 同用 `1024px` 产品边界但 owner 独立；列表最小 `352px`，Aside 最小/默认/最大为 `320/360/440px`，任务列表只保留 `<560px` 一档容器自适应；完整页仅显式打开。T43 据此再次重开。
 
 ## 完成记录
 
@@ -564,8 +561,8 @@
 - 2026-08-14：完成 T8、T15与阶段 B 收口。任务发起人批准固定版本缓存恢复边界；依赖树哈希、隔离 frozen install/typecheck/build、根级 typecheck、lint、边界、format、967 项测试、production build、主题边界与零凭据扫描均通过。建议 commit 文案：`refactor(ui): 建立 HeroUI 浅色主题与字体基础`；未提交、未改动 Git 暂存区。
 - 2026-08-14：完成 T16–T30 与阶段 C 收口。全仓第一方动画扫描转绿并接入根级 `check`；删除 StoneFlow 的 transition/animation/spin/pulse/active scale、旧 motion token、Sidebar 动画 workaround 及 `tw-animate-css` 直接依赖，只保留 HeroUI `@heroui/styles@3.2.4 -> tw-animate-css@1.4.0` 传递链。Modal、Popover、Tooltip、Sheet、Sidebar、Toast、Progress 锁版 probe 3/3、扫描器 2/2、970 项前端测试、146 项 release 测试及 production build 通过；保留的 rAF 仅用于 Sidebar/Scrollbar/TaskBoard 几何批处理与输入焦点调度，静态 transform 只承担虚拟化、居中和 off-canvas 几何。建议 commit 文案：`refactor(ui): 清除 StoneFlow 第一方动画代码`；未提交、未改动 Git 暂存区。
 - 2026-08-14：完成 T31–T38 与阶段 D 收口。Shell 以单一 controller 管理 expanded/icon/compact、`1024px` 断点、Sheet 和 live/committed width；HeroUI Sidebar/ContextMenu/Tooltip/Dropdown 接管导航与 Header 标准控件，唯一产品 separator 负责点按、拖动和键盘调宽。删除旧 Sidebar facade/context/pattern，Inset 主面由唯一 `Sidebar.Main` 提供，compact Sheet 复用同一导航树且显式覆盖 HeroUI 内建 `768px` 隐藏规则；冷启动骨架与设备偏好同步。严格审查发现并修复实际 Sidebar 被锁回 `240px`、`≤768px` Sheet 导航隐藏、`500–639px` 缺少可点击入口和 Sheet 无显式关闭按钮四项问题。根级 typecheck、lint、模块边界、format check、第一方动画扫描、978 项前端测试、146 项 release 测试和 production build 通过；`test:rust` 仍仅有已登记的 Space 文案断言失败。建议 commit 文案：`refactor(shell): 重建 HeroUI 侧边栏三态`；未提交、未改动 Git 暂存区。
-- 2026-08-14：完成 T39–T44 的实现与自动化预检。复用原 UI device key 持久化 Sheet/Aside，单一 ResizeObserver 按 compact、`640px` 主集合余量和 `400–560px` Aside 宽度派生有效呈现；删除旧 Radix `ShellDrawer`、`TaskDrawer`、document pointer/querySelector 守卫和零消费 `taskDrawerWidth`。HeroUI Pro Sheet 与非模态 Aside 共用单一 view model/content，taskId 级滚动快照、已连接焦点恢复、collection root 回退、compact 双 Sheet 互斥和 HeroUI 单选偏好菜单已有自动化覆盖。首轮全量前端测试 189 个文件/994 项通过；补齐路由 Back 与 collection-root 回退用例后，定向测试 18/18 通过，最终全量并发 996 项中 989 项通过、7 项无关异步用例超时，失败的两个文件立即单独重跑 26/26 通过。根级 typecheck、lint、模块边界、format check、第一方动画扫描和 production build 通过；T45/U2 与其后 T46/Rust 收口尚未执行，本阶段未提交。
+- 2026-08-14：完成 T39–T44 的首轮详情容器与自动化预检，建立单一 view model/content、taskId 级滚动快照、焦点恢复和 Back 基础；当时的呈现方案后续已被取代，自动化、根级门禁和 production build 结果只保留为基础能力历史证据。
 - 2026-08-14：U2 首轮问题已按根因修正：恢复 HeroUI Sidebar 实际宽度与 icon 居中，并让 icon 模式彻底移除项目区占位；导航 Sheet 避让 macOS traffic lights 并删除冲突关闭按钮；呈现偏好移入通用设置，dirty 草稿不再被同任务刷新覆盖；详情 Sheet 以透明模态 Backdrop 真正 portal 到 Main card，模态期间侧栏按钮与 `[` 均不穿透。定向回归、typecheck、lint 与模块边界通过，等待真实 Tauri 复验。
-- 2026-08-15：完成 T39–T44 的任务详情终态重构。删除任务 Sheet、呈现偏好、UI device preference 与共享详情几何模块；宽屏详情改为 HeroUI Pro Resizable 非模态 Aside，窄屏首次打开直达 canonical 完整页，Header 在 flush autosave 后打开完整页，`Space` Peek 保持独立。聚焦测试 `59/59`、全量前端测试 `190 files / 992 tests`，以及 typecheck、lint、模块边界和 production build 均通过，P0/P1 复核清零；T45/U2 与 T46 最终收口仍未完成。
-- 2026-08-15：完成 T43 的 compact 响应式修订。active Aside 以唯一 `SHELL_DESKTOP_MEDIA_QUERY` 在自身生命周期内监听断点，进入或恢复 compact 后先取得明确的 autosave flush 结果，再在成功且仍 compact 时 canonical `replace`；保存失败与保存期间变宽均不发生晚到导航。补齐 flush 成败、待保存变更、compact 升格、取消路径、引用稳定性与返回历史自动化；聚焦测试 `7 files / 54 tests`、全量测试 `190 files / 1007 tests`、typecheck、lint、模块边界、格式、动画扫描与 production build 通过；T45/U2 与 T46 最终收口仍未完成。
-- 2026-08-15：完成 T43 的最终简化。active Aside 缩窄时先 flush，成功且完成时仍 compact 才复用标准关闭路径返回列表，失败或已重新变宽则保留 Aside；窗口变宽无动作，并删除 compact canonical promotion、晚到导航与 session history 兼容代码。聚焦测试 `7 files / 50 tests`、全量测试 `190 files / 1003 tests`、typecheck、lint、模块边界、格式、动画扫描与 production build 通过；T45/U2 与 T46 最终收口仍未完成。
+- 2026-08-15：阶段 E 曾完成详情容器、草稿/autosave、路由、scroll 与焦点基础，并通过当时合同下的聚焦测试、全量前端测试、typecheck、lint、模块边界、格式、动画扫描与 production build。U2 后续发现任务列表缺少最小宽度，任务发起人确认当前最终合同并重开 T43；之前的自动化结果只作基础能力证据，不代表重开项已完成。
+- 2026-08-15：旧 T43 容器分流实现曾通过当时合同下的聚焦测试、全量前端测试、typecheck、lint、模块边界、格式和 production build；该设计已被 2026-08-16 最终合同取代，不代表重开后的 T43 已完成。
+- 2026-08-16：完成重开的 T43。Shell controller 只派生一份 `isCompact`；窗口 `<1024px` 使用 MainCard 内 HeroUI opaque Sheet，`>=1024px` 使用列表最小 `352px`、Aside `320/360/440px` 的 HeroUI Pro Resizable。跨断点保留同一 `?task=`、view model、草稿与滚动；TaskBoard 只用一条 `<560px` CSS container query 隐藏尾部元数据。旧 MainCard 宽度观测、自动完整页导航、preflight 与 history 特例已删除；窄窗导航 Sheet 与任务 Sheet 互斥。55 项聚焦测试、190 个文件共 1003 项前端测试、typecheck、lint、模块边界、格式、第一方动画扫描与 production build 均通过；T45/U2 仍待真实 Tauri 验收。建议 commit 文案：`refactor(task): 统一任务详情的 Sheet 与 Aside 响应式容器`；未提交、未改动 Git 暂存区。

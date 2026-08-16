@@ -133,7 +133,7 @@ export function ProjectRowAdapter({
 							actions={actions}
 						/>
 					</RowShell.Actions>
-					<RowShell.Fields>
+					<RowShell.Fields className='md:flex'>
 						{showProjectCell ? (
 							<MetadataFieldDropdown
 								compact

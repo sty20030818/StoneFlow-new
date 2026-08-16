@@ -13,6 +13,7 @@ import { FolderPlusIcon, SquarePenIcon } from 'lucide-react'
 
 type ShellMainProps = PropsWithChildren<{
 	activeDetail: EntityDetailRouteState
+	isCompact: boolean
 	isDrawerOpen: boolean
 	showPreview?: boolean
 	onCloseDrawer: () => void
@@ -48,6 +49,7 @@ const INTERACTIVE_TARGET_SELECTOR = [
 export function ShellMain({
 	children,
 	activeDetail,
+	isCompact,
 	isDrawerOpen,
 	showPreview = true,
 	onCloseDrawer,
@@ -99,6 +101,7 @@ export function ShellMain({
 				<ContextMenu>
 					<EntityDetailDrawerHost
 						activeDetail={activeDetail}
+						isCompact={isCompact}
 						onClose={onCloseDrawer}
 						open={isDrawerOpen}
 					>

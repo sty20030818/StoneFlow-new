@@ -39,7 +39,7 @@ flowchart TB
 1. HeroUI semantic theme 是 UI 颜色、圆角、阴影、焦点与状态皮肤的唯一真相。
 2. 每个键盘集合只有一份 React Aria collection state；业务 selection snapshot 是执行时只读投影。
 3. Command Registry/Runtime 是快捷键、可用性、目标与执行入口的唯一真相。
-4. URL 拥有当前详情落点，详情 controller 拥有编辑草稿；宽屏 Aside 与 canonical 完整页不引入呈现偏好或第二份业务状态。
+4. URL 拥有当前 `?task=` 详情意图，Detail Host 只按窗口 `1024px` 边界派生 Aside/Sheet 容器，详情 controller 拥有编辑草稿；完整页只由显式动作进入。
 5. HeroUI 官方动效是唯一组件动效合同；StoneFlow 不维护组件级动画、时间 token、Motion 封装或 feature 动效例外。
 
 ### 迁移原则
@@ -62,7 +62,7 @@ flowchart TB
 | Shell | HeroUI Sidebar/Sheet + 单一产品 resize rail | HeroUI AppLayout/Resizable 强套、继续旧 shadcn Shell | HeroUI 的 icon collapse 与内建 resize 不兼容，Handle 也不支持同一区域 click/drag；产品几何例外更符合已确认三态 |
 | TaskBoard | React Aria collection + 现有 TanStack Virtual | Pro ListView 全量替代、继续旧键盘状态机 | ListView 未承诺分组 sticky、服务端总高度和外部定位；TanStack 只保留几何职责 |
 | 普通集合 | 优先 Pro ListView / HeroUI ListBox、Table | 所有列表一律低层 hooks | 简单集合不值得自建行为层；只有 Linear 键位或特殊几何不够时才下沉 |
-| 任务详情 | 宽屏 HeroUI Surface/Resizable Aside + 窄屏 canonical 完整页 | 任务 Sheet、用户呈现偏好、`ResizeObserver` 或剩余宽度多级回退 | 以一个 `1024px` 断点决定首次落点，并在 active Aside 缩窄时安全关闭；Aside 服务轻量查看编辑，完整页服务窄窗口和深度编辑 |
+| 任务详情 | `>=1024px` HeroUI Pro Resizable Aside，`<1024px` HeroUI Sheet | 用户呈现偏好、额外的局部宽度分流、响应式导航完整页 | 与 Sidebar 共用一份 `isCompact`、分开拥有 open state；跨断点只换容器，不改 `?task=` 或草稿 |
 | 通知与日期 | HeroUI Toast、Calendar/DatePicker | Sonner、react-day-picker | 完成 HeroUI-only，减少两套视觉与焦点行为 |
 | 动画 | 保留 HeroUI 官方动效 + StoneFlow 第一方零动画 | 本轮引入 Motion、保留零散 CSS transition、全局禁用 HeroUI 动效 | 用户要删除自写动画而不是移除组件库原生反馈；未来自定义动效独立设计 |
 | 迁移方式 | 分阶段纵向 hard cut | 一次性删除后长时间不可构建、长期双轨 | 每阶段可验证，同时确保终态无兼容残渣 |
@@ -195,6 +195,7 @@ src/styles/
 | EmptyState | HeroUI Pro | 产品空状态文案与动作 |
 | Sidebar、Sheet | HeroUI Pro | 三态、1024px 响应式、宽度和设备偏好由 Shell controller 拥有 |
 | Shell resize rail | StoneFlow 产品几何例外 | HeroUI Handle 无法表达同一区域 click/drag；不扩张成通用 Resizable primitive |
+| 任务详情 | HeroUI Pro Resizable + HeroUI Sheet | 列表 Panel 最小 `352px`；Aside Panel 最小 `320px`、默认 `360px`、最大 `440px`；窄窗口复用同一详情内容的 Sheet |
 | 其他真实分栏 | HeroUI Pro Resizable | 只有现有表面确实需要独立 split pane 时采用；不为组件覆盖率新增用例 |
 | Command | HeroUI Pro Command | Registry、Runtime、异步搜索、最近使用、可用性与执行 |
 | Context menu | HeroUI Pro ContextMenu | selection 目标解析与领域命令 |
@@ -260,19 +261,19 @@ HeroUI Sidebar 与 Sheet 使用各自公开的 controlled-open props；Shell rai
 
 路由、编辑与布局真相严格分开：
 
-- `?task=` URL search 只表示当前列表上打开的宽屏 Aside，Back 可以关闭它；`/$scopeKey/tasks/$taskId` pathname 表示 canonical 完整页。
-- query、draft、autosave 和 mutation controller 以 `taskId` 为 key，不得在 Aside 和完整页之外复制第二份业务状态。
-- 任务详情不存在 Sheet、`detailPresentation` 或 UI device preference；不使用 `ResizeObserver`、宽度比例或主集合最小宽度派生容器，只响应唯一 `1024px` media query。
+- `?task=` URL search 表示当前列表上的正式详情意图，不绑定具体容器；`/$scopeKey/tasks/$taskId` pathname 表示只由用户显式打开的 canonical 完整页。
+- query、draft、autosave 和 mutation controller 以 `taskId` 为 key，不得在 Aside、Sheet 和完整页之间复制第二份业务状态。
+- 任务详情不存在 `detailPresentation` 或 UI device preference；Host 直接消费 Shell controller 已派生的单一 `isCompact`，不再监听媒体查询，也不建立局部宽度观测、响应式 store 或多级回退。
 
 响应式与宽度合同锁定为：
 
-- Sidebar controller 与任务详情共享 `SHELL_DESKTOP_MEDIA_QUERY` 这一个媒体查询常量，但不共享响应式 state/store；`openTaskDetail` 在打开动作发生时判断首次落点，active Aside 仅在自身生命周期内订阅同一 media query，不监听原始 resize。
-- `>=1024px`：列表点击或 `Enter` 在 Main surface 内打开非模态 Aside；列表仍可操作，Aside 不使用 overlay 或 focus trap。
-- Aside 初始宽度固定 `400px`；使用 HeroUI Pro Resizable 在 `400–560px` 内会话级拖宽，不持久化宽度。这些尺寸就近属于 Aside 容器，不建立只承载少数常量的共享 geometry 模块。
-- `<1024px`：从列表首次打开详情直接导航 canonical 完整页，不先写 `?task=`，不打开任务 Sheet。
-- active `?task=` Aside 从桌面宽度进入 `<1024px` 时发起 `flushNow()`；返回成功且完成时仍为 compact，才复用标准 `onClose` 路径清除 `?task=` 并返回原列表。保存失败或完成时已重新变宽则保留 Aside 与 dirty draft；窗口变宽本身不触发详情行为。
+- 所有列表打开动作只写入共享 `?task=` 详情意图；Shell controller 只派生一次 `isCompact` 并传给 Detail Host，Sidebar 与详情仅分开拥有 open state 和 lifecycle。
+- 窗口 `>=1024px`：Host 使用 HeroUI Pro Resizable 渲染最小 `352px` 的列表 Panel 和最小 `320px`、默认 `360px`、最大 `440px` 的 Aside Panel。Aside 宽度只在会话内拖动，不使用 overlay 或 focus trap。
+- 窗口 `<1024px`：Host 使用 HeroUI Sheet 渲染同一份详情内容，复用 HeroUI 的 modal、Backdrop、Escape、外点关闭与焦点恢复语义。
+- active `?task=` 详情跨越断点时只换 Aside/Sheet 容器；任务 ID、URL、draft、autosave controller 与 history 不变，不发起保存驱动的响应式导航。
+- 任务列表 Panel 本身使用一档 CSS container query：`<560px` 进入紧凑行布局，其余宽度使用标准行布局。不建立 JS 宽度 store 或第二档响应式分支。
 
-Aside 与完整页复用同一详情领域能力；Aside Header 保留“打开完整页”动作，同样先 flush 当前草稿再导航。响应式关闭复用标准 `onClose`，用 trigger entity ID 恢复焦点；虚拟行先滚动挂载，实体消失则回 collection root。Space Peek 保持独立只读层，不复用正式详情 open state。
+Aside、Sheet 与完整页复用同一详情领域能力；详情 Header 保留“打开完整页”动作，先 flush 当前草稿再显式导航。显式关闭 Aside/Sheet 时用 trigger entity ID 恢复焦点；虚拟行先滚动挂载，实体消失则回 collection root。Space Peek 保持独立只读层，不复用正式详情 open state。
 
 ## 集合、键盘与虚拟化
 
@@ -376,7 +377,7 @@ Aside 非模态、不 trap focus。虚拟 trigger 的恢复由 collection bridge
 - 精确锁定 HeroUI OSS/Pro、React Aria/React Stately，建立官方 CSS 顺序、五文件样式终态骨架、本地 Inter Variable 与 light-only theme。
 - 依赖写入项目后，在仓库外隔离目录核对固定版本缓存产物的树 SHA-256，并完成 frozen install、类型检查和 production build；失败时停止后续迁移。
 - 只允许迁移期继续导入仍有消费者的 legacy CSS；新 theme 与旧 `--sf-*` 不互相映射，新表面不得回读 legacy token。
-- 同步 HTML 原型到 SPEC 已确认色板、字体、密度和 HeroUI 状态，覆盖 Shell、表单、菜单、集合、导航 Sheet、任务详情 Aside 与反馈组件。
+- 同步 HTML 原型到 SPEC 已确认色板、字体、密度和 HeroUI 状态，覆盖 Shell、表单、菜单、集合、导航 Sheet、任务详情 Aside/Sheet 与反馈组件。
 - 完成 User Gate U1 后，才允许把新版视觉扩展到产品表面；U1 验证已确认色值在 HeroUI 中的映射、实际字形、密度和状态表现，不重新开启色彩方向决策。
 
 ### 阶段 C：StoneFlow 第一方动画清场
@@ -392,11 +393,12 @@ Aside 非模态、不 trap focus。虚拟 trigger 的恢复由 collection bridge
 - 落地 expanded/icon/compact 三态、Inset main、`220–330px` 展开宽度、`48px` icon rail 与单一 `1024px` 响应式来源。
 - 接回现有路由、Space/Project/Settings 行为、设备偏好、Tauri Header/Footer、启动骨架和冷启动防闪烁；只挂载一棵可操作导航树。
 
-### 阶段 E：任务详情 Aside 与完整页
+### 阶段 E：任务详情 Aside、Sheet 与完整页
 
-- 提取并复用单一 `TaskDetailContent`，让宽屏非模态 Aside 只承担产品容器职责，不复制查询、表单或 autosave state。
-- 删除任务 Sheet、呈现偏好、UI device preference、`ResizeObserver`、34% 初始宽度与 `640px` 回退；改为 `>=1024px` 列表打开 Aside、`<1024px` 首次打开直达 canonical 完整页。
-- Aside 初始 `400px`，会话内可拖到 `560px`；active Aside 缩窄时先 flush，成功且仍 compact 后复用标准关闭路径返回列表，失败或已重新变宽则留在 Aside；Header 保留显式 flush 后打开完整页。
+- 提取并复用单一 `TaskDetailContent`，让 Aside 和 Sheet 只承担产品容器职责，不复制查询、表单或 autosave state。
+- 删除呈现偏好、UI device preference、额外局部宽度观测与多级回退；Detail Host 复用 Shell controller 的单一 `isCompact`，两类容器各自拥有 open owner，窄窗模态 Sheet 互斥。
+- 所有列表打开动作只写 `?task=`；`>=1024px` 使用列表 `min 352px` + Aside `320/360/440px` 的 HeroUI Pro Resizable，`<1024px` 使用 HeroUI Sheet。跨断点只换容器，不改 URL、draft、autosave 或 history。
+- 任务列表仅以 CSS container query 在 `<560px` 进入唯一紧凑档；不引入第二个 JS 响应式状态。Header 保留 flush 后显式打开完整页。
 - 完成 User Gate U2，确认真实 Tauri Shell、Sidebar 和详情容器后再迁移其余主流程。
 
 ### 阶段 F：标准控件、表单与反馈组件族
@@ -455,7 +457,7 @@ U0 是一次供应链访问门；U1–U5 才是无法由类型、测试或静态
 |---|---|---|---|
 | U0 供应链 | A | 确认使用 CollectUI `hpsetup`，Key 仅经进程环境注入；CI secret 以后单独配置 | 固定安装器与 Pro 版本的隔离下载 smoke 成功，树 SHA-256 已记录，Key 未进入仓库或日志 |
 | U1 视觉 | B | 打开新版 HTML 原型，验证已确认色值的 HeroUI 映射、Inter/中文实际字形、密度及 Button、表单、菜单、列表、导航 Sheet / 任务 Aside 状态 | 已确认方向被正确实现；实现偏差逐项标注，不重新选择色板 |
-| U2 壳与详情 | E | 在真实 Tauri 中测试 Sidebar 点按/拖动/键盘、`1024px` 两侧的 Aside / canonical 完整页首次落点、active Aside 缩窄后的安全关闭、Aside 拖宽、Peek、Back 与 Header 打开完整页 | 三态、路由、`400–560px` 宽度、flush 成败、草稿、scroll 和焦点符合 SPEC，不出现任务 Sheet |
+| U2 壳与详情 | E | 在真实 Tauri 中测试 Sidebar 点按/拖动/键盘、窗口 `1024px` 两侧的 Aside/Sheet、跨断点容器切换、Aside 拖宽、列表 `<560px` 紧凑档、Peek、Back 与 Header 打开完整页 | Sidebar 与详情 owner 独立，`?task=` 与草稿跨断点不变，列表 `min 352px`、Aside `320/360/440px`、Sheet、scroll 和焦点符合 SPEC |
 | U3 键盘 | I | 按固定矩阵完整走一遍 TaskBoard 导航、多选、Peek、详情、右键、Escape 与输入框隔离 | 不丢焦点、不误选、不触发错误目标，手感可接受 |
 | U4 全表面 | L | 遍历迁移清单中的主要路径、Settings、Update、Launcher、空态/错误/危险操作 | 无旧 UI、无自写动效残留、领域行为不回退 |
 | U5 终验 | M | 审阅 macOS 关键截图与录屏，并在登记的 macOS 主设备完成一次端到端走查 | HeroUI-only、浅色视觉、第一方零动画与键盘合同共同通过；结论不扩张为 Windows 已验证 |
@@ -470,7 +472,7 @@ U0 是一次供应链访问门；U1–U5 才是无法由类型、测试或静态
 | B | `refactor(ui): 建立 HeroUI 浅色主题与字体基础` |
 | C | `refactor(ui): 清除 StoneFlow 第一方动画代码` |
 | D | `refactor(shell): 重建 HeroUI 侧边栏三态` |
-| E | `refactor(task): 收敛任务详情 Aside 与完整页` |
+| E | `refactor(task): 收敛任务详情 Aside 与 Sheet` |
 | F | `refactor(ui): 迁移 HeroUI 标准控件与表单` |
 | G | `refactor(ui): 迁移 HeroUI 浮层与焦点交互` |
 | H | `refactor(selection): 建立单一集合交互状态` |
@@ -499,8 +501,8 @@ PLAN 获确认后再在 TASKS 中拆 flat `T1/T2/...`：每个任务限定一个
 
 ### 视觉与可访问性
 
-- 视觉矩阵覆盖：主壳 expanded/icon/compact、TaskBoard 单项/连续选择、Command、ContextMenu、ActionBar、宽屏详情 Aside、窄屏完整页、表单状态、Toast、Launcher。
-- 终态视口至少覆盖 Rust 默认 `1280×900` inner window 在当前 macOS 可得到的实际稳定 WebView viewport、`1024×768`、`1023×768` 和最小支持窗口；专门检查 1024px 临界值、Inset 单层、滚动条和冷启动闪烁。迁移前截图只记录功能与特殊细节，不要求在阶段 A 凑齐这些精确视口。
+- 视觉矩阵覆盖：主壳 expanded/icon/compact、TaskBoard 单项/连续选择、Command、ContextMenu、ActionBar、宽窗口详情 Aside、窄窗口详情 Sheet、表单状态、Toast、Launcher。
+- 终态视口至少覆盖 Rust 默认 `1280×900` inner window 在当前 macOS 可得到的实际稳定 WebView viewport、`1024×768`、`1023×768` 和最小支持窗口；专门检查共享 `1024px` 边界两侧的 Sidebar 与详情容器、列表 `<560px` 紧凑档、Inset 单层、滚动条和冷启动闪烁。迁移前截图只记录功能与特殊细节，不要求在阶段 A 凑齐这些精确视口。
 - 状态矩阵覆盖 default、hover、pressed/open、selected/current、focus-visible、disabled、loading、invalid 与 reduced motion。
 - 在 macOS VoiceOver/WKWebView 路径验收集合导航、菜单、Sheet、焦点恢复和可访问名称。Windows 构建与产品支持保留，但本任务不执行 NVDA/WebView2 验收，也不据此新增专门兼容层。
 
@@ -510,7 +512,7 @@ PLAN 获确认后再在 TASKS 中拆 flat `T1/T2/...`：每个任务限定一个
 - 输入与 IME：文本全选、组合输入、编辑提交/取消、Cmd/Ctrl+K 与字符快捷键隔离。
 - Overlay：嵌套 Menu/Popover/Dialog/Sheet、右键/长按、关闭后 trigger restore、虚拟行恢复和实体删除 fallback。
 - Sidebar：点按/拖动阈值、键盘调宽、跨 1024px、重启偏好和只挂载一个导航树。
-- Detail：`1024px` 两侧首次打开落点、active Aside 缩窄时 flush 成功后关闭、保存失败或完成时已重新变宽则留在 Aside、变宽无动作、`400–560px` 拖宽、Back、Header flush 后打开完整页、autosave、scroll、focus restore 和 Peek 独立性。
+- Detail：窗口 `1024px` 两侧的 Aside/Sheet 首次打开与跨断点互换、`?task=`/draft/autosave/history 不变、Sidebar 与详情 owner 独立、列表 `min 352px` 及 `<560px` 唯一紧凑档、Aside `320/360/440px` 拖宽、Sheet modal/Backdrop/Escape/外点/焦点恢复、Header flush 后显式打开完整页、scroll 和 Peek 独立性。
 
 ### TaskBoard 性能预算
 
@@ -539,7 +541,9 @@ PLAN 获确认后再在 TASKS 中拆 flat `T1/T2/...`：每个任务限定一个
 | 1024px 与 HeroUI 内建 768px 移动断点冲突 | 双 Sidebar、闪烁、重复焦点 | 不使用 Sidebar.Mobile；单一 matchMedia source，compact 时只挂载 Sheet 导航 |
 | 集合与虚拟化出现双状态 | 丢焦点、错选、命令目标漂移 | SelectionManager 唯一 owner，TanStack 只管 geometry，key/ref bridge 恢复真实焦点 |
 | HeroUI 默认 Space 选择与 Linear Peek 冲突 | 选择和预览双触发 | 只在 collection-root adapter 改写，所有路径调用同一 manager |
-| Aside 在 dirty 状态下缩窄 | 未保存草稿或主列表被挤压 | 先 flush；成功且仍 compact 时复用标准关闭路径，失败或已重新变宽则保留 Aside；不建立 canonical promotion 或历史兼容分支 |
+| Aside/Sheet 跨断点切换 | 草稿丢失、URL 变化或双容器同时可操作 | 详情业务状态继续以 `taskId` 为 key；Host 只替换容器，不改 `?task=`、不触发响应式导航 |
+| Sidebar 与详情复用窗口断点 | 两个 Sheet 同时打开或 open state 相互覆盖 | Shell 只派生一份 `isCompact`；两者保留各自 open state，并在壳层保证窄窗模态 Sheet 互斥 |
+| 任务列表在分栏内变窄 | 字段拥挤或响应式分支失控 | 列表 Panel 保持 `min 352px`，行布局只以 CSS container query 在 `<560px` 切换一次 |
 | 过度追求“无本地样式” | 强行覆盖组件、可维护性反降 | 允许一份集中 recipe 和登记的产品几何；禁止 feature 私有皮肤 |
 | 迁移清单遗漏 Launcher/全局 overlay | 表面残留第二套 UI | route、overlay、Launcher、import graph 四源清单与零引用扫描共同收口 |
 | 直接删除 patterns 误伤产品组件 | 业务行为丢失 | 逐消费者归位；只删除纯样式或零消费者文件，不按目录整删 |
@@ -556,7 +560,7 @@ ADR 作为阶段 A 首个 task 记录已确认决策；其余文档只在对应�
 | `Documents/01-架构/A3-界面系统.md` | 主题、密度、字体、状态、Sidebar、Detail 与键盘合同 |
 | `src/ARCHITECTURE.md` | UI 平台边界、产品组件和 feature 依赖规则 |
 | `src/styles/ARCHITECTURE.md` | 五文件样式架构、HeroUI semantic theme、recipe 和局部例外 |
-| `src/layout/ARCHITECTURE.md` / `DESIGN.md` | Shell 三态、`1024px`、Inset、宽屏详情 Aside / 窄屏 canonical 完整页与 Tauri 几何 |
+| `src/layout/ARCHITECTURE.md` / `DESIGN.md` | Shell 三态、Sidebar 与详情独立共用的 `1024px` 边界、Inset、详情 Aside/Sheet 与 Tauri 几何 |
 | `src/features/selection/ARCHITECTURE.md` | 单一 collection state 与只读领域 snapshot |
 | `src/features/command/ARCHITECTURE.md` | HeroUI Command 投影、快捷键 ownership 与 Escape 层级 |
 | `src/features/task/ARCHITECTURE.md` / `DESIGN.md` | React Aria/TanStack bridge、TaskBoard 键盘与焦点恢复 |

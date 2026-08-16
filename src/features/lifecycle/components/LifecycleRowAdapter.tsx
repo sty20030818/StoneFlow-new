@@ -149,7 +149,7 @@ export function LifecycleRowAdapter({
 							onRestore={() => actions.onRestore(entry)}
 						/>
 					</RowShell.Actions>
-					<RowShell.Fields>
+					<RowShell.Fields className='md:flex'>
 						<CreatedAtCell value={createdAtValue} />
 					</RowShell.Fields>
 				</RowShell.Right>

@@ -1,6 +1,6 @@
 # task · 任务域
 
-> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-08-15
+> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-08-16
 
 ---
 
@@ -14,7 +14,7 @@
 
 详情
   → TaskPage | TaskDetailContent | TaskPreview（detail/）
-  → 宽屏 Aside 容器与响应式打开策略由 entity-detail 拥有
+  → Sheet / Aside 容器选择与显式完整页导航由 entity-detail 拥有
 
 创建
   → 壳 Overlays 挂 TaskCreateContent
@@ -91,9 +91,9 @@ src/features/task/
 | shell-dialogs | 创建对话框状态在壳；本域只出表单内容 |
 | metadata-fields | placement 归本域；status/priority 图标由本域注入 |
 | launcher | 创建内核 / 标签 formatters 复用本域 public |
-| navigation | 命令的 path-only open 策略在本域；列表详情的响应式 Aside / canonical 路由由 `entity-detail` 拥有 |
+| navigation | 命令的 path-only open 策略在本域；列表详情的 Sheet / Aside 容器选择与 canonical 显式导航由 `entity-detail` 拥有 |
 
-任务正式详情合同：`Space` 只打开只读 Peek；列表点击或 `Enter` 在 `>=1024px` 打开非模态 Aside，在 `<1024px` 直接进入 canonical `TaskPage`。active Aside 缩窄时先 flush，成功且完成时仍 compact 才复用标准关闭路径返回原列表；失败或完成时已重新变宽则保留 Aside 与 dirty draft，窗口变宽本身不触发详情行为。Aside 与完整页复用任务详情 query、draft、autosave 和 mutation 能力；Aside Header 在 flush autosave 后可显式打开完整页。任务域不拥有 Sheet、详情呈现偏好或共享响应式 state。
+任务正式详情合同：`Space` 只打开只读 Peek；列表点击或 `Enter` 只写入共享 `?task=` 详情意图。窗口 `<1024px` 时详情始终使用 HeroUI Sheet，`>=1024px` 时始终使用非模态 Aside；跨断点只换容器，不改 URL、不关闭、不跳 `TaskPage`。Aside 与 Sheet 复用同一任务详情 query、draft、autosave 和 mutation；Aside 列表 Panel 最小 `352px`，Aside 最小 `320px` / 默认 `360px` / 最大 `440px`。`TaskBoard` 只以自身容器宽度保留一档 `<560px` 紧凑布局，不与窗口或 Sidebar 状态耦合。canonical `TaskPage` 只能由 Header 等显式用户动作在 flush autosave 后打开。任务域不拥有详情呈现偏好、断点 state 或容器分流逻辑。
 
 ---
 

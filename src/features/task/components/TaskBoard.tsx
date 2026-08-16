@@ -505,7 +505,11 @@ export function TaskBoard({
 
 				return (
 					// 不用 BoardRoot 的 flex-1：虚拟列表必须由内容定高驱动 scrollHeight
-					<div className='relative w-full' data-board-root='true' tabIndex={-1}>
+					<div
+						className='@container/task-list relative w-full'
+						data-board-root='true'
+						tabIndex={-1}
+					>
 						{/*
 						 * 零高度 sticky 壳（不占文档流高度）+ 定高裁剪层：
 						 * 顶替时 push 负向位移，旧标题在裁剪盒内被顶出，而不是滑到版心上方再闪回。

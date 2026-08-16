@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import type { CSSProperties } from 'react'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { Sidebar } from '@heroui-pro/react'
 
 import { ShellChrome } from '@/layout/ShellChrome'
@@ -17,8 +17,20 @@ vi.mock('@/layout/ShellHeader', () => ({
 }))
 
 vi.mock('@/layout/ShellMain', () => ({
-	ShellMain: ({ children, isDrawerOpen }: { children: React.ReactNode; isDrawerOpen: boolean }) => (
-		<div data-detail-open={isDrawerOpen ? 'true' : 'false'} data-testid='shell-main-content'>
+	ShellMain: ({
+		children,
+		isCompact,
+		isDrawerOpen,
+	}: {
+		children: React.ReactNode
+		isCompact: boolean
+		isDrawerOpen: boolean
+	}) => (
+		<div
+			data-compact={isCompact ? 'true' : 'false'}
+			data-detail-open={isDrawerOpen ? 'true' : 'false'}
+			data-testid='shell-main-content'
+		>
 			{children}
 		</div>
 	),
@@ -89,14 +101,15 @@ describe('Shell 阶段 D 结构', () => {
 		expect(document.querySelectorAll('main')).toHaveLength(1)
 	})
 
-	it('导航 Sheet 打开时不卸载已经存在的任务 Aside', async () => {
+	it('compact 任务详情打开时阻止导航 Sheet 同时呈现', async () => {
 		installMatchMedia(false)
 		render(<Fixture detailOpen />)
 
 		fireEvent.click(screen.getByRole('button', { name: '打开导航' }))
 
-		expect(await screen.findByRole('dialog')).toBeInTheDocument()
+		await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
 		expect(screen.getByTestId('shell-main-content')).toHaveAttribute('data-detail-open', 'true')
+		expect(screen.getByTestId('shell-main-content')).toHaveAttribute('data-compact', 'true')
 	})
 })
 
@@ -121,7 +134,10 @@ function Fixture({ detailOpen = false }: { detailOpen?: boolean }) {
 			<ShellChrome
 				activeSection={'tasks' as never}
 				chrome={createChrome()}
-				command={createCommand({ isDrawerOpen: detailOpen })}
+				command={createCommand({
+					activeDetail: detailOpen ? { kind: 'task', id: 'task-a' } : null,
+					isDrawerOpen: detailOpen,
+				})}
 				createDialog={{ openProjectCreateDialog: vi.fn() } as never}
 				currentScope={{ type: 'all' }}
 				currentSpaceId={null}

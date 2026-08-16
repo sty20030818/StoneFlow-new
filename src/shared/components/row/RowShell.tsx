@@ -129,10 +129,7 @@ export function RowShellRight({ children, className, ...props }: ComponentProps<
 
 export function RowShellFields({ children, className, ...props }: ComponentProps<'div'>) {
 	return (
-		<div
-			{...props}
-			className={cn('hidden shrink-0 items-center justify-end gap-2 md:flex', className)}
-		>
+		<div {...props} className={cn('hidden shrink-0 items-center justify-end gap-2', className)}>
 			{children}
 		</div>
 	)

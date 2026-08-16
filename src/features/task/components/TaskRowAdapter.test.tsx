@@ -97,7 +97,7 @@ function renderTaskRowAdapter({
 	visibleProperties?: TaskRowAdapterProps['visibleProperties']
 	showSpaceLabel?: boolean
 } = {}) {
-	render(
+	const { container } = render(
 		<TestProviders>
 			<TaskRowAdapter
 				actions={actions}
@@ -112,7 +112,7 @@ function renderTaskRowAdapter({
 		</TestProviders>,
 	)
 
-	return { task, rowState, projectBinding, actions }
+	return { task, rowState, projectBinding, actions, container }
 }
 
 describe('TaskRowAdapter', () => {
@@ -271,6 +271,17 @@ describe('TaskRowAdapter', () => {
 		expect(screen.getByText('5/7')).toBeInTheDocument()
 		expect(screen.queryByText('5/6')).not.toBeInTheDocument()
 		expect(screen.queryByText('5/8')).not.toBeInTheDocument()
+	})
+
+	it('尾部字段只按任务列表的 560px 容器断点显示', () => {
+		const { container } = renderTaskRowAdapter()
+		const fields = [...container.querySelectorAll('div')].find((element) =>
+			element.className.includes('@min-[560px]/task-list:flex'),
+		)
+
+		expect(fields).toBeTruthy()
+		expect(fields?.className).toContain('hidden')
+		expect(fields?.className).not.toContain('md:flex')
 	})
 
 	it('右键菜单属性动作在多选时统一走 placement bulk 入口', async () => {

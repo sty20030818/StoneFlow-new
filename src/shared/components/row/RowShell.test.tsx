@@ -81,6 +81,13 @@ describe('RowShell', () => {
 		expect(screen.getByTestId('row').className).toContain('bg-sf-selection-surface-hover')
 		expect(screen.getByTestId('row').className).not.toContain(ROW_SHELL_SELECTED_FOCUS_CLASS)
 	})
+
+	it('尾部字段只提供默认隐藏布局，响应规则由消费方声明', () => {
+		render(<RowShell.Fields data-testid='fields'>fields</RowShell.Fields>)
+		const fields = screen.getByTestId('fields')
+		expect(fields.className).toContain('hidden')
+		expect(fields.className).not.toContain('md:flex')
+	})
 })
 
 describe('RowSelectionCell', () => {

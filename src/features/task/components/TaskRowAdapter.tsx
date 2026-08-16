@@ -341,7 +341,7 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 				</RowShell.Left>
 
 				<RowShell.Right>
-					<RowShell.Fields>
+					<RowShell.Fields className='@min-[560px]/task-list:flex'>
 						{showDueAt ? (
 							<MetadataDateDropdown
 								ariaLabel={`修改截止时间：${task.title}`}

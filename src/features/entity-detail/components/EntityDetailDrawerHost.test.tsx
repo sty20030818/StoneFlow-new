@@ -1,24 +1,36 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { useState } from 'react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { SHELL_DESKTOP_MEDIA_QUERY } from '@/shared/lib/shellSidebarGeometry'
+import { isAnyModalOpen } from '@/shared/lib/modal-guard'
 import { EntityDetailDrawerHost } from './EntityDetailDrawerHost'
 
-const flushNowMock = vi.hoisted(() => vi.fn<() => Promise<boolean>>())
-const useTaskDetailViewModelMock = vi.hoisted(() =>
-	vi.fn(() => ({ status: 'ready', autosave: { flushNow: flushNowMock } })),
-)
+type MockTaskDetailViewModel = {
+	status: 'ready'
+	autosave: { flushNow: () => Promise<boolean> }
+	draftTitle: string
+	setDraftTitle: (value: string) => void
+}
+
+const useTaskDetailViewModelMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@/features/task', () => ({
 	useTaskDetailViewModel: useTaskDetailViewModelMock,
 	TaskDetailContent: ({
 		onClose,
 		scrollRef,
+		viewModel,
 	}: {
 		onClose: () => void
 		scrollRef: React.Ref<HTMLDivElement>
+		viewModel: MockTaskDetailViewModel
 	}) => (
 		<div ref={scrollRef} data-testid='task-detail-viewport'>
+			<input
+				aria-label='任务详情草稿'
+				onChange={(event) => viewModel.setDraftTitle(event.currentTarget.value)}
+				value={viewModel.draftTitle}
+			/>
 			<button onClick={onClose} type='button'>
 				关闭内容
 			</button>
@@ -28,19 +40,28 @@ vi.mock('@/features/task', () => ({
 
 describe('EntityDetailDrawerHost', () => {
 	const onClose = vi.fn<() => void>()
-	let viewport: ReturnType<typeof installViewport>
 
 	beforeEach(() => {
 		onClose.mockReset()
-		flushNowMock.mockReset().mockResolvedValue(true)
-		useTaskDetailViewModelMock.mockClear()
-		viewport = installViewport(true)
+		useTaskDetailViewModelMock.mockReset().mockImplementation(function useMockTaskDetailViewModel({
+			taskId,
+		}: {
+			taskId: string
+		}) {
+			const [draftTitle, setDraftTitle] = useState(`草稿 ${taskId}`)
+			return {
+				status: 'ready',
+				autosave: { flushNow: vi.fn().mockResolvedValue(true) },
+				draftTitle,
+				setDraftTitle,
+			} satisfies MockTaskDetailViewModel
+		})
 	})
 
-	it('只使用 HeroUI Resizable 呈现可拖宽的非模态 Aside', () => {
-		renderHost({
-			children: <div data-testid='main-content'>任务列表</div>,
-		})
+	afterEach(() => vi.restoreAllMocks())
+
+	it('desktop 使用 HeroUI Resizable 构建列表与 Aside 双栏', () => {
+		renderHost({ children: <div data-testid='main-content'>任务列表</div> })
 
 		expect(screen.getByTestId('main-content')).toHaveTextContent('任务列表')
 		const aside = screen.getByRole('complementary', { name: '任务详情' })
@@ -50,14 +71,77 @@ describe('EntityDetailDrawerHost', () => {
 			'aria-orientation',
 			'vertical',
 		)
-		expect(document.querySelectorAll('[data-slot="resizable-panel"]')).toHaveLength(2)
+		const panels = document.querySelectorAll<HTMLElement>('[data-slot="resizable-panel"]')
+		expect(panels).toHaveLength(2)
 		expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 		expect(document.querySelector('[data-slot="sheet-backdrop"]')).not.toBeInTheDocument()
-		expect(screen.getByTestId('task-detail-viewport')).toBeInTheDocument()
 		expect(useTaskDetailViewModelMock).toHaveBeenCalledWith({ taskId: 'task-a', onClose })
 	})
 
-	it('打开和关闭 Aside 时不重建主集合 DOM', () => {
+	it('compact 使用 MainCard scope 内的 HeroUI 原生 opaque Sheet', async () => {
+		renderHost({ children: <div data-testid='main-content'>任务列表</div>, isCompact: true })
+
+		const dialog = await screen.findByRole('dialog', { name: '任务详情' })
+		const closeTrigger = screen.getByRole('button', { name: '关闭任务详情' })
+		const layout = document.querySelector<HTMLElement>('[data-entity-detail-layout="true"]')
+		const backdrop = document.querySelector<HTMLElement>('[data-slot="sheet-backdrop"]')
+		const content = document.querySelector<HTMLElement>('[data-slot="sheet-content"]')
+
+		expect(layout).toContainElement(backdrop)
+		expect(backdrop).toHaveClass('absolute', 'before:absolute', 'sheet__backdrop--opaque')
+		expect(content).toHaveClass(
+			'absolute',
+			'w-[min(420px,calc(100%_-_16px))]',
+			'h-full',
+			'max-w-none',
+		)
+		expect(dialog).toHaveClass('h-full', 'rounded-none')
+		expect(closeTrigger).toHaveClass('z-10')
+		expect(document.querySelector('[data-entity-detail-aside="true"]')).not.toBeInTheDocument()
+		expect(document.querySelectorAll('[data-slot="resizable-panel"]')).toHaveLength(1)
+	})
+
+	it('跨断点只切换容器，并保留 viewModel 草稿、滚动位置与主集合 DOM', async () => {
+		const children = <div data-testid='main-content'>任务列表</div>
+		const view = renderHost({ children })
+		const mainContent = screen.getByTestId('main-content')
+		const desktopViewport = screen.getByTestId('task-detail-viewport')
+		desktopViewport.scrollTop = 180
+		fireEvent.change(screen.getByRole('textbox', { name: '任务详情草稿' }), {
+			target: { value: '断点切换中的草稿' },
+		})
+
+		view.rerender(createHost({ children, isCompact: true }))
+
+		await screen.findByRole('dialog', { name: '任务详情' })
+		expect(screen.getByTestId('main-content')).toBe(mainContent)
+		expect(screen.getByRole('textbox', { name: '任务详情草稿' })).toHaveValue('断点切换中的草稿')
+		expect(screen.getByTestId('task-detail-viewport')).toHaveProperty('scrollTop', 180)
+
+		view.rerender(createHost({ children, isCompact: false }))
+
+		expect(screen.getByRole('complementary', { name: '任务详情' })).toBeInTheDocument()
+		expect(screen.getByRole('textbox', { name: '任务详情草稿' })).toHaveValue('断点切换中的草稿')
+		expect(screen.getByTestId('task-detail-viewport')).toHaveProperty('scrollTop', 180)
+		expect(onClose).not.toHaveBeenCalled()
+	})
+
+	it('compact Sheet 注册模态闸门，切回 desktop 后立即释放', async () => {
+		const view = renderHost({ isCompact: true })
+		await waitFor(() => expect(isAnyModalOpen()).toBe(true))
+
+		view.rerender(createHost({ isCompact: false }))
+		await waitFor(() => expect(isAnyModalOpen()).toBe(false))
+	})
+
+	it('compact 使用 Sheet 原生关闭触发器清理详情意图', async () => {
+		renderHost({ isCompact: true })
+
+		fireEvent.click(await screen.findByRole('button', { name: '关闭任务详情' }))
+		await waitFor(() => expect(onClose).toHaveBeenCalledOnce())
+	})
+
+	it('打开和关闭详情时不重建主集合 DOM', () => {
 		const children = <div data-testid='main-content'>任务列表</div>
 		const view = renderHost({ children })
 		const mainContent = screen.getByTestId('main-content')
@@ -71,20 +155,18 @@ describe('EntityDetailDrawerHost', () => {
 
 	it('切换任务时按 taskId 恢复真实滚动 viewport', () => {
 		const view = renderHost()
-		screen.getByTestId('task-detail-viewport').scrollTop = 180
+		const firstViewport = screen.getByTestId('task-detail-viewport')
+		firstViewport.scrollTop = 180
 
-		view.rerender(
-			createHost({
-				activeDetail: { kind: 'task', id: 'task-b' },
-			}),
-		)
+		view.rerender(createHost({ activeDetail: { kind: 'task', id: 'task-b' } }))
+		expect(screen.getByTestId('task-detail-viewport')).toBe(firstViewport)
 		expect(screen.getByTestId('task-detail-viewport')).toHaveProperty('scrollTop', 0)
 
 		view.rerender(createHost())
 		expect(screen.getByTestId('task-detail-viewport')).toHaveProperty('scrollTop', 180)
 	})
 
-	it('关闭 Aside 后恢复仍连接的原焦点元素', async () => {
+	it('关闭详情后恢复仍连接的原焦点元素', async () => {
 		const view = render(
 			<>
 				<button type='button'>任务行</button>
@@ -146,79 +228,6 @@ describe('EntityDetailDrawerHost', () => {
 		expect(container).toBeEmptyDOMElement()
 	})
 
-	it('Aside 进入 compact 时先保存再关闭', async () => {
-		renderHost()
-
-		await act(async () => {
-			viewport.setDesktop(false)
-		})
-
-		expect(flushNowMock).toHaveBeenCalledOnce()
-		expect(onClose).toHaveBeenCalledOnce()
-		expect(flushNowMock.mock.invocationCallOrder[0]).toBeLessThan(
-			onClose.mock.invocationCallOrder[0]!,
-		)
-	})
-
-	it('compact 下恢复遗留 Aside 时先保存再关闭', async () => {
-		viewport.setDesktop(false)
-
-		renderHost()
-
-		await waitFor(() => expect(onClose).toHaveBeenCalledOnce())
-		expect(flushNowMock).toHaveBeenCalledOnce()
-	})
-
-	it('保存失败时保留 Aside', async () => {
-		flushNowMock.mockResolvedValue(false)
-		renderHost()
-
-		await act(async () => {
-			viewport.setDesktop(false)
-		})
-
-		expect(flushNowMock).toHaveBeenCalledOnce()
-		expect(onClose).not.toHaveBeenCalled()
-		expect(screen.getByRole('complementary', { name: '任务详情' })).toBeInTheDocument()
-	})
-
-	it('保存期间重新变宽会取消关闭', async () => {
-		let resolveSave: ((saved: boolean) => void) | null = null
-		flushNowMock.mockImplementation(
-			() =>
-				new Promise<boolean>((resolve) => {
-					resolveSave = resolve
-				}),
-		)
-		renderHost()
-
-		await act(async () => {
-			viewport.setDesktop(false)
-			viewport.setDesktop(true)
-			resolveSave?.(true)
-		})
-
-		expect(flushNowMock).toHaveBeenCalledOnce()
-		expect(onClose).not.toHaveBeenCalled()
-	})
-
-	it('Aside 卸载后不会执行延迟关闭', async () => {
-		let resolveSave: ((saved: boolean) => void) | null = null
-		flushNowMock.mockImplementation(
-			() =>
-				new Promise<boolean>((resolve) => {
-					resolveSave = resolve
-				}),
-		)
-		const view = renderHost()
-
-		act(() => viewport.setDesktop(false))
-		view.unmount()
-		await act(async () => resolveSave?.(true))
-
-		expect(onClose).not.toHaveBeenCalled()
-	})
-
 	function renderHost(
 		overrides: Partial<React.ComponentProps<typeof EntityDetailDrawerHost>> = {},
 	) {
@@ -231,6 +240,7 @@ describe('EntityDetailDrawerHost', () => {
 		return (
 			<EntityDetailDrawerHost
 				activeDetail={{ kind: 'task', id: 'task-a' }}
+				isCompact={false}
 				onClose={onClose}
 				open
 				{...overrides}
@@ -238,37 +248,3 @@ describe('EntityDetailDrawerHost', () => {
 		)
 	}
 })
-
-function installViewport(initialDesktop: boolean) {
-	let matches = initialDesktop
-	const listeners = new Set<(event: MediaQueryListEvent) => void>()
-	const mediaQuery = {
-		get matches() {
-			return matches
-		},
-		media: SHELL_DESKTOP_MEDIA_QUERY,
-		onchange: null,
-		addEventListener: vi.fn((_type: string, listener: EventListenerOrEventListenerObject) => {
-			listeners.add(listener as (event: MediaQueryListEvent) => void)
-		}),
-		removeEventListener: vi.fn((_type: string, listener: EventListenerOrEventListenerObject) => {
-			listeners.delete(listener as (event: MediaQueryListEvent) => void)
-		}),
-		addListener: vi.fn(),
-		removeListener: vi.fn(),
-		dispatchEvent: vi.fn(() => false),
-	} satisfies MediaQueryList
-
-	Object.defineProperty(window, 'matchMedia', {
-		configurable: true,
-		value: vi.fn(() => mediaQuery),
-	})
-
-	return {
-		setDesktop(nextDesktop: boolean) {
-			matches = nextDesktop
-			const event = { matches, media: mediaQuery.media } as MediaQueryListEvent
-			listeners.forEach((listener) => listener(event))
-		},
-	}
-}

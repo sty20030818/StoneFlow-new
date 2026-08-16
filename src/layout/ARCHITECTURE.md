@@ -1,8 +1,8 @@
 # layout 架构短契约
 
-> 作用：描述 **当前已落地** 的 `src/layout` 职责与装配边界
+> 作用：描述 `src/layout` 的稳定职责与本轮定稿装配边界
 > 总览：`src/ARCHITECTURE.md`
-> 最后更新：2026-08-15
+> 最后更新：2026-08-16
 
 ---
 
@@ -55,7 +55,7 @@ src/layout/
 
 **分区 / spaceId 真相：** 直接读 `shellRoute` + `scope`（`ShellRouteLayout`），**无**可写 nav store 镜像。
 
-**任务详情装配：** `ShellMain` 在 Main surface 内挂载 `EntityDetailDrawerHost`。该宿主语义上是非模态 Aside：默认 `400px`，HeroUI Pro Resizable 会话拖宽范围 `400–560px`；layout 只负责容器装配，不拥有任务查询、草稿或 mutation。`<1024px` 的首次打开由 `entity-detail` 直接导航 canonical 完整页，不挂载任务 Sheet；active Aside 缩窄后先 flush，成功且完成时仍 compact 才复用标准关闭路径返回原列表，失败或已重新变宽则留在 Aside；窗口变宽本身无动作。
+**任务详情装配：** `ShellMain` 挂载唯一 `EntityDetailDrawerHost`，列表打开动作只产生共享 `?task=` 意图。Shell controller 只派生一份 `isCompact`：`<1024px` 使用 HeroUI Sheet，`>=1024px` 在 Main surface 内使用 HeroUI Pro Resizable Aside。跨断点只替换容器，保留同一 URL、active task、草稿与滚动上下文，不关闭详情、不导航、不进入完整页。Aside 几何为列表最小 `352px`、Aside 最小 `320px` / 默认 `360px` / 最大 `440px`；layout 只负责容器装配与窄窗两张 Sheet 互斥，不拥有任务 query、草稿或 mutation。canonical 完整页只由用户显式动作打开。
 
 ---
 
