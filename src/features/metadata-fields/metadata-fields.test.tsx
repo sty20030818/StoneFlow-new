@@ -1,6 +1,5 @@
 import { CalendarIcon } from 'lucide-react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { TooltipProvider } from '@/shared/components/base/tooltip'
 
 import {
 	createDueDateActionSpec,
@@ -105,7 +104,8 @@ describe('metadata-fields', () => {
 		)
 
 		const disabledTrigger = screen.getByRole('group', { name: '修改优先级：任务 A' })
-		fireEvent.focus(disabledTrigger)
+		fireEvent.keyDown(document, { key: 'Tab' })
+		disabledTrigger.focus()
 		const tooltip = await screen.findByRole('tooltip')
 		expect(tooltip).toHaveTextContent('修改优先级正在更新任务，暂时无法修改优先级')
 		expect(tooltip).not.toHaveTextContent('任务 A')
@@ -130,7 +130,8 @@ describe('metadata-fields', () => {
 		) as HTMLSpanElement
 		Object.defineProperty(overflowTrigger, 'clientWidth', { configurable: true, value: 40 })
 		Object.defineProperty(overflowTrigger, 'scrollWidth', { configurable: true, value: 160 })
-		fireEvent.focus(overflowTrigger)
+		fireEvent.pointerMove(overflowTrigger, { pointerType: 'mouse' })
+		fireEvent.pointerEnter(overflowTrigger, { pointerType: 'mouse' })
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('一个很长的优先级名称')
 
 		fireEvent.pointerDown(screen.getByRole('button', { name: '优先级' }))
@@ -265,7 +266,7 @@ describe('metadata-fields', () => {
 })
 
 function renderMetadata(ui: React.ReactNode) {
-	return render(<TooltipProvider>{ui}</TooltipProvider>)
+	return render(ui)
 }
 
 function getShortcutHintDigits() {

@@ -11,8 +11,11 @@ describe('DangerConfirmProvider', () => {
 		)
 
 		fireEvent.click(screen.getByRole('button', { name: '请求归档确认' }))
-		expect(await screen.findByRole('alertdialog')).toBeInTheDocument()
+		expect(await screen.findByRole('alertdialog')).toHaveAccessibleDescription(
+			'归档后可在归档页恢复。',
+		)
 		expect(screen.getByText('确认归档「任务 A」吗？')).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: '归档' })).toHaveClass('button--primary')
 
 		fireEvent.click(screen.getByRole('button', { name: '归档' }))
 		await waitFor(() => {
@@ -22,6 +25,7 @@ describe('DangerConfirmProvider', () => {
 		fireEvent.click(screen.getByRole('button', { name: '请求回收站确认' }))
 		expect(await screen.findByRole('alertdialog')).toBeInTheDocument()
 		expect(screen.getByText('确认移入回收站「项目 A」吗？')).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: '移入回收站' })).toHaveClass('button--danger')
 
 		fireEvent.click(screen.getByRole('button', { name: '取消' }))
 		await waitFor(() => {
@@ -33,6 +37,57 @@ describe('DangerConfirmProvider', () => {
 			expect(screen.getByTestId('replace-first-result')).toHaveTextContent('cancelled')
 		})
 		expect(screen.getByText('确认移入回收站「项目 B」吗？')).toBeInTheDocument()
+	})
+
+	it('外点不关闭，Escape 取消并将焦点归还给触发按钮', async () => {
+		render(
+			<DangerConfirmProvider>
+				<TestHarness />
+			</DangerConfirmProvider>,
+		)
+
+		const trigger = screen.getByRole('button', { name: '请求回收站确认' })
+		trigger.focus()
+		fireEvent.click(trigger)
+		expect(await screen.findByRole('alertdialog')).toBeInTheDocument()
+
+		const backdrop = document.querySelector('[data-slot="alert-dialog-backdrop"]')
+		expect(backdrop).not.toBeNull()
+		fireEvent.click(backdrop!)
+		expect(screen.getByRole('alertdialog')).toBeInTheDocument()
+
+		fireEvent.keyDown(screen.getByRole('alertdialog'), { key: 'Escape' })
+		await waitFor(() => {
+			expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+			expect(screen.getByTestId('second-result')).toHaveTextContent('cancelled')
+			expect(trigger).toHaveFocus()
+		})
+	})
+
+	it('Dialog 根节点阻断字符键，默认 Enter 确认当前请求', async () => {
+		const onWindowKeyDown = vi.fn()
+		window.addEventListener('keydown', onWindowKeyDown)
+
+		try {
+			render(
+				<DangerConfirmProvider>
+					<TestHarness />
+				</DangerConfirmProvider>,
+			)
+
+			fireEvent.click(screen.getByRole('button', { name: '请求归档确认' }))
+			const dialog = await screen.findByRole('alertdialog')
+			await waitFor(() => expect(dialog).toHaveFocus())
+
+			fireEvent.keyDown(dialog, { key: 'w' })
+			expect(onWindowKeyDown).not.toHaveBeenCalled()
+
+			fireEvent.keyDown(dialog, { key: 'Enter' })
+			await waitFor(() => expect(screen.getByTestId('first-result')).toHaveTextContent('confirmed'))
+			expect(onWindowKeyDown).not.toHaveBeenCalled()
+		} finally {
+			window.removeEventListener('keydown', onWindowKeyDown)
+		}
 	})
 })
 

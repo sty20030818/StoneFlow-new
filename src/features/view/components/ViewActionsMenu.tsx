@@ -35,19 +35,15 @@ export function ViewActionsMenu({ activeView, onCreate, onEdit, onDelete }: View
 	return (
 		<DropdownMenu onOpenChange={handleMenuOpenChange} open={menuOpen}>
 			<ActionTooltip
+				isOpen={tooltipOpen}
+				label='视图操作'
 				onOpenChange={(nextOpen) => setTooltipOpen(menuOpen ? false : nextOpen)}
-				open={tooltipOpen}
 			>
-				<ActionTooltip.Trigger asChild>
-					<DropdownMenuTrigger asChild>
-						<Button aria-label='视图操作' size='icon-sm' type='button' variant='outline'>
-							<EllipsisIcon />
-						</Button>
-					</DropdownMenuTrigger>
-				</ActionTooltip.Trigger>
-				<ActionTooltip.Content>
-					<ActionTooltip.Row label='视图操作' />
-				</ActionTooltip.Content>
+				<DropdownMenuTrigger asChild>
+					<Button aria-label='视图操作' size='icon-sm' type='button' variant='outline'>
+						<EllipsisIcon />
+					</Button>
+				</DropdownMenuTrigger>
 			</ActionTooltip>
 			<DropdownMenuContent align='end'>
 				<DropdownMenuGroup>

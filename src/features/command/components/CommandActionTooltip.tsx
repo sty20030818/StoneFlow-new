@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Slot } from 'radix-ui'
+import { mergeProps, mergeRefs } from '@react-aria/utils'
 
 import type { CommandId } from '@/features/command/core'
 import type { KeybindingScope } from '@/features/command/keybinding'
@@ -19,15 +19,20 @@ type CommandShortcutProps = {
 	className?: string
 }
 
-/** 在菜单、按钮等组合组件中渲染 canonical 主快捷键，不复制键帽字符串。 */
-function CommandShortcut({ commandId, scope = 'global', className }: CommandShortcutProps) {
+function useCommandShortcutTokens(commandId: CommandId, scope: KeybindingScope) {
 	const registry = useShortcutRegistry()
-	const tokens = resolveCommandShortcut({
+
+	return resolveCommandShortcut({
 		registry,
 		commandId,
 		scope,
 		mode: 'primary',
 	})
+}
+
+/** 在菜单、按钮等组合组件中渲染 canonical 主快捷键，不复制键帽字符串。 */
+function CommandShortcut({ commandId, scope = 'global', className }: CommandShortcutProps) {
+	const tokens = useCommandShortcutTokens(commandId, scope)
 
 	if (!tokens) {
 		return null
@@ -41,13 +46,7 @@ function CommandShortcut({ commandId, scope = 'global', className }: CommandShor
  * 可单独放入 Sidebar / ContextMenu 自己管理的 Tooltip Root，避免 overlay trigger 嵌套。
  */
 function CommandTooltipRow({ commandId, label, scope = 'global' }: CommandTooltipRowProps) {
-	const registry = useShortcutRegistry()
-	const tokens = resolveCommandShortcut({
-		registry,
-		commandId,
-		scope,
-		mode: 'primary',
-	})
+	const tokens = useCommandShortcutTokens(commandId, scope)
 
 	return (
 		<ActionTooltip.Row
@@ -59,63 +58,59 @@ function CommandTooltipRow({ commandId, label, scope = 'global' }: CommandToolti
 
 type TooltipRootControlProps = Pick<
 	React.ComponentProps<typeof ActionTooltip>,
-	'defaultOpen' | 'delayDuration' | 'disableHoverableContent' | 'onOpenChange' | 'open'
+	'defaultOpen' | 'isOpen' | 'onOpenChange'
 >
 
 type CommandActionTooltipProps = TooltipRootControlProps &
 	Omit<React.ComponentPropsWithoutRef<'span'>, 'children' | 'onOpenChange'> & {
-		children: React.ReactElement
+		children: React.ReactElement<Record<string, unknown>>
 		commandId: CommandId
-		contentProps?: Omit<React.ComponentProps<typeof ActionTooltip.Content>, 'children'>
 		label: React.ReactNode
 		scope?: KeybindingScope
 	}
 
 type DisabledCommandActionTooltipProps = TooltipRootControlProps & {
-	children: React.ReactElement
+	children: React.ReactElement<Record<string, unknown>>
 	commandId: CommandId
-	contentProps?: Omit<React.ComponentProps<typeof ActionTooltip.Content>, 'children'>
 	label: string
 	scope?: KeybindingScope
 }
 
 /**
  * Command 绑定操作的标准 Tooltip。
- * 顶层剩余属性会经 Slot 转发到真实 trigger，因此可安全作为 Dropdown/Popover 的 asChild 子节点。
+ * 顶层剩余属性与 ref 会合并到唯一真实 trigger，供 Dropdown/Popover 等组合组件复用。
  */
 const CommandActionTooltip = React.forwardRef<HTMLElement, CommandActionTooltipProps>(
 	function CommandActionTooltip(
 		{
 			children,
 			commandId,
-			contentProps,
 			defaultOpen,
-			delayDuration,
-			disableHoverableContent,
+			isOpen,
 			label,
 			onOpenChange,
-			open,
 			scope = 'global',
 			...triggerProps
 		},
 		ref,
 	) {
+		const tokens = useCommandShortcutTokens(commandId, scope)
+		const mergedTriggerProps = mergeProps(triggerProps, children.props)
+		mergedTriggerProps.ref = mergeRefs(
+			ref,
+			children.props.ref as React.Ref<HTMLElement> | undefined,
+		)
+		const trigger = React.cloneElement(children, mergedTriggerProps)
+
 		return (
 			<ActionTooltip
 				defaultOpen={defaultOpen}
-				delayDuration={delayDuration}
-				disableHoverableContent={disableHoverableContent}
+				isOpen={isOpen}
+				label={label}
 				onOpenChange={onOpenChange}
-				open={open}
+				shortcut={tokens ? <ShortcutTokens tokens={tokens} /> : undefined}
 			>
-				<ActionTooltip.Trigger asChild>
-					<Slot.Root {...triggerProps} ref={ref}>
-						{children}
-					</Slot.Root>
-				</ActionTooltip.Trigger>
-				<ActionTooltip.Content {...contentProps}>
-					<CommandTooltipRow commandId={commandId} label={label} scope={scope} />
-				</ActionTooltip.Content>
+				{trigger}
 			</ActionTooltip>
 		)
 	},

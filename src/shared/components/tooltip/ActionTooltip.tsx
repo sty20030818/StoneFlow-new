@@ -1,26 +1,48 @@
 import * as React from 'react'
-
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/base/tooltip'
-import { cn } from '@/shared/lib/utils'
+import { Tooltip } from '@heroui/react'
+import { mergeProps, mergeRefs } from '@react-aria/utils'
 
 type ActionTooltipRowProps = {
 	label: React.ReactNode
 	shortcut?: React.ReactNode
 }
 
-function ActionTooltipRoot(props: React.ComponentProps<typeof Tooltip>) {
-	return <Tooltip {...props} />
-}
+type ActionTooltipProps = Omit<React.ComponentProps<typeof Tooltip>, 'children'> &
+	ActionTooltipRowProps & {
+		children: React.ReactElement<Record<string, unknown>>
+	}
 
-function ActionTooltipContent({
-	className,
+function ActionTooltipRoot({
+	children,
+	closeDelay = 0,
+	delay = 500,
+	label,
+	shortcut,
 	...props
-}: React.ComponentProps<typeof TooltipContent>) {
+}: ActionTooltipProps) {
 	return (
-		<TooltipContent
-			className={cn('inline-flex flex-col items-stretch gap-0.5 p-1.5', className)}
-			{...props}
-		/>
+		<Tooltip closeDelay={closeDelay} delay={delay} {...props}>
+			<Tooltip.Trigger
+				render={(triggerProps) => {
+					const mergedProps = mergeProps(triggerProps, children.props) as Record<string, unknown>
+					mergedProps.ref = mergeRefs(
+						triggerProps.ref as React.Ref<HTMLElement>,
+						children.props.ref as React.Ref<HTMLElement> | undefined,
+					)
+					if (children.props.role === undefined) delete mergedProps.role
+					if (children.props.tabIndex === undefined) delete mergedProps.tabIndex
+					if (children.props['data-slot'] === undefined) delete mergedProps['data-slot']
+
+					return React.cloneElement(children, mergedProps)
+				}}
+			/>
+			<Tooltip.Content
+				className='inline-flex flex-col items-stretch gap-0.5 p-1.5'
+				placement='bottom'
+			>
+				<ActionTooltipRow label={label} shortcut={shortcut} />
+			</Tooltip.Content>
+		</Tooltip>
 	)
 }
 
@@ -41,9 +63,7 @@ function ActionTooltipRow({ label, shortcut }: ActionTooltipRowProps) {
 }
 
 const ActionTooltip = Object.assign(ActionTooltipRoot, {
-	Content: ActionTooltipContent,
 	Row: ActionTooltipRow,
-	Trigger: TooltipTrigger,
 })
 
 export { ActionTooltip }

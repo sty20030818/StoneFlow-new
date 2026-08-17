@@ -274,22 +274,17 @@ function DateNavigationButton({
 	children: ReactNode
 }) {
 	return (
-		<ActionTooltip>
-			<ActionTooltip.Trigger asChild>
-				<Button
-					aria-label={label}
-					className='text-sf-text-secondary'
-					onClick={onClick}
-					size='icon-sm'
-					type='button'
-					variant='ghost'
-				>
-					{children}
-				</Button>
-			</ActionTooltip.Trigger>
-			<ActionTooltip.Content>
-				<ActionTooltip.Row label={label} />
-			</ActionTooltip.Content>
+		<ActionTooltip label={label}>
+			<Button
+				aria-label={label}
+				className='text-sf-text-secondary'
+				onClick={onClick}
+				size='icon-sm'
+				type='button'
+				variant='ghost'
+			>
+				{children}
+			</Button>
 		</ActionTooltip>
 	)
 }

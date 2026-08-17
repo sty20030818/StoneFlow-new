@@ -33,12 +33,7 @@ export type ShellCommandBridgeDeps = {
 	goForward: () => void
 	canGoBack: boolean
 	closeEntityDrawer: () => void
-	closeProjectCreateDialog: () => void
-	closeTaskCreateDialog: () => void
-	createDialogType: 'task' | 'project' | null
 	handleOpenTaskCreate: () => void
-	isCommandOpen: boolean
-	isShortcutHelpOpen: boolean
 	navigate: (opts: { to: never } | NavigateOptions) => unknown
 	openProjectCreateDialog: () => void
 	openTaskCreateDialog: ReturnType<typeof useDialogStore.getState>['openTaskCreateDialog']

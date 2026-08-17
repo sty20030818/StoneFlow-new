@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { FolderIcon, TargetIcon } from 'lucide-react'
 
-import { CommandShortcut, CommandTooltipRow } from '@/features/command'
+import { CommandShortcut } from '@/features/command'
 import {
 	buildMetadataShortcutItems,
 	findTaskPlacementGroupItem,
@@ -128,21 +128,16 @@ function GroupedPlacementDropdown({
 				</DisabledActionTooltip>
 			) : shouldShowTooltip && !disabled ? (
 				<ActionTooltip
+					isOpen={tooltipOpen && !menuOpen}
+					label={triggerLabel}
 					onOpenChange={(open) => setTooltipOpen(open && !menuOpen)}
-					open={tooltipOpen && !menuOpen}
+					shortcut={
+						shortcut ? (
+							<CommandShortcut commandId={shortcut.commandId} scope={shortcut.scope} />
+						) : undefined
+					}
 				>
-					<ActionTooltip.Trigger asChild>{trigger}</ActionTooltip.Trigger>
-					<ActionTooltip.Content>
-						{shortcut ? (
-							<CommandTooltipRow
-								commandId={shortcut.commandId}
-								label={triggerLabel}
-								scope={shortcut.scope}
-							/>
-						) : (
-							<ActionTooltip.Row label={triggerLabel} />
-						)}
-					</ActionTooltip.Content>
+					{trigger}
 				</ActionTooltip>
 			) : (
 				trigger

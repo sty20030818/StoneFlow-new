@@ -31,6 +31,7 @@ function DropdownMenuContent({
 	className,
 	align = 'start',
 	sideOffset = 4,
+	onKeyDown,
 	...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Content>) {
 	return (
@@ -44,6 +45,10 @@ function DropdownMenuContent({
 					'z-50 max-h-(--radix-dropdown-menu-content-available-height) w-(--radix-dropdown-menu-trigger-width) min-w-56 overflow-x-hidden overflow-y-auto rounded-lg border border-sf-border-secondary bg-popover p-1 text-popover-foreground shadow-(--sf-shadow-popover) data-[state=closed]:overflow-hidden',
 					className,
 				)}
+				onKeyDown={(event) => {
+					onKeyDown?.(event)
+					if (event.key !== 'Escape' || event.defaultPrevented) event.stopPropagation()
+				}}
 				{...props}
 			/>
 		</DropdownMenuPrimitive.Portal>
@@ -223,6 +228,7 @@ function DropdownMenuSubTrigger({
 
 function DropdownMenuSubContent({
 	className,
+	onKeyDown,
 	...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.SubContent>) {
 	return (
@@ -232,6 +238,10 @@ function DropdownMenuSubContent({
 				'z-50 min-w-24 overflow-hidden rounded-lg border border-sf-border-secondary bg-popover p-1 text-popover-foreground shadow-(--sf-shadow-popover)',
 				className,
 			)}
+			onKeyDown={(event) => {
+				onKeyDown?.(event)
+				if (event.key !== 'Escape' || event.defaultPrevented) event.stopPropagation()
+			}}
 			{...props}
 		/>
 	)

@@ -18,15 +18,10 @@ export function registerShellChromeCommands(
 		| 'handleOpenTaskCreate'
 		| 'openTaskCreateDialog'
 		| 'openProjectCreateDialog'
-		| 'isShortcutHelpOpen'
-		| 'createDialogType'
-		| 'closeTaskCreateDialog'
-		| 'closeProjectCreateDialog'
 		| 'activeDetail'
 		| 'closeEntityDrawer'
 		| 'taskPreviewController'
 		| 'toggleSidebar'
-		| 'isCommandOpen'
 		| 'canGoBack'
 		| 'goBack'
 		| 'goForward'
@@ -57,16 +52,13 @@ export function registerShellChromeCommands(
 			useDialogStore.getState().openCommand('project-picker')
 		},
 		closeCurrentLayer: (ctx) => {
-			if (host.isShortcutHelpOpen) {
-				useDialogStore.getState().closeShortcutHelp()
+			const dialogState = useDialogStore.getState()
+			if (dialogState.createDialogType === 'task') {
+				dialogState.closeTaskCreateDialog()
 				return
 			}
-			if (host.createDialogType === 'task') {
-				host.closeTaskCreateDialog()
-				return
-			}
-			if (host.createDialogType === 'project') {
-				host.closeProjectCreateDialog()
+			if (dialogState.createDialogType === 'project') {
+				dialogState.closeProjectCreateDialog()
 				return
 			}
 			if (host.activeDetail) {
@@ -75,10 +67,6 @@ export function registerShellChromeCommands(
 			}
 			if (host.taskPreviewController.previewState.open) {
 				host.taskPreviewController.closePreview()
-				return
-			}
-			if (host.isCommandOpen) {
-				useDialogStore.getState().closeCommand()
 				return
 			}
 			if (ctx.selection.hasSelection) {

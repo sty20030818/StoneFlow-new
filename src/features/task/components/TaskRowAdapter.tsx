@@ -418,13 +418,8 @@ function UpdatedAtCell({ value }: { value: string | null | undefined }) {
 	const formatted = formatShortDate(value)
 
 	return (
-		<ActionTooltip>
-			<ActionTooltip.Trigger asChild>
-				<span className='shrink-0 text-xs tabular-nums text-sf-text-tertiary'>{formatted}</span>
-			</ActionTooltip.Trigger>
-			<ActionTooltip.Content>
-				<ActionTooltip.Row label={`更新于 ${formatted}`} />
-			</ActionTooltip.Content>
+		<ActionTooltip label={`更新于 ${formatted}`}>
+			<span className='shrink-0 text-xs tabular-nums text-sf-text-tertiary'>{formatted}</span>
 		</ActionTooltip>
 	)
 }

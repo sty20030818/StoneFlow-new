@@ -24,6 +24,7 @@ import {
 	type BulkSelectionSnapshot,
 } from '@/features/bulk-action'
 import { DangerConfirmProvider } from '@/features/danger-confirm'
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/base/popover'
 import type { TaskListItem } from '@/shared/types'
 import { TaskPreviewProvider } from '@/features/task/detail'
 
@@ -207,17 +208,26 @@ describe('TaskRowShortcutScope', () => {
 		expect(useDialogStore.getState().commandMenuMode).toBe('task-priority-picker')
 	})
 
-	it('输入态和上层菜单打开时不触发', () => {
+	it('Overlay 已消费、编辑器与 IME 内的行级字符键不穿透', () => {
 		const actions = createActions()
-		renderScope({ actions, withBlockingLayer: true })
+		const bulkCalls: BulkActionCall[] = []
+		const onGlobalTrigger = vi.fn<(id: CommandId) => void>()
+		renderScope({ actions, bulkCalls, onGlobalTrigger, withConsumingOverlay: true })
 
 		fireEvent.mouseMove(screen.getByTestId('row-task-a'))
-		fireKey('w')
-		fireKey('x', { target: screen.getByLabelText('编辑标题') })
+		const overlay = screen.getByTestId('consuming-overlay')
+		fireEvent.keyDown(overlay, { key: 'w' })
+		fireEvent.keyDown(overlay, { key: 'x' })
+		fireEvent.keyDown(overlay, { key: 'a', metaKey: true })
+		fireEvent.keyDown(overlay, { key: 'Escape' })
+		fireEvent.keyDown(screen.getByLabelText('编辑标题'), { key: 'x' })
+		fireKey('a', { isComposing: true })
 		flushShortcutTimers()
 
-		expect(actions.onToggleTaskStatus).not.toHaveBeenCalled()
+		expect(bulkCalls).toHaveLength(0)
 		expect(actions.onToggleTaskSelection).not.toHaveBeenCalled()
+		expect(onGlobalTrigger).not.toHaveBeenCalled()
+		expect(screen.queryByTestId('consuming-overlay')).not.toBeInTheDocument()
 	})
 
 	it('多选时 W / A / Delete 批量执行，Space / Enter 不执行', () => {
@@ -265,14 +275,17 @@ describe('TaskRowShortcutScope', () => {
 		expect(bulkCalls[0]?.snapshot.ids).toEqual(['task-a'])
 	})
 
-	it('Escape 通过 list Registry 清空当前选择', () => {
+	it('Escape 让位给 global 统一关层命令', () => {
 		const actions = createActions()
-		renderScope({ actions, selectedTaskIds: ['task-a'] })
+		const onGlobalTrigger = vi.fn<(id: CommandId) => void>()
+		renderScope({ actions, onGlobalTrigger, selectedTaskIds: ['task-a'] })
 
 		const event = fireKey('Escape')
+		flushShortcutTimers()
 
 		expect(event.defaultPrevented).toBe(true)
-		expect(actions.onClearTaskSelection).toHaveBeenCalledTimes(1)
+		expect(onGlobalTrigger).toHaveBeenCalledWith(COMMAND_IDS.close)
+		expect(actions.onClearTaskSelection).not.toHaveBeenCalled()
 	})
 
 	it('多选且没有 row target 时仍使用 selection 执行', () => {
@@ -412,20 +425,6 @@ describe('TaskRowShortcutScope', () => {
 
 		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-b')
 		expect(screen.getByTestId('selected-count')).toHaveTextContent('0')
-	})
-
-	it('上层浮层打开时忽略 pointer leave，冻结当前 hover 行', () => {
-		const actions = createActions()
-		renderSelectionScope({ actions, withBlockingLayer: true })
-
-		fireEvent.pointerMove(screen.getByTestId('row-task-b'), { clientX: 8, clientY: 8 })
-		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-b')
-		expect(screen.getByTestId('hover-source')).toHaveTextContent('pointer')
-
-		fireEvent.mouseLeave(screen.getByTestId('row-task-b'))
-
-		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-b')
-		expect(screen.getByTestId('hover-source')).toHaveTextContent('pointer')
 	})
 
 	it('Shift+ArrowDown / Shift+ArrowUp 会逐行切换选中状态', () => {
@@ -633,12 +632,13 @@ describe('TaskRowShortcutScope', () => {
 		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-a')
 	})
 
-	it('上层菜单打开时 Arrow 和 Shift+Arrow 不触发范围选择', () => {
+	it('Overlay 已消费时 Arrow 和 Shift+Arrow 不触发范围选择', () => {
 		const actions = createActions()
-		renderSelectionScope({ actions, withBlockingLayer: true })
+		renderSelectionScope({ actions, withConsumingOverlay: true })
 
-		fireKey('ArrowDown')
-		fireKey('ArrowDown', { shiftKey: true })
+		const overlay = screen.getByTestId('consuming-overlay')
+		fireEvent.keyDown(overlay, { key: 'ArrowDown' })
+		fireEvent.keyDown(overlay, { key: 'ArrowDown', shiftKey: true })
 
 		expect(screen.getByTestId('focused-task')).toHaveTextContent('none')
 		expect(screen.getByTestId('selected-count')).toHaveTextContent('0')
@@ -757,7 +757,7 @@ function renderScope({
 	bulkResults,
 	confirmingActionIds = [],
 	selectedTaskIds = [],
-	withBlockingLayer = false,
+	withConsumingOverlay = false,
 	onGlobalTrigger = () => undefined,
 }: {
 	actions?: ReturnType<typeof createActions>
@@ -765,7 +765,7 @@ function renderScope({
 	bulkResults?: Partial<Record<BulkActionId, Partial<BulkActionResult>>>
 	confirmingActionIds?: BulkActionId[]
 	selectedTaskIds?: string[]
-	withBlockingLayer?: boolean
+	withConsumingOverlay?: boolean
 	onGlobalTrigger?: (id: CommandId) => void
 } = {}) {
 	const tasks = [
@@ -785,7 +785,7 @@ function renderScope({
 							confirmingActionIds,
 						})}
 					>
-						{withBlockingLayer ? <div data-slot='dropdown-menu-content' /> : null}
+						{withConsumingOverlay ? <ConsumingOverlay /> : null}
 						<input aria-label='编辑标题' />
 						<TaskRowShortcutScope
 							activeTaskId={null}
@@ -834,11 +834,11 @@ function renderScope({
 function renderSelectionScope({
 	actions = createActions(),
 	bulkCalls = [],
-	withBlockingLayer = false,
+	withConsumingOverlay = false,
 }: {
 	actions?: ReturnType<typeof createActions>
 	bulkCalls?: BulkActionCall[]
-	withBlockingLayer?: boolean
+	withConsumingOverlay?: boolean
 } = {}) {
 	const tasks = [
 		createTask({ id: 'task-a', title: '任务 A' }),
@@ -870,7 +870,7 @@ function renderSelectionScope({
 							confirmingActionIds: [],
 						})}
 					>
-						{withBlockingLayer ? <div data-slot='dropdown-menu-content' /> : null}
+						{withConsumingOverlay ? <ConsumingOverlay /> : null}
 						<div data-testid='focused-task'>{focusedTaskId ?? 'none'}</div>
 						<div data-testid='selected-count'>{selectedCount}</div>
 						<div data-testid='selected-ids'>{selectedTaskIds.join(',')}</div>
@@ -1036,7 +1036,10 @@ function createTask(overrides: Partial<TaskListItem> = {}): TaskListItem {
 
 function fireKey(
 	key: string,
-	options: Pick<KeyboardEventInit, 'metaKey' | 'ctrlKey' | 'altKey' | 'shiftKey'> & {
+	options: Pick<
+		KeyboardEventInit,
+		'metaKey' | 'ctrlKey' | 'altKey' | 'shiftKey' | 'isComposing'
+	> & {
 		target?: EventTarget
 	} = {},
 ) {
@@ -1048,6 +1051,7 @@ function fireKey(
 		ctrlKey: options.ctrlKey,
 		altKey: options.altKey,
 		shiftKey: options.shiftKey,
+		isComposing: options.isComposing,
 	})
 
 	Object.defineProperty(event, 'target', {
@@ -1060,6 +1064,21 @@ function fireKey(
 	})
 
 	return event
+}
+
+function ConsumingOverlay() {
+	return (
+		<Popover defaultOpen>
+			<PopoverTrigger asChild>
+				<button type='button'>测试浮层入口</button>
+			</PopoverTrigger>
+			<PopoverContent aria-label='测试浮层'>
+				<button data-testid='consuming-overlay' type='button'>
+					浮层动作
+				</button>
+			</PopoverContent>
+		</Popover>
+	)
 }
 
 function flushShortcutTimers() {

@@ -34,7 +34,8 @@ describe('FilterBar', () => {
 		)
 
 		const trigger = screen.getByRole('button', { name: '添加筛选' })
-		fireEvent.focus(trigger)
+		fireEvent.keyDown(document, { key: 'Tab' })
+		trigger.focus()
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('添加筛选')
 
 		fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false })

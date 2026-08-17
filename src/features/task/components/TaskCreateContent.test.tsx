@@ -36,8 +36,11 @@ describe('TaskCreateContent', () => {
 
 		const button = screen.getByRole('button', { name: '创建任务' })
 		expect(button).toBeDisabled()
-		const trigger = button.closest('[data-slot="disabled-command-action-tooltip-trigger"]')
-		fireEvent.focus(trigger!)
+		const trigger = button.closest<HTMLElement>(
+			'[data-slot="disabled-command-action-tooltip-trigger"]',
+		)
+		fireEvent.keyDown(document, { key: 'Tab' })
+		trigger?.focus()
 
 		const tooltip = await screen.findByRole('tooltip')
 		expect(tooltip).toHaveTextContent('创建任务')

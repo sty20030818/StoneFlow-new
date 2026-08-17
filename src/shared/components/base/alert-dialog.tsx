@@ -4,7 +4,6 @@ import * as React from 'react'
 import { AlertDialog as AlertDialogPrimitive } from 'radix-ui'
 
 import { cn } from '@/shared/lib/utils'
-import { useRegisterOpenModal } from '@/shared/lib/modal-guard'
 import { buttonVariants } from '@/shared/components/base/button'
 
 // AlertDialog 内通过 data 属性定位确认/取消按钮，
@@ -12,38 +11,8 @@ import { buttonVariants } from '@/shared/components/base/button'
 const ALERT_DIALOG_ACTION_SELECTOR = '[data-alert-dialog-action="true"]'
 const ALERT_DIALOG_CANCEL_SELECTOR = '[data-slot="alert-dialog-cancel"]'
 
-function AlertDialog({
-	open,
-	defaultOpen,
-	onOpenChange,
-	...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Root>) {
-	// 内部维护一份 open 状态副本，以便受控与非受控两种用法都能接入 ModalGuard。
-	const [internalOpen, setInternalOpen] = React.useState<boolean>(defaultOpen ?? false)
-	const isControlled = open !== undefined
-	const currentOpen = isControlled ? open : internalOpen
-
-	const handleOpenChange = React.useCallback(
-		(nextOpen: boolean) => {
-			if (!isControlled) {
-				setInternalOpen(nextOpen)
-			}
-			onOpenChange?.(nextOpen)
-		},
-		[isControlled, onOpenChange],
-	)
-
-	useRegisterOpenModal(currentOpen)
-
-	return (
-		<AlertDialogPrimitive.Root
-			data-slot='alert-dialog'
-			open={open}
-			defaultOpen={defaultOpen}
-			onOpenChange={handleOpenChange}
-			{...props}
-		/>
-	)
+function AlertDialog(props: React.ComponentProps<typeof AlertDialogPrimitive.Root>) {
+	return <AlertDialogPrimitive.Root data-slot='alert-dialog' {...props} />
 }
 
 function AlertDialogTrigger({

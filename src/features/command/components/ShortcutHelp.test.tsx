@@ -6,7 +6,6 @@ import { DEFAULT_KEYBINDINGS, KeybindingRegistry } from '@/features/command/keyb
 import { ShortcutRegistryProvider } from '@/features/command/shortcuts'
 import type { ShellCommandActions } from '@/features/command/adapters'
 import { TASK_ROW_SHORTCUT_BINDINGS } from '@/features/task/shortcut-contribution'
-import { TooltipProvider } from '@/shared/components/base/tooltip'
 
 import { ShortcutHelp } from './ShortcutHelp'
 
@@ -31,8 +30,10 @@ describe('ShortcutHelp', () => {
 		expect(screen.queryByText('命令内')).not.toBeInTheDocument()
 		expect(screen.queryByText('未绑定')).not.toBeInTheDocument()
 		const closeButton = screen.getByRole('button', { name: '关闭快捷键帮助' })
-		fireEvent.focus(closeButton)
+		fireEvent.keyDown(document, { key: 'Tab' })
+		closeButton.focus()
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('关闭')
+		fireEvent.pointerDown(closeButton, { pointerType: 'mouse' })
 		fireEvent.click(closeButton)
 		await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument())
 	})
@@ -72,9 +73,7 @@ const shortcutRegistry = new KeybindingRegistry([
 
 function renderShortcutHelp(node: React.ReactNode) {
 	return render(
-		<ShortcutRegistryProvider registry={shortcutRegistry}>
-			<TooltipProvider>{node}</TooltipProvider>
-		</ShortcutRegistryProvider>,
+		<ShortcutRegistryProvider registry={shortcutRegistry}>{node}</ShortcutRegistryProvider>,
 	)
 }
 

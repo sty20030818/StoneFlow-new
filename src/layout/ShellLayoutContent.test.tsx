@@ -81,7 +81,8 @@ describe('Shell 阶段 D 结构', () => {
 		expect(screen.queryByTestId('sidebar-navigation')).not.toBeInTheDocument()
 		fireEvent.click(screen.getByRole('button', { name: '打开导航' }))
 
-		expect(await screen.findByRole('dialog')).toBeInTheDocument()
+		const dialog = await screen.findByRole('dialog')
+		expect(dialog).toBeInTheDocument()
 		expect(screen.queryByRole('button', { name: '关闭导航' })).not.toBeInTheDocument()
 		expect(screen.getByRole('dialog')).toHaveClass('pt-12')
 		expect(document.querySelector('[data-shell-sidebar-sheet="true"]')).toHaveStyle({
@@ -99,6 +100,12 @@ describe('Shell 阶段 D 结构', () => {
 			'grid-cols-[auto_minmax(0,1fr)]',
 		)
 		expect(document.querySelectorAll('main')).toHaveLength(1)
+
+		const onWindowKeyDown = vi.fn()
+		window.addEventListener('keydown', onWindowKeyDown)
+		fireEvent.keyDown(dialog, { key: 'w' })
+		expect(onWindowKeyDown).not.toHaveBeenCalled()
+		window.removeEventListener('keydown', onWindowKeyDown)
 	})
 
 	it('compact 任务详情打开时阻止导航 Sheet 同时呈现', async () => {

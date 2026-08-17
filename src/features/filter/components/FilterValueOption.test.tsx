@@ -1,11 +1,11 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import {
 	DropdownMenu,
 	DropdownMenuContent,
+	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from '@/shared/components/base/dropdown-menu'
-import { TooltipProvider } from '@/shared/components/base/tooltip'
 
 import { getFilterValueOptions } from './filterOptionCatalog'
 import { FilterValueOption } from './FilterValueOption'
@@ -27,14 +27,12 @@ describe('filter value options', () => {
 	it('勾选值后保持菜单打开', () => {
 		const onToggle = vi.fn()
 		render(
-			<TooltipProvider>
-				<DropdownMenu defaultOpen>
-					<DropdownMenuTrigger>筛选</DropdownMenuTrigger>
-					<DropdownMenuContent>
-						<FilterValueOption checked={false} label='高' onToggle={onToggle} />
-					</DropdownMenuContent>
-				</DropdownMenu>
-			</TooltipProvider>,
+			<DropdownMenu defaultOpen>
+				<DropdownMenuTrigger>筛选</DropdownMenuTrigger>
+				<DropdownMenuContent>
+					<FilterValueOption checked={false} label='高' onToggle={onToggle} />
+				</DropdownMenuContent>
+			</DropdownMenu>,
 		)
 
 		const option = screen.getByRole('menuitemcheckbox', { name: '高' })
@@ -44,5 +42,21 @@ describe('filter value options', () => {
 
 		expect(onToggle).toHaveBeenCalledTimes(1)
 		expect(screen.getByRole('menuitemcheckbox', { name: '高' })).toBeInTheDocument()
+	})
+
+	it('菜单内容阻断全局冒泡时仍保留 Radix typeahead', async () => {
+		render(
+			<DropdownMenu defaultOpen>
+				<DropdownMenuTrigger>筛选</DropdownMenuTrigger>
+				<DropdownMenuContent>
+					<DropdownMenuItem>Alpha</DropdownMenuItem>
+					<DropdownMenuItem>Beta</DropdownMenuItem>
+				</DropdownMenuContent>
+			</DropdownMenu>,
+		)
+
+		fireEvent.keyDown(screen.getByRole('menu'), { key: 'b' })
+
+		await waitFor(() => expect(screen.getByRole('menuitem', { name: 'Beta' })).toHaveFocus())
 	})
 })

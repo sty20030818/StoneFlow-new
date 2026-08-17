@@ -16,7 +16,6 @@ import {
 import type { ShellCommandActions } from '@/features/command/adapters'
 
 import type { SearchEntitiesResult, SearchProjectItem, SearchTaskItem } from '@/shared/types'
-import { TooltipProvider } from '@/shared/components/base/tooltip'
 import { CommandMenu } from './CommandMenu'
 import type { CommandMenuMode } from './command-menu-types'
 
@@ -605,11 +604,7 @@ function renderCommandMenu({
 const testShortcutRegistry = new KeybindingRegistry(DEFAULT_KEYBINDINGS)
 
 function withCommandProviders(node: React.ReactNode) {
-	return (
-		<ShortcutRegistryProvider registry={testShortcutRegistry}>
-			<TooltipProvider delayDuration={0}>{node}</TooltipProvider>
-		</ShortcutRegistryProvider>
-	)
+	return <ShortcutRegistryProvider registry={testShortcutRegistry}>{node}</ShortcutRegistryProvider>
 }
 
 function createTestQueryClient() {

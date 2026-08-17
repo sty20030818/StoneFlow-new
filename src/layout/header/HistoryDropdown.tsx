@@ -1,11 +1,12 @@
-import { memo, useState } from 'react'
-import { Dropdown, Tooltip } from '@heroui/react'
+import { memo } from 'react'
+import { Dropdown } from '@heroui/react'
 import { Header } from 'react-aria-components'
 
 import { getSpaceVisual } from '@/features/space'
 import type { ShellRouteHistoryEntry } from '@/app/navigation'
 import type { Space } from '@/shared/types'
 import { cn } from '@/shared/lib/utils'
+import { ActionTooltip } from '@/shared/components/tooltip'
 import {
 	shellChromeNavCircleButtonClass,
 	shellChromeNavCircleButtonExpandedClass,
@@ -29,30 +30,16 @@ type HistoryDropdownProps = {
 }
 
 export function HistoryDropdown({ entries, spaces, onNavigate }: HistoryDropdownProps) {
-	const [menuOpen, setMenuOpen] = useState(false)
-	const [tooltipOpen, setTooltipOpen] = useState(false)
-
-	function handleMenuOpenChange(nextOpen: boolean) {
-		setMenuOpen(nextOpen)
-		if (nextOpen) {
-			setTooltipOpen(false)
-		}
-	}
-
 	return (
-		<Dropdown isOpen={menuOpen} onOpenChange={handleMenuOpenChange}>
-			<Tooltip
-				isOpen={tooltipOpen}
-				onOpenChange={(nextOpen) => setTooltipOpen(menuOpen ? false : nextOpen)}
-			>
+		<Dropdown>
+			<ActionTooltip label='打开历史记录'>
 				<Dropdown.Trigger
 					aria-label='打开历史记录'
 					className={`${shellChromeNavCircleButtonClass} ${shellChromeNavCircleButtonExpandedClass}`}
 				>
 					<HistoryIcon className='size-3.5' />
 				</Dropdown.Trigger>
-				<Tooltip.Content>打开历史记录</Tooltip.Content>
-			</Tooltip>
+			</ActionTooltip>
 			<Dropdown.Popover className='min-w-68' placement='bottom start'>
 				<Dropdown.Menu aria-label='最近浏览'>
 					<Dropdown.Section>

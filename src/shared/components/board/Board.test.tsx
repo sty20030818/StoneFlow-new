@@ -3,7 +3,6 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import { BoardCollapsibleSection, BoardRows } from '@/shared/components/board'
 import { ContextMenuContent } from '@/shared/components/base/context-menu'
-import { TooltipProvider } from '@/shared/components/base/tooltip'
 import { RowShell } from '@/shared/components/row'
 
 function Wrapper({ children }: { children: ReactNode }) {
@@ -82,18 +81,16 @@ describe('BoardRows', () => {
 describe('BoardCollapsibleSection', () => {
 	it('在数量 badge 右侧渲染选中数量 badge', () => {
 		render(
-			<TooltipProvider>
-				<BoardCollapsibleSection
-					count={12}
-					icon={<span data-testid='icon' />}
-					label='进行中'
-					onOpenChange={() => undefined}
-					open
-					selectedCount={3}
-				>
-					<div>row</div>
-				</BoardCollapsibleSection>
-			</TooltipProvider>,
+			<BoardCollapsibleSection
+				count={12}
+				icon={<span data-testid='icon' />}
+				label='进行中'
+				onOpenChange={() => undefined}
+				open
+				selectedCount={3}
+			>
+				<div>row</div>
+			</BoardCollapsibleSection>,
 		)
 
 		expect(screen.getByText('12')).toBeInTheDocument()
@@ -102,24 +99,24 @@ describe('BoardCollapsibleSection', () => {
 
 	it('折叠动作显示当前语义，并在右键菜单打开时关闭提示', async () => {
 		render(
-			<TooltipProvider delayDuration={0}>
-				<BoardCollapsibleSection
-					contextMenuContent={<ContextMenuContent>分区菜单</ContextMenuContent>}
-					count={2}
-					icon={<span />}
-					label='进行中'
-					onOpenChange={() => undefined}
-					open
-				>
-					<div>row</div>
-				</BoardCollapsibleSection>
-			</TooltipProvider>,
+			<BoardCollapsibleSection
+				contextMenuContent={<ContextMenuContent>分区菜单</ContextMenuContent>}
+				count={2}
+				icon={<span />}
+				label='进行中'
+				onOpenChange={() => undefined}
+				open
+			>
+				<div>row</div>
+			</BoardCollapsibleSection>,
 		)
 
 		const toggle = screen.getByRole('button', { name: '折叠 进行中' })
-		fireEvent.focus(toggle)
+		fireEvent.keyDown(document, { key: 'Tab' })
+		toggle.focus()
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('折叠 进行中')
 
+		fireEvent.pointerDown(toggle, { button: 2, pointerType: 'mouse' })
 		fireEvent.contextMenu(toggle.closest('[data-board-section-header]')!)
 		expect(await screen.findByText('分区菜单')).toBeInTheDocument()
 		await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument())

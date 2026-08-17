@@ -128,14 +128,7 @@ function IconButton({
 		)
 	}
 
-	return (
-		<ActionTooltip>
-			<ActionTooltip.Trigger asChild>{action}</ActionTooltip.Trigger>
-			<ActionTooltip.Content>
-				<ActionTooltip.Row label={ariaLabel} />
-			</ActionTooltip.Content>
-		</ActionTooltip>
-	)
+	return <ActionTooltip label={ariaLabel}>{action}</ActionTooltip>
 }
 
 /** 环 / 自定义指示器容器 */

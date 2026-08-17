@@ -48,8 +48,6 @@ export function useShellCommandSystem({
 	handleOpenTaskCreate,
 	openTaskCreateDialog,
 	openProjectCreateDialog,
-	closeTaskCreateDialog,
-	closeProjectCreateDialog,
 	goBack,
 	goForward,
 	canGoBack,
@@ -64,8 +62,6 @@ export function useShellCommandSystem({
 	handleOpenTaskCreate: () => void
 	openTaskCreateDialog: OpenTaskCreate
 	openProjectCreateDialog: () => void
-	closeTaskCreateDialog: () => void
-	closeProjectCreateDialog: () => void
 	goBack: () => void
 	goForward: () => void
 	canGoBack: boolean
@@ -124,12 +120,7 @@ export function useShellCommandSystem({
 		goForward,
 		canGoBack,
 		closeEntityDrawer,
-		closeProjectCreateDialog,
-		closeTaskCreateDialog,
-		createDialogType,
 		handleOpenTaskCreate,
-		isCommandOpen,
-		isShortcutHelpOpen,
 		isSettingsMode,
 		navigate,
 		openProjectCreateDialog,

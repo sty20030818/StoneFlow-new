@@ -2,7 +2,6 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { isAnyModalOpen } from '@/shared/lib/modal-guard'
 import { EntityDetailDrawerHost } from './EntityDetailDrawerHost'
 
 type MockTaskDetailViewModel = {
@@ -141,12 +140,16 @@ describe('EntityDetailDrawerHost', () => {
 		expect(onClose).not.toHaveBeenCalled()
 	})
 
-	it('compact Sheet 注册模态闸门，切回 desktop 后立即释放', async () => {
-		const view = renderHost({ isCompact: true })
-		await waitFor(() => expect(isAnyModalOpen()).toBe(true))
+	it('compact Sheet 在组件边界阻断行级字符键冒泡', async () => {
+		const onWindowKeyDown = vi.fn()
+		window.addEventListener('keydown', onWindowKeyDown)
+		renderHost({ isCompact: true })
 
-		view.rerender(createHost({ isCompact: false }))
-		await waitFor(() => expect(isAnyModalOpen()).toBe(false))
+		const dialog = await screen.findByRole('dialog', { name: '任务详情' })
+		fireEvent.keyDown(dialog, { key: 'w' })
+
+		expect(onWindowKeyDown).not.toHaveBeenCalled()
+		window.removeEventListener('keydown', onWindowKeyDown)
 	})
 
 	it('打开和关闭详情时不重建主集合 DOM', () => {

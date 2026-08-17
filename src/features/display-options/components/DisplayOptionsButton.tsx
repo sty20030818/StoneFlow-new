@@ -51,7 +51,7 @@ export function DisplayOptionsButton({ pageKey }: DisplayOptionsButtonProps) {
 					commandId={COMMAND_IDS.displayOpenOptions}
 					label='显示选项'
 					onOpenChange={(nextOpen) => setTooltipOpen(open ? false : nextOpen)}
-					open={tooltipOpen}
+					isOpen={tooltipOpen}
 				>
 					<Button aria-label='显示选项' size='icon-sm' type='button' variant='outline'>
 						<SlidersHorizontalIcon />

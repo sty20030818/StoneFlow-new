@@ -41,6 +41,7 @@ function ContextMenuRadioGroup({
 
 function ContextMenuContent({
 	className,
+	onKeyDown,
 	...props
 }: React.ComponentProps<typeof ContextMenuPrimitive.Content> & {
 	side?: 'top' | 'right' | 'bottom' | 'left'
@@ -53,6 +54,10 @@ function ContextMenuContent({
 					'z-50 max-h-(--radix-context-menu-content-available-height) min-w-44 overflow-x-hidden overflow-y-auto rounded-xl border border-sf-border-secondary bg-popover p-1.5 text-popover-foreground shadow-(--sf-shadow-popover)',
 					className,
 				)}
+				onKeyDown={(event) => {
+					onKeyDown?.(event)
+					if (event.key !== 'Escape' || event.defaultPrevented) event.stopPropagation()
+				}}
 				{...props}
 			/>
 		</ContextMenuPrimitive.Portal>
@@ -108,6 +113,7 @@ function ContextMenuSubTrigger({
 
 function ContextMenuSubContent({
 	className,
+	onKeyDown,
 	...props
 }: React.ComponentProps<typeof ContextMenuPrimitive.SubContent>) {
 	return (
@@ -117,6 +123,10 @@ function ContextMenuSubContent({
 				'z-50 min-w-40 overflow-hidden rounded-xl border border-sf-border-secondary bg-popover p-1.5 text-popover-foreground shadow-(--sf-shadow-popover)',
 				className,
 			)}
+			onKeyDown={(event) => {
+				onKeyDown?.(event)
+				if (event.key !== 'Escape' || event.defaultPrevented) event.stopPropagation()
+			}}
 			{...props}
 		/>
 	)

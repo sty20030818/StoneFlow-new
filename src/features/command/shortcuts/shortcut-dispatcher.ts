@@ -37,8 +37,16 @@ export class ShortcutDispatcher {
 	}
 
 	dispatch(event: KeyboardEvent, options: { globalChordPending?: boolean } = {}) {
+		if (event.defaultPrevented || event.isComposing) {
+			return 'unhandled' as const
+		}
+
 		const registrations = [...this.registrations.values()].sort(
-			(left, right) => right.priority - left.priority || left.id - right.id,
+			(left, right) =>
+				// Escape 由 Shell 的全局层级裁决；普通快捷键仍让最具体的 scope 优先。
+				(event.key === 'Escape'
+					? left.priority - right.priority
+					: right.priority - left.priority) || left.id - right.id,
 		)
 
 		for (const registration of registrations) {

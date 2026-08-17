@@ -1,5 +1,4 @@
 import { isGlobalChordPending } from '@/shared/lib/global-chord-guard'
-import { isHigherInteractionLayerOpen } from '@/shared/lib/interaction-layer'
 import type { NormalizedKeyEvent } from '@/features/command'
 
 import type { PointerPoint } from './types'
@@ -36,14 +35,12 @@ export function toTaskRowRef(taskId: string | null | undefined) {
 	return taskId ? { targetId: taskId } : null
 }
 
+/**
+ * Overlay、编辑态与 IME 由键位匹配器读取同一个 KeyboardEvent 后决定是否忽略；
+ * 这里仅保留跨 scope 的同步 chord 会话让位。
+ */
 export function isBlockedByHigherLayer() {
-	// 全局 chord 进行中时让位给全局命令系统，防止 chord 第二键（如 f→p 中的 p）
-	// 被 Row 单键命令（如 taskSetPriority）同时消费。
-	if (isGlobalChordPending()) {
-		return true
-	}
-
-	return isHigherInteractionLayerOpen()
+	return isGlobalChordPending()
 }
 
 export function normalizeKeyboardEvent(event: KeyboardEvent): NormalizedKeyEvent {
@@ -60,13 +57,14 @@ export function normalizeKeyboardEvent(event: KeyboardEvent): NormalizedKeyEvent
 }
 
 export function isEditableEventTarget(target: EventTarget | null) {
-	if (!(target instanceof HTMLElement)) {
+	if (typeof HTMLElement === 'undefined' || !(target instanceof HTMLElement)) {
 		return false
 	}
 
 	return (
 		target.tagName === 'INPUT' ||
 		target.tagName === 'TEXTAREA' ||
+		target.tagName === 'SELECT' ||
 		target.isContentEditable ||
 		target.closest('[contenteditable="true"]') !== null
 	)

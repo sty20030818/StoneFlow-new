@@ -1,26 +1,15 @@
 import type { Space } from '@/shared/types'
 
+import { Button, Dropdown, Modal } from '@heroui/react'
+import { useId } from 'react'
+
 import {
 	createSpaceMetadataDropdownProps,
-	createSpaceMetadataOptions,
 	getSpaceMetadataButtonVisual,
-	MetadataFieldDropdown,
 } from '@/features/metadata-fields'
-import { Button } from '@/shared/components/base/button'
 import { ActionTooltip } from '@/shared/components/tooltip'
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogTitle,
-} from '@/shared/components/base/dialog'
-import {
-	createDialogHeaderClass,
-	createDialogShellClass,
-	createDialogShellFullscreenClass,
-} from '@/shared/components/patterns/create-dialog'
 import { cn } from '@/shared/lib/utils'
-import { ChevronRightIcon, Maximize2Icon, Minimize2Icon, XIcon } from 'lucide-react'
+import { CheckIcon, ChevronRightIcon, Maximize2Icon, Minimize2Icon, XIcon } from 'lucide-react'
 
 type CreateDialogShellProps = {
 	open: boolean
@@ -58,40 +47,59 @@ export function CreateDialogShell({
 	const currentSpace = selectedSpaceId
 		? (spaces.find((space) => space.id === selectedSpaceId) ?? null)
 		: null
+	const descriptionId = useId()
 	// 创建必须落到具体 Space；空选中态提示选择，而不是伪装成「所有空间」聚合
 	const currentSpaceLabel = currentSpace?.name ?? '选择空间'
 
 	return (
-		<Dialog onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>
-			<DialogContent
-				className={cn(fullscreen ? createDialogShellFullscreenClass : createDialogShellClass)}
-				showCloseButton={false}
-			>
-				<DialogTitle className='sr-only'>{title}</DialogTitle>
-				<DialogDescription className='sr-only'>{description}</DialogDescription>
-
-				<div className={createDialogHeaderClass}>
-					<div className='flex items-center gap-1 text-[13px]'>
-						<CreateDialogSpaceSelector
-							currentSpace={currentSpace}
-							currentSpaceLabel={currentSpaceLabel}
-							onSelectSpace={onSelectSpace}
-							selectedSpaceId={selectedSpaceId}
-							spaces={spaces}
+		<Modal.Backdrop
+			isKeyboardDismissDisabled={false}
+			isOpen={open}
+			onOpenChange={(nextOpen) => !nextOpen && onClose()}
+		>
+			<Modal.Container placement='center' size='lg'>
+				<Modal.Dialog
+					aria-describedby={descriptionId}
+					className={cn(
+						'flex min-h-[30dvh] max-h-[70dvh] flex-col gap-0 overflow-hidden p-0',
+						fullscreen &&
+							'h-[70dvh] w-[min(72rem,calc(100vw-1.5rem))] max-w-[min(72rem,calc(100vw-1.5rem))]',
+					)}
+					render={(dialogProps) => (
+						<section
+							{...dialogProps}
+							onKeyDown={(event) => {
+								if (event.key !== 'Escape' || event.defaultPrevented) event.stopPropagation()
+							}}
 						/>
-						<ChevronRightIcon className='size-3.5 text-sf-icon-subtle' />
-						<span className='font-black text-legacy-foreground'>{title}</span>
-					</div>
+					)}
+				>
+					<Modal.Heading className='sr-only'>{title}</Modal.Heading>
+					<p className='sr-only' id={descriptionId}>
+						{description}
+					</p>
 
-					<div className='flex items-center gap-0.5'>
-						{showFullscreenToggle ? (
-							<ActionTooltip>
-								<ActionTooltip.Trigger asChild>
+					<div className='flex shrink-0 items-center justify-between p-3'>
+						<div className='flex items-center gap-1 text-[13px]'>
+							<CreateDialogSpaceSelector
+								currentSpace={currentSpace}
+								currentSpaceLabel={currentSpaceLabel}
+								onSelectSpace={onSelectSpace}
+								selectedSpaceId={selectedSpaceId}
+								spaces={spaces}
+							/>
+							<ChevronRightIcon className='size-3.5 text-muted' />
+							<span className='font-black text-foreground'>{title}</span>
+						</div>
+
+						<div className='flex items-center gap-0.5'>
+							{showFullscreenToggle ? (
+								<ActionTooltip label={fullscreen ? '退出全屏创建' : '全屏创建'}>
 									<Button
 										aria-label={fullscreen ? '退出全屏创建' : '全屏创建'}
-										className='size-7 text-sf-icon-secondary'
-										onClick={onToggleFullscreen}
-										size='icon-sm'
+										isIconOnly
+										onPress={onToggleFullscreen}
+										size='sm'
 										type='button'
 										variant='ghost'
 									>
@@ -101,34 +109,27 @@ export function CreateDialogShell({
 											<Maximize2Icon className='size-3.5' />
 										)}
 									</Button>
-								</ActionTooltip.Trigger>
-								<ActionTooltip.Content>
-									<ActionTooltip.Row label={fullscreen ? '退出全屏创建' : '全屏创建'} />
-								</ActionTooltip.Content>
-							</ActionTooltip>
-						) : null}
-						<ActionTooltip>
-							<ActionTooltip.Trigger asChild>
+								</ActionTooltip>
+							) : null}
+							<ActionTooltip label='关闭创建窗口'>
 								<Button
 									aria-label='关闭创建窗口'
-									className='size-7 text-sf-icon-secondary'
-									onClick={onClose}
-									size='icon-sm'
+									isIconOnly
+									onPress={onClose}
+									size='sm'
+									type='button'
 									variant='ghost'
 								>
 									<XIcon className='size-3.5' />
 								</Button>
-							</ActionTooltip.Trigger>
-							<ActionTooltip.Content>
-								<ActionTooltip.Row label='关闭创建窗口' />
-							</ActionTooltip.Content>
-						</ActionTooltip>
+							</ActionTooltip>
+						</div>
 					</div>
-				</div>
 
-				<div className='flex min-h-0 flex-1 flex-col overflow-hidden'>{children}</div>
-			</DialogContent>
-		</Dialog>
+					<div className='flex min-h-0 flex-1 flex-col overflow-hidden'>{children}</div>
+				</Modal.Dialog>
+			</Modal.Container>
+		</Modal.Backdrop>
 	)
 }
 
@@ -145,20 +146,32 @@ function CreateDialogSpaceSelector({
 	spaces: Space[]
 	onSelectSpace: (spaceId: string | null) => void
 }) {
-	const options = createSpaceMetadataOptions(spaces)
 	const spaceDropdownProps = createSpaceMetadataDropdownProps(spaces)
 	const buttonVisual = getSpaceMetadataButtonVisual(currentSpace)
-	const fallbackValue = selectedSpaceId ?? options[0]?.value ?? ''
 
 	return (
-		<MetadataFieldDropdown
-			buttonIcon={buttonVisual.icon}
-			buttonLabel={currentSpaceLabel}
-			label='空间'
-			menuLabel={spaceDropdownProps.menuLabel}
-			options={options}
-			value={fallbackValue}
-			onChange={onSelectSpace}
-		/>
+		<Dropdown>
+			<Button aria-label='空间' className='max-w-52' size='sm' type='button' variant='outline'>
+				{buttonVisual.icon}
+				<span className='min-w-0 truncate'>{currentSpaceLabel}</span>
+			</Button>
+			<Dropdown.Popover offset={6} placement='bottom start'>
+				<Dropdown.Menu aria-label={spaceDropdownProps.menuLabel}>
+					{spaceDropdownProps.options.map((option) => (
+						<Dropdown.Item
+							id={option.key ?? option.value}
+							isDisabled={option.disabled}
+							key={option.key ?? option.value}
+							onAction={() => onSelectSpace(option.value)}
+							textValue={option.label}
+						>
+							{option.icon}
+							<span className='min-w-0 flex-1 truncate'>{option.label}</span>
+							{option.value === selectedSpaceId ? <CheckIcon className='ml-auto size-4' /> : null}
+						</Dropdown.Item>
+					))}
+				</Dropdown.Menu>
+			</Dropdown.Popover>
+		</Dropdown>
 	)
 }

@@ -55,12 +55,5 @@ export function ShellFooterHit({
 
 	if (disabled || !tooltipLabel || tooltipLabel === label) return action
 
-	return (
-		<ActionTooltip>
-			<ActionTooltip.Trigger asChild>{action}</ActionTooltip.Trigger>
-			<ActionTooltip.Content>
-				<ActionTooltip.Row label={tooltipLabel} />
-			</ActionTooltip.Content>
-		</ActionTooltip>
-	)
+	return <ActionTooltip label={tooltipLabel}>{action}</ActionTooltip>
 }

@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { useState } from 'react'
 
-import { TooltipProvider } from '@/shared/components/base/tooltip'
 import type { Space } from '@/shared/types'
 import { CreateDialogShell } from './CreateDialogShell'
 
@@ -38,6 +38,27 @@ describe('CreateDialogShell', () => {
 
 		expect(onSelectSpace).toHaveBeenCalledWith('space-b')
 	})
+
+	it('Escape 关闭最高层并将焦点归还给普通 trigger', async () => {
+		const onWindowKeyDown = vi.fn()
+		window.addEventListener('keydown', onWindowKeyDown)
+		render(<FocusRestoreHarness />)
+		const trigger = screen.getByRole('button', { name: '打开创建窗口' })
+
+		trigger.focus()
+		fireEvent.click(trigger)
+		const dialog = await screen.findByRole('dialog', { name: '新建任务' })
+
+		fireEvent.keyDown(dialog, { key: 'w' })
+		expect(onWindowKeyDown).not.toHaveBeenCalled()
+		fireEvent.keyDown(dialog, { key: 'Escape' })
+
+		await waitFor(() => {
+			expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+			expect(trigger).toHaveFocus()
+		})
+		window.removeEventListener('keydown', onWindowKeyDown)
+	})
 })
 
 function renderCreateDialogShell({
@@ -48,19 +69,42 @@ function renderCreateDialogShell({
 	selectedSpaceId: string | null
 }) {
 	return render(
-		<TooltipProvider>
-			<CreateDialogShell
-				description='创建一个新任务'
-				onClose={vi.fn()}
-				onSelectSpace={onSelectSpace}
-				open
-				selectedSpaceId={selectedSpaceId}
-				spaces={spaces}
-				title='新建任务'
-			>
-				<div>表单内容</div>
-			</CreateDialogShell>
-		</TooltipProvider>,
+		<CreateDialogShell
+			description='创建一个新任务'
+			onClose={vi.fn()}
+			onSelectSpace={onSelectSpace}
+			open
+			selectedSpaceId={selectedSpaceId}
+			spaces={spaces}
+			title='新建任务'
+		>
+			<div>表单内容</div>
+		</CreateDialogShell>,
+	)
+}
+
+function FocusRestoreHarness() {
+	const [open, setOpen] = useState(false)
+
+	return (
+		<>
+			<button onClick={() => setOpen(true)} type='button'>
+				打开创建窗口
+			</button>
+			{open ? (
+				<CreateDialogShell
+					description='创建一个新任务'
+					onClose={() => setOpen(false)}
+					onSelectSpace={vi.fn()}
+					open
+					selectedSpaceId='space-a'
+					spaces={spaces}
+					title='新建任务'
+				>
+					<div>表单内容</div>
+				</CreateDialogShell>
+			) : null}
+		</>
 	)
 }
 

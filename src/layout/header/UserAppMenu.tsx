@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { Avatar, Badge, Dropdown, Tooltip } from '@heroui/react'
+import { Avatar, Badge, Dropdown } from '@heroui/react'
 
 import {
 	COMMAND_IDS,
@@ -9,6 +8,7 @@ import {
 } from '@/features/command'
 import { useManualUpdateCheck } from '@/features/update'
 import { ShortcutTokens } from '@/shared/components/ShortcutTokens'
+import { ActionTooltip } from '@/shared/components/tooltip'
 import { cn } from '@/shared/lib/utils'
 import {
 	shellChromeNavCircleButtonClass,
@@ -50,23 +50,10 @@ export function UserAppMenu({
 	onOpenAbout,
 }: UserAppMenuProps) {
 	const { checkNow, disabled, isChecking } = useManualUpdateCheck()
-	const [menuOpen, setMenuOpen] = useState(false)
-	const [tooltipOpen, setTooltipOpen] = useState(false)
-
-	function handleMenuOpenChange(nextOpen: boolean) {
-		setMenuOpen(nextOpen)
-		if (nextOpen) {
-			setTooltipOpen(false)
-		}
-	}
 
 	return (
-		<Dropdown isOpen={menuOpen} onOpenChange={handleMenuOpenChange}>
-			<Tooltip
-				delay={0}
-				isOpen={tooltipOpen}
-				onOpenChange={(nextOpen) => setTooltipOpen(menuOpen ? false : nextOpen)}
-			>
+		<Dropdown>
+			<ActionTooltip delay={0} label='应用菜单'>
 				<Dropdown.Trigger
 					aria-label='应用菜单'
 					className={cn(
@@ -75,10 +62,6 @@ export function UserAppMenu({
 						'relative size-7.5 shrink-0 rounded-full p-0',
 						'focus-visible:ring-0 data-[state=open]:bg-sf-shell-hover-strong',
 					)}
-					onBlur={() => setTooltipOpen(false)}
-					onFocus={() => setTooltipOpen(!menuOpen)}
-					onPointerEnter={() => setTooltipOpen(!menuOpen)}
-					onPointerLeave={() => setTooltipOpen(false)}
 				>
 					<Badge color='success' placement='bottom-right' size='sm'>
 						<Badge.Anchor>
@@ -90,8 +73,7 @@ export function UserAppMenu({
 						<Badge.Label aria-label='在线' />
 					</Badge>
 				</Dropdown.Trigger>
-				<Tooltip.Content>应用菜单</Tooltip.Content>
-			</Tooltip>
+			</ActionTooltip>
 
 			<Dropdown.Popover className='min-w-56' offset={6} placement='bottom end'>
 				<Dropdown.Menu aria-label='应用菜单'>

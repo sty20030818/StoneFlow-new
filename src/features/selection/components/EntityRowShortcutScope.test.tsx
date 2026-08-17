@@ -33,7 +33,7 @@ describe('EntityRowShortcutScope', () => {
 		expect(screen.getByTestId('hover-source')).toHaveTextContent('none')
 	})
 
-	it('Escape 从同一 Registry 清空选择', () => {
+	it('有选择时 Escape 仍交给 global close 统一裁决', async () => {
 		const onGlobalTrigger = vi.fn<(id: CommandId) => void>()
 		renderSelectionHarness(onGlobalTrigger)
 		fireKey('a', { ctrlKey: true })
@@ -41,8 +41,8 @@ describe('EntityRowShortcutScope', () => {
 		const event = fireKey('Escape')
 
 		expect(event.defaultPrevented).toBe(true)
-		expect(screen.getByTestId('selected-ids')).toBeEmptyDOMElement()
-		expect(onGlobalTrigger).not.toHaveBeenCalled()
+		expect(screen.getByTestId('selected-ids')).toHaveTextContent('a,b,c')
+		await waitFor(() => expect(onGlobalTrigger).toHaveBeenCalledWith(COMMAND_IDS.close))
 	})
 
 	it('无选择时 list 不消费 Escape，事件下沉给 global close', async () => {

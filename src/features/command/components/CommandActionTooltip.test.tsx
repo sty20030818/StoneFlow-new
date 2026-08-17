@@ -5,7 +5,6 @@ import { COMMAND_IDS } from '@/features/command/core'
 import { KeybindingRegistry } from '@/features/command/keybinding'
 import { ShortcutRegistryProvider } from '@/features/command/shortcuts'
 import { Button } from '@/shared/components/base/button'
-import { TooltipProvider } from '@/shared/components/base/tooltip'
 
 import { CommandActionTooltip, DisabledCommandActionTooltip } from './CommandActionTooltip'
 
@@ -73,15 +72,12 @@ describe('CommandActionTooltip', () => {
 		expect(trigger).toHaveAttribute('tabindex', '0')
 		expect(trigger).toHaveAttribute('aria-disabled', 'true')
 		fireEvent.pointerMove(trigger!, { pointerType: 'mouse' })
+		fireEvent.pointerEnter(trigger!, { pointerType: 'mouse' })
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('创建任务F')
 		expect(screen.getByLabelText('按 F')).toBeInTheDocument()
 	})
 })
 
 function renderTooltip(registry: KeybindingRegistry, ui: React.ReactNode) {
-	return render(
-		<ShortcutRegistryProvider registry={registry}>
-			<TooltipProvider delayDuration={0}>{ui}</TooltipProvider>
-		</ShortcutRegistryProvider>,
-	)
+	return render(<ShortcutRegistryProvider registry={registry}>{ui}</ShortcutRegistryProvider>)
 }

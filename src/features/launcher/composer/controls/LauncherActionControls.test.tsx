@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import type { LauncherSpaceSummary } from '../../model/types'
-import { TooltipProvider } from '@/shared/components/base/tooltip'
 
 import { PriorityControl } from './PriorityControl'
 import { SpaceControl } from './SpaceControl'
@@ -29,7 +28,8 @@ describe('Launcher icon action controls', () => {
 		renderControl(<PriorityControlHarness />)
 
 		const trigger = screen.getByRole('button', { name: '优先级' })
-		fireEvent.focus(trigger)
+		fireEvent.keyDown(document, { key: 'Tab' })
+		trigger.focus()
 		const tooltip = await screen.findByRole('tooltip')
 		expect(tooltip).toHaveTextContent('设置优先级')
 		expect(tooltip.querySelector('[data-slot="kbd"]')).toBeNull()
@@ -43,7 +43,8 @@ describe('Launcher icon action controls', () => {
 		renderControl(<PriorityControlHarness disabled />)
 
 		const disabledTrigger = screen.getByRole('group', { name: '设置优先级' })
-		fireEvent.focus(disabledTrigger)
+		fireEvent.keyDown(document, { key: 'Tab' })
+		disabledTrigger.focus()
 
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('正在创建，暂时无法修改优先级')
 		expect(screen.getByRole('button', { name: '优先级' })).toBeDisabled()
@@ -53,7 +54,8 @@ describe('Launcher icon action controls', () => {
 		renderControl(<SpaceControlHarness />)
 
 		const trigger = screen.getByRole('button', { name: '空间选择' })
-		fireEvent.focus(trigger)
+		fireEvent.keyDown(document, { key: 'Tab' })
+		trigger.focus()
 		const tooltip = await screen.findByRole('tooltip')
 		expect(tooltip).toHaveTextContent('选择空间')
 		expect(tooltip.querySelector('[data-slot="kbd"]')).toBeNull()
@@ -95,5 +97,5 @@ function SpaceControlHarness() {
 }
 
 function renderControl(ui: React.ReactNode) {
-	return render(<TooltipProvider delayDuration={0}>{ui}</TooltipProvider>)
+	return render(ui)
 }

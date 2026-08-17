@@ -72,13 +72,11 @@ export function PriorityControl({
 				</DisabledActionTooltip>
 			) : (
 				<ActionTooltip
+					isOpen={tooltipOpen}
+					label='设置优先级'
 					onOpenChange={(nextOpen) => setTooltipOpen(open ? false : nextOpen)}
-					open={tooltipOpen}
 				>
-					<ActionTooltip.Trigger asChild>{trigger}</ActionTooltip.Trigger>
-					<ActionTooltip.Content>
-						<ActionTooltip.Row label='设置优先级' />
-					</ActionTooltip.Content>
+					{trigger}
 				</ActionTooltip>
 			)}
 			<DropdownMenuContent align='start' className={`w-46 ${launcherMenuContentClass}`}>

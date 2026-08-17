@@ -6,7 +6,6 @@ import type * as TauriEvent from '@tauri-apps/api/event'
 import type { ShellSidebarSettings } from '../api/shellDevicePreferences'
 import { SettingsPage } from './SettingsPage'
 import type { Space } from '@/shared/types'
-import { TooltipProvider } from '@/shared/components/base/tooltip'
 import { renderWithRouterContext } from '@/test/renderWithRouter'
 
 const loadSidebarSettingsSpy = vi.fn<() => Promise<void>>()
@@ -932,7 +931,8 @@ describe('SettingsPage', () => {
 
 		const configureButton = await screen.findByRole('button', { name: '配置同步数据库' })
 		await waitFor(() => expect(configureButton).toBeEnabled())
-		fireEvent.focus(configureButton)
+		fireEvent.keyDown(document, { key: 'Tab' })
+		configureButton.focus()
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('配置同步数据库')
 
 		fireEvent.click(configureButton)
@@ -942,11 +942,7 @@ describe('SettingsPage', () => {
 })
 
 async function renderSettingsPage() {
-	return renderWithRouterContext(
-		<TooltipProvider delayDuration={0}>
-			<SettingsPage />
-		</TooltipProvider>,
-	)
+	return renderWithRouterContext(<SettingsPage />)
 }
 
 function openSyncConfigDialog() {

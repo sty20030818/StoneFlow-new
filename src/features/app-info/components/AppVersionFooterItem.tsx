@@ -11,22 +11,17 @@ export function AppVersionFooterItem() {
 	const label = `版本 ${version}`
 
 	return (
-		<ActionTooltip>
-			<ActionTooltip.Trigger asChild>
-				<span
-					aria-label={label}
-					className={cn(
-						shellFooterStaticTextClass,
-						'flex shrink-0 items-center rounded-sm tabular-nums outline-none focus-visible:ring-1 focus-visible:ring-ring',
-					)}
-					tabIndex={0}
-				>
-					v{version}
-				</span>
-			</ActionTooltip.Trigger>
-			<ActionTooltip.Content>
-				<ActionTooltip.Row label={label} />
-			</ActionTooltip.Content>
+		<ActionTooltip label={label}>
+			<span
+				aria-label={label}
+				className={cn(
+					shellFooterStaticTextClass,
+					'flex shrink-0 items-center rounded-sm tabular-nums outline-none focus-visible:ring-1 focus-visible:ring-ring',
+				)}
+				tabIndex={0}
+			>
+				v{version}
+			</span>
 		</ActionTooltip>
 	)
 }

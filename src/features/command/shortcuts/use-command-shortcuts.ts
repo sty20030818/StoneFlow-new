@@ -10,7 +10,6 @@ import {
 	type NormalizedKeyEvent,
 	type ShortcutPlatform,
 } from '@/features/command/keybinding'
-import { isAnyModalOpen } from '@/shared/lib/modal-guard'
 import { setGlobalChordPending } from '@/shared/lib/global-chord-guard'
 import { useLatestRef } from '@/shared/lib/useLatestRef'
 
@@ -82,11 +81,6 @@ export function useCommandShortcuts({
 	}, [emitChordState])
 
 	useShortcutDispatcher(SHORTCUT_DISPATCH_PRIORITY.global, (event) => {
-		// 模态层内的键盘契约由模态组件接管，global 命令不消费事件。
-		if (isAnyModalOpen()) {
-			return 'unhandled'
-		}
-
 		const result = matchKeybindingEvent({
 			bindings,
 			event: normalizeKeyboardEvent(event),

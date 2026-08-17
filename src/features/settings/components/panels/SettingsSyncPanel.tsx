@@ -99,7 +99,6 @@ export function SettingsSyncPanel() {
 	const [databaseUrl, setDatabaseUrl] = useState('')
 	const [syncConfigDialogOpen, setSyncConfigDialogOpen] = useState(false)
 	const [syncDetailsOpen, setSyncDetailsOpen] = useState(false)
-	const [configTooltipOpen, setConfigTooltipOpen] = useState(false)
 	/** 定时模式下的分钟草稿，失焦/回车时提交 */
 	const [intervalMinutesDraft, setIntervalMinutesDraft] = useState(String(DEFAULT_INTERVAL_MINUTES))
 
@@ -319,10 +318,7 @@ export function SettingsSyncPanel() {
 		<Button
 			aria-label='配置同步数据库'
 			disabled={syncActionBusy}
-			onClick={() => {
-				setConfigTooltipOpen(false)
-				setSyncConfigDialogOpen(true)
-			}}
+			onClick={() => setSyncConfigDialogOpen(true)}
 			size='icon-sm'
 			type='button'
 			variant='ghost'
@@ -386,15 +382,7 @@ export function SettingsSyncPanel() {
 										{configureButton}
 									</DisabledActionTooltip>
 								) : (
-									<ActionTooltip
-										onOpenChange={setConfigTooltipOpen}
-										open={configTooltipOpen && !syncConfigDialogOpen && !syncActionBusy}
-									>
-										<ActionTooltip.Trigger asChild>{configureButton}</ActionTooltip.Trigger>
-										<ActionTooltip.Content>
-											<ActionTooltip.Row label='配置同步数据库' />
-										</ActionTooltip.Content>
-									</ActionTooltip>
+									<ActionTooltip label='配置同步数据库'>{configureButton}</ActionTooltip>
 								)}
 								{syncNowDisabled ? (
 									<DisabledActionTooltip label='立即同步' reason={syncNowDisabledReason}>

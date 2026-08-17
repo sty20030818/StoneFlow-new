@@ -1,6 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 
-import { TooltipProvider } from '@/shared/components/base/tooltip'
 import { SyncFooterStatusItem } from './SyncFooterStatusItem'
 
 const mocks = vi.hoisted(() => ({
@@ -27,15 +26,12 @@ describe('SyncFooterStatusItem', () => {
 			},
 		})
 
-		render(
-			<TooltipProvider delayDuration={0}>
-				<SyncFooterStatusItem />
-			</TooltipProvider>,
-		)
+		render(<SyncFooterStatusItem />)
 
 		const action = screen.getByRole('button', { name: '立即同步' })
 		expect(action).not.toHaveAttribute('title')
-		fireEvent.focus(action)
+		fireEvent.keyDown(document, { key: 'Tab' })
+		action.focus()
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('立即同步')
 	})
 
@@ -49,15 +45,12 @@ describe('SyncFooterStatusItem', () => {
 			statusPayload: null,
 		})
 
-		render(
-			<TooltipProvider delayDuration={0}>
-				<SyncFooterStatusItem />
-			</TooltipProvider>,
-		)
+		render(<SyncFooterStatusItem />)
 
 		const trigger = document.querySelector('[data-slot="disabled-action-tooltip-trigger"]')
 		expect(trigger).not.toHaveAttribute('title')
-		fireEvent.focus(trigger!)
+		fireEvent.keyDown(document, { key: 'Tab' })
+		;(trigger as HTMLElement).focus()
 		expect(await screen.findByRole('tooltip')).toHaveTextContent(
 			'立即同步同步未配置远端，请到设置中配置',
 		)

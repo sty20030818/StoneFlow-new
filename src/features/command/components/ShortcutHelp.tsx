@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef } from 'react'
 
 import { XIcon } from 'lucide-react'
 
@@ -44,23 +44,9 @@ export function ShortcutHelp({
 		[context, runtime, shortcutRegistry],
 	)
 	const contentRef = useRef<HTMLDivElement>(null)
-	const [closeTooltipOpen, setCloseTooltipOpen] = useState(false)
-
-	useEffect(() => {
-		if (!open) {
-			setCloseTooltipOpen(false)
-		}
-	}, [open])
-
-	function handleOpenChange(nextOpen: boolean) {
-		if (!nextOpen) {
-			setCloseTooltipOpen(false)
-		}
-		onOpenChange(nextOpen)
-	}
 
 	return (
-		<Dialog onOpenChange={handleOpenChange} open={open}>
+		<Dialog onOpenChange={onOpenChange} open={open}>
 			<DialogContent
 				className={cn(dialogShellReadingClass, className)}
 				onOpenAutoFocus={(event) => {
@@ -74,20 +60,15 @@ export function ShortcutHelp({
 				<DialogTitle className='sr-only'>{title}</DialogTitle>
 				<DialogDescription className='sr-only'>{description}</DialogDescription>
 
-				<ActionTooltip onOpenChange={setCloseTooltipOpen} open={closeTooltipOpen}>
-					<ActionTooltip.Trigger asChild>
-						<Button
-							aria-label='关闭快捷键帮助'
-							className='absolute top-3 right-3 size-8'
-							onClick={() => handleOpenChange(false)}
-							variant='ghost'
-						>
-							<XIcon aria-hidden className='size-4' />
-						</Button>
-					</ActionTooltip.Trigger>
-					<ActionTooltip.Content>
-						<ActionTooltip.Row label='关闭' />
-					</ActionTooltip.Content>
+				<ActionTooltip label='关闭'>
+					<Button
+						aria-label='关闭快捷键帮助'
+						className='absolute top-3 right-3 size-8'
+						onClick={() => onOpenChange(false)}
+						variant='ghost'
+					>
+						<XIcon aria-hidden className='size-4' />
+					</Button>
 				</ActionTooltip>
 				<div className='px-5 pt-4 pb-3'>
 					<OverflowTooltip

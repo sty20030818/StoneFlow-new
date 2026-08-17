@@ -5,7 +5,6 @@ import { Resizable } from '@heroui-pro/react/resizable'
 import { UNSAFE_PortalProvider } from 'react-aria'
 
 import { TaskDetailContent, useTaskDetailViewModel } from '@/features/task'
-import { useRegisterOpenModal } from '@/shared/lib/modal-guard'
 
 import type { EntityDetailRouteState } from '../model/entityDetailTypes'
 
@@ -126,8 +125,6 @@ function TaskEntityDetail({
 		[scrollPositions, taskId],
 	)
 
-	useRegisterOpenModal(isCompact)
-
 	if (isCompact) {
 		if (!sheetContainer) {
 			return null
@@ -159,7 +156,17 @@ function TaskEntityDetail({
 							data-entity-detail-sheet='true'
 							onContextMenu={(event) => event.preventDefault()}
 						>
-							<Sheet.Dialog className='h-full min-h-0 overflow-hidden'>
+							<Sheet.Dialog
+								className='h-full min-h-0 overflow-hidden'
+								render={(dialogProps) => (
+									<section
+										{...dialogProps}
+										onKeyDown={(event) => {
+											if (event.key !== 'Escape' || event.defaultPrevented) event.stopPropagation()
+										}}
+									/>
+								)}
+							>
 								<Sheet.Heading className='sr-only'>任务详情</Sheet.Heading>
 								<TaskDetailContent
 									onClose={onClose}

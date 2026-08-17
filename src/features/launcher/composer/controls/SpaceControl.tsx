@@ -77,13 +77,11 @@ export function SpaceControl({
 		<DropdownMenu onOpenChange={handleMenuOpenChange} open={open}>
 			{iconOnly ? (
 				<ActionTooltip
+					isOpen={tooltipOpen}
+					label='选择空间'
 					onOpenChange={(nextOpen) => setTooltipOpen(open ? false : nextOpen)}
-					open={tooltipOpen}
 				>
-					<ActionTooltip.Trigger asChild>{trigger}</ActionTooltip.Trigger>
-					<ActionTooltip.Content>
-						<ActionTooltip.Row label='选择空间' />
-					</ActionTooltip.Content>
+					{trigger}
 				</ActionTooltip>
 			) : (
 				trigger

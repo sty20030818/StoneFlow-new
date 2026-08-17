@@ -3,7 +3,6 @@ import type { ReactElement } from 'react'
 
 import { TaskBoard } from '@/features/task/components/TaskBoard'
 import type { RowSelectionGroupPosition } from '@/shared/components/patterns/row-tokens'
-import { TooltipProvider } from '@/shared/components/base/tooltip'
 import type { TaskListItem } from '@/shared/types'
 
 vi.mock('@/features/task/components/useTaskContextMenuBulkActions', () => ({
@@ -174,7 +173,7 @@ describe('TaskBoard', () => {
 })
 
 function renderTaskBoard(element: ReactElement): RenderResult {
-	return render(<TooltipProvider>{element}</TooltipProvider>)
+	return render(element)
 }
 
 function createTask(

@@ -256,33 +256,17 @@ export function BoardCollapsibleSection({
 	children,
 }: BoardCollapsibleSectionProps) {
 	const [contextMenuOpen, setContextMenuOpen] = useState(false)
-	const [toggleTooltipOpen, setToggleTooltipOpen] = useState(false)
 	const toggleLabel = open ? `折叠 ${label}` : `展开 ${label}`
 	const header = (
 		<div
 			className={BOARD_GROUP_HEADER_CLASS}
 			data-board-section-header='true'
-			onDoubleClick={() => {
-				setToggleTooltipOpen(false)
-				onOpenChange(!open)
-			}}
+			onDoubleClick={() => onOpenChange(!open)}
 		>
-			<ActionTooltip
-				onOpenChange={(nextOpen) => setToggleTooltipOpen(nextOpen && !contextMenuOpen)}
-				open={toggleTooltipOpen && !contextMenuOpen}
-			>
-				<ActionTooltip.Trigger asChild>
-					<CollapsibleTrigger
-						aria-label={toggleLabel}
-						className={entityBoardSectionToggleClass}
-						onClick={() => setToggleTooltipOpen(false)}
-					>
-						<BoardChevron data-chevron />
-					</CollapsibleTrigger>
-				</ActionTooltip.Trigger>
-				<ActionTooltip.Content>
-					<ActionTooltip.Row label={toggleLabel} />
-				</ActionTooltip.Content>
+			<ActionTooltip label={toggleLabel}>
+				<CollapsibleTrigger aria-label={toggleLabel} className={entityBoardSectionToggleClass}>
+					<BoardChevron data-chevron />
+				</CollapsibleTrigger>
 			</ActionTooltip>
 			<div className={entityBoardSectionHeadingClass}>
 				{icon}
@@ -317,15 +301,7 @@ export function BoardCollapsibleSection({
 			open={open}
 		>
 			{contextMenuContent ? (
-				<ContextMenu
-					onOpenChange={(nextOpen) => {
-						setContextMenuOpen(nextOpen)
-						if (nextOpen) {
-							setToggleTooltipOpen(false)
-						}
-					}}
-					open={contextMenuOpen}
-				>
+				<ContextMenu onOpenChange={setContextMenuOpen} open={contextMenuOpen}>
 					<ContextMenuTrigger asChild>{header}</ContextMenuTrigger>
 					{contextMenuContent}
 				</ContextMenu>

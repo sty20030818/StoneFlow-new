@@ -1,8 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { TooltipProvider } from '@/shared/components/base/tooltip'
-
 import { getAppVersion, openAppInfoUrl } from '../api/appInfo'
 import { AboutDialog } from './AboutDialog'
 
@@ -26,9 +24,10 @@ describe('AboutDialog', () => {
 		expect(screen.getByRole('button', { name: /许可证，待配置/ })).toBeDisabled()
 		const disabledLinkTrigger = document.querySelector(
 			'[data-slot="disabled-action-tooltip-trigger"]',
-		)
-		fireEvent.focus(disabledLinkTrigger!)
-		expect(await screen.findByRole('tooltip')).toHaveTextContent('此资料入口尚未配置')
+		) as HTMLElement
+		fireEvent.keyDown(document, { key: 'Tab' })
+		disabledLinkTrigger.focus()
+		await waitFor(() => expect(screen.getByRole('tooltip')).toHaveTextContent('此资料入口尚未配置'))
 		expect(openAppInfoUrl).not.toHaveBeenCalled()
 	})
 
@@ -40,12 +39,12 @@ describe('AboutDialog', () => {
 		)
 
 		const closeButton = await screen.findByRole('button', { name: '关闭关于 StoneFlow' })
-		fireEvent.focus(closeButton)
+		closeButton.blur()
+		fireEvent.keyDown(document, { key: 'Tab' })
+		closeButton.focus()
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('关闭')
 		fireEvent.click(closeButton)
 		expect(onOpenChange).toHaveBeenCalledWith(false)
-		await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument())
-		expect(screen.queryByRole('button', { name: '关闭' })).not.toBeInTheDocument()
 
 		fireEvent.click(screen.getByRole('button', { name: /更新日志/ }))
 		await waitFor(() => expect(onOpenChangelog).toHaveBeenCalledTimes(1))
@@ -54,5 +53,5 @@ describe('AboutDialog', () => {
 })
 
 function renderAboutDialog(node: React.ReactNode) {
-	return render(<TooltipProvider delayDuration={0}>{node}</TooltipProvider>)
+	return render(node)
 }

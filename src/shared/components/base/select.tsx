@@ -57,6 +57,7 @@ function SelectContent({
 	children,
 	position = 'item-aligned',
 	align = 'center',
+	onKeyDown,
 	...props
 }: React.ComponentProps<typeof SelectPrimitive.Content>) {
 	return (
@@ -72,6 +73,10 @@ function SelectContent({
 				)}
 				position={position}
 				align={align}
+				onKeyDown={(event) => {
+					onKeyDown?.(event)
+					if (event.key !== 'Escape' || event.defaultPrevented) event.stopPropagation()
+				}}
 				{...props}
 			>
 				<SelectScrollUpButton />

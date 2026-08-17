@@ -2,7 +2,6 @@ import { fireEvent, render, screen } from '@testing-library/react'
 
 import { KeybindingRegistry, ShortcutRegistryProvider } from '@/features/command'
 import { SELECTION_SHORTCUT_BINDINGS } from '@/features/selection'
-import { TooltipProvider } from '@/shared/components/base/tooltip'
 
 import { BulkActionBar } from './BulkActionBar'
 
@@ -59,7 +58,8 @@ describe('BulkActionBar', () => {
 			/>,
 		)
 
-		fireEvent.focus(screen.getByRole('button', { name: '清空已选' }))
+		fireEvent.keyDown(document, { key: 'Tab' })
+		screen.getByRole('button', { name: '清空已选' }).focus()
 
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('清空已选Esc')
 		expect(screen.getByLabelText('按 Escape')).toBeInTheDocument()
@@ -68,8 +68,6 @@ describe('BulkActionBar', () => {
 
 function renderBulkActionBar(ui: React.ReactNode) {
 	return render(
-		<ShortcutRegistryProvider registry={TEST_SHORTCUT_REGISTRY}>
-			<TooltipProvider delayDuration={0}>{ui}</TooltipProvider>
-		</ShortcutRegistryProvider>,
+		<ShortcutRegistryProvider registry={TEST_SHORTCUT_REGISTRY}>{ui}</ShortcutRegistryProvider>,
 	)
 }

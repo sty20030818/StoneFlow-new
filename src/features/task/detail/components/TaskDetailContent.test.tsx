@@ -9,7 +9,6 @@ import {
 	ShortcutRegistryProvider,
 } from '@/features/command'
 import { TASK_ROW_SHORTCUT_BINDINGS } from '@/features/task/shortcuts'
-import { TooltipProvider } from '@/shared/components/base/tooltip'
 import type { TaskDetail } from '@/shared/types'
 
 import type { TaskDetailDraft } from '../model/taskDetailDraft'
@@ -371,9 +370,7 @@ function renderWithRouter(node: React.ReactNode) {
 
 function renderTaskDetailContent(node: React.ReactNode) {
 	return render(
-		<ShortcutRegistryProvider registry={testShortcutRegistry}>
-			<TooltipProvider delayDuration={0}>{node}</TooltipProvider>
-		</ShortcutRegistryProvider>,
+		<ShortcutRegistryProvider registry={testShortcutRegistry}>{node}</ShortcutRegistryProvider>,
 	)
 }
 

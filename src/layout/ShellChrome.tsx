@@ -189,7 +189,17 @@ export function ShellChrome({
 							data-shell-sidebar-sheet='true'
 							style={{ '--sidebar-width': '100%' } as CSSProperties}
 						>
-							<Sheet.Dialog className='h-full overflow-hidden px-0 pb-0 pt-12'>
+							<Sheet.Dialog
+								className='h-full overflow-hidden px-0 pb-0 pt-12'
+								render={(dialogProps) => (
+									<section
+										{...dialogProps}
+										onKeyDown={(event) => {
+											if (event.key !== 'Escape' || event.defaultPrevented) event.stopPropagation()
+										}}
+									/>
+								)}
+							>
 								<Sheet.Heading className='sr-only'>导航</Sheet.Heading>
 								{sidebarNavigation}
 							</Sheet.Dialog>

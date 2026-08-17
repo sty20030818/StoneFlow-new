@@ -9,7 +9,6 @@ import {
 	KeybindingRegistry,
 	ShortcutRegistryProvider,
 } from '@/features/command'
-import { TooltipProvider } from '@/shared/components/base/tooltip'
 import { renderWithMatchedRoute } from '@/test/renderWithRouter'
 import { ViewsPage } from '@/features/view/components/ViewsPage'
 
@@ -414,11 +413,9 @@ function renderViewsPage(
 		wrap: (children) => {
 			const content = (
 				<ShortcutRegistryProvider registry={testShortcutRegistry}>
-					<TooltipProvider delayDuration={0}>
-						<ShellRouteProvider shellRoute={parseShellRoute(initialEntry)}>
-							{children}
-						</ShellRouteProvider>
-					</TooltipProvider>
+					<ShellRouteProvider shellRoute={parseShellRoute(initialEntry)}>
+						{children}
+					</ShellRouteProvider>
 				</ShortcutRegistryProvider>
 			)
 

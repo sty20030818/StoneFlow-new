@@ -41,7 +41,8 @@ describe('PageFilterButton', () => {
 		)
 
 		const trigger = screen.getByRole('button', { name: '筛选' })
-		fireEvent.focus(trigger)
+		fireEvent.keyDown(document, { key: 'Tab' })
+		trigger.focus()
 
 		const tooltip = await screen.findByRole('tooltip')
 		expect(tooltip).toHaveTextContent('筛选F')

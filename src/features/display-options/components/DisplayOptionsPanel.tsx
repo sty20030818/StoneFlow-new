@@ -316,14 +316,7 @@ function OrderDirectionButton({
 		)
 	}
 
-	return (
-		<ActionTooltip>
-			<ActionTooltip.Trigger asChild>{button}</ActionTooltip.Trigger>
-			<ActionTooltip.Content>
-				<ActionTooltip.Row label={label} />
-			</ActionTooltip.Content>
-		</ActionTooltip>
-	)
+	return <ActionTooltip label={label}>{button}</ActionTooltip>
 }
 
 function DisplayOptionRow({

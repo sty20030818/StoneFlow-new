@@ -45,6 +45,7 @@ function DialogContent({
 	className,
 	children,
 	showCloseButton = true,
+	onKeyDown,
 	...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
 	showCloseButton?: boolean
@@ -58,6 +59,10 @@ function DialogContent({
 					'fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl border border-sf-border-secondary bg-popover p-4 text-sm text-popover-foreground shadow-(--sf-shadow-float) outline-none sm:max-w-sm',
 					className,
 				)}
+				onKeyDown={(event) => {
+					onKeyDown?.(event)
+					if (event.key !== 'Escape' || event.defaultPrevented) event.stopPropagation()
+				}}
 				{...props}
 			>
 				{children}
@@ -69,23 +74,18 @@ function DialogContent({
 
 function DialogIconCloseButton() {
 	return (
-		<ActionTooltip>
-			<ActionTooltip.Trigger asChild>
-				<DialogPrimitive.Close data-slot='dialog-close' asChild>
-					<Button
-						aria-label='关闭'
-						className='absolute top-2 right-2'
-						size='icon-sm'
-						type='button'
-						variant='ghost'
-					>
-						<XIcon />
-					</Button>
-				</DialogPrimitive.Close>
-			</ActionTooltip.Trigger>
-			<ActionTooltip.Content>
-				<ActionTooltip.Row label='关闭' />
-			</ActionTooltip.Content>
+		<ActionTooltip label='关闭'>
+			<DialogPrimitive.Close data-slot='dialog-close' asChild>
+				<Button
+					aria-label='关闭'
+					className='absolute top-2 right-2'
+					size='icon-sm'
+					type='button'
+					variant='ghost'
+				>
+					<XIcon />
+				</Button>
+			</DialogPrimitive.Close>
 		</ActionTooltip>
 	)
 }

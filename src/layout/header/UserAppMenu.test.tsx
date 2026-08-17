@@ -8,7 +8,6 @@ import {
 	KeybindingRegistry,
 	ShortcutRegistryProvider,
 } from '@/features/command'
-import { TooltipProvider } from '@/shared/components/base/tooltip'
 
 const TEST_SHORTCUT_REGISTRY = new KeybindingRegistry(DEFAULT_KEYBINDINGS)
 
@@ -81,6 +80,7 @@ describe('UserAppMenu', () => {
 		)
 
 		const trigger = screen.getByRole('button', { name: '应用菜单' })
+		fireEvent.pointerMove(trigger)
 		fireEvent.pointerEnter(trigger)
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('应用菜单')
 
@@ -92,8 +92,6 @@ describe('UserAppMenu', () => {
 
 function renderUserAppMenu(ui: React.ReactNode) {
 	return render(
-		<ShortcutRegistryProvider registry={TEST_SHORTCUT_REGISTRY}>
-			<TooltipProvider>{ui}</TooltipProvider>
-		</ShortcutRegistryProvider>,
+		<ShortcutRegistryProvider registry={TEST_SHORTCUT_REGISTRY}>{ui}</ShortcutRegistryProvider>,
 	)
 }

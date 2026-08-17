@@ -150,11 +150,8 @@ function MainCardGhostAction({
 	if (isDisabled) return action
 
 	return (
-		<ActionTooltip>
-			<ActionTooltip.Trigger asChild>{action}</ActionTooltip.Trigger>
-			<ActionTooltip.Content>
-				<ActionTooltip.Row label={ariaLabel} shortcut={tooltipShortcut} />
-			</ActionTooltip.Content>
+		<ActionTooltip label={ariaLabel} shortcut={tooltipShortcut}>
+			{action}
 		</ActionTooltip>
 	)
 }

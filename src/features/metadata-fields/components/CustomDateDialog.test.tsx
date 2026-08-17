@@ -1,32 +1,31 @@
-import { fireEvent, render, screen } from '@testing-library/react'
-
-import { TooltipProvider } from '@/shared/components/base/tooltip'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import { CustomDateDialog } from './CustomDateDialog'
 
 describe('CustomDateDialog', () => {
 	it('日期导航与对话框关闭按钮使用统一动作提示', async () => {
 		render(
-			<TooltipProvider delayDuration={0}>
-				<CustomDateDialog
-					fieldKey='dueDate'
-					hasExistingValue={false}
-					label='截止日期'
-					onOpenChange={() => undefined}
-					onSubmit={() => undefined}
-					open
-					value={null}
-				/>
-			</TooltipProvider>,
+			<CustomDateDialog
+				fieldKey='dueDate'
+				hasExistingValue={false}
+				label='截止日期'
+				onOpenChange={() => undefined}
+				onSubmit={() => undefined}
+				open
+				value={null}
+			/>,
 		)
 
 		const previousMonth = screen.getByRole('button', { name: '上一个月' })
-		fireEvent.focus(previousMonth)
+		fireEvent.keyDown(document, { key: 'Tab' })
+		act(() => previousMonth.focus())
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('上一个月')
 
-		fireEvent.blur(previousMonth)
+		act(() => previousMonth.blur())
+		await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument())
 		const close = screen.getByRole('button', { name: '关闭' })
-		fireEvent.focus(close)
+		fireEvent.keyDown(document, { key: 'Tab' })
+		act(() => close.focus())
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('关闭')
 	})
 })

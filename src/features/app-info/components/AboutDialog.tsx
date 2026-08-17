@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react'
 import { ExternalLinkIcon, HistoryIcon, InfoIcon, RefreshCwIcon, XIcon } from 'lucide-react'
 
 import { Button } from '@/shared/components/base/button'
@@ -27,23 +26,9 @@ type AboutDialogProps = {
 export function AboutDialog({ open, onOpenChange, onOpenChangelog }: AboutDialogProps) {
 	const { checkNow, disabled, isChecking } = useManualUpdateCheck()
 	const { version, isLoading, hasError } = useAppVersion()
-	const [closeTooltipOpen, setCloseTooltipOpen] = useState(false)
-
-	useEffect(() => {
-		if (!open) {
-			setCloseTooltipOpen(false)
-		}
-	}, [open])
-
-	function handleOpenChange(nextOpen: boolean) {
-		if (!nextOpen) {
-			setCloseTooltipOpen(false)
-		}
-		onOpenChange(nextOpen)
-	}
 
 	function handleOpenChangelog() {
-		handleOpenChange(false)
+		onOpenChange(false)
 		onOpenChangelog()
 	}
 
@@ -61,28 +46,23 @@ export function AboutDialog({ open, onOpenChange, onOpenChangelog }: AboutDialog
 			: '版本信息暂不可用'
 
 	return (
-		<Dialog onOpenChange={handleOpenChange} open={open}>
+		<Dialog onOpenChange={onOpenChange} open={open}>
 			<DialogContent className={cn(dialogShellReadingClass, 'sm:max-w-lg')} showCloseButton={false}>
 				<DialogTitle className='sr-only'>关于 StoneFlow</DialogTitle>
 				<DialogDescription className='sr-only'>
 					查看 StoneFlow 版本、更新和资料入口。
 				</DialogDescription>
 
-				<ActionTooltip onOpenChange={setCloseTooltipOpen} open={closeTooltipOpen}>
-					<ActionTooltip.Trigger asChild>
-						<Button
-							aria-label='关闭关于 StoneFlow'
-							className='absolute top-3 right-3 size-8'
-							onClick={() => handleOpenChange(false)}
-							type='button'
-							variant='ghost'
-						>
-							<XIcon aria-hidden className='size-4' />
-						</Button>
-					</ActionTooltip.Trigger>
-					<ActionTooltip.Content>
-						<ActionTooltip.Row label='关闭' />
-					</ActionTooltip.Content>
+				<ActionTooltip label='关闭'>
+					<Button
+						aria-label='关闭关于 StoneFlow'
+						className='absolute top-3 right-3 size-8'
+						onClick={() => onOpenChange(false)}
+						type='button'
+						variant='ghost'
+					>
+						<XIcon aria-hidden className='size-4' />
+					</Button>
 				</ActionTooltip>
 
 				<div className='flex items-center gap-3 px-5 pt-4 pb-3 pr-14'>

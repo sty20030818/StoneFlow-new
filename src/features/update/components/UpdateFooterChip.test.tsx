@@ -1,6 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 
-import { TooltipProvider } from '@/shared/components/base/tooltip'
 import { UpdateFooterChip } from './UpdateFooterChip'
 
 describe('UpdateFooterChip', () => {
@@ -17,24 +16,23 @@ describe('UpdateFooterChip', () => {
 		},
 	])('$phase 用全局 Tooltip 展示补充信息，不保留 native title', async (view) => {
 		render(
-			<TooltipProvider delayDuration={0}>
-				<UpdateFooterChip
-					view={{
-						...view,
-						downloaded: 30,
-						errorMessage: null,
-						ringValue: 30,
-						total: 100,
-						version: '1.2.0',
-					}}
-					onOpen={() => undefined}
-				/>
-			</TooltipProvider>,
+			<UpdateFooterChip
+				view={{
+					...view,
+					downloaded: 30,
+					errorMessage: null,
+					ringValue: 30,
+					total: 100,
+					version: '1.2.0',
+				}}
+				onOpen={() => undefined}
+			/>,
 		)
 
 		const action = screen.getByRole('button', { name: view.title })
 		expect(action).not.toHaveAttribute('title')
-		fireEvent.focus(action)
+		fireEvent.keyDown(document, { key: 'Tab' })
+		action.focus()
 		expect(await screen.findByRole('tooltip')).toHaveTextContent(view.title)
 	})
 })

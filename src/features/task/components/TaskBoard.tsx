@@ -750,34 +750,27 @@ function StatusSectionHeader({
 		>
 			{status && onOpenChange ? (
 				<ActionTooltip
+					isOpen={toggleTooltipOpen && !contextMenuOpen}
+					label={open ? `折叠 ${label}` : `展开 ${label}`}
 					onOpenChange={(nextOpen) => setToggleTooltipOpen(nextOpen && !contextMenuOpen)}
-					open={toggleTooltipOpen && !contextMenuOpen}
 				>
-					<ActionTooltip.Trigger asChild>
-						<button
-							aria-expanded={open}
-							aria-label={open ? `折叠 ${label}` : `展开 ${label}`}
-							className={entityBoardSectionToggleClass}
-							onClick={() => {
-								setToggleTooltipOpen(false)
-								onOpenChange(!open)
-							}}
-							type='button'
-						>
-							<span
-								className='inline-flex size-3 shrink-0 items-center justify-center'
-								data-chevron
-							>
-								<TriangleIcon
-									className={cn('size-1.5 text-sf-icon-subtle', open ? 'rotate-180' : 'rotate-90')}
-									fill='currentColor'
-								/>
-							</span>
-						</button>
-					</ActionTooltip.Trigger>
-					<ActionTooltip.Content>
-						<ActionTooltip.Row label={open ? `折叠 ${label}` : `展开 ${label}`} />
-					</ActionTooltip.Content>
+					<button
+						aria-expanded={open}
+						aria-label={open ? `折叠 ${label}` : `展开 ${label}`}
+						className={entityBoardSectionToggleClass}
+						onClick={() => {
+							setToggleTooltipOpen(false)
+							onOpenChange(!open)
+						}}
+						type='button'
+					>
+						<span className='inline-flex size-3 shrink-0 items-center justify-center' data-chevron>
+							<TriangleIcon
+								className={cn('size-1.5 text-sf-icon-subtle', open ? 'rotate-180' : 'rotate-90')}
+								fill='currentColor'
+							/>
+						</span>
+					</button>
 				</ActionTooltip>
 			) : null}
 			<div className={entityBoardSectionHeadingClass}>
@@ -803,29 +796,25 @@ function StatusSectionHeader({
 			</div>
 			{status ? (
 				<ActionTooltip
+					isOpen={createTooltipOpen && !contextMenuOpen}
+					label={`在 ${label} 中创建任务`}
 					onOpenChange={(nextOpen) => setCreateTooltipOpen(nextOpen && !contextMenuOpen)}
-					open={createTooltipOpen && !contextMenuOpen}
 				>
-					<ActionTooltip.Trigger asChild>
-						<Button
-							aria-label={`在 ${label} 中创建任务`}
-							className={entityBoardSectionActionButtonClass}
-							onClick={(event) => {
-								setCreateTooltipOpen(false)
-								event.preventDefault()
-								event.stopPropagation()
-								openTaskCreateDialog({ projectId: createProjectId, status })
-							}}
-							size='icon-xs'
-							type='button'
-							variant='ghost'
-						>
-							<PlusIcon />
-						</Button>
-					</ActionTooltip.Trigger>
-					<ActionTooltip.Content>
-						<ActionTooltip.Row label={`在 ${label} 中创建任务`} />
-					</ActionTooltip.Content>
+					<Button
+						aria-label={`在 ${label} 中创建任务`}
+						className={entityBoardSectionActionButtonClass}
+						onClick={(event) => {
+							setCreateTooltipOpen(false)
+							event.preventDefault()
+							event.stopPropagation()
+							openTaskCreateDialog({ projectId: createProjectId, status })
+						}}
+						size='icon-xs'
+						type='button'
+						variant='ghost'
+					>
+						<PlusIcon />
+					</Button>
 				</ActionTooltip>
 			) : (
 				<span className={entityBoardSectionRightSpacerClass} />

@@ -6,6 +6,7 @@
 import { useState } from 'react'
 import { PlusIcon, XIcon } from 'lucide-react'
 
+import { COMMAND_IDS, CommandActionTooltip } from '@/features/command'
 import { Button } from '@/shared/components/base/button'
 import {
 	Dialog,
@@ -74,36 +75,33 @@ export function FilterBar({ className }: { className?: string }) {
 						projects={projects}
 					/>
 				))}
-				<ActionTooltip
-					onOpenChange={(nextOpen) => setFilterTooltipOpen(nextOpen && !filterMenuOpen)}
-					open={filterTooltipOpen && !filterMenuOpen}
-				>
-					<FilterMenu
-						onOpenChange={(nextOpen) => {
-							setFilterMenuOpen(nextOpen)
-							if (nextOpen) {
-								setFilterTooltipOpen(false)
-							}
-						}}
-						open={filterMenuOpen}
-						trigger={
-							<ActionTooltip.Trigger asChild>
-								<Button
-									aria-label='添加筛选'
-									className='size-7'
-									size='icon'
-									type='button'
-									variant='ghost'
-								>
-									<PlusIcon className='size-3.5' />
-								</Button>
-							</ActionTooltip.Trigger>
+				<FilterMenu
+					onOpenChange={(nextOpen) => {
+						setFilterMenuOpen(nextOpen)
+						if (nextOpen) {
+							setFilterTooltipOpen(false)
 						}
-					/>
-					<ActionTooltip.Content>
-						<ActionTooltip.Row label='添加筛选' />
-					</ActionTooltip.Content>
-				</ActionTooltip>
+					}}
+					open={filterMenuOpen}
+					trigger={
+						<CommandActionTooltip
+							commandId={COMMAND_IDS.filterAdd}
+							isOpen={filterTooltipOpen && !filterMenuOpen}
+							label='添加筛选'
+							onOpenChange={(nextOpen) => setFilterTooltipOpen(nextOpen && !filterMenuOpen)}
+						>
+							<Button
+								aria-label='添加筛选'
+								className='size-7'
+								size='icon'
+								type='button'
+								variant='ghost'
+							>
+								<PlusIcon className='size-3.5' />
+							</Button>
+						</CommandActionTooltip>
+					}
+				/>
 				<div className='ml-auto flex items-center gap-1.5'>
 					{dirty ? (
 						<Button onClick={() => clearTemp()} size='sm' type='button' variant='ghost'>
@@ -155,20 +153,15 @@ function FilterChip({
 				}
 				projects={projects}
 			/>
-			<ActionTooltip>
-				<ActionTooltip.Trigger asChild>
-					<button
-						aria-label='删除筛选条件'
-						className='rounded p-0.5 text-sf-text-tertiary hover:bg-legacy-muted hover:text-legacy-foreground'
-						onClick={onRemove}
-						type='button'
-					>
-						<XIcon className='size-3' />
-					</button>
-				</ActionTooltip.Trigger>
-				<ActionTooltip.Content>
-					<ActionTooltip.Row label='删除筛选条件' />
-				</ActionTooltip.Content>
+			<ActionTooltip label='删除筛选条件'>
+				<button
+					aria-label='删除筛选条件'
+					className='rounded p-0.5 text-sf-text-tertiary hover:bg-legacy-muted hover:text-legacy-foreground'
+					onClick={onRemove}
+					type='button'
+				>
+					<XIcon className='size-3' />
+				</button>
 			</ActionTooltip>
 		</div>
 	)

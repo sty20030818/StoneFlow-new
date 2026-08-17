@@ -31,7 +31,6 @@ import type {
 import { formatDateLabel } from './model/launcherFormatters'
 import { getLauncherShortcutTokens } from './model/launcherShortcutKeymap'
 import { getShortcutAccessibilityLabel, inferShortcutPlatform } from '@/shared/lib/keyboardShortcut'
-import { TooltipProvider } from '@/shared/components/base/tooltip'
 
 const listenMock = vi.fn()
 const originalRequestAnimationFrame = window.requestAnimationFrame
@@ -39,7 +38,7 @@ const originalCancelAnimationFrame = window.cancelAnimationFrame
 const DEFAULT_SESSION_ID = 'session-1'
 
 function render(ui: ReactNode) {
-	return testingLibraryRender(<TooltipProvider delayDuration={0}>{ui}</TooltipProvider>)
+	return testingLibraryRender(ui)
 }
 
 vi.mock('./api/launcherApi', () => ({
@@ -248,14 +247,16 @@ describe('LauncherPage', () => {
 		await screen.findByTestId('launcher-recent-tasks-section')
 
 		const advancedTrigger = screen.getByLabelText('更多参数')
-		fireEvent.focus(advancedTrigger)
+		fireEvent.keyDown(document, { key: 'Tab' })
+		advancedTrigger.focus()
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('展开更多参数')
 		expect(screen.getByRole('tooltip').querySelector('[data-slot="kbd"]')).toBeNull()
 		fireEvent.click(advancedTrigger)
 		await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument())
 
-		fireEvent.blur(advancedTrigger)
-		fireEvent.focus(advancedTrigger)
+		advancedTrigger.blur()
+		fireEvent.keyDown(document, { key: 'Tab' })
+		advancedTrigger.focus()
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('收起更多参数')
 	})
 
@@ -280,15 +281,17 @@ describe('LauncherPage', () => {
 
 		const taskTitle = screen.getByText('最近任务 A')
 		setElementSize(taskTitle, { clientWidth: 80, scrollWidth: 160 })
-		fireEvent.focus(taskTitle)
+		fireEvent.pointerMove(taskTitle, { pointerType: 'mouse' })
+		fireEvent.pointerEnter(taskTitle, { pointerType: 'mouse' })
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('最近任务 A')
 
-		fireEvent.blur(taskTitle)
+		fireEvent.pointerLeave(taskTitle, { pointerType: 'mouse' })
 		await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument())
 
 		const projectTitle = screen.getByText('最近项目 A')
 		setElementSize(projectTitle, { clientWidth: 80, scrollWidth: 80 })
-		fireEvent.focus(projectTitle)
+		fireEvent.pointerMove(projectTitle, { pointerType: 'mouse' })
+		fireEvent.pointerEnter(projectTitle, { pointerType: 'mouse' })
 		expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
 	})
 

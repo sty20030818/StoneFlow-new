@@ -8,7 +8,6 @@ import {
 	KeybindingRegistry,
 	ShortcutRegistryProvider,
 } from '@/features/command'
-import { TooltipProvider } from '@/shared/components/base/tooltip'
 
 import { DisplayOptionsButton } from './DisplayOptionsButton'
 
@@ -59,7 +58,8 @@ describe('DisplayOptionsButton', () => {
 		renderWithQueryClient(<DisplayOptionsButton pageKey='task:all' />)
 
 		const trigger = screen.getByRole('button', { name: '显示选项' })
-		fireEvent.focus(trigger)
+		fireEvent.keyDown(document, { key: 'Tab' })
+		trigger.focus()
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('显示选项')
 
 		fireEvent.click(trigger)
@@ -90,9 +90,7 @@ function renderWithQueryClient(ui: React.ReactNode) {
 function TestWrapper({ children }: PropsWithChildren) {
 	return (
 		<ShortcutRegistryProvider registry={TEST_SHORTCUT_REGISTRY}>
-			<TooltipProvider>
-				<div className='p-6'>{children}</div>
-			</TooltipProvider>
+			<div className='p-6'>{children}</div>
 		</ShortcutRegistryProvider>
 	)
 }

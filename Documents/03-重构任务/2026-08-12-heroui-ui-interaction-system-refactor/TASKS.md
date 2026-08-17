@@ -1,10 +1,10 @@
 # HeroUI-only UI 平台、Linear 浅色设计系统与键盘交互重写 - Tasks
 
-> 当前状态：阶段 3。阶段 A–F 已完成，下一步从阶段 G 的 T51 开始。
+> 当前状态：阶段 3。阶段 A–G 已完成，下一步从阶段 H 的 T60 开始。
 
 ## 当前阶段
 
-- 阶段 A–F 已完成；下一步执行阶段 G 的 T51。Windows WebView2 不属于本任务验收范围，也不阻塞后续阶段。
+- 阶段 A–G 已完成；下一步执行阶段 H 的 T60。Windows WebView2 不属于本任务验收范围，也不阻塞后续阶段。
 - 执行任意 task 前，必须重读 [SPEC.md](./SPEC.md) 对应 AC 与 [PLAN.md](./PLAN.md) 对应方案；后续 task 默认按编号顺序依赖。
 - 任一锁定包 API、供应链访问、性能或产品合同与 PLAN 冲突时，先在本文件「与 SPEC/PLAN 的实施偏差」登记并停止相关切片，不得静默增加兼容层。
 
@@ -234,40 +234,43 @@
 
 **阶段 G：Overlay、Menu 与焦点基础**
 
-- [ ] T51 将 `src/shared/components/tooltip/ActionTooltip.tsx`、`src/shared/components/tooltip/DisabledActionTooltip.tsx` 与 `src/shared/components/tooltip/OverflowTooltip.tsx` 改为直接组合 HeroUI Tooltip，保留动作文案、快捷键、禁用原因、可访问名称与截断复测，一次性删除 Radix `Trigger/asChild` 兼容 API。
+- [x] T51 将 `src/shared/components/tooltip/ActionTooltip.tsx`、`src/shared/components/tooltip/DisabledActionTooltip.tsx` 与 `src/shared/components/tooltip/OverflowTooltip.tsx` 改为直接组合 HeroUI Tooltip，保留动作文案、快捷键、禁用原因、可访问名称与截断复测，一次性删除 Radix `Trigger/asChild` 兼容 API。
   _对应验收标准：AC-1, AC-3, AC-8, AC-32, AC-44_
   _测试先行：`src/shared/components/tooltip/Tooltip.test.tsx`_
 
-- [ ] T52 迁移 `src/layout/`、`src/shared/components/` 与 `src/features/command/` 中经全仓扫描确认的 Action/Disabled/Overflow Tooltip 调用方到 T51 API，并删除 `src/app/providers/AppProviders.tsx`、`src/launcher.tsx`、`src/test/TestInteractionProviders.tsx` 的旧 TooltipProvider；不改动命令、快捷键或 Shell 行为。
+- [x] T52 迁移 `src/layout/`、`src/shared/components/` 与 `src/features/command/` 中经全仓扫描确认的 Action/Disabled/Overflow Tooltip 调用方到 T51 API，并删除 `src/app/providers/AppProviders.tsx`、`src/launcher.tsx`、`src/test/TestInteractionProviders.tsx` 的旧 TooltipProvider；不改动命令、快捷键或 Shell 行为。
   _对应验收标准：AC-1, AC-3, AC-8, AC-32, AC-39_
   _测试先行：`src/layout/ShellSidebar.test.tsx`、`src/layout/header/NavBackForward.test.tsx`、`src/features/command/components/CommandActionTooltip.test.tsx`_
 
-- [ ] T53 迁移 `src/features/app-info/`、`bulk-action/`、`changelog/`、`display-options/`、`filter/`、`global-search/`、`launcher/`、`metadata-fields/`、`project/`、`settings/`、`sync/`、`task/`、`update/` 与 `view/` 中经全仓扫描确认的 Tooltip 调用方到 T51 API，保留各 feature 的 disabled reason、截断条件与快捷键。
+- [x] T53 迁移 `src/features/app-info/`、`bulk-action/`、`changelog/`、`display-options/`、`filter/`、`global-search/`、`launcher/`、`metadata-fields/`、`project/`、`settings/`、`sync/`、`task/`、`update/` 与 `view/` 中经全仓扫描确认的 Tooltip 调用方到 T51 API，保留各 feature 的 disabled reason、截断条件与快捷键。
   - 完成后以 `rg` 证明生产代码中 `TooltipProvider`、`ActionTooltip.Trigger` 和 `asChild` 旧调用归零，不以兼容 wrapper 收口。
   _对应验收标准：AC-1, AC-3, AC-8, AC-32, AC-39_
   _测试先行：`src/features/display-options/components/DisplayOptionsPanel.test.tsx`、`src/features/task/components/TaskRowAdapter.test.tsx`、`src/features/launcher/LauncherPage.test.tsx`_
 
-- [ ] T54 将 `src/features/danger-confirm/components/DangerConfirmDialog.tsx` hard cut 到 HeroUI AlertDialog/Modal，保留 Provider Promise、危险动作、取消结果与调用方确认语义。
+- [x] T54 将 `src/features/danger-confirm/components/DangerConfirmDialog.tsx` hard cut 到 HeroUI AlertDialog/Modal，保留 Provider Promise、危险动作、取消结果与调用方确认语义。
   _对应验收标准：AC-1, AC-3, AC-30, AC-32, AC-39_
   _测试先行：`src/features/danger-confirm/runtime/DangerConfirmProvider.test.tsx`、`src/features/danger-confirm/model/dangerConfirm.test.ts`_
 
-- [ ] T55 将 `src/layout/CreateDialogShell.tsx` hard cut 到受控 HeroUI Modal 并更新 `src/layout/overlays/ShellOverlays.tsx`，保留创建表面 state、Escape 与正常 trigger restore；业务表单仍归阶段 K。
+- [x] T55 将 `src/layout/CreateDialogShell.tsx` hard cut 到受控 HeroUI Modal 并更新 `src/layout/overlays/ShellOverlays.tsx`，保留创建表面 state、Escape 与正常 trigger restore；业务表单仍归阶段 K。
   _对应验收标准：AC-1, AC-3, AC-30, AC-32, AC-39_
   _测试先行：`src/layout/CreateDialogShell.test.tsx`_
 
-- [ ] T56 修改 `src/features/command/shortcuts/shortcut-dispatcher.ts`、`src/features/command/shortcuts/use-command-shortcuts.ts`、`src/layout/model/useShellCommandOpenRouting.ts`、`src/layout/model/useShellCommandSystem.ts`、`src/features/task/detail/model/useTaskPreviewController.ts` 与 `src/features/entity-detail/model/useEntityDetailController.ts`，统一事件消费、编辑/IME guard 与 Escape 层级，并在新增 `src/layout/ShellEscapePriority.test.tsx` 中覆盖“Menu/Dialog/Sheet → Detail Aside → Peek → Selection → 页面”的单次消费链。
+- [x] T56 修改 `src/features/command/shortcuts/shortcut-dispatcher.ts`、`src/features/command/shortcuts/use-command-shortcuts.ts`、`src/layout/model/useShellCommandOpenRouting.ts`、`src/layout/model/useShellCommandSystem.ts`、`src/features/task/detail/model/useTaskPreviewController.ts` 与 `src/features/entity-detail/model/useEntityDetailController.ts`，统一事件消费、编辑/IME guard 与 Escape 层级，并在新增 `src/layout/ShellEscapePriority.test.tsx` 中覆盖“Menu/Dialog/Sheet → Detail Aside → Peek → Selection → 页面”的单次消费链。
+	- Escape 的实际关层 owner 为 `src/layout/command-bridge/registerShellChromeCommands.ts`；现有 controller close port 已满足合同，未制造无行为改动。延迟挂载的任务创建意图也由同一 owner 优先关闭，不再穿透到底层。
   _对应验收标准：AC-29, AC-30, AC-31, AC-32, AC-34_
   _测试先行：`src/features/command/shortcuts/shortcut-dispatcher.test.ts`、`src/features/command/shortcuts/use-command-shortcuts.test.tsx`、`src/layout/ShellEscapePriority.test.tsx`_
 
-- [ ] T57 修改 `src/features/task/shortcuts/rowShortcutGuards.ts` 及测试，移除对 DOM selector 型 `src/shared/lib/modal-guard.ts`、`interaction-layer.ts` 的运行时依赖，证明 Overlay/编辑器/IME 内行级字符键不穿透。
+- [x] T57 修改 `src/features/task/shortcuts/rowShortcutGuards.ts` 及测试，移除对 DOM selector 型 `src/shared/lib/modal-guard.ts`、`interaction-layer.ts` 的运行时依赖，证明 Overlay/编辑器/IME 内行级字符键不穿透。
   _对应验收标准：AC-29, AC-30, AC-31, AC-34_
   _测试先行：`src/features/task/shortcuts/TaskRowShortcutScope.test.tsx`、`src/features/task/shortcuts/rowTargetResolver.test.ts`_
 
-- [ ] T58 在 `src/layout/overlays/ShellOverlayFocus.test.tsx` 建立共享 Overlay 事件矩阵，覆盖 Tooltip→Menu、Popover→Dialog、ContextMenu submenu、Sheet、外点关闭、Escape 最高层消费与普通 trigger restore；虚拟 trigger 留给阶段 H/I bridge，真实 CSS reduced-motion 留给阶段 M WebView 验收。
+- [x] T58 在 `src/layout/overlays/ShellOverlayFocus.test.tsx` 建立共享 Overlay 事件矩阵，覆盖 Tooltip→Menu、Popover→Dialog、ContextMenu submenu、Sheet、外点关闭、Escape 最高层消费与普通 trigger restore；虚拟 trigger 留给阶段 H/I bridge，真实 CSS reduced-motion 留给阶段 M WebView 验收。
   _对应验收标准：AC-8, AC-30, AC-32, AC-39, AC-44_
   _测试先行：`src/layout/overlays/ShellOverlayFocus.test.tsx`_
 
-- [ ] T59 完成阶段 G 收口：零消费者后删除旧 tooltip/alert-dialog 与旧 modal/interaction guard，保留仍由 I/J/K/L 消费的 Overlay primitive；运行焦点矩阵、动画扫描、根级门禁与 build，获准提交时引用 PLAN 的阶段 G 文案。
+- [x] T59 完成阶段 G 收口：零消费者后删除旧 tooltip/alert-dialog 与旧 modal/interaction guard，保留仍由 I/J/K/L 消费的 Overlay primitive；运行焦点矩阵、动画扫描、根级门禁与 build，获准提交时引用 PLAN 的阶段 G 文案。
+	- 已删除零消费者的旧 base Tooltip 与 `modal-guard`；base AlertDialog 仍由 T80 的 `BulkActionConfirmDialog` 消费，`interaction-layer` 仍由 T95 的 `EntityRowShortcutScope` 消费，按零消费者规则保留。
+	- 收口证据：生产代码旧 Tooltip API 与已删除模块引用归零；193 个测试文件、1025 项测试通过，根级 typecheck、lint、format、边界、动画扫描及 production build 通过。
   _对应验收标准：AC-2, AC-3, AC-30, AC-32, AC-44_
 
 **阶段 H：单一 Collection 交互基础**

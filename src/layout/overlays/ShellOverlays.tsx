@@ -74,52 +74,48 @@ export function ShellOverlays({
 
 	return (
 		<>
-			<CreateDialogShell
-				description={
-					createDialogType === 'task'
-						? '创建新任务，设置标题、描述、状态、优先级与归属。'
-						: '在目标 Space 中创建新项目，填写名称与说明。'
-				}
-				onClose={() => {
-					if (createDialogType === 'task') {
-						closeTaskCreateDialog()
-					} else {
-						closeProjectCreateDialog()
+			{createDialogType && !shouldDelayTaskCreateDialog ? (
+				<CreateDialogShell
+					description={
+						createDialogType === 'task'
+							? '创建新任务，设置标题、描述、状态、优先级与归属。'
+							: '在目标 Space 中创建新项目，填写名称与说明。'
 					}
-				}}
-				onSelectSpace={setSelectedSpaceId}
-				open={createDialogType !== null && !shouldDelayTaskCreateDialog}
-				selectedSpaceId={selectedSpaceId ?? defaultCreateSpaceId}
-				fullscreen={createDialogType === 'task' && taskCreatePresentation === 'fullscreen'}
-				showFullscreenToggle={createDialogType === 'task'}
-				onToggleFullscreen={toggleTaskCreatePresentation}
-				spaces={spaces}
-				title={createDialogType === 'task' ? '新建任务' : '新建项目'}
-			>
-				{createDialogType === 'task' ? (
-					<TaskCreateContent
-						currentScope={currentScope}
-						initialPlacement={taskCreateDraft.placement ?? null}
-						initialProjectId={taskCreateDraft.projectId ?? null}
-						initialStatus={taskCreateDraft.status ?? 'todo'}
-						onClose={closeTaskCreateDialog}
-						projects={projectOptions}
-						projectsLoading={projectsLoading}
-						selectedSpaceId={selectedSpaceId ?? defaultCreateSpaceId}
-						spaces={spaces}
-					/>
-				) : createDialogType === 'project' ? (
-					<ProjectCreateContent
-						onClose={closeProjectCreateDialog}
-						onCreated={(project) => {
-							void navigate({
-								to: openCanonicalProjectDetail(project.id, project.spaceId) as never,
-							})
-						}}
-						selectedSpaceId={selectedSpaceId}
-					/>
-				) : null}
-			</CreateDialogShell>
+					fullscreen={createDialogType === 'task' && taskCreatePresentation === 'fullscreen'}
+					onClose={createDialogType === 'task' ? closeTaskCreateDialog : closeProjectCreateDialog}
+					onSelectSpace={setSelectedSpaceId}
+					onToggleFullscreen={toggleTaskCreatePresentation}
+					open
+					selectedSpaceId={selectedSpaceId ?? defaultCreateSpaceId}
+					showFullscreenToggle={createDialogType === 'task'}
+					spaces={spaces}
+					title={createDialogType === 'task' ? '新建任务' : '新建项目'}
+				>
+					{createDialogType === 'task' ? (
+						<TaskCreateContent
+							currentScope={currentScope}
+							initialPlacement={taskCreateDraft.placement ?? null}
+							initialProjectId={taskCreateDraft.projectId ?? null}
+							initialStatus={taskCreateDraft.status ?? 'todo'}
+							onClose={closeTaskCreateDialog}
+							projects={projectOptions}
+							projectsLoading={projectsLoading}
+							selectedSpaceId={selectedSpaceId ?? defaultCreateSpaceId}
+							spaces={spaces}
+						/>
+					) : (
+						<ProjectCreateContent
+							onClose={closeProjectCreateDialog}
+							onCreated={(project) => {
+								void navigate({
+									to: openCanonicalProjectDetail(project.id, project.spaceId) as never,
+								})
+							}}
+							selectedSpaceId={selectedSpaceId}
+						/>
+					)}
+				</CreateDialogShell>
+			) : null}
 			{customDateDialog ? (
 				<CustomDateDialog
 					fieldKey={customDateDialog.fieldKey}

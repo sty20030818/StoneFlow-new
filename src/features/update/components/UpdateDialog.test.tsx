@@ -1,8 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { TooltipProvider } from '@/shared/components/base/tooltip'
-
 import { useUpdateStore } from '../model/useUpdateStore'
 import { UpdateDialog } from './UpdateDialog'
 
@@ -102,7 +100,8 @@ describe('UpdateDialog', () => {
 		expect(screen.getAllByRole('button', { name: '关闭' })).toHaveLength(1)
 		expect(screen.queryByRole('button', { name: '立即更新' })).not.toBeInTheDocument()
 		expect(screen.queryByRole('button', { name: '跳过此版本' })).not.toBeInTheDocument()
-		fireEvent.focus(screen.getByRole('button', { name: '关闭' }))
+		fireEvent.keyDown(document, { key: 'Tab' })
+		screen.getByRole('button', { name: '关闭' }).focus()
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('关闭')
 
 		fireEvent.click(screen.getByRole('button', { name: '重新检查' }))
@@ -271,7 +270,8 @@ describe('UpdateDialog', () => {
 		const disabledCloseTrigger = document.querySelector(
 			'[data-slot="disabled-action-tooltip-trigger"]',
 		)
-		fireEvent.focus(disabledCloseTrigger!)
+		fireEvent.keyDown(document, { key: 'Tab' })
+		;(disabledCloseTrigger as HTMLElement).focus()
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('关闭安装完成前无法关闭更新窗口')
 		fireEvent.click(closeButton)
 
@@ -285,9 +285,5 @@ describe('UpdateDialog', () => {
 })
 
 function renderUpdateDialog() {
-	return render(
-		<TooltipProvider delayDuration={0}>
-			<UpdateDialog />
-		</TooltipProvider>,
-	)
+	return render(<UpdateDialog />)
 }

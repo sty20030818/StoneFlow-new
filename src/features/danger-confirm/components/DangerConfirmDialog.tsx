@@ -1,14 +1,6 @@
-import { cn } from '@/shared/lib/utils'
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from '@/shared/components/base/alert-dialog'
+import { AlertDialog, Button } from '@heroui/react'
+import { useId } from 'react'
+
 import type { DangerConfirmCopy } from '@/features/danger-confirm/model/dangerConfirm'
 
 type DangerConfirmDialogProps = {
@@ -26,29 +18,57 @@ export function DangerConfirmDialog({
 	onConfirm,
 	onOpenChange,
 }: DangerConfirmDialogProps) {
+	const descriptionId = useId()
+
 	return (
-		<AlertDialog open={open} onOpenChange={onOpenChange}>
-			<AlertDialogContent>
-				<AlertDialogHeader>
-					<AlertDialogTitle>{copy?.title ?? '确认操作'}</AlertDialogTitle>
-					<AlertDialogDescription>{copy?.description ?? ''}</AlertDialogDescription>
-				</AlertDialogHeader>
-				<AlertDialogFooter>
-					<AlertDialogCancel onClick={onCancel}>{copy?.cancelLabel ?? '取消'}</AlertDialogCancel>
-					<AlertDialogAction
-						className={cn(copy?.destructive && destructiveActionClass)}
-						onClick={(event) => {
-							event.preventDefault()
-							onConfirm()
-						}}
-					>
-						{copy?.confirmLabel ?? '确认'}
-					</AlertDialogAction>
-				</AlertDialogFooter>
-			</AlertDialogContent>
-		</AlertDialog>
+		<AlertDialog.Backdrop
+			isKeyboardDismissDisabled={false}
+			isOpen={open}
+			onOpenChange={onOpenChange}
+		>
+			<AlertDialog.Container>
+				<AlertDialog.Dialog
+					aria-describedby={descriptionId}
+					render={(dialogProps) => (
+						<section
+							{...dialogProps}
+							onKeyDown={(event) => {
+								if (
+									event.key === 'Enter' &&
+									event.target === event.currentTarget &&
+									!event.metaKey &&
+									!event.ctrlKey &&
+									!event.altKey &&
+									!event.shiftKey &&
+									!event.nativeEvent.isComposing
+								) {
+									event.preventDefault()
+									onConfirm()
+								}
+								if (event.key !== 'Escape' || event.defaultPrevented) event.stopPropagation()
+							}}
+						/>
+					)}
+				>
+					<AlertDialog.Header>
+						<AlertDialog.Icon status={copy?.destructive ? 'danger' : 'default'} />
+						<AlertDialog.Heading>{copy?.title ?? '确认操作'}</AlertDialog.Heading>
+					</AlertDialog.Header>
+					<AlertDialog.Body id={descriptionId}>{copy?.description ?? ''}</AlertDialog.Body>
+					<AlertDialog.Footer>
+						<Button onPress={onCancel} type='button' variant='tertiary'>
+							{copy?.cancelLabel ?? '取消'}
+						</Button>
+						<Button
+							onPress={onConfirm}
+							type='button'
+							variant={copy?.destructive ? 'danger' : 'primary'}
+						>
+							{copy?.confirmLabel ?? '确认'}
+						</Button>
+					</AlertDialog.Footer>
+				</AlertDialog.Dialog>
+			</AlertDialog.Container>
+		</AlertDialog.Backdrop>
 	)
 }
-
-const destructiveActionClass =
-	'border-destructive/20 bg-destructive/10 text-destructive hover:bg-destructive/15 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40'

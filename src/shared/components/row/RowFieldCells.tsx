@@ -69,7 +69,7 @@ export function RowSelectionCell({
 			onPointerDownCapture={stopRowEventPropagation}
 		/>
 	)
-	const cell = (
+	const renderCell = (content: ReactNode) => (
 		<span
 			className={cn(
 				'flex size-5 shrink-0 items-center justify-center',
@@ -79,7 +79,7 @@ export function RowSelectionCell({
 			)}
 			data-slot='row-selection-cell'
 		>
-			{checkbox}
+			{content}
 		</span>
 	)
 
@@ -91,20 +91,17 @@ export function RowSelectionCell({
 				reason={disabledReason}
 				shortcut={tooltipShortcut}
 			>
-				{cell}
+				{renderCell(checkbox)}
 			</DisabledActionTooltip>
 		) : (
-			cell
+			renderCell(checkbox)
 		)
 	}
 
-	return (
-		<ActionTooltip>
-			<ActionTooltip.Trigger asChild>{cell}</ActionTooltip.Trigger>
-			<ActionTooltip.Content>
-				<ActionTooltip.Row label={label} shortcut={tooltipShortcut} />
-			</ActionTooltip.Content>
-		</ActionTooltip>
+	return renderCell(
+		<ActionTooltip label={label} shortcut={tooltipShortcut}>
+			{checkbox}
+		</ActionTooltip>,
 	)
 }
 

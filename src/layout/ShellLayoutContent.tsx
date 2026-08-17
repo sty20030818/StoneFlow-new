@@ -131,8 +131,6 @@ export function ShellLayoutContent({
 		handleOpenTaskCreate,
 		openTaskCreateDialog: createDialog.openTaskCreateDialog,
 		openProjectCreateDialog: createDialog.openProjectCreateDialog,
-		closeTaskCreateDialog: createDialog.closeTaskCreateDialog,
-		closeProjectCreateDialog: createDialog.closeProjectCreateDialog,
 		goBack: routeHistory.goBack,
 		goForward: routeHistory.goForward,
 		canGoBack: routeHistory.canGoBack,

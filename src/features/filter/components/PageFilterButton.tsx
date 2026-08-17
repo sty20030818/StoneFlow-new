@@ -44,7 +44,7 @@ export function PageFilterButton({ className }: PageFilterButtonProps) {
 			commandId={COMMAND_IDS.filterAdd}
 			label={label}
 			onOpenChange={(nextOpen) => setTooltipOpen(menuOpen ? false : nextOpen)}
-			open={tooltipOpen}
+			isOpen={tooltipOpen}
 		>
 			<Button
 				aria-label={label}

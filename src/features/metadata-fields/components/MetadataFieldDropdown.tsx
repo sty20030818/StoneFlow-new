@@ -1,11 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react'
 
-import {
-	CommandShortcut,
-	CommandTooltipRow,
-	type CommandId,
-	type KeybindingScope,
-} from '@/features/command'
+import { CommandShortcut, type CommandId, type KeybindingScope } from '@/features/command'
 import {
 	buildMetadataShortcutItems,
 	defaultMetadataValueComparator,
@@ -151,21 +146,16 @@ export function MetadataFieldDropdown<TValue>({
 				</DisabledActionTooltip>
 			) : shouldShowTooltip && !disabled ? (
 				<ActionTooltip
+					isOpen={tooltipOpen && !menuOpen}
+					label={resolvedTooltipLabel}
 					onOpenChange={(open) => setTooltipOpen(open && !menuOpen)}
-					open={tooltipOpen && !menuOpen}
+					shortcut={
+						shortcut ? (
+							<CommandShortcut commandId={shortcut.commandId} scope={shortcut.scope} />
+						) : undefined
+					}
 				>
-					<ActionTooltip.Trigger asChild>{trigger}</ActionTooltip.Trigger>
-					<ActionTooltip.Content>
-						{shortcut ? (
-							<CommandTooltipRow
-								commandId={shortcut.commandId}
-								label={resolvedTooltipLabel}
-								scope={shortcut.scope}
-							/>
-						) : (
-							<ActionTooltip.Row label={resolvedTooltipLabel} />
-						)}
-					</ActionTooltip.Content>
+					{trigger}
 				</ActionTooltip>
 			) : (
 				trigger

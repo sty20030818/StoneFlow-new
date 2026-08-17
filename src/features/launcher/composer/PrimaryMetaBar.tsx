@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { ChevronDownIcon } from 'lucide-react'
 
 import { useLauncher } from '../domain/LauncherDomainProvider'
@@ -13,7 +12,6 @@ import { ActionTooltip } from '@/shared/components/tooltip'
 
 export function PrimaryMetaBar() {
 	const { actions, derived, state } = useLauncher()
-	const [advancedTooltipOpen, setAdvancedTooltipOpen] = useState(false)
 	const advancedActionLabel = state.isAdvancedOpen ? '收起更多参数' : '展开更多参数'
 
 	return (
@@ -48,27 +46,19 @@ export function PrimaryMetaBar() {
 				spaces={state.openContext?.spaces ?? []}
 			/>
 
-			<ActionTooltip onOpenChange={setAdvancedTooltipOpen} open={advancedTooltipOpen}>
-				<ActionTooltip.Trigger asChild>
-					<Button
-						aria-expanded={state.isAdvancedOpen}
-						aria-label='更多参数'
-						className={cn(
-							state.isAdvancedOpen ? 'border-primary text-primary' : 'text-sf-text-quaternary',
-						)}
-						onClick={() => {
-							setAdvancedTooltipOpen(false)
-							actions.toggleAdvanced()
-						}}
-						size='icon-sm'
-						variant='outline'
-					>
-						<ChevronDownIcon className={cn('size-4', state.isAdvancedOpen ? 'rotate-180' : '')} />
-					</Button>
-				</ActionTooltip.Trigger>
-				<ActionTooltip.Content>
-					<ActionTooltip.Row label={advancedActionLabel} />
-				</ActionTooltip.Content>
+			<ActionTooltip label={advancedActionLabel}>
+				<Button
+					aria-expanded={state.isAdvancedOpen}
+					aria-label='更多参数'
+					className={cn(
+						state.isAdvancedOpen ? 'border-primary text-primary' : 'text-sf-text-quaternary',
+					)}
+					onClick={actions.toggleAdvanced}
+					size='icon-sm'
+					variant='outline'
+				>
+					<ChevronDownIcon className={cn('size-4', state.isAdvancedOpen ? 'rotate-180' : '')} />
+				</Button>
 			</ActionTooltip>
 		</div>
 	)

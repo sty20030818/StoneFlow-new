@@ -29,19 +29,14 @@ export function UpdateFooterChip({ view, onOpen }: UpdateFooterChipProps) {
 	// 有更新：Badge 一体提醒
 	if (view.phase === 'available') {
 		return (
-			<ActionTooltip>
-				<ActionTooltip.Trigger asChild>
-					<Badge asChild variant='default' className='max-w-38 cursor-pointer text-[11px]'>
-						<button type='button' aria-label={view.title} onClick={onOpen}>
-							{/* 光学：箭头略偏下 */}
-							<DownloadIcon aria-hidden data-icon='inline-start' className='translate-y-px' />
-							<span className='min-w-0 truncate'>{view.label}</span>
-						</button>
-					</Badge>
-				</ActionTooltip.Trigger>
-				<ActionTooltip.Content>
-					<ActionTooltip.Row label={view.title} />
-				</ActionTooltip.Content>
+			<ActionTooltip label={view.title}>
+				<Badge asChild variant='default' className='max-w-38 cursor-pointer text-[11px]'>
+					<button type='button' aria-label={view.title} onClick={onOpen}>
+						{/* 光学：箭头略偏下 */}
+						<DownloadIcon aria-hidden data-icon='inline-start' className='translate-y-px' />
+						<span className='min-w-0 truncate'>{view.label}</span>
+					</button>
+				</Badge>
 			</ActionTooltip>
 		)
 	}

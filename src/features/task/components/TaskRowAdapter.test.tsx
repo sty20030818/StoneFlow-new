@@ -8,7 +8,6 @@ import {
 import { DangerConfirmProvider } from '@/features/danger-confirm'
 import type { TaskPlacementTarget } from '@/features/metadata-fields'
 import { ROW_SHELL_ACTIVE_CLASS, ROW_SHELL_SELECTED_CLASS } from '@/shared/components/row'
-import { TooltipProvider } from '@/shared/components/base/tooltip'
 import type { TaskListItem } from '@/shared/types'
 
 import { TaskRowAdapter, type TaskRowAdapterProps } from './TaskRowAdapter'
@@ -188,7 +187,8 @@ describe('TaskRowAdapter', () => {
 		async (role, accessibleName, tooltipLabel, shortcut) => {
 			renderTaskRowAdapter()
 
-			fireEvent.focus(screen.getByRole(role, { name: accessibleName }))
+			fireEvent.keyDown(document, { key: 'Tab' })
+			screen.getByRole(role, { name: accessibleName }).focus()
 			const tooltip = await screen.findByRole('tooltip')
 			expect(tooltip).toHaveTextContent(`${tooltipLabel}${shortcut}`)
 			expect(tooltip).not.toHaveTextContent('任务 A')
@@ -210,7 +210,8 @@ describe('TaskRowAdapter', () => {
 				rowState: { isActive: false, isSelected: false, isPending: true },
 			})
 
-			fireEvent.focus(screen.getByRole('group', { name: accessibleName }))
+			fireEvent.keyDown(document, { key: 'Tab' })
+			screen.getByRole('group', { name: accessibleName }).focus()
 			const tooltip = await screen.findByRole('tooltip')
 			expect(tooltip).toHaveTextContent(tooltipLabel)
 			expect(tooltip).toHaveTextContent(disabledReason)
@@ -378,9 +379,7 @@ describe('TaskRowAdapter', () => {
 function TestProviders({ children }: { children: React.ReactNode }) {
 	return (
 		<ShortcutRegistryProvider registry={TEST_SHORTCUT_REGISTRY}>
-			<TooltipProvider delayDuration={0}>
-				<DangerConfirmProvider>{children}</DangerConfirmProvider>
-			</TooltipProvider>
+			<DangerConfirmProvider>{children}</DangerConfirmProvider>
 		</ShortcutRegistryProvider>
 	)
 }

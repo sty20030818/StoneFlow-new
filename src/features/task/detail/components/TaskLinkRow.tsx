@@ -69,26 +69,22 @@ export function TaskLinkRow({ link, onOpen, onEdit, onRemove }: TaskLinkRowProps
 							open={isMenuOpen}
 						>
 							<ActionTooltip
+								isOpen={isMoreTooltipOpen && !isMenuOpen}
+								label='更多链接操作'
 								onOpenChange={(nextOpen) => setMoreTooltipOpen(nextOpen && !isMenuOpen)}
-								open={isMoreTooltipOpen && !isMenuOpen}
 							>
-								<ActionTooltip.Trigger asChild>
-									<DropdownMenuTrigger asChild>
-										<Button
-											aria-label={`更多链接操作：${link.title}`}
-											className='size-7 p-0'
-											onClick={(event) => event.stopPropagation()}
-											size='icon'
-											type='button'
-											variant='outline'
-										>
-											<MoreHorizontalIcon className='size-4' />
-										</Button>
-									</DropdownMenuTrigger>
-								</ActionTooltip.Trigger>
-								<ActionTooltip.Content>
-									<ActionTooltip.Row label='更多链接操作' />
-								</ActionTooltip.Content>
+								<DropdownMenuTrigger asChild>
+									<Button
+										aria-label={`更多链接操作：${link.title}`}
+										className='size-7 p-0'
+										onClick={(event) => event.stopPropagation()}
+										size='icon'
+										type='button'
+										variant='outline'
+									>
+										<MoreHorizontalIcon className='size-4' />
+									</Button>
+								</DropdownMenuTrigger>
 							</ActionTooltip>
 							<DropdownMenuContent align='end' className='w-44' data-drawer-owned-overlay='true'>
 								<DropdownMenuItem

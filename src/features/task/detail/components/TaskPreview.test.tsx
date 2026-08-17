@@ -1,6 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 
-import { TooltipProvider } from '@/shared/components/base/tooltip'
 import type { TaskListItem } from '@/shared/types'
 
 import { TaskPreview } from './TaskPreview'
@@ -15,24 +14,23 @@ vi.mock('@/features/task/hooks/useTaskData', () => ({
 describe('TaskPreview', () => {
 	it('为面包屑、标题、备注、链接和更新时间提供按溢出触发的完整文本', async () => {
 		render(
-			<TooltipProvider delayDuration={0}>
-				<TaskPreview
-					linkSummary={{
-						items: [{ id: 'link-1', title: '一份很长的技术方案文档' }],
-						remainingCount: 0,
-					}}
-					onPointerEnter={vi.fn()}
-					onPointerLeave={vi.fn()}
-					task={createTask()}
-				/>
-			</TooltipProvider>,
+			<TaskPreview
+				linkSummary={{
+					items: [{ id: 'link-1', title: '一份很长的技术方案文档' }],
+					remainingCount: 0,
+				}}
+				onPointerEnter={vi.fn()}
+				onPointerLeave={vi.fn()}
+				task={createTask()}
+			/>,
 		)
 
 		const titleTrigger = screen
 			.getByText('这是一个很长的任务标题')
 			.closest('[data-slot="overflow-tooltip-trigger"]') as HTMLElement
 		setElementSize(titleTrigger, { clientHeight: 40, scrollHeight: 80 })
-		fireEvent.focus(titleTrigger)
+		fireEvent.pointerMove(titleTrigger, { pointerType: 'mouse' })
+		fireEvent.pointerEnter(titleTrigger, { pointerType: 'mouse' })
 
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('这是一个很长的任务标题')
 		expect(

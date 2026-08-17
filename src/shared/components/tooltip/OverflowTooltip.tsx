@@ -1,6 +1,7 @@
 import * as React from 'react'
+import { Tooltip } from '@heroui/react'
+import { mergeRefs } from '@react-aria/utils'
 
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/base/tooltip'
 import { cn } from '@/shared/lib/utils'
 
 type OverflowTooltipProps = {
@@ -47,23 +48,29 @@ function OverflowTooltip({ children, className, content }: OverflowTooltipProps)
 
 	return (
 		<Tooltip
+			closeDelay={0}
+			delay={500}
+			isOpen={isOpen}
 			onOpenChange={(nextIsOpen) => {
 				setIsOpen(nextIsOpen && measureOverflow())
 			}}
-			open={isOpen}
 		>
-			<TooltipTrigger asChild>
-				<span
-					className={cn('block min-w-0 max-w-full truncate', className)}
-					data-slot='overflow-tooltip-trigger'
-					onFocus={measureOverflow}
-					onPointerEnter={measureOverflow}
-					ref={triggerRef}
-				>
-					{children}
-				</span>
-			</TooltipTrigger>
-			<TooltipContent>{content}</TooltipContent>
+			<Tooltip.Trigger
+				className={cn('block min-w-0 max-w-full truncate', className)}
+				data-slot='overflow-tooltip-trigger'
+				onPointerEnter={measureOverflow}
+				role='group'
+				render={(triggerProps) => (
+					<span
+						{...triggerProps}
+						ref={mergeRefs(triggerProps.ref, triggerRef)}
+						tabIndex={undefined}
+					>
+						{children}
+					</span>
+				)}
+			/>
+			<Tooltip.Content placement='bottom'>{content}</Tooltip.Content>
 		</Tooltip>
 	)
 }

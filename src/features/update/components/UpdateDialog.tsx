@@ -56,7 +56,6 @@ export function UpdateDialog() {
 	const updateInfo = snapshot.update
 	const [currentVersion, setCurrentVersion] = useState<string | null>(null)
 	const [readySettings, setReadySettings] = useState<ReadySettingsState>(null)
-	const [closeTooltipOpen, setCloseTooltipOpen] = useState(false)
 
 	const isDownloading = phase === 'downloading'
 	const isReady = phase === 'ready'
@@ -126,12 +125,6 @@ export function UpdateDialog() {
 		}
 	}, [readyKey])
 
-	useEffect(() => {
-		if (!dialogVisible || isInstalling) {
-			setCloseTooltipOpen(false)
-		}
-	}, [dialogVisible, isInstalling])
-
 	const currentReadySettings = readySettings?.key === readyKey ? readySettings : null
 	const settingsLoading =
 		isReady && currentReadySettings?.status !== 'loaded' && currentReadySettings?.status !== 'error'
@@ -146,13 +139,11 @@ export function UpdateDialog() {
 
 	function handleOpenChange(nextOpen: boolean) {
 		if (!nextOpen && !isInstalling) {
-			setCloseTooltipOpen(false)
 			closeDialog()
 		}
 	}
 
 	function handleClose() {
-		setCloseTooltipOpen(false)
 		closeDialog()
 	}
 
@@ -259,22 +250,17 @@ export function UpdateDialog() {
 							</Button>
 						</DisabledActionTooltip>
 					) : (
-						<ActionTooltip onOpenChange={setCloseTooltipOpen} open={closeTooltipOpen}>
-							<ActionTooltip.Trigger asChild>
-								<Button
-									aria-label='关闭'
-									className='size-7 shrink-0 text-sf-icon-secondary'
-									onClick={handleClose}
-									size='icon-sm'
-									type='button'
-									variant='ghost'
-								>
-									<XIcon aria-hidden className='size-3.5' />
-								</Button>
-							</ActionTooltip.Trigger>
-							<ActionTooltip.Content>
-								<ActionTooltip.Row label='关闭' />
-							</ActionTooltip.Content>
+						<ActionTooltip label='关闭'>
+							<Button
+								aria-label='关闭'
+								className='size-7 shrink-0 text-sf-icon-secondary'
+								onClick={handleClose}
+								size='icon-sm'
+								type='button'
+								variant='ghost'
+							>
+								<XIcon aria-hidden className='size-3.5' />
+							</Button>
 						</ActionTooltip>
 					)}
 				</div>
