@@ -1,7 +1,8 @@
 import { useCallback, useLayoutEffect, useRef, useState, type PropsWithChildren } from 'react'
-import { CloseButton, Surface } from '@heroui/react'
+import { Surface } from '@heroui/react'
 import { Sheet } from '@heroui-pro/react'
 import { Resizable } from '@heroui-pro/react/resizable'
+import { UNSAFE_PortalProvider } from 'react-aria'
 
 import { TaskDetailContent, useTaskDetailViewModel } from '@/features/task'
 import { useRegisterOpenModal } from '@/shared/lib/modal-guard'
@@ -133,44 +134,43 @@ function TaskEntityDetail({
 		}
 
 		return (
-			<Sheet
-				container={sheetContainer}
-				isDismissable
-				isModal
-				isOpen
-				onOpenChange={(nextOpen) => {
-					if (!nextOpen) {
-						onClose()
-					}
-				}}
-				placement='right'
-				shouldAutoFocus
-			>
-				<Sheet.Backdrop
-					UNSTABLE_portalContainer={sheetContainer}
-					className='absolute inset-0 overflow-hidden before:absolute before:inset-0'
-					variant='opaque'
+			<UNSAFE_PortalProvider getContainer={() => sheetContainer}>
+				<Sheet
+					container={sheetContainer}
+					isDetached
+					isDismissable
+					isModal
+					isOpen
+					onOpenChange={(nextOpen) => {
+						if (!nextOpen) {
+							onClose()
+						}
+					}}
+					placement='right'
+					shouldAutoFocus
 				>
-					<Sheet.Content
-						className='absolute inset-y-0 right-0 h-full w-[min(420px,calc(100%_-_16px))] max-w-none'
-						data-entity-detail-root='true'
-						data-entity-detail-sheet='true'
-						onContextMenu={(event) => event.preventDefault()}
+					<Sheet.Backdrop
+						className='absolute inset-0 overflow-hidden before:absolute before:inset-0'
+						variant='opaque'
 					>
-						<Sheet.Dialog className='h-full min-h-0 rounded-none'>
-							<Sheet.Heading className='sr-only'>任务详情</Sheet.Heading>
-							<Sheet.CloseTrigger aria-label='关闭任务详情' className='z-10' />
-							<Surface className='relative flex h-full min-h-0 overflow-hidden rounded-none'>
+						<Sheet.Content
+							className='absolute h-auto w-[min(420px,calc(100%-16px))] max-w-none'
+							data-entity-detail-root='true'
+							data-entity-detail-sheet='true'
+							onContextMenu={(event) => event.preventDefault()}
+						>
+							<Sheet.Dialog className='h-full min-h-0 overflow-hidden'>
+								<Sheet.Heading className='sr-only'>任务详情</Sheet.Heading>
 								<TaskDetailContent
 									onClose={onClose}
 									scrollRef={setViewport}
 									viewModel={viewModel}
 								/>
-							</Surface>
-						</Sheet.Dialog>
-					</Sheet.Content>
-				</Sheet.Backdrop>
-			</Sheet>
+							</Sheet.Dialog>
+						</Sheet.Content>
+					</Sheet.Backdrop>
+				</Sheet>
+			</UNSAFE_PortalProvider>
 		)
 	}
 
@@ -193,12 +193,12 @@ function TaskEntityDetail({
 					onContextMenu={(event) => event.preventDefault()}
 				>
 					<Surface className='relative flex h-full min-h-0 overflow-hidden rounded-none'>
-						<CloseButton
-							aria-label='关闭任务详情'
-							className='absolute right-2 top-2 z-10'
-							onPress={onClose}
+						<TaskDetailContent
+							onClose={onClose}
+							scrollRef={setViewport}
+							showCloseButton
+							viewModel={viewModel}
 						/>
-						<TaskDetailContent onClose={onClose} scrollRef={setViewport} viewModel={viewModel} />
 					</Surface>
 				</aside>
 			</Resizable.Panel>

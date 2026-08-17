@@ -19,13 +19,19 @@ vi.mock('@/features/task', () => ({
 	TaskDetailContent: ({
 		onClose,
 		scrollRef,
+		showCloseButton,
 		viewModel,
 	}: {
 		onClose: () => void
 		scrollRef: React.Ref<HTMLDivElement>
+		showCloseButton?: boolean
 		viewModel: MockTaskDetailViewModel
 	}) => (
-		<div ref={scrollRef} data-testid='task-detail-viewport'>
+		<div
+			ref={scrollRef}
+			data-show-close-button={showCloseButton ? 'true' : 'false'}
+			data-testid='task-detail-viewport'
+		>
 			<input
 				aria-label='任务详情草稿'
 				onChange={(event) => viewModel.setDraftTitle(event.currentTarget.value)}
@@ -76,13 +82,16 @@ describe('EntityDetailDrawerHost', () => {
 		expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 		expect(document.querySelector('[data-slot="sheet-backdrop"]')).not.toBeInTheDocument()
 		expect(useTaskDetailViewModelMock).toHaveBeenCalledWith({ taskId: 'task-a', onClose })
+		expect(screen.getByTestId('task-detail-viewport')).toHaveAttribute(
+			'data-show-close-button',
+			'true',
+		)
 	})
 
-	it('compact 使用 MainCard scope 内的 HeroUI 原生 opaque Sheet', async () => {
+	it('compact 使用 MainCard scope 内的 HeroUI 原生卡片式 Sheet', async () => {
 		renderHost({ children: <div data-testid='main-content'>任务列表</div>, isCompact: true })
 
 		const dialog = await screen.findByRole('dialog', { name: '任务详情' })
-		const closeTrigger = screen.getByRole('button', { name: '关闭任务详情' })
 		const layout = document.querySelector<HTMLElement>('[data-entity-detail-layout="true"]')
 		const backdrop = document.querySelector<HTMLElement>('[data-slot="sheet-backdrop"]')
 		const content = document.querySelector<HTMLElement>('[data-slot="sheet-content"]')
@@ -91,12 +100,18 @@ describe('EntityDetailDrawerHost', () => {
 		expect(backdrop).toHaveClass('absolute', 'before:absolute', 'sheet__backdrop--opaque')
 		expect(content).toHaveClass(
 			'absolute',
-			'w-[min(420px,calc(100%_-_16px))]',
-			'h-full',
+			'w-[min(420px,calc(100%-16px))]',
+			'h-auto',
 			'max-w-none',
 		)
-		expect(dialog).toHaveClass('h-full', 'rounded-none')
-		expect(closeTrigger).toHaveClass('z-10')
+		expect(content).toHaveAttribute('data-sheet-detached')
+		expect(dialog).toHaveClass('h-full', 'overflow-hidden')
+		expect(dialog).not.toHaveClass('rounded-none')
+		expect(screen.queryByRole('button', { name: '关闭任务详情' })).not.toBeInTheDocument()
+		expect(screen.getByTestId('task-detail-viewport')).toHaveAttribute(
+			'data-show-close-button',
+			'false',
+		)
 		expect(document.querySelector('[data-entity-detail-aside="true"]')).not.toBeInTheDocument()
 		expect(document.querySelectorAll('[data-slot="resizable-panel"]')).toHaveLength(1)
 	})
@@ -132,13 +147,6 @@ describe('EntityDetailDrawerHost', () => {
 
 		view.rerender(createHost({ isCompact: false }))
 		await waitFor(() => expect(isAnyModalOpen()).toBe(false))
-	})
-
-	it('compact 使用 Sheet 原生关闭触发器清理详情意图', async () => {
-		renderHost({ isCompact: true })
-
-		fireEvent.click(await screen.findByRole('button', { name: '关闭任务详情' }))
-		await waitFor(() => expect(onClose).toHaveBeenCalledOnce())
 	})
 
 	it('打开和关闭详情时不重建主集合 DOM', () => {

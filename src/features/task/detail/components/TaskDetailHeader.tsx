@@ -1,5 +1,5 @@
 import { Button } from '@heroui/react'
-import { SquareArrowOutUpRightIcon } from 'lucide-react'
+import { SquareArrowOutUpRightIcon, XIcon } from 'lucide-react'
 
 import { useEntityDetailController } from '@/features/entity-detail'
 import type { AutosaveController } from '@/shared/autosave'
@@ -9,11 +9,12 @@ import type { TaskDetailDraft } from '../model/taskDetailDraft'
 
 type TaskDetailHeaderProps = {
 	autosave: AutosaveController<TaskDetailDraft>
+	onClose?: () => void
 	taskId: string
 }
 
 export function TaskDetailHeader(props: TaskDetailHeaderProps) {
-	const { autosave, taskId } = props
+	const { autosave, onClose, taskId } = props
 	const entityDetailController = useEntityDetailController()
 
 	const handleOpenPage = async () => {
@@ -23,7 +24,7 @@ export function TaskDetailHeader(props: TaskDetailHeaderProps) {
 	}
 
 	return (
-		<DetailHeader className='h-12 items-center gap-2 border-sf-border-subtle py-0 pl-3 pr-10'>
+		<DetailHeader className='h-12 items-center gap-2 border-sf-border-subtle py-0 pl-3 pr-2'>
 			<div className='min-w-0 flex flex-1 items-center gap-2'>
 				<h2 className='shrink-0 text-[12px] font-medium text-sf-text-secondary'>任务详情</h2>
 				<DetailSaveStatus
@@ -38,6 +39,11 @@ export function TaskDetailHeader(props: TaskDetailHeaderProps) {
 					<SquareArrowOutUpRightIcon className='size-3.5' />
 					打开
 				</Button>
+				{onClose ? (
+					<Button isIconOnly aria-label='关闭任务详情' onPress={onClose} size='sm' variant='ghost'>
+						<XIcon aria-hidden='true' className='size-3.5' />
+					</Button>
+				) : null}
 			</div>
 		</DetailHeader>
 	)

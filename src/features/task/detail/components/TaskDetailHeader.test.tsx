@@ -49,7 +49,20 @@ describe('TaskDetailHeader', () => {
 		expect(openPage).not.toHaveBeenCalled()
 	})
 
-	function renderHeader() {
+	it('Aside 关闭按钮使用与打开按钮同尺寸的 ghost 视觉', () => {
+		const onClose = vi.fn()
+		renderHeader(onClose)
+
+		const openButton = screen.getByRole('button', { name: '打开' })
+		const closeButton = screen.getByRole('button', { name: '关闭任务详情' })
+		expect(openButton).toHaveClass('button--outline', 'button--sm')
+		expect(closeButton).toHaveClass('button--ghost', 'button--sm')
+
+		fireEvent.click(closeButton)
+		expect(onClose).toHaveBeenCalledOnce()
+	})
+
+	function renderHeader(onClose?: () => void) {
 		return render(
 			<TaskDetailHeader
 				autosave={
@@ -60,6 +73,7 @@ describe('TaskDetailHeader', () => {
 						status: 'idle',
 					} as unknown as AutosaveController<TaskDetailDraft>
 				}
+				onClose={onClose}
 				taskId='task-a'
 			/>,
 		)
