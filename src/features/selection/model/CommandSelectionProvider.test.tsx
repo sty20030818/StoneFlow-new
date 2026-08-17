@@ -1,4 +1,5 @@
-import { render, renderHook, screen } from '@testing-library/react'
+import { useCallback } from 'react'
+import { fireEvent, render, renderHook, screen } from '@testing-library/react'
 
 import type { CommandSelectionContext } from '@/features/command'
 
@@ -48,6 +49,27 @@ describe('CommandSelectionProvider', () => {
 		)
 	})
 
+	it('owner 更新后订阅者和执行入口都读取最新 snapshot', () => {
+		const onExecute = vi.fn()
+
+		function Harness({ ids }: { ids: string[] }) {
+			return (
+				<CommandSelectionProvider>
+					<SelectionRegistrar selection={createTaskSelection(ids)} />
+					<SelectionProbe />
+					<ExecutionProbe onExecute={onExecute} />
+				</CommandSelectionProvider>
+			)
+		}
+
+		const { rerender } = render(<Harness ids={['task-a']} />)
+		rerender(<Harness ids={['task-b', 'task-c']} />)
+
+		expect(screen.getByTestId('selection-json').textContent).toContain('"ids":["task-b","task-c"]')
+		fireEvent.click(screen.getByRole('button', { name: '执行当前选择' }))
+		expect(onExecute).toHaveBeenCalledWith(['task-b', 'task-c'])
+	})
+
 	it('注册空 selection 后恢复空状态', () => {
 		render(
 			<CommandSelectionProvider>
@@ -86,11 +108,42 @@ describe('CommandSelectionProvider', () => {
 
 		expect(screen.getByTestId('selection-json').textContent).toContain('"hasSelection":false')
 	})
+
+	it('旧 token 卸载不会清空后来注册的 active source', () => {
+		function Harness({ showFirst, showSecond }: { showFirst: boolean; showSecond: boolean }) {
+			return (
+				<CommandSelectionProvider>
+					{showFirst ? (
+						<SelectionRegistrar key='first' selection={createTaskSelection(['task-a'])} />
+					) : null}
+					{showSecond ? (
+						<SelectionRegistrar key='second' selection={createTaskSelection(['task-b'])} />
+					) : null}
+					<SelectionProbe />
+				</CommandSelectionProvider>
+			)
+		}
+
+		const { rerender } = render(<Harness showFirst showSecond />)
+		expect(screen.getByTestId('selection-json').textContent).toContain('"ids":["task-b"]')
+
+		rerender(<Harness showFirst={false} showSecond />)
+		expect(screen.getByTestId('selection-json').textContent).toContain('"ids":["task-b"]')
+
+		rerender(<Harness showFirst={false} showSecond={false} />)
+		expect(screen.getByTestId('selection-json').textContent).toContain('"hasSelection":false')
+	})
 })
 
 function SelectionRegistrar({ selection }: { selection: CommandSelectionContext }) {
-	useRegisterCommandSelection(selection)
+	const readSelection = useCallback(() => selection, [selection])
+	useRegisterCommandSelection(readSelection)
 	return null
+}
+
+function ExecutionProbe({ onExecute }: { onExecute: (ids: string[]) => void }) {
+	const selection = useCommandSelectionContext()
+	return <button onClick={() => onExecute([...selection.ids])}>执行当前选择</button>
 }
 
 function SelectionProbe() {

@@ -73,7 +73,8 @@ export function useProjectOverviewScene() {
 			}),
 		[clearProjectSelection, overviewItems, selectionSnapshot.ids],
 	)
-	useRegisterCommandSelection(commandSelection)
+	const readCommandSelection = useCallback(() => commandSelection, [commandSelection])
+	useRegisterCommandSelection(readCommandSelection)
 	async function runRowAction(projectId: string, runner: () => Promise<unknown>) {
 		setBusyProjectId(projectId)
 		try {

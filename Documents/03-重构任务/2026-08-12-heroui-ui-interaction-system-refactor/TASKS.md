@@ -1,10 +1,10 @@
 # HeroUI-only UI 平台、Linear 浅色设计系统与键盘交互重写 - Tasks
 
-> 当前状态：阶段 3。阶段 A–G 已完成，下一步从阶段 H 的 T60 开始。
+> 当前状态：阶段 3。阶段 A–H 已完成，下一步从阶段 I 的 T66 开始。
 
 ## 当前阶段
 
-- 阶段 A–G 已完成；下一步执行阶段 H 的 T60。Windows WebView2 不属于本任务验收范围，也不阻塞后续阶段。
+- 阶段 A–H 已完成；下一步执行阶段 I 的 T66。Windows WebView2 不属于本任务验收范围，也不阻塞后续阶段。
 - 执行任意 task 前，必须重读 [SPEC.md](./SPEC.md) 对应 AC 与 [PLAN.md](./PLAN.md) 对应方案；后续 task 默认按编号顺序依赖。
 - 任一锁定包 API、供应链访问、性能或产品合同与 PLAN 冲突时，先在本文件「与 SPEC/PLAN 的实施偏差」登记并停止相关切片，不得静默增加兼容层。
 
@@ -275,30 +275,30 @@
 
 **阶段 H：单一 Collection 交互基础**
 
-- [ ] T60 在 `src/features/selection/model/collectionState.ts` 与测试中建立稳定 key 的纯投影与不变量，覆盖显式 `selectedKeys`、`focusedKey`、range anchor、`eligibleKeys`、`navigableKeys`、筛选裁剪、折叠、删除和增量加载。
+- [x] T60 在 `src/features/selection/model/collectionState.ts` 与测试中建立稳定 key 的纯投影与不变量，覆盖显式 `selectedKeys`、`focusedKey`、range anchor、`eligibleKeys`、`navigableKeys`、筛选裁剪、折叠、删除和增量加载。
   - 纯模型只产出 focus intent：折叠含 focusedKey 的分组时指向折叠按钮，再次进入时指向分组后首项或 collection root；anchor 不可导航时在下一次 range 前重置为当前 focusedKey，不在模型内操作 DOM。
   _对应验收标准：AC-27, AC-28, AC-34, AC-36_
   _测试先行：`src/features/selection/model/collectionState.test.ts`_
 
-- [ ] T61 在 `src/features/selection/model/useCollectionInteraction.ts`、`src/features/selection/model/CommandSelectionProvider.tsx` 与 `src/features/bulk-action/core/command-bulk-selection-snapshot.ts` 以 `react-aria`/`react-stately` 公开 hooks 接入单一 owner，并在执行瞬间生成只读领域 snapshot；HeroUI 继续拥有高层标准集合外观，不读取其内部 manager。
+- [x] T61 在 `src/features/selection/model/useCollectionInteraction.ts`、`src/features/selection/model/CommandSelectionProvider.tsx` 与 `src/features/bulk-action/core/command-bulk-selection-snapshot.ts` 以 `react-aria`/`react-stately` 公开 hooks 接入单一 owner，并在执行瞬间生成只读领域 snapshot；HeroUI 继续拥有高层标准集合外观，不读取其内部 manager。
   - 禁止 `'all'` sentinel、第二份可写选择或 snapshot 反向写 collection。
   _对应验收标准：AC-26, AC-28, AC-31, AC-34, AC-36_
   _测试先行：`src/features/selection/model/useCollectionInteraction.test.tsx`、`src/features/selection/model/CommandSelectionProvider.test.tsx`、`src/features/bulk-action/core/command-bulk-selection-snapshot.test.ts`_
 
-- [ ] T62 在 `src/features/selection/shortcuts/useCollectionKeyboardAdapter.ts` 及测试中复用 `src/features/command/keybinding/input-guard.ts`，集中适配 `J/K`、`X`、`Space`、`Enter`、Shift range 与 loaded-only Cmd/Ctrl+A；React Aria 保持 Arrow、Home/End 和标准焦点 owner。
+- [x] T62 在 `src/features/selection/shortcuts/useCollectionKeyboardAdapter.ts` 及测试中复用 `src/features/command/keybinding/input-guard.ts`，集中适配 `J/K`、`X`、`Space`、`Enter`、Shift range 与 loaded-only Cmd/Ctrl+A；React Aria 保持 Arrow、Home/End 和标准焦点 owner。
   - 覆盖 input、textarea、contenteditable、编辑器与 IME composition 隔离。
   _对应验收标准：AC-25, AC-26, AC-27, AC-28, AC-29_
   _测试先行：`src/features/selection/shortcuts/useCollectionKeyboardAdapter.test.tsx`_
 
-- [ ] T63 在 `src/features/selection/model/collectionFocusBridge.ts` 与测试中实现 stable key/ref registry、分组折叠按钮 ref、collection root ref、scroll request、异步挂载后聚焦、虚拟 trigger 恢复及实体删除 fallback；禁止 `scroll + querySelector` 和 mounted keys 参与选择真相。
+- [x] T63 在 `src/features/selection/model/collectionFocusBridge.ts` 与测试中实现 stable key/ref registry、分组折叠按钮 ref、collection root ref、scroll request、异步挂载后聚焦、虚拟 trigger 恢复及实体删除 fallback；禁止 `scroll + querySelector` 和 mounted keys 参与选择真相。
   _对应验收标准：AC-26, AC-32, AC-35, AC-36_
   _测试先行：`src/features/selection/model/collectionFocusBridge.test.ts`_
 
-- [ ] T64 在 `src/features/selection/components/CollectionInteractionContract.test.tsx` 建立仅测试使用的简单平面集合 probe，验证 HeroUI Pro ListView 可直接承接的合同与必须下沉 hooks 的边界；不得新增生产通用 ListView wrapper。
+- [x] T64 在 `src/features/selection/components/CollectionInteractionContract.test.tsx` 建立仅测试使用的简单平面集合 probe，验证 HeroUI Pro ListView 可直接承接的合同与必须下沉 hooks 的边界；不得新增生产通用 ListView wrapper。
   _对应验收标准：AC-25, AC-26, AC-27, AC-29, AC-34_
   _测试先行：`src/features/selection/components/CollectionInteractionContract.test.tsx`_
 
-- [ ] T65 完成阶段 H 收口：运行 selection、command、bulk 测试及根级门禁/build，确认没有第二 selection owner 或 HeroUI 同名 wrapper；获准提交时引用 PLAN 的阶段 H 文案，不自动提交。
+- [x] T65 完成阶段 H 收口：运行 selection、command、bulk 测试及根级门禁/build，确认没有第二 selection owner 或 HeroUI 同名 wrapper；获准提交时引用 PLAN 的阶段 H 文案，不自动提交。
   _对应验收标准：AC-3, AC-31, AC-34_
 
 **阶段 I：TaskBoard 交互与虚拟化 hard cut**
@@ -542,6 +542,7 @@
 - 2026-08-14：阶段 C 根级检查暴露一个与 UI 重构无关、在未改动 Rust 文件中可单独复现的 Space 删除错误文案断言失败；未将其混入 HeroUI 重构修改，登记为 T120 前必须处理的仓库既有失败。
 - 2026-08-14：阶段 E 的已连接 trigger 使用真实 DOM ref 恢复，trigger 卸载时回退到打开时捕获的 collection root；虚拟行离屏后重挂载并恢复当前实体行，仍按 PLAN 由阶段 H/I 的 stable key/ref bridge 完成，本阶段不新增 querySelector 兼容桥。
 - 2026-08-16：任务发起人确认最终合同：列表打开只写 `?task=`；窗口 `<1024px` 始终使用 HeroUI Sheet，`>=1024px` 始终使用 Aside；跨断点只换容器，不改 URL、不关闭、不跳页。Sidebar 同用 `1024px` 产品边界但 owner 独立；列表最小 `352px`，Aside 最小/默认/最大为 `320/360/440px`，任务列表只保留 `<560px` 一档容器自适应；完整页仅显式打开。T43 据此再次重开。
+- 2026-08-17：锁定版 `react-stately@3.49.0` 的公开 `MultipleSelectionManager` 不暴露 range anchor 的读取或重置能力；阶段 H 不使用 private import 或类型强转，仍由 manager 唯一拥有 `selectedKeys`/`focusedKey`，仅在同一 collection interaction owner 内保留一个 `rangeAnchorKey` 交互元数据，并以显式 key Set 落选择结果。
 
 ## 完成记录
 
@@ -573,3 +574,4 @@
 - 2026-08-17：完成 T45/U2。任务发起人在真实 Tauri 中完成阶段 E 连续复验并确认通过；最终保留单一 `1024px` 边界、宽窗 Resizable Aside、窄窗 MainCard 内 Card Sheet、单一详情 view model、任务列表单档容器自适应及显式完整页入口。
 - 2026-08-17：完成 T46 与阶段 E 收口。详情/Sidebar 聚焦测试 11 个文件共 69 项、全量前端 190 个文件共 1003 项、release 146 项、第一方动画扫描、typecheck、lint、模块边界、格式与 production build 均通过；`test:rust` 仅复现已登记且与本阶段无关的 Space 回收站文案断言失败，继续由 T120 收口。阶段 E 建议 commit 文案：`refactor(task): 收敛任务详情 Aside 与 Sheet`；本次只更新任务记录，不自动提交。
 - 2026-08-17：完成 T47–T50 与阶段 F 收口。Activity Debug 和根/壳路由反馈直接切到 HeroUI 表单、Button、Link、EmptyState 与反馈组件；ShortcutTokens/MainCard 保留产品语义并直接组合 HeroUI Kbd/Button；普通 MainCard/Detail 使用 ScrollShadow，TaskBoard 三条页面路径通过显式 `PageFrame.VirtualizedBody` 继续拥有唯一 AppScrollArea viewport。`Sidebar.Content` 已由 HeroUI 提供 ScrollShadow，验证后不再嵌套第二层。删除零消费者的 Activity Debug/MainCard pattern、ShortcutMenuItemHint 与旧 Kbd primitive；AppScrollArea/OverlayScrollbar 因真实消费者继续保留。全量前端 191 个文件共 1009 项、release 146 项、第一方动画扫描、typecheck、lint、模块边界、格式与 production build 均通过；`test:rust` 仅复现已登记的 Space 回收站文案断言失败。阶段 F 建议 commit 文案：`refactor(ui): 迁移 HeroUI 标准控件与表单`；未提交、未改动 Git 暂存区。
+- 2026-08-17：完成 T60–T65 与阶段 H 收口。建立 stable-key collection 投影、唯一 React Stately owner、loaded-only 显式全选、Linear 键位 adapter 与异步 stable key/ref focus bridge；折叠项保留选择但由 React Aria navigation-disabled keys 跳过，range anchor 仅在下一次范围动作前修复。Command 注册改为只读订阅源，领域批量 snapshot 在执行瞬间复制；HeroUI Pro ListView 仅保留测试 probe，不新增生产 wrapper，也未提前迁移 TaskBoard。阶段专项 30 个文件共 237 项、全量前端 199 个文件共 1065 项、typecheck、lint、模块边界、格式、第一方动画扫描与 production build 均通过；阶段 H 建议 commit 文案：`refactor(selection): 建立单一集合交互状态`；未提交、未改动 Git 暂存区。

@@ -189,7 +189,7 @@ describe('ShellSidebar', () => {
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('StoneFlow VNext')
 	})
 
-	it('Space 删除会打开统一确认弹窗，并默认聚焦确认按钮', async () => {
+	it('Space 删除会打开统一确认弹窗，并聚焦弹窗根节点', async () => {
 		const onDeleteSpace = vi.fn(async () => mockSpaceRemovalResult(null))
 		renderShellSidebar(
 			{
@@ -228,7 +228,7 @@ describe('ShellSidebar', () => {
 		fireEvent.click(await screen.findByRole('menuitem', { name: '删除' }))
 
 		const dialog = await screen.findByRole('alertdialog')
-		expect(dialog).toHaveFocus()
+		await waitFor(() => expect(dialog).toHaveFocus())
 		const confirmButton = screen.getByRole('button', { name: '移入回收站' })
 
 		fireEvent.click(confirmButton)

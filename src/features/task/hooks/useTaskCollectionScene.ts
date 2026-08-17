@@ -2,7 +2,7 @@
  * 任务集合编排：数据源 + Display 呈现 + 选择/预览/Board。
  * 筛选会话与查询下推由各列表 scene 持有；本 hook 不维护第二套 filter 状态。
  */
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 
 import {
 	applyTaskDisplayOptionsToTasks,
@@ -87,7 +87,8 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 			selection.selectionSnapshot.ids,
 		],
 	)
-	useRegisterCommandSelection(commandSelection)
+	const readCommandSelection = useCallback(() => commandSelection, [commandSelection])
+	useRegisterCommandSelection(readCommandSelection)
 	useRegisterTaskPreviewSource({
 		tasks: input.source.items,
 		focusedTaskId: selection.focusedTaskId,

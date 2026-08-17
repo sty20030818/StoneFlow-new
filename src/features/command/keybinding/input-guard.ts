@@ -13,8 +13,12 @@ export function isEditableTarget(target: EventTarget | null) {
 		return true
 	}
 
-	const tagName = target.tagName
-	return tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT'
+	const contentEditableHost = target.closest<HTMLElement>('[contenteditable]')
+	if (contentEditableHost && contentEditableHost.getAttribute('contenteditable') !== 'false') {
+		return true
+	}
+
+	return target.closest('input, textarea, select, [role="textbox"], [data-editor]') !== null
 }
 
 export function shouldIgnoreKeybindingEvent(event: NormalizedKeyEvent, allowInEditable = false) {

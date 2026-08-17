@@ -20,6 +20,23 @@ export {
 
 // ── 实体列表选择 ────────────────────────────────────────────────────────────
 
+export {
+	createCollectionFocusBridge,
+	createCollectionProjection,
+	reconcileCollapsedGroup,
+	reconcileCollectionProjection,
+	useCollectionInteraction,
+} from './model'
+export type {
+	CollectionEntryTarget,
+	CollectionFocusIntent,
+	CollectionInteraction,
+	CollectionKey,
+	CollectionProjection,
+	CollectionState,
+	CollectionTransition,
+} from './model'
+
 /** 通用实体多选 / 焦点（task/project/lifecycle 列表）。 */
 export { useEntitySelection } from './model/useEntitySelection'
 
@@ -35,4 +52,4 @@ export {
 } from './components/EntityRowShortcutScope'
 
 /** 由 AppProviders 在组合根注入统一 KeybindingRegistry。 */
-export { SELECTION_SHORTCUT_BINDINGS } from './shortcuts'
+export { SELECTION_SHORTCUT_BINDINGS, useCollectionKeyboardAdapter } from './shortcuts'

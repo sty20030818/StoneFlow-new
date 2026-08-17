@@ -30,7 +30,13 @@ export type {
 
 // ── Keybinding ──────────────────────────────────────────────────────────────
 
-export { DEFAULT_KEYBINDINGS, KeybindingRegistry, matchKeybindingEvent } from './keybinding'
+export {
+	DEFAULT_KEYBINDINGS,
+	isEditableTarget,
+	KeybindingRegistry,
+	matchKeybindingEvent,
+	shouldIgnoreKeybindingEvent,
+} from './keybinding'
 
 export type {
 	Keybinding,

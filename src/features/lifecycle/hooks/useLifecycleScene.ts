@@ -87,7 +87,8 @@ export function useLifecycleScene(mode: LifecycleMode) {
 			}),
 		[clearEntrySelection, mode, selectionSnapshot.ids, sliceItems],
 	)
-	useRegisterCommandSelection(commandSelection)
+	const readCommandSelection = useCallback(() => commandSelection, [commandSelection])
+	useRegisterCommandSelection(readCommandSelection)
 	const showSpacePill = scope.type === 'all'
 	const scopeItems = showSpacePill
 		? sliceItems

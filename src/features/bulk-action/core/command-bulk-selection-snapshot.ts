@@ -8,18 +8,28 @@ export function createCommandBulkSelectionSnapshot(
 	entity: BulkEntityType,
 	source: BulkSelectionSource,
 ) {
-	const entities = selection.entities.filter((item) => item.type === entity)
+	const entityById = new Map(
+		selection.entities.filter((item) => item.type === entity).map((item) => [item.id, item]),
+	)
+	const entities = selection.ids.flatMap((id) => {
+		const item = entityById.get(id)
+		return item
+			? [
+					{
+						id: item.id,
+						title: item.title,
+						subtitle: item.subtitle,
+						status: item.status,
+						priority: item.priority,
+					},
+				]
+			: []
+	})
 
 	return createBulkSelectionSnapshot({
 		entity,
-		ids: entities.map((item) => item.id),
-		entities: entities.map((item) => ({
-			id: item.id,
-			title: item.title,
-			subtitle: item.subtitle,
-			status: item.status,
-			priority: item.priority,
-		})),
+		ids: selection.ids,
+		entities,
 		source,
 	})
 }
