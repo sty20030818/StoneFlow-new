@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 
-import { Kbd } from '@/shared/components/base/kbd'
+import { Kbd } from '@heroui/react'
+
 import { TooltipProvider } from '@/shared/components/base/tooltip'
 import { ActionTooltip, DisabledActionTooltip, OverflowTooltip } from '.'
 
@@ -45,8 +46,22 @@ describe('shared tooltip patterns', () => {
 						<button type='button'>任务入口</button>
 					</ActionTooltip.Trigger>
 					<ActionTooltip.Content>
-						<ActionTooltip.Row label='全部任务' shortcut={<Kbd>G → T</Kbd>} />
-						<ActionTooltip.Row label='独立任务' shortcut={<Kbd>G → I</Kbd>} />
+						<ActionTooltip.Row
+							label='全部任务'
+							shortcut={
+								<Kbd>
+									<Kbd.Content>G → T</Kbd.Content>
+								</Kbd>
+							}
+						/>
+						<ActionTooltip.Row
+							label='独立任务'
+							shortcut={
+								<Kbd>
+									<Kbd.Content>G → I</Kbd.Content>
+								</Kbd>
+							}
+						/>
 					</ActionTooltip.Content>
 				</ActionTooltip>
 			</TooltipProvider>,

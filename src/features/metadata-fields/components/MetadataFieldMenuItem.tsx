@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react'
 
+import { Kbd } from '@heroui/react'
 import { CheckIcon, MinusIcon } from 'lucide-react'
 
 import type { MetadataFieldIndicator } from '@/features/metadata-fields/core'
 import { cn } from '@/shared/lib/utils'
 import { DropdownMenuItem } from '@/shared/components/base/dropdown-menu'
-import { ShortcutMenuItemHint } from '@/shared/components/shortcut-menu'
 
 export type MetadataFieldMenuItemProps<TValue> = {
 	value: TValue
@@ -54,15 +54,19 @@ export function MetadataFieldMenuItem<TValue>({
 				className={cn(
 					'ml-auto shrink-0 items-center text-[11px] text-muted-foreground',
 					hasTrailing
-						? 'grid grid-cols-[0.875rem_1rem_auto] gap-x-1.5'
-						: 'grid grid-cols-[0.875rem_1rem] gap-x-1.5',
+						? 'grid grid-cols-[0.875rem_auto_auto] gap-x-1.5'
+						: 'grid grid-cols-[0.875rem_auto] gap-x-1.5',
 				)}
 			>
 				<span className='flex items-center justify-center'>
 					<MetadataFieldIndicatorIcon indicator={indicator} />
 				</span>
 				<span className='flex items-center justify-center'>
-					{digit ? <ShortcutMenuItemHint digit={digit} /> : null}
+					{digit ? (
+						<Kbd aria-hidden data-slot='shortcut-menu-item-hint' variant='light'>
+							<Kbd.Content>{digit}</Kbd.Content>
+						</Kbd>
+					) : null}
 				</span>
 				{hasTrailing ? <span className='min-w-0 text-right tabular-nums'>{trailing}</span> : null}
 			</span>

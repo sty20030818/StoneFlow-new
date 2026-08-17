@@ -1,7 +1,10 @@
-import { Button } from '@/shared/components/base/button'
+import { Button } from '@heroui/react'
+import { linkVariants } from '@heroui/styles'
 import { Link, Outlet, createFileRoute } from '@tanstack/react-router'
 
 import { RouterFeedbackPage } from '../-router-feedback'
+
+const shellFeedbackLinkStyles = linkVariants()
 
 export const Route = createFileRoute('/_shell')({
 	component: ShellRouteGroup,
@@ -20,14 +23,17 @@ function ShellRouteGroupError({ error, reset }: { error: unknown; reset: () => v
 		<RouterFeedbackPage
 			action={
 				<div className='flex items-center justify-center gap-3'>
-					<Button onClick={() => reset()} type='button' variant='outline'>
+					<Button onPress={() => reset()} type='button' variant='outline'>
 						重试
 					</Button>
-					<Button asChild type='button' variant='ghost'>
-						<Link from='/' to='/$scopeKey/tasks' params={{ scopeKey: 'all' }}>
-							回到全部任务
-						</Link>
-					</Button>
+					<Link
+						className={shellFeedbackLinkStyles.base()}
+						from='/'
+						params={{ scopeKey: 'all' }}
+						to='/$scopeKey/tasks'
+					>
+						回到全部任务
+					</Link>
 				</div>
 			}
 			description={message}
@@ -40,11 +46,14 @@ function ShellRouteGroupNotFound() {
 	return (
 		<RouterFeedbackPage
 			action={
-				<Button asChild type='button' variant='outline'>
-					<Link from='/' to='/$scopeKey/tasks' params={{ scopeKey: 'all' }}>
-						回到全部任务
-					</Link>
-				</Button>
+				<Link
+					className={shellFeedbackLinkStyles.base()}
+					from='/'
+					params={{ scopeKey: 'all' }}
+					to='/$scopeKey/tasks'
+				>
+					回到全部任务
+				</Link>
 			}
 			description='当前工作区路径不存在，可能是旧链接已失效，或者目标实体已经被删除。'
 			title='工作区页面不存在'

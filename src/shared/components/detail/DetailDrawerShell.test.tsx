@@ -1,11 +1,6 @@
 /** @vitest-environment jsdom */
 import { render, screen } from '@testing-library/react'
-
-vi.mock('@/shared/components/OverlayScrollbar', () => ({
-	OverlayScrollbar: ({ className }: { className?: string }) => (
-		<div aria-hidden='true' className={className} data-testid='overlay-scrollbar' />
-	),
-}))
+import { createRef } from 'react'
 
 import {
 	DetailBody,
@@ -42,10 +37,16 @@ describe('详情通用界面基元', () => {
 		)
 	})
 
-	it('正文使用 AppScrollArea，并把滚动协议挂在真实 viewport', () => {
+	it('正文使用 HeroUI ScrollShadow，并把样式与 ref 挂在真实滚动根', () => {
+		const scrollRef = createRef<HTMLDivElement>()
+
 		render(
 			<DetailDrawerShell>
-				<DetailBody>
+				<DetailBody
+					className='detail-body-layout-contract'
+					ref={scrollRef}
+					viewportClassName='detail-body-viewport-contract'
+				>
 					<div>可滚动内容</div>
 				</DetailBody>
 				<DetailFooter>底部</DetailFooter>
@@ -53,14 +54,16 @@ describe('详情通用界面基元', () => {
 		)
 
 		const viewport = screen.getByText('可滚动内容').closest('[data-scroll-container="true"]')
-		const wrapper = viewport?.parentElement
 		const footer = screen.getByText('底部')
 
+		expect(viewport).toHaveAttribute('data-slot', 'scroll-shadow')
+		expect(scrollRef.current).toBe(viewport)
 		expect(viewport).toHaveAttribute('data-scroll-container', 'true')
-		expect(viewport?.className).toContain('overflow-y-auto')
 		expect(viewport?.className).toContain('pb-20')
-		expect(wrapper?.className).toContain('min-h-0')
-		expect(wrapper?.className).toContain('flex-1')
+		expect(viewport?.className).toContain('min-h-0')
+		expect(viewport?.className).toContain('flex-1')
+		expect(viewport?.className).toContain('detail-body-layout-contract')
+		expect(viewport?.className).toContain('detail-body-viewport-contract')
 		expect(footer.className).toContain('shrink-0')
 	})
 

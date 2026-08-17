@@ -30,4 +30,17 @@ describe('PageFrame', () => {
 
 		expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
 	})
+
+	it('虚拟列表主体只提供一个真实滚动 viewport', () => {
+		const { container } = render(
+			<PageFrame.Root>
+				<PageFrame.VirtualizedBody>虚拟列表</PageFrame.VirtualizedBody>
+			</PageFrame.Root>,
+		)
+
+		const viewports = container.querySelectorAll('[data-scroll-container="true"]')
+		expect(viewports).toHaveLength(1)
+		expect(viewports[0]).toHaveAttribute('data-scroll-container-role', 'task-board')
+		expect(screen.getByText('虚拟列表')).toBeInTheDocument()
+	})
 })

@@ -1,7 +1,8 @@
 import { forwardRef, type ReactNode } from 'react'
 
+import { ScrollShadow } from '@heroui/react'
+
 import { cn } from '@/shared/lib/utils'
-import { AppScrollArea } from '@/shared/components/AppScrollArea'
 
 import { detailBodyViewportClass, detailBodyWrapperClass } from './detailTokens'
 
@@ -16,12 +17,12 @@ export const DetailBody = forwardRef<HTMLDivElement, DetailBodyProps>(function D
 	ref,
 ) {
 	return (
-		<AppScrollArea
-			className={cn(detailBodyWrapperClass, className)}
+		<ScrollShadow
+			className={cn(detailBodyWrapperClass, detailBodyViewportClass, className, viewportClassName)}
+			data-scroll-container='true'
 			ref={ref}
-			viewportClassName={cn(detailBodyViewportClass, viewportClassName)}
 		>
 			{children}
-		</AppScrollArea>
+		</ScrollShadow>
 	)
 })

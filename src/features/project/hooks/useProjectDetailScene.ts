@@ -170,7 +170,7 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 			filter === 'all'
 				? statusProjection.statusValues.length === 0
 				: statusProjection.statusValues.length === 1 && statusProjection.statusValues[0] === filter,
-		onClick: () => {
+		onPress: () => {
 			if (filter === 'all') {
 				filterSession.replaceEffective(removeFilterField(filterSession.effective, 'status'))
 				return

@@ -1,4 +1,4 @@
-import { Button } from '@/shared/components/base/button'
+import { linkVariants } from '@heroui/styles'
 import { Link, getRouteApi } from '@tanstack/react-router'
 import { type FormEvent, useEffect, useState } from 'react'
 
@@ -8,6 +8,7 @@ import { ActivityDebugPage, type ActivityDebugLoadState } from '@/features/activ
 import { normalizeActivityDebugSearch } from './-activity-debug-search'
 
 const activityDebugRoute = getRouteApi('/debug/activity')
+const activityDebugLinkStyles = linkVariants()
 
 /**
  * route-private 组件：负责 search contract、导航和数据装配。
@@ -91,11 +92,14 @@ export function ActivityDebugRoute() {
 	return (
 		<ActivityDebugPage
 			backAction={
-				<Button asChild className='h-10 rounded-lg' type='button' variant='ghost'>
-					<Link from='/' params={{ scopeKey: 'all' }} to='/$scopeKey/tasks'>
-						返回
-					</Link>
-				</Button>
+				<Link
+					className={activityDebugLinkStyles.base()}
+					from='/'
+					params={{ scopeKey: 'all' }}
+					to='/$scopeKey/tasks'
+				>
+					返回
+				</Link>
 			}
 			entityId={entityId}
 			entityType={entityType}

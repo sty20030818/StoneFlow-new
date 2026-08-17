@@ -27,7 +27,7 @@ export function ViewsPage() {
 					actions={
 						<MainCard.GhostAction
 							aria-label='创建任务'
-							onClick={scene.openTaskCreateDialog}
+							onPress={scene.openTaskCreateDialog}
 							tooltipShortcut={<CommandShortcut commandId={COMMAND_IDS.newFullTask} />}
 						>
 							<PlusIcon />
@@ -63,13 +63,12 @@ export function ViewsPage() {
 					pills={scene.visibleViews.map((view) => ({
 						label: view.name,
 						active: view.id === scene.activeView?.id,
-						onClick: () => scene.navigateToView(view),
-						role: 'tab' as const,
+						onPress: () => scene.navigateToView(view),
 					}))}
 				/>
-				<PageFrame.Body>
+				<PageFrame.VirtualizedBody>
 					<TaskBoard {...scene.taskCollection.boardProps} />
-				</PageFrame.Body>
+				</PageFrame.VirtualizedBody>
 				<PageFrame.BulkBar>
 					<BulkActionBar
 						action={<BulkCommandMenuAction />}

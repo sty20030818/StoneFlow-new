@@ -38,10 +38,10 @@ vi.mock('@/shared/components/main-card/MainCardLayout', () => ({
 				{action}
 			</div>
 		),
-		Toolbar: ({ pills }: { pills: Array<{ label: string; onClick: () => void }> }) => (
+		Toolbar: ({ pills }: { pills: Array<{ label: string; onPress: () => void }> }) => (
 			<div>
 				{pills.map((pill) => (
-					<button key={pill.label} onClick={pill.onClick} type='button'>
+					<button key={pill.label} onClick={pill.onPress} type='button'>
 						{pill.label}
 					</button>
 				))}
@@ -50,8 +50,8 @@ vi.mock('@/shared/components/main-card/MainCardLayout', () => ({
 		Body: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 		Empty: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 		NoticeGroup: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-		GhostAction: ({ children, onClick }: { children: ReactNode; onClick?: () => void }) => (
-			<button onClick={onClick} type='button'>
+		GhostAction: ({ children, onPress }: { children: ReactNode; onPress?: () => void }) => (
+			<button onClick={onPress} type='button'>
 				{children}
 			</button>
 		),

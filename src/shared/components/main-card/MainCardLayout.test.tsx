@@ -5,7 +5,7 @@ import { TooltipProvider } from '@/shared/components/base/tooltip'
 
 describe('MainCardLayout', () => {
 	it('MainCardBody 使用统一滚动容器协议，并保留 viewport 几何类', () => {
-		render(
+		const { container } = render(
 			<MainCard.Root>
 				<MainCard.Body className='custom-gap'>
 					<div>内容</div>
@@ -13,7 +13,8 @@ describe('MainCardLayout', () => {
 			</MainCard.Root>,
 		)
 
-		const viewport = screen.getByText('内容').parentElement
+		const viewport = container.querySelector('[data-scroll-container-role="main-card"]')
+		expect(viewport).not.toBeNull()
 		expect(viewport).toHaveAttribute('data-scroll-container', 'true')
 		expect(viewport).toHaveAttribute('data-scroll-container-role', 'main-card')
 		expect(viewport?.className).toContain('px-2')
@@ -33,7 +34,7 @@ describe('MainCardLayout', () => {
 
 		const action = screen.getByRole('button', { name: '创建任务' })
 		expect(action).not.toHaveAttribute('title')
-		fireEvent.focus(action)
+		fireEvent.pointerMove(action, { pointerType: 'mouse' })
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('创建任务')
 	})
 })

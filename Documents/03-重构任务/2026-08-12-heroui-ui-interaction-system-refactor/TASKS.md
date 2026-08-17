@@ -1,10 +1,10 @@
 # HeroUI-only UI 平台、Linear 浅色设计系统与键盘交互重写 - Tasks
 
-> 当前状态：阶段 3。阶段 E 的 T43 实现与自动验证已完成，等待 T45/U2 真实 Tauri 验收。
+> 当前状态：阶段 3。阶段 A–F 已完成，下一步从阶段 G 的 T51 开始。
 
 ## 当前阶段
 
-- 阶段 A–D 已完成；阶段 E 的 T39–T44 已完成，当前进入 T45/U2 真实 Tauri 验收。Windows WebView2 不属于本任务验收范围，也不阻塞后续阶段。
+- 阶段 A–F 已完成；下一步执行阶段 G 的 T51。Windows WebView2 不属于本任务验收范围，也不阻塞后续阶段。
 - 执行任意 task 前，必须重读 [SPEC.md](./SPEC.md) 对应 AC 与 [PLAN.md](./PLAN.md) 对应方案；后续 task 默认按编号顺序依赖。
 - 任一锁定包 API、供应链访问、性能或产品合同与 PLAN 冲突时，先在本文件「与 SPEC/PLAN 的实施偏差」登记并停止相关切片，不得静默增加兼容层。
 
@@ -204,31 +204,32 @@
   _对应验收标准：AC-19, AC-21, AC-22, AC-25, AC-30_
   _测试先行：`src/features/task/detail/components/TaskDetailHeader.test.tsx`、`src/features/task/detail/components/TaskPreview.test.tsx`、`src/features/entity-detail/components/EntityDetailDrawerHost.test.tsx`_
 
-- [ ] T45（任务发起人验收 U2）在真实 Tauri 中验证 Sidebar 点按/拖动/键盘、窗口 `1024px` 两侧的 Aside / Sheet、Aside 拖宽、列表容器紧凑档、显式完整页、草稿、scroll 与焦点，并在本文件记录“通过”或精确问题；AI 不得代为勾选。
+- [x] T45（任务发起人验收 U2）在真实 Tauri 中验证 Sidebar 点按/拖动/键盘、窗口 `1024px` 两侧的 Aside / Sheet、Aside 拖宽、列表容器紧凑档、显式完整页、草稿、scroll 与焦点，并在本文件记录“通过”或精确问题；AI 不得代为勾选。
 	- `>=1024px` 应打开非模态 Aside：列表不小于 `352px`，Aside 可在 `320–440px` 拖宽且默认 `360px`，分隔区可键盘操作。`<1024px` 应使用带 Backdrop、Escape、外点关闭和焦点管理的 HeroUI Sheet。
 	- 打开详情后反复跨过 `1024px`，应只替换 Aside / Sheet 容器；`?task=`、任务、草稿、autosave、scroll 和 history 保持，不自动关闭或跳完整页。Sidebar 同断点切换不得改写详情 open state。
 	- 将列表容器调到 `560px` 两侧，只能出现一次紧凑/默认排版切换。同时验证 `Space` 只打开 Peek，Aside / Sheet Header 显式打开完整页前先 flush，Escape、显式关闭和浏览器 Back 恢复正确列表、scroll 与焦点。
 	- 2026-08-14 首轮 U2 的导航 Sidebar、dirty 备注和焦点问题仍需回归；当时的偏好和双容器 open-state 问题不得回流。
+	- 2026-08-17：任务发起人基于本轮真实 Tauri 连续复验确认 U2 通过；验收期间发现的 Sidebar、Space 切换、MainCard、Aside / Sheet、Backdrop、草稿保存、详情 Header 与关闭动作问题均已修正并复验，最终合同不再保留呈现偏好、局部宽度状态机或自动完整页分流。
   _对应验收标准：AC-14, AC-18, AC-21, AC-23, AC-24_
 
-- [ ] T46 完成阶段 E 收口：确认 U2 通过后运行详情/Sidebar 测试、根级门禁、production build 与 `bun run test:rust`；获准提交时引用 PLAN 的阶段 E 文案，不自动提交。
+- [x] T46 完成阶段 E 收口：确认 U2 通过后运行详情/Sidebar 测试、根级门禁、production build 与 `bun run test:rust`；获准提交时引用 PLAN 的阶段 E 文案，不自动提交。
   _对应验收标准：AC-21, AC-22, AC-23, AC-24, AC-25_
 
 **阶段 F：标准控件、表单与反馈组件族**
 
-- [ ] T47 将 `src/features/activity/components/ActivityDebugPage.tsx`、`src/routes/-activity-debug-route.tsx`、`src/routes/-router-feedback.tsx` 与 `src/routes/__root.tsx` 直接切到 HeroUI Button、Input、Select、Link、EmptyState 与反馈组件，作为标准控件/表单最小真实 probe；不二次修改阶段 D/E 表面，不经过旧 base 重导出。
+- [x] T47 将 `src/features/activity/components/ActivityDebugPage.tsx`、`src/routes/-activity-debug-route.tsx`、`src/routes/-router-feedback.tsx`、`src/routes/__root.tsx` 与迁移清单明确归属 T47 的 `src/routes/_shell/route.tsx` 直接切到 HeroUI Button、Input、Select、Link、EmptyState 与反馈组件，作为标准控件/表单最小真实 probe；不二次修改阶段 D/E 表面，不经过旧 base 重导出。
   _对应验收标准：AC-1, AC-3, AC-4, AC-38, AC-39_
   _测试先行：`src/features/activity/components/ActivityDebugPage.test.tsx`_
 
-- [ ] T48 将 `src/shared/components/ShortcutTokens.tsx`、`src/shared/components/shortcut-menu/ShortcutMenuItemHint.tsx`、`src/shared/components/main-card/MainCardLayout.tsx` 中仍有跨 feature 价值的产品语义改为直接组合 HeroUI，并删除只为旧皮肤存在的 pattern 消费；不把产品组件改成 HeroUI 透传 wrapper。
+- [x] T48 将 `src/shared/components/ShortcutTokens.tsx`、`src/shared/components/shortcut-menu/ShortcutMenuItemHint.tsx`、`src/shared/components/main-card/MainCardLayout.tsx` 中仍有跨 feature 价值的产品语义改为直接组合 HeroUI，并删除只为旧皮肤存在的 pattern 消费；不把产品组件改成 HeroUI 透传 wrapper。
   _对应验收标准：AC-1, AC-3, AC-4, AC-5, AC-39_
   _测试先行：`src/shared/components/ShortcutTokens.test.tsx`、`src/shared/components/main-card/MainCardLayout.test.tsx`_
 
-- [ ] T49 将 `src/layout/ShellSidebar.tsx`、`src/shared/components/detail/DetailBody.tsx` 与 `src/shared/components/main-card/MainCardLayout.tsx` 的普通滚动容器改为 HeroUI ScrollShadow 或原生 overflow；`src/shared/components/AppScrollArea.tsx`、`src/shared/components/OverlayScrollbar.tsx` 只保留尚未迁移消费者和 TaskBoard 真实 viewport 例外，不叠加第二个 virtualizer。
+- [x] T49 将 `src/layout/ShellSidebar.tsx`、`src/shared/components/detail/DetailBody.tsx` 与 `src/shared/components/main-card/MainCardLayout.tsx` 的普通滚动容器改为 HeroUI ScrollShadow 或原生 overflow；`src/shared/components/AppScrollArea.tsx`、`src/shared/components/OverlayScrollbar.tsx` 只保留尚未迁移消费者和 TaskBoard 真实 viewport 例外，不叠加第二个 virtualizer。
   _对应验收标准：AC-3, AC-4, AC-5, AC-33_
   _测试先行：`src/shared/components/main-card/MainCardLayout.test.tsx`、`src/shared/components/AppScrollArea.test.tsx`、`src/features/task/components/TaskBoard.test.tsx`_
 
-- [ ] T50 完成阶段 F 收口：复核本阶段文件无旧 base/pattern/`--sf-*` 消费，运行根级门禁与 production build；只删除最后消费者已归零的 primitive，获准提交时引用 PLAN 的阶段 F 文案，不自动提交。
+- [x] T50 完成阶段 F 收口：复核本阶段文件无旧 base/pattern/`--sf-*` 消费，运行根级门禁与 production build；只删除最后消费者已归零的 primitive，获准提交时引用 PLAN 的阶段 F 文案，不自动提交。
   _对应验收标准：AC-1, AC-2, AC-3, AC-4, AC-38_
 
 **阶段 G：Overlay、Menu 与焦点基础**
@@ -522,8 +523,8 @@
 ## 阻塞
 
 - 当前阶段没有外部设备阻塞；Windows WebView2 不属于本任务验收范围。
-- 已知与 HeroUI 重构无关的失败：根级 `bun run check` 的最后 Rust 阶段稳定失败于未改动的 `commands::spaces::tests::deleting_trashed_space_again_should_not_enqueue_another_operation` 文案断言；动画扫描、TypeScript、lint、模块边界、格式、978 项前端测试、146 项 release 测试与 production build 均通过。该失败不阻塞阶段 D，但必须在 T120 最终收口前另行解决。
-- T45、T73、T105、T119 是尚未执行的人工 Gate，不在失败前视为阻塞。
+- 已知与 HeroUI 重构无关的失败：根级 `bun run check` 的最后 Rust 阶段稳定失败于未改动的 `commands::spaces::tests::deleting_trashed_space_again_should_not_enqueue_another_operation` 文案断言；动画扫描、TypeScript、lint、模块边界、格式、1009 项前端测试、146 项 release 测试与 production build 均通过。该失败不阻塞已完成的阶段 D–F，但必须在 T120 最终收口前另行解决。
+- T73、T105、T119 是尚未执行的人工 Gate，不在失败前视为阻塞。
 
 ## 与 SPEC/PLAN 的实施偏差
 
@@ -566,3 +567,6 @@
 - 2026-08-15：阶段 E 曾完成详情容器、草稿/autosave、路由、scroll 与焦点基础，并通过当时合同下的聚焦测试、全量前端测试、typecheck、lint、模块边界、格式、动画扫描与 production build。U2 后续发现任务列表缺少最小宽度，任务发起人确认当前最终合同并重开 T43；之前的自动化结果只作基础能力证据，不代表重开项已完成。
 - 2026-08-15：旧 T43 容器分流实现曾通过当时合同下的聚焦测试、全量前端测试、typecheck、lint、模块边界、格式和 production build；该设计已被 2026-08-16 最终合同取代，不代表重开后的 T43 已完成。
 - 2026-08-16：完成重开的 T43。Shell controller 只派生一份 `isCompact`；窗口 `<1024px` 使用 MainCard 内 HeroUI opaque Sheet，`>=1024px` 使用列表最小 `352px`、Aside `320/360/440px` 的 HeroUI Pro Resizable。跨断点保留同一 `?task=`、view model、草稿与滚动；TaskBoard 只用一条 `<560px` CSS container query 隐藏尾部元数据。旧 MainCard 宽度观测、自动完整页导航、preflight 与 history 特例已删除；窄窗导航 Sheet 与任务 Sheet 互斥。55 项聚焦测试、190 个文件共 1003 项前端测试、typecheck、lint、模块边界、格式、第一方动画扫描与 production build 均通过；T45/U2 仍待真实 Tauri 验收。建议 commit 文案：`refactor(task): 统一任务详情的 Sheet 与 Aside 响应式容器`；未提交、未改动 Git 暂存区。
+- 2026-08-17：完成 T45/U2。任务发起人在真实 Tauri 中完成阶段 E 连续复验并确认通过；最终保留单一 `1024px` 边界、宽窗 Resizable Aside、窄窗 MainCard 内 Card Sheet、单一详情 view model、任务列表单档容器自适应及显式完整页入口。
+- 2026-08-17：完成 T46 与阶段 E 收口。详情/Sidebar 聚焦测试 11 个文件共 69 项、全量前端 190 个文件共 1003 项、release 146 项、第一方动画扫描、typecheck、lint、模块边界、格式与 production build 均通过；`test:rust` 仅复现已登记且与本阶段无关的 Space 回收站文案断言失败，继续由 T120 收口。阶段 E 建议 commit 文案：`refactor(task): 收敛任务详情 Aside 与 Sheet`；本次只更新任务记录，不自动提交。
+- 2026-08-17：完成 T47–T50 与阶段 F 收口。Activity Debug 和根/壳路由反馈直接切到 HeroUI 表单、Button、Link、EmptyState 与反馈组件；ShortcutTokens/MainCard 保留产品语义并直接组合 HeroUI Kbd/Button；普通 MainCard/Detail 使用 ScrollShadow，TaskBoard 三条页面路径通过显式 `PageFrame.VirtualizedBody` 继续拥有唯一 AppScrollArea viewport。`Sidebar.Content` 已由 HeroUI 提供 ScrollShadow，验证后不再嵌套第二层。删除零消费者的 Activity Debug/MainCard pattern、ShortcutMenuItemHint 与旧 Kbd primitive；AppScrollArea/OverlayScrollbar 因真实消费者继续保留。全量前端 191 个文件共 1009 项、release 146 项、第一方动画扫描、typecheck、lint、模块边界、格式与 production build 均通过；`test:rust` 仅复现已登记的 Space 回收站文案断言失败。阶段 F 建议 commit 文案：`refactor(ui): 迁移 HeroUI 标准控件与表单`；未提交、未改动 Git 暂存区。

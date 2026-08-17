@@ -1,4 +1,4 @@
-import { Button } from '@/shared/components/base/button'
+import { Button } from '@heroui/react'
 import { Outlet, createRootRouteWithContext } from '@tanstack/react-router'
 
 import type { AppRouterContext } from '@/app/router'
@@ -20,7 +20,7 @@ function RootRouteError({ error, reset }: { error: unknown; reset: () => void })
 	return (
 		<RouterFeedbackPage
 			action={
-				<Button onClick={() => reset()} type='button' variant='outline'>
+				<Button onPress={() => reset()} type='button' variant='outline'>
 					重试
 				</Button>
 			}

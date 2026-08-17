@@ -15,8 +15,8 @@ describe('ShortcutTokens', () => {
 		)
 
 		expect(screen.getByLabelText('依次按 G、T')).toBeInTheDocument()
-		expect(screen.getByText('G')).toHaveAttribute('aria-hidden', 'true')
-		expect(screen.getByText('T')).toHaveAttribute('aria-hidden', 'true')
+		expect(screen.getByText('G').closest('[aria-hidden="true"]')).toBeInTheDocument()
+		expect(screen.getByText('T').closest('[aria-hidden="true"]')).toBeInTheDocument()
 	})
 
 	it('不会让读屏直接朗读 macOS 修饰键符号', () => {
@@ -31,5 +31,11 @@ describe('ShortcutTokens', () => {
 		)
 
 		expect(screen.getByLabelText('按 Shift + Command + Enter')).toBeInTheDocument()
+	})
+
+	it('没有快捷键 token 时不渲染空容器', () => {
+		const { container } = render(<ShortcutTokens tokens={[]} />)
+
+		expect(container).toBeEmptyDOMElement()
 	})
 })

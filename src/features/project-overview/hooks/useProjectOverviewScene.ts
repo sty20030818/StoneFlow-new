@@ -144,7 +144,7 @@ export function useProjectOverviewScene() {
 		{
 			active: viewKey === 'all_projects',
 			label: '所有项目',
-			onClick: () => setViewKey('all_projects'),
+			onPress: () => setViewKey('all_projects'),
 		},
 	]
 

@@ -2,12 +2,12 @@
 
 import type { ComponentType, ReactNode } from 'react'
 
+import { Kbd } from '@heroui/react'
 import { CheckIcon, FolderOpenIcon, FoldersIcon, MinusIcon, type LucideProps } from 'lucide-react'
 
 import { AppScrollArea } from '@/shared/components/AppScrollArea'
 import { ShortcutTokens } from '@/shared/components/ShortcutTokens'
 import { Badge } from '@/shared/components/base/badge'
-import { Kbd } from '@/shared/components/base/kbd'
 import { CommandGroup, CommandItem, CommandList } from '@/shared/components/base/command'
 import { getProjectStatusBadgeVariant } from '@/shared/components/badgeSemantics'
 import { OverflowTooltip } from '@/shared/components/tooltip'
@@ -122,13 +122,7 @@ function CommandMenuShortcut({ shortcut }: { shortcut: CommandMenuEntry['shortcu
 		return null
 	}
 
-	return (
-		<ShortcutTokens
-			kbdClassName='h-6 min-w-6 rounded-sm border border-sf-border-subtle bg-legacy-background/90 px-1.5 text-[11px] text-sf-text-secondary'
-			separatorClassName='text-sf-text-quaternary'
-			tokens={shortcut}
-		/>
-	)
+	return <ShortcutTokens tokens={shortcut} />
 }
 
 export function ProjectsCommandGroup({
@@ -242,8 +236,8 @@ export function CommandRowSelectionTrailing({
 
 export function CommandRowDigitHint({ digit }: { digit: string }) {
 	return (
-		<Kbd className='h-6 min-w-6 rounded-sm border border-sf-border-subtle bg-legacy-background/90 px-1.5 text-[11px] text-sf-text-secondary'>
-			{digit}
+		<Kbd variant='light'>
+			<Kbd.Content>{digit}</Kbd.Content>
 		</Kbd>
 	)
 }

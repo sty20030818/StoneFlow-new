@@ -1,26 +1,9 @@
+import { Alert, Button, Input, Label, ListBox, Select, Spinner } from '@heroui/react'
+import { EmptyState } from '@heroui-pro/react'
 import type { FormEvent, ReactNode } from 'react'
 
 import type { ActivityEntityType, ActivityTimelineEntry } from '../api/getEntityActivities'
 import { MainCard } from '@/shared/components/main-card/MainCardLayout'
-import { Button } from '@/shared/components/base/button'
-import { Input } from '@/shared/components/base/input'
-import {
-	activityDebugCompactCodeBlockClass,
-	activityDebugCodeBlockClass,
-	activityDebugDetailsEmptyTextClass,
-	activityDebugDetailsClass,
-	activityDebugFieldLabelClass,
-	activityDebugMetaRowClass,
-} from '@/shared/components/patterns/activity-debug'
-import {
-	Select,
-	SelectContent,
-	SelectGroup,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from '@/shared/components/base/select'
-import { StatusNotice } from '@/shared/components/StatusNotice'
 
 const ENTITY_TYPE_OPTIONS: Array<{ value: ActivityEntityType; label: string }> = [
 	{ value: 'task', label: 'Task' },
@@ -67,142 +50,154 @@ export function ActivityDebugPage({
 			<MainCard.Header title='Activity Debug' />
 			<MainCard.Body className='gap-4 p-4'>
 				<form
-					className='grid gap-3 rounded-xl border border-sf-border-subtle bg-card p-4 md:grid-cols-[180px_minmax(0,1fr)_120px_auto]'
+					className='grid gap-3 md:grid-cols-[180px_minmax(0,1fr)_120px_auto]'
 					onSubmit={onSubmit}
 				>
-					<label className='space-y-1.5'>
-						<span className={activityDebugFieldLabelClass}>Entity Type</span>
-						<Select
-							onValueChange={(value) => onEntityTypeChange(value as ActivityEntityType)}
-							value={entityType}
-						>
-							<SelectTrigger aria-label='实体类型' className='h-10 w-full'>
-								<SelectValue placeholder='选择实体类型' />
-							</SelectTrigger>
-							<SelectContent position='popper'>
-								<SelectGroup>
-									{ENTITY_TYPE_OPTIONS.map((option) => (
-										<SelectItem key={option.value} value={option.value}>
-											{option.label}
-										</SelectItem>
-									))}
-								</SelectGroup>
-							</SelectContent>
-						</Select>
-					</label>
+					<Select
+						className='w-full'
+						onChange={(value) => {
+							if (typeof value === 'string') {
+								onEntityTypeChange(value as ActivityEntityType)
+							}
+						}}
+						placeholder='选择实体类型'
+						value={entityType}
+					>
+						<Label>Entity Type</Label>
+						<Select.Trigger>
+							<Select.Value />
+							<Select.Indicator />
+						</Select.Trigger>
+						<Select.Popover>
+							<ListBox>
+								{ENTITY_TYPE_OPTIONS.map((option) => (
+									<ListBox.Item key={option.value} id={option.value} textValue={option.label}>
+										{option.label}
+										<ListBox.ItemIndicator />
+									</ListBox.Item>
+								))}
+							</ListBox>
+						</Select.Popover>
+					</Select>
 
-					<label className='space-y-1.5'>
-						<span className={activityDebugFieldLabelClass}>Entity ID</span>
+					<div className='space-y-1.5'>
+						<Label htmlFor='activity-debug-entity-id'>Entity ID</Label>
 						<Input
-							className='h-10'
+							fullWidth
+							id='activity-debug-entity-id'
 							onChange={(event) => onEntityIdChange(event.currentTarget.value)}
 							placeholder='例如 task-1 / project-42'
 							value={entityId}
 						/>
-					</label>
+					</div>
 
-					<label className='space-y-1.5'>
-						<span className={activityDebugFieldLabelClass}>Limit</span>
+					<div className='space-y-1.5'>
+						<Label htmlFor='activity-debug-limit'>Limit</Label>
 						<Input
-							className='h-10'
+							fullWidth
+							id='activity-debug-limit'
 							inputMode='numeric'
 							onChange={(event) => onLimitChange(event.currentTarget.value)}
 							placeholder='50'
 							value={limit}
 						/>
-					</label>
+					</div>
 
 					<div className='flex items-end gap-2'>
-						<Button className='h-10 rounded-lg' type='submit'>
-							查询 Activity
-						</Button>
+						<Button type='submit'>查询 Activity</Button>
 						{backAction}
 					</div>
 				</form>
 
 				{loadState.kind === 'idle' ? (
-					<StatusNotice
-						description='输入 entity type 和 entity id 后即可读取该实体的 Activity timeline。'
-						title='等待查询'
-						variant='neutral'
-					/>
+					<EmptyState size='sm'>
+						<EmptyState.Header>
+							<EmptyState.Title>等待查询</EmptyState.Title>
+							<EmptyState.Description>
+								输入 entity type 和 entity id 后即可读取该实体的 Activity timeline。
+							</EmptyState.Description>
+						</EmptyState.Header>
+					</EmptyState>
 				) : null}
 
 				{loadState.kind === 'loading' ? (
-					<StatusNotice
-						description='正在向 Rust 宿主请求 Activity timeline。'
-						title='读取中'
-						variant='warning'
-					/>
+					<Alert aria-busy='true' aria-live='polite' role='status' status='accent'>
+						<Alert.Indicator>
+							<Spinner aria-hidden='true' color='current' size='sm' />
+						</Alert.Indicator>
+						<Alert.Content>
+							<Alert.Title>读取中</Alert.Title>
+							<Alert.Description>正在向 Rust 宿主请求 Activity timeline。</Alert.Description>
+						</Alert.Content>
+					</Alert>
 				) : null}
 
 				{loadState.kind === 'error' ? (
-					<StatusNotice description={loadState.message} title='查询失败' variant='danger' />
+					<Alert role='alert' status='danger'>
+						<Alert.Indicator />
+						<Alert.Content>
+							<Alert.Title>查询失败</Alert.Title>
+							<Alert.Description>{loadState.message}</Alert.Description>
+						</Alert.Content>
+					</Alert>
 				) : null}
 
 				{loadState.kind === 'ready' && loadState.entries.length === 0 ? (
-					<StatusNotice
-						description='当前实体还没有任何 Activity 记录，或者你输入的 entity id 不存在。'
-						title='暂无记录'
-						variant='neutral'
-					/>
+					<EmptyState size='sm'>
+						<EmptyState.Header>
+							<EmptyState.Title>暂无记录</EmptyState.Title>
+							<EmptyState.Description>
+								当前实体还没有任何 Activity 记录，或者你输入的 entity id 不存在。
+							</EmptyState.Description>
+						</EmptyState.Header>
+					</EmptyState>
 				) : null}
 
 				{loadState.kind === 'ready' && loadState.entries.length > 0 ? (
-					<div className='space-y-3'>
+					<div className='divide-y divide-separator'>
 						{loadState.entries.map((entry) => (
-							<article
-								className='space-y-3 rounded-xl border border-sf-border-subtle bg-card p-4'
-								key={entry.id}
-							>
-								<div className={activityDebugMetaRowClass}>
-									<span className='rounded-full bg-legacy-muted px-2.5 py-1 font-medium text-legacy-foreground'>
-										{entry.action}
-									</span>
+							<article className='space-y-3 py-4 first:pt-0 last:pb-0' key={entry.id}>
+								<div className='flex flex-wrap items-center gap-2 text-xs text-muted'>
+									<span className='font-medium text-foreground'>{entry.action}</span>
 									<span>{entry.entityType}</span>
 									<span>{entry.entityId}</span>
 									<span>{entry.actorType}</span>
 									<span>{entry.source}</span>
-									<span>{entry.createdAt}</span>
+									<span className='tabular-nums'>{entry.createdAt}</span>
 								</div>
 
 								{entry.summary ? (
-									<p className='text-sm leading-6 text-legacy-foreground'>{entry.summary}</p>
+									<p className='text-sm leading-6 text-foreground'>{entry.summary}</p>
 								) : null}
 
 								{entry.metadata ? (
 									<div className='space-y-1.5'>
-										<p className={activityDebugFieldLabelClass}>Metadata</p>
-										<pre className={activityDebugCodeBlockClass}>
+										<p className='text-xs font-medium text-muted'>Metadata</p>
+										<pre className='overflow-x-auto rounded-lg bg-surface-secondary p-3 text-xs leading-5 text-muted'>
 											{JSON.stringify(entry.metadata, null, 2)}
 										</pre>
 									</div>
 								) : null}
 
-								<details className={activityDebugDetailsClass}>
-									<summary className='cursor-pointer text-sm font-medium text-legacy-foreground'>
+								<details className='border-l border-separator pl-3'>
+									<summary className='cursor-pointer text-sm font-medium text-foreground'>
 										字段变化 ({entry.changes.length})
 									</summary>
 									{entry.changes.length === 0 ? (
-										<p className={activityDebugDetailsEmptyTextClass}>这条事件没有附带字段变化。</p>
+										<p className='mt-3 text-sm text-muted'>这条事件没有附带字段变化。</p>
 									) : (
 										<div className='mt-3 space-y-3'>
 											{entry.changes.map((change) => (
-												<div
-													className='rounded-lg border border-sf-border-subtle bg-card p-3'
-													key={change.id}
-												>
-													<div className={activityDebugMetaRowClass}>
-														<span className='font-medium text-legacy-foreground'>
-															{change.field}
-														</span>
-														<span>{change.createdAt}</span>
+												<div className='border-l border-separator pl-3' key={change.id}>
+													<div className='flex flex-wrap items-center gap-2 text-xs text-muted'>
+														<span className='font-medium text-foreground'>{change.field}</span>
+														<span className='tabular-nums'>{change.createdAt}</span>
 													</div>
 													<div className='mt-2 grid gap-2 md:grid-cols-2'>
-														<pre className={activityDebugCompactCodeBlockClass}>
+														<pre className='overflow-x-auto rounded-md bg-surface-secondary p-2 text-xs leading-5 text-muted'>
 															{JSON.stringify(change.oldValue, null, 2)}
 														</pre>
-														<pre className={activityDebugCompactCodeBlockClass}>
+														<pre className='overflow-x-auto rounded-md bg-surface-secondary p-2 text-xs leading-5 text-muted'>
 															{JSON.stringify(change.newValue, null, 2)}
 														</pre>
 													</div>

@@ -17,18 +17,10 @@ type CommandShortcutProps = {
 	commandId: CommandId
 	scope?: KeybindingScope
 	className?: string
-	kbdClassName?: string
-	separatorClassName?: string
 }
 
 /** 在菜单、按钮等组合组件中渲染 canonical 主快捷键，不复制键帽字符串。 */
-function CommandShortcut({
-	commandId,
-	scope = 'global',
-	className,
-	kbdClassName,
-	separatorClassName,
-}: CommandShortcutProps) {
+function CommandShortcut({ commandId, scope = 'global', className }: CommandShortcutProps) {
 	const registry = useShortcutRegistry()
 	const tokens = resolveCommandShortcut({
 		registry,
@@ -41,14 +33,7 @@ function CommandShortcut({
 		return null
 	}
 
-	return (
-		<ShortcutTokens
-			className={className}
-			kbdClassName={kbdClassName}
-			separatorClassName={separatorClassName}
-			tokens={tokens}
-		/>
-	)
+	return <ShortcutTokens className={className} tokens={tokens} />
 }
 
 /**

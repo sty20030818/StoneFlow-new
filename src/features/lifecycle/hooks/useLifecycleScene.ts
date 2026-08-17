@@ -117,7 +117,7 @@ export function useLifecycleScene(mode: LifecycleMode) {
 	].map((pill) => ({
 		label: pill.label,
 		active: entityFilter === pill.key,
-		onClick: () => setEntityFilter(pill.key),
+		onPress: () => setEntityFilter(pill.key),
 	}))
 
 	function handleOpenDetail(entry: LifecycleEntry) {

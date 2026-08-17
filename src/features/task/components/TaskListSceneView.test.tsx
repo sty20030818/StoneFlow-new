@@ -34,14 +34,14 @@ vi.mock('@/shared/components/main-card/MainCardLayout', () => ({
 		Body: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 		GhostAction: ({
 			children,
+			onPress,
 			tooltipShortcut: _tooltipShortcut,
-			...props
 		}: {
 			children: ReactNode
-			onClick?: () => void
+			onPress?: () => void
 			tooltipShortcut?: ReactNode
 		}) => (
-			<button aria-label='创建任务' type='button' {...props}>
+			<button aria-label='创建任务' onClick={onPress} type='button'>
 				{children}
 			</button>
 		),

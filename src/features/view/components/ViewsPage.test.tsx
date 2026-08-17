@@ -348,7 +348,7 @@ describe('ViewsPage', () => {
 	it('点击系统视图 tab 后切换到新的视图 id', async () => {
 		await renderViewsPage('/all/views/today')
 
-		fireEvent.click(screen.getByRole('tab', { name: 'Upcoming' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Upcoming' }))
 
 		await waitFor(() => {
 			expect(runTaskViewSpy).toHaveBeenLastCalledWith({

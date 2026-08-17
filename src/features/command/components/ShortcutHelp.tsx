@@ -152,9 +152,7 @@ function ShortcutHelpRow({
 			<div className='ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2'>
 				{entry.shortcuts.map((shortcut) => (
 					<ShortcutTokens
-						kbdClassName='h-6 min-w-6 rounded-sm border border-sf-border-subtle bg-legacy-background/90 px-1.5 text-[11px] text-sf-text-secondary'
 						key={shortcut.map((token) => `${token.type}:${token.value}`).join('|')}
-						separatorClassName='text-sf-text-quaternary'
 						tokens={shortcut}
 					/>
 				))}

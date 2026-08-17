@@ -32,7 +32,7 @@ export function TaskListSceneView({ variant }: TaskListSceneViewProps) {
 					actions={
 						<MainCard.GhostAction
 							aria-label='创建任务'
-							onClick={scene.openCreate}
+							onPress={scene.openCreate}
 							tooltipShortcut={<CommandShortcut commandId={COMMAND_IDS.newFullTask} />}
 						>
 							<PlusIcon />
@@ -46,9 +46,9 @@ export function TaskListSceneView({ variant }: TaskListSceneViewProps) {
 					filterBar={<FilterBar />}
 					pills={scene.toolbarPills}
 				/>
-				<PageFrame.Body>
+				<PageFrame.VirtualizedBody>
 					<TaskBoard {...scene.taskCollection.boardProps} />
-				</PageFrame.Body>
+				</PageFrame.VirtualizedBody>
 				<PageFrame.BulkBar>
 					<BulkActionBar
 						action={<BulkCommandMenuAction />}

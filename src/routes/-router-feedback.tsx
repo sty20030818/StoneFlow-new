@@ -1,3 +1,4 @@
+import { EmptyState } from '@heroui-pro/react'
 import type { ReactNode } from 'react'
 
 type RouterFeedbackPageProps = {
@@ -12,14 +13,14 @@ export function RouterFeedbackPage({
 	action = null,
 }: RouterFeedbackPageProps) {
 	return (
-		<div className='flex min-h-screen items-center justify-center bg-legacy-background px-6'>
-			<div className='flex w-full max-w-md flex-col items-center gap-3 text-center'>
-				<h1 className='text-base font-semibold text-legacy-foreground'>{title}</h1>
-				{description ? (
-					<div className='text-sm leading-6 text-sf-shell-text-tertiary'>{description}</div>
-				) : null}
-				{action}
-			</div>
-		</div>
+		<main className='flex min-h-screen items-center justify-center bg-background px-6'>
+			<EmptyState className='w-full max-w-md'>
+				<EmptyState.Header>
+					<EmptyState.Title>{title}</EmptyState.Title>
+					{description ? <EmptyState.Description>{description}</EmptyState.Description> : null}
+				</EmptyState.Header>
+				{action ? <EmptyState.Content>{action}</EmptyState.Content> : null}
+			</EmptyState>
+		</main>
 	)
 }

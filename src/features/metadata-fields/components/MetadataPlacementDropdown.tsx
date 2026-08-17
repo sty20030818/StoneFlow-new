@@ -157,11 +157,7 @@ function GroupedPlacementDropdown({
 					<span className='flex items-center gap-2'>
 						<span className='min-w-0 flex-1 truncate'>{menuLabel}</span>
 						{shortcut ? (
-							<CommandShortcut
-								commandId={shortcut.commandId}
-								kbdClassName='h-5 min-w-5 rounded-sm border border-sf-border-subtle bg-legacy-background/90 px-1.5 text-[11px] font-medium text-muted-foreground'
-								scope={shortcut.scope}
-							/>
+							<CommandShortcut commandId={shortcut.commandId} scope={shortcut.scope} />
 						) : null}
 					</span>
 				</DropdownMenuLabel>

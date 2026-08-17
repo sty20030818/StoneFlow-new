@@ -161,7 +161,7 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 					filter === 'all'
 						? noStatus
 						: projection.statusValues.length === 1 && projection.statusValues[0] === filter,
-				onClick: () => {
+				onPress: () => {
 					if (filter === 'all') {
 						filterSession.replaceEffective(removeFilterField(filterSession.effective, 'status'))
 						void display.actions.applyPartial({ showCompleted: true })
@@ -202,7 +202,7 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 			return {
 				label,
 				active,
-				onClick: () => {
+				onPress: () => {
 					if (filter === 'standalone') {
 						filterSession.replaceEffective(
 							setFilterFieldClause(

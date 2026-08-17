@@ -1,5 +1,6 @@
 import type { ComponentProps, ReactNode } from 'react'
 
+import { AppScrollArea } from '@/shared/components/AppScrollArea'
 import { MainCard } from '@/shared/components/main-card/MainCardLayout'
 import { cn } from '@/shared/lib/utils'
 
@@ -74,6 +75,18 @@ function PageFrameBody({ children, className }: PageFrameBodyProps) {
 	)
 }
 
+function PageFrameVirtualizedBody({ children, className }: PageFrameBodyProps) {
+	return (
+		<AppScrollArea
+			className='min-w-0 flex-1'
+			scrollContainerRole='task-board'
+			viewportClassName='flex min-h-0 min-w-0 flex-col px-2 pb-2'
+		>
+			<div className={cn('flex min-h-0 flex-1 flex-col gap-3', className)}>{children}</div>
+		</AppScrollArea>
+	)
+}
+
 function PageFrameBulkBar({ children }: Pick<PageFrameSlotProps, 'children'>) {
 	return <>{children}</>
 }
@@ -83,5 +96,6 @@ export const PageFrame = {
 	Header: PageFrameHeader,
 	Toolbar: PageFrameToolbar,
 	Body: PageFrameBody,
+	VirtualizedBody: PageFrameVirtualizedBody,
 	BulkBar: PageFrameBulkBar,
 }

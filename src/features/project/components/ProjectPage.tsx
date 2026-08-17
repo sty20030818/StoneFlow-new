@@ -73,8 +73,8 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 					filterBar={<FilterBar />}
 					pills={scene.toolbarPills}
 				/>
-				<PageFrame.Body>
-					{!scene.project ? (
+				{!scene.project ? (
+					<PageFrame.Body>
 						<EmptyPage>
 							<Empty>
 								<EmptyHeader>
@@ -91,10 +91,12 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 								</EmptyContent>
 							</Empty>
 						</EmptyPage>
-					) : (
+					</PageFrame.Body>
+				) : (
+					<PageFrame.VirtualizedBody>
 						<TaskBoard {...scene.taskCollection.boardProps} />
-					)}
-				</PageFrame.Body>
+					</PageFrame.VirtualizedBody>
+				)}
 				{scene.project ? (
 					<PageFrame.BulkBar>
 						<BulkActionBar

@@ -1,51 +1,41 @@
+import { Kbd } from '@heroui/react'
 import { ArrowRightIcon } from 'lucide-react'
 
-import { Kbd, KbdGroup } from '@/shared/components/base/kbd'
 import { getShortcutAccessibilityLabel, type ShortcutToken } from '@/shared/lib/keyboardShortcut'
 import { cn } from '@/shared/lib/utils'
 
 type ShortcutTokensProps = {
 	tokens: readonly ShortcutToken[]
 	className?: string
-	kbdClassName?: string
-	separatorClassName?: string
 }
 
 /**
  * 统一渲染平台化快捷键 token，并为视觉符号提供可读的无障碍名称。
  */
-export function ShortcutTokens({
-	tokens,
-	className,
-	kbdClassName,
-	separatorClassName,
-}: ShortcutTokensProps) {
+export function ShortcutTokens({ tokens, className }: ShortcutTokensProps) {
 	if (tokens.length === 0) {
 		return null
 	}
 
 	return (
-		<KbdGroup
+		<span
 			aria-label={getShortcutAccessibilityLabel(tokens)}
-			className={cn('shrink-0 gap-1.5', className)}
+			className={cn('inline-flex shrink-0 items-center gap-1.5', className)}
+			role='group'
 		>
 			{tokens.map((token, index) =>
 				token.type === 'separator' ? (
 					<ArrowRightIcon
 						aria-hidden='true'
-						className={cn('size-3 shrink-0 text-sf-text-quaternary', separatorClassName)}
+						className='size-3 shrink-0 text-muted'
 						key={`${token.type}-${token.value}-${index}`}
 					/>
 				) : (
-					<Kbd
-						aria-hidden='true'
-						className={kbdClassName}
-						key={`${token.type}-${token.value}-${index}`}
-					>
-						{token.value}
+					<Kbd aria-hidden='true' key={`${token.type}-${token.value}-${index}`}>
+						<Kbd.Content>{token.value}</Kbd.Content>
 					</Kbd>
 				),
 			)}
-		</KbdGroup>
+		</span>
 	)
 }

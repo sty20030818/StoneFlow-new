@@ -1,5 +1,6 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { FormEvent } from 'react'
+import { vi } from 'vitest'
 
 import type { ActivityEntityType } from '../api/getEntityActivities'
 import { ActivityDebugPage } from './ActivityDebugPage'
@@ -15,6 +16,57 @@ describe('ActivityDebugPage', () => {
 		expect(
 			screen.getByText('输入 entity type 和 entity id 后即可读取该实体的 Activity timeline。'),
 		).toBeInTheDocument()
+	})
+
+	it('使用可访问表单控件并转发输入与提交', () => {
+		const onEntityIdChange = vi.fn()
+		const onLimitChange = vi.fn()
+		const onSubmit = vi.fn((event: FormEvent<HTMLFormElement>) => event.preventDefault())
+
+		renderWithComponent(
+			<ActivityDebugPage
+				entityId='task-1'
+				entityType='task'
+				limit='50'
+				loadState={{ kind: 'idle' }}
+				onEntityIdChange={onEntityIdChange}
+				onEntityTypeChange={() => {}}
+				onLimitChange={onLimitChange}
+				onSubmit={onSubmit}
+			/>,
+		)
+
+		expect(screen.getByLabelText('Entity Type')).toHaveTextContent('Task')
+		fireEvent.change(screen.getByLabelText('Entity ID'), { target: { value: 'task-2' } })
+		fireEvent.change(screen.getByLabelText('Limit'), { target: { value: '20' } })
+		fireEvent.click(screen.getByRole('button', { name: '查询 Activity' }))
+
+		expect(onEntityIdChange).toHaveBeenCalledWith('task-2')
+		expect(onLimitChange).toHaveBeenCalledWith('20')
+		expect(onSubmit).toHaveBeenCalledOnce()
+	})
+
+	it('读取期间提供可访问的加载反馈', () => {
+		renderActivityDebugPageView({
+			entityType: 'task',
+			entityId: 'task-1',
+			limit: '50',
+			loadState: { kind: 'loading' },
+		})
+
+		expect(screen.getByRole('status')).toHaveAttribute('aria-busy', 'true')
+		expect(screen.getByText('正在向 Rust 宿主请求 Activity timeline。')).toBeInTheDocument()
+	})
+
+	it('查询成功但无记录时渲染空态', () => {
+		renderActivityDebugPageView({
+			entityType: 'task',
+			entityId: 'task-1',
+			limit: '50',
+			loadState: { kind: 'ready', entries: [] },
+		})
+
+		expect(screen.getByRole('heading', { name: '暂无记录' })).toBeInTheDocument()
 	})
 
 	it('查询成功后展示事件列表与字段变化', async () => {
@@ -69,7 +121,7 @@ describe('ActivityDebugPage', () => {
 		})
 
 		await waitFor(() => {
-			expect(screen.getByText('查询失败')).toBeInTheDocument()
+			expect(screen.getByRole('alert')).toBeInTheDocument()
 		})
 
 		expect(

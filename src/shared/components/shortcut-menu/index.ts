@@ -1,4 +1,3 @@
-export { ShortcutMenuItemHint } from './ShortcutMenuItemHint'
 export {
 	buildDigitShortcutMap,
 	type DigitShortcutMapItem,

@@ -24,7 +24,7 @@ export function ProjectOverviewPage() {
 				actions={
 					<MainCard.GhostAction
 						aria-label='创建项目'
-						onClick={scene.openProjectCreateDialog}
+						onPress={scene.openProjectCreateDialog}
 						tooltipShortcut={<CommandShortcut commandId={COMMAND_IDS.newProject} />}
 					>
 						<PlusIcon />
