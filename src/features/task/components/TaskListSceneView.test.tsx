@@ -139,7 +139,7 @@ describe('TaskListSceneView', () => {
 	it('collection scene 独占 flat/selection，并在折叠聚焦分区时输出一次可消费 intent', async () => {
 		renderTaskCollectionOwner()
 
-		fireEvent.click(screen.getByRole('button', { name: '选择进行中 C' }))
+		fireEvent.click(screen.getByRole('button', { name: '聚焦并选择进行中 C' }))
 		fireEvent.click(screen.getByRole('button', { name: '折叠进行中' }))
 
 		await waitFor(() => expect(screen.getByTestId('owner-focused')).toHaveTextContent('todo-a'))
@@ -161,7 +161,7 @@ describe('TaskListSceneView', () => {
 	it('显式 task:deleted 批次只按删除前快照迁移一次焦点', async () => {
 		renderTaskCollectionOwner()
 
-		fireEvent.click(screen.getByRole('button', { name: '选择待执行 B' }))
+		fireEvent.click(screen.getByRole('button', { name: '聚焦并选择待执行 B' }))
 		fireEvent.click(screen.getByRole('button', { name: '批量删除待执行' }))
 
 		await waitFor(() => expect(screen.getByTestId('owner-focused')).toHaveTextContent('doing-c'))
@@ -237,11 +237,23 @@ function TaskCollectionOwnerHarness() {
 
 	return (
 		<div>
-			<button onClick={() => collectionInteraction.toggleSelection('doing-c')} type='button'>
-				选择进行中 C
+			<button
+				onClick={() => {
+					collectionInteraction.focusKey('doing-c')
+					collectionInteraction.toggleSelection('doing-c')
+				}}
+				type='button'
+			>
+				聚焦并选择进行中 C
 			</button>
-			<button onClick={() => collectionInteraction.toggleSelection('todo-b')} type='button'>
-				选择待执行 B
+			<button
+				onClick={() => {
+					collectionInteraction.focusKey('todo-b')
+					collectionInteraction.toggleSelection('todo-b')
+				}}
+				type='button'
+			>
+				聚焦并选择待执行 B
 			</button>
 			<button
 				onClick={() => scene.boardProps.onSectionOpenChange('h:doing', 'doing', false)}

@@ -285,7 +285,7 @@
   _对应验收标准：AC-26, AC-28, AC-31, AC-34, AC-36_
   _测试先行：`src/features/selection/model/useCollectionInteraction.test.tsx`、`src/features/selection/model/CommandSelectionProvider.test.tsx`、`src/features/bulk-action/core/command-bulk-selection-snapshot.test.ts`_
 
-- [x] T62 在 `src/features/selection/shortcuts/useCollectionKeyboardAdapter.ts` 及测试中复用 `src/features/command/keybinding/input-guard.ts`，集中适配 `J/K`、`X`、`Space`、`Enter`、Shift range 与 loaded-only Cmd/Ctrl+A；React Aria 保持 Arrow、Home/End 和标准焦点 owner。
+- [x] T62 在 `src/features/selection/shortcuts/useCollectionKeyboardAdapter.ts` 及测试中复用 `src/features/command/keybinding/input-guard.ts`，集中适配 Arrow、`J/K`、Home/End、`X`、`Space`、`Enter`、Shift range 与 loaded-only Cmd/Ctrl+A，并丢弃密集或已滞后的 repeat；React Aria 保持标准焦点与选择语义 owner。
   - 覆盖 input、textarea、contenteditable、编辑器与 IME composition 隔离。
   _对应验收标准：AC-25, AC-26, AC-27, AC-28, AC-29_
   _测试先行：`src/features/selection/shortcuts/useCollectionKeyboardAdapter.test.tsx`_
@@ -321,11 +321,11 @@
   _对应验收标准：AC-32, AC-33, AC-35, AC-36, AC-37_
   _测试先行：`src/features/task/components/TaskBoard.test.tsx`_
 
-- [x] T70 将 `src/features/task/components/TaskContextMenu.tsx`、`src/features/task/components/task-context-menu-items.tsx` 与 `src/features/task/components/TaskRowAdapter.tsx` hard cut 到 HeroUI Pro ContextMenu：右键已选行保留整组，未选行先单选并聚焦，关闭后经 bridge 恢复；领域 action、危险确认和 mutation 不变。
+- [x] T70 将 `src/features/task/components/TaskContextMenu.tsx`、`src/features/task/components/task-context-menu-items.tsx` 与 `src/features/task/components/TaskRowAdapter.tsx` hard cut 到 HeroUI Pro ContextMenu：右键不改变 selection，已选行作用于整组、未选行只作用于该行，关闭后经 bridge 恢复；领域 action、危险确认和 mutation 不变。
   _对应验收标准：AC-31, AC-32, AC-35, AC-39_
   _测试先行：`src/features/task/components/TaskRowAdapter.test.tsx`、`src/features/task/components/useTaskContextMenuBulkActions.test.tsx`_
 
-- [x] T71 在 `src/features/task/components/TaskBoard.tsx`、`src/features/task/components/TaskRowAdapter.tsx`、`src/features/task/model/indicators/PriorityIcon.tsx` 与 `src/features/task/model/indicators/TaskStatusIndicator.tsx` 重建单项/连续选择、优先级与状态视觉，分离 pointer hover 与真实焦点，不保留旧 `--sf-*` 视觉引用；随后删除 `src/features/task/shortcuts/` 中被新合同取代且零引用的视觉 hover、Shift session、DOM 查询与 row/list 双层快捷键。
+- [x] T71 在 `src/features/task/components/TaskBoard.tsx`、`src/features/task/components/TaskRowAdapter.tsx`、`src/features/task/model/indicators/PriorityIcon.tsx` 与 `src/features/task/model/indicators/TaskStatusIndicator.tsx` 重建单项/连续选择、优先级与状态视觉，以唯一 current key 统一 pointer hover 与键盘焦点并仅按交互来源显示边框，不保留旧 `--sf-*` 视觉引用；随后删除 `src/features/task/shortcuts/` 中被新合同取代且零引用的视觉 hover、Shift session、DOM 查询与 row/list 双层快捷键。
   - Project/Lifecycle 尚有消费者的 `EntityRowShortcutScope` 不在本阶段提前删除。
   _对应验收标准：AC-2, AC-8, AC-26, AC-33, AC-36_
   _测试先行：`src/features/task/components/TaskBoard.test.tsx`、`src/features/selection/components/CollectionInteractionContract.test.tsx`_
@@ -333,7 +333,7 @@
 - [ ] T72 使用阶段 A 已建立的 `src/routes/debug.task-board.tsx` 与 T5 fixture 把迁移后原始结果写入 `Documents/99-素材/03-验证/heroui-refactor/task-board-performance-after.json`，执行 5 次滚动、50 次 focus 延迟与 100 次键盘移动预算。
   _对应验收标准：AC-33, AC-35, AC-37_
 
-- [ ] T73（任务发起人验收 U3）在 production Tauri build 完整验证 TaskBoard Arrow/J/K/Home/End、X、Shift、Space Peek、Enter 详情、Cmd/Ctrl+A、右键、Escape 与输入/IME 隔离，并在本文件记录“通过”或精确问题。
+- [ ] T73（任务发起人验收 U3）在 production Tauri build 完整验证 TaskBoard pointer hover 起点、root 无行 current 的键盘进入、Arrow/J/K/Home/End、方向键长按松键、X、Shift、Space Peek、Enter 详情、Cmd/Ctrl+A、右键、Escape 与输入/IME 隔离，并在本文件记录“通过”或精确问题。
   - 另一定验证“折叠焦点行 → 分组按钮 → 再次进入”、删除聚焦行、离屏挂载后聚焦与 anchor 重置；执行者先提供固定步骤、录屏、性能比较与已知差异，AI 不得代为勾选。
   _对应验收标准：AC-26, AC-27, AC-32, AC-35, AC-36_
 
@@ -576,3 +576,4 @@
 - 2026-08-17：完成 T47–T50 与阶段 F 收口。Activity Debug 和根/壳路由反馈直接切到 HeroUI 表单、Button、Link、EmptyState 与反馈组件；ShortcutTokens/MainCard 保留产品语义并直接组合 HeroUI Kbd/Button；普通 MainCard/Detail 使用 ScrollShadow，TaskBoard 三条页面路径通过显式 `PageFrame.VirtualizedBody` 继续拥有唯一 AppScrollArea viewport。`Sidebar.Content` 已由 HeroUI 提供 ScrollShadow，验证后不再嵌套第二层。删除零消费者的 Activity Debug/MainCard pattern、ShortcutMenuItemHint 与旧 Kbd primitive；AppScrollArea/OverlayScrollbar 因真实消费者继续保留。全量前端 191 个文件共 1009 项、release 146 项、第一方动画扫描、typecheck、lint、模块边界、格式与 production build 均通过；`test:rust` 仅复现已登记的 Space 回收站文案断言失败。阶段 F 建议 commit 文案：`refactor(ui): 迁移 HeroUI 标准控件与表单`；未提交、未改动 Git 暂存区。
 - 2026-08-17：完成 T60–T65 与阶段 H 收口。建立 stable-key collection 投影、唯一 React Stately owner、loaded-only 显式全选、Linear 键位 adapter 与异步 stable key/ref focus bridge；折叠项保留选择但由 React Aria navigation-disabled keys 跳过，range anchor 仅在下一次范围动作前修复。Command 注册改为只读订阅源，领域批量 snapshot 在执行瞬间复制；HeroUI Pro ListView 仅保留测试 probe，不新增生产 wrapper，也未提前迁移 TaskBoard。阶段专项 30 个文件共 237 项、全量前端 199 个文件共 1065 项、typecheck、lint、模块边界、格式、第一方动画扫描与 production build 均通过；阶段 H 建议 commit 文案：`refactor(selection): 建立单一集合交互状态`；未提交、未改动 Git 暂存区。
 - 2026-08-17：完成 T66–T71。TaskBoard 以阶段 H collection state 为选择、焦点与 anchor 唯一 owner，使用 React Aria Grid 真实行焦点和 stable key/ref bridge，并保留唯一 TanStack Virtual、sticky、分页与总高度。右键 hard cut 到 HeroUI Pro ContextMenu；旧 Task 视觉 hover、Shift session、DOM 查询与双层快捷键状态机在零引用后删除，Project/Lifecycle 的共享旧 owner 留待所属阶段。阶段 I 聚焦回归 12 个文件共 86 项通过，包含折叠/删除恢复、离屏滚动挂载后聚焦、右键回焦、行内输入隔离与 React Aria typeahead 冲突回归；typecheck、lint、模块边界、格式、第一方动画扫描与 diff check 通过。T72 的 production 采样、T73/U3 与 T74 尚未完成；未提交、未改动 Git 暂存区。
+- 2026-08-18：根据 U3 首轮反馈收口 TaskBoard 密度与 current 视觉：任务行/分组标题/文字统一为 `44/34/13px`；pointer hover 与键盘共享唯一 current，pointer 无边框、键盘为 `1px` 细边框，selected 与 selected-hover 使用无边框浅蓝/灰蓝表面，右键不改变 selection。collection root 在无行 current 时仍可按方向建立首/尾项、Shift anchor 与 loaded-only 全选；Arrow repeat 增加密集限流和积压丢弃，避免松键后继续翻动。相关 12 个文件 96 项、全量前端 200 个文件共 1060 项、typecheck、lint、模块边界、格式、第一方动画扫描、diff check 与 production build 通过；方向键长按手感仍待真实 Tauri 复验，T72、T73/U3 与 T74 保持未完成。

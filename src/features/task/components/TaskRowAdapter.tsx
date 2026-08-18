@@ -3,6 +3,7 @@ import type { GridListItemAria } from 'react-aria'
 
 import { COMMAND_IDS, CommandShortcut } from '@/features/command'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
+import { TASK_BOARD_ROW_HEIGHT } from '@/features/task/model/taskBoardModel'
 import { TaskContextMenu } from '@/features/task/components/TaskContextMenu'
 import type { TaskContextMenuBulkActions } from '@/features/task/components/useTaskContextMenuBulkActions'
 import type { TaskDisplayPropertyKey } from '@/features/display-options'
@@ -36,11 +37,10 @@ export type TaskRowAdapterProps = {
 	task: TaskListItem
 	contextTasks?: TaskListItem[]
 	rowState: {
-		isActive: boolean
 		isSelected: boolean
 		isPending: boolean
-		isFocused?: boolean
-		isFocusVisible?: boolean
+		isFocused: boolean
+		focusSource: 'pointer' | 'keyboard' | null
 	}
 	rowProps?: GridListItemAria['rowProps']
 	gridCellProps?: GridListItemAria['gridCellProps']
@@ -91,11 +91,10 @@ function taskRowAdapterPropsEqual(prev: TaskRowAdapterProps, next: TaskRowAdapte
 	const ps = prev.rowState
 	const ns = next.rowState
 	if (
-		ps.isActive !== ns.isActive ||
 		ps.isSelected !== ns.isSelected ||
 		ps.isPending !== ns.isPending ||
 		ps.isFocused !== ns.isFocused ||
-		ps.isFocusVisible !== ns.isFocusVisible
+		ps.focusSource !== ns.focusSource
 	) {
 		return false
 	}
@@ -127,7 +126,7 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 	showSpaceLabel = false,
 	actions,
 }: TaskRowAdapterProps) {
-	const { isActive, isSelected, isPending, isFocused = false, isFocusVisible = false } = rowState
+	const { isSelected, isPending, isFocused, focusSource } = rowState
 	const { onClick: _reactAriaPressClick, ...ariaRowProps } = rowProps ?? {}
 	const actionTargets = contextTasks && contextTasks.length > 0 ? contextTasks : [task]
 	const isDoneLike = task.status === 'done' || task.status === 'canceled'
@@ -274,18 +273,25 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 				ref={rowRef}
 				aria-label={`打开任务 ${task.title}`}
 				className={cn(
-					'h-9 cursor-pointer outline-none',
-					isSelected ? 'hover:bg-accent-soft-hover' : 'hover:bg-surface-hover',
-					isActive && 'border-border-secondary',
-					isSelected && !selectionGroupPosition && 'bg-accent-soft',
-					isFocusVisible && 'ring-2 ring-focus ring-inset',
+					'text-[13px] leading-5 outline-none',
+					focusSource === 'pointer' && isFocused && 'focus-visible:border-transparent',
+					focusSource === 'keyboard' &&
+						!isFocused &&
+						(isSelected ? 'hover:bg-accent-soft' : 'hover:bg-transparent'),
+					isSelected
+						? 'group-data-[open=true]/task-context-menu:bg-accent-soft-hover'
+						: 'group-data-[open=true]/task-context-menu:bg-surface-hover',
 				)}
-				data-focused={isFocused || undefined}
-				data-focus-visible={isFocusVisible || undefined}
 				data-shell-task-card='true'
 				data-task-id={task.id}
+				data-focus-source={isFocused ? focusSource : undefined}
+				hovered={isFocused}
+				hoverSource={isFocused ? focusSource : null}
+				interactive
 				pending={isPending}
+				selected={isSelected}
 				selectionGroupPosition={selectionGroupPosition}
+				style={{ height: TASK_BOARD_ROW_HEIGHT }}
 				onClick={() => actions.onOpenTask(task.id)}
 			>
 				<div {...gridCellProps} className='flex min-w-0 flex-1 items-center gap-3'>
@@ -298,7 +304,6 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 								disabledReason='正在更新任务，暂时无法更改选择'
 								label='选择任务'
 								tooltipShortcut={<CommandShortcut commandId={COMMAND_IDS.taskSelect} scope='row' />}
-								visible={isSelected || isFocused}
 								onCheckedChange={() => actions.onToggleTaskSelection(task.id)}
 							/>
 							{showPriority ? (

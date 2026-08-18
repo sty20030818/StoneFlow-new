@@ -92,12 +92,12 @@ describe('LifecycleBoard', () => {
 		const row = screen.getByRole('button', { name: '打开 任务 A' })
 
 		fireEvent.mouseEnter(row)
-		expect(row).toHaveClass('bg-sf-list-row-hover')
-		expect(row).not.toHaveClass('border-sf-border-subtle')
+		expect(row).toHaveClass('bg-surface-hover')
+		expect(row).not.toHaveClass('border-foreground/70')
 
 		fireEvent.mouseLeave(row)
-		expect(row).not.toHaveClass('bg-sf-list-row-hover')
-		expect(row).not.toHaveClass('border-sf-border-subtle')
+		expect(row).not.toHaveClass('bg-surface-hover')
+		expect(row).not.toHaveClass('border-foreground/70')
 	})
 
 	it('右键已选中行时菜单动作使用全部前缀', async () => {

@@ -142,7 +142,12 @@ export function TaskContextMenu({
 				onOpenChange?.(open)
 			}}
 		>
-			<ContextMenu.Trigger className='block w-full'>{children}</ContextMenu.Trigger>
+			<ContextMenu.Trigger
+				className='group/task-context-menu block w-full'
+				data-open={menuOpen || undefined}
+			>
+				{children}
+			</ContextMenu.Trigger>
 			{menuOpen && statusGroup && priorityGroup && dateGroup ? (
 				<ContextMenu.Popover className='w-56'>
 					<ContextMenu.Menu aria-label='任务操作'>

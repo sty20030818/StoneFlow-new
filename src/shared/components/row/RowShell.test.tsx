@@ -8,7 +8,6 @@ import {
 	ROW_SHELL_FOCUS_CLASS,
 	ROW_SHELL_IDLE_CLASS,
 	ROW_SHELL_SELECTED_CLASS,
-	ROW_SHELL_SELECTED_FOCUS_CLASS,
 } from '@/shared/components/row'
 
 describe('RowShell', () => {
@@ -49,7 +48,7 @@ describe('RowShell', () => {
 		)
 
 		const row = screen.getByTestId('row')
-		expect(row.className).toContain('bg-sf-list-row-hover')
+		expect(row.className).toContain('bg-surface-hover')
 		expect(row.className).toContain(ROW_SHELL_FOCUS_CLASS)
 
 		rerender(
@@ -57,8 +56,8 @@ describe('RowShell', () => {
 				row
 			</RowShell.Root>,
 		)
-		expect(row.className).toContain('bg-sf-selection-surface-hover')
-		expect(row.className).toContain(ROW_SHELL_SELECTED_FOCUS_CLASS)
+		expect(row.className).toContain('bg-accent-soft-hover')
+		expect(row.className).toContain(ROW_SHELL_FOCUS_CLASS)
 		expect(row.className).not.toContain('ring-3')
 	})
 
@@ -69,7 +68,7 @@ describe('RowShell', () => {
 			</RowShell.Root>,
 		)
 
-		expect(screen.getByTestId('row').className).toContain('bg-sf-list-row-hover')
+		expect(screen.getByTestId('row').className).toContain('bg-surface-hover')
 		expect(screen.getByTestId('row').className).not.toContain(ROW_SHELL_FOCUS_CLASS)
 
 		rerender(
@@ -77,8 +76,31 @@ describe('RowShell', () => {
 				row
 			</RowShell.Root>,
 		)
-		expect(screen.getByTestId('row').className).toContain('bg-sf-selection-surface-hover')
-		expect(screen.getByTestId('row').className).not.toContain(ROW_SHELL_SELECTED_FOCUS_CLASS)
+		expect(screen.getByTestId('row').className).toContain('bg-accent-soft-hover')
+		expect(screen.getByTestId('row').className).not.toContain(ROW_SHELL_FOCUS_CLASS)
+	})
+
+	it('原生 focus-visible 只给键盘路径增加克制细边框', () => {
+		const { rerender } = render(
+			<RowShell.Root data-testid='row' interactive>
+				row
+			</RowShell.Root>,
+		)
+
+		const row = screen.getByTestId('row')
+		expect(row.className).toContain('hover:bg-surface-hover')
+		expect(row.className).toContain('focus-visible:border-foreground/70')
+		expect(row.className).toContain('focus-visible:bg-surface-hover')
+		expect(row.className).not.toContain('outline-2')
+
+		rerender(
+			<RowShell.Root data-testid='row' interactive selected>
+				row
+			</RowShell.Root>,
+		)
+		expect(row.className).toContain('bg-accent-soft')
+		expect(row.className).toContain('hover:bg-accent-soft-hover')
+		expect(row.className).toContain('focus-visible:bg-accent-soft-hover')
 	})
 
 	it('尾部字段只提供默认隐藏布局，响应规则由消费方声明', () => {

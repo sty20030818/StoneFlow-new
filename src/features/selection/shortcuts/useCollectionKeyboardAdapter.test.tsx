@@ -7,7 +7,7 @@ import { createCollectionFocusBridge } from '../model/collectionFocusBridge'
 import { useCollectionKeyboardAdapter } from './useCollectionKeyboardAdapter'
 
 describe('useCollectionKeyboardAdapter', () => {
-	it('用 J/K 移动真实 collection focus，并集中处理 Shift range', () => {
+	it('统一处理 Arrow/Home/End 与 J/K，并集中处理 Shift range', () => {
 		const onReactAriaKeyDown = vi.fn()
 		render(<CollectionProbe onReactAriaKeyDown={onReactAriaKeyDown} />)
 
@@ -37,10 +37,48 @@ describe('useCollectionKeyboardAdapter', () => {
 		fireEvent.keyDown(rowB, { key: 'ArrowDown', shiftKey: true })
 		expect(screen.getByTestId('selected-keys')).toHaveTextContent('task-b,task-c')
 
-		for (const key of ['ArrowDown', 'Home', 'End']) {
-			expect(fireEvent.keyDown(rowC, { key })).toBe(true)
+		expect(fireEvent.keyDown(rowC, { key: 'Home' })).toBe(false)
+		expect(rowA).toHaveFocus()
+		expect(fireEvent.keyDown(rowA, { key: 'End' })).toBe(false)
+		expect(rowC).toHaveFocus()
+		expect(fireEvent.keyDown(rowC, { key: 'ArrowUp' })).toBe(false)
+		expect(rowB).toHaveFocus()
+		expect(onReactAriaKeyDown).not.toHaveBeenCalled()
+	})
+
+	it('丢弃积压或过密的系统 repeat，新的离散按键仍立即执行', () => {
+		const eligibleKeys = Array.from({ length: 20 }, (_, index) => `task-${index}`)
+		const now = vi.spyOn(performance, 'now').mockReturnValue(1_000)
+		render(<CollectionProbe eligibleKeys={eligibleKeys} />)
+
+		const rowA = screen.getByTestId('row-task-0')
+		const rowB = screen.getByTestId('row-task-1')
+		const rowC = screen.getByTestId('row-task-2')
+		fireEvent.pointerMove(rowA)
+		fireEvent.keyDown(rowA, { key: 'ArrowDown' })
+		expect(rowB).toHaveFocus()
+
+		for (let index = 0; index < 12; index += 1) {
+			fireEvent.keyDown(document.activeElement ?? rowB, {
+				key: 'ArrowDown',
+				repeat: true,
+			})
 		}
-		expect(onReactAriaKeyDown).toHaveBeenCalledTimes(3)
+		expect(rowC).toHaveFocus()
+
+		const staleRepeat = new KeyboardEvent('keydown', {
+			bubbles: true,
+			cancelable: true,
+			key: 'ArrowUp',
+			repeat: true,
+		})
+		Object.defineProperty(staleRepeat, 'timeStamp', { value: 800 })
+		fireEvent(rowC, staleRepeat)
+		expect(rowC).toHaveFocus()
+
+		fireEvent.keyDown(rowC, { key: 'ArrowUp' })
+		expect(rowB).toHaveFocus()
+		now.mockRestore()
 	})
 
 	it('只在 row 本体或 root 上处理 X、Space Peek 与 Enter', () => {
@@ -50,6 +88,7 @@ describe('useCollectionKeyboardAdapter', () => {
 
 		const root = screen.getByTestId('collection-root')
 		const rowB = screen.getByTestId('row-task-b')
+		fireEvent.pointerMove(rowB)
 		expect(fireEvent.keyDown(rowB, { key: 'x' })).toBe(false)
 		expect(screen.getByTestId('selected-keys')).toHaveTextContent('task-b')
 
@@ -82,9 +121,8 @@ describe('useCollectionKeyboardAdapter', () => {
 				onReactAriaKeyDown={onReactAriaKeyDown}
 			/>,
 		)
-
 		expect(
-			fireEvent.keyDown(screen.getByTestId('row-task-a'), {
+			fireEvent.keyDown(screen.getByTestId('collection-root'), {
 				key: 'a',
 				...modifier,
 			}),
@@ -156,6 +194,7 @@ function CollectionProbe({
 		requestFocus: focusBridge.requestFocus,
 		onOpen: onOpen ?? noop,
 		onPeek: onPeek ?? noop,
+		onKeyboardInteraction: noop,
 	})
 
 	return (
@@ -171,6 +210,10 @@ function CollectionProbe({
 					key={key}
 					ref={(element) => (element ? focusBridge.registerItem(key, element) : undefined)}
 					tabIndex={-1}
+					onPointerMove={() => {
+						interaction.focusKey(key)
+						focusBridge.requestFocus({ type: 'item', key })
+					}}
 				>
 					<button type='button'>操作 {key}</button>
 					<input aria-label={`选择 ${key}`} type='checkbox' />

@@ -34,7 +34,7 @@ describe('TaskBoard benchmark', () => {
 		expect(screen.getByRole('textbox', { name: 'Commit' })).toHaveValue('benchmark-commit')
 		expect(container.querySelector('[data-task-board-virtual="sections"]')).toHaveAttribute(
 			'data-task-board-extent',
-			'76680',
+			'92720',
 		)
 		expect(
 			(screen.getByRole('textbox', { name: '性能测量 JSON' }) as HTMLTextAreaElement).value,

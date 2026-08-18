@@ -6,11 +6,9 @@ import {
 	ROW_SHELL_ACTIVE_CLASS,
 	ROW_SHELL_BASE_CLASS,
 	ROW_SHELL_GROUP_POSITION_CLASS,
-	ROW_SHELL_GROUP_SELECTED_CLASS,
 	ROW_SHELL_IDLE_CLASS,
 	ROW_SHELL_FOCUS_CLASS,
 	ROW_SHELL_SELECTED_CLASS,
-	ROW_SHELL_SELECTED_FOCUS_CLASS,
 	type RowSelectionGroupPosition,
 } from '@/shared/components/patterns/row-tokens'
 
@@ -40,23 +38,14 @@ export function RowShellRoot({
 }: RowShellRootProps) {
 	const groupedSelected = selected && !!selectionGroupPosition
 	const idleClass = hovered ? null : ROW_SHELL_IDLE_CLASS
-	const selectionClass = groupedSelected
+	const selectionClass = selected
 		? hovered
-			? 'border-transparent bg-sf-selection-surface-hover'
-			: ROW_SHELL_GROUP_SELECTED_CLASS
-		: selected
-			? hovered
-				? 'border-transparent bg-sf-selection-surface-hover'
-				: ROW_SHELL_SELECTED_CLASS
-			: hovered && !active
-				? 'bg-sf-list-row-hover'
-				: idleClass
-	const focusBorderClass =
-		hovered && hoverSource === 'keyboard'
-			? selected
-				? ROW_SHELL_SELECTED_FOCUS_CLASS
-				: ROW_SHELL_FOCUS_CLASS
-			: null
+			? 'border-transparent bg-accent-soft-hover'
+			: ROW_SHELL_SELECTED_CLASS
+		: hovered && !active
+			? 'bg-surface-hover'
+			: idleClass
+	const focusBorderClass = hovered && hoverSource === 'keyboard' ? ROW_SHELL_FOCUS_CLASS : null
 
 	return (
 		<div
@@ -66,7 +55,16 @@ export function RowShellRoot({
 				ROW_SHELL_BASE_CLASS,
 				active ? ROW_SHELL_ACTIVE_CLASS : selectionClass,
 				// 指针 hover 用 CSS，避免父级 React state 刷全表（键盘 hover 仍走 hovered prop）
-				interactive && !hovered && !active && !selected ? 'hover:bg-sf-list-row-hover' : null,
+				interactive && !hovered && !active
+					? selected
+						? 'hover:bg-accent-soft-hover'
+						: 'hover:bg-surface-hover'
+					: null,
+				interactive
+					? selected
+						? 'focus-visible:border-foreground/70 focus-visible:bg-accent-soft-hover'
+						: 'focus-visible:border-foreground/70 focus-visible:bg-surface-hover'
+					: null,
 				focusBorderClass,
 				groupedSelected ? ROW_SHELL_GROUP_POSITION_CLASS[selectionGroupPosition] : null,
 				interactive ? 'cursor-pointer' : null,

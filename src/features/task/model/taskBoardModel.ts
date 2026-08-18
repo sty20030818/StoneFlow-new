@@ -8,8 +8,8 @@ import type { TaskListItem, TaskStatus } from '@/shared/types'
 import { TASK_BOARD_STATUS_ORDER } from './taskBoardOrder'
 import { formatTaskStatusLabel } from './taskStatus'
 
-export const TASK_BOARD_ROW_HEIGHT = 36
-export const TASK_BOARD_HEADER_HEIGHT = 32
+export const TASK_BOARD_ROW_HEIGHT = 44
+export const TASK_BOARD_HEADER_HEIGHT = 34
 export const TASK_BOARD_ITEM_GAP = 2
 /** 行占位（含 gap） */
 export const TASK_BOARD_ROW_SIZE = TASK_BOARD_ROW_HEIGHT + TASK_BOARD_ITEM_GAP

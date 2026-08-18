@@ -181,7 +181,7 @@ export function BoardRows({
 
 				return (
 					<div
-						className='flex flex-col gap-0.5 overflow-hidden rounded-md bg-sf-selection-surface'
+						className='flex flex-col gap-0.5 overflow-hidden rounded-md bg-accent-soft'
 						key={`sel-${gi}`}
 					>
 						{group.items.map((item, ii) => {

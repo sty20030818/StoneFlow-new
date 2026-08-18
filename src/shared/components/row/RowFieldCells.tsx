@@ -29,7 +29,6 @@ export type RowSelectionCellProps = {
 export type RowTitleCellProps = {
 	title: string
 	doneLike?: boolean
-	className?: string
 }
 
 export type RowMetaButtonProps = Omit<ComponentProps<'button'>, 'children'> &
@@ -105,13 +104,12 @@ export function RowSelectionCell({
 	)
 }
 
-export function RowTitleCell({ title, doneLike = false, className }: RowTitleCellProps) {
+export function RowTitleCell({ title, doneLike = false }: RowTitleCellProps) {
 	return (
 		<OverflowTooltip
 			className={cn(
-				'truncate text-sm font-medium text-legacy-foreground group-hover/row-shell:text-legacy-foreground',
+				'truncate font-medium text-legacy-foreground group-hover/row-shell:text-legacy-foreground',
 				doneLike ? 'text-sf-text-tertiary line-through' : null,
-				className,
 			)}
 			content={title}
 		>

@@ -166,6 +166,22 @@ describe('useCollectionInteraction', () => {
 		})
 	})
 
+	it('切换选择不抢走指针操作的当前焦点', () => {
+		const { result } = renderHook(() =>
+			useCollectionInteraction({
+				eligibleKeys: ['task-a', 'task-b'],
+				navigableKeys: ['task-a', 'task-b'],
+			}),
+		)
+
+		act(() => result.current.focusKey('task-a'))
+		act(() => result.current.toggleSelection('task-b'))
+
+		expect([...result.current.selectedKeys]).toEqual(['task-b'])
+		expect(result.current.focusedKey).toBe('task-a')
+		expect(result.current.rangeAnchorKey).toBe('task-a')
+	})
+
 	it('投影修复后普通焦点移动会建立新 anchor', () => {
 		const { result, rerender } = renderHook(
 			({ navigableKeys }) =>

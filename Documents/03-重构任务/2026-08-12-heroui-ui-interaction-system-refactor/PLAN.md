@@ -285,11 +285,11 @@ Aside、Sheet 与完整页复用同一详情领域能力；详情 Header 保留�
 - `focusedKey`。
 - range anchor。
 
-StoneFlow 不再并行维护 `keyboardHoveredId`、视觉 keyboard-hover、第二份 focused ID 或第二套 Shift session。Command/Bulk 在执行瞬间从同一个 manager 派生不可变 `SelectionSnapshot`；snapshot 不可反向写 collection。
+StoneFlow 不再并行维护 `keyboardHoveredId`、第二份 focused ID 或第二套 Shift session。pointer 与 keyboard 共用 manager 的唯一 current key，只保留一个不承载实体真相的 interaction source 来决定是否显示键盘边框。Command/Bulk 在执行瞬间从同一个 manager 派生不可变 `SelectionSnapshot`；snapshot 不可反向写 collection。
 
 `Cmd/Ctrl+A` 将按键时“当前查询内已加载且可操作”的稳定 ID 写入显式 Set，后续加载不自动加入。本任务不改 bulk API，不引入 `query + excludedIds` 的后端全选协议。
 
-pointer hover 只服务 hover 样式与 Peek。鼠标主点击打开详情，checkbox 或 X 改变选择。右键已选行保留整组 selection；右键未选行先清空旧选择、选中并聚焦该行，再打开菜单，使视觉目标与执行目标一致。
+pointer hover 建立唯一 current，移出 pointer-owned 行时清空行 current 并把键盘入口留在 collection root；后续键盘导航从 hover 行开始并切换为细边框。root 有焦点但没有行 current 时，导航/Shift range 按方向从首项或末项建立起点，Cmd/Ctrl+A 仍物化当前 loaded eligible keys。鼠标主点击打开详情，checkbox 或 X 改变选择。右键不改变 selection：已选行作用于整组 selection，未选行只作用于该行，视觉只保持普通 hover 表面。
 
 Task collection 明确区分三份投影：
 
@@ -301,8 +301,8 @@ logical collection 包含 `eligibleKeys`，因此折叠不会清除选择；折�
 
 ### 键盘事件所有权
 
-- React Aria 负责 Arrow、Home/End、标准焦点、选择语义和读屏输出。
-- 一个 collection-root 产品适配器只增加 J/K、X、Space Peek 和 Enter 详情，并将 Shift+Arrow 的 Linear 合同交给同一 SelectionManager。
+- React Aria 负责标准焦点、选择语义和读屏输出；collection-root 产品适配器集中处理 Arrow、J/K、Home/End、X、Space Peek、Enter 与 Shift range，避免虚拟列表 DOM delegate 在按键 repeat 时积压布局和焦点任务。
+- 适配器只读写同一个 SelectionManager/current key，并丢弃已明显滞后的 repeat；不得创建第二套导航状态。
 - Space 与 React Aria 默认选择冲突只能在这一处解决；禁止每行拦截、再同步第二份状态。
 - input、textarea、contenteditable、编辑器和 composition 优先接收字符键；Command Runtime 不捕获这些事件。
 - Group header 不进入任务行焦点序列；其 collapse Button 自身仍可 Tab 聚焦。
@@ -458,7 +458,7 @@ U0 是一次供应链访问门；U1–U5 才是无法由类型、测试或静态
 | U0 供应链 | A | 确认使用 CollectUI `hpsetup`，Key 仅经进程环境注入；CI secret 以后单独配置 | 固定安装器与 Pro 版本的隔离下载 smoke 成功，树 SHA-256 已记录，Key 未进入仓库或日志 |
 | U1 视觉 | B | 打开新版 HTML 原型，验证已确认色值的 HeroUI 映射、Inter/中文实际字形、密度及 Button、表单、菜单、列表、导航 Sheet / 任务 Aside 状态 | 已确认方向被正确实现；实现偏差逐项标注，不重新选择色板 |
 | U2 壳与详情 | E | 在真实 Tauri 中测试 Sidebar 点按/拖动/键盘、窗口 `1024px` 两侧的 Aside/Sheet、跨断点容器切换、Aside 拖宽、列表 `<560px` 紧凑档、Peek、Back 与 Header 打开完整页 | Sidebar 与详情 owner 独立，`?task=` 与草稿跨断点不变，列表 `min 352px`、Aside `320/360/440px`、Sheet、scroll 和焦点符合 SPEC |
-| U3 键盘 | I | 按固定矩阵完整走一遍 TaskBoard 导航、多选、Peek、详情、右键、Escape 与输入框隔离 | 不丢焦点、不误选、不触发错误目标，手感可接受 |
+| U3 键盘 | I | 按固定矩阵完整走一遍 TaskBoard hover 起点、root 无行 current 的键盘进入、导航/长按松键、多选、Peek、详情、右键、Escape 与输入框隔离 | pointer 与 keyboard 只有一个 current，root 入口不死锁，松键后立即停止，不误选、不触发错误目标，手感可接受 |
 | U4 全表面 | L | 遍历迁移清单中的主要路径、Settings、Update、Launcher、空态/错误/危险操作 | 无旧 UI、无自写动效残留、领域行为不回退 |
 | U5 终验 | M | 审阅 macOS 关键截图与录屏，并在登记的 macOS 主设备完成一次端到端走查 | HeroUI-only、浅色视觉、第一方零动画与键盘合同共同通过；结论不扩张为 Windows 已验证 |
 

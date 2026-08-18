@@ -62,7 +62,7 @@ StoneFlow 已具备较完整的桌面产品能力，但 UI 实现形成了多条
 | `main-hover` | `#f6f6f7` | 主工作区行与内容项 Hover |
 | `shell-hover` | `#ebebec` | Sidebar 等壳层高频入口 Hover |
 | `shell-active` | `#e5e5e6` | Sidebar Active/Current 表面 |
-| `accent` / `focus-visible` | `#5e6ad2` | 主要动作、品牌强调和键盘焦点环 |
+| `accent` | `#5e6ad2` | 主要动作与品牌强调 |
 
 - 以下组件状态配方同样属于全局视觉合同，由 HeroUI theme/BEM 组件层统一实现；feature 不得重复硬编码。
 
@@ -74,7 +74,7 @@ StoneFlow 已具备较完整的桌面产品能力，但 UI 实现形成了多条
 | Raised Button 背景 | `#ffffff` | `#f7f7f7` | 按对应 Button variant 的 Active 配方 |
 | Outline Button | 背景 `#ffffff`；边框 `#dbdbdb`；文字 `#5d5d5f` | 背景 `#f3f3f4`；边框 `#cccccc`；文字 `#303032` | 背景 `#efeff0`；边框 `#d6d6d7`；文字 `#1b1b1b` |
 
-- 本表中的 `Active` 指按钮按下、保持 pressed、展开或 open 后的交互状态，不等于键盘 `focus-visible`。键盘焦点始终由独立 `#5e6ad2` 焦点环表达；Selected/Current 也不得借用焦点状态冒充。
+- 本表中的 `Active` 指按钮按下、保持 pressed、展开或 open 后的交互状态，不等于键盘 `focus-visible`。标准控件沿用 HeroUI 焦点配方；TaskBoard 行以对应 hover 表面加 `1px` 中性强边框表达键盘 current，pointer current 不显示边框。Selected/Current 不得借用焦点状态冒充。
 - `#2e2f30` 不进入最终主题；粗体继续使用 `#303032`，通过真实字重表达强调。近似色可以在 HeroUI 内部保留为组件配方，但不得扩张成 feature 级 token 或编号灰阶。
 - 已验证的主要文字组合均满足 WCAG AA：`#5a5a5c / #f3f3f4` 为 `6.21:1`，`#303032 / #fcfcfd` 为 `12.85:1`，Outline 默认文字 `#5d5d5f / #ffffff` 为 `6.57:1`。
 - 中性边框的对比度约为 `1.26–1.45:1`，只允许承担克制的装饰与分层；如果控件必须依赖可见边界才能被识别，则还必须通过标签、表面、阴影或更强边界提供足够信息。任何可聚焦控件都不得仅依赖这些中性边框表达焦点。
@@ -108,13 +108,14 @@ StoneFlow 已具备较完整的桌面产品能力，但 UI 实现形成了多条
 
 ### 7. 键盘、焦点、选择与命令重写
 
-- 普通集合与 TaskBoard 使用同一份产品交互合同，不并行维护“视觉 hover 焦点”、第二份 selected state 或多套 Shift 会话。
-- 集合焦点与 pointer 临时高亮必须分离；pointer hover 不得改变键盘命令目标。
-- `↑/↓`、`J/K` 与 `Home/End` 移动真实焦点并将目标滚入视野。
+- 普通集合与 TaskBoard 使用同一份产品交互合同，不并行维护第二份 current key、selected state 或多套 Shift 会话。
+- pointer hover 与键盘导航共享唯一 current key；pointer 进入行时该行成为 current，移出 pointer-owned current 时清空行 current 并把键盘入口留在 collection root。交互来源只决定视觉：pointer 无边框，键盘接管后显示细边框，不产生第二份焦点真相。
+- 行表面状态固定为：pointer hover 使用无边框中性灰；selected 使用无边框浅蓝；selected + pointer hover 使用更深的低饱和灰蓝；键盘 current 在对应表面上增加 `1px` 中性强边框。右键不新增独立状态。
+- 有 current 时，`↑/↓`、`J/K` 与 `Home/End` 从该项移动真实焦点并将目标滚入视野；collection root 有焦点但没有行 current 时，向下/Home 从首项、向上/End 从末项建立键盘 current。
 - `X` 切换当前焦点项；`Shift+方向键` 从固定 anchor 扩展或收缩连续范围。
 - `Space` 只控制 Peek，`Enter` 写入 `?task=` 并按窗口 `1024px` 边界打开 Aside 或 Sheet；关闭正式详情后恢复原集合焦点。
-- `Cmd/Ctrl+A` 只选择按键时当前视图中已经加载且可操作的项目；之后增量加载的项目不自动加入。查询级“包含尚未加载结果的全选”不在本 UI 重构内隐式引入。
-- 右键已选项时，以整个 selection 为目标；右键未选项时，仅以该项作为目标并避免视觉选择与动作目标冲突。
+- `Cmd/Ctrl+A` 在 collection root 或行拥有真实焦点时选择按键时当前视图中已经加载且可操作的项目，不要求预先存在行 current；之后增量加载的项目不自动加入。查询级“包含尚未加载结果的全选”不在本 UI 重构内隐式引入。
+- 右键不改变 selection，也不增加选中边框：右键已选项时以整个 selection 为目标，右键未选项时仅以该项为目标，并保持普通 pointer hover 表面。
 - Escape 按“输入法/编辑 → 当前 Menu/Dialog/Sheet → Detail Aside → Peek → Selection → 页面”的固定优先级消费。
 - 输入框、编辑器、contenteditable 或 IME 接收输入时，字符快捷键不得触发产品命令。
 - Command Palette、Context Menu、ActionBar、行操作与直接快捷键继续共享 Command Registry/Runtime 的可用性、目标快照、disabled reason 和执行入口。
@@ -224,7 +225,7 @@ StoneFlow 已具备较完整的桌面产品能力，但 UI 实现形成了多条
 - **AC-10**：当主窗口或 Launcher 渲染文字时，拉丁字符与数字应当使用本地 Inter Variable，中文应当使用统一系统中文 fallback，并且 400/500/600 实际字重不得依赖伪粗体。
 - **AC-11**：当进行视觉回归时，系统应当以本 SPEC 的色值表与对比度结果为颜色真相，并使用同步后的 HeroUI 原型和新版 StoneFlow 关键页面截图验证渲染结果；迁移前 StoneFlow 与 Linear 截图不得作为逐像素复制要求。
 - **AC-12**：当任务完成时，系统应当只提供浅色主题，生产样式不得残留会生成另一套未维护视觉结果的旧 dark token 或 `dark:` 分支。
-- **AC-13**：当渲染 Sidebar、工具栏和 TaskBoard 时，系统应当以批准原型的紧凑桌面密度为基线：导航与工具控件 `28–32px`、任务行 `32–36px`、分组标题 `28–32px`、常用图标 `14–16px`。
+- **AC-13**：当渲染 Sidebar、工具栏和 TaskBoard 时，系统应当以批准的 Linear-style 桌面密度为基线：导航与工具控件 `28–32px`、任务行 `44px`、任务标题 `13px / 20px / 500`、分组标题 `34px`、常用图标 `14–16px`。
 
 ### Sidebar 三态
 
@@ -246,9 +247,9 @@ StoneFlow 已具备较完整的桌面产品能力，但 UI 实现形成了多条
 
 ### 键盘、焦点与命令
 
-- **AC-26**：当集合获得焦点且用户按方向键、`J/K` 或 `Home/End` 时，系统应当移动真实集合焦点并将目标滚入视野，不得以视觉 hover 代替焦点。
-- **AC-27**：当用户按 `X` 或 `Shift+方向键` 时，系统应当分别执行当前项切换或固定 anchor 的连续范围选择，并以单一 selection 状态为结果真相。
-- **AC-28**：当用户在集合上下文按 `Cmd/Ctrl+A` 时，系统应当选择按键时当前视图中已加载且可操作的项目，之后加载的项目不得自动加入；当焦点位于输入或编辑器时，系统应当保留文本全选。
+- **AC-26**：当 pointer hover 建立唯一 current 后按方向键、`J/K` 或 `Home/End` 时，系统应当从该项移动真实集合焦点、切换为键盘细边框并将目标滚入视野；pointer current 本身无边框。collection root 有焦点但没有行 current 时，应当按方向从首项或末项建立键盘 current。
+- **AC-27**：当用户按 `X` 或 `Shift+方向键` 时，系统应当分别执行 current 项切换或固定 anchor 的连续范围选择，并以单一 selection 状态为结果真相；没有行 current 的首次 Shift 导航按方向从首项或末项建立 anchor。
+- **AC-28**：当 collection root 或行拥有真实焦点且用户按 `Cmd/Ctrl+A` 时，系统应当选择按键时当前视图中已加载且可操作的项目，之后加载的项目不得自动加入；当焦点位于输入/编辑器或集合之外时，系统应当保留原有快捷键语义。
 - **AC-29**：只要输入框、编辑器、contenteditable 或 IME 正在接收输入，系统就不得触发 `J/K/X/Space/P/S/D` 等产品字符快捷键。
 - **AC-30**：当多个 overlay、Detail Aside、Peek、选择和页面层同时存在且用户按 Escape 时，系统应当按“输入法/编辑 → 当前 Menu/Dialog/Sheet → Detail Aside → Peek → Selection → 页面”的顺序只消费最高优先级层。
 - **AC-31**：当同一业务命令从 Command、ContextMenu、ActionBar、行操作或直接快捷键触发时，系统应当使用同一份可用性、disabled reason、目标快照和执行入口。

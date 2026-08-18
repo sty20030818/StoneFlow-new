@@ -8,6 +8,7 @@ import { useDialogStore } from '@/features/shell-dialogs'
 import { TaskBoard, type TaskBoardProps } from '@/features/task/components/TaskBoard'
 import { focusTaskBoardTaskId } from '@/features/task/components/taskBoardScroll'
 import {
+	TASK_BOARD_HEADER_HEIGHT,
 	TASK_BOARD_HEADER_SIZE,
 	TASK_BOARD_ROW_HEIGHT,
 	TASK_BOARD_ROW_SIZE,
@@ -117,7 +118,9 @@ describe('TaskBoard', () => {
 			screen.getAllByRole('button', { name: '在 待执行 中创建任务' }).length,
 		).toBeGreaterThanOrEqual(1)
 		expect(container.querySelector('[data-task-board-sticky-header]')).toBeTruthy()
-		expect(container.querySelector('[data-board-section-header]')).toHaveClass('h-8')
+		expect(container.querySelector('[data-board-section-header]')).toHaveStyle({
+			height: `${TASK_BOARD_HEADER_HEIGHT}px`,
+		})
 		expect(container.querySelector('[data-board-root="true"]')).toHaveAttribute('tabindex', '0')
 		expect(screen.getByRole('grid', { name: '任务列表' })).toHaveAttribute('aria-rowcount', '1')
 		expect(container.querySelector('[data-board-root="true"]')?.className).toContain(
@@ -243,6 +246,65 @@ describe('TaskBoard', () => {
 		await waitFor(() => expect(rows[0]).toHaveFocus())
 	})
 
+	it('鼠标 hover 是唯一行起点，移开后 collection root 仍可建立键盘 current', async () => {
+		const tasks = [
+			createTask({ id: 'task-1', title: '任务 A' }),
+			createTask({ id: 'task-2', title: '任务 B' }),
+			createTask({ id: 'task-3', title: '任务 C' }),
+		]
+		renderTaskBoard(
+			<TaskBoardHarness
+				activeTaskId={null}
+				onEmptyAction={() => undefined}
+				onOpenTask={() => undefined}
+				onToggleTaskStatus={async () => undefined}
+				onUpdateTaskPriority={async () => undefined}
+				onUpdateTaskStatus={async () => undefined}
+				pendingTaskId={null}
+				status='ready'
+				tasks={tasks}
+			/>,
+		)
+
+		const grid = screen.getByRole('grid', { name: '任务列表' })
+		const rows = within(grid).getAllByRole('row')
+		fireEvent.pointerMove(rows[1]!)
+		await waitFor(() => {
+			expect(rows[1]).toHaveFocus()
+			expect(screen.getByTestId('focused-key')).toHaveTextContent('task-2')
+		})
+
+		fireEvent.keyDown(rows[1]!, { key: 'ArrowDown' })
+		await waitFor(() => expect(rows[2]).toHaveFocus())
+
+		fireEvent.pointerMove(rows[0]!)
+		await waitFor(() => expect(rows[0]).toHaveFocus())
+		fireEvent.pointerLeave(rows[0]!)
+		await waitFor(() => {
+			expect(screen.getByTestId('focused-key')).toHaveTextContent('none')
+			expect(grid).toHaveFocus()
+			expect(grid.className).toContain('focus-visible:outline-none')
+		})
+		fireEvent.keyDown(grid, { key: 'Tab' })
+		expect(grid.className).not.toContain('focus-visible:outline-none')
+		const inlineButton = within(rows[0]!).getByRole('button', { name: '行内操作 任务 A' })
+		act(() => inlineButton.focus())
+		fireEvent.keyDown(inlineButton, { key: 'Tab', shiftKey: true })
+		act(() => grid.focus())
+		expect(grid.className).not.toContain('focus-visible:outline-none')
+
+		fireEvent.keyDown(grid, { key: 'ArrowDown', shiftKey: true })
+		await waitFor(() => {
+			expect(rows[0]).toHaveFocus()
+			expect(screen.getByTestId('selected-keys')).toHaveTextContent('task-1')
+		})
+
+		fireEvent.keyDown(rows[0]!, { key: 'a', metaKey: true })
+		await waitFor(() =>
+			expect(screen.getByTestId('selected-keys')).toHaveTextContent('task-1,task-2,task-3'),
+		)
+	})
+
 	it('root capture 处理 J/K/Shift/X/Space/Enter/Cmd+A，并隔离行内控件', async () => {
 		const tasks = [
 			createTask({ id: 'task-1', title: '任务 A' }),
@@ -324,7 +386,7 @@ describe('TaskBoard', () => {
 		useDialogStore.getState().closeCommand()
 	})
 
-	it('右键保留已选集合，未选行切为单选，并在菜单关闭后恢复该行焦点', async () => {
+	it('右键不改变选择，菜单关闭后只恢复触发行焦点', async () => {
 		const tasks = [
 			createTask({ id: 'task-1', title: '任务 A' }),
 			createTask({ id: 'task-2', title: '任务 B' }),
@@ -349,20 +411,18 @@ describe('TaskBoard', () => {
 		fireEvent.contextMenu(rowB)
 		await waitFor(() => {
 			expect(screen.getByTestId('selected-keys')).toHaveTextContent('task-1,task-2')
-			expect(screen.getByTestId('focused-key')).toHaveTextContent('task-2')
+			expect(screen.getByTestId('focused-key')).toHaveTextContent('none')
 		})
 
 		const closeMenuB = screen.getByRole('button', { name: '关闭模拟菜单 任务 B' })
-		act(() => closeMenuB.focus())
-		expect(closeMenuB).toHaveFocus()
 		fireEvent.click(closeMenuB)
 		await waitFor(() => expect(rowB).toHaveFocus())
 
 		const rowC = screen.getByRole('row', { name: '打开任务 任务 C' })
 		fireEvent.contextMenu(rowC)
 		await waitFor(() => {
-			expect(screen.getByTestId('selected-keys')).toHaveTextContent('task-3')
-			expect(screen.getByTestId('focused-key')).toHaveTextContent('task-3')
+			expect(screen.getByTestId('selected-keys')).toHaveTextContent('task-1,task-2')
+			expect(screen.getByTestId('focused-key')).toHaveTextContent('task-2')
 		})
 	})
 
@@ -520,8 +580,7 @@ describe('TaskBoard', () => {
 			/>,
 		)
 
-		const grid = screen.getByRole('grid', { name: '任务列表' })
-		fireEvent.keyDown(grid, { key: 'j' })
+		fireEvent.pointerMove(screen.getByRole('row', { name: '打开任务 任务 C' }))
 		await waitFor(() => expect(screen.getByTestId('focused-key')).toHaveTextContent('task-3'))
 		expect(screen.getByTestId('range-anchor-key')).toHaveTextContent('task-3')
 

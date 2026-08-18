@@ -121,6 +121,7 @@ function renderHarness({
 			ownsEventTarget: (target) => target === collectionRowRef.current,
 			onToggleTaskSelection: vi.fn(),
 			onClearTaskSelection: vi.fn(),
+			onKeyboardInteraction: vi.fn(),
 			onOpenTask,
 		})
 		return (

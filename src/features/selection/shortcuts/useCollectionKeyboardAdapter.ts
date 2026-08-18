@@ -1,5 +1,6 @@
 import {
 	useCallback,
+	useRef,
 	type KeyboardEvent as ReactKeyboardEvent,
 	type KeyboardEventHandler,
 } from 'react'
@@ -28,46 +29,54 @@ export type UseCollectionKeyboardAdapterOptions<K extends CollectionKey = Collec
 	requestFocus: (intent: CollectionEntryTarget<K>) => void
 	onPeek: (key: K) => void
 	onOpen: (key: K) => void
+	onKeyboardInteraction: () => void
 }
 
-/**
- * 在 collection root capture 阶段补充产品键位，标准 Arrow/Home/End 继续交给 React Aria。
- */
+const REPEAT_MIN_INTERVAL_MS = 40
+const REPEAT_MAX_QUEUE_AGE_MS = 120
+
+/** collection root 唯一键盘入口；避免虚拟列表的 React Aria DOM delegate 积压 repeat。 */
 export function useCollectionKeyboardAdapter<K extends CollectionKey>({
 	interaction,
 	resolveRowKey,
 	requestFocus,
 	onPeek,
 	onOpen,
+	onKeyboardInteraction,
 }: UseCollectionKeyboardAdapterOptions<K>): {
 	onKeyDownCapture: KeyboardEventHandler<HTMLElement>
 } {
+	const repeatRef = useRef({ key: '', lastHandledAt: -Infinity })
 	const onKeyDownCapture = useCallback<KeyboardEventHandler<HTMLElement>>(
 		(event) => {
 			if (shouldIgnoreKeybindingEvent(toNormalizedKeyEvent(event))) {
 				return
 			}
 
-			const target = resolveOwnedTarget(event, resolveRowKey, interaction.projection.eligibleKeys)
-			if (!target.owned) {
+			if (!isOwnedTarget(event, resolveRowKey, interaction.projection.eligibleKeys)) {
 				return
 			}
 
+			const currentKey = interaction.focusedKey
 			if (isExplicitSelectAll(event)) {
 				consumeEvent(event)
+				onKeyboardInteraction()
 				interaction.selectEligibleKeys()
 				return
 			}
 
-			const currentKey = target.rowKey ?? interaction.focusedKey
-			const direction = resolveNavigationDirection(event)
-			if (direction !== null) {
-				const nextKey = moveKey(interaction.projection.navigableKeys, currentKey, direction)
-				if (nextKey === null) {
-					return
-				}
-
+			const navigation = resolveNavigation(event)
+			if (navigation !== null) {
 				consumeEvent(event)
+				if (shouldDropRepeat(event, repeatRef.current)) return
+				onKeyboardInteraction()
+
+				const nextKey = resolveNavigationKey(
+					interaction.projection.navigableKeys,
+					currentKey,
+					navigation,
+				)
+				if (nextKey === null || nextKey === currentKey) return
 				if (event.shiftKey) {
 					interaction.selectRangeTo(nextKey)
 				} else {
@@ -84,78 +93,107 @@ export function useCollectionKeyboardAdapter<K extends CollectionKey>({
 			const key = normalizeCharacterKey(event.key)
 			if (key === 'x') {
 				consumeEvent(event)
+				onKeyboardInteraction()
 				interaction.toggleSelection(currentKey)
 				return
 			}
 
 			if (isSpaceKey(event.key)) {
 				consumeEvent(event)
+				onKeyboardInteraction()
 				onPeek(currentKey)
 				return
 			}
 
 			if (event.key === 'Enter') {
 				consumeEvent(event)
+				onKeyboardInteraction()
 				onOpen(currentKey)
 			}
 		},
-		[interaction, onOpen, onPeek, requestFocus, resolveRowKey],
+		[interaction, onKeyboardInteraction, onOpen, onPeek, requestFocus, resolveRowKey],
 	)
 
 	return { onKeyDownCapture }
 }
 
-type OwnedTarget<K extends CollectionKey> = { owned: true; rowKey: K | null } | { owned: false }
-
-function resolveOwnedTarget<K extends CollectionKey>(
+function isOwnedTarget<K extends CollectionKey>(
 	event: ReactKeyboardEvent<HTMLElement>,
 	resolveRowKey: (target: HTMLElement) => K | null,
 	eligibleKeys: readonly K[],
-): OwnedTarget<K> {
+): boolean {
 	if (!(event.target instanceof HTMLElement)) {
-		return { owned: false }
+		return false
 	}
 	if (event.target === event.currentTarget) {
-		return { owned: true, rowKey: null }
+		return true
 	}
 
 	const rowKey = resolveRowKey(event.target)
 	return rowKey !== null && eligibleKeys.includes(rowKey)
-		? { owned: true, rowKey }
-		: { owned: false }
 }
 
-function resolveNavigationDirection(event: ReactKeyboardEvent<HTMLElement>): -1 | 1 | null {
+type Navigation = -1 | 1 | 'first' | 'last'
+
+function resolveNavigation(event: ReactKeyboardEvent<HTMLElement>): Navigation | null {
 	if (event.metaKey || event.ctrlKey || event.altKey) {
 		return null
 	}
 
+	if (event.key === 'Home') return 'first'
+	if (event.key === 'End') return 'last'
+	if (event.key === 'ArrowDown') return 1
+	if (event.key === 'ArrowUp') return -1
+
 	const key = normalizeCharacterKey(event.key)
-	if (key === 'j' || (event.shiftKey && event.key === 'ArrowDown')) {
-		return 1
-	}
-	if (key === 'k' || (event.shiftKey && event.key === 'ArrowUp')) {
-		return -1
-	}
+	if (key === 'j') return 1
+	if (key === 'k') return -1
 	return null
 }
 
-function moveKey<K extends CollectionKey>(
+function resolveNavigationKey<K extends CollectionKey>(
 	navigableKeys: readonly K[],
 	currentKey: K | null,
-	direction: -1 | 1,
+	navigation: Navigation,
 ): K | null {
 	if (navigableKeys.length === 0) {
 		return null
 	}
+	if (navigation === 'first') return navigableKeys[0] ?? null
+	if (navigation === 'last') return navigableKeys.at(-1) ?? null
 
 	const currentIndex = currentKey === null ? -1 : navigableKeys.indexOf(currentKey)
 	if (currentIndex === -1) {
-		return direction === 1 ? (navigableKeys[0] ?? null) : (navigableKeys.at(-1) ?? null)
+		return navigation === 1 ? (navigableKeys[0] ?? null) : (navigableKeys.at(-1) ?? null)
 	}
 
-	const nextIndex = Math.min(Math.max(currentIndex + direction, 0), navigableKeys.length - 1)
+	const nextIndex = Math.min(Math.max(currentIndex + navigation, 0), navigableKeys.length - 1)
 	return navigableKeys[nextIndex] ?? null
+}
+
+function shouldDropRepeat(
+	event: ReactKeyboardEvent<HTMLElement>,
+	state: { key: string; lastHandledAt: number },
+) {
+	const now = globalThis.performance?.now() ?? Date.now()
+	if (!event.repeat) {
+		state.key = event.key
+		state.lastHandledAt = -Infinity
+		return false
+	}
+
+	const eventTime = event.timeStamp
+	const queueAge = eventTime > 0 && eventTime <= now ? now - eventTime : 0
+	if (
+		queueAge > REPEAT_MAX_QUEUE_AGE_MS ||
+		(state.key === event.key && now - state.lastHandledAt < REPEAT_MIN_INTERVAL_MS)
+	) {
+		return true
+	}
+
+	state.key = event.key
+	state.lastHandledAt = now
+	return false
 }
 
 function isExplicitSelectAll(event: ReactKeyboardEvent<HTMLElement>) {

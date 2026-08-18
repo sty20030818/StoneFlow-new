@@ -46,7 +46,7 @@
 	--accent-hover: #6566df;
 	--accent-soft: #eef0ff;
 	--accent-soft-foreground: #4450b4;
-	--accent-soft-hover: color-mix(in srgb, #eef0ff 78%, #5e6ad2 22%);
+	--accent-soft-hover: color-mix(in srgb, var(--accent-soft) 78%, var(--border-secondary) 22%);
 
 	--field-background: #ffffff;
 	--field-foreground: #303032;

@@ -38,7 +38,6 @@ export type CollectionInteraction<K extends CollectionKey> = {
 	rangeAnchorKey: K | null
 	focusKey: (key: K | null, options?: { preserveRangeAnchor?: boolean }) => void
 	toggleSelection: (key?: K | null) => void
-	selectOnly: (key: K) => void
 	selectRangeTo: (key: K) => void
 	selectEligibleKeys: () => void
 	clearSelection: () => void
@@ -154,24 +153,11 @@ export function useCollectionInteraction<K extends CollectionKey>({
 		[setRangeAnchorKey],
 	)
 
-	const toggleSelection = useCallback(
-		(key?: K | null) => {
-			const target = key ?? asCollectionKey<K>(listStateRef.current.selectionManager.focusedKey)
-			if (!target || !projectionRef.current.eligibleKeys.includes(target)) return
-			listStateRef.current.selectionManager.toggleSelection(target)
-			focusKey(target)
-		},
-		[focusKey],
-	)
-
-	const selectOnly = useCallback(
-		(key: K) => {
-			if (!projectionRef.current.eligibleKeys.includes(key)) return
-			listStateRef.current.selectionManager.setSelectedKeys([key])
-			focusKey(key)
-		},
-		[focusKey],
-	)
+	const toggleSelection = useCallback((key?: K | null) => {
+		const target = key ?? asCollectionKey<K>(listStateRef.current.selectionManager.focusedKey)
+		if (!target || !projectionRef.current.eligibleKeys.includes(target)) return
+		listStateRef.current.selectionManager.toggleSelection(target)
+	}, [])
 
 	const getSnapshot = useCallback(
 		(): CollectionState<K> => ({
@@ -227,7 +213,6 @@ export function useCollectionInteraction<K extends CollectionKey>({
 		rangeAnchorKey,
 		focusKey,
 		toggleSelection,
-		selectOnly,
 		selectRangeTo,
 		selectEligibleKeys,
 		clearSelection,

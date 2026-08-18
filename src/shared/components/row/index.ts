@@ -26,7 +26,6 @@ export {
 	ROW_SHELL_GROUP_POSITION_CLASS,
 	ROW_SHELL_IDLE_CLASS,
 	ROW_SHELL_SELECTED_CLASS,
-	ROW_SHELL_SELECTED_FOCUS_CLASS,
 	type RowSelectionGroupPosition,
 } from '@/shared/components/patterns/row-tokens'
 export {

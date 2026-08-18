@@ -79,7 +79,7 @@ function createProjectBinding(
 
 function renderTaskRowAdapter({
 	task = buildTask(),
-	rowState = { isActive: false, isSelected: false, isPending: false },
+	rowState = { isSelected: false, isPending: false, isFocused: false, focusSource: null },
 	projectBinding = createProjectBinding(),
 	actions = buildActions(),
 	contextMenuActions,
@@ -139,11 +139,10 @@ describe('TaskRowAdapter', () => {
 		const rowRef = createRef<HTMLDivElement>()
 		const { actions } = renderTaskRowAdapter({
 			rowState: {
-				isActive: false,
 				isSelected: false,
 				isPending: false,
 				isFocused: true,
-				isFocusVisible: true,
+				focusSource: 'keyboard',
 			},
 			rowProps: {
 				role: 'row',
@@ -156,11 +155,15 @@ describe('TaskRowAdapter', () => {
 		})
 
 		const row = screen.getByRole('row', { name: '打开任务 任务 A' })
+		const title = screen.getByText('任务 A')
 		expect(rowRef.current).toBe(row)
-		expect(row).toHaveAttribute('data-focused', 'true')
-		expect(row).toHaveAttribute('data-focus-visible', 'true')
-		expect(row).toHaveClass('h-9')
-		expect(row.className).toContain('ring-focus')
+		expect(row).toHaveStyle({ height: '44px' })
+		expect(row).toHaveClass('text-[13px]', 'leading-5')
+		expect(title).toHaveClass('font-medium')
+		expect(title).not.toHaveClass('text-[13px]')
+		expect(row).toHaveAttribute('data-focus-source', 'keyboard')
+		expect(row.className).toContain('border-foreground/70')
+		expect(row.className).not.toContain('ring-focus')
 		expect(within(row).getByRole('gridcell')).toBeInTheDocument()
 		fireEvent.click(row)
 
@@ -254,7 +257,12 @@ describe('TaskRowAdapter', () => {
 		'pending 时 %s Tooltip 保留动作、快捷键和原因，但不显示任务名',
 		async (accessibleName, tooltipLabel, disabledReason, shortcutLabel) => {
 			renderTaskRowAdapter({
-				rowState: { isActive: false, isSelected: false, isPending: true },
+				rowState: {
+					isSelected: false,
+					isPending: true,
+					isFocused: false,
+					focusSource: null,
+				},
 			})
 
 			fireEvent.keyDown(document, { key: 'Tab' })
@@ -369,7 +377,7 @@ describe('TaskRowAdapter', () => {
 		await waitFor(() => expect(onContextMenuOpenChange).toHaveBeenCalledWith(false))
 	})
 
-	it('active/selected/pending 映射到行壳状态 class', () => {
+	it('鼠标当前行只有 hover 表面，键盘接管后才显示细边框', () => {
 		const task = buildTask()
 		const actions = buildActions()
 		const { rerender } = render(
@@ -378,9 +386,10 @@ describe('TaskRowAdapter', () => {
 					actions={actions}
 					projectBinding={createProjectBinding()}
 					rowState={{
-						isActive: true,
-						isSelected: true,
-						isPending: true,
+						isSelected: false,
+						isPending: false,
+						isFocused: true,
+						focusSource: 'pointer',
 					}}
 					task={task}
 				/>
@@ -388,7 +397,74 @@ describe('TaskRowAdapter', () => {
 		)
 
 		const row = screen.getByLabelText('打开任务 任务 A')
-		expect(row.className).toContain('border-border-secondary')
+		expect(row.className).toContain('bg-surface-hover')
+		expect(row.className).toContain('focus-visible:border-transparent')
+		expect(row.className).not.toContain('border-foreground/70')
+
+		rerender(
+			<TestProviders>
+				<TaskRowAdapter
+					actions={actions}
+					projectBinding={createProjectBinding()}
+					rowState={{
+						isSelected: true,
+						isPending: false,
+						isFocused: true,
+						focusSource: 'keyboard',
+					}}
+					selectionGroupPosition='single'
+					task={task}
+				/>
+			</TestProviders>,
+		)
+
+		expect(row.className).toContain('bg-accent-soft-hover')
+		expect(row.className).toContain('border-foreground/70')
+
+		rerender(
+			<TestProviders>
+				<TaskRowAdapter
+					actions={actions}
+					projectBinding={createProjectBinding()}
+					rowState={{
+						isSelected: false,
+						isPending: false,
+						isFocused: false,
+						focusSource: 'keyboard',
+					}}
+					task={task}
+				/>
+			</TestProviders>,
+		)
+
+		expect(row.className).toContain('hover:bg-transparent')
+		expect(row.className.split(/\s+/)).not.toContain('border-foreground/70')
+	})
+
+	it('selected/pending 由 RowShell 统一映射表面状态', () => {
+		const task = buildTask()
+		const actions = buildActions()
+		const { rerender } = render(
+			<TestProviders>
+				<TaskRowAdapter
+					actions={actions}
+					projectBinding={createProjectBinding()}
+					rowState={{
+						isSelected: true,
+						isPending: true,
+						isFocused: false,
+						focusSource: null,
+					}}
+					selectionGroupPosition='single'
+					task={task}
+				/>
+			</TestProviders>,
+		)
+
+		const row = screen.getByLabelText('打开任务 任务 A')
+		expect(row.className).toContain('bg-accent-soft')
+		expect(row.className).toContain('hover:bg-accent-soft-hover')
+		expect(row).not.toHaveClass('border-foreground/70')
 		expect(row.className).toContain('opacity-75')
 
 		rerender(
@@ -397,10 +473,12 @@ describe('TaskRowAdapter', () => {
 					actions={actions}
 					projectBinding={createProjectBinding()}
 					rowState={{
-						isActive: false,
 						isSelected: true,
 						isPending: false,
+						isFocused: false,
+						focusSource: null,
 					}}
+					selectionGroupPosition='single'
 					task={task}
 				/>
 			</TestProviders>,

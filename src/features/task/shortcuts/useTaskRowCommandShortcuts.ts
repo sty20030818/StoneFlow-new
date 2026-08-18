@@ -29,6 +29,7 @@ type UseTaskRowCommandShortcutsOptions = {
 	ownsEventTarget: (target: EventTarget | null) => boolean
 	onToggleTaskSelection: (taskId: string) => void
 	onClearTaskSelection: () => void
+	onKeyboardInteraction: () => void
 	onOpenTask: (taskId: string) => void
 	onPeekTask?: (taskId: string, source: 'keyboard' | 'pointer') => void
 }
@@ -52,6 +53,7 @@ export function useTaskRowCommandShortcuts({
 	ownsEventTarget,
 	onToggleTaskSelection,
 	onClearTaskSelection,
+	onKeyboardInteraction,
 	onOpenTask,
 	onPeekTask,
 }: UseTaskRowCommandShortcutsOptions) {
@@ -118,6 +120,7 @@ export function useTaskRowCommandShortcuts({
 		})
 		if (result.status !== 'matched') return 'unhandled'
 
+		onKeyboardInteraction()
 		if (result.keybinding.preventDefault) event.preventDefault()
 		void runtime.execute(result.keybinding.commandId)
 		return 'handled'

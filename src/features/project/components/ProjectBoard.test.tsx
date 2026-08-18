@@ -142,12 +142,12 @@ describe('ProjectBoard', () => {
 		const row = screen.getByRole('button', { name: '打开项目 项目 A' })
 
 		fireEvent.mouseEnter(row)
-		expect(row).toHaveClass('bg-sf-list-row-hover')
-		expect(row).not.toHaveClass('border-sf-border-subtle')
+		expect(row).toHaveClass('bg-surface-hover')
+		expect(row).not.toHaveClass('border-foreground/70')
 
 		fireEvent.mouseLeave(row)
-		expect(row).not.toHaveClass('bg-sf-list-row-hover')
-		expect(row).not.toHaveClass('border-sf-border-subtle')
+		expect(row).not.toHaveClass('bg-surface-hover')
+		expect(row).not.toHaveClass('border-foreground/70')
 	})
 })
 

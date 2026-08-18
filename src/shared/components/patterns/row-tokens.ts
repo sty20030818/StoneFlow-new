@@ -5,16 +5,12 @@ export type RowSelectionGroupPosition = 'single' | 'first' | 'middle' | 'last'
  * 所有 row surface 常量统一以 ROW_SHELL_ 命名，不含实体前缀。
  */
 export const ROW_SHELL_BASE_CLASS =
-	'group/row-shell flex h-12 min-w-0 items-center gap-3 rounded-md border border-transparent bg-transparent px-3 text-left'
+	'group/row-shell flex h-12 min-w-0 items-center gap-3 rounded-md border border-transparent bg-transparent px-3 text-left text-sm leading-5'
 
 export const ROW_SHELL_IDLE_CLASS = ''
-export const ROW_SHELL_ACTIVE_CLASS = 'border-sf-border-subtle bg-sf-list-row-selected'
-export const ROW_SHELL_FOCUS_CLASS = 'border-sf-border-subtle'
-export const ROW_SHELL_SELECTED_FOCUS_CLASS =
-	'border-[1.5px] border-[color-mix(in_srgb,color-mix(in_srgb,var(--sf-accent-active)_42%,var(--sf-border-strong))_44%,transparent)]'
-export const ROW_SHELL_SELECTED_CLASS = 'border-transparent bg-sf-selection-surface'
-/** 选中 row 被合并到分组 wrapper 内时，去掉自身背景，只保留 hover。 */
-export const ROW_SHELL_GROUP_SELECTED_CLASS = 'border-transparent bg-transparent'
+export const ROW_SHELL_ACTIVE_CLASS = 'border-border-secondary bg-accent-soft'
+export const ROW_SHELL_FOCUS_CLASS = 'border-foreground/70'
+export const ROW_SHELL_SELECTED_CLASS = 'border-transparent bg-accent-soft'
 export const ROW_SHELL_SECTION_HEADER_CLASS =
 	'flex h-10 items-center gap-2 rounded-md bg-sf-list-section-bg pl-3 pr-1'
 

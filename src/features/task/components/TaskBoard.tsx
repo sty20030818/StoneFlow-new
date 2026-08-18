@@ -6,7 +6,7 @@ import {
 	useState,
 	type KeyboardEvent as ReactKeyboardEvent,
 } from 'react'
-import { mergeProps, useFocusRing, useGridList, useGridListItem } from 'react-aria'
+import { mergeProps, useGridList, useGridListItem } from 'react-aria'
 import { defaultRangeExtractor, useVirtualizer, type Range } from '@tanstack/react-virtual'
 import { registerTaskBoardFocusTaskId, registerTaskBoardScrollToTaskId } from './taskBoardScroll'
 import { useScrollAreaViewport } from '@/shared/components/AppScrollArea'
@@ -152,6 +152,12 @@ export function TaskBoard({
 }: TaskBoardProps) {
 	const selectedTaskIdSet = collectionInteraction.selectedKeys
 	const focusedTaskId = collectionInteraction.focusedKey
+	const [focusSource, setFocusSource] = useState<'pointer' | 'keyboard' | null>(null)
+	const [suppressRootFocusRing, setSuppressRootFocusRing] = useState(false)
+	const markKeyboardInteraction = useCallback(() => {
+		setFocusSource('keyboard')
+		setSuppressRootFocusRing(false)
+	}, [])
 	const contextMenuActions = useTaskContextMenuBulkActions({
 		onClearTaskSelection: collectionInteraction.clearSelection,
 	})
@@ -319,10 +325,11 @@ export function TaskBoard({
 	const focusCollectionKey = useCallback(
 		(key: string) => {
 			if (!navigableTaskKeys.includes(key)) return
+			markKeyboardInteraction()
 			focusCollectionStateKey(key)
 			focusBridge.requestFocus({ type: 'item', key })
 		},
-		[focusBridge, focusCollectionStateKey, navigableTaskKeys],
+		[focusBridge, focusCollectionStateKey, markKeyboardInteraction, navigableTaskKeys],
 	)
 	const gridRef = useRef<HTMLDivElement | null>(null)
 	const groupReentryRef = useRef<{
@@ -345,6 +352,7 @@ export function TaskBoard({
 		interaction: collectionInteraction,
 		resolveRowKey: focusBridge.getItemKey,
 		requestFocus: focusBridge.requestFocus,
+		onKeyboardInteraction: markKeyboardInteraction,
 		onOpen: onOpenTask,
 		onPeek: (key) => onPeekTask?.(key, 'keyboard'),
 	})
@@ -357,6 +365,7 @@ export function TaskBoard({
 			target === gridRef.current || focusBridge.getItemKey(target) !== null,
 		onToggleTaskSelection: collectionInteraction.toggleSelection,
 		onClearTaskSelection: collectionInteraction.clearSelection,
+		onKeyboardInteraction: markKeyboardInteraction,
 		onOpenTask,
 		onPeekTask,
 	})
@@ -378,12 +387,6 @@ export function TaskBoard({
 		onFocusIntentConsumed(focusIntent)
 	}, [focusBridge, focusIntent, onFocusIntentConsumed])
 
-	useEffect(() => {
-		if (focusedTaskId && !focusIntent && !groupReentryRef.current && !focusBridge.getTriggerKey()) {
-			focusBridge.requestFocus({ type: 'item', key: focusedTaskId })
-		}
-	}, [focusBridge, focusIntent, focusedTaskId])
-
 	const handleGroupTriggerKeyDown = useCallback(
 		(groupKey: string, event: ReactKeyboardEvent<HTMLElement>) => {
 			const pending = groupReentryRef.current
@@ -400,13 +403,15 @@ export function TaskBoard({
 
 			event.preventDefault()
 			event.stopPropagation()
+			markKeyboardInteraction()
 			groupReentryRef.current = null
 			focusBridge.requestFocus(pending.reentry)
 		},
-		[focusBridge],
+		[focusBridge, markKeyboardInteraction],
 	)
 	const handleRootKeyDownCapture = useCallback(
 		(event: ReactKeyboardEvent<HTMLDivElement>) => {
+			setSuppressRootFocusRing(false)
 			const target = event.target
 			if (target instanceof HTMLElement) {
 				const groupKey = target.dataset.collectionGroupKey
@@ -421,6 +426,27 @@ export function TaskBoard({
 			groupReentryRef.current = null
 		}
 	}, [])
+	const handlePointerFocusTask = useCallback(
+		(taskId: string) => {
+			if (focusSource === 'pointer' && focusedTaskId === taskId) return
+			setFocusSource('pointer')
+			setSuppressRootFocusRing(false)
+			collectionInteraction.focusKey(taskId)
+			focusBridge.requestFocus({ type: 'item', key: taskId })
+		},
+		[collectionInteraction, focusBridge, focusSource, focusedTaskId],
+	)
+	const handlePointerLeaveTask = useCallback(
+		(taskId: string, restoreRootFocus: boolean) => {
+			if (focusSource !== 'pointer' || focusedTaskId !== taskId) return
+			collectionInteraction.focusKey(null)
+			if (restoreRootFocus) {
+				setSuppressRootFocusRing(true)
+				gridRef.current?.focus({ preventScroll: true })
+			}
+		},
+		[collectionInteraction, focusSource, focusedTaskId],
+	)
 
 	const renderTaskRow = useCallback(
 		(task: TaskListItem, selectionGroupPosition?: RowSelectionGroupPosition) => {
@@ -433,9 +459,12 @@ export function TaskBoard({
 					contextMenuActions={contextMenuActions}
 					contextTasks={contextTasks}
 					focusBridge={focusBridge}
+					onPointerFocusTask={handlePointerFocusTask}
+					onPointerLeaveTask={handlePointerLeaveTask}
 					projectBinding={projectBinding}
 					rowState={{
-						isActive: activeTaskId === task.id,
+						focusSource,
+						isFocused: focusedTaskId === task.id,
 						isPending: pendingTaskId === task.id,
 						isSelected: selectedTaskIdSet.has(task.id),
 					}}
@@ -447,10 +476,13 @@ export function TaskBoard({
 			)
 		},
 		[
-			activeTaskId,
 			collectionInteraction,
 			contextMenuActions,
 			focusBridge,
+			focusSource,
+			focusedTaskId,
+			handlePointerFocusTask,
+			handlePointerLeaveTask,
 			pendingTaskId,
 			projectBinding,
 			rowActions,
@@ -521,27 +553,25 @@ export function TaskBoard({
 		item: Extract<TaskBoardFlatItem, { kind: 'header' }>,
 		registerTrigger: boolean,
 	) => (
-		<div style={{ height: TASK_BOARD_HEADER_HEIGHT }}>
-			<StatusSectionHeader
-				count={item.count}
-				createProjectId={createProjectId}
-				groupKey={item.key}
-				label={item.label}
-				onCollapseAll={onCollapseAll}
-				onExpandAll={onExpandAll}
-				onGroupTriggerBlur={handleGroupTriggerBlur}
-				onOpenChange={
-					item.status ? (open) => onSectionOpenChange(item.key, item.status!, open) : undefined
-				}
-				onSetSectionSelection={setSectionSelection}
-				open={item.open}
-				openTaskCreateDialog={openTaskCreateDialog}
-				registerGroupTrigger={registerTrigger ? focusBridge.registerGroupTrigger : undefined}
-				selectedTaskIdSet={selectedTaskIdSet}
-				status={item.status}
-				tasks={item.status ? groupedTasks[item.status] : []}
-			/>
-		</div>
+		<StatusSectionHeader
+			count={item.count}
+			createProjectId={createProjectId}
+			groupKey={item.key}
+			label={item.label}
+			onCollapseAll={onCollapseAll}
+			onExpandAll={onExpandAll}
+			onGroupTriggerBlur={handleGroupTriggerBlur}
+			onOpenChange={
+				item.status ? (open) => onSectionOpenChange(item.key, item.status!, open) : undefined
+			}
+			onSetSectionSelection={setSectionSelection}
+			open={item.open}
+			openTaskCreateDialog={openTaskCreateDialog}
+			registerGroupTrigger={registerTrigger ? focusBridge.registerGroupTrigger : undefined}
+			selectedTaskIdSet={selectedTaskIdSet}
+			status={item.status}
+			tasks={item.status ? groupedTasks[item.status] : []}
+		/>
 	)
 
 	return (
@@ -550,8 +580,19 @@ export function TaskBoard({
 			{...gridProps}
 			ref={gridRef}
 			aria-rowcount={collectionInteraction.projection.navigableKeys.length}
-			className='@container/task-list relative w-full'
+			className={cn(
+				'@container/task-list relative w-full',
+				suppressRootFocusRing && 'focus-visible:outline-none',
+			)}
 			data-board-root='true'
+			onBlurCapture={(event) => {
+				if (
+					!(event.relatedTarget instanceof Node) ||
+					!event.currentTarget.contains(event.relatedTarget)
+				) {
+					setSuppressRootFocusRing(false)
+				}
+			}}
 			onKeyDownCapture={handleRootKeyDownCapture}
 		>
 			{/* 零高度 sticky 壳（不占文档流高度）+ 定高裁剪层。 */}
@@ -578,7 +619,6 @@ export function TaskBoard({
 						<div
 							ref={stickyPushLayerRef}
 							style={{
-								height: TASK_BOARD_HEADER_HEIGHT,
 								willChange: 'transform',
 								backfaceVisibility: 'hidden',
 							}}
@@ -720,11 +760,15 @@ export function TaskBoard({
 type TaskBoardGridRowProps = Omit<TaskRowAdapterProps, 'gridCellProps' | 'rowProps' | 'rowRef'> & {
 	collectionInteraction: CollectionInteraction<string>
 	focusBridge: ReturnType<typeof createCollectionFocusBridge>
+	onPointerFocusTask: (taskId: string) => void
+	onPointerLeaveTask: (taskId: string, restoreRootFocus: boolean) => void
 }
 
 function TaskBoardGridRow({
 	collectionInteraction,
 	focusBridge,
+	onPointerFocusTask,
+	onPointerLeaveTask,
 	rowState,
 	task,
 	...props
@@ -735,7 +779,7 @@ function TaskBoardGridRow({
 	if (!node) {
 		throw new Error(`TaskBoard collection 缺少任务：${task.id}`)
 	}
-	const { rowProps, gridCellProps, isFocused } = useGridListItem(
+	const { rowProps, gridCellProps } = useGridListItem(
 		{
 			node,
 			isVirtualized: true,
@@ -744,7 +788,6 @@ function TaskBoardGridRow({
 		collectionInteraction.listState,
 		rowRef,
 	)
-	const { focusProps, isFocusVisible } = useFocusRing()
 	const ariaRowIndex = collectionInteraction.projection.navigableKeys.indexOf(task.id) + 1
 	const setRowRef = useCallback(
 		(element: HTMLDivElement | null) => {
@@ -761,11 +804,6 @@ function TaskBoardGridRow({
 		(open: boolean) => {
 			if (open) {
 				focusBridge.rememberTrigger(task.id)
-				if (rowState.isSelected) {
-					collectionInteraction.focusKey(task.id, { preserveRangeAnchor: true })
-				} else {
-					collectionInteraction.selectOnly(task.id)
-				}
 				return
 			}
 
@@ -773,7 +811,7 @@ function TaskBoardGridRow({
 				focusBridge.restoreTrigger({ type: 'item', key: task.id })
 			}
 		},
-		[collectionInteraction, focusBridge, rowState.isSelected, task.id],
+		[focusBridge, task.id],
 	)
 	useEffect(() => () => unregisterRef.current?.(), [])
 
@@ -782,9 +820,16 @@ function TaskBoardGridRow({
 			{...props}
 			gridCellProps={gridCellProps}
 			onContextMenuOpenChange={handleContextMenuOpenChange}
-			rowProps={mergeProps(rowProps, focusProps, { 'aria-rowindex': ariaRowIndex })}
+			rowProps={mergeProps(rowProps, {
+				'aria-rowindex': ariaRowIndex,
+				onPointerMove: () => onPointerFocusTask(task.id),
+				onPointerLeave: () => {
+					const row = rowRef.current
+					onPointerLeaveTask(task.id, row !== null && row === document.activeElement)
+				},
+			})}
 			rowRef={setRowRef}
-			rowState={{ ...rowState, isFocused, isFocusVisible }}
+			rowState={rowState}
 			task={task}
 		/>
 	)
@@ -871,8 +916,9 @@ function StatusSectionHeader({
 	// 不用 CSS sticky：虚拟列表的顶替由外层浮层 + pushOffset 负责，这里只保留视觉 surface
 	const header = (
 		<div
-			className='relative z-10 flex h-8 items-center gap-2 rounded-md bg-surface-secondary pr-1 pl-3'
+			className='relative z-10 flex items-center gap-2 rounded-md bg-surface-secondary pr-1 pl-3'
 			data-board-section-header='true'
+			style={{ height: TASK_BOARD_HEADER_HEIGHT }}
 			onDoubleClick={() => {
 				setToggleTooltipOpen(false)
 				setCreateTooltipOpen(false)
