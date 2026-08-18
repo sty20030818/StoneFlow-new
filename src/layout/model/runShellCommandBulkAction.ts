@@ -8,7 +8,7 @@ import {
 	type BulkEntityType,
 	type useBulkActionContext,
 } from '@/features/bulk-action'
-import type { CommandContext } from '@/features/command'
+import type { CommandContext, CommandInvocation } from '@/features/command'
 
 type RunBulkAction = ReturnType<typeof useBulkActionContext>['runBulkAction']
 
@@ -18,6 +18,7 @@ type RunBulkAction = ReturnType<typeof useBulkActionContext>['runBulkAction']
 export function createRunEntityBulkActionFromCommand(runBulkAction: RunBulkAction) {
 	return async (
 		ctx: CommandContext,
+		invocation: CommandInvocation,
 		entity: BulkEntityType,
 		actionId: BulkActionId,
 		labels: BulkActionResultMessageLabels,
@@ -26,7 +27,11 @@ export function createRunEntityBulkActionFromCommand(runBulkAction: RunBulkActio
 		if (ctx.selection.type !== entity || ctx.selection.ids.length === 0) {
 			return
 		}
-		const snapshot = createCommandBulkSelectionSnapshot(ctx.selection, entity, 'command-menu')
+		const snapshot = createCommandBulkSelectionSnapshot(
+			ctx.selection,
+			entity,
+			resolveBulkSelectionSource(invocation),
+		)
 		const result = await runBulkAction(actionId, snapshot, payload)
 		if (shouldClearBulkSelection(result)) {
 			ctx.selection.clearSelection?.()
@@ -36,4 +41,11 @@ export function createRunEntityBulkActionFromCommand(runBulkAction: RunBulkActio
 			throw result.error
 		}
 	}
+}
+
+function resolveBulkSelectionSource(invocation: CommandInvocation) {
+	if (invocation.source === 'row') {
+		throw new Error('行指针操作不能执行批量命令')
+	}
+	return invocation.source
 }

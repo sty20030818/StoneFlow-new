@@ -24,6 +24,7 @@ describe('buildCommandMenuGroups', () => {
 				isVisible: () => false,
 			}),
 			createCommand(COMMAND_IDS.newView, {
+				title: '新建视图',
 				category: 'new',
 				isEnabled: () => false,
 				getDisabledReason: () => '视图创建入口尚未接入',
@@ -33,11 +34,15 @@ describe('buildCommandMenuGroups', () => {
 		const groups = buildCommandMenuGroups(runtime, context, shortcutRegistry)
 		const entries = groups.flatMap((group) => group.entries)
 
-		expect(entries.map((entry) => entry.command.id)).toEqual([COMMAND_IDS.newView])
+		expect(entries.map((entry) => entry.id)).toEqual([COMMAND_IDS.newView])
 		expect(entries[0]).toMatchObject({
-			disabled: true,
+			label: '新建视图',
+			enabled: false,
 			disabledReason: '视图创建入口尚未接入',
+			target: context,
 		})
+		expect(entries[0]).not.toHaveProperty('command')
+		expect(entries[0]?.execute).toEqual(expect.any(Function))
 	})
 
 	it('按 priority 从高到低排序', () => {
@@ -54,7 +59,7 @@ describe('buildCommandMenuGroups', () => {
 
 		const [group] = buildCommandMenuGroups(runtime, context, shortcutRegistry)
 
-		expect(group.entries.map((entry) => entry.command.id)).toEqual(['test.high', 'test.low'])
+		expect(group.entries.map((entry) => entry.id)).toEqual(['test.high', 'test.low'])
 	})
 
 	it('快捷键文案来自默认 keybinding registry', () => {
@@ -102,18 +107,18 @@ describe('buildCommandMenuGroups', () => {
 		const groups = buildCommandMenuGroups(runtime, createTaskSelectionContext(), shortcutRegistry)
 
 		expect(groups[0]?.key).toBe('bulk')
-		expect(groups[0]?.entries.map((entry) => entry.command.id)).toEqual([
+		expect(groups[0]?.entries.map((entry) => entry.id)).toEqual([
 			COMMAND_IDS.taskComplete,
 			COMMAND_IDS.taskArchive,
 			COMMAND_IDS.taskSetPriority,
 		])
 		expect(groups[0]?.entries[2]).toMatchObject({
-			disabled: true,
+			enabled: false,
 			disabledReason: '优先级 scoped picker 尚未接入',
 		})
-		expect(
-			groups.find((group) => group.key === 'task')?.entries.map((entry) => entry.command.id),
-		).toEqual(['test.normalTask'])
+		expect(groups.find((group) => group.key === 'task')?.entries.map((entry) => entry.id)).toEqual([
+			'test.normalTask',
+		])
 	})
 
 	it('归档页 lifecycle selection 显示恢复和删除批量命令', () => {
@@ -133,7 +138,7 @@ describe('buildCommandMenuGroups', () => {
 		)
 
 		expect(groups[0]?.key).toBe('bulk')
-		expect(groups[0]?.entries.map((entry) => entry.command.id)).toEqual([
+		expect(groups[0]?.entries.map((entry) => entry.id)).toEqual([
 			COMMAND_IDS.lifecycleRestore,
 			COMMAND_IDS.lifecycleDelete,
 		])
@@ -156,7 +161,7 @@ describe('buildCommandMenuGroups', () => {
 		)
 
 		expect(groups[0]?.key).toBe('bulk')
-		expect(groups[0]?.entries.map((entry) => entry.command.id)).toEqual([
+		expect(groups[0]?.entries.map((entry) => entry.id)).toEqual([
 			COMMAND_IDS.lifecycleRestore,
 			COMMAND_IDS.lifecycleDeletePermanently,
 		])
@@ -176,12 +181,12 @@ describe('buildCommandMenuGroups', () => {
 		)
 
 		expect(groups[0]?.key).toBe('bulk')
-		expect(groups[0]?.entries.map((entry) => entry.command.id)).toEqual([
+		expect(groups[0]?.entries.map((entry) => entry.id)).toEqual([
 			COMMAND_IDS.projectArchive,
 			COMMAND_IDS.projectDelete,
 		])
 		expect(
-			groups.find((group) => group.key === 'project')?.entries.map((entry) => entry.command.id),
+			groups.find((group) => group.key === 'project')?.entries.map((entry) => entry.id),
 		).toEqual(['test.normalProject'])
 	})
 

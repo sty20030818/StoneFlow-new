@@ -38,4 +38,4 @@ export { useSectionSelection } from './selection'
 
 // ── components ──────────────────────────────────────────────────────────────
 
-export { BulkActionBar, BulkCommandMenuAction, showBulkActionResultToast } from './components'
+export { BulkActionBar, showBulkActionResultToast } from './components'

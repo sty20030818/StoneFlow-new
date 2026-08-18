@@ -1,10 +1,16 @@
-import { memo, useMemo, type Ref } from 'react'
+import { memo, useCallback, useMemo, type Ref } from 'react'
 import type { GridListItemAria } from 'react-aria'
 
-import { COMMAND_IDS, CommandShortcut } from '@/features/command'
+import {
+	COMMAND_IDS,
+	CommandShortcut,
+	useCommandRuntimeContext,
+	type CommandId,
+} from '@/features/command'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { TASK_BOARD_ROW_HEIGHT } from '@/features/task/model/taskBoardModel'
 import { TaskContextMenu } from '@/features/task/components/TaskContextMenu'
+import { buildTaskCommandContext } from '@/features/task/commands/buildTaskCommandContext'
 import type { TaskContextMenuBulkActions } from '@/features/task/components/useTaskContextMenuBulkActions'
 import type { TaskDisplayPropertyKey } from '@/features/display-options'
 import {
@@ -63,7 +69,6 @@ export type TaskRowAdapterProps = {
 	/** 跨 Space 列表（所有空间）时固定露出 Space 名，不依赖 display 偏好 */
 	showSpaceLabel?: boolean
 	actions: {
-		onOpenTask: (taskId: string) => void
 		onToggleTaskSelection: (taskId: string) => void
 		onUpdateTaskPriority: (task: TaskListItem, priority: TaskPriorityValue) => Promise<void>
 		onUpdateTaskStatus: (task: TaskListItem, status: TaskStatus) => Promise<void>
@@ -71,8 +76,6 @@ export type TaskRowAdapterProps = {
 		onUpdateTaskScheduledAt?: (task: TaskListItem, plannedAt: string | null) => Promise<void>
 		onUpdateTaskReminderAt?: (task: TaskListItem, remindAt: string | null) => Promise<void>
 		onToggleTaskStatus: (task: TaskListItem) => Promise<void>
-		onArchiveTask?: (task: TaskListItem) => Promise<void>
-		onDeleteTask?: (task: TaskListItem) => Promise<void>
 	}
 }
 
@@ -129,15 +132,47 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 	actions,
 }: TaskRowAdapterProps) {
 	const { isSelected, isPending, isFocused, focusSource, suppressFocusIndicator } = rowState
+	const { runtime: commandRuntime, context: commandContext } = useCommandRuntimeContext()
 	const { onClick: _reactAriaPressClick, ...ariaRowProps } = rowProps ?? {}
-	const actionTargets = contextTasks && contextTasks.length > 0 ? contextTasks : [task]
+	const actionTargets = useMemo(
+		() => (contextTasks && contextTasks.length > 0 ? contextTasks : [task]),
+		[contextTasks, task],
+	)
 	const isDoneLike = task.status === 'done' || task.status === 'canceled'
 	const hasProjectOptions = Boolean(
 		projectBinding?.projectOptions && projectBinding.onSelectPlacement,
 	)
 	const showProjectCellOptions =
 		hasProjectOptions && projectBinding?.showProjectCellOptions !== false
-	const usesBulkDangerActions = actionTargets.length > 1 && Boolean(contextMenuActions)
+	const rowCommandContext = useMemo(
+		() =>
+			buildTaskCommandContext({
+				baseContext: commandContext,
+				tasks: [task],
+				targetTaskIds: [task.id],
+				focusedTaskId: task.id,
+				rowTargetId: task.id,
+				rowTargetSource: focusSource === 'keyboard' ? 'focus' : 'hover',
+			}),
+		[commandContext, focusSource, task],
+	)
+	const contextMenuCommandContext = useMemo(
+		() =>
+			buildTaskCommandContext({
+				baseContext: commandContext,
+				tasks: actionTargets,
+				targetTaskIds: actionTargets.map((item) => item.id),
+				focusedTaskId: task.id,
+				rowTargetId: task.id,
+				rowTargetSource: 'context-menu',
+				clearSelection: contextTasks ? commandContext.selection.clearSelection : undefined,
+			}),
+		[actionTargets, commandContext, contextTasks, task.id],
+	)
+	const projectContextMenuCommand = useCallback(
+		(commandId: CommandId) => commandRuntime.project(commandId, contextMenuCommandContext),
+		[commandRuntime, contextMenuCommandContext],
+	)
 	// Board 级单例 options（非每行工厂）
 	const priorityDropdownProps = getTaskPriorityMetadataDropdownProps()
 	const statusDropdownProps = getTaskStatusMetadataDropdownProps()
@@ -194,33 +229,8 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 
 	return (
 		<TaskContextMenu
-			archiveRequiresConfirm={!usesBulkDangerActions}
-			dangerEntityLabel={task.title}
 			isBusy={isPending}
-			moveToTrashRequiresConfirm={!usesBulkDangerActions}
 			onOpenChange={onContextMenuOpenChange}
-			onArchive={
-				actions.onArchiveTask
-					? () =>
-							runContextMenuTaskAction(
-								actionTargets,
-								contextMenuActions ? (targets) => contextMenuActions.onArchive(targets) : undefined,
-								(target) => actions.onArchiveTask!(target),
-							)
-					: undefined
-			}
-			onMoveToTrash={
-				actions.onDeleteTask
-					? () =>
-							runContextMenuTaskAction(
-								actionTargets,
-								contextMenuActions
-									? (targets) => contextMenuActions.onMoveToTrash(targets)
-									: undefined,
-								(target) => actions.onDeleteTask!(target),
-							)
-					: undefined
-			}
 			onSelectDueDate={
 				actions.onUpdateTaskDueDate
 					? (dueAt) =>
@@ -266,6 +276,7 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 			placementGroups={showProjectCellOptions ? placementDropdownProps.groups : undefined}
 			placementValue={projectValue}
 			priority={task.priority}
+			projectCommand={projectContextMenuCommand}
 			selectionValues={buildTaskContextSelectionValues(actionTargets)}
 			status={task.status}
 			dueAt={task.dueAt}
@@ -295,7 +306,11 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 				selected={isSelected}
 				selectionGroupPosition={selectionGroupPosition}
 				style={{ height: TASK_BOARD_ROW_HEIGHT }}
-				onClick={() => actions.onOpenTask(task.id)}
+				onClick={() =>
+					void commandRuntime
+						.project(COMMAND_IDS.taskOpenDetail, rowCommandContext)
+						?.execute({ source: 'row' })
+				}
 			>
 				<div {...gridCellProps} className='flex min-w-0 flex-1 items-center gap-3'>
 					<RowShell.Left>

@@ -48,7 +48,6 @@ vi.mock('../hooks/useProjectDetailScene', () => ({
 		taskCollection: { boardProps: { tasks: [], status: 'ready' } },
 		displayPageKey: 'task:project-detail',
 		toolbarPills: [{ label: '所有任务' }],
-		bulk: { selectedCount: 0, clearTaskSelection: vi.fn() },
 		filterUiValue: {
 			session: {
 				base: EMPTY_FILTER_QUERY,
@@ -76,12 +75,6 @@ vi.mock('@/features/display-options', () => ({
 	DisplayOptionsButton: () => <button type='button'>显示设置</button>,
 }))
 
-vi.mock('@/features/bulk-action', async (importOriginal) => ({
-	...(await importOriginal<typeof import('@/features/bulk-action')>()),
-	BulkActionBar: () => <div data-testid='bulk-bar'>批量操作</div>,
-	BulkCommandMenuAction: () => null,
-}))
-
 vi.mock('@/shared/components/AppBreadcrumb', () => ({
 	AppBreadcrumb: () => <span>面包屑</span>,
 }))
@@ -93,12 +86,11 @@ describe('ProjectPage', () => {
 		completeOrReopen.mockClear()
 	})
 
-	it('组合项目 Header、完整 Task Collection、展示设置和 BulkBar', () => {
+	it('组合项目 Header、Task Board 与展示设置', () => {
 		render(<ProjectPage />)
 
 		expect(screen.getByText('状态分组任务 Board')).toBeInTheDocument()
 		expect(screen.getByText('显示设置')).toBeInTheDocument()
-		expect(screen.getByTestId('bulk-bar')).toBeInTheDocument()
 		fireEvent.click(screen.getByRole('button', { name: '完成' }))
 		fireEvent.click(screen.getByRole('button', { name: '归档' }))
 		fireEvent.click(screen.getByRole('button', { name: '删除' }))

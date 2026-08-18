@@ -66,3 +66,24 @@ export function createEmptyCommandContext(): CommandContext {
 		rowTarget: createEmptyCommandRowTargetContext(),
 	}
 }
+
+/** 任务详情类命令的唯一目标优先级。 */
+export function resolveTaskDetailTargetId(ctx: CommandContext) {
+	if (ctx.rowTarget.isTaskTarget && ctx.rowTarget.targetId) {
+		return ctx.rowTarget.targetId
+	}
+	if (ctx.selection.focusedType === 'task' && ctx.selection.focusedId) {
+		return ctx.selection.focusedId
+	}
+	if (ctx.selection.primaryEntity?.type === 'task') {
+		return ctx.selection.primaryEntity.id
+	}
+	if (
+		ctx.selection.type === 'task' &&
+		ctx.selection.isSingleSelection &&
+		ctx.selection.ids.length === 1
+	) {
+		return ctx.selection.ids[0]
+	}
+	return null
+}

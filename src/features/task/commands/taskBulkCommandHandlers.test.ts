@@ -1,98 +1,59 @@
 import { TASK_BULK_ACTION_IDS } from '@/features/bulk-action'
-import type { TaskListItem } from '@/shared/types'
+import { createEmptyCommandContext } from '@/features/command'
 
-import {
-	getTaskBulkCommandActionId,
-	registerTaskCommands,
-	runTaskRowBulkCommand,
-} from './taskBulkCommandHandlers'
+import { registerTaskCommands } from './taskBulkCommandHandlers'
 
-describe('task bulk command handlers', () => {
-	it('命令菜单与行快捷键共用 complete/archive/delete action id', () => {
-		expect(getTaskBulkCommandActionId('complete')).toBe(TASK_BULK_ACTION_IDS.completeSelected)
-		expect(getTaskBulkCommandActionId('archive')).toBe(TASK_BULK_ACTION_IDS.archiveSelected)
-		expect(getTaskBulkCommandActionId('delete')).toBe(TASK_BULK_ACTION_IDS.deleteSelected)
-	})
-
-	it('registerTaskCommands 绑定 host bulk 端口', async () => {
+describe('registerTaskCommands', () => {
+	it('将批量、Peek 与打开详情统一绑定到 host 端口', async () => {
+		const invocation = { source: 'row-shortcut' } as const
 		const run = vi.fn(
-			async (_ctx: unknown, entity: string, actionId: string, _labels: unknown): Promise<void> => {
+			async (
+				_ctx: unknown,
+				_invocation: unknown,
+				entity: string,
+				actionId: string,
+				_labels: unknown,
+			): Promise<void> => {
 				void entity
 				void actionId
 			},
 		)
+		const openTaskDetail = vi.fn()
+		const openPreview = vi.fn()
 		const actions = registerTaskCommands({
 			runEntityBulkActionFromCommand: run,
 			activeDetail: null,
 			closeEntityDrawer: vi.fn(),
+			openTaskDetail,
 			taskPreviewController: {
 				previewState: { open: false },
-				openPreview: vi.fn(),
+				openPreview,
 				closePreview: vi.fn(),
 			},
 		})
+		const emptyContext = createEmptyCommandContext()
 		const ctx = {
-			selection: { type: 'task' as const, ids: ['t1'] },
-		} as never
+			...emptyContext,
+			selection: {
+				...emptyContext.selection,
+				type: 'task' as const,
+				ids: ['t1'],
+				isSingleSelection: true,
+			},
+		}
 
-		await actions.completeSelectedTasks(ctx)
-		await actions.requestArchiveSelectedTasks(ctx)
-		await actions.requestDeleteSelectedTasks(ctx)
+		await actions.completeSelectedTasks(ctx, invocation)
+		await actions.requestArchiveSelectedTasks(ctx, invocation)
+		await actions.requestDeleteSelectedTasks(ctx, invocation)
+		actions.peekTask(ctx)
+		actions.openTaskDetail(ctx)
 
 		expect(run).toHaveBeenCalledTimes(3)
-		expect(run.mock.calls[0]?.[2]).toBe(TASK_BULK_ACTION_IDS.completeSelected)
-		expect(run.mock.calls[1]?.[2]).toBe(TASK_BULK_ACTION_IDS.archiveSelected)
-		expect(run.mock.calls[2]?.[2]).toBe(TASK_BULK_ACTION_IDS.deleteSelected)
-	})
-
-	it('runTaskRowBulkCommand 用同一 action id 并在成功时可清空 selection', async () => {
-		const clearSelection = vi.fn()
-		const runBulkAction = vi.fn(async () => ({
-			status: 'success' as const,
-			actionId: TASK_BULK_ACTION_IDS.archiveSelected,
-			entity: 'task' as const,
-			requestedIds: ['t1'],
-			succeededIds: ['t1'],
-			failedIds: [],
-			skippedIds: [],
-			shouldClearSelection: true,
-		}))
-
-		await runTaskRowBulkCommand({
-			kind: 'archive',
-			tasks: [createTask()],
-			runBulkAction,
-			clearSelection,
-		})
-
-		expect(runBulkAction).toHaveBeenCalledWith(
-			TASK_BULK_ACTION_IDS.archiveSelected,
-			expect.objectContaining({ ids: ['t1'], source: 'row-shortcut' }),
-		)
-		expect(clearSelection).toHaveBeenCalled()
+		expect(run.mock.calls[0]?.[1]).toBe(invocation)
+		expect(run.mock.calls[0]?.[3]).toBe(TASK_BULK_ACTION_IDS.completeSelected)
+		expect(run.mock.calls[1]?.[3]).toBe(TASK_BULK_ACTION_IDS.archiveSelected)
+		expect(run.mock.calls[2]?.[3]).toBe(TASK_BULK_ACTION_IDS.deleteSelected)
+		expect(openPreview).toHaveBeenCalledWith('t1', 'keyboard')
+		expect(openTaskDetail).toHaveBeenCalledWith('t1')
 	})
 })
-
-function createTask(overrides: Partial<TaskListItem> = {}): TaskListItem {
-	return {
-		id: 't1',
-		spaceId: 'space-1',
-		spaceName: '工作',
-		spaceSlug: 'work',
-		projectId: null,
-		projectName: null,
-		title: '任务',
-		status: 'todo',
-		statusChangedAt: '2026-01-01T00:00:00Z',
-		priority: 0,
-		dueAt: null,
-		plannedAt: null,
-		remindAt: null,
-		completedAt: null,
-		canceledAt: null,
-		archivedAt: null,
-		createdAt: '2026-01-01T00:00:00Z',
-		updatedAt: '2026-01-01T00:00:00Z',
-		...overrides,
-	}
-}

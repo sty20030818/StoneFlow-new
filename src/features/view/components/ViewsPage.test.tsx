@@ -229,7 +229,6 @@ vi.mock('@/features/task', async () => {
 				emptyTitle?: string
 			}
 		}) => {
-			const clearTaskSelection = vi.fn()
 			return {
 				boardProps: {
 					emptyActionLabel: input.empty.emptyActionLabel,
@@ -238,8 +237,6 @@ vi.mock('@/features/task', async () => {
 					onEmptyAction: input.onCreateTask,
 					tasks: input.source.items,
 				},
-				selectedCount: 1,
-				clearTaskSelection,
 			}
 		},
 		useTaskListController: () => ({
@@ -302,16 +299,6 @@ vi.mock('@/features/task', async () => {
 	}
 })
 
-vi.mock('@/features/bulk-action', async (importOriginal) => {
-	const actual = await importOriginal<typeof import('@/features/bulk-action')>()
-	return {
-		...actual,
-		BulkActionBar: ({ selectedCount, action }: { selectedCount: number; action: ReactNode }) =>
-			selectedCount > 0 ? <div>{action}</div> : null,
-		BulkCommandMenuAction: () => <button type='button'>操作</button>,
-	}
-})
-
 vi.mock('@/features/view/components/ViewEditorDialog', () => ({
 	ViewEditorDialog: ({ open }: { open: boolean }) => (open ? <div>创建视图弹窗</div> : null),
 }))
@@ -339,7 +326,6 @@ describe('ViewsPage', () => {
 			})
 		})
 
-		expect(screen.getByRole('button', { name: '操作' })).toBeInTheDocument()
 		expect(screen.getByRole('link', { name: '视图' })).toBeInTheDocument()
 		expect(screen.getByRole('link', { name: 'Today' })).toHaveAttribute('aria-current', 'page')
 	})

@@ -144,11 +144,6 @@ describe('BulkActionRuntime', () => {
 		expect(requestConfirm).toHaveBeenCalledWith({
 			action,
 			snapshot,
-			copy: {
-				title: action.label,
-				description: '将对 2 个对象执行此操作。',
-				confirmLabel: '确认',
-			},
 		})
 		expect(run).not.toHaveBeenCalled()
 	})

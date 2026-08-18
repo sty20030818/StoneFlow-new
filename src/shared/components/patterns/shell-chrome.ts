@@ -10,9 +10,6 @@ export const shellChromeWindowControlClass =
 export const shellChromeIconActionClass =
 	'border-legacy-border bg-card text-sf-shell-text-secondary shadow-(--sf-shadow-panel) hover:bg-sf-surface-panel-subtle hover:text-legacy-foreground'
 
-export const shellChromeCommandDialogClass =
-	'max-w-2xl border border-legacy-border/80 bg-popover/98 shadow-(--sf-shadow-float)'
-
 export const shellChromeNavCircleButtonClass =
 	'rounded-full bg-transparent text-sf-shell-text-secondary shadow-none hover:bg-sf-shell-hover-strong hover:text-legacy-foreground focus-visible:bg-sf-shell-hover-strong focus-visible:text-legacy-foreground'
 

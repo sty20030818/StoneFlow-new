@@ -1,8 +1,4 @@
-import {
-	ContextMenuContent,
-	ContextMenuItem,
-	ContextMenuSeparator,
-} from '@/shared/components/base/context-menu'
+import { ContextMenu } from '@heroui-pro/react'
 import { CheckCheckIcon, ChevronsDownUpIcon, ChevronsUpDownIcon, XIcon } from 'lucide-react'
 
 type BoardSectionContextMenuProps = {
@@ -27,36 +23,54 @@ export function BoardSectionContextMenu({
 	onDeselectAll,
 }: BoardSectionContextMenuProps) {
 	return (
-		<ContextMenuContent>
-			{open ? (
-				<>
-					<ContextMenuItem onClick={onCollapse}>折叠该分区</ContextMenuItem>
-					<ContextMenuItem onClick={onCollapseAll}>
-						<ChevronsDownUpIcon />
-						折叠全部
-					</ContextMenuItem>
-				</>
-			) : (
-				<>
-					<ContextMenuItem onClick={onExpand}>展开该分区</ContextMenuItem>
-					<ContextMenuItem onClick={onExpandAll}>
-						<ChevronsUpDownIcon />
-						展开全部
-					</ContextMenuItem>
-				</>
-			)}
-			<ContextMenuSeparator />
-			{selectedCount >= 2 ? (
-				<ContextMenuItem onClick={onDeselectAll}>
-					<XIcon />
-					取消选中全部
-				</ContextMenuItem>
-			) : (
-				<ContextMenuItem onClick={onSelectAll}>
-					<CheckCheckIcon />
-					选中全部
-				</ContextMenuItem>
-			)}
-		</ContextMenuContent>
+		<ContextMenu.Popover className='w-52'>
+			<ContextMenu.Menu aria-label='分区操作'>
+				{open ? (
+					<>
+						<ContextMenu.Item id='toggle-section' onAction={onCollapse} textValue='折叠该分区'>
+							折叠该分区
+						</ContextMenu.Item>
+						<ContextMenu.Item
+							id='toggle-all-sections'
+							onAction={onCollapseAll}
+							textValue='折叠全部'
+						>
+							<ChevronsDownUpIcon />
+							折叠全部
+						</ContextMenu.Item>
+					</>
+				) : (
+					<>
+						<ContextMenu.Item id='toggle-section' onAction={onExpand} textValue='展开该分区'>
+							展开该分区
+						</ContextMenu.Item>
+						<ContextMenu.Item id='toggle-all-sections' onAction={onExpandAll} textValue='展开全部'>
+							<ChevronsUpDownIcon />
+							展开全部
+						</ContextMenu.Item>
+					</>
+				)}
+				<ContextMenu.Separator />
+				{selectedCount >= 2 ? (
+					<ContextMenu.Item
+						id='toggle-section-selection'
+						onAction={onDeselectAll}
+						textValue='取消选中全部'
+					>
+						<XIcon />
+						取消选中全部
+					</ContextMenu.Item>
+				) : (
+					<ContextMenu.Item
+						id='toggle-section-selection'
+						onAction={onSelectAll}
+						textValue='选中全部'
+					>
+						<CheckCheckIcon />
+						选中全部
+					</ContextMenu.Item>
+				)}
+			</ContextMenu.Menu>
+		</ContextMenu.Popover>
 	)
 }

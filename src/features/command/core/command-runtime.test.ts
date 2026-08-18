@@ -3,9 +3,11 @@ import {
 	CommandRuntime,
 	createEmptyCommandContext,
 	type Command,
+	type CommandInvocation,
 } from '@/features/command/core'
 
 const context = createEmptyCommandContext()
+const invocation = { source: 'global-shortcut' } satisfies CommandInvocation
 
 describe('CommandRuntime', () => {
 	it('重复 command id 会在注册阶段失败', () => {
@@ -22,7 +24,7 @@ describe('CommandRuntime', () => {
 			getContext: () => context,
 		})
 
-		await expect(runtime.execute('test.missing')).resolves.toEqual({
+		await expect(runtime.execute('test.missing', invocation)).resolves.toEqual({
 			status: 'not-found',
 			commandId: 'test.missing',
 		})
@@ -36,7 +38,7 @@ describe('CommandRuntime', () => {
 		})
 		const runtime = createRuntime(command)
 
-		await expect(runtime.execute(command.id)).resolves.toEqual({
+		await expect(runtime.execute(command.id, invocation)).resolves.toEqual({
 			status: 'hidden',
 			commandId: command.id,
 		})
@@ -52,7 +54,7 @@ describe('CommandRuntime', () => {
 		})
 		const runtime = createRuntime(command)
 
-		await expect(runtime.execute(command.id)).resolves.toEqual({
+		await expect(runtime.execute(command.id, invocation)).resolves.toEqual({
 			status: 'disabled',
 			commandId: command.id,
 			reason: '当前没有目标',
@@ -60,16 +62,71 @@ describe('CommandRuntime', () => {
 		expect(run).not.toHaveBeenCalled()
 	})
 
+	it('投影固定展示状态与目标，并从唯一入口执行同一 context', async () => {
+		const targetContext = createTaskContext('task-a')
+		const contextMenuInvocation = { source: 'context-menu' } satisfies CommandInvocation
+		let currentContext = targetContext
+		const run = vi.fn()
+		const command = createCommand('test.projected', {
+			title: '投影命令',
+			description: '验证目标快照',
+			keywords: ['projection', '快照'],
+			isEnabled: (ctx) => ctx.selection.ids.includes('task-a'),
+			getDisabledReason: () => '当前没有目标',
+			getPriority: () => 42,
+			run,
+		})
+		const runtime = new CommandRuntime({
+			registry: new CommandRegistry([command]),
+			getContext: () => currentContext,
+		})
+
+		const projection = runtime.project(command.id, targetContext)
+		currentContext = createTaskContext('task-b')
+
+		expect(projection).toMatchObject({
+			id: command.id,
+			label: '投影命令',
+			description: '验证目标快照',
+			keywords: ['projection', '快照'],
+			visible: true,
+			enabled: true,
+			disabledReason: undefined,
+			priority: 42,
+			target: targetContext,
+		})
+		await expect(projection?.execute(contextMenuInvocation)).resolves.toEqual({
+			status: 'success',
+			commandId: command.id,
+		})
+		expect(run).toHaveBeenCalledWith(targetContext, contextMenuInvocation)
+	})
+
+	it('projectAll 只读取一次当前 context，并让全部投影共享该目标', () => {
+		const targetContext = createTaskContext('task-a')
+		const getContext = vi.fn(() => targetContext)
+		const runtime = new CommandRuntime({
+			registry: new CommandRegistry([createCommand('test.first'), createCommand('test.second')]),
+			getContext,
+		})
+
+		const projections = runtime.projectAll()
+
+		expect(getContext).toHaveBeenCalledTimes(1)
+		expect(projections.map((projection) => projection.id)).toEqual(['test.first', 'test.second'])
+		expect(projections.every((projection) => projection.target === targetContext)).toBe(true)
+	})
+
 	it('可执行 command 成功返回 success', async () => {
 		const run = vi.fn()
 		const command = createCommand('test.success', { run })
 		const runtime = createRuntime(command)
 
-		await expect(runtime.execute(command.id)).resolves.toEqual({
+		await expect(runtime.execute(command.id, invocation)).resolves.toEqual({
 			status: 'success',
 			commandId: command.id,
 		})
-		expect(run).toHaveBeenCalledWith(context)
+		expect(run).toHaveBeenCalledWith(context, invocation)
 	})
 
 	it('command 抛错时返回 failed 并通知错误处理器', async () => {
@@ -86,7 +143,7 @@ describe('CommandRuntime', () => {
 			onError,
 		})
 
-		await expect(runtime.execute(command.id)).resolves.toEqual({
+		await expect(runtime.execute(command.id, invocation)).resolves.toEqual({
 			status: 'failed',
 			commandId: command.id,
 			error,
@@ -110,5 +167,22 @@ function createCommand(id: string, overrides: Partial<Command> = {}): Command {
 		scope: ['global'],
 		run: () => {},
 		...overrides,
+	}
+}
+
+function createTaskContext(taskId: string) {
+	return {
+		...context,
+		selection: {
+			...context.selection,
+			type: 'task' as const,
+			ids: [taskId],
+			entities: [{ id: taskId, type: 'task' as const, title: taskId }],
+			primaryEntity: { id: taskId, type: 'task' as const, title: taskId },
+			source: 'task-list' as const,
+			hasSelection: true,
+			isSingleSelection: true,
+			isMultiSelection: false,
+		},
 	}
 }

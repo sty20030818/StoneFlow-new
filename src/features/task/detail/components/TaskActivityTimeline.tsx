@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Timeline } from '@heroui-pro/react'
+import { Button } from '@heroui/react'
 
 import { useEntityActivitiesQuery } from '@/features/activity'
 import type { ActivityTimelineEntry } from '@/features/activity'
 import { useProjectOptions } from '@/features/project'
 import { useSpaces } from '@/features/space'
 import { useEventSubscription, type AppEvent } from '@/shared/events'
-import { Button } from '@/shared/components/base/button'
 import { DetailSection } from '@/shared/components/detail'
 import { StatusNotice } from '@/shared/components/StatusNotice'
 
@@ -130,28 +131,33 @@ export function TaskActivityTimeline({ spaceId, taskId }: TaskActivityTimelinePr
 			) : null}
 
 			{loadState === 'ready' && displayItems.length > 0 ? (
-				<div className='flex flex-col'>
-					<div className='flex flex-col'>
+				<div className='flex flex-col gap-3'>
+					<Timeline aria-label='任务活动记录' density='compact' size='sm'>
 						{visibleItems.map((item) => (
-							<article className='flex items-start gap-3 py-2' key={item.id}>
-								<span className='mt-1 flex size-4 shrink-0 items-center justify-center text-sf-icon-secondary'>
-									{item.icon}
-								</span>
-								<div className='min-w-0 flex-1 text-sm leading-6 text-legacy-foreground'>
-									{item.text}
-								</div>
-								<div className='shrink-0 pt-0.5 text-[12px] leading-5 text-sf-text-tertiary'>
-									{item.relativeTime}
-								</div>
-							</article>
+							<Timeline.Item key={item.id}>
+								<Timeline.Rail>
+									<Timeline.Marker>{item.icon}</Timeline.Marker>
+									<Timeline.Connector />
+								</Timeline.Rail>
+								<Timeline.Content>
+									<div className='flex min-w-0 items-start justify-between gap-3'>
+										<div className='min-w-0 flex-1 text-sm leading-6 text-foreground'>
+											{item.text}
+										</div>
+										<div className='shrink-0 pt-0.5 text-xs leading-5 text-muted'>
+											{item.relativeTime}
+										</div>
+									</div>
+								</Timeline.Content>
+							</Timeline.Item>
 						))}
-					</div>
+					</Timeline>
 					{hasMoreItems ? (
 						<Button
 							className='self-start px-3 text-[12px]'
 							size='sm'
 							variant='outline'
-							onClick={() => {
+							onPress={() => {
 								if (!showAll) {
 									setShowAll(true)
 									if (requestedLimit < EXPANDED_ACTIVITY_FETCH_LIMIT) {

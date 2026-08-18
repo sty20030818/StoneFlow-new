@@ -20,7 +20,6 @@ import { useDialogStore } from '@/features/shell-dialogs'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useProjectOptions } from '@/features/project'
 import { useSpaces } from '@/features/space'
-import { useTaskPreviewController } from '@/features/task/detail'
 import { createView } from '@/features/view'
 import { EMPTY_FILTER_QUERY } from '@/shared/types'
 import type { TaskStatus } from '@/shared/types'
@@ -50,8 +49,6 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 	const entityDetailController = useEntityDetailController()
 	const activeDetail = entityDetailController.activeDetail
-	const openTaskDetail = entityDetailController.openTaskDetail
-	const taskPreviewController = useTaskPreviewController()
 
 	const display = useTaskDisplayOptions(config.displayPageKey)
 	const filterSession = useListFilterSession({ base: EMPTY_FILTER_QUERY })
@@ -118,16 +115,6 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 		fallbackSubtitle,
 		activeTaskId,
 		onCreateTask: openCreate,
-		onOpenTask: (taskId) => {
-			taskPreviewController.closePreview()
-			openTaskDetail(taskId)
-		},
-		onPeekTask: (taskId, source) => {
-			if (activeDetail?.kind === 'task') {
-				return
-			}
-			taskPreviewController.openPreview(taskId, source)
-		},
 		projectOptions,
 		spaces,
 		showProjectCellOptions: config.supportsProject,
@@ -278,10 +265,6 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 		taskCollection,
 		toolbarPills,
 		filterUiValue,
-		bulk: {
-			selectedCount: taskCollection.selectedCount,
-			clearTaskSelection: taskCollection.clearTaskSelection,
-		},
 		openCreate,
 	}
 }

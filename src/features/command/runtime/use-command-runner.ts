@@ -1,6 +1,11 @@
 import { useCallback } from 'react'
 
-import type { CommandExecutionResult, CommandId, CommandRuntime } from '@/features/command/core'
+import type {
+	CommandExecutionResult,
+	CommandId,
+	CommandInvocation,
+	CommandRuntime,
+} from '@/features/command/core'
 
 type UseCommandRunnerOptions = {
 	runtime: CommandRuntime
@@ -9,8 +14,8 @@ type UseCommandRunnerOptions = {
 
 export function useCommandRunner({ runtime, onResult }: UseCommandRunnerOptions) {
 	return useCallback(
-		async (commandId: CommandId) => {
-			const result = await runtime.execute(commandId)
+		async (commandId: CommandId, invocation: CommandInvocation) => {
+			const result = await runtime.execute(commandId, invocation)
 			onResult?.(result)
 			return result
 		},

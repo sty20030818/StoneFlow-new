@@ -31,6 +31,7 @@ export type BulkSelectionSource =
 	| 'bulk-bar'
 	| 'command-menu'
 	| 'context-menu'
+	| 'global-shortcut'
 	| 'row-shortcut'
 	| 'section-menu'
 	| 'page'
@@ -66,13 +67,6 @@ export type BulkActionResult = {
 	shouldClearSelection?: boolean
 }
 
-export type BulkActionConfirmCopy = {
-	title: string
-	description: string
-	confirmLabel: string
-	cancelLabel?: string
-}
-
 export type BulkActionContext = {
 	adapter?: BulkActionAdapter
 	meta?: Record<string, unknown>
@@ -89,7 +83,6 @@ export type BulkAction = {
 	intent: 'complete' | 'archive' | 'delete' | 'restore' | 'update' | 'move'
 	tone?: 'default' | 'destructive'
 	requiresConfirm?: boolean | ((snapshot: BulkSelectionSnapshot) => boolean)
-	getConfirmCopy?: (snapshot: BulkSelectionSnapshot) => BulkActionConfirmCopy
 	isEnabled?: (snapshot: BulkSelectionSnapshot, context: BulkActionContext) => boolean
 	getDisabledReason?: (
 		snapshot: BulkSelectionSnapshot,
@@ -105,7 +98,4 @@ export type BulkAction = {
 export type BulkActionConfirmationRequest = {
 	action: BulkAction
 	snapshot: BulkSelectionSnapshot
-	copy: BulkActionConfirmCopy
 }
-
-export type BulkActionConfirmRequest = BulkActionConfirmationRequest

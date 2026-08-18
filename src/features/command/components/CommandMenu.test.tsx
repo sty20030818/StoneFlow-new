@@ -7,10 +7,8 @@ import { DEFAULT_KEYBINDINGS, KeybindingRegistry } from '@/features/command/keyb
 import { ShortcutRegistryProvider } from '@/features/command/shortcuts'
 import {
 	CommandRuntime,
-	COMMAND_IDS,
 	createEmptyCommandContext,
 	type CommandContext,
-	type CommandId,
 	type TaskPlacementTarget,
 } from '@/features/command/core'
 import type { ShellCommandActions } from '@/features/command/adapters'
@@ -96,6 +94,19 @@ describe('CommandMenu', () => {
 		expect(screen.getByText('导航')).toBeInTheDocument()
 	})
 
+	it('由 HeroUI Command 管理对话框、输入焦点与 Escape 关闭', async () => {
+		const onOpenChange = vi.fn<(open: boolean) => void>()
+		renderCommandMenu({ onOpenChange })
+
+		const input = screen.getByRole('searchbox', { name: '输入命令 或 搜索 …' })
+		expect(screen.getByRole('dialog', { name: 'StoneFlow Command' })).toBeInTheDocument()
+		expect(screen.getByRole('menu', { name: '命令' })).toBeInTheDocument()
+		await waitFor(() => expect(input).toHaveFocus())
+
+		fireEvent.keyDown(input, { key: 'Escape' })
+		expect(onOpenChange).toHaveBeenCalledWith(false)
+	})
+
 	it('渲染 V1 command-only 命令面', () => {
 		renderCommandMenu()
 
@@ -117,33 +128,32 @@ describe('CommandMenu', () => {
 	})
 
 	it('选择命令后执行 command id 并关闭菜单', () => {
-		const onRunCommand = vi.fn<(id: CommandId) => void>()
+		const openQuickTaskCreate = vi.fn()
 		const onOpenChange = vi.fn<(open: boolean) => void>()
-		renderCommandMenu({ onOpenChange, onRunCommand })
+		renderCommandMenu({
+			onOpenChange,
+			runtime: createRuntime({ ...createActions(), openQuickTaskCreate }),
+		})
 
 		fireEvent.click(screen.getByText('快速新建任务'))
 
 		expect(onOpenChange).toHaveBeenCalledWith(false)
-		expect(onRunCommand).toHaveBeenCalledWith(COMMAND_IDS.newQuickTask)
+		expect(openQuickTaskCreate).toHaveBeenCalledOnce()
 	})
 
 	it('disabled 命令不触发执行', () => {
-		const onRunCommand = vi.fn<(id: CommandId) => void>()
-		renderCommandMenu({ onRunCommand })
+		renderCommandMenu()
 
 		fireEvent.click(screen.getByText('新建视图'))
 
-		expect(onRunCommand).not.toHaveBeenCalled()
 		expect(screen.getByText('视图创建入口尚未接入')).toBeInTheDocument()
 	})
 
 	it('command-only disabled 命令不触发执行', () => {
-		const onRunCommand = vi.fn<(id: CommandId) => void>()
-		renderCommandMenu({ onRunCommand })
+		renderCommandMenu()
 
 		fireEvent.click(screen.getByText('完成任务'))
 
-		expect(onRunCommand).not.toHaveBeenCalled()
 		expect(screen.getAllByText('需要先选择任务').length).toBeGreaterThan(0)
 	})
 
@@ -158,23 +168,21 @@ describe('CommandMenu', () => {
 		expect(screen.getByText('删除任务')).toBeInTheDocument()
 	})
 
-	it('命令列表滚动容器来自 AppScrollArea，chips 保持独立单行摘要区', () => {
+	it('命令列表由 HeroUI Command 管理滚动，chips 保持独立单行摘要区', () => {
 		renderCommandMenu({ context: createTaskSelectionContext() })
 
 		const commandItem = screen.getByText('完成任务')
-		const commandScrollContainer = commandItem.closest('[data-scroll-container="true"]')
 		const chipsRow = screen.getByLabelText('当前选中对象')
 		const commandList = commandItem.closest('[data-slot="command-list"]')
 		const input = screen.getByPlaceholderText('输入命令 或 搜索 …')
-		const topStack = input.closest('.flex.flex-col')
+		const header = input.closest('[data-slot="command-header"]')
 
-		expect(commandScrollContainer).toHaveAttribute('data-scroll-container', 'true')
-		expect(commandList).toHaveClass('overflow-y-visible')
+		expect(commandList).toHaveAttribute('role', 'menu')
+		expect(commandList).toHaveClass('max-h-120')
+		expect(commandList?.closest('[data-scroll-container="true"]')).toBeNull()
 		expect(chipsRow).toHaveClass('overflow-hidden')
-		expect(chipsRow).not.toHaveClass('border-b')
-		expect(chipsRow.closest('[data-scroll-container="true"]')).toBeNull()
-		expect(topStack).toContainElement(chipsRow)
-		expect(topStack).toContainElement(input)
+		expect(header).toContainElement(chipsRow)
+		expect(header).toContainElement(input)
 		expect(chipsRow.compareDocumentPosition(input) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
 	})
 
@@ -473,7 +481,7 @@ describe('CommandMenu', () => {
 		const onSelectTaskPriority = vi.fn<(priority: number) => void>()
 		renderCommandMenu({ mode: 'task-priority-picker', onOpenChange, onSelectTaskPriority })
 
-		fireEvent.keyDown(screen.getByRole('listbox'), { key: '0' })
+		fireEvent.keyDown(screen.getByRole('menu'), { key: '0' })
 
 		expect(onOpenChange).toHaveBeenCalledWith(false)
 		expect(onSelectTaskPriority).toHaveBeenCalledWith(0)
@@ -521,7 +529,7 @@ describe('CommandMenu', () => {
 		const onSelectTaskDate = vi.fn<(dueAt: string | null) => void>()
 		renderCommandMenu({ mode: 'task-date-picker', onOpenChange, onSelectTaskDate })
 
-		fireEvent.keyDown(screen.getByRole('listbox'), { key: '1' })
+		fireEvent.keyDown(screen.getByRole('menu'), { key: '1' })
 
 		expect(onOpenChange).not.toHaveBeenCalledWith(false)
 		expect(onSelectTaskDate).not.toHaveBeenCalled()
@@ -559,7 +567,6 @@ function renderCommandMenu({
 	mode = 'default',
 	onNavigateProject = vi.fn(),
 	onOpenChange = vi.fn(),
-	onRunCommand = vi.fn(),
 	onSelectTaskDate = vi.fn(),
 	onSelectTaskPriority = vi.fn(),
 	onSelectTaskStatus = vi.fn(),
@@ -567,18 +574,19 @@ function renderCommandMenu({
 	onSelectTaskPlacement = vi.fn(),
 	onSelectTask = vi.fn(),
 	context = createEmptyCommandContext(),
+	runtime = createRuntime(),
 }: Partial<{
 	mode: CommandMenuMode
 	context: CommandContext
 	onNavigateProject: (projectId: string) => void
 	onOpenChange: (open: boolean) => void
-	onRunCommand: (id: CommandId) => void
 	onSelectTaskDate: (dueAt: string | null) => void
 	onSelectTaskPriority: (priority: number) => void
 	onSelectTaskStatus: (status: string) => void
 	onSelectProject: (project: SearchProjectItem) => void
 	onSelectTaskPlacement: (target: TaskPlacementTarget) => void
 	onSelectTask: (task: SearchTaskItem) => void
+	runtime: CommandRuntime
 }> = {}) {
 	return render(
 		withCommandProviders(
@@ -587,7 +595,6 @@ function renderCommandMenu({
 					mode,
 					onNavigateProject,
 					onOpenChange,
-					onRunCommand,
 					onSelectTaskDate,
 					onSelectTaskPriority,
 					onSelectTaskStatus,
@@ -595,6 +602,7 @@ function renderCommandMenu({
 					onSelectTaskPlacement,
 					onSelectTask,
 					context,
+					runtime,
 				})}
 			</QueryClientProvider>,
 		),
@@ -620,7 +628,6 @@ function createCommandMenuElement({
 	mode = 'default',
 	onNavigateProject = vi.fn(),
 	onOpenChange = vi.fn(),
-	onRunCommand = vi.fn(),
 	onSelectTaskDate = vi.fn(),
 	onSelectTaskPriority = vi.fn(),
 	onSelectTaskStatus = vi.fn(),
@@ -628,18 +635,19 @@ function createCommandMenuElement({
 	onSelectTaskPlacement = vi.fn(),
 	onSelectTask = vi.fn(),
 	context = createEmptyCommandContext(),
+	runtime = createRuntime(),
 }: Partial<{
 	mode: CommandMenuMode
 	context: CommandContext
 	onNavigateProject: (projectId: string) => void
 	onOpenChange: (open: boolean) => void
-	onRunCommand: (id: CommandId) => void
 	onSelectTaskDate: (dueAt: string | null) => void
 	onSelectTaskPriority: (priority: number) => void
 	onSelectTaskStatus: (status: string) => void
 	onSelectProject: (project: SearchProjectItem) => void
 	onSelectTaskPlacement: (target: TaskPlacementTarget) => void
 	onSelectTask: (task: SearchTaskItem) => void
+	runtime: CommandRuntime
 }> = {}) {
 	return (
 		<CommandMenu
@@ -648,7 +656,6 @@ function createCommandMenuElement({
 			mode={mode}
 			onNavigateProject={onNavigateProject}
 			onOpenChange={onOpenChange}
-			onRunCommand={onRunCommand}
 			onSelectTaskDate={onSelectTaskDate}
 			onSelectTaskPriority={onSelectTaskPriority}
 			onSelectTaskStatus={onSelectTaskStatus}
@@ -657,7 +664,7 @@ function createCommandMenuElement({
 			onSelectTask={onSelectTask}
 			open
 			projects={[{ id: 'project-a', label: '项目 A', badge: '2' }]}
-			runtime={createRuntime()}
+			runtime={runtime}
 			spaces={[
 				{
 					id: 'space-a',
@@ -689,9 +696,9 @@ function createCommandMenuElement({
 	)
 }
 
-function createRuntime() {
+function createRuntime(actions = createActions()) {
 	return new CommandRuntime({
-		registry: createShellCommandRegistry(createActions()),
+		registry: createShellCommandRegistry(actions),
 		getContext: () => createEmptyCommandContext(),
 	})
 }
@@ -707,6 +714,8 @@ function createActions(): ShellCommandActions {
 		openProjectCreate: vi.fn(),
 		openTaskPicker: vi.fn(),
 		openProjectPicker: vi.fn(),
+		peekTask: vi.fn(),
+		openTaskDetail: vi.fn(),
 		openTaskPlacementPicker: vi.fn(),
 		applyTaskPlacement: vi.fn(),
 		openTaskPriorityPicker: vi.fn(),

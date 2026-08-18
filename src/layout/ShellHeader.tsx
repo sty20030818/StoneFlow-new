@@ -33,7 +33,6 @@ import {
 import type { TaskPriorityValue } from '@/features/task'
 import {
 	shellChromeAvatarClusterClass,
-	shellChromeCommandDialogClass,
 	shellChromeIconActionClass,
 	shellChromeNavCircleButtonClass,
 	shellChromeWindowControlsRowClass,
@@ -434,7 +433,6 @@ export function ShellHeader({
 			</div>
 
 			<CommandMenu
-				className={shellChromeCommandDialogClass}
 				context={commandContext}
 				description={`${getScopeLabel(currentScope, spaces)} · ${getSectionLabel(activeSection)}`}
 				mode={commandMenuMode}
@@ -447,7 +445,6 @@ export function ShellHeader({
 						}),
 					)
 				}}
-				onRunCommand={onRunCommand}
 				onSelectTaskDate={onSelectTaskDate}
 				onSelectTaskPlacement={onSelectTaskPlacement}
 				onSelectTaskPriority={onSelectTaskPriority}

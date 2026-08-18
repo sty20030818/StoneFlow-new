@@ -34,11 +34,6 @@ export const taskBulkActionDefinitions: TaskBulkActionDefinition[] = [
 		description: '将选中的任务移动到归档。',
 		intent: 'archive',
 		requiresConfirm: true,
-		getConfirmCopy: (snapshot) => ({
-			title: '归档选中任务？',
-			description: `将归档 ${snapshot.ids.length} 个任务。归档后可在归档页中恢复。`,
-			confirmLabel: '确认归档',
-		}),
 	},
 	{
 		id: TASK_BULK_ACTION_IDS.deleteSelected,
@@ -48,11 +43,6 @@ export const taskBulkActionDefinitions: TaskBulkActionDefinition[] = [
 		intent: 'delete',
 		tone: 'destructive',
 		requiresConfirm: true,
-		getConfirmCopy: (snapshot) => ({
-			title: '删除选中任务？',
-			description: `将删除 ${snapshot.ids.length} 个任务。删除后可在回收站中恢复。`,
-			confirmLabel: '确认删除',
-		}),
 	},
 	{
 		id: TASK_BULK_ACTION_IDS.setPrioritySelected,

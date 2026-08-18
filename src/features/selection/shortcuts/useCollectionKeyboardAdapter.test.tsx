@@ -2,6 +2,8 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { useMemo, type KeyboardEventHandler } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
+import { COMMAND_IDS, type CommandId } from '@/features/command'
+
 import { useCollectionInteraction } from '../model/useCollectionInteraction'
 import { createCollectionFocusBridge } from '../model/collectionFocusBridge'
 import { useCollectionKeyboardAdapter } from './useCollectionKeyboardAdapter'
@@ -122,10 +124,9 @@ describe('useCollectionKeyboardAdapter', () => {
 		now.mockRestore()
 	})
 
-	it('只在 row 本体或 root 上处理 X、Space Peek 与 Enter', () => {
-		const onOpen = vi.fn<(key: string) => void>()
-		const onPeek = vi.fn<(key: string) => void>()
-		render(<CollectionProbe onOpen={onOpen} onPeek={onPeek} />)
+	it('只有 Space / Enter 进入命令执行，X 继续由 collection 直接选择', () => {
+		const onExecuteCommand = vi.fn<(commandId: CommandId, key: string) => void>()
+		render(<CollectionProbe onExecuteCommand={onExecuteCommand} />)
 
 		const root = screen.getByTestId('collection-root')
 		const rowB = screen.getByTestId('row-task-b')
@@ -137,9 +138,9 @@ describe('useCollectionKeyboardAdapter', () => {
 		expect(root).toHaveFocus()
 		expect(fireEvent.keyDown(root, { key: ' ' })).toBe(false)
 		expect(rowB).toHaveFocus()
-		expect(onPeek).toHaveBeenCalledWith('task-b')
+		expect(onExecuteCommand).toHaveBeenCalledWith(COMMAND_IDS.taskPeek, 'task-b')
 		expect(fireEvent.keyDown(rowB, { key: 'Enter' })).toBe(false)
-		expect(onOpen).toHaveBeenCalledWith('task-b')
+		expect(onExecuteCommand).toHaveBeenCalledWith(COMMAND_IDS.taskOpenDetail, 'task-b')
 
 		expect(
 			fireEvent.keyDown(screen.getByRole('button', { name: '操作 task-b' }), { key: 'x' }),
@@ -150,8 +151,7 @@ describe('useCollectionKeyboardAdapter', () => {
 		fireEvent.keyDown(screen.getByRole('button', { name: '操作 task-b' }), { key: 'Enter' })
 
 		expect(screen.getByTestId('selected-keys')).toHaveTextContent('task-b')
-		expect(onPeek).toHaveBeenCalledTimes(1)
-		expect(onOpen).toHaveBeenCalledTimes(1)
+		expect(onExecuteCommand).toHaveBeenCalledTimes(2)
 	})
 
 	it.each([
@@ -184,9 +184,8 @@ describe('useCollectionKeyboardAdapter', () => {
 	})
 
 	it('不劫持未注册节点、行内控件、输入/编辑器和 IME composition', () => {
-		const onOpen = vi.fn<(key: string) => void>()
-		const onPeek = vi.fn<(key: string) => void>()
-		render(<CollectionProbe onOpen={onOpen} onPeek={onPeek} />)
+		const onExecuteCommand = vi.fn<(commandId: CommandId, key: string) => void>()
+		render(<CollectionProbe onExecuteCommand={onExecuteCommand} />)
 
 		const ignoredEvents: Array<[HTMLElement, KeyboardEventInit]> = [
 			[screen.getByTestId('unregistered-child'), { key: 'j' }],
@@ -206,24 +205,21 @@ describe('useCollectionKeyboardAdapter', () => {
 
 		expect(screen.getByTestId('focused-key')).toHaveTextContent('none')
 		expect(screen.getByTestId('selected-keys')).toHaveTextContent('none')
-		expect(onPeek).not.toHaveBeenCalled()
-		expect(onOpen).not.toHaveBeenCalled()
+		expect(onExecuteCommand).not.toHaveBeenCalled()
 	})
 })
 
 type CollectionProbeProps = {
 	defaultSelectedKeys?: string[]
 	eligibleKeys?: string[]
-	onOpen?: (key: string) => void
-	onPeek?: (key: string) => void
+	onExecuteCommand?: (commandId: CommandId, key: string) => void
 	onReactAriaKeyDown?: KeyboardEventHandler<HTMLDivElement>
 }
 
 function CollectionProbe({
 	defaultSelectedKeys,
 	eligibleKeys = ['task-a', 'task-b', 'task-c'],
-	onOpen,
-	onPeek,
+	onExecuteCommand,
 	onReactAriaKeyDown,
 }: CollectionProbeProps) {
 	const interaction = useCollectionInteraction({
@@ -239,8 +235,7 @@ function CollectionProbe({
 		interaction,
 		resolveRowKey: focusBridge.getItemKey,
 		requestFocus: focusBridge.requestFocus,
-		onOpen: onOpen ?? noop,
-		onPeek: onPeek ?? noop,
+		onExecuteCommand: onExecuteCommand ?? noop,
 		onKeyboardInteraction: noop,
 	})
 

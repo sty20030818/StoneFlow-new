@@ -45,6 +45,23 @@ describe('useCommandShortcuts', () => {
 		expect(onTrigger).toHaveBeenNthCalledWith(1, COMMAND_IDS.newQuickTask)
 	})
 
+	it('命中时捕获执行回调，不让延迟任务改用后续上下文', () => {
+		const firstTrigger = vi.fn<(id: CommandId) => void>()
+		const laterTrigger = vi.fn<(id: CommandId) => void>()
+		let onTrigger = firstTrigger
+		const hook = renderHook(() => useCommandShortcuts({ bindings, onTrigger }))
+
+		fireKey('c')
+		onTrigger = laterTrigger
+		hook.rerender()
+		act(() => {
+			vi.runAllTimers()
+		})
+
+		expect(firstTrigger).toHaveBeenCalledWith(COMMAND_IDS.newQuickTask)
+		expect(laterTrigger).not.toHaveBeenCalled()
+	})
+
 	it('输入态聚焦时忽略 c / v / n / g', () => {
 		const onTrigger = vi.fn<(id: CommandId) => void>()
 		renderHook(() => useCommandShortcuts({ bindings, onTrigger }))

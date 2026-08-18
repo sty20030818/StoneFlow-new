@@ -9,6 +9,7 @@ import {
 	type KeyboardEvent as ReactKeyboardEvent,
 } from 'react'
 import { mergeProps, useGridList, useGridListItem } from 'react-aria'
+import { ContextMenu } from '@heroui-pro/react'
 import { defaultRangeExtractor, useVirtualizer, type Range } from '@tanstack/react-virtual'
 import { registerTaskBoardFocusTaskId, registerTaskBoardScrollToTaskId } from './taskBoardScroll'
 import { useScrollAreaViewport } from '@/shared/components/AppScrollArea'
@@ -50,11 +51,12 @@ import { buildTaskBoardCollection } from '@/features/task/model/taskBoardCollect
 import { TaskStatusIndicator } from '@/features/task/model/indicators/TaskStatusIndicator'
 import { useTaskContextMenuBulkActions } from '@/features/task/components/useTaskContextMenuBulkActions'
 import { useTaskRowCommandShortcuts } from '@/features/task/shortcuts/useTaskRowCommandShortcuts'
+import { useCommandRuntimeContext, type CommandId } from '@/features/command'
+import { buildTaskCommandContext } from '@/features/task/commands/buildTaskCommandContext'
 import type { TaskPlacementTarget } from '@/features/metadata-fields'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
 import { Button } from '@/shared/components/base/button'
 import { Badge } from '@/shared/components/base/badge'
-import { ContextMenu, ContextMenuTrigger } from '@/shared/components/base/context-menu'
 import { ListTodoIcon, PlusIcon, TriangleIcon } from 'lucide-react'
 import { StatusNotice } from '@/shared/components/StatusNotice'
 import { ActionTooltip, OverflowTooltip } from '@/shared/components/tooltip'
@@ -69,7 +71,6 @@ export type TaskBoardProps = {
 	status?: 'idle' | 'loading' | 'ready' | 'error'
 	createProjectId?: string | null
 	pendingTaskId: string | null
-	activeTaskId: string | null
 	emptyTitle?: string
 	emptyDescription?: string
 	emptyActionLabel?: string
@@ -83,10 +84,6 @@ export type TaskBoardProps = {
 	onUpdateTaskScheduledAt?: (task: TaskListItem, plannedAt: string | null) => Promise<void>
 	onUpdateTaskReminderAt?: (task: TaskListItem, remindAt: string | null) => Promise<void>
 	onToggleTaskStatus: (task: TaskListItem) => Promise<void>
-	onArchiveTask?: (task: TaskListItem) => Promise<void>
-	onDeleteTask?: (task: TaskListItem) => Promise<void>
-	onOpenTask: (taskId: string) => void
-	onPeekTask?: (taskId: string, source: 'keyboard' | 'pointer') => void
 	suppressFocusIndicator?: boolean
 	projectOptions?: Array<{ id: string; name: string; spaceId: string }>
 	spaces?: Array<{ id: string; name: string; iconKey?: string; colorKey?: string }>
@@ -122,7 +119,6 @@ export function TaskBoard({
 	status = 'ready',
 	createProjectId = null,
 	pendingTaskId,
-	activeTaskId,
 	emptyTitle,
 	emptyDescription,
 	emptyActionLabel,
@@ -136,10 +132,6 @@ export function TaskBoard({
 	onUpdateTaskScheduledAt,
 	onUpdateTaskReminderAt,
 	onToggleTaskStatus,
-	onArchiveTask,
-	onDeleteTask,
-	onOpenTask,
-	onPeekTask,
 	suppressFocusIndicator = false,
 	projectOptions,
 	spaces,
@@ -156,13 +148,12 @@ export function TaskBoard({
 }: TaskBoardProps) {
 	const selectedTaskIdSet = collectionInteraction.selectedKeys
 	const focusedTaskId = collectionInteraction.focusedKey
+	const { runtime: commandRuntime, context: commandContext } = useCommandRuntimeContext()
 	const [focusSource, setFocusSource] = useState<'pointer' | 'keyboard' | null>(null)
 	const markKeyboardInteraction = useCallback(() => {
 		setFocusSource('keyboard')
 	}, [])
-	const contextMenuActions = useTaskContextMenuBulkActions({
-		onClearTaskSelection: collectionInteraction.clearSelection,
-	})
+	const contextMenuActions = useTaskContextMenuBulkActions()
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 	const scrollViewportRef = useScrollAreaViewport()
 	const measureRef = useRef<HTMLDivElement | null>(null)
@@ -232,7 +223,6 @@ export function TaskBoard({
 
 	const rowActions = useMemo(
 		(): TaskRowAdapterProps['actions'] => ({
-			onOpenTask,
 			onToggleTaskSelection: collectionInteraction.toggleSelection,
 			onUpdateTaskPriority,
 			onUpdateTaskStatus,
@@ -240,13 +230,8 @@ export function TaskBoard({
 			onUpdateTaskScheduledAt,
 			onUpdateTaskReminderAt,
 			onToggleTaskStatus,
-			onArchiveTask,
-			onDeleteTask,
 		}),
 		[
-			onArchiveTask,
-			onDeleteTask,
-			onOpenTask,
 			collectionInteraction.toggleSelection,
 			onToggleTaskStatus,
 			onUpdateTaskDueDate,
@@ -362,26 +347,35 @@ export function TaskBoard({
 		collectionInteraction.listState,
 		gridRef,
 	)
+	const executeCollectionCommand = useCallback(
+		(commandId: CommandId, taskId: string) => {
+			const target = buildTaskCommandContext({
+				baseContext: commandContext,
+				tasks,
+				targetTaskIds: [taskId],
+				focusedTaskId: taskId,
+				rowTargetId: taskId,
+				rowTargetSource: 'focus',
+			})
+			void commandRuntime.project(commandId, target)?.execute({ source: 'row-shortcut' })
+		},
+		[commandContext, commandRuntime, tasks],
+	)
 	const keyboard = useCollectionKeyboardAdapter({
 		interaction: collectionInteraction,
 		resolveRowKey: focusBridge.getItemKey,
 		requestFocus: focusBridge.requestFocus,
 		onKeyboardInteraction: markKeyboardInteraction,
-		onOpen: onOpenTask,
-		onPeek: (key) => onPeekTask?.(key, 'keyboard'),
+		onExecuteCommand: executeCollectionCommand,
 	})
 	useTaskRowCommandShortcuts({
 		tasks,
-		activeTaskId,
 		focusedTaskId,
 		selectedTaskIds: selectedTaskIdSet,
 		ownsEventTarget: (target) =>
 			target === gridRef.current || focusBridge.getItemKey(target) !== null,
-		onToggleTaskSelection: collectionInteraction.toggleSelection,
 		onClearTaskSelection: collectionInteraction.clearSelection,
 		onKeyboardInteraction: markKeyboardInteraction,
-		onOpenTask,
-		onPeekTask,
 	})
 
 	useEffect(() => {
@@ -912,9 +906,12 @@ function StatusSectionHeader({
 	const [contextMenuOpen, setContextMenuOpen] = useState(false)
 	const [toggleTooltipOpen, setToggleTooltipOpen] = useState(false)
 	const [createTooltipOpen, setCreateTooltipOpen] = useState(false)
+	const contextMenuHadOpenedRef = useRef(false)
+	const groupTriggerElementRef = useRef<HTMLButtonElement | null>(null)
 	const unregisterGroupTriggerRef = useRef<(() => void) | null>(null)
 	const groupTriggerRef = useCallback(
 		(element: HTMLButtonElement | null) => {
+			groupTriggerElementRef.current = element
 			unregisterGroupTriggerRef.current?.()
 			unregisterGroupTriggerRef.current = null
 			if (element && registerGroupTrigger) {
@@ -924,6 +921,16 @@ function StatusSectionHeader({
 		[groupKey, registerGroupTrigger],
 	)
 	useEffect(() => () => unregisterGroupTriggerRef.current?.(), [])
+	useEffect(() => {
+		if (contextMenuOpen) {
+			contextMenuHadOpenedRef.current = true
+			return
+		}
+		if (!contextMenuHadOpenedRef.current) return
+
+		contextMenuHadOpenedRef.current = false
+		groupTriggerElementRef.current?.focus({ preventScroll: true })
+	}, [contextMenuOpen])
 	const selectedCount = sectionIds.filter((id) => selectedTaskIdSet.has(id)).length
 	const handleSelectAll = useCallback(
 		() => onSetSectionSelection(sectionIds, true),
@@ -935,18 +942,8 @@ function StatusSectionHeader({
 	)
 
 	// 不用 CSS sticky：虚拟列表的顶替由外层浮层 + pushOffset 负责，这里只保留视觉 surface
-	const header = (
-		<div
-			className='relative z-10 flex items-center gap-2 rounded-md bg-surface-secondary pr-1 pl-3'
-			data-board-section-header='true'
-			style={{ height: TASK_BOARD_HEADER_HEIGHT }}
-			onDoubleClick={() => {
-				setToggleTooltipOpen(false)
-				setCreateTooltipOpen(false)
-				onOpenChange?.(!open)
-			}}
-			onFocus={(event) => event.stopPropagation()}
-		>
+	const headerContent = (
+		<>
 			{status && onOpenChange ? (
 				<ActionTooltip
 					isOpen={toggleTooltipOpen && !contextMenuOpen}
@@ -1021,11 +1018,20 @@ function StatusSectionHeader({
 			) : (
 				<span className='pr-1' />
 			)}
-		</div>
+		</>
 	)
 
 	if (!onOpenChange) {
-		return header
+		return (
+			<div
+				className='relative z-10 flex items-center gap-2 rounded-md bg-surface-secondary pr-1 pl-3'
+				data-board-section-header='true'
+				style={{ height: TASK_BOARD_HEADER_HEIGHT }}
+				onFocus={(event) => event.stopPropagation()}
+			>
+				{headerContent}
+			</div>
+		)
 	}
 
 	return (
@@ -1040,7 +1046,19 @@ function StatusSectionHeader({
 				}}
 				open={contextMenuOpen}
 			>
-				<ContextMenuTrigger asChild>{header}</ContextMenuTrigger>
+				<ContextMenu.Trigger
+					className='relative z-10 flex items-center gap-2 rounded-md bg-surface-secondary pr-1 pl-3'
+					data-board-section-header='true'
+					style={{ height: TASK_BOARD_HEADER_HEIGHT }}
+					onDoubleClick={() => {
+						setToggleTooltipOpen(false)
+						setCreateTooltipOpen(false)
+						onOpenChange(!open)
+					}}
+					onFocus={(event) => event.stopPropagation()}
+				>
+					{headerContent}
+				</ContextMenu.Trigger>
 				<BoardSectionContextMenu
 					onCollapse={() => onOpenChange(false)}
 					onCollapseAll={onCollapseAll}

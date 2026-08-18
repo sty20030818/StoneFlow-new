@@ -78,7 +78,6 @@ export class BulkActionRuntime {
 			const confirmed = await this.requestConfirm?.({
 				action,
 				snapshot,
-				copy: getBulkActionConfirmCopy(action, snapshot),
 			})
 			if (!confirmed) {
 				return createBulkActionResult({
@@ -140,14 +139,4 @@ export function shouldConfirmAction(action: BulkAction, snapshot: BulkSelectionS
 	return typeof action.requiresConfirm === 'function'
 		? action.requiresConfirm(snapshot)
 		: Boolean(action.requiresConfirm)
-}
-
-export function getBulkActionConfirmCopy(action: BulkAction, snapshot: BulkSelectionSnapshot) {
-	return (
-		action.getConfirmCopy?.(snapshot) ?? {
-			title: action.label,
-			description: `将对 ${snapshot.ids.length} 个对象执行此操作。`,
-			confirmLabel: '确认',
-		}
-	)
 }

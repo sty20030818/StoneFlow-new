@@ -54,12 +54,25 @@ describe('EntityRowShortcutScope', () => {
 		expect(event.defaultPrevented).toBe(true)
 		await waitFor(() => expect(onGlobalTrigger).toHaveBeenCalledWith(COMMAND_IDS.close))
 	})
+
+	it('HeroUI Command 打开时不让旧列表快捷键穿透', () => {
+		renderSelectionHarness(() => undefined, true)
+
+		const event = fireKey('a', { ctrlKey: true })
+
+		expect(event.defaultPrevented).toBe(false)
+		expect(screen.getByTestId('selected-ids')).toBeEmptyDOMElement()
+	})
 })
 
-function renderSelectionHarness(onGlobalTrigger: (id: CommandId) => void = () => undefined) {
+function renderSelectionHarness(
+	onGlobalTrigger: (id: CommandId) => void = () => undefined,
+	commandOpen = false,
+) {
 	return render(
 		<ShortcutRegistryProvider registry={TEST_SHORTCUT_REGISTRY}>
 			<CommandShortcutLayer onTrigger={onGlobalTrigger} />
+			{commandOpen ? <div data-slot='command-backdrop' /> : null}
 			<EntitySelectionHarness />
 		</ShortcutRegistryProvider>,
 	)

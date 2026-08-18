@@ -97,7 +97,7 @@ export function ShellChrome({
 		/>
 	)
 	const runShellCommand = (commandId: CommandId) => {
-		void command.runCommand(commandId)
+		void command.runCommand(commandId, { source: 'global-shortcut' })
 	}
 	const { isCompact: isSidebarCompact, mobileSheetOpen, setMobileSheetOpen } = sidebar
 

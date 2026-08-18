@@ -8,6 +8,8 @@ import {
 	bindSelectionProjectCommand,
 	bindSelectionTaskCommand,
 	bindSelectionTaskPlacementCommand,
+	bindTaskPeekCommand,
+	bindTaskTargetCommand,
 	bindTogglePreviewCommand,
 } from './bind-shell-command-helpers'
 import {
@@ -64,6 +66,14 @@ export function bindShellCommand(command: Command, adapter: ShellCommandAdapter)
 			return { ...command, run: adapter.openTaskPicker }
 		case COMMAND_IDS.openProject:
 			return { ...command, run: adapter.openProjectPicker }
+		case COMMAND_IDS.taskPeek:
+			return withDomainHandler(command, adapter.peekTask, (run) =>
+				bindTaskPeekCommand(command, run),
+			)
+		case COMMAND_IDS.taskOpenDetail:
+			return withDomainHandler(command, adapter.openTaskDetail, (run) =>
+				bindTaskTargetCommand(command, run),
+			)
 		case COMMAND_IDS.taskComplete:
 			return withDomainHandler(command, adapter.completeSelectedTasks, (run) =>
 				bindSelectionTaskCommand(command, run),

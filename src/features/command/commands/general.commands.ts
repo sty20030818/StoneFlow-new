@@ -7,7 +7,7 @@ export const generalCommands: Command[] = [
 		category: 'general',
 		scope: ['global'],
 		description: '打开 StoneFlow 的全局命令入口。',
-		keywords: ['command', 'cmdk', '命令'],
+		keywords: ['command', 'palette', '命令'],
 		// 静态命令只承载元数据；Shell 运行时会通过 adapter 绑定真实动作。
 		run: () => {},
 	},

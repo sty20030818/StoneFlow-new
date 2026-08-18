@@ -83,6 +83,7 @@ export function useShellCommandSystem({
 	const activeDetail = entityDetailController.activeDetail
 	const isDrawerOpen = entityDetailController.isOpen
 	const closeEntityDrawer = entityDetailController.closeDrawer
+	const openTaskDetail = entityDetailController.openTaskDetail
 
 	const taskPreviewController = useTaskPreviewController()
 	const { runBulkAction } = useBulkActionContext()
@@ -120,6 +121,7 @@ export function useShellCommandSystem({
 		goForward,
 		canGoBack,
 		closeEntityDrawer,
+		openTaskDetail,
 		handleOpenTaskCreate,
 		isSettingsMode,
 		navigate,

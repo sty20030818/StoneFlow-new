@@ -1,19 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 
-import {
-	Command,
-	CommandDialog,
-	CommandEmpty,
-	CommandInput,
-} from '@/shared/components/base/command'
+import { Command } from '@heroui-pro/react'
+import { SearchIcon } from 'lucide-react'
 import { useGlobalSearch } from '@/features/global-search'
 import { useDialogStore } from '@/features/shell-dialogs'
-import type {
-	CommandContext,
-	CommandId,
-	CommandRuntime,
-	TaskPlacementTarget,
-} from '@/features/command/core'
+import type { CommandContext, CommandRuntime, TaskPlacementTarget } from '@/features/command/core'
 import type {
 	SearchProjectItem,
 	SearchTaskItem,
@@ -49,7 +40,6 @@ export type CommandMenuProject = {
 }
 
 type CommandMenuProps = {
-	className?: string
 	context: CommandContext
 	description: string
 	mode: CommandMenuMode
@@ -61,7 +51,6 @@ type CommandMenuProps = {
 	onSelectTaskDate: (dueAt: string | null) => void
 	onSelectTaskPriority: (priority: TaskPriority) => void
 	onSelectTaskStatus: (status: TaskStatus) => void
-	onRunCommand: (id: CommandId) => void
 	open: boolean
 	projects: CommandMenuProject[]
 	runtime: CommandRuntime
@@ -70,7 +59,6 @@ type CommandMenuProps = {
 }
 
 export function CommandMenu({
-	className,
 	context,
 	description,
 	mode,
@@ -82,7 +70,6 @@ export function CommandMenu({
 	onSelectTaskDate,
 	onSelectTaskPriority,
 	onSelectTaskStatus,
-	onRunCommand,
 	open,
 	projects: projectLinks,
 	runtime,
@@ -90,7 +77,7 @@ export function CommandMenu({
 	title,
 }: CommandMenuProps) {
 	const [query, setQuery] = useState('')
-	const inputRef = useRef<HTMLInputElement>(null)
+	const descriptionId = useId()
 	const shortcutRegistry = useShortcutRegistry()
 	const openCustomDateDialog = useDialogStore((state) => state.openCustomDateDialog)
 	const groups = useMemo(
@@ -104,99 +91,60 @@ export function CommandMenu({
 		setQuery('')
 	}, [mode, open])
 
-	useEffect(() => {
-		if (!open) {
-			return
-		}
-
-		requestAnimationFrame(() => {
-			const input = inputRef.current
-			if (!input) {
-				return
-			}
-
-			if (document.activeElement !== input) {
-				input.focus()
-			}
-			input.setSelectionRange(query.length, query.length)
-		})
-	}, [open, query.length])
-
-	const handleSurfacePointerDownCapture = (event: React.PointerEvent<HTMLDivElement>) => {
-		const target = event.target
-		if (!(target instanceof HTMLElement)) {
-			return
-		}
-
-		if (target.closest('[data-slot="command-input"]')) {
-			return
-		}
-
-		requestAnimationFrame(() => {
-			const input = inputRef.current
-			if (!input) {
-				return
-			}
-
-			if (document.activeElement !== input) {
-				input.focus()
-			}
-			input.setSelectionRange(query.length, query.length)
-		})
-	}
-
 	return (
-		<CommandDialog
-			className={className}
-			description={description}
-			onOpenChange={onOpenChange}
-			open={open}
-			title={title}
-		>
-			<Command
-				onPointerDownCapture={handleSurfacePointerDownCapture}
-				shouldFilter={!isCommandMenuSearchMode(mode)}
-			>
-				<div className='flex flex-col'>
-					<CommandMenuSelectionChips entities={context.selection.entities} />
-					<CommandInput
-						ref={inputRef}
-						placeholder={getCommandMenuPlaceholder(mode)}
-						value={query}
-						wrapperClassName='pr-2 pl-4 py-3'
-						onValueChange={setQuery}
-					/>
-				</div>
-				<CommandScrollableList>
-					<CommandEmpty>{getCommandMenuEmptyText(mode, query)}</CommandEmpty>
-					{isScopedMode ? (
-						<ScopedPickerCommandGroup
-							context={context}
-							mode={mode}
-							onOpenChange={onOpenChange}
-							onSelectProject={onSelectProject}
-							onSelectTaskPlacement={onSelectTaskPlacement}
-							onSelectTask={onSelectTask}
-							onSelectTaskDate={onSelectTaskDate}
-							onSelectTaskPriority={onSelectTaskPriority}
-							onSelectTaskStatus={onSelectTaskStatus}
-							onOpenCustomDateDialog={openCustomDateDialog}
-							projectLinks={projectLinks}
-							result={scopedSearch.result}
-							spaces={spaces}
-						/>
-					) : (
-						<>
-							<CommandMenuList
-								groups={groups}
-								onOpenChange={onOpenChange}
-								onRunCommand={onRunCommand}
-							/>
-							<ProjectsCommandGroup onNavigateProject={onNavigateProject} projects={projectLinks} />
-						</>
-					)}
-				</CommandScrollableList>
-			</Command>
-		</CommandDialog>
+		<Command>
+			<Command.Backdrop isDismissable isOpen={open} onOpenChange={onOpenChange}>
+				<Command.Container size='lg'>
+					<Command.Dialog
+						aria-describedby={descriptionId}
+						aria-label={title}
+						filter={isCommandMenuSearchMode(mode) ? () => true : undefined}
+						inputValue={query}
+						onInputChange={setQuery}
+					>
+						<p className='sr-only' id={descriptionId}>
+							{description}
+						</p>
+						<Command.Header className='flex-col items-stretch p-0'>
+							<CommandMenuSelectionChips entities={context.selection.entities} />
+							<Command.InputGroup aria-label={getCommandMenuPlaceholder(mode)}>
+								<Command.InputGroup.Prefix>
+									<SearchIcon aria-hidden />
+								</Command.InputGroup.Prefix>
+								<Command.InputGroup.Input placeholder={getCommandMenuPlaceholder(mode)} />
+								<Command.InputGroup.ClearButton aria-label='清空搜索' />
+							</Command.InputGroup>
+						</Command.Header>
+						<CommandScrollableList emptyText={getCommandMenuEmptyText(mode, query)}>
+							{isScopedMode ? (
+								<ScopedPickerCommandGroup
+									context={context}
+									mode={mode}
+									onOpenChange={onOpenChange}
+									onSelectProject={onSelectProject}
+									onSelectTaskPlacement={onSelectTaskPlacement}
+									onSelectTask={onSelectTask}
+									onSelectTaskDate={onSelectTaskDate}
+									onSelectTaskPriority={onSelectTaskPriority}
+									onSelectTaskStatus={onSelectTaskStatus}
+									onOpenCustomDateDialog={openCustomDateDialog}
+									projectLinks={projectLinks}
+									result={scopedSearch.result}
+									spaces={spaces}
+								/>
+							) : (
+								<>
+									<CommandMenuList groups={groups} onOpenChange={onOpenChange} />
+									<ProjectsCommandGroup
+										onNavigateProject={onNavigateProject}
+										projects={projectLinks}
+									/>
+								</>
+							)}
+						</CommandScrollableList>
+					</Command.Dialog>
+				</Command.Container>
+			</Command.Backdrop>
+		</Command>
 	)
 }

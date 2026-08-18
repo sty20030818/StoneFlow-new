@@ -4,8 +4,6 @@ export {
 	TASK_BULK_ACTION_IDS,
 	type BulkAction,
 	type BulkActionAdapter,
-	type BulkActionConfirmCopy,
-	type BulkActionConfirmRequest,
 	type BulkActionConfirmationRequest,
 	type BulkActionContext,
 	type BulkActionId,
@@ -22,7 +20,6 @@ export { BulkActionRegistry } from './bulk-action-registry'
 export {
 	BulkActionRuntime,
 	createBulkActionResult,
-	getBulkActionConfirmCopy,
 	shouldConfirmAction,
 } from './bulk-action-runtime'
 export { createBulkSelectionSnapshot } from './bulk-selection-snapshot'

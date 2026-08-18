@@ -18,11 +18,6 @@ const projectBulkActionDefinitions: ProjectBulkActionDefinition[] = [
 		description: '将选中的项目移动到归档。',
 		intent: 'archive',
 		requiresConfirm: true,
-		getConfirmCopy: (snapshot) => ({
-			title: '归档选中项目？',
-			description: `将归档 ${snapshot.ids.length} 个项目。归档后可在归档页中恢复。`,
-			confirmLabel: '确认归档',
-		}),
 	},
 	{
 		id: PROJECT_BULK_ACTION_IDS.deleteSelected,
@@ -32,11 +27,6 @@ const projectBulkActionDefinitions: ProjectBulkActionDefinition[] = [
 		intent: 'delete',
 		tone: 'destructive',
 		requiresConfirm: true,
-		getConfirmCopy: (snapshot) => ({
-			title: '删除选中项目？',
-			description: `将删除 ${snapshot.ids.length} 个项目。删除后可在回收站中恢复。`,
-			confirmLabel: '确认删除',
-		}),
 	},
 ]
 

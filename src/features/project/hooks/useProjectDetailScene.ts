@@ -23,12 +23,7 @@ import {
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useDialogStore } from '@/features/shell-dialogs'
 import { useSpaces } from '@/features/space'
-import {
-	formatTaskStatusLabel,
-	useTaskCollectionScene,
-	useTaskListData,
-	useTaskPreviewController,
-} from '@/features/task'
+import { formatTaskStatusLabel, useTaskCollectionScene, useTaskListData } from '@/features/task'
 import { createView } from '@/features/view'
 import { EMPTY_FILTER_QUERY } from '@/shared/types'
 import type { Scope, TaskStatus } from '@/shared/types'
@@ -67,7 +62,6 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 	const entityDetailController = useEntityDetailController()
 	const activeDetail = entityDetailController.activeDetail
-	const taskPreviewController = useTaskPreviewController()
 	const { data: project } = useSuspenseProjectDetailQuery(projectId)
 	const projectOptions = useProjectOptions(scope)
 	const { spaces } = useSpaces()
@@ -130,15 +124,6 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 		fallbackSubtitle: project?.name ?? '当前项目',
 		activeTaskId,
 		onCreateTask: () => openTaskCreateDialog({ projectId }),
-		onOpenTask: (taskId) => {
-			taskPreviewController.closePreview()
-			entityDetailController.openTaskDetail(taskId)
-		},
-		onPeekTask: (taskId, source) => {
-			if (activeDetail?.kind !== 'task') {
-				taskPreviewController.openPreview(taskId, source)
-			}
-		},
 		projectOptions: projectMoveOptions,
 		spaces,
 		showProjectCellOptions: false,
@@ -234,10 +219,6 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 		displayPageKey: PROJECT_DETAIL_DISPLAY_PAGE_KEY,
 		toolbarPills,
 		filterUiValue,
-		bulk: {
-			selectedCount: taskCollection.selectedCount,
-			clearTaskSelection: taskCollection.clearTaskSelection,
-		},
 		goToProjectsOverview,
 		completeOrReopen: () => {
 			if (!project) return

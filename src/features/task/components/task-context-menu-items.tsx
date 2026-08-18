@@ -15,6 +15,7 @@ export function getPlacementIcon(target: TaskPlacementTarget) {
 
 export function PropertySubTrigger({
 	children,
+	disabledReason,
 	id,
 	isDisabled,
 	icon,
@@ -22,6 +23,7 @@ export function PropertySubTrigger({
 	textValue,
 }: {
 	children: ReactNode
+	disabledReason?: string
 	id: string
 	isDisabled?: boolean
 	icon: ReactNode
@@ -29,7 +31,12 @@ export function PropertySubTrigger({
 	textValue: string
 }) {
 	return (
-		<ContextMenu.Item id={id} isDisabled={isDisabled} textValue={textValue}>
+		<ContextMenu.Item
+			aria-description={isDisabled ? disabledReason : undefined}
+			id={id}
+			isDisabled={isDisabled}
+			textValue={textValue}
+		>
 			{icon}
 			<span>{children}</span>
 			<MenuShortcut>{shortcut}</MenuShortcut>

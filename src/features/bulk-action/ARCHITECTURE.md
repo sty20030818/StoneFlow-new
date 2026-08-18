@@ -8,7 +8,7 @@
 ## 1. 当前真实心智
 
 ```txt
-页面 / 命令 / 行快捷键
+ActionBar / Command / ContextMenu / 行快捷键
   → 构造 BulkSelectionSnapshot
   → BulkActionProvider.run(actionId, snapshot, payload?)
   → Registry 找动作定义（定义由各域贡献）
@@ -19,9 +19,9 @@
 
 | 模块 | 负责 |
 |------|------|
-| **bulk-action** | 契约、Registry/Runtime、Provider、确认编排、result 语义、通用 UI |
+| **bulk-action** | 契约、Registry/Runtime、Provider、确认编排、result 语义、唯一 ActionBar |
 | **task / project / lifecycle** | 本域 `bulk/`：动作定义 + adapter |
-| **layout** | `ShellBulkActionBoundary` 只 compose 各域 public |
+| **layout** | `ShellBulkActionBoundary` compose 各域 public，`ShellLayoutContent` 挂载唯一 ActionBar |
 
 ---
 
@@ -33,7 +33,7 @@ src/features/bulk-action/
 ├── index.ts
 ├── core/          # 类型 · Registry · Runtime · snapshot · result · ACTION_IDS
 ├── runtime/       # BulkActionProvider · hooks
-├── components/    # BulkActionBar · ConfirmDialog · toast
+├── components/    # HeroUI Pro BulkActionBar · toast
 └── selection/     # useSectionSelection
 ```
 
@@ -49,6 +49,10 @@ layout/ShellBulkActionBoundary
   → createProjectBulkAdapter + projectBulkActions
   → createLifecycleBulkAdapter + lifecycleBulkActions
   → merge → <BulkActionProvider>
+
+layout/ShellLayoutContent
+  → CommandContext + CommandRuntime
+  → 单一 viewport-fixed <BulkActionBar>
 ```
 
 ---

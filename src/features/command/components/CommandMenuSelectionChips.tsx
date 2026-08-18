@@ -2,7 +2,8 @@
 
 import { useLayoutEffect, useRef, useState } from 'react'
 
-import { buttonVariants } from '@/shared/components/base/button'
+import { Chip } from '@heroui/react'
+
 import { cn } from '@/shared/lib/utils'
 import type { CommandSelectedEntity } from '@/features/command/core'
 
@@ -104,23 +105,24 @@ function ReadonlySelectionSummaryChip({
 	tabular = false,
 	className,
 	...props
-}: React.ComponentProps<'span'> & {
+}: Omit<React.ComponentProps<'span'>, 'color'> & {
 	label: string
 	tabular?: boolean
 }) {
 	return (
-		<span
+		<Chip
 			{...props}
 			aria-hidden='true'
 			className={cn(
-				buttonVariants({ variant: 'outline', size: 'default' }),
 				'pointer-events-none max-w-56 shrink-0 cursor-default overflow-hidden',
 				tabular && 'tabular-nums',
 				className,
 			)}
+			size='sm'
+			variant='secondary'
 		>
-			<span className='truncate'>{label}</span>
-		</span>
+			<Chip.Label className='truncate'>{label}</Chip.Label>
+		</Chip>
 	)
 }
 

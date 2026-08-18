@@ -1,26 +1,14 @@
-import { useMemo, useRef } from 'react'
-
-import { XIcon } from 'lucide-react'
+import { Modal } from '@heroui/react'
+import { useId, useMemo } from 'react'
 
 import type { CommandContext, CommandRuntime } from '@/features/command/core'
-import { AppScrollArea } from '@/shared/components/AppScrollArea'
 import { ShortcutTokens } from '@/shared/components/ShortcutTokens'
-import { Button } from '@/shared/components/base/button'
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogTitle,
-} from '@/shared/components/base/dialog'
-import { dialogShellReadingClass } from '@/shared/components/patterns/dialog-shell'
 import { ActionTooltip, OverflowTooltip } from '@/shared/components/tooltip'
-import { cn } from '@/shared/lib/utils'
 import { useShortcutRegistry } from '@/features/command/shortcuts/shortcut-registry-context'
 
 import { buildShortcutHelpGroups } from './shortcut-help-model'
 
 type ShortcutHelpProps = {
-	className?: string
 	context: CommandContext
 	description: string
 	onOpenChange: (open: boolean) => void
@@ -30,7 +18,6 @@ type ShortcutHelpProps = {
 }
 
 export function ShortcutHelp({
-	className,
 	context,
 	description,
 	onOpenChange,
@@ -43,67 +30,45 @@ export function ShortcutHelp({
 		() => buildShortcutHelpGroups(runtime, context, shortcutRegistry),
 		[context, runtime, shortcutRegistry],
 	)
-	const contentRef = useRef<HTMLDivElement>(null)
+	const descriptionId = useId()
 
 	return (
-		<Dialog onOpenChange={onOpenChange} open={open}>
-			<DialogContent
-				className={cn(dialogShellReadingClass, className)}
-				onOpenAutoFocus={(event) => {
-					event.preventDefault()
-					contentRef.current?.focus({ preventScroll: true })
-				}}
-				ref={contentRef}
-				showCloseButton={false}
-				tabIndex={-1}
-			>
-				<DialogTitle className='sr-only'>{title}</DialogTitle>
-				<DialogDescription className='sr-only'>{description}</DialogDescription>
-
-				<ActionTooltip label='关闭'>
-					<Button
-						aria-label='关闭快捷键帮助'
-						className='absolute top-3 right-3 size-8'
-						onClick={() => onOpenChange(false)}
-						variant='ghost'
-					>
-						<XIcon aria-hidden className='size-4' />
-					</Button>
-				</ActionTooltip>
-				<div className='px-5 pt-4 pb-3'>
-					<OverflowTooltip
-						className='pr-9 text-[16px] font-medium text-legacy-foreground'
-						content={title}
-					>
-						{title}
-					</OverflowTooltip>
-					<OverflowTooltip className='mt-1 text-[12px] text-sf-text-tertiary' content={description}>
-						{description}
-					</OverflowTooltip>
-				</div>
-				<AppScrollArea
-					className='max-h-120'
-					minThumbHeight={28}
-					thumbLengthRatio={0.58}
-					trackInsetBottom={8}
-					trackInsetTop={4}
-					viewportClassName='px-1 pb-2'
+		<Modal.Backdrop isOpen={open} onOpenChange={onOpenChange}>
+			<Modal.Container placement='center' scroll='inside' size='lg'>
+				<Modal.Dialog
+					aria-describedby={descriptionId}
+					className='max-h-[min(36rem,calc(100dvh-5rem))] max-w-[min(47.5rem,calc(100vw-1.5rem))] gap-0 overflow-hidden p-0'
 				>
-					{groups.map((group) => (
-						<section key={group.key} className='pt-1 first:pt-0'>
-							<h3 className='px-3 pt-1 pb-2 text-[13px] font-medium tracking-normal text-sf-text-secondary'>
-								{group.heading}
-							</h3>
-							<div className='flex flex-col'>
-								{group.entries.map((entry) => (
-									<ShortcutHelpRow entry={entry} key={entry.id} />
-								))}
-							</div>
-						</section>
-					))}
-				</AppScrollArea>
-			</DialogContent>
-		</Dialog>
+					<ActionTooltip label='关闭'>
+						<Modal.CloseTrigger aria-label='关闭快捷键帮助' className='end-3 top-3 z-10' />
+					</ActionTooltip>
+
+					<Modal.Header className='gap-1 px-5 pt-4 pr-12 pb-3'>
+						<Modal.Heading className='pr-8'>
+							<OverflowTooltip content={title}>{title}</OverflowTooltip>
+						</Modal.Heading>
+						<p id={descriptionId}>
+							<OverflowTooltip className='text-xs text-muted' content={description}>
+								{description}
+							</OverflowTooltip>
+						</p>
+					</Modal.Header>
+
+					<Modal.Body aria-label='快捷键列表' className='m-0 px-1 pb-2' role='region'>
+						{groups.map((group) => (
+							<section key={group.key} className='pt-1 first:pt-0'>
+								<h3 className='px-3 pt-1 pb-2 text-xs font-medium text-muted'>{group.heading}</h3>
+								<div className='flex flex-col'>
+									{group.entries.map((entry) => (
+										<ShortcutHelpRow entry={entry} key={entry.id} />
+									))}
+								</div>
+							</section>
+						))}
+					</Modal.Body>
+				</Modal.Dialog>
+			</Modal.Container>
+		</Modal.Backdrop>
 	)
 }
 
@@ -115,17 +80,11 @@ function ShortcutHelpRow({
 	return (
 		<article className='mx-1 flex min-h-11 items-center gap-3 rounded-md bg-transparent px-3 py-2'>
 			<div className='min-w-0 flex-1'>
-				<OverflowTooltip
-					className='text-[14px] font-medium text-legacy-foreground'
-					content={entry.title}
-				>
+				<OverflowTooltip className='text-sm font-medium text-foreground' content={entry.title}>
 					{entry.title}
 				</OverflowTooltip>
 				{entry.description ? (
-					<OverflowTooltip
-						className='mt-0.5 text-[12px] text-sf-text-tertiary'
-						content={entry.description}
-					>
+					<OverflowTooltip className='mt-0.5 text-xs text-muted' content={entry.description}>
 						{entry.description}
 					</OverflowTooltip>
 				) : null}

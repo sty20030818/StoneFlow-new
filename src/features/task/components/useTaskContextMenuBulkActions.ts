@@ -3,7 +3,6 @@ import { useCallback } from 'react'
 import {
 	TASK_BULK_ACTION_IDS,
 	createTaskBulkSelectionSnapshotFromTasks,
-	shouldClearBulkSelection,
 	type BulkActionId,
 	type BulkActionPayload,
 } from '@/features/bulk-action'
@@ -14,19 +13,13 @@ import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
 
 export type TaskContextMenuBulkActions = {
-	onArchive: (tasks: TaskListItem[]) => void
-	onMoveToTrash: (tasks: TaskListItem[]) => void
 	onSelectDueDate: (tasks: TaskListItem[], dueAt: string | null) => void
 	onSelectPlacement: (tasks: TaskListItem[], target: TaskPlacementTarget) => void
 	onSelectPriority: (tasks: TaskListItem[], priority: TaskPriorityValue) => void
 	onSelectStatus: (tasks: TaskListItem[], status: TaskStatus) => void
 }
 
-export function useTaskContextMenuBulkActions({
-	onClearTaskSelection,
-}: {
-	onClearTaskSelection?: () => void
-} = {}): TaskContextMenuBulkActions {
+export function useTaskContextMenuBulkActions(): TaskContextMenuBulkActions {
 	const { runBulkAction } = useBulkActionContext()
 
 	const runTaskContextMenuBulkAction = useCallback(
@@ -37,23 +30,16 @@ export function useTaskContextMenuBulkActions({
 
 			const snapshot = createTaskBulkSelectionSnapshotFromTasks(tasks, 'context-menu')
 			const result = await runBulkAction(actionId, snapshot, payload)
-			if (shouldClearBulkSelection(result)) {
-				onClearTaskSelection?.()
-			}
 
 			showBulkActionResultToast(result, {
 				successVerb: isTaskMoveAction(actionId) ? '整理' : '更新',
 				entityLabel: '任务',
 			})
 		},
-		[onClearTaskSelection, runBulkAction],
+		[runBulkAction],
 	)
 
 	return {
-		onArchive: (tasks) =>
-			void runTaskContextMenuBulkAction(tasks, TASK_BULK_ACTION_IDS.archiveSelected),
-		onMoveToTrash: (tasks) =>
-			void runTaskContextMenuBulkAction(tasks, TASK_BULK_ACTION_IDS.deleteSelected),
 		onSelectDueDate: (tasks, dueAt) =>
 			void runTaskContextMenuBulkAction(tasks, TASK_BULK_ACTION_IDS.setDateSelected, {
 				dueAt,

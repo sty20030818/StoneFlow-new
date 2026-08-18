@@ -1,10 +1,19 @@
 import { act, fireEvent, screen, waitFor, within, type RenderResult } from '@testing-library/react'
-import { useLayoutEffect, useMemo, useState, type ReactElement } from 'react'
+import { useLayoutEffect, useMemo, useState, type ReactElement, type ReactNode } from 'react'
 
 import { BulkActionProvider } from '@/features/bulk-action'
+import {
+	CommandRegistry,
+	CommandRuntime,
+	CommandRuntimeProvider,
+	COMMAND_IDS,
+	createEmptyCommandContext,
+	type Command,
+	type CommandContext,
+	type CommandInvocation,
+} from '@/features/command'
 import { DangerConfirmProvider } from '@/features/danger-confirm'
 import { useCollectionInteraction, type CollectionFocusIntent } from '@/features/selection'
-import { useDialogStore } from '@/features/shell-dialogs'
 import { TaskBoard, type TaskBoardProps } from '@/features/task/components/TaskBoard'
 import { focusTaskBoardTaskId } from '@/features/task/components/taskBoardScroll'
 import {
@@ -30,7 +39,6 @@ vi.mock('@/features/task/components/useTaskContextMenuBulkActions', () => ({
 
 vi.mock('@/features/task/components/TaskRowAdapter', () => ({
 	TaskRowAdapter: ({
-		actions,
 		gridCellProps,
 		rowProps,
 		rowRef,
@@ -39,7 +47,6 @@ vi.mock('@/features/task/components/TaskRowAdapter', () => ({
 		selectionGroupPosition,
 		onContextMenuOpenChange,
 	}: {
-		actions: { onOpenTask: (taskId: string) => void }
 		gridCellProps?: React.HTMLAttributes<HTMLDivElement>
 		rowProps?: React.HTMLAttributes<HTMLDivElement>
 		rowRef?: React.Ref<HTMLDivElement>
@@ -56,7 +63,6 @@ vi.mock('@/features/task/components/TaskRowAdapter', () => ({
 				aria-label={`打开任务 ${task.title}`}
 				data-suppress-focus-indicator={String(rowState.suppressFocusIndicator ?? false)}
 				data-selection-group-position={selectionGroupPosition}
-				onClick={() => actions.onOpenTask(task.id)}
 				onContextMenu={() => onContextMenuOpenChange?.(true)}
 			>
 				<div {...gridCellProps}>
@@ -77,11 +83,9 @@ describe('TaskBoard', () => {
 	it('加载中不显示空态文案', () => {
 		renderTaskBoard(
 			<TaskBoardHarness
-				activeTaskId={null}
 				emptyDescription='empty description'
 				emptyTitle='暂无任务'
 				onEmptyAction={() => undefined}
-				onOpenTask={() => undefined}
 				onToggleTaskStatus={async () => undefined}
 				onUpdateTaskPriority={async () => undefined}
 				onUpdateTaskStatus={async () => undefined}
@@ -98,9 +102,7 @@ describe('TaskBoard', () => {
 	it('显示状态分区 header，并用 totalCount 锁定总高', () => {
 		const { container } = renderTaskBoard(
 			<TaskBoardHarness
-				activeTaskId={null}
 				onEmptyAction={() => undefined}
-				onOpenTask={() => undefined}
 				onToggleTaskStatus={async () => undefined}
 				onUpdateTaskPriority={async () => undefined}
 				onUpdateTaskStatus={async () => undefined}
@@ -137,10 +139,38 @@ describe('TaskBoard', () => {
 		expect((root as HTMLElement).style.height).toBe(`${extent}px`)
 	})
 
+	it('可见 sticky 分组打开右键菜单时关闭提示，Escape 恢复真实 trigger', async () => {
+		renderTaskBoard(
+			<TaskBoardHarness
+				onEmptyAction={() => undefined}
+				onToggleTaskStatus={async () => undefined}
+				onUpdateTaskPriority={async () => undefined}
+				onUpdateTaskStatus={async () => undefined}
+				pendingTaskId={null}
+				status='ready'
+				tasks={[createTask({ id: 'task-1', title: '任务 A', status: 'todo' })]}
+			/>,
+		)
+
+		const trigger = screen.getByRole('button', { name: '折叠 待执行' })
+		fireEvent.keyDown(document, { key: 'Tab' })
+		trigger.focus()
+		expect(await screen.findByRole('tooltip')).toHaveTextContent('折叠 待执行')
+
+		fireEvent.contextMenu(trigger.closest('[data-board-section-header]')!)
+		const menu = await screen.findByRole('menu', { name: '分区操作' })
+		await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument())
+
+		fireEvent.keyDown(menu, { key: 'Escape' })
+		await waitFor(() =>
+			expect(screen.queryByRole('menu', { name: '分区操作' })).not.toBeInTheDocument(),
+		)
+		expect(trigger).toHaveFocus()
+	})
+
 	it('customSections 显示分组标题', () => {
 		renderTaskBoard(
 			<TaskBoardHarness
-				activeTaskId={null}
 				customSections={[
 					{
 						key: 'all',
@@ -149,7 +179,6 @@ describe('TaskBoard', () => {
 					},
 				]}
 				onEmptyAction={() => undefined}
-				onOpenTask={() => undefined}
 				onToggleTaskStatus={async () => undefined}
 				onUpdateTaskPriority={async () => undefined}
 				onUpdateTaskStatus={async () => undefined}
@@ -173,13 +202,11 @@ describe('TaskBoard', () => {
 		]
 		const { container } = renderTaskBoard(
 			<TaskBoardHarness
-				activeTaskId={null}
 				customSections={[
 					{ key: 'first', label: '第一组', tasks: tasks.slice(0, 3) },
 					{ key: 'second', label: '第二组', tasks: tasks.slice(3) },
 				]}
 				onEmptyAction={() => undefined}
-				onOpenTask={() => undefined}
 				onToggleTaskStatus={async () => undefined}
 				onUpdateTaskPriority={async () => undefined}
 				onUpdateTaskStatus={async () => undefined}
@@ -223,9 +250,7 @@ describe('TaskBoard', () => {
 		]
 		renderTaskBoard(
 			<TaskBoardHarness
-				activeTaskId={null}
 				onEmptyAction={() => undefined}
-				onOpenTask={() => undefined}
 				onToggleTaskStatus={async () => undefined}
 				onUpdateTaskPriority={async () => undefined}
 				onUpdateTaskStatus={async () => undefined}
@@ -257,9 +282,7 @@ describe('TaskBoard', () => {
 		]
 		renderTaskBoard(
 			<TaskBoardHarness
-				activeTaskId={null}
 				onEmptyAction={() => undefined}
-				onOpenTask={() => undefined}
 				onToggleTaskStatus={async () => undefined}
 				onUpdateTaskPriority={async () => undefined}
 				onUpdateTaskStatus={async () => undefined}
@@ -315,21 +338,19 @@ describe('TaskBoard', () => {
 			createTask({ id: 'task-2', title: '任务 B' }),
 			createTask({ id: 'task-3', title: '任务 C' }),
 		]
-		const onOpenTask = vi.fn()
-		const onPeekTask = vi.fn()
+		const onCommand = vi.fn()
 		renderTaskBoard(
-			<TaskBoardHarness
-				activeTaskId={null}
-				onEmptyAction={() => undefined}
-				onOpenTask={onOpenTask}
-				onPeekTask={onPeekTask}
-				onToggleTaskStatus={async () => undefined}
-				onUpdateTaskPriority={async () => undefined}
-				onUpdateTaskStatus={async () => undefined}
-				pendingTaskId={null}
-				status='ready'
-				tasks={tasks}
-			/>,
+			<TaskCommandTestProvider onCommand={onCommand}>
+				<TaskBoardHarness
+					onEmptyAction={() => undefined}
+					onToggleTaskStatus={async () => undefined}
+					onUpdateTaskPriority={async () => undefined}
+					onUpdateTaskStatus={async () => undefined}
+					pendingTaskId={null}
+					status='ready'
+					tasks={tasks}
+				/>
+			</TaskCommandTestProvider>,
 		)
 
 		const rows = screen.getAllByRole('row')
@@ -350,9 +371,17 @@ describe('TaskBoard', () => {
 		expect(grid).toHaveFocus()
 		fireEvent.keyDown(grid, { key: ' ' })
 		await waitFor(() => expect(rows[2]).toHaveFocus())
-		expect(onPeekTask).toHaveBeenCalledWith('task-3', 'keyboard')
+		expect(onCommand).toHaveBeenCalledWith(
+			COMMAND_IDS.taskPeek,
+			expect.objectContaining({ selection: expect.objectContaining({ ids: ['task-3'] }) }),
+			{ source: 'row-shortcut' },
+		)
 		fireEvent.keyDown(rows[2]!, { key: 'Enter' })
-		expect(onOpenTask).toHaveBeenCalledWith('task-3')
+		expect(onCommand).toHaveBeenCalledWith(
+			COMMAND_IDS.taskOpenDetail,
+			expect.objectContaining({ selection: expect.objectContaining({ ids: ['task-3'] }) }),
+			{ source: 'row-shortcut' },
+		)
 		fireEvent.keyDown(rows[2]!, { key: 'a', metaKey: true })
 		await waitFor(() => rows.forEach((row) => expect(row).toHaveAttribute('aria-selected', 'true')))
 		fireEvent.keyDown(rows[2]!, { key: 'k' })
@@ -372,19 +401,22 @@ describe('TaskBoard', () => {
 		function PeekProbe() {
 			const [open, setOpen] = useState(false)
 			return (
-				<TaskBoardHarness
-					activeTaskId={null}
-					onEmptyAction={() => undefined}
-					onOpenTask={() => undefined}
-					onPeekTask={() => setOpen((current) => !current)}
-					onToggleTaskStatus={async () => undefined}
-					onUpdateTaskPriority={async () => undefined}
-					onUpdateTaskStatus={async () => undefined}
-					pendingTaskId={null}
-					status='ready'
-					suppressFocusIndicator={open}
-					tasks={tasks}
-				/>
+				<TaskCommandTestProvider
+					onCommand={(commandId) => {
+						if (commandId === COMMAND_IDS.taskPeek) setOpen((current) => !current)
+					}}
+				>
+					<TaskBoardHarness
+						onEmptyAction={() => undefined}
+						onToggleTaskStatus={async () => undefined}
+						onUpdateTaskPriority={async () => undefined}
+						onUpdateTaskStatus={async () => undefined}
+						pendingTaskId={null}
+						status='ready'
+						suppressFocusIndicator={open}
+						tasks={tasks}
+					/>
+				</TaskCommandTestProvider>
 			)
 		}
 
@@ -413,22 +445,22 @@ describe('TaskBoard', () => {
 	})
 
 	it('领域字符快捷键不被 Grid typeahead 抢占', async () => {
-		useDialogStore.getState().closeCommand()
+		const onCommand = vi.fn()
 		renderTaskBoard(
-			<TaskBoardHarness
-				activeTaskId={null}
-				onEmptyAction={() => undefined}
-				onOpenTask={() => undefined}
-				onToggleTaskStatus={async () => undefined}
-				onUpdateTaskPriority={async () => undefined}
-				onUpdateTaskStatus={async () => undefined}
-				pendingTaskId={null}
-				status='ready'
-				tasks={[
-					createTask({ id: 'a-task', title: '任务 A' }),
-					createTask({ id: 'd-task', title: '任务 D' }),
-				]}
-			/>,
+			<TaskCommandTestProvider onCommand={onCommand}>
+				<TaskBoardHarness
+					onEmptyAction={() => undefined}
+					onToggleTaskStatus={async () => undefined}
+					onUpdateTaskPriority={async () => undefined}
+					onUpdateTaskStatus={async () => undefined}
+					pendingTaskId={null}
+					status='ready'
+					tasks={[
+						createTask({ id: 'a-task', title: '任务 A' }),
+						createTask({ id: 'd-task', title: '任务 D' }),
+					]}
+				/>
+			</TaskCommandTestProvider>,
 		)
 
 		const row = screen.getByRole('row', { name: '打开任务 任务 A' })
@@ -438,10 +470,12 @@ describe('TaskBoard', () => {
 
 		await waitFor(() => {
 			expect(row).toHaveFocus()
-			expect(useDialogStore.getState().commandMenuMode).toBe('task-date-picker')
-			expect(useDialogStore.getState().commandSelectionOverride?.ids).toEqual(['a-task'])
+			expect(onCommand).toHaveBeenCalledWith(
+				COMMAND_IDS.taskOpenDateMenu,
+				expect.objectContaining({ selection: expect.objectContaining({ ids: ['a-task'] }) }),
+				{ source: 'row-shortcut' },
+			)
 		})
-		useDialogStore.getState().closeCommand()
 	})
 
 	it('右键不改变选择，菜单关闭后只恢复触发行焦点', async () => {
@@ -452,9 +486,7 @@ describe('TaskBoard', () => {
 		]
 		renderTaskBoard(
 			<TaskBoardHarness
-				activeTaskId={null}
 				onEmptyAction={() => undefined}
-				onOpenTask={() => undefined}
 				onToggleTaskStatus={async () => undefined}
 				onUpdateTaskPriority={async () => undefined}
 				onUpdateTaskStatus={async () => undefined}
@@ -497,11 +529,9 @@ describe('TaskBoard', () => {
 		} satisfies CollectionFocusIntent<string, string>
 		const { container } = renderTaskBoard(
 			<TaskBoardHarness
-				activeTaskId={null}
 				focusIntent={focusIntent}
 				onEmptyAction={() => undefined}
 				onFocusIntentConsumed={onFocusIntentConsumed}
-				onOpenTask={() => undefined}
 				onToggleTaskStatus={async () => undefined}
 				onUpdateTaskPriority={async () => undefined}
 				onUpdateTaskStatus={async () => undefined}
@@ -531,10 +561,8 @@ describe('TaskBoard', () => {
 		} satisfies CollectionFocusIntent<string, string>
 		renderTaskBoard(
 			<TaskBoardHarness
-				activeTaskId={null}
 				focusIntent={focusIntent}
 				onEmptyAction={() => undefined}
-				onOpenTask={() => undefined}
 				onToggleTaskStatus={async () => undefined}
 				onUpdateTaskPriority={async () => undefined}
 				onUpdateTaskStatus={async () => undefined}
@@ -564,11 +592,9 @@ describe('TaskBoard', () => {
 		const onFocusIntentConsumed = vi.fn()
 		renderTaskBoard(
 			<TaskBoardHarness
-				activeTaskId={null}
 				focusIntent={focusIntent}
 				onEmptyAction={() => undefined}
 				onFocusIntentConsumed={onFocusIntentConsumed}
-				onOpenTask={() => undefined}
 				onToggleTaskStatus={async () => undefined}
 				onUpdateTaskPriority={async () => undefined}
 				onUpdateTaskStatus={async () => undefined}
@@ -593,9 +619,7 @@ describe('TaskBoard', () => {
 		renderTaskBoard(
 			<AppScrollArea viewportProps={{ 'data-testid': 'task-viewport' }}>
 				<TaskBoardHarness
-					activeTaskId={null}
 					onEmptyAction={() => undefined}
-					onOpenTask={() => undefined}
 					onToggleTaskStatus={async () => undefined}
 					onUpdateTaskPriority={async () => undefined}
 					onUpdateTaskStatus={async () => undefined}
@@ -634,11 +658,9 @@ describe('TaskBoard', () => {
 						删除最后一项
 					</button>
 					<TaskBoardHarness
-						activeTaskId={null}
 						emptyActionLabel='创建任务'
 						emptyTitle='当前没有任务'
 						onEmptyAction={() => undefined}
-						onOpenTask={() => undefined}
 						onToggleTaskStatus={async () => undefined}
 						onUpdateTaskPriority={async () => undefined}
 						onUpdateTaskStatus={async () => undefined}
@@ -655,7 +677,7 @@ describe('TaskBoard', () => {
 		await waitFor(() => expect(screen.getByRole('button', { name: '创建任务' })).toHaveFocus())
 	})
 
-	it('分组全选一次更新 selection，不改动 focus', async () => {
+	it('可见 sticky 分组右键不改 selection/focus，动作仍一次更新 selection', async () => {
 		const tasks = [
 			createTask({ id: 'task-1', title: '任务 A', status: 'todo' }),
 			createTask({ id: 'task-2', title: '任务 B', status: 'todo' }),
@@ -663,9 +685,7 @@ describe('TaskBoard', () => {
 		]
 		renderTaskBoard(
 			<TaskBoardHarness
-				activeTaskId={null}
 				onEmptyAction={() => undefined}
-				onOpenTask={() => undefined}
 				onToggleTaskStatus={async () => undefined}
 				onUpdateTaskPriority={async () => undefined}
 				onUpdateTaskStatus={async () => undefined}
@@ -682,6 +702,9 @@ describe('TaskBoard', () => {
 			.getByRole('button', { name: '折叠 待执行' })
 			.closest('[data-board-section-header]')
 		fireEvent.contextMenu(visibleHeader!)
+		await screen.findByRole('menu', { name: '分区操作' })
+		expect(screen.getByTestId('selected-keys')).toHaveTextContent('none')
+		expect(screen.getByTestId('focused-key')).toHaveTextContent('task-3')
 		fireEvent.click(await screen.findByRole('menuitem', { name: '选中全部' }))
 		await waitFor(() => {
 			expect(screen.getByRole('row', { name: '打开任务 任务 A' })).toHaveAttribute(
@@ -694,6 +717,7 @@ describe('TaskBoard', () => {
 			)
 		})
 		expect(screen.getByTestId('focused-key')).toHaveTextContent('task-3')
+		await waitFor(() => expect(screen.getByRole('button', { name: '折叠 待执行' })).toHaveFocus())
 	})
 })
 
@@ -702,6 +726,45 @@ function renderTaskBoard(element: ReactElement): RenderResult {
 		<DangerConfirmProvider>
 			<BulkActionProvider actions={[]}>{element}</BulkActionProvider>
 		</DangerConfirmProvider>,
+	)
+}
+
+function TaskCommandTestProvider({
+	children,
+	onCommand,
+}: {
+	children: ReactNode
+	onCommand: (commandId: string, context: CommandContext, invocation: CommandInvocation) => void
+}) {
+	const context = useMemo(() => createEmptyCommandContext(), [])
+	const runtime = useMemo(() => {
+		const commands: Command[] = [
+			COMMAND_IDS.taskPeek,
+			COMMAND_IDS.taskOpenDetail,
+			COMMAND_IDS.taskComplete,
+			COMMAND_IDS.taskArchive,
+			COMMAND_IDS.taskDelete,
+			COMMAND_IDS.taskSetPriority,
+			COMMAND_IDS.taskSetStatus,
+			COMMAND_IDS.taskOpenDateMenu,
+			COMMAND_IDS.taskChangePlacement,
+		].map((commandId) => ({
+			id: commandId,
+			title: commandId,
+			category: 'task',
+			scope: ['task-list'],
+			run: (target, invocation) => onCommand(commandId, target, invocation),
+		}))
+		return new CommandRuntime({
+			registry: new CommandRegistry(commands),
+			getContext: () => context,
+		})
+	}, [context, onCommand])
+
+	return (
+		<CommandRuntimeProvider context={context} runtime={runtime}>
+			{children}
+		</CommandRuntimeProvider>
 	)
 }
 

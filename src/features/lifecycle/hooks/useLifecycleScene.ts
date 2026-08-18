@@ -63,7 +63,6 @@ export function useLifecycleScene(mode: LifecycleMode) {
 	const {
 		selectedIdSet: selectedEntryIdSet,
 		selectionSnapshot,
-		selectedCount,
 		focusedId: focusedEntryId,
 		toggleSelection: toggleEntrySelection,
 		clearSelection: clearEntrySelection,
@@ -71,11 +70,6 @@ export function useLifecycleScene(mode: LifecycleMode) {
 		moveFocus,
 		selectIds: selectEntryIds,
 	} = useEntitySelection(sliceItems.map((entry) => entry.id))
-
-	const selectedEntries = useMemo(
-		() => sliceItems.filter((entry) => selectedEntryIdSet.has(entry.id)),
-		[selectedEntryIdSet, sliceItems],
-	)
 
 	const commandSelection = useMemo(
 		() =>
@@ -139,21 +133,17 @@ export function useLifecycleScene(mode: LifecycleMode) {
 	}
 
 	const runLifecycleBulkAction = useCallback(
-		async (
-			actionId: BulkActionId,
-			entries: LifecycleEntry[] = selectedEntries,
-			source: 'bulk-bar' | 'context-menu' = 'bulk-bar',
-		) => {
+		async (actionId: BulkActionId, entries: LifecycleEntry[]) => {
 			const result = await runBulkAction(
 				actionId,
-				createLifecycleBulkSelectionSnapshot(entries, source),
+				createLifecycleBulkSelectionSnapshot(entries, 'context-menu'),
 			)
 			if (shouldClearBulkSelection(result)) {
 				clearEntrySelection()
 			}
 			showBulkActionResultToast(result, { successVerb: '处理', entityLabel: '条目' })
 		},
-		[clearEntrySelection, runBulkAction, selectedEntries],
+		[clearEntrySelection, runBulkAction],
 	)
 
 	async function runEntryMutation(entry: LifecycleEntry, runner: () => Promise<unknown>) {
@@ -193,27 +183,19 @@ export function useLifecycleScene(mode: LifecycleMode) {
 			void runEntryMutation(entry, () => restoreEntry.mutateAsync(entry))
 		},
 		onRestoreEntries: (entries: LifecycleEntry[]) => {
-			void runLifecycleBulkAction(
-				LIFECYCLE_BULK_ACTION_IDS.restoreSelected,
-				entries,
-				'context-menu',
-			)
+			void runLifecycleBulkAction(LIFECYCLE_BULK_ACTION_IDS.restoreSelected, entries)
 		},
 		onMoveToTrash: (entry: LifecycleEntry) => {
 			void runEntryMutation(entry, () => deleteEntry.mutateAsync(entry))
 		},
 		onMoveToTrashEntries: (entries: LifecycleEntry[]) => {
-			void runLifecycleBulkAction(LIFECYCLE_BULK_ACTION_IDS.deleteSelected, entries, 'context-menu')
+			void runLifecycleBulkAction(LIFECYCLE_BULK_ACTION_IDS.deleteSelected, entries)
 		},
 		onPermanentlyDelete: (entry: LifecycleEntry) => {
 			void runEntryMutation(entry, () => permanentlyDeleteEntry.mutateAsync(entry))
 		},
 		onPermanentlyDeleteEntries: (entries: LifecycleEntry[]) => {
-			void runLifecycleBulkAction(
-				LIFECYCLE_BULK_ACTION_IDS.deletePermanentlySelected,
-				entries,
-				'context-menu',
-			)
+			void runLifecycleBulkAction(LIFECYCLE_BULK_ACTION_IDS.deletePermanentlySelected, entries)
 		},
 		onSelectAllEntries: selectEntryIds,
 		onToggleEntrySelection: toggleEntrySelection,
@@ -227,18 +209,5 @@ export function useLifecycleScene(mode: LifecycleMode) {
 		lifecycleBoardProps,
 		breadcrumbItems,
 		toolbarPills,
-		bulk: {
-			selectedCount,
-			clearEntrySelection,
-			restoreSelected: () => {
-				void runLifecycleBulkAction(LIFECYCLE_BULK_ACTION_IDS.restoreSelected)
-			},
-			deleteSelected: () => {
-				void runLifecycleBulkAction(LIFECYCLE_BULK_ACTION_IDS.deleteSelected)
-			},
-			deletePermanentlySelected: () => {
-				void runLifecycleBulkAction(LIFECYCLE_BULK_ACTION_IDS.deletePermanentlySelected)
-			},
-		},
 	}
 }

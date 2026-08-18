@@ -15,18 +15,18 @@ export function registerLifecycleCommands(
 > {
 	const run = host.runEntityBulkActionFromCommand
 	return {
-		restoreSelectedLifecycleEntries: (ctx) =>
-			run(ctx, 'lifecycle', LIFECYCLE_BULK_ACTION_IDS.restoreSelected, {
+		restoreSelectedLifecycleEntries: (ctx, invocation) =>
+			run(ctx, invocation, 'lifecycle', LIFECYCLE_BULK_ACTION_IDS.restoreSelected, {
 				successVerb: '处理',
 				entityLabel: '条目',
 			}),
-		requestDeleteSelectedLifecycleEntries: (ctx) =>
-			run(ctx, 'lifecycle', LIFECYCLE_BULK_ACTION_IDS.deleteSelected, {
+		requestDeleteSelectedLifecycleEntries: (ctx, invocation) =>
+			run(ctx, invocation, 'lifecycle', LIFECYCLE_BULK_ACTION_IDS.deleteSelected, {
 				successVerb: '处理',
 				entityLabel: '条目',
 			}),
-		requestDeletePermanentlySelectedLifecycleEntries: (ctx) =>
-			run(ctx, 'lifecycle', LIFECYCLE_BULK_ACTION_IDS.deletePermanentlySelected, {
+		requestDeletePermanentlySelectedLifecycleEntries: (ctx, invocation) =>
+			run(ctx, invocation, 'lifecycle', LIFECYCLE_BULK_ACTION_IDS.deletePermanentlySelected, {
 				successVerb: '处理',
 				entityLabel: '条目',
 			}),

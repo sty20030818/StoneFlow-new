@@ -2,9 +2,17 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { createRef } from 'react'
 
 import {
+	CommandRegistry,
+	CommandRuntime,
+	CommandRuntimeProvider,
+	COMMAND_IDS,
+	createEmptyCommandContext,
 	DEFAULT_KEYBINDINGS,
 	KeybindingRegistry,
 	ShortcutRegistryProvider,
+	type Command,
+	type CommandContext,
+	type CommandInvocation,
 } from '@/features/command'
 import { DangerConfirmProvider } from '@/features/danger-confirm'
 import type { TaskPlacementTarget } from '@/features/metadata-fields'
@@ -45,7 +53,6 @@ function buildTask(partial: Partial<TaskListItem> = {}): TaskListItem {
 
 function buildActions(): TaskRowAdapterProps['actions'] {
 	return {
-		onOpenTask: vi.fn(),
 		onToggleTaskSelection: vi.fn(),
 		onUpdateTaskPriority: vi.fn().mockResolvedValue(undefined),
 		onUpdateTaskStatus: vi.fn().mockResolvedValue(undefined),
@@ -53,8 +60,6 @@ function buildActions(): TaskRowAdapterProps['actions'] {
 		onUpdateTaskScheduledAt: vi.fn().mockResolvedValue(undefined),
 		onUpdateTaskReminderAt: vi.fn().mockResolvedValue(undefined),
 		onToggleTaskStatus: vi.fn().mockResolvedValue(undefined),
-		onArchiveTask: vi.fn().mockResolvedValue(undefined),
-		onDeleteTask: vi.fn().mockResolvedValue(undefined),
 	}
 }
 
@@ -90,6 +95,7 @@ function renderTaskRowAdapter({
 	gridCellProps,
 	rowRef,
 	onContextMenuOpenChange,
+	onCommand,
 }: {
 	task?: TaskListItem
 	rowState?: TaskRowAdapterProps['rowState']
@@ -103,9 +109,10 @@ function renderTaskRowAdapter({
 	gridCellProps?: TaskRowAdapterProps['gridCellProps']
 	rowRef?: TaskRowAdapterProps['rowRef']
 	onContextMenuOpenChange?: TaskRowAdapterProps['onContextMenuOpenChange']
+	onCommand?: (commandId: string, context: CommandContext, invocation: CommandInvocation) => void
 } = {}) {
 	const { container } = render(
-		<TestProviders>
+		<TestProviders onCommand={onCommand}>
 			<TaskRowAdapter
 				actions={actions}
 				contextMenuActions={contextMenuActions}
@@ -127,11 +134,18 @@ function renderTaskRowAdapter({
 }
 
 describe('TaskRowAdapter', () => {
-	it('行点击触发打开详情', () => {
-		const { actions } = renderTaskRowAdapter()
+	it('行点击按 command ID 执行单行目标', () => {
+		const onCommand = vi.fn()
+		renderTaskRowAdapter({ onCommand })
 
 		fireEvent.click(screen.getByLabelText('打开任务 任务 A'))
-		expect(actions.onOpenTask).toHaveBeenCalledWith('task-1')
+		expect(onCommand).toHaveBeenCalledWith(
+			COMMAND_IDS.taskOpenDetail,
+			expect.objectContaining({
+				selection: expect.objectContaining({ ids: ['task-1'] }),
+			}),
+			{ source: 'row' },
+		)
 	})
 
 	it('接收 React Aria row/gridcell/ref，并覆盖 press click 保持行点击只打开详情', () => {
@@ -169,7 +183,6 @@ describe('TaskRowAdapter', () => {
 		expect(within(row).getByRole('gridcell')).toBeInTheDocument()
 		fireEvent.click(row)
 
-		expect(actions.onOpenTask).toHaveBeenCalledWith('task-1')
 		expect(actions.onToggleTaskSelection).not.toHaveBeenCalled()
 		expect(reactAriaPressClick).not.toHaveBeenCalled()
 	})
@@ -360,7 +373,7 @@ describe('TaskRowAdapter', () => {
 		fireEvent.contextMenu(screen.getByLabelText('打开任务 任务 A'))
 		await screen.findByRole('menu', { name: '任务操作' })
 		expect(onContextMenuOpenChange).toHaveBeenCalledWith(true)
-		fireEvent.click(await screen.findByRole('menuitem', { name: /归属/ }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /移动到/ }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /独立事项/ }))
 		expect(contextMenuActions.onSelectPlacement).toHaveBeenCalledWith(contextTasks, {
 			kind: 'standalone',
@@ -369,7 +382,7 @@ describe('TaskRowAdapter', () => {
 		expect(projectBinding.onSelectPlacement).not.toHaveBeenCalled()
 
 		fireEvent.contextMenu(screen.getByLabelText('打开任务 任务 A'))
-		fireEvent.click(await screen.findByRole('menuitem', { name: /归属/ }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /移动到/ }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /项目 B/ }))
 		expect(contextMenuActions.onSelectPlacement).toHaveBeenCalledWith(contextTasks, {
 			kind: 'project',
@@ -521,32 +534,62 @@ describe('TaskRowAdapter', () => {
 		)
 	})
 
-	it('右键菜单危险动作触发任务动作回调', async () => {
-		const { actions } = renderTaskRowAdapter()
+	it('右键菜单危险动作执行 context-menu 命令投影', async () => {
+		const onCommand = vi.fn()
+		renderTaskRowAdapter({ onCommand })
 		const row = screen.getByLabelText('打开任务 任务 A')
 
 		fireEvent.contextMenu(row)
 		fireEvent.click(await screen.findByRole('menuitem', { name: /归档任务/ }))
-		await screen.findByRole('alertdialog')
-		fireEvent.click(screen.getByRole('button', { name: '归档' }))
-		await waitFor(() => {
-			expect(actions.onArchiveTask).toHaveBeenCalledTimes(1)
-		})
+		expect(onCommand).toHaveBeenCalledWith(
+			COMMAND_IDS.taskArchive,
+			expect.objectContaining({
+				selection: expect.objectContaining({ ids: ['task-1'] }),
+				rowTarget: expect.objectContaining({ source: 'context-menu', targetId: 'task-1' }),
+			}),
+			{ source: 'context-menu' },
+		)
 	})
 })
 
-function TestProviders({ children }: { children: React.ReactNode }) {
+function TestProviders({
+	children,
+	onCommand = () => undefined,
+}: {
+	children: React.ReactNode
+	onCommand?: (commandId: string, context: CommandContext, invocation: CommandInvocation) => void
+}) {
+	const context = createEmptyCommandContext()
+	const commands: Command[] = [
+		[COMMAND_IDS.taskOpenDetail, '打开任务详情'],
+		[COMMAND_IDS.taskSetPriority, '设置任务优先级'],
+		[COMMAND_IDS.taskSetStatus, '设置任务状态'],
+		[COMMAND_IDS.taskOpenDateMenu, '设置任务日期'],
+		[COMMAND_IDS.taskChangePlacement, '移动到...'],
+		[COMMAND_IDS.taskArchive, '归档任务'],
+		[COMMAND_IDS.taskDelete, '删除任务'],
+	].map(([id, title]) => ({
+		id,
+		title,
+		category: 'task',
+		scope: ['task-list'],
+		run: (target, invocation) => onCommand(id, target, invocation),
+	}))
+	const runtime = new CommandRuntime({
+		registry: new CommandRegistry(commands),
+		getContext: () => context,
+	})
 	return (
 		<ShortcutRegistryProvider registry={TEST_SHORTCUT_REGISTRY}>
-			<DangerConfirmProvider>{children}</DangerConfirmProvider>
+			<CommandRuntimeProvider context={context} runtime={runtime}>
+				<DangerConfirmProvider>{children}</DangerConfirmProvider>
+			</CommandRuntimeProvider>
 		</ShortcutRegistryProvider>
 	)
 }
 
 function buildContextMenuActions(): TaskContextMenuBulkActions {
 	return {
-		onArchive: vi.fn(),
-		onMoveToTrash: vi.fn(),
 		onSelectDueDate: vi.fn(),
 		onSelectPlacement: vi.fn(),
 		onSelectPriority: vi.fn(),

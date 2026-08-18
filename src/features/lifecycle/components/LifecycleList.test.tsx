@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 
 import { BulkActionProvider } from '@/features/bulk-action'
 import { DangerConfirmProvider } from '@/features/danger-confirm'
@@ -138,32 +138,6 @@ describe('LifecycleList', () => {
 		expect(screen.queryByRole('button', { name: '永久删除' })).not.toBeInTheDocument()
 	})
 
-	it('Archive 模式多选后通过批量条恢复并清空 selection', async () => {
-		await renderLifecycleList({ mode: 'archive' })
-
-		fireEvent.click(screen.getByRole('checkbox', { name: '选择 工作' }))
-		fireEvent.click(screen.getByRole('checkbox', { name: '选择 补齐生命周期页面' }))
-
-		expect(await screen.findByText('已选 2 项')).toBeInTheDocument()
-		const bulkToolbar = await screen.findByRole('toolbar', { name: '批量操作' })
-		fireEvent.click(within(bulkToolbar).getByRole('button', { name: '恢复' }))
-
-		await waitFor(() => {
-			expect(restoreLifecycleEntrySpy).toHaveBeenCalledTimes(2)
-		})
-		expect(restoreLifecycleEntrySpy).toHaveBeenNthCalledWith(
-			1,
-			expect.objectContaining({ id: 'space-1' }),
-		)
-		expect(restoreLifecycleEntrySpy).toHaveBeenNthCalledWith(
-			2,
-			expect.objectContaining({ id: 'task-1' }),
-		)
-		expect(refreshLoadedSlicesSpy).toHaveBeenCalledTimes(1)
-		expect(toastSuccessSpy).toHaveBeenCalledWith('已恢复 2 个条目')
-		expect(screen.queryByText('已选 2 项')).not.toBeInTheDocument()
-	})
-
 	it('Trash 模式在空列表时展示页面空状态', async () => {
 		storeState = createStoreState({
 			trashEntries: {
@@ -183,44 +157,6 @@ describe('LifecycleList', () => {
 				'删除后的任务和项目会先来到这里。点「返回独立事项」先回去继续处理内容就好。',
 			),
 		).toBeInTheDocument()
-	})
-
-	it('Trash 模式多选后展示恢复与永久删除入口', async () => {
-		await renderLifecycleList({ mode: 'trash' })
-
-		fireEvent.click(screen.getByRole('checkbox', { name: '选择 待永久删除任务' }))
-
-		expect(await screen.findByRole('toolbar', { name: '批量操作' })).toBeInTheDocument()
-		expect(screen.getAllByRole('button', { name: '恢复' })).toHaveLength(2)
-		expect(screen.getByRole('button', { name: '永久删除' })).toBeInTheDocument()
-	})
-
-	it('Trash 模式永久删除先确认再执行', async () => {
-		await renderLifecycleList({ mode: 'trash' })
-
-		fireEvent.click(screen.getByRole('checkbox', { name: '选择 待永久删除任务' }))
-		fireEvent.click(
-			within(await screen.findByRole('toolbar', { name: '批量操作' })).getByRole('button', {
-				name: '永久删除',
-			}),
-		)
-
-		expect(screen.getByRole('alertdialog')).toBeInTheDocument()
-		expect(screen.getByText('确认永久删除「待永久删除任务」吗？')).toBeInTheDocument()
-		expect(permanentlyDeleteLifecycleEntrySpy).not.toHaveBeenCalled()
-
-		fireEvent.click(
-			within(screen.getByRole('alertdialog')).getByRole('button', { name: '永久删除' }),
-		)
-
-		await waitFor(() => {
-			expect(permanentlyDeleteLifecycleEntrySpy).toHaveBeenCalledWith(
-				expect.objectContaining({ id: 'task-2' }),
-			)
-		})
-		expect(refreshLoadedSlicesSpy).toHaveBeenCalledTimes(1)
-		expect(toastSuccessSpy).toHaveBeenCalledWith('已永久删除 1 个条目')
-		expect(screen.queryByText('已选 1 项')).not.toBeInTheDocument()
 	})
 
 	it('archive 单条 task 右键可移入回收站，trash 单条 task 右键可永久删除', async () => {

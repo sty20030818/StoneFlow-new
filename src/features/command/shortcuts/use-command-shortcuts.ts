@@ -99,8 +99,9 @@ export function useCommandShortcuts({
 			if (result.keybinding.preventDefault) {
 				event.preventDefault()
 			}
+			const trigger = onTriggerRef.current
 			clearChordState()
-			window.setTimeout(() => onTriggerRef.current(result.keybinding.commandId), 0)
+			window.setTimeout(() => trigger(result.keybinding.commandId), 0)
 			return 'handled'
 		}
 

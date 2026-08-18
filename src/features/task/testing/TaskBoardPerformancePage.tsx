@@ -284,7 +284,6 @@ export function TaskBoardPerformancePage() {
 									viewportClassName='px-2 pb-2'
 								>
 									<TaskBoard
-										activeTaskId={null}
 										collectionInteraction={collectionInteraction}
 										flatItems={flatItems}
 										focusIntent={null}
@@ -296,7 +295,6 @@ export function TaskBoardPerformancePage() {
 										onExpandAll={noop}
 										onFetchNextPage={handleFetchNextPage}
 										onFocusIntentConsumed={noop}
-										onOpenTask={noop}
 										onSectionOpenChange={noop}
 										onToggleTaskStatus={noopAsync}
 										onUpdateTaskPriority={noopAsync}

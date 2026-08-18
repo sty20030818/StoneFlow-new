@@ -19,7 +19,9 @@ import { useSettingsReturnPath } from '@/layout/model/useSettingsReturnPath'
 import { ShellChrome } from '@/layout/ShellChrome'
 import { ShellLayoutSkeleton } from '@/layout/ShellLayoutSkeleton'
 import { ShellOverlays } from '@/layout/overlays/ShellOverlays'
+import { BulkActionBar } from '@/features/bulk-action'
 import { SyncStatusProvider } from '@/features/sync'
+import { CommandRuntimeProvider } from '@/features/command'
 import { useUpdateEvents } from '@/features/update'
 import { getUpdateSettings, type UpdateChannel } from '@/features/update/contract'
 import { dismissBootShell } from '@/shared/lib/bootShell'
@@ -171,53 +173,58 @@ export function ShellLayoutContent({
 		>
 			<BootShellDismiss />
 			<SyncStatusProvider>
-				<ShellChrome
-					activeSection={activeSection}
-					chrome={chrome}
-					command={command}
-					createDialog={createDialog}
-					currentScope={currentScope}
-					currentSpaceId={currentSpaceId}
-					handleOpenTaskCreate={handleOpenTaskCreate}
-					onOpenChangelog={() => openChangelog()}
-					onOpenAbout={() => setIsAboutOpen(true)}
-					headerProjects={headerProjects}
-					isSettingsMode={isSettingsMode}
-					routeHistory={routeHistory}
-					settingsReturnPath={settingsReturnPath}
-					shellRoute={shellRoute}
-					sidebar={sidebar}
-				>
-					{children}
-				</ShellChrome>
-				<ShellOverlays
-					closeCustomDateDialog={createDialog.closeCustomDateDialog}
-					closeProjectCreateDialog={createDialog.closeProjectCreateDialog}
-					closeTaskCreateDialog={createDialog.closeTaskCreateDialog}
-					changelogOpen={changelogIntent.open}
-					changelogChannel={changelogIntent.channel}
-					changelogFocusVersion={changelogIntent.focusVersion}
-					aboutOpen={isAboutOpen}
-					createDialogType={createDialog.createDialogType}
-					currentScope={currentScope}
-					customDateDialog={createDialog.customDateDialog}
-					defaultCreateSpaceId={createDialog.defaultCreateSpaceId}
-					projectOptions={chrome.projectOptions}
-					projectsLoading={chrome.sidebarProjects.status === 'loading'}
-					onChangelogOpenChange={(open) => setChangelogIntent((current) => ({ ...current, open }))}
-					onAboutOpenChange={setIsAboutOpen}
-					onOpenChangelogFromAbout={() => {
-						setIsAboutOpen(false)
-						openChangelog()
-					}}
-					selectedSpaceId={createDialog.selectedSpaceId}
-					setSelectedSpaceId={createDialog.setSelectedSpaceId}
-					shouldDelayTaskCreateDialog={createDialog.shouldDelayTaskCreateDialog}
-					spaces={chrome.spaces}
-					taskCreateDraft={createDialog.taskCreateDraft}
-					taskCreatePresentation={createDialog.taskCreatePresentation}
-					toggleTaskCreatePresentation={createDialog.toggleTaskCreatePresentation}
-				/>
+				<CommandRuntimeProvider context={command.commandContext} runtime={command.commandRuntime}>
+					<ShellChrome
+						activeSection={activeSection}
+						chrome={chrome}
+						command={command}
+						createDialog={createDialog}
+						currentScope={currentScope}
+						currentSpaceId={currentSpaceId}
+						handleOpenTaskCreate={handleOpenTaskCreate}
+						onOpenChangelog={() => openChangelog()}
+						onOpenAbout={() => setIsAboutOpen(true)}
+						headerProjects={headerProjects}
+						isSettingsMode={isSettingsMode}
+						routeHistory={routeHistory}
+						settingsReturnPath={settingsReturnPath}
+						shellRoute={shellRoute}
+						sidebar={sidebar}
+					>
+						{children}
+					</ShellChrome>
+					<BulkActionBar context={command.commandContext} runtime={command.commandRuntime} />
+					<ShellOverlays
+						closeCustomDateDialog={createDialog.closeCustomDateDialog}
+						closeProjectCreateDialog={createDialog.closeProjectCreateDialog}
+						closeTaskCreateDialog={createDialog.closeTaskCreateDialog}
+						changelogOpen={changelogIntent.open}
+						changelogChannel={changelogIntent.channel}
+						changelogFocusVersion={changelogIntent.focusVersion}
+						aboutOpen={isAboutOpen}
+						createDialogType={createDialog.createDialogType}
+						currentScope={currentScope}
+						customDateDialog={createDialog.customDateDialog}
+						defaultCreateSpaceId={createDialog.defaultCreateSpaceId}
+						projectOptions={chrome.projectOptions}
+						projectsLoading={chrome.sidebarProjects.status === 'loading'}
+						onChangelogOpenChange={(open) =>
+							setChangelogIntent((current) => ({ ...current, open }))
+						}
+						onAboutOpenChange={setIsAboutOpen}
+						onOpenChangelogFromAbout={() => {
+							setIsAboutOpen(false)
+							openChangelog()
+						}}
+						selectedSpaceId={createDialog.selectedSpaceId}
+						setSelectedSpaceId={createDialog.setSelectedSpaceId}
+						shouldDelayTaskCreateDialog={createDialog.shouldDelayTaskCreateDialog}
+						spaces={chrome.spaces}
+						taskCreateDraft={createDialog.taskCreateDraft}
+						taskCreatePresentation={createDialog.taskCreatePresentation}
+						toggleTaskCreatePresentation={createDialog.toggleTaskCreatePresentation}
+					/>
+				</CommandRuntimeProvider>
 			</SyncStatusProvider>
 		</Sidebar.Provider>
 	)

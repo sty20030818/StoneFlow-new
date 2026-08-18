@@ -47,11 +47,6 @@ describe('lifecycleBulkActions', () => {
 
 		expect(action.tone).toBe('destructive')
 		expect(shouldConfirmAction(action, snapshot)).toBe(true)
-		expect(action.getConfirmCopy?.(snapshot)).toEqual({
-			title: '永久删除选中条目？',
-			description: '将永久删除 2 个条目。此操作不可撤销。',
-			confirmLabel: '永久删除',
-		})
 	})
 
 	it('缺 adapter 时返回 failed', async () => {

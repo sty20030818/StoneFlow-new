@@ -1,4 +1,9 @@
-import type { Command, CommandContext, TaskPlacementTarget } from '@/features/command/core'
+import type {
+	Command,
+	CommandContext,
+	CommandInvocation,
+	TaskPlacementTarget,
+} from '@/features/command/core'
 import type { ShellNavigationTarget } from '@/shared/types'
 
 /**
@@ -26,19 +31,45 @@ export type ShellChromeCommandActions = {
  * 各域 register 贡献的动作。装配时按 register 出现；缺则 bind 侧禁用对应命令。
  */
 export type ShellDomainCommandActions = {
+	peekTask: (ctx: CommandContext) => void | Promise<void>
+	openTaskDetail: (ctx: CommandContext) => void | Promise<void>
 	openTaskPlacementPicker: (ctx: CommandContext) => void
 	applyTaskPlacement: (target: TaskPlacementTarget, ctx: CommandContext) => void | Promise<void>
 	openTaskPriorityPicker: (ctx: CommandContext) => void
 	openTaskStatusPicker: (ctx: CommandContext) => void
 	openTaskDatePicker: (ctx: CommandContext) => void
-	completeSelectedTasks: (ctx: CommandContext) => void | Promise<void>
-	requestArchiveSelectedTasks: (ctx: CommandContext) => void | Promise<void>
-	requestDeleteSelectedTasks: (ctx: CommandContext) => void | Promise<void>
-	requestArchiveSelectedProjects: (ctx: CommandContext) => void | Promise<void>
-	requestDeleteSelectedProjects: (ctx: CommandContext) => void | Promise<void>
-	restoreSelectedLifecycleEntries: (ctx: CommandContext) => void | Promise<void>
-	requestDeleteSelectedLifecycleEntries: (ctx: CommandContext) => void | Promise<void>
-	requestDeletePermanentlySelectedLifecycleEntries: (ctx: CommandContext) => void | Promise<void>
+	completeSelectedTasks: (
+		ctx: CommandContext,
+		invocation: CommandInvocation,
+	) => void | Promise<void>
+	requestArchiveSelectedTasks: (
+		ctx: CommandContext,
+		invocation: CommandInvocation,
+	) => void | Promise<void>
+	requestDeleteSelectedTasks: (
+		ctx: CommandContext,
+		invocation: CommandInvocation,
+	) => void | Promise<void>
+	requestArchiveSelectedProjects: (
+		ctx: CommandContext,
+		invocation: CommandInvocation,
+	) => void | Promise<void>
+	requestDeleteSelectedProjects: (
+		ctx: CommandContext,
+		invocation: CommandInvocation,
+	) => void | Promise<void>
+	restoreSelectedLifecycleEntries: (
+		ctx: CommandContext,
+		invocation: CommandInvocation,
+	) => void | Promise<void>
+	requestDeleteSelectedLifecycleEntries: (
+		ctx: CommandContext,
+		invocation: CommandInvocation,
+	) => void | Promise<void>
+	requestDeletePermanentlySelectedLifecycleEntries: (
+		ctx: CommandContext,
+		invocation: CommandInvocation,
+	) => void | Promise<void>
 	submitActiveForm: (ctx: CommandContext) => void | Promise<void>
 	submitAndContinue: (ctx: CommandContext) => void | Promise<void>
 	submitAndOpen: (ctx: CommandContext) => void | Promise<void>

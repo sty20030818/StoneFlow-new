@@ -3,14 +3,15 @@ import {
 	cloneElement,
 	Fragment,
 	isValidElement,
+	useEffect,
+	useRef,
 	useState,
 	type ComponentProps,
 	type ReactElement,
 	type ReactNode,
 	type Ref,
 } from 'react'
-
-import { ContextMenu, ContextMenuTrigger } from '@/shared/components/base/context-menu'
+import { ContextMenu } from '@heroui-pro/react'
 
 import { cn } from '@/shared/lib/utils'
 import { Badge } from '@/shared/components/base/badge'
@@ -257,15 +258,33 @@ export function BoardCollapsibleSection({
 	children,
 }: BoardCollapsibleSectionProps) {
 	const [contextMenuOpen, setContextMenuOpen] = useState(false)
+	const [toggleTooltipOpen, setToggleTooltipOpen] = useState(false)
+	const contextMenuHadOpenedRef = useRef(false)
+	const toggleRef = useRef<HTMLButtonElement | null>(null)
+	useEffect(() => {
+		if (contextMenuOpen) {
+			contextMenuHadOpenedRef.current = true
+			return
+		}
+		if (!contextMenuHadOpenedRef.current) return
+
+		contextMenuHadOpenedRef.current = false
+		toggleRef.current?.focus({ preventScroll: true })
+	}, [contextMenuOpen])
 	const toggleLabel = open ? `折叠 ${label}` : `展开 ${label}`
-	const header = (
-		<div
-			className={BOARD_GROUP_HEADER_CLASS}
-			data-board-section-header='true'
-			onDoubleClick={() => onOpenChange(!open)}
-		>
-			<ActionTooltip label={toggleLabel}>
-				<CollapsibleTrigger aria-label={toggleLabel} className={entityBoardSectionToggleClass}>
+	const headerContent = (
+		<>
+			<ActionTooltip
+				isOpen={toggleTooltipOpen && !contextMenuOpen}
+				label={toggleLabel}
+				onOpenChange={(nextOpen) => setToggleTooltipOpen(nextOpen && !contextMenuOpen)}
+			>
+				<CollapsibleTrigger
+					ref={toggleRef}
+					aria-label={toggleLabel}
+					className={entityBoardSectionToggleClass}
+					onClick={() => setToggleTooltipOpen(false)}
+				>
 					<BoardChevron data-chevron />
 				</CollapsibleTrigger>
 			</ActionTooltip>
@@ -291,7 +310,7 @@ export function BoardCollapsibleSection({
 				) : null}
 			</div>
 			{trailing ?? <span className={entityBoardSectionRightSpacerClass} />}
-		</div>
+		</>
 	)
 
 	return (
@@ -302,12 +321,30 @@ export function BoardCollapsibleSection({
 			open={open}
 		>
 			{contextMenuContent ? (
-				<ContextMenu onOpenChange={setContextMenuOpen} open={contextMenuOpen}>
-					<ContextMenuTrigger asChild>{header}</ContextMenuTrigger>
+				<ContextMenu
+					onOpenChange={(nextOpen) => {
+						setContextMenuOpen(nextOpen)
+						if (nextOpen) setToggleTooltipOpen(false)
+					}}
+					open={contextMenuOpen}
+				>
+					<ContextMenu.Trigger
+						className={BOARD_GROUP_HEADER_CLASS}
+						data-board-section-header='true'
+						onDoubleClick={() => onOpenChange(!open)}
+					>
+						{headerContent}
+					</ContextMenu.Trigger>
 					{contextMenuContent}
 				</ContextMenu>
 			) : (
-				header
+				<div
+					className={BOARD_GROUP_HEADER_CLASS}
+					data-board-section-header='true'
+					onDoubleClick={() => onOpenChange(!open)}
+				>
+					{headerContent}
+				</div>
 			)}
 			<CollapsibleContent className='overflow-hidden px-0'>
 				<BoardRows getItemId={getItemId} selectedIdSet={selectedIdSet}>

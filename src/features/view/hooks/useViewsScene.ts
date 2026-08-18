@@ -17,7 +17,7 @@ import {
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useProjectOptions } from '@/features/project'
 import { useSpaces } from '@/features/space'
-import { useTaskCollectionScene, useTaskPreviewController } from '@/features/task'
+import { useTaskCollectionScene } from '@/features/task'
 import { useTaskChangedListener } from '@/shared/events'
 import { EMPTY_FILTER_QUERY } from '@/shared/types'
 import type { View } from '@/shared/types'
@@ -46,8 +46,6 @@ export function useViewsScene() {
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 	const entityDetailController = useEntityDetailController()
 	const activeDetail = entityDetailController.activeDetail
-	const openTaskDetail = entityDetailController.openTaskDetail
-	const taskPreviewController = useTaskPreviewController()
 	const taskViewsQuery = useViewsQuery()
 	const taskViews = taskViewsQuery.data ?? EMPTY_TASK_VIEWS
 
@@ -181,15 +179,6 @@ export function useViewsScene() {
 			}
 			openCreateEditor()
 		},
-		onOpenTask: (taskId) => {
-			taskPreviewController.closePreview()
-			openTaskDetail(taskId)
-		},
-		onPeekTask: (taskId, source) => {
-			if (activeDetail?.kind !== 'task') {
-				taskPreviewController.openPreview(taskId, source)
-			}
-		},
 		projectOptions,
 		spaces,
 		showProjectCellOptions: false,
@@ -315,10 +304,6 @@ export function useViewsScene() {
 		taskCollection,
 		displayPageKey,
 		filterUiValue,
-		bulk: {
-			selectedCount: taskCollection.selectedCount,
-			clearTaskSelection: taskCollection.clearTaskSelection,
-		},
 		openTaskCreateDialog: () => openTaskCreateDialog({ status: 'todo' }),
 		navigateToView,
 		openCreateEditor,

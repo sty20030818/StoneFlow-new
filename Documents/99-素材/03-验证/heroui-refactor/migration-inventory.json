@@ -850,11 +850,24 @@
 	],
 	"legacyLayers": [
 		{
+			"path": "src/shared/components/base/command.tsx",
+			"kind": "legacy-cmdk-command-primitive",
+			"ownerTask": "T82",
+			"disposition": "delete-after-heroui-pro-command-hard-cut-and-zero-consumers"
+		},
+		{
+			"path": "src/shared/components/base/alert-dialog.tsx",
+			"kind": "legacy-alert-dialog-primitive",
+			"ownerTask": "T82",
+			"preflightTasks": ["T54", "T80"],
+			"disposition": "delete-after-unified-danger-confirm-becomes-only-confirmation-surface"
+		},
+		{
 			"path": "src/shared/components/base",
 			"kind": "legacy-primitive-layer",
 			"ownerTask": "T108",
-			"preflightTasks": ["T17", "T18", "T19", "T29"],
-			"disposition": "delete-entire-layer-after-all-direct-heroui-hard-cuts-and-zero-consumers"
+			"preflightTasks": ["T17", "T18", "T19", "T29", "T82"],
+			"disposition": "delete-remaining-layer-after-t82-narrow-deletions-and-all-direct-heroui-hard-cuts"
 		},
 		{
 			"path": "src/shared/components/patterns",
@@ -935,15 +948,15 @@
 			"path": "package.json",
 			"kind": "legacy-ui-dependency-manifest",
 			"ownerTask": "T109",
-			"preflightTasks": ["T8", "T29"],
-			"disposition": "remove-zero-consumer-radix-shadcn-cmdk-sonner-react-day-picker-cva-and-tw-animate-dependencies"
+			"preflightTasks": ["T8", "T29", "T82"],
+			"disposition": "remove-cmdk-at-t82-then-remove-remaining-zero-consumer-legacy-ui-dependencies-at-t109"
 		},
 		{
 			"path": "bun.lock",
 			"kind": "legacy-ui-dependency-lock",
 			"ownerTask": "T109",
-			"preflightTasks": ["T8", "T29"],
-			"disposition": "regenerate-without-zero-consumer-legacy-ui-and-direct-animation-dependencies"
+			"preflightTasks": ["T8", "T29", "T82"],
+			"disposition": "remove-cmdk-at-t82-then-regenerate-without-remaining-zero-consumer-legacy-dependencies-at-t109"
 		}
 	],
 	"legacySfTokenInventory": [
@@ -1356,7 +1369,8 @@
 			"path": "src/shared/components/base",
 			"kind": "radix-cmdk-day-picker-sonner-cva-consumer-set",
 			"ownerTask": "T108",
-			"disposition": "delete-after-direct-heroui-consumers-cut-over"
+			"preflightTasks": ["T82"],
+			"disposition": "cmdk-command-and-alert-dialog-removed-at-t82-delete-remaining-consumers-at-t108"
 		},
 		{
 			"path": "src/features/command/components/CommandActionTooltip.tsx",
@@ -1398,7 +1412,8 @@
 			"path": "package.json",
 			"kind": "legacy-dependency-declarations",
 			"ownerTask": "T109",
-			"disposition": "remove-radix-ui-@radix-ui/react-avatar-cmdk-sonner-react-day-picker-class-variance-authority-and-tw-animate-css-after-zero-consumers"
+			"preflightTasks": ["T82"],
+			"disposition": "cmdk-removed-at-t82-remove-remaining-legacy-declarations-at-t109-after-zero-consumers"
 		}
 	]
 }

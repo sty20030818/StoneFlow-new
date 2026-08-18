@@ -26,11 +26,6 @@ const lifecycleBulkActionDefinitions: LifecycleBulkActionDefinition[] = [
 		intent: 'delete',
 		tone: 'destructive',
 		requiresConfirm: true,
-		getConfirmCopy: (snapshot) => ({
-			title: '删除选中条目？',
-			description: `将删除 ${snapshot.ids.length} 个条目。删除后可在回收站中恢复。`,
-			confirmLabel: '确认删除',
-		}),
 	},
 	{
 		id: LIFECYCLE_BULK_ACTION_IDS.deletePermanentlySelected,
@@ -40,11 +35,6 @@ const lifecycleBulkActionDefinitions: LifecycleBulkActionDefinition[] = [
 		intent: 'delete',
 		tone: 'destructive',
 		requiresConfirm: true,
-		getConfirmCopy: (snapshot) => ({
-			title: '永久删除选中条目？',
-			description: `将永久删除 ${snapshot.ids.length} 个条目。此操作不可撤销。`,
-			confirmLabel: '永久删除',
-		}),
 	},
 ]
 

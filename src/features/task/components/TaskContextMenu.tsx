@@ -1,5 +1,9 @@
-import { useDangerConfirm } from '@/features/danger-confirm'
-import { COMMAND_IDS, CommandShortcut } from '@/features/command'
+import {
+	COMMAND_IDS,
+	CommandShortcut,
+	type CommandId,
+	type CommandProjection,
+} from '@/features/command'
 import { useDialogStore } from '@/features/shell-dialogs'
 import { ContextMenu } from '@heroui-pro/react'
 import { Header } from '@heroui/react'
@@ -40,18 +44,12 @@ type TaskContextMenuProps = {
 	placementGroups?: TaskPlacementGroup[]
 	placementValue?: TaskPlacementTarget
 	isBusy?: boolean
+	projectCommand: (commandId: CommandId) => CommandProjection | null
 	onSelectStatus: (status: TaskStatus) => void
 	onSelectPriority: (priority: TaskPriorityValue) => void
 	onSelectDueDate?: (dueAt: string | null) => void
 	onSelectPlacement?: (target: TaskPlacementTarget) => void
-	onMoveToTrash?: () => void
-	onArchive?: () => void
 	onOpenChange?: (open: boolean) => void
-	moveToTrashLabel?: string
-	archiveActionLabel?: string
-	moveToTrashRequiresConfirm?: boolean
-	archiveRequiresConfirm?: boolean
-	dangerEntityLabel?: string
 }
 
 type TaskContextSelectionValues = {
@@ -74,28 +72,27 @@ export function TaskContextMenu({
 	placementGroups = [],
 	placementValue,
 	isBusy,
+	projectCommand,
 	onSelectStatus,
 	onSelectPriority,
 	onSelectDueDate,
 	onSelectPlacement,
-	onMoveToTrash,
-	onArchive,
 	onOpenChange,
-	moveToTrashLabel = '移入回收站',
-	archiveActionLabel = '归档任务',
-	moveToTrashRequiresConfirm = true,
-	archiveRequiresConfirm = true,
-	dangerEntityLabel,
 }: TaskContextMenuProps) {
 	// 仅打开时挂载 Content，避免每行常驻整棵菜单子树
 	const [menuOpen, setMenuOpen] = useState(false)
-	const { requestDangerConfirm } = useDangerConfirm()
 	const openCustomDateDialog = useDialogStore((state) => state.openCustomDateDialog)
-	const canMoveToTrash = !!onMoveToTrash
-	const canArchive = !!onArchive
-	const canSelectDueDate = !!onSelectDueDate
+	const statusCommand = menuOpen ? projectCommand(COMMAND_IDS.taskSetStatus) : null
+	const priorityCommand = menuOpen ? projectCommand(COMMAND_IDS.taskSetPriority) : null
+	const dateCommand = menuOpen ? projectCommand(COMMAND_IDS.taskOpenDateMenu) : null
+	const placementCommand = menuOpen ? projectCommand(COMMAND_IDS.taskChangePlacement) : null
+	const archiveCommand = menuOpen ? projectCommand(COMMAND_IDS.taskArchive) : null
+	const deleteCommand = menuOpen ? projectCommand(COMMAND_IDS.taskDelete) : null
+	const canMoveToTrash = Boolean(deleteCommand?.visible)
+	const canArchive = Boolean(archiveCommand?.visible)
+	const canSelectDueDate = Boolean(onSelectDueDate && dateCommand?.visible)
 	const canSelectPlacement = Boolean(
-		onSelectPlacement && placementValue && placementGroups.length > 0,
+		onSelectPlacement && placementValue && placementGroups.length > 0 && placementCommand?.visible,
 	)
 	const currentDueDate = normalizeMetadataDateValue(dueAt)
 	const statusIndicatorValues = getIndicatorValues(selectionValues?.statuses ?? [status])
@@ -152,87 +149,96 @@ export function TaskContextMenu({
 				<ContextMenu.Popover className='w-56'>
 					<ContextMenu.Menu aria-label='任务操作'>
 						<ContextMenu.Section>
-							<ContextMenu.SubmenuTrigger>
-								<PropertySubTrigger
-									id='task-status-submenu'
-									isDisabled={isBusy}
-									icon={<TaskStatusIndicator status={status} />}
-									shortcut={<CommandShortcut commandId={COMMAND_IDS.taskSetStatus} scope='row' />}
-									textValue='状态'
-								>
-									状态
-								</PropertySubTrigger>
-								<ContextMenu.Popover className='w-64' placement='right top'>
-									<ContextMenu.Menu aria-label='任务状态'>
-										<ContextMenu.Section>
-											<Header>{statusGroup.label}</Header>
-											{statusGroup.options.map((option) => (
-												<PropertyOptionItem
-													id={`task-status-${String(option.value)}`}
-													indicator={getPropertyOptionIndicator(
-														statusIndicatorValues,
-														option.value,
-													)}
-													icon={option.icon}
-													key={option.value}
-													onAction={() => onSelectStatus(option.value)}
-													shortcut={option.shortcut}
-													textValue={option.label}
-												>
-													{option.label}
-												</PropertyOptionItem>
-											))}
-										</ContextMenu.Section>
-									</ContextMenu.Menu>
-								</ContextMenu.Popover>
-							</ContextMenu.SubmenuTrigger>
+							{statusCommand?.visible ? (
+								<ContextMenu.SubmenuTrigger>
+									<PropertySubTrigger
+										disabledReason={statusCommand.disabledReason}
+										id='task-status-submenu'
+										isDisabled={isBusy || !statusCommand.enabled}
+										icon={<TaskStatusIndicator status={status} />}
+										shortcut={<CommandShortcut commandId={COMMAND_IDS.taskSetStatus} scope='row' />}
+										textValue={statusCommand.label}
+									>
+										{statusCommand.label}
+									</PropertySubTrigger>
+									<ContextMenu.Popover className='w-64' placement='right top'>
+										<ContextMenu.Menu aria-label='任务状态'>
+											<ContextMenu.Section>
+												<Header>{statusGroup.label}</Header>
+												{statusGroup.options.map((option) => (
+													<PropertyOptionItem
+														id={`task-status-${String(option.value)}`}
+														indicator={getPropertyOptionIndicator(
+															statusIndicatorValues,
+															option.value,
+														)}
+														icon={option.icon}
+														key={option.value}
+														onAction={() => onSelectStatus(option.value)}
+														shortcut={option.shortcut}
+														textValue={option.label}
+													>
+														{option.label}
+													</PropertyOptionItem>
+												))}
+											</ContextMenu.Section>
+										</ContextMenu.Menu>
+									</ContextMenu.Popover>
+								</ContextMenu.SubmenuTrigger>
+							) : null}
 
-							<ContextMenu.SubmenuTrigger>
-								<PropertySubTrigger
-									id='task-priority-submenu'
-									isDisabled={isBusy}
-									icon={<PriorityIcon priority={priority} />}
-									shortcut={<CommandShortcut commandId={COMMAND_IDS.taskSetPriority} scope='row' />}
-									textValue='优先级'
-								>
-									优先级
-								</PropertySubTrigger>
-								<ContextMenu.Popover className='w-64' placement='right top'>
-									<ContextMenu.Menu aria-label='任务优先级'>
-										<ContextMenu.Section>
-											<Header>{priorityGroup.label}</Header>
-											{priorityGroup.options.map((option) => (
-												<PropertyOptionItem
-													id={`task-priority-${String(option.value)}`}
-													indicator={getPropertyOptionIndicator(
-														priorityIndicatorValues,
-														String(option.value),
-													)}
-													icon={option.icon}
-													key={option.value}
-													onAction={() => onSelectPriority(option.value)}
-													shortcut={option.shortcut}
-													textValue={option.label}
-												>
-													{option.label}
-												</PropertyOptionItem>
-											))}
-										</ContextMenu.Section>
-									</ContextMenu.Menu>
-								</ContextMenu.Popover>
-							</ContextMenu.SubmenuTrigger>
+							{priorityCommand?.visible ? (
+								<ContextMenu.SubmenuTrigger>
+									<PropertySubTrigger
+										disabledReason={priorityCommand.disabledReason}
+										id='task-priority-submenu'
+										isDisabled={isBusy || !priorityCommand.enabled}
+										icon={<PriorityIcon priority={priority} />}
+										shortcut={
+											<CommandShortcut commandId={COMMAND_IDS.taskSetPriority} scope='row' />
+										}
+										textValue={priorityCommand.label}
+									>
+										{priorityCommand.label}
+									</PropertySubTrigger>
+									<ContextMenu.Popover className='w-64' placement='right top'>
+										<ContextMenu.Menu aria-label='任务优先级'>
+											<ContextMenu.Section>
+												<Header>{priorityGroup.label}</Header>
+												{priorityGroup.options.map((option) => (
+													<PropertyOptionItem
+														id={`task-priority-${String(option.value)}`}
+														indicator={getPropertyOptionIndicator(
+															priorityIndicatorValues,
+															String(option.value),
+														)}
+														icon={option.icon}
+														key={option.value}
+														onAction={() => onSelectPriority(option.value)}
+														shortcut={option.shortcut}
+														textValue={option.label}
+													>
+														{option.label}
+													</PropertyOptionItem>
+												))}
+											</ContextMenu.Section>
+										</ContextMenu.Menu>
+									</ContextMenu.Popover>
+								</ContextMenu.SubmenuTrigger>
+							) : null}
 							{canSelectDueDate ? (
 								<ContextMenu.SubmenuTrigger>
 									<PropertySubTrigger
+										disabledReason={dateCommand?.disabledReason}
 										id='task-due-date-submenu'
-										isDisabled={isBusy}
+										isDisabled={isBusy || !dateCommand?.enabled}
 										icon={<CalendarX2Icon />}
 										shortcut={
 											<CommandShortcut commandId={COMMAND_IDS.taskOpenDateMenu} scope='row' />
 										}
-										textValue='截止时间'
+										textValue={dateCommand?.label ?? '截止时间'}
 									>
-										截止时间
+										{dateCommand?.label ?? '截止时间'}
 									</PropertySubTrigger>
 									<ContextMenu.Popover className='w-64' placement='right top'>
 										<ContextMenu.Menu aria-label='任务截止时间'>
@@ -280,15 +286,16 @@ export function TaskContextMenu({
 							{canSelectPlacement ? (
 								<ContextMenu.SubmenuTrigger>
 									<PropertySubTrigger
+										disabledReason={placementCommand?.disabledReason}
 										id='task-placement-submenu'
-										isDisabled={isBusy}
+										isDisabled={isBusy || !placementCommand?.enabled}
 										icon={getPlacementIcon(placementValue!)}
 										shortcut={
 											<CommandShortcut commandId={COMMAND_IDS.taskChangePlacement} scope='row' />
 										}
-										textValue='归属'
+										textValue={placementCommand?.label ?? '归属'}
 									>
-										归属
+										{placementCommand?.label ?? '归属'}
 									</PropertySubTrigger>
 									<ContextMenu.Popover className='w-64' placement='right top'>
 										<ContextMenu.Menu aria-label='移动到项目'>
@@ -324,26 +331,16 @@ export function TaskContextMenu({
 								<ContextMenu.Section>
 									{canArchive ? (
 										<ContextMenu.Item
+											aria-description={
+												isBusy ? '正在更新任务，暂时无法归档' : archiveCommand?.disabledReason
+											}
 											id='task-archive'
-											isDisabled={isBusy}
-											onAction={async () => {
-												if (
-													archiveRequiresConfirm &&
-													!(await requestDangerConfirm({
-														intent: 'archive',
-														entityType: 'task',
-														count: 1,
-														entityLabel: dangerEntityLabel,
-													}))
-												) {
-													return
-												}
-												onArchive?.()
-											}}
-											textValue={archiveActionLabel}
+											isDisabled={isBusy || !archiveCommand?.enabled}
+											onAction={() => void archiveCommand?.execute({ source: 'context-menu' })}
+											textValue={archiveCommand?.label}
 										>
 											<ArchiveIcon />
-											<span>{archiveActionLabel}</span>
+											<span>{archiveCommand?.label}</span>
 											<MenuShortcut>
 												<CommandShortcut commandId={COMMAND_IDS.taskArchive} scope='row' />
 											</MenuShortcut>
@@ -351,27 +348,17 @@ export function TaskContextMenu({
 									) : null}
 									{canMoveToTrash ? (
 										<ContextMenu.Item
+											aria-description={
+												isBusy ? '正在更新任务，暂时无法移到回收站' : deleteCommand?.disabledReason
+											}
 											id='task-move-to-trash'
-											isDisabled={isBusy}
-											onAction={async () => {
-												if (
-													moveToTrashRequiresConfirm &&
-													!(await requestDangerConfirm({
-														intent: 'trash',
-														entityType: 'task',
-														count: 1,
-														entityLabel: dangerEntityLabel,
-													}))
-												) {
-													return
-												}
-												onMoveToTrash?.()
-											}}
-											textValue={moveToTrashLabel}
+											isDisabled={isBusy || !deleteCommand?.enabled}
+											onAction={() => void deleteCommand?.execute({ source: 'context-menu' })}
+											textValue={deleteCommand?.label}
 											variant='danger'
 										>
 											<Trash2Icon />
-											<span>{moveToTrashLabel}</span>
+											<span>{deleteCommand?.label}</span>
 											<MenuShortcut>
 												<CommandShortcut commandId={COMMAND_IDS.taskDelete} scope='row' />
 											</MenuShortcut>

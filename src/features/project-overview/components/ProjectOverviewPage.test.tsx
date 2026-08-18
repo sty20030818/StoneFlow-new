@@ -1,9 +1,6 @@
 import type { ReactNode } from 'react'
-import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 
-import { BulkActionProvider } from '@/features/bulk-action'
-import { createProjectBulkAdapter, projectBulkActions } from '@/features/project'
-import { DangerConfirmProvider } from '@/features/danger-confirm'
 import { ProjectOverviewPage } from '@/features/project-overview/components/ProjectOverviewPage'
 import type { ProjectOverviewItem, Scope } from '@/shared/types'
 import { renderWithRouterContext } from '@/test/renderWithRouter'
@@ -12,9 +9,6 @@ const loadOverviewSpy = vi.fn<(scope: Scope, viewKey: string) => Promise<void>>(
 const loadProjectViewsSpy = vi.fn<() => Promise<void>>()
 const archiveProjectSpy = vi.fn<(projectId: string) => Promise<unknown>>()
 const deleteProjectSpy = vi.fn<(projectId: string) => Promise<unknown>>()
-const refreshLoadedSlicesSpy = vi.fn<() => Promise<void>>()
-const toastSuccessSpy = vi.fn<(message: string) => void>()
-const toastErrorSpy = vi.fn<(message: string) => void>()
 
 const baseOverviewState = {
 	items: [
@@ -133,13 +127,6 @@ vi.mock('@/features/view', () => ({
 	}),
 }))
 
-vi.mock('sonner', () => ({
-	toast: {
-		success: (message: string) => toastSuccessSpy(message),
-		error: (message: string) => toastErrorSpy(message),
-	},
-}))
-
 const viewState = {
 	projectViews: {
 		items: [],
@@ -158,48 +145,6 @@ describe('ProjectOverviewPage', () => {
 		archiveProjectSpy.mockResolvedValue({})
 		deleteProjectSpy.mockReset()
 		deleteProjectSpy.mockResolvedValue({})
-		refreshLoadedSlicesSpy.mockReset()
-		refreshLoadedSlicesSpy.mockResolvedValue()
-		toastSuccessSpy.mockReset()
-		toastErrorSpy.mockReset()
-	})
-
-	it('多选后显示归档和删除批量入口', async () => {
-		await renderProjectOverviewPage()
-
-		expect(screen.getByText('项目总览')).toHaveAttribute('aria-current', 'page')
-		fireEvent.click(screen.getByRole('checkbox', { name: '选择项目 项目 A' }))
-		fireEvent.click(screen.getByRole('checkbox', { name: '选择项目 项目 B' }))
-
-		const bulkToolbar = await screen.findByRole('toolbar', { name: '批量操作' })
-		expect(within(bulkToolbar).getByText('已选 2 项')).toBeInTheDocument()
-		expect(within(bulkToolbar).getByRole('button', { name: '归档' })).toBeInTheDocument()
-		expect(within(bulkToolbar).getByRole('button', { name: '删除' })).toBeInTheDocument()
-	})
-
-	it('归档批量操作先确认，成功后刷新一次并清空 selection', async () => {
-		await renderProjectOverviewPage()
-
-		fireEvent.click(screen.getByRole('checkbox', { name: '选择项目 项目 A' }))
-		fireEvent.click(screen.getByRole('checkbox', { name: '选择项目 项目 B' }))
-		fireEvent.click(
-			within(await screen.findByRole('toolbar', { name: '批量操作' })).getByText('归档'),
-		)
-
-		expect(screen.getByRole('alertdialog')).toBeInTheDocument()
-		expect(screen.getByText('归档选中项目？')).toBeInTheDocument()
-		expect(archiveProjectSpy).not.toHaveBeenCalled()
-
-		fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: '归档' }))
-
-		await waitFor(() => {
-			expect(archiveProjectSpy).toHaveBeenCalledTimes(2)
-		})
-		expect(archiveProjectSpy).toHaveBeenNthCalledWith(1, 'project-a')
-		expect(archiveProjectSpy).toHaveBeenNthCalledWith(2, 'project-b')
-		expect(refreshLoadedSlicesSpy).toHaveBeenCalledTimes(1)
-		expect(toastSuccessSpy).toHaveBeenCalledWith('已归档 2 个项目')
-		expect(screen.queryByText('已选 2 项')).not.toBeInTheDocument()
 	})
 
 	it('空状态文案使用统一的项目总览文案', async () => {
@@ -222,26 +167,7 @@ describe('ProjectOverviewPage', () => {
 })
 
 async function renderProjectOverviewPage() {
-	return renderWithRouterContext(<ProjectOverviewPage />, {
-		wrap: (children) => <TestBulkActionBoundary>{children}</TestBulkActionBoundary>,
-	})
-}
-
-function TestBulkActionBoundary({ children }: { children: ReactNode }) {
-	const adapter = createProjectBulkAdapter({
-		availableProjectIds: storeState.overview.items.map((project) => project.id),
-		archiveProject: archiveProjectSpy as never,
-		deleteProject: deleteProjectSpy as never,
-		refreshLoadedSlices: refreshLoadedSlicesSpy,
-	})
-
-	return (
-		<DangerConfirmProvider>
-			<BulkActionProvider actions={projectBulkActions} context={{ adapter }}>
-				{children}
-			</BulkActionProvider>
-		</DangerConfirmProvider>
-	)
+	return renderWithRouterContext(<ProjectOverviewPage />)
 }
 
 function createProjectStoreState(
@@ -261,7 +187,6 @@ function createProjectStoreState(
 		reopenProject: vi.fn(),
 		archiveProject: vi.fn(),
 		deleteProject: vi.fn(),
-		refreshLoadedSlices: refreshLoadedSlicesSpy,
 	}
 }
 

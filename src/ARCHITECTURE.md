@@ -119,7 +119,7 @@ src/
 base UI、board/row、query 跨域失效工具、types、lib、events、form…
 禁止实体业务规则、feature 专属 API。
 
-`shared/components/page-frame` 是工作区页面的纯视觉骨架，只提供 Header、Toolbar、Body 与 BulkBar 的组合顺序。它不持有实体数据、Board 分发或业务操作。
+`shared/components/page-frame` 是工作区页面的纯视觉骨架，只提供 Header、Toolbar 与 Body 的组合顺序。它不持有实体数据、Board 分发或业务操作。
 
 `shared/lib/keyboardShortcut` 与 `shared/components/ShortcutTokens` 只负责跨平台键帽投影和展示；Command / Launcher 各自拥有绑定、匹配与动作语义。
 

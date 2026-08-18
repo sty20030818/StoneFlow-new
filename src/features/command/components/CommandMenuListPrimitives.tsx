@@ -2,57 +2,43 @@
 
 import type { ComponentType, ReactNode } from 'react'
 
-import { Kbd } from '@heroui/react'
+import { Command } from '@heroui-pro/react'
+import { Chip, Kbd } from '@heroui/react'
 import { CheckIcon, FolderOpenIcon, FoldersIcon, MinusIcon, type LucideProps } from 'lucide-react'
 
-import { AppScrollArea } from '@/shared/components/AppScrollArea'
 import { ShortcutTokens } from '@/shared/components/ShortcutTokens'
-import { Badge } from '@/shared/components/base/badge'
-import { CommandGroup, CommandItem, CommandList } from '@/shared/components/base/command'
-import { getProjectStatusBadgeVariant } from '@/shared/components/badgeSemantics'
 import { OverflowTooltip } from '@/shared/components/tooltip'
-import type { CommandId } from '@/features/command/core'
 
 import { buildCommandMenuGroups, type CommandMenuEntry } from './command-menu-model'
 import { resolveCommandIcon } from './command-menu-helpers'
 import type { CommandRowSelectionIndicator } from './command-menu-helpers'
 import type { CommandMenuProject } from './CommandMenu'
 
-export function CommandScrollableList({ children }: { children: React.ReactNode }) {
+export function CommandScrollableList({
+	children,
+	emptyText,
+}: {
+	children: React.ReactNode
+	emptyText: string
+}) {
 	return (
-		<AppScrollArea
-			className='max-h-120'
-			minThumbHeight={48}
-			thumbLengthRatio={0.58}
-			trackInsetBottom={8}
-			trackInsetTop={4}
-			viewportClassName='px-1 pb-2'
-		>
-			<CommandList className='max-h-none scroll-py-2 overflow-x-hidden overflow-y-visible outline-none'>
-				{children}
-			</CommandList>
-		</AppScrollArea>
+		<Command.List aria-label='命令' className='max-h-120' renderEmptyState={() => emptyText}>
+			{children}
+		</Command.List>
 	)
 }
 
 export function CommandMenuList({
 	groups,
 	onOpenChange,
-	onRunCommand,
 }: {
 	groups: ReturnType<typeof buildCommandMenuGroups>
 	onOpenChange: (open: boolean) => void
-	onRunCommand: (id: CommandId) => void
 }) {
 	return (
 		<>
 			{groups.map((group) => (
-				<CommandMenuGroup
-					group={group}
-					key={group.key}
-					onOpenChange={onOpenChange}
-					onRunCommand={onRunCommand}
-				/>
+				<CommandMenuGroup group={group} key={group.key} onOpenChange={onOpenChange} />
 			))}
 		</>
 	)
@@ -61,59 +47,48 @@ export function CommandMenuList({
 function CommandMenuGroup({
 	group,
 	onOpenChange,
-	onRunCommand,
 }: {
 	group: ReturnType<typeof buildCommandMenuGroups>[number]
 	onOpenChange: (open: boolean) => void
-	onRunCommand: (id: CommandId) => void
 }) {
 	return (
-		<CommandGroup className='pt-1 first:pt-0' heading={group.heading}>
+		<Command.Group className='pt-1 first:pt-0' heading={group.heading}>
 			{group.entries.map((entry) => (
-				<CommandMenuItem
-					entry={entry}
-					key={entry.command.id}
-					onOpenChange={onOpenChange}
-					onRunCommand={onRunCommand}
-				/>
+				<CommandMenuItem entry={entry} key={entry.id} onOpenChange={onOpenChange} />
 			))}
-		</CommandGroup>
+		</Command.Group>
 	)
 }
 
 function CommandMenuItem({
 	entry,
 	onOpenChange,
-	onRunCommand,
 }: {
 	entry: CommandMenuEntry
 	onOpenChange: (open: boolean) => void
-	onRunCommand: (id: CommandId) => void
 }) {
 	return (
-		<CommandItem
-			disabled={entry.disabled}
-			onSelect={() => {
-				if (entry.disabled) {
-					return
-				}
+		<Command.Item
+			id={entry.id}
+			isDisabled={!entry.enabled}
+			onAction={() => {
 				onOpenChange(false)
-				onRunCommand(entry.command.id)
+				void entry.execute({ source: 'command-menu' })
 			}}
-			value={`${entry.command.title} ${entry.command.keywords?.join(' ') ?? ''}`}
+			textValue={`${entry.label} ${entry.keywords?.join(' ') ?? ''}`}
 		>
 			<CommandRow
-				leading={renderCommandIcon(resolveCommandIcon(entry.command.id))}
-				title={entry.command.title}
+				leading={renderCommandIcon(resolveCommandIcon(entry.id))}
+				title={entry.label}
 				trailing={
-					entry.disabled && entry.disabledReason ? (
+					!entry.enabled && entry.disabledReason ? (
 						<CommandRowMeta>{entry.disabledReason}</CommandRowMeta>
 					) : (
 						<CommandMenuShortcut shortcut={entry.shortcut} />
 					)
 				}
 			/>
-		</CommandItem>
+		</Command.Item>
 	)
 }
 
@@ -133,37 +108,55 @@ export function ProjectsCommandGroup({
 	projects: CommandMenuProject[]
 }) {
 	return (
-		<CommandGroup className='pt-4' heading='项目'>
+		<Command.Group className='pt-4' heading='项目'>
 			{projects.length === 0 ? (
-				<CommandItem disabled value='empty-projects'>
+				<Command.Item id='empty-projects' isDisabled textValue='当前 Space 还没有项目'>
 					<CommandRow leading={renderCommandIcon(FolderOpenIcon)} title='当前 Space 还没有项目' />
-				</CommandItem>
+				</Command.Item>
 			) : (
 				projects.map((project) => (
-					<CommandItem
+					<Command.Item
+						id={`project:${project.id}`}
 						key={project.id}
-						onSelect={() => onNavigateProject(project.id)}
-						value={project.label}
+						onAction={() => onNavigateProject(project.id)}
+						textValue={project.label}
 					>
 						<CommandRow
 							leading={renderCommandIcon(FoldersIcon)}
 							title={project.label}
 							trailing={
 								project.badge ? (
-									<Badge
-										className='ml-auto h-5 rounded-full px-2 text-[10.5px]'
-										variant={getProjectStatusBadgeVariant(project.badge)}
+									<Chip
+										className='ml-auto'
+										color={getProjectStatusColor(project.badge)}
+										size='sm'
+										variant='soft'
 									>
-										{project.badge}
-									</Badge>
+										<Chip.Label>{project.badge}</Chip.Label>
+									</Chip>
 								) : null
 							}
 						/>
-					</CommandItem>
+					</Command.Item>
 				))
 			)}
-		</CommandGroup>
+		</Command.Group>
 	)
+}
+
+function getProjectStatusColor(status: string) {
+	switch (status.toLowerCase()) {
+		case 'active':
+			return 'accent' as const
+		case 'paused':
+			return 'warning' as const
+		case 'blocked':
+		case 'failed':
+		case 'error':
+			return 'danger' as const
+		default:
+			return 'default' as const
+	}
 }
 
 export function CommandRow({
@@ -179,7 +172,7 @@ export function CommandRow({
 		<div className='flex w-full min-w-0 items-center gap-3'>
 			<div className='flex size-4 shrink-0 items-center justify-center'>{leading}</div>
 			<OverflowTooltip
-				className='min-w-0 flex-1 text-[14px] font-medium text-legacy-foreground'
+				className='min-w-0 flex-1 text-[14px] font-medium text-foreground'
 				content={title}
 			>
 				{title}
@@ -190,13 +183,13 @@ export function CommandRow({
 }
 
 export function renderCommandIcon(Icon: ComponentType<LucideProps>) {
-	return <Icon className='size-4 text-sf-icon-secondary' />
+	return <Icon className='size-4 text-muted' />
 }
 
 export function CommandRowMeta({ children }: { children: React.ReactNode }) {
 	return (
 		<OverflowTooltip
-			className='block max-w-48 text-right text-[12px] text-sf-text-tertiary'
+			className='block max-w-48 text-right text-[12px] text-muted'
 			content={children}
 		>
 			{children}
@@ -224,9 +217,9 @@ export function CommandRowSelectionTrailing({
 				data-slot='command-row-selected-indicator'
 			>
 				{indicator === 'checked' ? (
-					<CheckIcon className='size-3.5 text-sf-icon-secondary' />
+					<CheckIcon className='size-3.5 text-muted' />
 				) : indicator === 'mixed' ? (
-					<MinusIcon className='size-3.5 text-sf-icon-secondary' />
+					<MinusIcon className='size-3.5 text-muted' />
 				) : null}
 			</span>
 			{digit ? <CommandRowDigitHint digit={digit} /> : null}

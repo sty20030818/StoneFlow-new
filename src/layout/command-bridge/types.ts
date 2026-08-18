@@ -2,7 +2,7 @@ import type { NavigateOptions } from '@tanstack/react-router'
 
 import type { Scope } from '@/shared/types'
 import { useDialogStore } from '@/features/shell-dialogs'
-import type { CommandContext } from '@/features/command'
+import type { CommandContext, CommandInvocation } from '@/features/command'
 import type { EntityDetailRouteState } from '@/features/entity-detail'
 import type {
 	BulkActionId,
@@ -33,6 +33,7 @@ export type ShellCommandBridgeDeps = {
 	goForward: () => void
 	canGoBack: boolean
 	closeEntityDrawer: () => void
+	openTaskDetail: (taskId: string) => void
 	handleOpenTaskCreate: () => void
 	navigate: (opts: { to: never } | NavigateOptions) => unknown
 	openProjectCreateDialog: () => void
@@ -41,6 +42,7 @@ export type ShellCommandBridgeDeps = {
 	requestSearchFocus: () => void
 	runEntityBulkActionFromCommand: (
 		ctx: CommandContext,
+		invocation: CommandInvocation,
 		entity: BulkEntityType,
 		actionId: BulkActionId,
 		labels: BulkActionResultMessageLabels,

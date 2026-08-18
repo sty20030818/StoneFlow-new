@@ -1,8 +1,8 @@
 // CommandMenu 各 scoped 模式（任务/项目/属性选择）列表面板。
 
 import { CircleIcon, FolderIcon } from 'lucide-react'
+import { Command } from '@heroui-pro/react'
 
-import { CommandGroup, CommandItem } from '@/shared/components/base/command'
 import type { ShortcutMenuItem } from '@/shared/components/shortcut-menu'
 import { ShortcutDigitSelectLayer } from '@/shared/components/shortcut-menu'
 import {
@@ -82,7 +82,7 @@ export function ScopedPickerCommandGroup({
 			isEmptyValue: option.value === 0,
 		}))
 		return (
-			<CommandGroup className='pt-2' heading={group.heading}>
+			<Command.Group className='pt-2' heading={group.heading}>
 				<ShortcutDigitSelectLayer
 					items={shortcutItems}
 					onSelect={(item) => {
@@ -91,13 +91,14 @@ export function ScopedPickerCommandGroup({
 					}}
 				/>
 				{options.map((option) => (
-					<CommandItem
+					<Command.Item
+						id={`priority:${option.value}`}
 						key={option.value}
-						onSelect={() => {
+						onAction={() => {
 							onOpenChange(false)
 							onSelectTaskPriority(option.value)
 						}}
-						value={`priority ${option.label} ${option.value}`}
+						textValue={`priority ${option.label} ${option.value}`}
 					>
 						<CommandRow
 							leading={option.leading}
@@ -112,9 +113,9 @@ export function ScopedPickerCommandGroup({
 								/>
 							}
 						/>
-					</CommandItem>
+					</Command.Item>
 				))}
-			</CommandGroup>
+			</Command.Group>
 		)
 	}
 
@@ -128,7 +129,7 @@ export function ScopedPickerCommandGroup({
 			disabled: false,
 		}))
 		return (
-			<CommandGroup className='pt-2' heading={group.heading}>
+			<Command.Group className='pt-2' heading={group.heading}>
 				<ShortcutDigitSelectLayer
 					items={shortcutItems}
 					onSelect={(item) => {
@@ -137,13 +138,14 @@ export function ScopedPickerCommandGroup({
 					}}
 				/>
 				{options.map((option) => (
-					<CommandItem
+					<Command.Item
+						id={`status:${option.value}`}
 						key={option.value}
-						onSelect={() => {
+						onAction={() => {
 							onOpenChange(false)
 							onSelectTaskStatus(option.value)
 						}}
-						value={`status ${option.label} ${option.value}`}
+						textValue={`status ${option.label} ${option.value}`}
 					>
 						<CommandRow
 							leading={option.leading}
@@ -155,9 +157,9 @@ export function ScopedPickerCommandGroup({
 								/>
 							}
 						/>
-					</CommandItem>
+					</Command.Item>
 				))}
-			</CommandGroup>
+			</Command.Group>
 		)
 	}
 
@@ -183,12 +185,13 @@ export function ScopedPickerCommandGroup({
 		const customDateDialogValue =
 			uniqueNonEmptyDueDates.length === 1 ? uniqueNonEmptyDueDates[0] : null
 		return (
-			<CommandGroup className='pt-2' heading={group.heading}>
+			<Command.Group className='pt-2' heading={group.heading}>
 				{options.map((option) => (
-					<CommandItem
-						disabled={option.disabled}
+					<Command.Item
+						id={`date:${option.key}`}
+						isDisabled={option.disabled}
 						key={option.key}
-						onSelect={() => {
+						onAction={() => {
 							if (option.disabled) {
 								return
 							}
@@ -206,7 +209,7 @@ export function ScopedPickerCommandGroup({
 							onOpenChange(false)
 							onSelectTaskDate(option.value)
 						}}
-						value={`date ${option.label} ${option.key}`}
+						textValue={`date ${option.label} ${option.key}`}
 					>
 						<CommandRow
 							leading={option.leading}
@@ -221,33 +224,34 @@ export function ScopedPickerCommandGroup({
 								) : null
 							}
 						/>
-					</CommandItem>
+					</Command.Item>
 				))}
-			</CommandGroup>
+			</Command.Group>
 		)
 	}
 
 	if (mode === 'task-picker') {
 		const tasks = [...result.tasks, ...result.completedTasks]
 		return (
-			<CommandGroup className='pt-2' heading='任务'>
+			<Command.Group className='pt-2' heading='任务'>
 				{tasks.map((task) => (
-					<CommandItem
+					<Command.Item
+						id={`task:${task.id}`}
 						key={task.id}
-						onSelect={() => {
+						onAction={() => {
 							onOpenChange(false)
 							onSelectTask(task)
 						}}
-						value={`${task.title} ${task.note ?? ''} ${task.projectName ?? ''} ${task.spaceName}`}
+						textValue={`${task.title} ${task.note ?? ''} ${task.projectName ?? ''} ${task.spaceName}`}
 					>
 						<CommandRow
 							leading={renderCommandIcon(CircleIcon)}
 							title={task.title}
 							trailing={<CommandRowMeta>{task.projectName ?? 'Task · 独立事项'}</CommandRowMeta>}
 						/>
-					</CommandItem>
+					</Command.Item>
 				))}
-			</CommandGroup>
+			</Command.Group>
 		)
 	}
 
@@ -290,19 +294,20 @@ export function ScopedPickerCommandGroup({
 					}}
 				/>
 				{groups.map((group) => (
-					<CommandGroup
+					<Command.Group
 						className='pt-1 first:pt-0'
 						heading={group.spaceId === 'ungrouped' ? '移动到项目...' : group.heading}
 						key={group.spaceId}
 					>
 						{group.items.map((item: CommandTaskPlacementGroup['items'][number]) => (
-							<CommandItem
+							<Command.Item
+								id={`placement:${item.key}`}
 								key={item.key}
-								onSelect={() => {
+								onAction={() => {
 									onOpenChange(false)
 									onSelectTaskPlacement(item.target)
 								}}
-								value={item.value}
+								textValue={item.value}
 							>
 								<CommandRow
 									leading={item.leading}
@@ -317,9 +322,9 @@ export function ScopedPickerCommandGroup({
 										/>
 									}
 								/>
-							</CommandItem>
+							</Command.Item>
 						))}
-					</CommandGroup>
+					</Command.Group>
 				))}
 			</>
 		)
@@ -327,23 +332,24 @@ export function ScopedPickerCommandGroup({
 
 	const projects = [...result.projects, ...result.completedProjects]
 	return (
-		<CommandGroup className='pt-2' heading='项目'>
+		<Command.Group className='pt-2' heading='项目'>
 			{projects.map((project) => (
-				<CommandItem
+				<Command.Item
+					id={`project:${project.id}`}
 					key={project.id}
-					onSelect={() => {
+					onAction={() => {
 						onOpenChange(false)
 						onSelectProject(project)
 					}}
-					value={`${project.name} ${project.note ?? ''} ${project.spaceName}`}
+					textValue={`${project.name} ${project.note ?? ''} ${project.spaceName}`}
 				>
 					<CommandRow
 						leading={renderCommandIcon(FolderIcon)}
 						title={project.name}
 						trailing={<CommandRowMeta>{`Project · ${project.spaceName}`}</CommandRowMeta>}
 					/>
-				</CommandItem>
+				</Command.Item>
 			))}
-		</CommandGroup>
+		</Command.Group>
 	)
 }

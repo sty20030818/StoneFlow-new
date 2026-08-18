@@ -25,7 +25,8 @@
 
 批量 / 命令
   → bulk/（动作定义 + adapter）
-  → commands/registerTaskCommands · runTaskRowBulkCommand
+  → commands/registerTaskCommands（壳层唯一 CommandRuntime）
+  → shortcuts/useTaskRowCommandShortcuts（只做按键匹配与目标投影）
 ```
 
 跨模块只使用稳定入口：完整 facade 走 `@/features/task`，placement 纯契约走 `@/features/task/contract`，文案与指示器走 `@/features/task/presentation`。
@@ -51,7 +52,7 @@ src/features/task/
 ├── model/                   # 纯规则 + indicators（无 React hook）
 ├── create/                  # 创建表单内核
 ├── bulk/                    # 批量动作 + adapter
-├── commands/                # registerTaskCommands · runTaskRowBulkCommand
+├── commands/                # registerTaskCommands · buildTaskCommandContext
 ├── components/              # Board · Row · Create · ListSceneView · ContextMenu(+helpers/items)
 ├── detail/                  # 详情子树；preview = Provider 壳 + store/helpers/register
 └── shortcuts/               # Scope 壳 + controller/navigation/runtime/scroll/guards
@@ -71,7 +72,7 @@ src/features/task/
 | placement | 类型 + `buildTaskPlacementGroups` · `./contract` |
 | 展示 | status / priority 文案与指示器 · `./presentation` |
 | 批量 | `taskBulkActions` · `createTaskBulkAdapter` |
-| 命令 | `registerTaskCommands`（行快捷键包内调 handlers） |
+| 命令 | `registerTaskCommands`（行快捷键投影后进入壳层唯一 Runtime） |
 | 详情 | `TaskPage` · `TaskDetailContent` · `TaskPreview` · Preview Provider/controller |
 | 列表编排 | `useTaskListController` · `useTaskSelection` · `useTaskListData` / Query |
 | 展示 | `PriorityIcon` · `TaskStatusIndicator` · 标签 formatters |

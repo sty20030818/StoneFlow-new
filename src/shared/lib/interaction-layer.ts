@@ -1,6 +1,6 @@
 /** 高于页面/行级快捷键的交互层；打开时由浮层自己优先处理键盘事件。 */
 export const HIGHER_INTERACTION_LAYER_SELECTOR = [
-	'[cmdk-root]',
+	'[data-slot="command-backdrop"]',
 	'[data-slot="dialog-content"]',
 	'[data-slot="dropdown-menu-content"]',
 	'[data-slot="context-menu-content"]',

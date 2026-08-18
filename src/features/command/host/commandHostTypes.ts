@@ -1,6 +1,6 @@
 import type { NavigateOptions } from '@tanstack/react-router'
 
-import type { CommandContext } from '@/features/command/core'
+import type { CommandContext, CommandInvocation } from '@/features/command/core'
 import type {
 	BulkActionId,
 	BulkActionPayload,
@@ -19,6 +19,7 @@ import type { Scope } from '@/shared/types'
 export type CommandHostContext = {
 	runEntityBulkActionFromCommand: (
 		ctx: CommandContext,
+		invocation: CommandInvocation,
 		entity: BulkEntityType,
 		actionId: BulkActionId,
 		labels: BulkActionResultMessageLabels,
@@ -44,6 +45,7 @@ export type CommandHostContext = {
 	goForward: () => void
 	canGoBack: boolean
 	closeEntityDrawer: () => void
+	openTaskDetail: (taskId: string) => void
 	closeProjectCreateDialog: () => void
 	closeTaskCreateDialog: () => void
 	createDialogType: 'task' | 'project' | null

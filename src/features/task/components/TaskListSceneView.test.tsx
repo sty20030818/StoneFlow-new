@@ -62,7 +62,6 @@ vi.mock('@/features/task/hooks/useTaskListScene', () => ({
 		breadcrumbItems: [],
 		taskCollection: { boardProps: { tasks: [], status: 'ready' } },
 		toolbarPills: [{ label: '所有任务' }],
-		bulk: { selectedCount: 0, clearTaskSelection: vi.fn() },
 		filterUiValue: {
 			session: {
 				base: EMPTY_FILTER_QUERY,
@@ -103,12 +102,6 @@ vi.mock('@/features/display-options', async (importOriginal) => ({
 	DisplayOptionsButton: () => <button type='button'>显示设置</button>,
 }))
 
-vi.mock('@/features/bulk-action', async (importOriginal) => ({
-	...(await importOriginal<typeof import('@/features/bulk-action')>()),
-	BulkActionBar: () => <div data-testid='bulk-bar'>批量操作</div>,
-	BulkCommandMenuAction: () => null,
-}))
-
 vi.mock('@/shared/components/AppBreadcrumb', () => ({
 	AppBreadcrumb: () => <span>面包屑</span>,
 }))
@@ -121,12 +114,11 @@ describe('TaskListSceneView', () => {
 		})
 	})
 
-	it('所有任务页组合完整 Task Collection 框架', () => {
+	it('所有任务页组合 Board 与展示设置', () => {
 		render(<TaskListSceneView variant='all' />)
 
 		expect(screen.getByText('状态分组任务 Board')).toBeInTheDocument()
 		expect(screen.getByText('显示设置')).toBeInTheDocument()
-		expect(screen.getByTestId('bulk-bar')).toBeInTheDocument()
 	})
 
 	it('独立事项保留完整 Board 与专属归属提示', () => {
@@ -239,8 +231,6 @@ function TaskCollectionOwnerHarness() {
 		fallbackSubtitle: '无项目',
 		activeTaskId: null,
 		onCreateTask: () => undefined,
-		onOpenTask: () => undefined,
-		onPeekTask: taskPreviewController.openPreview,
 		projectOptions: [],
 		spaces: [],
 		showProjectCellOptions: false,

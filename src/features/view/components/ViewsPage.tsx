@@ -1,6 +1,5 @@
 import { PlusIcon } from 'lucide-react'
 
-import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
 import { COMMAND_IDS, CommandShortcut } from '@/features/command'
 import { DisplayOptionsButton } from '@/features/display-options'
 import { FilterBar, ListFilterUiProvider, PageFilterButton } from '@/features/filter'
@@ -69,13 +68,6 @@ export function ViewsPage() {
 				<PageFrame.VirtualizedBody>
 					<TaskBoard {...scene.taskCollection.boardProps} />
 				</PageFrame.VirtualizedBody>
-				<PageFrame.BulkBar>
-					<BulkActionBar
-						action={<BulkCommandMenuAction />}
-						onClear={scene.bulk.clearTaskSelection}
-						selectedCount={scene.bulk.selectedCount}
-					/>
-				</PageFrame.BulkBar>
 			</PageFrame.Root>
 
 			<ViewEditorDialog

@@ -194,6 +194,19 @@ export type CommandRowTargetContext = {
 	isProjectTarget: boolean
 }
 
+export type CommandInvocationSource =
+	| 'command-menu'
+	| 'bulk-bar'
+	| 'context-menu'
+	| 'row'
+	| 'row-shortcut'
+	| 'global-shortcut'
+
+/** 命令目标快照与调用来源分离：同一投影可由不同表面执行。 */
+export type CommandInvocation = {
+	source: CommandInvocationSource
+}
+
 export type CommandContext = {
 	route: CommandRouteContext
 	selection: CommandSelectionContext
@@ -218,7 +231,7 @@ export type Command = {
 	isEnabled?: (ctx: CommandContext) => boolean
 	getDisabledReason?: (ctx: CommandContext) => string | undefined
 	getPriority?: (ctx: CommandContext) => number
-	run: (ctx: CommandContext) => void | Promise<void>
+	run: (ctx: CommandContext, invocation: CommandInvocation) => void | Promise<void>
 }
 
 export type CommandExecutionResult =

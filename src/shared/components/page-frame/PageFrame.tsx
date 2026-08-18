@@ -87,15 +87,10 @@ function PageFrameVirtualizedBody({ children, className }: PageFrameBodyProps) {
 	)
 }
 
-function PageFrameBulkBar({ children }: Pick<PageFrameSlotProps, 'children'>) {
-	return <>{children}</>
-}
-
 export const PageFrame = {
 	Root: PageFrameRoot,
 	Header: PageFrameHeader,
 	Toolbar: PageFrameToolbar,
 	Body: PageFrameBody,
 	VirtualizedBody: PageFrameVirtualizedBody,
-	BulkBar: PageFrameBulkBar,
 }

@@ -15,6 +15,7 @@ export {
 	CommandRegistry,
 	CommandRuntime,
 	COMMAND_IDS,
+	resolveTaskDetailTargetId,
 } from './core'
 
 export type {
@@ -22,6 +23,9 @@ export type {
 	CommandContext,
 	CommandFocusContext,
 	CommandId,
+	CommandInvocation,
+	CommandInvocationSource,
+	CommandProjection,
 	CommandRouteContext,
 	CommandRowTargetContext,
 	CommandSelectionContext,
@@ -47,7 +51,13 @@ export type {
 
 // ── Runtime hooks ───────────────────────────────────────────────────────────
 
-export { useCommandContext, useCommandRunner, useCommandRuntime } from './runtime'
+export {
+	CommandRuntimeProvider,
+	useCommandContext,
+	useCommandRunner,
+	useCommandRuntime,
+	useCommandRuntimeContext,
+} from './runtime'
 
 // ── Shortcuts ───────────────────────────────────────────────────────────────
 

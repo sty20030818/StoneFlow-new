@@ -45,18 +45,8 @@ describe('projectBulkActions', () => {
 		const deleteAction = getAction(PROJECT_BULK_ACTION_IDS.deleteSelected)
 
 		expect(shouldConfirmAction(archiveAction, snapshot)).toBe(true)
-		expect(archiveAction.getConfirmCopy?.(snapshot)).toEqual({
-			title: '归档选中项目？',
-			description: '将归档 2 个项目。归档后可在归档页中恢复。',
-			confirmLabel: '确认归档',
-		})
 		expect(deleteAction.tone).toBe('destructive')
 		expect(shouldConfirmAction(deleteAction, snapshot)).toBe(true)
-		expect(deleteAction.getConfirmCopy?.(snapshot)).toEqual({
-			title: '删除选中项目？',
-			description: '将删除 2 个项目。删除后可在回收站中恢复。',
-			confirmLabel: '确认删除',
-		})
 	})
 
 	it('缺 adapter 时返回 failed', async () => {

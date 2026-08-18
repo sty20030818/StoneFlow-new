@@ -58,6 +58,8 @@ function createActions(): ShellCommandActions {
 		openProjectCreate: vi.fn(),
 		openTaskPicker: vi.fn(),
 		openProjectPicker: vi.fn(),
+		peekTask: vi.fn(),
+		openTaskDetail: vi.fn(),
 		openTaskPlacementPicker: vi.fn(),
 		applyTaskPlacement: vi.fn(),
 		openTaskPriorityPicker: vi.fn(),

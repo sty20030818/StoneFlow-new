@@ -4,17 +4,16 @@ import { describe, expect, it } from 'vitest'
 import { PageFrame } from './PageFrame'
 
 describe('PageFrame', () => {
-	it('按 Header、Toolbar、Body 和 BulkBar 的顺序组合页面', () => {
+	it('按 Header、Toolbar 和 Body 的顺序组合页面', () => {
 		render(
 			<PageFrame.Root>
 				<PageFrame.Header breadcrumb={<span>面包屑</span>} />
 				<PageFrame.Toolbar pills={[{ label: '全部任务', active: true }]} />
 				<PageFrame.Body>页面主体</PageFrame.Body>
-				<PageFrame.BulkBar>批量操作</PageFrame.BulkBar>
 			</PageFrame.Root>,
 		)
 
-		for (const text of ['面包屑', '全部任务', '页面主体', '批量操作']) {
+		for (const text of ['面包屑', '全部任务', '页面主体']) {
 			expect(screen.getByText(text)).toBeInTheDocument()
 		}
 	})

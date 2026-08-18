@@ -30,21 +30,21 @@ export function mapMetadataIconToCommandLeading(iconKey: MetadataActionIconKey |
 	switch (iconKey) {
 		case 'calendar-cog':
 		case 'custom':
-			return <CalendarCogIcon className='size-4 text-sf-icon-secondary' />
+			return <CalendarCogIcon className='size-4 text-muted' />
 		case 'calendar-1':
 		case 'today':
-			return <Calendar1Icon className='size-4 text-sf-icon-secondary' />
+			return <Calendar1Icon className='size-4 text-muted' />
 		case 'calendar-days':
 		case 'one-week':
 		case 'this-week':
 		case 'thisWeek':
-			return <CalendarDaysIcon className='size-4 text-sf-icon-secondary' />
+			return <CalendarDaysIcon className='size-4 text-muted' />
 		case 'calendar-off':
 		case 'none':
 		case 'noDate':
-			return <CalendarOffIcon className='size-4 text-sf-icon-secondary' />
+			return <CalendarOffIcon className='size-4 text-muted' />
 		default:
-			return <CalendarIcon className='size-4 text-sf-icon-secondary' />
+			return <CalendarIcon className='size-4 text-muted' />
 	}
 }
 
@@ -68,8 +68,8 @@ export function getCommandMenuDateLeading(key: string) {
 
 export function getCommandMenuPlacementLeading(kind: 'project' | 'standalone'): ReactNode {
 	if (kind !== 'project') {
-		return <TargetIcon className='size-4 text-sf-icon-secondary' />
+		return <TargetIcon className='size-4 text-muted' />
 	}
 
-	return <FolderIcon className='size-4 text-sf-icon-secondary' />
+	return <FolderIcon className='size-4 text-muted' />
 }

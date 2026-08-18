@@ -42,6 +42,7 @@ export function useShellCommandActions(deps: ShellCommandBridgeDeps): ShellComma
 			deps.goForward,
 			deps.canGoBack,
 			deps.closeEntityDrawer,
+			deps.openTaskDetail,
 			deps.handleOpenTaskCreate,
 			deps.isSettingsMode,
 			deps.navigate,

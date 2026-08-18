@@ -57,8 +57,6 @@ export type TaskCollectionSceneInput = {
 	fallbackSubtitle: string | ((task: TaskListItem) => string)
 	activeTaskId: string | null
 	onCreateTask: () => void
-	onOpenTask: (taskId: string) => void
-	onPeekTask: (taskId: string, source: 'keyboard' | 'pointer') => void
 	projectOptions: ProjectOption[]
 	spaces: Space[]
 	showProjectCellOptions: boolean
@@ -284,7 +282,6 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 	})
 	const boardProps = useMemo(
 		(): TaskBoardProps => ({
-			activeTaskId: input.activeTaskId,
 			collectionInteraction: selection.interaction,
 			createProjectId: input.createProjectId ?? null,
 			emptyActionLabel: input.empty.emptyActionLabel,
@@ -292,14 +289,10 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 			emptyTitle: input.empty.emptyTitle,
 			flatItems,
 			focusIntent,
-			onArchiveTask: mutations.archiveListTask,
 			onCollapseAll: handleCollapseAll,
-			onDeleteTask: mutations.deleteListTask,
 			onEmptyAction: input.onCreateTask,
 			onExpandAll: handleExpandAll,
 			onFocusIntentConsumed: handleFocusIntentConsumed,
-			onOpenTask: input.onOpenTask,
-			onPeekTask: input.onPeekTask,
 			onSectionOpenChange: handleSectionOpenChange,
 			onSelectPlacement: (task, target) => void mutations.updateTaskPlacement(task, target),
 			onToggleTaskStatus: mutations.toggleTaskStatus,
@@ -335,7 +328,6 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 			handleExpandAll,
 			handleFocusIntentConsumed,
 			handleSectionOpenChange,
-			input.activeTaskId,
 			input.createProjectId,
 			input.empty.emptyActionLabel,
 			input.empty.emptyDescription,
@@ -345,8 +337,6 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 			input.hasNextPage,
 			input.isFetchingNextPage,
 			input.onCreateTask,
-			input.onOpenTask,
-			input.onPeekTask,
 			input.projectOptions,
 			input.showProjectCellOptions,
 			input.showSpaceLabel,
@@ -365,7 +355,5 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 		boardProps,
 		display,
 		displayPageKey: input.displayPageKey,
-		selectedCount: selection.selectedCount,
-		clearTaskSelection: selection.interaction.clearSelection,
 	}
 }

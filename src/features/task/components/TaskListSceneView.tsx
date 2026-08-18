@@ -4,7 +4,6 @@ import { PageFrame } from '@/shared/components/page-frame'
 import { MainCard } from '@/shared/components/main-card/MainCardLayout'
 import { DisplayOptionsButton } from '@/features/display-options'
 import { FilterBar, ListFilterUiProvider, PageFilterButton } from '@/features/filter'
-import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
 import { COMMAND_IDS, CommandShortcut } from '@/features/command'
 import { useTaskListScene, type TaskListSceneVariant } from '@/features/task/hooks/useTaskListScene'
 import { TaskBoard } from './TaskBoard'
@@ -49,13 +48,6 @@ export function TaskListSceneView({ variant }: TaskListSceneViewProps) {
 				<PageFrame.VirtualizedBody>
 					<TaskBoard {...scene.taskCollection.boardProps} />
 				</PageFrame.VirtualizedBody>
-				<PageFrame.BulkBar>
-					<BulkActionBar
-						action={<BulkCommandMenuAction />}
-						onClear={scene.bulk.clearTaskSelection}
-						selectedCount={scene.bulk.selectedCount}
-					/>
-				</PageFrame.BulkBar>
 			</PageFrame.Root>
 		</ListFilterUiProvider>
 	)

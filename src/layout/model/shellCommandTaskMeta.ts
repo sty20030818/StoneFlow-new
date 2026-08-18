@@ -1,11 +1,12 @@
 import type { BulkActionId, BulkActionPayload } from '@/features/bulk-action'
 import { TASK_BULK_ACTION_IDS } from '@/features/bulk-action'
-import type { CommandContext, TaskPlacementTarget } from '@/features/command'
+import type { CommandContext, CommandInvocation, TaskPlacementTarget } from '@/features/command'
 import type { TaskPriorityValue } from '@/features/task'
 import type { TaskStatus } from '@/shared/types'
 
 type RunEntityBulk = (
 	ctx: CommandContext,
+	invocation: CommandInvocation,
 	entity: 'task',
 	actionId: BulkActionId,
 	labels: { successVerb: string; entityLabel: string },
@@ -34,6 +35,7 @@ export function createShellCommandTaskMetaHandlers(
 		}
 		await runEntityBulkActionFromCommand(
 			commandContext,
+			{ source: 'command-menu' },
 			'task',
 			actionId,
 			{ successVerb: '更新', entityLabel: '任务' },

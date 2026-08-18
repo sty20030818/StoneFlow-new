@@ -7,14 +7,6 @@ import {
 	resolveShellRouteScope,
 	useCurrentShellRoute,
 } from '@/app/navigation'
-import {
-	PROJECT_BULK_ACTION_IDS,
-	createProjectBulkSelectionSnapshotFromProjects,
-	shouldClearBulkSelection,
-	showBulkActionResultToast,
-	useBulkActionContext,
-	type BulkActionId,
-} from '@/features/bulk-action'
 import { useDialogStore } from '@/features/shell-dialogs'
 import type { ProjectOverviewViewKey } from '@/features/project'
 import {
@@ -29,7 +21,7 @@ import {
 import { useEntitySelection, useRegisterCommandSelection } from '@/features/selection'
 
 /**
- * 项目总览页唯一 wiring：视图轨 / 选择 / bulk / 行动作。
+ * 项目总览页唯一 wiring：视图轨 / 命令选择上下文 / 行动作。
  * 数据与 mutation 只走 project public；不 import layout。
  */
 export function useProjectOverviewScene() {
@@ -37,7 +29,6 @@ export function useProjectOverviewScene() {
 	const shellRoute = useCurrentShellRoute()
 	const scope = resolveShellRouteScope(shellRoute)
 	const spaceId = shellRoute.spaceId
-	const { runBulkAction } = useBulkActionContext()
 	const openProjectCreateDialog = useDialogStore((state) => state.openProjectCreateDialog)
 	const [viewKey, setViewKey] = useState<ProjectOverviewViewKey>('all_projects')
 	const [busyProjectId, setBusyProjectId] = useState<string | null>(null)
@@ -52,7 +43,6 @@ export function useProjectOverviewScene() {
 	const {
 		selectedIdSet: selectedProjectIds,
 		selectionSnapshot,
-		selectedCount,
 		focusedId: focusedProjectId,
 		toggleSelection: toggleProjectSelection,
 		clearSelection: clearProjectSelection,
@@ -60,10 +50,6 @@ export function useProjectOverviewScene() {
 		moveFocus,
 		selectIds: selectProjectIds,
 	} = useEntitySelection(overviewItems.map((item) => item.id))
-	const selectedProjects = useMemo(
-		() => overviewItems.filter((project) => selectedProjectIds.has(project.id)),
-		[overviewItems, selectedProjectIds],
-	)
 	const commandSelection = useMemo(
 		() =>
 			buildProjectCommandSelection({
@@ -83,20 +69,6 @@ export function useProjectOverviewScene() {
 			setBusyProjectId(null)
 		}
 	}
-
-	const runProjectBulkAction = useCallback(
-		async (actionId: BulkActionId) => {
-			const result = await runBulkAction(
-				actionId,
-				createProjectBulkSelectionSnapshotFromProjects(selectedProjects, 'bulk-bar'),
-			)
-			if (shouldClearBulkSelection(result)) {
-				clearProjectSelection()
-			}
-			showBulkActionResultToast(result, { successVerb: '处理', entityLabel: '项目' })
-		},
-		[clearProjectSelection, runBulkAction, selectedProjects],
-	)
 
 	const projectBoardProps: ProjectBoardProps = {
 		variant: 'overview',
@@ -153,16 +125,6 @@ export function useProjectOverviewScene() {
 		breadcrumbItems,
 		projectBoardProps,
 		toolbarPills,
-		bulk: {
-			selectedCount,
-			clearProjectSelection,
-			archiveSelected: () => {
-				void runProjectBulkAction(PROJECT_BULK_ACTION_IDS.archiveSelected)
-			},
-			deleteSelected: () => {
-				void runProjectBulkAction(PROJECT_BULK_ACTION_IDS.deleteSelected)
-			},
-		},
 		openProjectCreateDialog: () => openProjectCreateDialog(),
 	}
 }

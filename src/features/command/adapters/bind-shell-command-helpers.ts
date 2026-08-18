@@ -1,4 +1,8 @@
-import type { Command, CommandContext } from '@/features/command/core'
+import {
+	resolveTaskDetailTargetId,
+	type Command,
+	type CommandContext,
+} from '@/features/command/core'
 
 import {
 	createDisabledCommand,
@@ -6,10 +10,7 @@ import {
 	type ShellCommandAdapter,
 } from './shell-command-actions'
 
-export function bindSelectionTaskCommand(
-	command: Command,
-	run: (ctx: CommandContext) => void | Promise<void>,
-): Command {
+export function bindSelectionTaskCommand(command: Command, run: Command['run']): Command {
 	return {
 		...command,
 		isEnabled: (ctx) => hasTaskSelection(ctx),
@@ -23,10 +24,27 @@ export function hasTaskSelection(ctx: CommandContext) {
 	return ctx.selection.type === 'task' && ctx.selection.ids.length > 0
 }
 
-export function bindSelectionTaskPlacementCommand(
-	command: Command,
-	run: (ctx: CommandContext) => void | Promise<void>,
-): Command {
+export function bindTaskTargetCommand(command: Command, run: Command['run']): Command {
+	return {
+		...command,
+		isEnabled: (ctx) => resolveTaskDetailTargetId(ctx) !== null,
+		getDisabledReason: (ctx) =>
+			resolveTaskDetailTargetId(ctx) === null ? '当前没有可操作的任务' : undefined,
+		run,
+	}
+}
+
+export function bindTaskPeekCommand(command: Command, run: Command['run']): Command {
+	const bound = bindTaskTargetCommand(command, run)
+	return {
+		...bound,
+		isEnabled: (ctx) => ctx.ui.detailEntityType !== 'task' && bound.isEnabled!(ctx),
+		getDisabledReason: (ctx) =>
+			ctx.ui.detailEntityType === 'task' ? '任务详情已打开' : bound.getDisabledReason?.(ctx),
+	}
+}
+
+export function bindSelectionTaskPlacementCommand(command: Command, run: Command['run']): Command {
 	return {
 		...command,
 		isEnabled: (ctx) => getTaskPlacementDisabledReason(ctx) === undefined,
@@ -64,10 +82,7 @@ function hasResolvedTaskPlacementSpaceId(ctx: CommandContext) {
 	return selectionSpaceIds.size === 1
 }
 
-export function bindSelectionLifecycleCommand(
-	command: Command,
-	run: (ctx: CommandContext) => void | Promise<void>,
-): Command {
+export function bindSelectionLifecycleCommand(command: Command, run: Command['run']): Command {
 	return {
 		...command,
 		isEnabled: (ctx) => hasLifecycleSelection(ctx),
@@ -100,13 +115,13 @@ export function bindDeleteSelectionCommand(
 		isEnabled: (ctx) => getDeleteSelectionDisabledReason(ctx) === undefined,
 		getDisabledReason: getDeleteSelectionDisabledReason,
 		getPriority: (ctx) => (ctx.selection.isMultiSelection ? 120 : 90),
-		run: (ctx) => {
+		run: (ctx, invocation) => {
 			if (hasTaskSelection(ctx)) {
-				return adapter.requestDeleteSelectedTasks?.(ctx)
+				return adapter.requestDeleteSelectedTasks?.(ctx, invocation)
 			}
 
 			if (hasProjectSelection(ctx)) {
-				return adapter.requestDeleteSelectedProjects?.(ctx)
+				return adapter.requestDeleteSelectedProjects?.(ctx, invocation)
 			}
 
 			if (!hasLifecycleSelection(ctx)) {
@@ -114,11 +129,11 @@ export function bindDeleteSelectionCommand(
 			}
 
 			if (ctx.route.page === 'archive') {
-				return adapter.requestDeleteSelectedLifecycleEntries?.(ctx)
+				return adapter.requestDeleteSelectedLifecycleEntries?.(ctx, invocation)
 			}
 
 			if (ctx.route.page === 'trash') {
-				return adapter.requestDeletePermanentlySelectedLifecycleEntries?.(ctx)
+				return adapter.requestDeletePermanentlySelectedLifecycleEntries?.(ctx, invocation)
 			}
 		},
 	}
@@ -142,10 +157,7 @@ function getDeleteSelectionDisabledReason(ctx: CommandContext) {
 		: '当前页面不支持删除选中条目'
 }
 
-export function bindSelectionProjectCommand(
-	command: Command,
-	run: (ctx: CommandContext) => void | Promise<void>,
-): Command {
+export function bindSelectionProjectCommand(command: Command, run: Command['run']): Command {
 	return {
 		...command,
 		isEnabled: (ctx) => hasProjectSelection(ctx),
@@ -190,28 +202,4 @@ function getTogglePreviewDisabledReason(ctx: CommandContext) {
 	}
 
 	return resolveTaskDetailTargetId(ctx) ? undefined : '当前没有可打开的任务预览'
-}
-
-function resolveTaskDetailTargetId(ctx: CommandContext) {
-	if (ctx.rowTarget.isTaskTarget && ctx.rowTarget.targetId) {
-		return ctx.rowTarget.targetId
-	}
-
-	if (ctx.selection.focusedType === 'task' && ctx.selection.focusedId) {
-		return ctx.selection.focusedId
-	}
-
-	if (ctx.selection.primaryEntity?.type === 'task') {
-		return ctx.selection.primaryEntity.id
-	}
-
-	if (
-		ctx.selection.type === 'task' &&
-		ctx.selection.isSingleSelection &&
-		ctx.selection.ids.length === 1
-	) {
-		return ctx.selection.ids[0]
-	}
-
-	return null
 }

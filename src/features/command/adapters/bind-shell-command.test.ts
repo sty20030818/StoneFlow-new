@@ -7,17 +7,19 @@ import {
 } from '@/features/command/core'
 import type { ShellCommandActions, ShellCommandAdapter } from './shell-command-actions'
 
+const invocation = { source: 'global-shortcut' } as const
+
 describe('bindShellCommand / ShellCommandAdapter', () => {
 	it('执行 general 命令时调用 Shell action', async () => {
 		const actions = createActions()
 		const runtime = createRuntime(actions)
 
-		await expect(runtime.execute(COMMAND_IDS.openSearch)).resolves.toEqual({
+		await expect(runtime.execute(COMMAND_IDS.openSearch, invocation)).resolves.toEqual({
 			status: 'success',
 			commandId: COMMAND_IDS.openSearch,
 		})
-		await runtime.execute(COMMAND_IDS.openCommandMenu)
-		await runtime.execute(COMMAND_IDS.openShortcutHelp)
+		await runtime.execute(COMMAND_IDS.openCommandMenu, invocation)
+		await runtime.execute(COMMAND_IDS.openShortcutHelp, invocation)
 
 		expect(actions.focusSearch).toHaveBeenCalledTimes(1)
 		expect(actions.openCommandMenu).toHaveBeenCalledTimes(1)
@@ -36,9 +38,9 @@ describe('bindShellCommand / ShellCommandAdapter', () => {
 			},
 		})
 
-		await runtime.execute(COMMAND_IDS.saveOrSubmit)
-		await runtime.execute(COMMAND_IDS.submitAndContinue)
-		await runtime.execute(COMMAND_IDS.submitAndOpen)
+		await runtime.execute(COMMAND_IDS.saveOrSubmit, invocation)
+		await runtime.execute(COMMAND_IDS.submitAndContinue, invocation)
+		await runtime.execute(COMMAND_IDS.submitAndOpen, invocation)
 
 		expect(actions.submitActiveForm).toHaveBeenCalledTimes(1)
 		expect(actions.submitAndContinue).toHaveBeenCalledTimes(1)
@@ -57,7 +59,7 @@ describe('bindShellCommand / ShellCommandAdapter', () => {
 			},
 		})
 
-		await expect(runtime.execute(COMMAND_IDS.submitAndOpen)).resolves.toEqual({
+		await expect(runtime.execute(COMMAND_IDS.submitAndOpen, invocation)).resolves.toEqual({
 			status: 'disabled',
 			commandId: COMMAND_IDS.submitAndOpen,
 			reason: '当前表单不支持创建并打开',
@@ -68,10 +70,10 @@ describe('bindShellCommand / ShellCommandAdapter', () => {
 		const actions = createActions()
 		const runtime = createRuntime(actions)
 
-		await runtime.execute(COMMAND_IDS.newQuickTask)
-		await runtime.execute(COMMAND_IDS.newFullTask)
-		await runtime.execute(COMMAND_IDS.newStandaloneTask)
-		await runtime.execute(COMMAND_IDS.newProject)
+		await runtime.execute(COMMAND_IDS.newQuickTask, invocation)
+		await runtime.execute(COMMAND_IDS.newFullTask, invocation)
+		await runtime.execute(COMMAND_IDS.newStandaloneTask, invocation)
+		await runtime.execute(COMMAND_IDS.newProject, invocation)
 
 		expect(actions.openQuickTaskCreate).toHaveBeenCalledTimes(1)
 		expect(actions.openFullTaskCreate).toHaveBeenCalledTimes(1)
@@ -83,8 +85,8 @@ describe('bindShellCommand / ShellCommandAdapter', () => {
 		const actions = createActions()
 		const runtime = createRuntime(actions)
 
-		await runtime.execute(COMMAND_IDS.openTask)
-		await runtime.execute(COMMAND_IDS.openProject)
+		await runtime.execute(COMMAND_IDS.openTask, invocation)
+		await runtime.execute(COMMAND_IDS.openProject, invocation)
 
 		expect(actions.openTaskPicker).toHaveBeenCalledTimes(1)
 		expect(actions.openProjectPicker).toHaveBeenCalledTimes(1)
@@ -99,7 +101,7 @@ describe('bindShellCommand / ShellCommandAdapter', () => {
 			},
 		})
 
-		await expect(runtime.execute(COMMAND_IDS.newQuickTask)).resolves.toEqual({
+		await expect(runtime.execute(COMMAND_IDS.newQuickTask, invocation)).resolves.toEqual({
 			status: 'disabled',
 			commandId: COMMAND_IDS.newQuickTask,
 			reason: '当前页面不支持快速新建任务',
@@ -111,7 +113,7 @@ describe('bindShellCommand / ShellCommandAdapter', () => {
 		const actions = createActions()
 		const runtime = createRuntime(actions)
 
-		await expect(runtime.execute(COMMAND_IDS.newView)).resolves.toEqual({
+		await expect(runtime.execute(COMMAND_IDS.newView, invocation)).resolves.toEqual({
 			status: 'disabled',
 			commandId: COMMAND_IDS.newView,
 			reason: '视图创建入口尚未接入',
@@ -132,7 +134,7 @@ describe('bindShellCommand / ShellCommandAdapter', () => {
 		const actions = createActions()
 		const runtime = createRuntime(actions)
 
-		await runtime.execute(commandId)
+		await runtime.execute(commandId, invocation)
 
 		expect(actions.navigateTo).toHaveBeenCalledWith(target)
 	})
@@ -141,8 +143,8 @@ describe('bindShellCommand / ShellCommandAdapter', () => {
 		const actions = createActions()
 		const runtime = createRuntime(actions)
 
-		await runtime.execute(COMMAND_IDS.goBack)
-		await runtime.execute(COMMAND_IDS.goForward)
+		await runtime.execute(COMMAND_IDS.goBack, invocation)
+		await runtime.execute(COMMAND_IDS.goForward, invocation)
 
 		expect(actions.goBack).toHaveBeenCalledTimes(1)
 		expect(actions.goForward).toHaveBeenCalledTimes(1)
@@ -164,8 +166,8 @@ describe('bindShellCommand / ShellCommandAdapter', () => {
 			},
 		})
 
-		await runtime.execute(COMMAND_IDS.layoutToggleSidebar)
-		await runtime.execute(COMMAND_IDS.layoutTogglePreview)
+		await runtime.execute(COMMAND_IDS.layoutToggleSidebar, invocation)
+		await runtime.execute(COMMAND_IDS.layoutTogglePreview, invocation)
 
 		expect(actions.toggleSidebar).toHaveBeenCalledTimes(1)
 		expect(actions.togglePreview).toHaveBeenCalledTimes(1)
@@ -176,7 +178,7 @@ describe('bindShellCommand / ShellCommandAdapter', () => {
 		async (commandId) => {
 			const runtime = createRuntime(createActions())
 
-			await expect(runtime.execute(commandId)).resolves.toMatchObject({
+			await expect(runtime.execute(commandId, invocation)).resolves.toMatchObject({
 				status: 'disabled',
 				commandId,
 				reason: '目标页面尚未接入',
@@ -191,7 +193,7 @@ describe('bindShellCommand / ShellCommandAdapter', () => {
 	] as const)('未接入搜索能力的 open 命令 %s 返回 disabled', async (commandId, reason) => {
 		const runtime = createRuntime(createActions())
 
-		await expect(runtime.execute(commandId)).resolves.toMatchObject({
+		await expect(runtime.execute(commandId, invocation)).resolves.toMatchObject({
 			status: 'disabled',
 			commandId,
 			reason,
@@ -206,7 +208,7 @@ describe('bindShellCommand / ShellCommandAdapter', () => {
 	] as const)('command-only 命令 %s 返回 disabled', async (commandId, reason) => {
 		const runtime = createRuntime(createActions())
 
-		await expect(runtime.execute(commandId)).resolves.toMatchObject({
+		await expect(runtime.execute(commandId, invocation)).resolves.toMatchObject({
 			status: 'disabled',
 			commandId,
 			reason,
@@ -246,11 +248,11 @@ describe('bindShellCommand / ShellCommandAdapter', () => {
 		}
 		const runtime = createRuntime(actions, context)
 
-		await expect(runtime.execute(commandId)).resolves.toMatchObject({
+		await expect(runtime.execute(commandId, invocation)).resolves.toMatchObject({
 			status: 'success',
 			commandId,
 		})
-		expect(actions[actionName]).toHaveBeenCalledWith(context)
+		expect(actions[actionName]).toHaveBeenCalledWith(context, invocation)
 	})
 
 	it.each([
@@ -276,11 +278,11 @@ describe('bindShellCommand / ShellCommandAdapter', () => {
 		}
 		const runtime = createRuntime(actions, context)
 
-		await expect(runtime.execute(commandId)).resolves.toMatchObject({
+		await expect(runtime.execute(commandId, invocation)).resolves.toMatchObject({
 			status: 'success',
 			commandId,
 		})
-		expect(actions[actionName]).toHaveBeenCalledWith(context)
+		expect(actions[actionName]).toHaveBeenCalledWith(context, invocation)
 	})
 
 	it('Cmd+Backspace 分发 task selection 到任务删除', async () => {
@@ -301,11 +303,13 @@ describe('bindShellCommand / ShellCommandAdapter', () => {
 		}
 		const runtime = createRuntime(actions, context)
 
-		await expect(runtime.execute(COMMAND_IDS.selectionDeleteByRoute)).resolves.toMatchObject({
+		await expect(
+			runtime.execute(COMMAND_IDS.selectionDeleteByRoute, invocation),
+		).resolves.toMatchObject({
 			status: 'success',
 			commandId: COMMAND_IDS.selectionDeleteByRoute,
 		})
-		expect(actions.requestDeleteSelectedTasks).toHaveBeenCalledWith(context)
+		expect(actions.requestDeleteSelectedTasks).toHaveBeenCalledWith(context, invocation)
 	})
 
 	it('Cmd+Backspace 分发 project selection 到项目删除', async () => {
@@ -326,11 +330,13 @@ describe('bindShellCommand / ShellCommandAdapter', () => {
 		}
 		const runtime = createRuntime(actions, context)
 
-		await expect(runtime.execute(COMMAND_IDS.selectionDeleteByRoute)).resolves.toMatchObject({
+		await expect(
+			runtime.execute(COMMAND_IDS.selectionDeleteByRoute, invocation),
+		).resolves.toMatchObject({
 			status: 'success',
 			commandId: COMMAND_IDS.selectionDeleteByRoute,
 		})
-		expect(actions.requestDeleteSelectedProjects).toHaveBeenCalledWith(context)
+		expect(actions.requestDeleteSelectedProjects).toHaveBeenCalledWith(context, invocation)
 	})
 
 	it.each([
@@ -354,11 +360,13 @@ describe('bindShellCommand / ShellCommandAdapter', () => {
 		}
 		const runtime = createRuntime(actions, context)
 
-		await expect(runtime.execute(COMMAND_IDS.selectionDeleteByRoute)).resolves.toMatchObject({
+		await expect(
+			runtime.execute(COMMAND_IDS.selectionDeleteByRoute, invocation),
+		).resolves.toMatchObject({
 			status: 'success',
 			commandId: COMMAND_IDS.selectionDeleteByRoute,
 		})
-		expect(actions[actionName]).toHaveBeenCalledWith(context)
+		expect(actions[actionName]).toHaveBeenCalledWith(context, invocation)
 	})
 
 	it.each([
@@ -372,7 +380,7 @@ describe('bindShellCommand / ShellCommandAdapter', () => {
 	])('没有 task selection 时禁用批量任务命令 %s', async (commandId) => {
 		const runtime = createRuntime(createActions())
 
-		await expect(runtime.execute(commandId)).resolves.toMatchObject({
+		await expect(runtime.execute(commandId, invocation)).resolves.toMatchObject({
 			status: 'disabled',
 			commandId,
 			reason: '需要先选择任务',
@@ -382,7 +390,9 @@ describe('bindShellCommand / ShellCommandAdapter', () => {
 	it('没有任务上下文时禁用任务预览切换命令', async () => {
 		const runtime = createRuntime(createActions())
 
-		await expect(runtime.execute(COMMAND_IDS.layoutTogglePreview)).resolves.toMatchObject({
+		await expect(
+			runtime.execute(COMMAND_IDS.layoutTogglePreview, invocation),
+		).resolves.toMatchObject({
 			status: 'disabled',
 			commandId: COMMAND_IDS.layoutTogglePreview,
 			reason: '当前没有可打开的任务预览',
@@ -398,7 +408,7 @@ describe('bindShellCommand / ShellCommandAdapter', () => {
 		})
 		const runtime = createRuntime(actions)
 
-		await expect(runtime.execute(COMMAND_IDS.openSearch)).resolves.toEqual({
+		await expect(runtime.execute(COMMAND_IDS.openSearch, invocation)).resolves.toEqual({
 			status: 'failed',
 			commandId: COMMAND_IDS.openSearch,
 			error,
@@ -409,7 +419,7 @@ describe('bindShellCommand / ShellCommandAdapter', () => {
 		const { completeSelectedTasks: _omit, ...chromeOnly } = createActions()
 		const runtime = createRuntime(chromeOnly)
 
-		await expect(runtime.execute(COMMAND_IDS.taskComplete)).resolves.toMatchObject({
+		await expect(runtime.execute(COMMAND_IDS.taskComplete, invocation)).resolves.toMatchObject({
 			status: 'disabled',
 			commandId: COMMAND_IDS.taskComplete,
 			reason: '该命令处理器尚未注册',
@@ -438,6 +448,8 @@ function createActions(overrides: Partial<ShellCommandActions> = {}): ShellComma
 		openProjectCreate: vi.fn(),
 		openTaskPicker: vi.fn(),
 		openProjectPicker: vi.fn(),
+		peekTask: vi.fn(),
+		openTaskDetail: vi.fn(),
 		openTaskPlacementPicker: vi.fn(),
 		applyTaskPlacement: vi.fn(),
 		openTaskPriorityPicker: vi.fn(),

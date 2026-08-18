@@ -113,35 +113,10 @@ describe('useTaskContextMenuBulkActions', () => {
 			source: 'context-menu',
 		})
 	})
-
-	it('把右键归档和删除映射到 bulk action，并按结果清空选区', async () => {
-		const calls: BulkActionCall[] = []
-		const onClearTaskSelection = vi.fn()
-		const tasks = [buildTask(), buildTask({ id: 'task-2', title: '任务 B' })]
-		const { result } = renderTaskContextMenuBulkActions({ calls, onClearTaskSelection })
-
-		await act(async () => {
-			result.current.onArchive(tasks)
-			result.current.onMoveToTrash(tasks)
-		})
-
-		expect(calls.map((call) => call.actionId)).toEqual([
-			TASK_BULK_ACTION_IDS.archiveSelected,
-			TASK_BULK_ACTION_IDS.deleteSelected,
-		])
-		expect(onClearTaskSelection).toHaveBeenCalledTimes(2)
-		expect(toastSuccessSpy).toHaveBeenCalledTimes(2)
-	})
 })
 
-function renderTaskContextMenuBulkActions({
-	calls,
-	onClearTaskSelection,
-}: {
-	calls: BulkActionCall[]
-	onClearTaskSelection?: () => void
-}) {
-	return renderHook(() => useTaskContextMenuBulkActions({ onClearTaskSelection }), {
+function renderTaskContextMenuBulkActions({ calls }: { calls: BulkActionCall[] }) {
+	return renderHook(() => useTaskContextMenuBulkActions(), {
 		wrapper: ({ children }: PropsWithChildren) => (
 			<DangerConfirmProvider>
 				<BulkActionProvider actions={createTestBulkActions(calls)}>{children}</BulkActionProvider>

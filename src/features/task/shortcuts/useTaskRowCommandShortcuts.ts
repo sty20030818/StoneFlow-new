@@ -1,37 +1,25 @@
 import { useMemo } from 'react'
 
-import { useBulkActionContext } from '@/features/bulk-action'
 import {
-	CommandRegistry,
-	CommandRuntime,
 	COMMAND_IDS,
 	matchKeybindingEvent,
 	SHORTCUT_DISPATCH_PRIORITY,
+	useCommandRuntimeContext,
 	useShortcutDispatcher,
 	useShortcutRegistry,
-	type CommandRowTargetContext,
 	type CommandId,
 	type NormalizedKeyEvent,
 } from '@/features/command'
+import { buildTaskCommandContext } from '@/features/task/commands/buildTaskCommandContext'
 import type { TaskListItem } from '@/shared/types'
-
-import {
-	createTaskRowCommandActions,
-	createTaskRowCommandContext,
-	createTaskRowCommands,
-} from './rowCommandRuntime'
 
 type UseTaskRowCommandShortcutsOptions = {
 	tasks: TaskListItem[]
-	activeTaskId: string | null
 	focusedTaskId: string | null
 	selectedTaskIds: ReadonlySet<string>
 	ownsEventTarget: (target: EventTarget | null) => boolean
-	onToggleTaskSelection: (taskId: string) => void
 	onClearTaskSelection: () => void
 	onKeyboardInteraction: () => void
-	onOpenTask: (taskId: string) => void
-	onPeekTask?: (taskId: string, source: 'keyboard' | 'pointer') => void
 }
 
 const TASK_DOMAIN_ROW_COMMAND_IDS = new Set<CommandId>([
@@ -44,20 +32,17 @@ const TASK_DOMAIN_ROW_COMMAND_IDS = new Set<CommandId>([
 	COMMAND_IDS.taskChangePlacement,
 ])
 
-/** 只绑定任务领域命令；集合导航、选择与真实焦点由 collection owner 负责。 */
+/** 只负责 row 快捷键匹配与目标投影；执行始终进入壳层唯一 Runtime。 */
 export function useTaskRowCommandShortcuts({
 	tasks,
-	activeTaskId,
 	focusedTaskId,
 	selectedTaskIds,
 	ownsEventTarget,
-	onToggleTaskSelection,
 	onClearTaskSelection,
 	onKeyboardInteraction,
-	onOpenTask,
-	onPeekTask,
 }: UseTaskRowCommandShortcutsOptions) {
 	const shortcutRegistry = useShortcutRegistry()
+	const { runtime, context } = useCommandRuntimeContext()
 	const rowBindings = useMemo(
 		() =>
 			shortcutRegistry
@@ -65,49 +50,32 @@ export function useTaskRowCommandShortcuts({
 				.filter((binding) => TASK_DOMAIN_ROW_COMMAND_IDS.has(binding.commandId)),
 		[shortcutRegistry],
 	)
-	const { runBulkAction } = useBulkActionContext()
-	const selectedTasks = useMemo(
-		() => tasks.filter((task) => selectedTaskIds.has(task.id)),
+	const taskById = useMemo(() => new Map(tasks.map((task) => [task.id, task])), [tasks])
+	const selectedIds = useMemo(
+		() => tasks.filter((task) => selectedTaskIds.has(task.id)).map((task) => task.id),
 		[selectedTaskIds, tasks],
 	)
-	const selectedIds = useMemo(() => selectedTasks.map((task) => task.id), [selectedTasks])
-	const taskById = useMemo(() => new Map(tasks.map((task) => [task.id, task])), [tasks])
-	const rowTarget = useMemo(
-		() => resolveRowTarget(selectedIds, focusedTaskId, activeTaskId, taskById),
-		[activeTaskId, focusedTaskId, selectedIds, taskById],
+	const focusedTargetId = focusedTaskId && taskById.has(focusedTaskId) ? focusedTaskId : null
+	const targetIds = useMemo(
+		() => (selectedIds.length > 0 ? selectedIds : focusedTargetId ? [focusedTargetId] : []),
+		[focusedTargetId, selectedIds],
 	)
-	const targetTask = rowTarget.targetId ? taskById.get(rowTarget.targetId) : undefined
-	const runtime = useMemo(() => {
-		const actions = createTaskRowCommandActions({
-			rowTarget,
-			targetTask,
-			selectedTasks,
-			runBulkAction,
-			onClearTaskSelection,
-			onOpenTask,
-			onPeekTask,
-			onToggleTaskSelection,
-		})
-
-		return new CommandRuntime({
-			registry: new CommandRegistry(createTaskRowCommands(actions)),
-			getContext: () => createTaskRowCommandContext(rowTarget, selectedIds, focusedTaskId),
-		})
-	}, [
-		focusedTaskId,
-		onClearTaskSelection,
-		onOpenTask,
-		onPeekTask,
-		onToggleTaskSelection,
-		rowTarget,
-		runBulkAction,
-		selectedIds,
-		selectedTasks,
-		targetTask,
-	])
+	const targetContext = useMemo(
+		() =>
+			buildTaskCommandContext({
+				baseContext: context,
+				tasks,
+				targetTaskIds: targetIds,
+				focusedTaskId: focusedTargetId,
+				rowTargetId: focusedTargetId ?? (targetIds.length === 1 ? targetIds[0] : null),
+				rowTargetSource: 'focus',
+				clearSelection: selectedIds.length > 0 ? onClearTaskSelection : undefined,
+			}),
+		[context, focusedTargetId, onClearTaskSelection, selectedIds.length, targetIds, tasks],
+	)
 
 	useShortcutDispatcher(SHORTCUT_DISPATCH_PRIORITY.row, (event) => {
-		if (!ownsEventTarget(event.target) || (!rowTarget.hasTarget && selectedIds.length === 0)) {
+		if (!ownsEventTarget(event.target) || targetIds.length === 0) {
 			return 'unhandled'
 		}
 
@@ -122,39 +90,11 @@ export function useTaskRowCommandShortcuts({
 
 		onKeyboardInteraction()
 		if (result.keybinding.preventDefault) event.preventDefault()
-		void runtime.execute(result.keybinding.commandId)
+		void runtime
+			.project(result.keybinding.commandId, targetContext)
+			?.execute({ source: 'row-shortcut' })
 		return 'handled'
 	})
-}
-
-function resolveRowTarget(
-	selectedIds: readonly string[],
-	focusedTaskId: string | null,
-	activeTaskId: string | null,
-	taskById: ReadonlyMap<string, TaskListItem>,
-): CommandRowTargetContext {
-	const selectionTarget = selectedIds.length === 1 ? selectedIds[0] : null
-	const targetId = [selectionTarget, focusedTaskId, activeTaskId].find(
-		(candidate): candidate is string => Boolean(candidate && taskById.has(candidate)),
-	)
-	if (!targetId) {
-		return {
-			source: 'none',
-			hasTarget: false,
-			isTaskTarget: false,
-			isProjectTarget: false,
-		}
-	}
-
-	return {
-		targetId,
-		targetType: 'task',
-		source:
-			targetId === selectionTarget ? 'selection' : targetId === focusedTaskId ? 'focus' : 'drawer',
-		hasTarget: true,
-		isTaskTarget: true,
-		isProjectTarget: false,
-	}
 }
 
 function normalizeKeyboardEvent(event: KeyboardEvent): NormalizedKeyEvent {

@@ -11,11 +11,12 @@ import { ShortcutHelp } from './ShortcutHelp'
 
 describe('ShortcutHelp', () => {
 	it('按分类仅展示拥有真实绑定的快捷键', async () => {
+		const onOpenChange = vi.fn()
 		renderShortcutHelp(
 			<ShortcutHelp
 				context={createEmptyCommandContext()}
 				description='测试'
-				onOpenChange={vi.fn()}
+				onOpenChange={onOpenChange}
 				open
 				runtime={createRuntime()}
 				title='快捷键'
@@ -27,6 +28,7 @@ describe('ShortcutHelp', () => {
 		expect(screen.getByText('完成任务')).toBeInTheDocument()
 		expect(screen.getByRole('button', { name: '关闭快捷键帮助' })).toBeInTheDocument()
 		expect(screen.getAllByText('/').length).toBeGreaterThan(0)
+		expect(screen.getAllByText('/')[0].closest('kbd')).not.toBeNull()
 		expect(screen.queryByText('命令内')).not.toBeInTheDocument()
 		expect(screen.queryByText('未绑定')).not.toBeInTheDocument()
 		const closeButton = screen.getByRole('button', { name: '关闭快捷键帮助' })
@@ -35,10 +37,11 @@ describe('ShortcutHelp', () => {
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('关闭')
 		fireEvent.pointerDown(closeButton, { pointerType: 'mouse' })
 		fireEvent.click(closeButton)
+		expect(onOpenChange).toHaveBeenCalledWith(false)
 		await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument())
 	})
 
-	it('列表区使用统一滚动容器，标题区不进入滚动层', () => {
+	it('列表区使用 Modal 内建滚动区域，标题和描述保留在区域外', () => {
 		renderShortcutHelp(
 			<ShortcutHelp
 				context={createEmptyCommandContext()}
@@ -50,12 +53,14 @@ describe('ShortcutHelp', () => {
 			/>,
 		)
 
-		const title = screen.getAllByText('快捷键')[1]
+		const dialog = screen.getByRole('dialog', { name: '快捷键' })
+		const title = screen.getByRole('heading', { name: '快捷键' })
+		const listRegion = screen.getByRole('region', { name: '快捷键列表' })
 		const listItem = screen.getByText('打开命令菜单')
-		const scrollContainer = listItem.closest('[data-scroll-container="true"]')
 
-		expect(scrollContainer).toHaveAttribute('data-scroll-container', 'true')
-		expect(title.closest('[data-scroll-container="true"]')).toBeNull()
+		expect(dialog).toHaveAccessibleDescription('测试')
+		expect(listRegion).toContainElement(listItem)
+		expect(listRegion).not.toContainElement(title)
 	})
 })
 
@@ -88,6 +93,8 @@ function createActions(): ShellCommandActions {
 		openProjectCreate: vi.fn(),
 		openTaskPicker: vi.fn(),
 		openProjectPicker: vi.fn(),
+		peekTask: vi.fn(),
+		openTaskDetail: vi.fn(),
 		openTaskPlacementPicker: vi.fn(),
 		applyTaskPlacement: vi.fn(),
 		openTaskPriorityPicker: vi.fn(),

@@ -1,7 +1,6 @@
 import { FolderIcon } from 'lucide-react'
 
 import { PageFrame } from '@/shared/components/page-frame'
-import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
 import { DisplayOptionsButton } from '@/features/display-options'
 import { FilterBar, ListFilterUiProvider, PageFilterButton } from '@/features/filter'
 import type { Scope } from '@/shared/types'
@@ -97,15 +96,6 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 						<TaskBoard {...scene.taskCollection.boardProps} />
 					</PageFrame.VirtualizedBody>
 				)}
-				{scene.project ? (
-					<PageFrame.BulkBar>
-						<BulkActionBar
-							action={<BulkCommandMenuAction />}
-							onClear={scene.bulk.clearTaskSelection}
-							selectedCount={scene.bulk.selectedCount}
-						/>
-					</PageFrame.BulkBar>
-				) : null}
 			</PageFrame.Root>
 		</ListFilterUiProvider>
 	)
