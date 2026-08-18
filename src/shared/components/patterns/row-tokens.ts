@@ -9,7 +9,7 @@ export const ROW_SHELL_BASE_CLASS =
 
 export const ROW_SHELL_IDLE_CLASS = ''
 export const ROW_SHELL_ACTIVE_CLASS = 'border-border-secondary bg-accent-soft'
-export const ROW_SHELL_FOCUS_CLASS = 'border-foreground/70'
+export const ROW_SHELL_FOCUS_CLASS = 'border-foreground/55'
 export const ROW_SHELL_SELECTED_CLASS = 'border-transparent bg-accent-soft'
 export const ROW_SHELL_SECTION_HEADER_CLASS =
 	'flex h-10 items-center gap-2 rounded-md bg-sf-list-section-bg pl-3 pr-1'

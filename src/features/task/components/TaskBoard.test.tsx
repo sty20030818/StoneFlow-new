@@ -1,5 +1,5 @@
 import { act, fireEvent, screen, waitFor, within, type RenderResult } from '@testing-library/react'
-import { useMemo, type ReactElement } from 'react'
+import { useLayoutEffect, useMemo, useState, type ReactElement } from 'react'
 
 import { BulkActionProvider } from '@/features/bulk-action'
 import { DangerConfirmProvider } from '@/features/danger-confirm'
@@ -268,6 +268,14 @@ describe('TaskBoard', () => {
 
 		const grid = screen.getByRole('grid', { name: '任务列表' })
 		const rows = within(grid).getAllByRole('row')
+		const nativeMatches = grid.matches.bind(grid)
+		const focusVisible = vi
+			.spyOn(grid, 'matches')
+			.mockImplementation((selector) => selector === ':focus-visible' || nativeMatches(selector))
+		act(() => grid.focus())
+		await waitFor(() => expect(rows[0]).toHaveFocus())
+		focusVisible.mockRestore()
+
 		fireEvent.pointerMove(rows[1]!)
 		await waitFor(() => {
 			expect(rows[1]).toHaveFocus()
@@ -283,15 +291,8 @@ describe('TaskBoard', () => {
 		await waitFor(() => {
 			expect(screen.getByTestId('focused-key')).toHaveTextContent('none')
 			expect(grid).toHaveFocus()
-			expect(grid.className).toContain('focus-visible:outline-none')
+			expect(grid).toHaveClass('outline-none')
 		})
-		fireEvent.keyDown(grid, { key: 'Tab' })
-		expect(grid.className).not.toContain('focus-visible:outline-none')
-		const inlineButton = within(rows[0]!).getByRole('button', { name: '行内操作 任务 A' })
-		act(() => inlineButton.focus())
-		fireEvent.keyDown(inlineButton, { key: 'Tab', shiftKey: true })
-		act(() => grid.focus())
-		expect(grid.className).not.toContain('focus-visible:outline-none')
 
 		fireEvent.keyDown(grid, { key: 'ArrowDown', shiftKey: true })
 		await waitFor(() => {
@@ -339,7 +340,11 @@ describe('TaskBoard', () => {
 		})
 		fireEvent.keyDown(rows[2]!, { key: 'x' })
 		await waitFor(() => expect(rows[2]).toHaveAttribute('aria-selected', 'false'))
-		fireEvent.keyDown(rows[2]!, { key: ' ' })
+		const grid = screen.getByRole('grid', { name: '任务列表' })
+		act(() => grid.focus())
+		expect(grid).toHaveFocus()
+		fireEvent.keyDown(grid, { key: ' ' })
+		await waitFor(() => expect(rows[2]).toHaveFocus())
 		expect(onPeekTask).toHaveBeenCalledWith('task-3', 'keyboard')
 		fireEvent.keyDown(rows[2]!, { key: 'Enter' })
 		expect(onOpenTask).toHaveBeenCalledWith('task-3')
@@ -465,7 +470,7 @@ describe('TaskBoard', () => {
 		await waitFor(() => expect(screen.getByRole('row', { name: '打开任务 任务 B' })).toHaveFocus())
 	})
 
-	it('尾部 group 的 ArrowDown 再进入 collection root', async () => {
+	it('尾部 group 没有下一项时 ArrowDown 保留可见 trigger 焦点', async () => {
 		const focusIntent = {
 			type: 'group-trigger',
 			groupKey: 'h:doing',
@@ -494,7 +499,8 @@ describe('TaskBoard', () => {
 		const rootFocus = vi.spyOn(grid, 'focus')
 		await waitFor(() => expect(trigger).toHaveFocus())
 		expect(fireEvent.keyDown(trigger, { key: 'ArrowDown' })).toBe(false)
-		expect(rootFocus).toHaveBeenCalledWith({ preventScroll: true })
+		expect(trigger).toHaveFocus()
+		expect(rootFocus).not.toHaveBeenCalled()
 	})
 
 	it('删除 fallback item intent 聚焦真实 row 并只消费一次', async () => {
@@ -558,6 +564,42 @@ describe('TaskBoard', () => {
 
 		await waitFor(() => expect(screen.getByRole('row', { name: '打开任务 任务 80' })).toHaveFocus())
 		expect(scrollTo).toHaveBeenCalled()
+	})
+
+	it('最后一项删除后 stable id 失效时聚焦空态主操作', async () => {
+		function EmptyFallbackProbe() {
+			const [tasks, setTasks] = useState([createTask({ id: 'task-1', title: '任务 A' })])
+			useLayoutEffect(() => {
+				if (tasks.length === 0) {
+					focusTaskBoardTaskId('task-1')
+				}
+			}, [tasks.length])
+
+			return (
+				<>
+					<button onClick={() => setTasks([])} type='button'>
+						删除最后一项
+					</button>
+					<TaskBoardHarness
+						activeTaskId={null}
+						emptyActionLabel='创建任务'
+						emptyTitle='当前没有任务'
+						onEmptyAction={() => undefined}
+						onOpenTask={() => undefined}
+						onToggleTaskStatus={async () => undefined}
+						onUpdateTaskPriority={async () => undefined}
+						onUpdateTaskStatus={async () => undefined}
+						pendingTaskId={null}
+						status='ready'
+						tasks={tasks}
+					/>
+				</>
+			)
+		}
+
+		renderTaskBoard(<EmptyFallbackProbe />)
+		fireEvent.click(screen.getByRole('button', { name: '删除最后一项' }))
+		await waitFor(() => expect(screen.getByRole('button', { name: '创建任务' })).toHaveFocus())
 	})
 
 	it('分组全选一次更新 selection，不改动 focus 与 range anchor', async () => {

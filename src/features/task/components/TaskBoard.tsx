@@ -1,9 +1,11 @@
 import {
 	useCallback,
 	useEffect,
+	useLayoutEffect,
 	useMemo,
 	useRef,
 	useState,
+	type FocusEvent as ReactFocusEvent,
 	type KeyboardEvent as ReactKeyboardEvent,
 } from 'react'
 import { mergeProps, useGridList, useGridListItem } from 'react-aria'
@@ -153,10 +155,8 @@ export function TaskBoard({
 	const selectedTaskIdSet = collectionInteraction.selectedKeys
 	const focusedTaskId = collectionInteraction.focusedKey
 	const [focusSource, setFocusSource] = useState<'pointer' | 'keyboard' | null>(null)
-	const [suppressRootFocusRing, setSuppressRootFocusRing] = useState(false)
 	const markKeyboardInteraction = useCallback(() => {
 		setFocusSource('keyboard')
-		setSuppressRootFocusRing(false)
 	}, [])
 	const contextMenuActions = useTaskContextMenuBulkActions({
 		onClearTaskSelection: collectionInteraction.clearSelection,
@@ -332,6 +332,18 @@ export function TaskBoard({
 		[focusBridge, focusCollectionStateKey, markKeyboardInteraction, navigableTaskKeys],
 	)
 	const gridRef = useRef<HTMLDivElement | null>(null)
+	const emptyActionRef = useRef<HTMLButtonElement | null>(null)
+	const focusTaskBoardTarget = useCallback(
+		(key: string) => {
+			if (navigableTaskKeys.includes(key)) {
+				focusCollectionKey(key)
+				return
+			}
+			const fallbackTarget = gridRef.current ?? emptyActionRef.current
+			fallbackTarget?.focus({ preventScroll: true })
+		},
+		[focusCollectionKey, navigableTaskKeys],
+	)
 	const groupReentryRef = useRef<{
 		groupKey: string
 		reentry: CollectionEntryTarget<string>
@@ -405,13 +417,13 @@ export function TaskBoard({
 			event.stopPropagation()
 			markKeyboardInteraction()
 			groupReentryRef.current = null
+			if (pending.reentry.type === 'root') return
 			focusBridge.requestFocus(pending.reentry)
 		},
 		[focusBridge, markKeyboardInteraction],
 	)
 	const handleRootKeyDownCapture = useCallback(
 		(event: ReactKeyboardEvent<HTMLDivElement>) => {
-			setSuppressRootFocusRing(false)
 			const target = event.target
 			if (target instanceof HTMLElement) {
 				const groupKey = target.dataset.collectionGroupKey
@@ -420,6 +432,23 @@ export function TaskBoard({
 			if (!event.isPropagationStopped()) keyboard.onKeyDownCapture(event)
 		},
 		[handleGroupTriggerKeyDown, keyboard],
+	)
+	const handleRootFocusCapture = useCallback(
+		(event: ReactFocusEvent<HTMLDivElement>) => {
+			if (
+				event.target !== event.currentTarget ||
+				focusSource === 'pointer' ||
+				(event.relatedTarget instanceof Node &&
+					event.currentTarget.contains(event.relatedTarget)) ||
+				!event.currentTarget.matches(':focus-visible')
+			) {
+				return
+			}
+
+			const entryKey = focusedTaskId ?? navigableTaskKeys[0]
+			if (entryKey) focusCollectionKey(entryKey)
+		},
+		[focusCollectionKey, focusSource, focusedTaskId, navigableTaskKeys],
 	)
 	const handleGroupTriggerBlur = useCallback((groupKey: string) => {
 		if (groupReentryRef.current?.groupKey === groupKey) {
@@ -430,7 +459,6 @@ export function TaskBoard({
 		(taskId: string) => {
 			if (focusSource === 'pointer' && focusedTaskId === taskId) return
 			setFocusSource('pointer')
-			setSuppressRootFocusRing(false)
 			collectionInteraction.focusKey(taskId)
 			focusBridge.requestFocus({ type: 'item', key: taskId })
 		},
@@ -440,10 +468,8 @@ export function TaskBoard({
 		(taskId: string, restoreRootFocus: boolean) => {
 			if (focusSource !== 'pointer' || focusedTaskId !== taskId) return
 			collectionInteraction.focusKey(null)
-			if (restoreRootFocus) {
-				setSuppressRootFocusRing(true)
-				gridRef.current?.focus({ preventScroll: true })
-			}
+			if (restoreRootFocus) gridRef.current?.focus({ preventScroll: true })
+			setFocusSource(null)
 		},
 		[collectionInteraction, focusSource, focusedTaskId],
 	)
@@ -514,14 +540,14 @@ export function TaskBoard({
 	const stickyHeaderItem = flatItems[stickyActiveIndex]
 	const stickyHeader = stickyHeaderItem?.kind === 'header' ? stickyHeaderItem : null
 
-	useEffect(() => {
+	useLayoutEffect(() => {
 		registerTaskBoardScrollToTaskId(scrollToCollectionKey)
-		registerTaskBoardFocusTaskId(focusCollectionKey)
+		registerTaskBoardFocusTaskId(focusTaskBoardTarget)
 		return () => {
 			registerTaskBoardScrollToTaskId(null)
 			registerTaskBoardFocusTaskId(null)
 		}
-	}, [focusCollectionKey, scrollToCollectionKey])
+	}, [focusTaskBoardTarget, scrollToCollectionKey])
 
 	if (status === 'idle' || status === 'loading') {
 		return <BoardLoadingState />
@@ -540,6 +566,7 @@ export function TaskBoard({
 	if (status === 'ready' && tasks.length === 0 && emptyTitle) {
 		return (
 			<BoardEmptyState
+				actionRef={emptyActionRef}
 				actionLabel={emptyActionLabel}
 				description={emptyDescription}
 				icon={<ListTodoIcon />}
@@ -580,19 +607,9 @@ export function TaskBoard({
 			{...gridProps}
 			ref={gridRef}
 			aria-rowcount={collectionInteraction.projection.navigableKeys.length}
-			className={cn(
-				'@container/task-list relative w-full',
-				suppressRootFocusRing && 'focus-visible:outline-none',
-			)}
+			className='@container/task-list relative w-full outline-none'
 			data-board-root='true'
-			onBlurCapture={(event) => {
-				if (
-					!(event.relatedTarget instanceof Node) ||
-					!event.currentTarget.contains(event.relatedTarget)
-				) {
-					setSuppressRootFocusRing(false)
-				}
-			}}
+			onFocusCapture={handleRootFocusCapture}
 			onKeyDownCapture={handleRootKeyDownCapture}
 		>
 			{/* 零高度 sticky 壳（不占文档流高度）+ 定高裁剪层。 */}

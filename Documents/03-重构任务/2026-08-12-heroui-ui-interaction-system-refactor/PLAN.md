@@ -423,7 +423,7 @@ Aside 非模态、不 trap focus。虚拟 trigger 的恢复由 collection bridge
 
 - 保留 TanStack Virtual 的分组、sticky、总高度、分页与 `scrollToTaskId`，只把焦点、选择和键盘 ownership 切到单一 collection state。
 - 迁移行控件、Pro ContextMenu、连续选择视觉、虚拟行 focus restore 与实体删除 fallback。
-- 删除视觉 hover 焦点、重复 Shift session、DOM 查询焦点和 row/list 双重快捷键状态机；完成两份性能 fixture 与 User Gate U3。
+- 删除视觉 hover 焦点、重复 Shift session、DOM 查询焦点和 row/list 双重快捷键状态机；完成自动化正确性门禁与 User Gate U3。两份性能 fixture 留给独立后续任务重新基线。
 
 ### 阶段 J：Command、ContextMenu、ActionBar 与 Timeline
 
@@ -447,7 +447,7 @@ Aside 非模态、不 trap focus。虚拟 trigger 的恢复由 collection bridge
 
 - 零消费者后删除 Radix/shadcn/cmdk/Sonner/react-day-picker/CVA、旧 base、旧纯样式 pattern、旧 token/adapter/dark scaffold 和无消费者测试；确认阶段 C 已删除的 StoneFlow `tw-animate-css` 直接声明没有回流。
 - 运行 HeroUI-only、第一方零动画、架构边界、类型、lint、格式、测试、production build 与依赖树门禁；确认 lockfile 中 `tw-animate-css` 只来自 HeroUI 官方链路。
-- 完成 macOS WKWebView 的视觉、键盘、焦点、reduced-motion 与性能验收，通过 User Gate U5 后同步长期文档、记录偏差并归档任务。复核 Windows 构建、平台分支和产品支持没有被迁移删除，但不采集 Windows WebView2 证据、不以其为阻塞，也不宣称 Windows 已验证。
+- 完成 macOS WKWebView 的视觉、键盘、焦点与 reduced-motion 验收，通过 User Gate U5 后同步长期文档、记录偏差并归档任务。复核 Windows 构建、平台分支和产品支持没有被迁移删除，但不采集 Windows WebView2 证据、不以其为阻塞，也不宣称 Windows 已验证。
 
 ### 供应链与人工验收门
 
@@ -515,6 +515,8 @@ PLAN 获确认后再在 TASKS 中拆 flat `T1/T2/...`：每个任务限定一个
 - Detail：窗口 `1024px` 两侧的 Aside/Sheet 首次打开与跨断点互换、`?task=`/draft/autosave/history 不变、Sidebar 与详情 owner 独立、列表 `min 352px` 及 `<560px` 唯一紧凑档、Aside `320/360/440px` 拖宽、Sheet modal/Backdrop/Escape/外点/焦点恢复、Header flush 后显式打开完整页、scroll 和 Peek 独立性。
 
 ### TaskBoard 性能预算
+
+> **范围变更（2026-08-18）**：本节冻结为独立 MainCard + TaskBoard 虚拟列表/焦点链路性能重构的历史输入，后续需重新建立基线；不执行本任务原 T72/T113，不阻塞 T74、U5 或 T120，也不代表当前性能已通过。
 
 使用两份确定性 fixture：
 

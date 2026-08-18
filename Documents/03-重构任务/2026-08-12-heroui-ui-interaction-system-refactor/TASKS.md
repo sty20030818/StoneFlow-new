@@ -1,10 +1,10 @@
 # HeroUI-only UI 平台、Linear 浅色设计系统与键盘交互重写 - Tasks
 
-> 当前状态：阶段 3。阶段 A–H 已完成；阶段 I 的 T66–T71 已完成，下一步执行 T72 production Tauri 性能采集。
+> 当前状态：阶段 3。阶段 A–H 已完成；阶段 I 的 T66–T71 与 U3 反馈修正已完成，下一步执行 T73/U3 真实 Tauri 验收。
 
 ## 当前阶段
 
-- 阶段 A–H 已完成；阶段 I 的 TaskBoard collection、Grid、focus bridge、HeroUI Pro ContextMenu 与旧快捷键状态机清理已完成，下一步执行 T72。Windows WebView2 不属于本任务验收范围，也不阻塞后续阶段。
+- 阶段 A–H 已完成；阶段 I 的 TaskBoard collection、Grid、focus bridge、HeroUI Pro ContextMenu 与旧快捷键状态机清理已完成，下一步执行 T73/U3。MainCard + TaskBoard 整体性能重构已移入独立后续任务；Windows WebView2 不属于本任务验收范围，也不阻塞后续阶段。
 - 执行任意 task 前，必须重读 [SPEC.md](./SPEC.md) 对应 AC 与 [PLAN.md](./PLAN.md) 对应方案；后续 task 默认按编号顺序依赖。
 - 任一锁定包 API、供应链访问、性能或产品合同与 PLAN 冲突时，先在本文件「与 SPEC/PLAN 的实施偏差」登记并停止相关切片，不得静默增加兼容层。
 
@@ -318,7 +318,7 @@
 
 - [x] T69 在 `src/features/task/components/TaskBoard.tsx`、`src/features/task/components/taskBoardScroll.ts` 与测试中接入 stable key/ref focus bridge，向 bridge 注册 row、分组折叠按钮与 collection root，并保留 TanStack Virtual 的分组、sticky、range extractor、总高度、分页与 `scrollToTaskId`。
   - `TaskBoard.test.tsx` 覆盖“焦点行被折叠 → 折叠按钮 → 再次进入首项/root → anchor 重置”、删除聚焦行与离屏挂载后聚焦。
-  _对应验收标准：AC-32, AC-33, AC-35, AC-36, AC-37_
+  _对应验收标准：AC-32, AC-33, AC-35, AC-36_
   _测试先行：`src/features/task/components/TaskBoard.test.tsx`_
 
 - [x] T70 将 `src/features/task/components/TaskContextMenu.tsx`、`src/features/task/components/task-context-menu-items.tsx` 与 `src/features/task/components/TaskRowAdapter.tsx` hard cut 到 HeroUI Pro ContextMenu：右键不改变 selection，已选行作用于整组、未选行只作用于该行，关闭后经 bridge 恢复；领域 action、危险确认和 mutation 不变。
@@ -330,15 +330,14 @@
   _对应验收标准：AC-2, AC-8, AC-26, AC-33, AC-36_
   _测试先行：`src/features/task/components/TaskBoard.test.tsx`、`src/features/selection/components/CollectionInteractionContract.test.tsx`_
 
-- [ ] T72 使用阶段 A 已建立的 `src/routes/debug.task-board.tsx` 与 T5 fixture 把迁移后原始结果写入 `Documents/99-素材/03-验证/heroui-refactor/task-board-performance-after.json`，执行 5 次滚动、50 次 focus 延迟与 100 次键盘移动预算。
-  _对应验收标准：AC-33, AC-35, AC-37_
+- T72（延期，已移出本任务）原计划使用 `src/routes/debug.task-board.tsx` 与 T5 fixture 采集迁移后性能；现保留入口、fixture 与历史基线，交由独立 MainCard + TaskBoard 虚拟列表/焦点链路性能重构重新基线，不阻塞阶段 I。
 
 - [ ] T73（任务发起人验收 U3）在 production Tauri build 完整验证 TaskBoard pointer hover 起点、root 无行 current 的键盘进入、Arrow/J/K/Home/End、方向键长按松键、X、Shift、Space Peek、Enter 详情、Cmd/Ctrl+A、右键、Escape 与输入/IME 隔离，并在本文件记录“通过”或精确问题。
-  - 另一定验证“折叠焦点行 → 分组按钮 → 再次进入”、删除聚焦行、离屏挂载后聚焦与 anchor 重置；执行者先提供固定步骤、录屏、性能比较与已知差异，AI 不得代为勾选。
+  - 另一定验证“折叠焦点行 → 分组按钮 → 再次进入”、删除聚焦行、离屏挂载后聚焦与 anchor 重置；执行者先提供固定步骤、录屏与已知差异，AI 不得代为勾选。
   _对应验收标准：AC-26, AC-27, AC-32, AC-35, AC-36_
 
-- [ ] T74 完成阶段 I 收口：确认 U3 与性能预算通过，运行 Task/Selection/Bulk 测试、根级门禁与 build，确认旧 TaskBoard 状态机零引用；获准提交时引用 PLAN 的阶段 I 文案。
-  _对应验收标准：AC-33, AC-34, AC-35, AC-36, AC-37_
+- [ ] T74 完成阶段 I 收口：确认 U3 通过，运行 Task/Selection/Bulk 测试、根级门禁与 build，确认旧 TaskBoard 状态机零引用；获准提交时引用 PLAN 的阶段 I 文案。
+  _对应验收标准：AC-33, AC-34, AC-35, AC-36_
 
 **阶段 J：Command、ContextMenu、ActionBar 与 Timeline**
 
@@ -497,8 +496,7 @@
 - [ ] T112 确认 Windows WebView2 不在本任务验收范围：复核现有 Windows 构建入口、Tauri 平台分支与产品支持未因迁移被删除，同时不得为未实测的 Windows 行为新增专门兼容层；本任务不采集 Windows 证据、不以 Windows 设备为阻塞，也不得宣称 Windows 已验证。
   _对应验收边界：SPEC「不做什么」第 11 项；本项不构成 Windows 验收证据_
 
-- [ ] T113 使用 `src/routes/debug.task-board.tsx` 与 T5 fixture，在 T6 登记的同一台 macOS WKWebView、同一实际稳定 viewport 上复跑最终性能，比较 macOS 基线并验证 p95、mounted rows、mount/unmount、重复 fetch、挂载风暴、100 次键盘移动与 PLAN 回归预算，结果写入 `Documents/99-素材/03-验证/heroui-refactor/task-board-performance-final.json`。
-  _对应验收标准：AC-33, AC-35, AC-37_
+- T113（延期，已移出本任务）原计划在同一台 macOS WKWebView 复跑最终性能；现与 T72 一并交由独立后续任务，不阻塞 U5 或最终归档，且不得据此宣称性能预算已通过。
 
 - [ ] T114 将已落地的 HeroUI-only 技术栈、Pro 供应链与全局界面合同同步到 `Documents/01-架构/A2-系统设计.md` 与 `Documents/01-架构/A3-界面系统.md`，只描述当前事实。
   _对应验收标准：AC-1, AC-4, AC-7, AC-38_
@@ -515,11 +513,11 @@
 - [ ] T118 将偏好、系统反馈与 Launcher 最终边界同步到 `src/features/settings/ARCHITECTURE.md`、`src/features/update/ARCHITECTURE.md` 与 `src/features/launcher/ARCHITECTURE.md`，不扩大到未改变的领域或 Rust 协议。
   _对应验收标准：AC-18, AC-38, AC-39, AC-41, AC-43_
 
-- [ ] T119（任务发起人验收 U5）审阅 macOS 关键截图、录屏与 T113 性能报告，并在 T4 登记的 macOS 主设备完成端到端走查；必须同时通过 HeroUI-only、浅色视觉、键盘合同、第一方零动画、reduced-motion 与性能预算，且不得把结论扩张为 Windows 已验证。
+- [ ] T119（任务发起人验收 U5）审阅 macOS 关键截图与录屏，并在 T4 登记的 macOS 主设备完成端到端走查；必须同时通过 HeroUI-only、浅色视觉、键盘合同、第一方零动画与 reduced-motion，且不得把结论扩张为 Windows 已验证。
   - 在本文件记录“通过”或精确问题；AI 不得代为勾选。
-  _对应验收标准：AC-1, AC-11, AC-37, AC-41, AC-44_
+  _对应验收标准：AC-1, AC-11, AC-41, AC-44_
 
-- [ ] T120 完成阶段 M 收口：在 U5 通过后逐条核对 Definition of Done 与全部验收标准，在本文件完成记录留下证据；运行根级 `bun run typecheck`、`bun run lint`、`bun run lint:boundaries`、`bun run format:check`、`bun run test:run`、`bun run build`、`bun run test:rust` 与两项 UI 扫描，再归档并更新 `Documents/_INDEX.md`。
+- [ ] T120 完成阶段 M 收口：在 U5 通过后逐条核对 Definition of Done 与全部当前有效验收标准（不含明确延期的 AC-37），在本文件完成记录留下证据；运行根级 `bun run typecheck`、`bun run lint`、`bun run lint:boundaries`、`bun run format:check`、`bun run test:run`、`bun run build`、`bun run test:rust` 与两项 UI 扫描，再归档并更新 `Documents/_INDEX.md`。
   - 未解决事项先转成独立后续任务，再将目录移至 `Documents/98-归档/02-已完成重构/2026-08-12-heroui-ui-interaction-system-refactor/` 并冻结 SPEC/PLAN/TASKS；获准提交时引用 PLAN 的阶段 M 文案，不自动提交。
   _对应验收标准：AC-1, AC-2, AC-38, AC-40, AC-41_
 
@@ -543,6 +541,7 @@
 - 2026-08-14：阶段 E 的已连接 trigger 使用真实 DOM ref 恢复，trigger 卸载时回退到打开时捕获的 collection root；虚拟行离屏后重挂载并恢复当前实体行，仍按 PLAN 由阶段 H/I 的 stable key/ref bridge 完成，本阶段不新增 querySelector 兼容桥。
 - 2026-08-16：任务发起人确认最终合同：列表打开只写 `?task=`；窗口 `<1024px` 始终使用 HeroUI Sheet，`>=1024px` 始终使用 Aside；跨断点只换容器，不改 URL、不关闭、不跳页。Sidebar 同用 `1024px` 产品边界但 owner 独立；列表最小 `352px`，Aside 最小/默认/最大为 `320/360/440px`，任务列表只保留 `<560px` 一档容器自适应；完整页仅显式打开。T43 据此再次重开。
 - 2026-08-17：锁定版 `react-stately@3.49.0` 的公开 `MultipleSelectionManager` 不暴露 range anchor 的读取或重置能力；阶段 H 不使用 private import 或类型强转，仍由 manager 唯一拥有 `selectedKeys`/`focusedKey`，仅在同一 collection interaction owner 内保留一个 `rangeAnchorKey` 交互元数据，并以显式 key Set 落选择结果。
+- 2026-08-18：任务发起人明确将 MainCard + TaskBoard 虚拟列表/焦点链路的整体性能重构延期到独立后续任务；本轮 HeroUI 重构不执行 T72/T113 的量化性能采集，也不以旧性能预算阻塞 T74、U5 或 T120，且不得据此宣称性能预算已通过。T5/T6 fixture 与迁移前基线继续保留为后续重新基线的输入；阶段 I 仍以自动化正确性门禁和 T73/U3 的真实 Tauri 交互验收收口。
 
 ## 完成记录
 
@@ -553,7 +552,7 @@
 - 2026-08-13：按《任务方案编写 SOP》完成 13 阶段、120 个 flat tasks、1 个供应链访问 Gate、5 个人工 Gate 与逐阶段收口拆分，进入阶段 3，尚未实施产品代码。
 - 2026-08-13：完成 T1。新增 ADR-0002，固化 HeroUI-only、Tailwind/HeroUI theme、产品例外、第一方零动画与 CollectUI 固定供应链决策。
 - 2026-08-13：完成 T2/U0。首轮位置参数诊断不计入验收；随后在新的仓库外临时目录以 `HEROUI_KEY` 进程环境变量重跑成功，记录 547 个文件、2,593,321 bytes、70 个 exports、30 个 peers 与当前 installed tree SHA-256。该缓存 smoke 只证明固定产物可取得；T8/T110 另以树 SHA-256、隔离 frozen install/typecheck/build 验收。
-- 2026-08-13：完成 T3。首轮清单 213 条；T6 新增后又补入 7 个 benchmark route/page/access/fixture 条目，并统一交由 T113 在最终同合同比较后删除，当前共 220 条。
+- 2026-08-13：完成 T3。首轮清单 213 条；T6 新增后又补入 7 个 benchmark route/page/access/fixture 条目，原计划交由 T113 在最终比较后删除；按 2026-08-18 范围变更，这些条目改由独立性能重构复核和处置，当前共 220 条。
 - 2026-08-13：完成 T5。两份确定性 TaskBoard fixture 及定向测试通过，覆盖 `2,000/20×100` 与 `200/10,000` 合同。
 - 2026-08-13：完成 T4。现有 9 份有效 macOS 迁移前截图覆盖主壳/Sidebar、TaskBoard 稀疏/密集、Command、两张 ContextMenu、任务详情、Settings/Update 与 Launcher；迁移前证据不再承担终态精确视口验收。
 - 2026-08-13：T6 首轮实现新增仅允许 production + Tauri + 显式构建开关访问的测量入口；审计发现固定 timer 步进使所谓 5 秒窗口实测约 7.1 秒，已改为基于 `performance.now()` 的截止时基，旧样本只保留为无效诊断且必须重跑。Windows 已移出本任务验收范围，T6 仍因修正版 macOS 真机基线未采集而保持未完成。
@@ -576,4 +575,5 @@
 - 2026-08-17：完成 T47–T50 与阶段 F 收口。Activity Debug 和根/壳路由反馈直接切到 HeroUI 表单、Button、Link、EmptyState 与反馈组件；ShortcutTokens/MainCard 保留产品语义并直接组合 HeroUI Kbd/Button；普通 MainCard/Detail 使用 ScrollShadow，TaskBoard 三条页面路径通过显式 `PageFrame.VirtualizedBody` 继续拥有唯一 AppScrollArea viewport。`Sidebar.Content` 已由 HeroUI 提供 ScrollShadow，验证后不再嵌套第二层。删除零消费者的 Activity Debug/MainCard pattern、ShortcutMenuItemHint 与旧 Kbd primitive；AppScrollArea/OverlayScrollbar 因真实消费者继续保留。全量前端 191 个文件共 1009 项、release 146 项、第一方动画扫描、typecheck、lint、模块边界、格式与 production build 均通过；`test:rust` 仅复现已登记的 Space 回收站文案断言失败。阶段 F 建议 commit 文案：`refactor(ui): 迁移 HeroUI 标准控件与表单`；未提交、未改动 Git 暂存区。
 - 2026-08-17：完成 T60–T65 与阶段 H 收口。建立 stable-key collection 投影、唯一 React Stately owner、loaded-only 显式全选、Linear 键位 adapter 与异步 stable key/ref focus bridge；折叠项保留选择但由 React Aria navigation-disabled keys 跳过，range anchor 仅在下一次范围动作前修复。Command 注册改为只读订阅源，领域批量 snapshot 在执行瞬间复制；HeroUI Pro ListView 仅保留测试 probe，不新增生产 wrapper，也未提前迁移 TaskBoard。阶段专项 30 个文件共 237 项、全量前端 199 个文件共 1065 项、typecheck、lint、模块边界、格式、第一方动画扫描与 production build 均通过；阶段 H 建议 commit 文案：`refactor(selection): 建立单一集合交互状态`；未提交、未改动 Git 暂存区。
 - 2026-08-17：完成 T66–T71。TaskBoard 以阶段 H collection state 为选择、焦点与 anchor 唯一 owner，使用 React Aria Grid 真实行焦点和 stable key/ref bridge，并保留唯一 TanStack Virtual、sticky、分页与总高度。右键 hard cut 到 HeroUI Pro ContextMenu；旧 Task 视觉 hover、Shift session、DOM 查询与双层快捷键状态机在零引用后删除，Project/Lifecycle 的共享旧 owner 留待所属阶段。阶段 I 聚焦回归 12 个文件共 86 项通过，包含折叠/删除恢复、离屏滚动挂载后聚焦、右键回焦、行内输入隔离与 React Aria typeahead 冲突回归；typecheck、lint、模块边界、格式、第一方动画扫描与 diff check 通过。T72 的 production 采样、T73/U3 与 T74 尚未完成；未提交、未改动 Git 暂存区。
-- 2026-08-18：根据 U3 首轮反馈收口 TaskBoard 密度与 current 视觉：任务行/分组标题/文字统一为 `44/34/13px`；pointer hover 与键盘共享唯一 current，pointer 无边框、键盘为 `1px` 细边框，selected 与 selected-hover 使用无边框浅蓝/灰蓝表面，右键不改变 selection。collection root 在无行 current 时仍可按方向建立首/尾项、Shift anchor 与 loaded-only 全选；Arrow repeat 增加密集限流和积压丢弃，避免松键后继续翻动。相关 12 个文件 96 项、全量前端 200 个文件共 1060 项、typecheck、lint、模块边界、格式、第一方动画扫描、diff check 与 production build 通过；方向键长按手感仍待真实 Tauri 复验，T72、T73/U3 与 T74 保持未完成。
+- 2026-08-18：根据 U3 首轮反馈收口 TaskBoard 密度与 current 视觉：任务行/分组标题/文字统一为 `44/34/13px`；pointer hover 与键盘共享唯一 current，pointer 无边框、键盘为 `1px` 细边框，selected 与 selected-hover 使用无边框浅蓝/灰蓝表面，右键不改变 selection。collection root 在无行 current 时仍可按方向建立首/尾项、Shift anchor 与 loaded-only 全选；Arrow repeat 增加密集限流和积压丢弃，避免松键后继续翻动。相关 12 个文件 96 项、全量前端 200 个文件共 1060 项、typecheck、lint、模块边界、格式、第一方动画扫描、diff check 与 production build 通过；方向键长按手感仍待真实 Tauri 复验。T72 随后按同日范围变更移出本任务，T73/U3 与 T74 保持未完成。
+- 2026-08-18：继续根据 U3 截图收口 TaskBoard 行状态：将键盘细边框调浅并只交给真实行 `:focus-visible`；collection root 固定抑制 macOS WebKit 原生 outline，Space/X/Enter 从 root 执行时先把真实焦点归还 current 行；正式详情关闭时通过 stable task id 恢复已虚拟卸载的触发行；done/canceled 标题不再因 pointer hover 意外提亮。8 个聚焦文件共 78 项、全量前端 200 个文件共 1062 项、typecheck、lint、模块边界、格式、第一方动画扫描、diff check 与 production build 通过；粉色系统 outline 是否在真实 WKWebView 消失仍由 T73/U3 复验。

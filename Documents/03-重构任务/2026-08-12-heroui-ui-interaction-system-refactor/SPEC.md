@@ -74,7 +74,7 @@ StoneFlow 已具备较完整的桌面产品能力，但 UI 实现形成了多条
 | Raised Button 背景 | `#ffffff` | `#f7f7f7` | 按对应 Button variant 的 Active 配方 |
 | Outline Button | 背景 `#ffffff`；边框 `#dbdbdb`；文字 `#5d5d5f` | 背景 `#f3f3f4`；边框 `#cccccc`；文字 `#303032` | 背景 `#efeff0`；边框 `#d6d6d7`；文字 `#1b1b1b` |
 
-- 本表中的 `Active` 指按钮按下、保持 pressed、展开或 open 后的交互状态，不等于键盘 `focus-visible`。标准控件沿用 HeroUI 焦点配方；TaskBoard 行以对应 hover 表面加 `1px` 中性强边框表达键盘 current，pointer current 不显示边框。Selected/Current 不得借用焦点状态冒充。
+- 本表中的 `Active` 指按钮按下、保持 pressed、展开或 open 后的交互状态，不等于键盘 `focus-visible`。标准控件沿用 HeroUI 焦点配方；TaskBoard 行状态只以第 7 节矩阵为准。Selected/Current 不得借用焦点状态冒充。
 - `#2e2f30` 不进入最终主题；粗体继续使用 `#303032`，通过真实字重表达强调。近似色可以在 HeroUI 内部保留为组件配方，但不得扩张成 feature 级 token 或编号灰阶。
 - 已验证的主要文字组合均满足 WCAG AA：`#5a5a5c / #f3f3f4` 为 `6.21:1`，`#303032 / #fcfcfd` 为 `12.85:1`，Outline 默认文字 `#5d5d5f / #ffffff` 为 `6.57:1`。
 - 中性边框的对比度约为 `1.26–1.45:1`，只允许承担克制的装饰与分层；如果控件必须依赖可见边界才能被识别，则还必须通过标签、表面、阴影或更强边界提供足够信息。任何可聚焦控件都不得仅依赖这些中性边框表达焦点。
@@ -110,7 +110,21 @@ StoneFlow 已具备较完整的桌面产品能力，但 UI 实现形成了多条
 
 - 普通集合与 TaskBoard 使用同一份产品交互合同，不并行维护第二份 current key、selected state 或多套 Shift 会话。
 - pointer hover 与键盘导航共享唯一 current key；pointer 进入行时该行成为 current，移出 pointer-owned current 时清空行 current 并把键盘入口留在 collection root。交互来源只决定视觉：pointer 无边框，键盘接管后显示细边框，不产生第二份焦点真相。
-- 行表面状态固定为：pointer hover 使用无边框中性灰；selected 使用无边框浅蓝；selected + pointer hover 使用更深的低饱和灰蓝；键盘 current 在对应表面上增加 `1px` 中性强边框。右键不新增独立状态。
+- 行表面只由 `selected × current source` 决定，不让详情、Peek 或菜单再创建第七种“active”颜色：
+
+  | Selection | Current source | 表面 | 边框 |
+  |---|---|---|---|
+  | 未选 | 无 | 透明 | 无 |
+  | 未选 | Pointer | 中性灰 hover | 无 |
+  | 未选 | Keyboard | 中性灰 hover | `1px` 较浅中性边框 |
+  | 已选 | 无 | 浅蓝 selected | 无 |
+  | 已选 | Pointer | 更深、低饱和的灰蓝 | 无 |
+  | 已选 | Keyboard | 更深、低饱和的灰蓝 | `1px` 较浅中性边框 |
+
+- 键盘边框只属于真实 `:focus-visible` 行，不属于 collection root 或逻辑 current；浅色表面上的边框仍保持至少 `3:1` 的非文本对比。Pointer 聚焦、右键和普通点击不得显示边框。
+- ContextMenu 打开不改变 selection：已选触发行继续使用 selection 目标和灰蓝表面，未选触发行只作为本次单项目标并使用普通灰 hover；菜单本身不增加行状态。
+- Detail 与非模态 Space Peek 不增加专用行颜色，也不独立锁定 current；pointer 仍在移出时清空，键盘触发项关闭后若虚拟行卸载，则按 stable task id 滚动、重挂并恢复真实焦点；实体不存在时回退集合根，集合已为空时回退空态主操作。
+- Pending 只叠加透明度与禁用 mutation 控件；连续选择只改变首/中/尾圆角与间隙底色；done/canceled 只叠加弱化文字与删除线。这些修饰不得改写六种核心表面。
 - 有 current 时，`↑/↓`、`J/K` 与 `Home/End` 从该项移动真实焦点并将目标滚入视野；collection root 有焦点但没有行 current 时，向下/Home 从首项、向上/End 从末项建立键盘 current。
 - `X` 切换当前焦点项；`Shift+方向键` 从固定 anchor 扩展或收缩连续范围。
 - `Space` 只控制 Peek，`Enter` 写入 `?task=` 并按窗口 `1024px` 边界打开 Aside 或 Sheet；关闭正式详情后恢复原集合焦点。
@@ -160,6 +174,7 @@ StoneFlow 已具备较完整的桌面产品能力，但 UI 实现形成了多条
 9. 不要求旧 StoneFlow 界面像素保真；旧界面只用于防止现有功能和特殊桌面细节遗漏。
 10. 不把 HeroUI Pro 私有组件源码或解包资产作为源码、库或下载物再分发。
 11. 不取消 Windows 构建、平台分支或产品支持，也不为本任务未实测的 Windows 行为新增专门兼容层；Windows WebView2 验收另行安排。
+12. 不在本任务整体重构 MainCard、TaskBoard 虚拟列表或焦点渲染性能；现有 fixture 与迁移前基线仅保留给独立后续任务重新基线，不作为本轮完成门。
 
 ## 用户场景与需求
 
@@ -196,7 +211,7 @@ StoneFlow 已具备较完整的桌面产品能力，但 UI 实现形成了多条
 
 ## Definition of Done
 
-- 所有验收标准都有自动化测试、静态扫描、截图对比或真实 Tauri/WebView 验收证据。
+- 全部当前有效验收标准（不含明确延期的 AC-37）都有自动化测试、静态扫描、截图对比或真实 Tauri/WebView 验收证据。
 - 所有现有用户可达表面均已迁移到 HeroUI，或登记为本 SPEC 明确允许的产品/平台例外。
 - 生产依赖和源码不再引用 Radix、shadcn、cmdk、旧 base primitive、旧 adapter、旧 pattern class 或旧 `--sf-*` UI token。
 - `package.json` 与应用源码不再由 StoneFlow 直接声明或调用 `tw-animate-css`、Motion/Framer Motion、CSS/Tailwind 动画或过渡；HeroUI 官方安装合同要求的供应商实现依赖及其传递依赖按精确锁定链路允许，StoneFlow 不消费其动画 API。
@@ -253,15 +268,15 @@ StoneFlow 已具备较完整的桌面产品能力，但 UI 实现形成了多条
 - **AC-29**：只要输入框、编辑器、contenteditable 或 IME 正在接收输入，系统就不得触发 `J/K/X/Space/P/S/D` 等产品字符快捷键。
 - **AC-30**：当多个 overlay、Detail Aside、Peek、选择和页面层同时存在且用户按 Escape 时，系统应当按“输入法/编辑 → 当前 Menu/Dialog/Sheet → Detail Aside → Peek → Selection → 页面”的顺序只消费最高优先级层。
 - **AC-31**：当同一业务命令从 Command、ContextMenu、ActionBar、行操作或直接快捷键触发时，系统应当使用同一份可用性、disabled reason、目标快照和执行入口。
-- **AC-32**：当 Menu、Popover、Modal、Sheet 或 ContextMenu 关闭时，如果原触发项仍存在，系统应当恢复原触发项；虚拟触发项已卸载时先滚动并重新挂载，实体已不存在时恢复集合根。
+- **AC-32**：当 Menu、Popover、Modal、Sheet 或 ContextMenu 关闭时，如果原触发项仍存在，系统应当恢复原触发项；虚拟触发项已卸载时先滚动并重新挂载；实体已不存在时恢复集合根，集合已为空时恢复空态主操作。
 
 ### TaskBoard 与集合
 
 - **AC-33**：当 TaskBoard 完成重构时，现有分组、折叠、sticky header、TanStack Virtual、增量加载、服务端总高度和 `scrollToTaskId` 应当保持可用，旧焦点/选择状态机应当被删除；列表行只应在自身容器 `<560px` 时进入唯一紧凑档，不得依赖 viewport 或增加多档 JS 布局状态。
 - **AC-34**：当普通集合与 TaskBoard 执行焦点和选择操作时，系统应当共享同一份产品交互合同，不得维护两套需要互相同步的焦点或选择真相。
-- **AC-35**：当目标实体尚未挂载时，系统应当先滚动并挂载再恢复真实焦点；当实体已删除时，系统应当回退到确定的相邻项或集合根。
+- **AC-35**：当目标实体尚未挂载时，系统应当先滚动并挂载再恢复真实焦点；当实体已删除时，系统应当回退到确定的相邻项、集合根或空集合的主操作。
 - **AC-36**：当选择跨越虚拟卸载或分组折叠时，系统应当按稳定实体 ID 保留选择；当实体删除时移除该项，筛选或查询变化时与新可操作集合取交集，增量加载时不自动加入新项目，并正确呈现单项与连续选择分组。
-- **AC-37**：当使用已批准的 TaskBoard fixture、测试设备、滚动/挂载指标和性能预算验收时，系统应当处于预算内且不得产生重复挂载风暴。
+- **AC-37（延期）**：TaskBoard 量化性能预算已移入独立的 MainCard + 虚拟列表整体重构任务；本轮保留 fixture 与历史基线，但不把该项计入 Definition of Done，也不得据此宣称性能已通过。
 
 ### 完整迁移与工程收口
 

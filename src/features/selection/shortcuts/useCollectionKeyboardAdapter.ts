@@ -94,6 +94,7 @@ export function useCollectionKeyboardAdapter<K extends CollectionKey>({
 			if (key === 'x') {
 				consumeEvent(event)
 				onKeyboardInteraction()
+				requestFocus({ type: 'item', key: currentKey })
 				interaction.toggleSelection(currentKey)
 				return
 			}
@@ -101,6 +102,7 @@ export function useCollectionKeyboardAdapter<K extends CollectionKey>({
 			if (isSpaceKey(event.key)) {
 				consumeEvent(event)
 				onKeyboardInteraction()
+				requestFocus({ type: 'item', key: currentKey })
 				onPeek(currentKey)
 				return
 			}
@@ -108,6 +110,7 @@ export function useCollectionKeyboardAdapter<K extends CollectionKey>({
 			if (event.key === 'Enter') {
 				consumeEvent(event)
 				onKeyboardInteraction()
+				requestFocus({ type: 'item', key: currentKey })
 				onOpen(currentKey)
 			}
 		},

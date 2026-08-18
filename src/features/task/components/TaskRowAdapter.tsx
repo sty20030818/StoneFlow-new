@@ -286,7 +286,6 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 				data-task-id={task.id}
 				data-focus-source={isFocused ? focusSource : undefined}
 				hovered={isFocused}
-				hoverSource={isFocused ? focusSource : null}
 				interactive
 				pending={isPending}
 				selected={isSelected}

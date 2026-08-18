@@ -7,6 +7,7 @@ import {
 	type ComponentProps,
 	type ReactElement,
 	type ReactNode,
+	type Ref,
 } from 'react'
 
 import { ContextMenu, ContextMenuTrigger } from '@/shared/components/base/context-menu'
@@ -369,6 +370,7 @@ export function BoardEmptyState({
 	description,
 	actionLabel,
 	onAction,
+	actionRef,
 	emptyClassName,
 }: {
 	icon: ReactNode
@@ -376,6 +378,7 @@ export function BoardEmptyState({
 	description?: ReactNode
 	actionLabel?: string
 	onAction?: () => void
+	actionRef?: Ref<HTMLButtonElement>
 	emptyClassName?: string
 }) {
 	return (
@@ -388,7 +391,7 @@ export function BoardEmptyState({
 				</EmptyHeader>
 				{onAction && actionLabel ? (
 					<EmptyContent>
-						<Button onClick={onAction} type='button'>
+						<Button ref={actionRef} onClick={onAction} type='button'>
 							{actionLabel}
 						</Button>
 					</EmptyContent>

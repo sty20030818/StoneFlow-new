@@ -6,7 +6,6 @@ import {
 	RowTitleCell,
 	ROW_SHELL_ACTIVE_CLASS,
 	ROW_SHELL_FOCUS_CLASS,
-	ROW_SHELL_IDLE_CLASS,
 	ROW_SHELL_SELECTED_CLASS,
 } from '@/shared/components/row'
 
@@ -15,7 +14,7 @@ describe('RowShell', () => {
 		const { rerender } = render(<RowShell.Root data-testid='row'>row</RowShell.Root>)
 
 		const row = screen.getByTestId('row')
-		expect(row.className).toContain(ROW_SHELL_IDLE_CLASS)
+		expect(row).toHaveClass('border-transparent', 'bg-transparent')
 
 		rerender(
 			<RowShell.Root active data-testid='row'>
@@ -89,7 +88,7 @@ describe('RowShell', () => {
 
 		const row = screen.getByTestId('row')
 		expect(row.className).toContain('hover:bg-surface-hover')
-		expect(row.className).toContain('focus-visible:border-foreground/70')
+		expect(row.className).toContain('focus-visible:border-foreground/55')
 		expect(row.className).toContain('focus-visible:bg-surface-hover')
 		expect(row.className).not.toContain('outline-2')
 
@@ -208,6 +207,14 @@ describe('RowSelectionCell', () => {
 })
 
 describe('RowTitleCell', () => {
+	it('完成态标题在 pointer 与 keyboard 表面下都保持弱化删除线', () => {
+		render(<RowTitleCell doneLike title='已完成任务' />)
+
+		const title = screen.getByText('已完成任务')
+		expect(title).toHaveClass('text-sf-text-tertiary', 'line-through')
+		expect(title).not.toHaveClass('group-hover/row-shell:text-legacy-foreground')
+	})
+
 	it('仅在标题真实截断时展示完整文本', async () => {
 		render(<RowTitleCell title='一个完整的任务标题' />)
 

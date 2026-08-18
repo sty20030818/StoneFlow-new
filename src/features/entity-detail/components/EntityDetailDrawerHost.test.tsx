@@ -12,8 +12,10 @@ type MockTaskDetailViewModel = {
 }
 
 const useTaskDetailViewModelMock = vi.hoisted(() => vi.fn())
+const focusTaskBoardTaskIdMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@/features/task', () => ({
+	focusTaskBoardTaskId: focusTaskBoardTaskIdMock,
 	useTaskDetailViewModel: useTaskDetailViewModelMock,
 	TaskDetailContent: ({
 		onClose,
@@ -48,6 +50,7 @@ describe('EntityDetailDrawerHost', () => {
 
 	beforeEach(() => {
 		onClose.mockReset()
+		focusTaskBoardTaskIdMock.mockReset()
 		useTaskDetailViewModelMock.mockReset().mockImplementation(function useMockTaskDetailViewModel({
 			taskId,
 		}: {
@@ -204,10 +207,10 @@ describe('EntityDetailDrawerHost', () => {
 		await waitFor(() => expect(screen.getByRole('button', { name: '任务行' })).toHaveFocus())
 	})
 
-	it('原任务行已卸载时恢复已捕获的集合根', async () => {
+	it('原任务行已虚拟卸载时先恢复集合根，再按 stable id 请求重挂聚焦', async () => {
 		const view = render(
 			<div data-board-root='true' tabIndex={-1}>
-				<div>
+				<div data-task-id='task-a'>
 					<button type='button'>任务行</button>
 				</div>
 				{createHost({ open: false })}
@@ -217,7 +220,7 @@ describe('EntityDetailDrawerHost', () => {
 
 		view.rerender(
 			<div data-board-root='true' tabIndex={-1}>
-				<div>
+				<div data-task-id='task-a'>
 					<button type='button'>任务行</button>
 				</div>
 				{createHost()}
@@ -232,6 +235,7 @@ describe('EntityDetailDrawerHost', () => {
 		)
 
 		await waitFor(() => expect(document.querySelector('[data-board-root="true"]')).toHaveFocus())
+		expect(focusTaskBoardTaskIdMock).toHaveBeenCalledWith('task-a')
 	})
 
 	it('关闭或无 active detail 时不渲染实体内容', () => {

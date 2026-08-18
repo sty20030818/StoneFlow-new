@@ -92,7 +92,10 @@ describe('useCollectionKeyboardAdapter', () => {
 		expect(fireEvent.keyDown(rowB, { key: 'x' })).toBe(false)
 		expect(screen.getByTestId('selected-keys')).toHaveTextContent('task-b')
 
+		root.focus()
+		expect(root).toHaveFocus()
 		expect(fireEvent.keyDown(root, { key: ' ' })).toBe(false)
+		expect(rowB).toHaveFocus()
 		expect(onPeek).toHaveBeenCalledWith('task-b')
 		expect(fireEvent.keyDown(rowB, { key: 'Enter' })).toBe(false)
 		expect(onOpen).toHaveBeenCalledWith('task-b')

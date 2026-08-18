@@ -162,7 +162,8 @@ describe('TaskRowAdapter', () => {
 		expect(title).toHaveClass('font-medium')
 		expect(title).not.toHaveClass('text-[13px]')
 		expect(row).toHaveAttribute('data-focus-source', 'keyboard')
-		expect(row.className).toContain('border-foreground/70')
+		expect(row.className).toContain('focus-visible:border-foreground/55')
+		expect(row.className.split(/\s+/)).not.toContain('border-foreground/55')
 		expect(row.className).not.toContain('ring-focus')
 		expect(within(row).getByRole('gridcell')).toBeInTheDocument()
 		fireEvent.click(row)
@@ -377,7 +378,7 @@ describe('TaskRowAdapter', () => {
 		await waitFor(() => expect(onContextMenuOpenChange).toHaveBeenCalledWith(false))
 	})
 
-	it('鼠标当前行只有 hover 表面，键盘接管后才显示细边框', () => {
+	it('鼠标和键盘 current 复用表面，细边框只由真实 focus-visible 决定', () => {
 		const task = buildTask()
 		const actions = buildActions()
 		const { rerender } = render(
@@ -399,7 +400,8 @@ describe('TaskRowAdapter', () => {
 		const row = screen.getByLabelText('打开任务 任务 A')
 		expect(row.className).toContain('bg-surface-hover')
 		expect(row.className).toContain('focus-visible:border-transparent')
-		expect(row.className).not.toContain('border-foreground/70')
+		expect(row.className).not.toContain('focus-visible:border-foreground/55')
+		expect(row.className.split(/\s+/)).not.toContain('border-foreground/55')
 
 		rerender(
 			<TestProviders>
@@ -419,7 +421,8 @@ describe('TaskRowAdapter', () => {
 		)
 
 		expect(row.className).toContain('bg-accent-soft-hover')
-		expect(row.className).toContain('border-foreground/70')
+		expect(row.className).toContain('focus-visible:border-foreground/55')
+		expect(row.className.split(/\s+/)).not.toContain('border-foreground/55')
 
 		rerender(
 			<TestProviders>
@@ -438,7 +441,7 @@ describe('TaskRowAdapter', () => {
 		)
 
 		expect(row.className).toContain('hover:bg-transparent')
-		expect(row.className.split(/\s+/)).not.toContain('border-foreground/70')
+		expect(row.className.split(/\s+/)).not.toContain('border-foreground/55')
 	})
 
 	it('selected/pending 由 RowShell 统一映射表面状态', () => {
@@ -464,7 +467,7 @@ describe('TaskRowAdapter', () => {
 		const row = screen.getByLabelText('打开任务 任务 A')
 		expect(row.className).toContain('bg-accent-soft')
 		expect(row.className).toContain('hover:bg-accent-soft-hover')
-		expect(row).not.toHaveClass('border-foreground/70')
+		expect(row).not.toHaveClass('border-foreground/55')
 		expect(row.className).toContain('opacity-75')
 
 		rerender(

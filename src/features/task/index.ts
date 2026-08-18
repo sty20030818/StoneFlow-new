@@ -23,6 +23,9 @@ export { TaskListSceneView } from './components/TaskListSceneView'
  */
 export { TaskBoard, type TaskBoardProps } from './components/TaskBoard'
 
+/** 详情等跨 feature 入口按 stable task id 恢复虚拟行焦点。 */
+export { focusTaskBoardTaskId } from './components/taskBoardScroll'
+
 /**
  * 壳层「新建任务」对话框内容。
  */

@@ -4,7 +4,7 @@ import { Sheet } from '@heroui-pro/react'
 import { Resizable } from '@heroui-pro/react/resizable'
 import { UNSAFE_PortalProvider } from 'react-aria'
 
-import { TaskDetailContent, useTaskDetailViewModel } from '@/features/task'
+import { focusTaskBoardTaskId, TaskDetailContent, useTaskDetailViewModel } from '@/features/task'
 
 import type { EntityDetailRouteState } from '../model/entityDetailTypes'
 
@@ -31,6 +31,7 @@ export function EntityDetailDrawerHost({
 	const scrollPositions = useRef(new Map<string, number>())
 	const returnFocusTarget = useRef<HTMLElement | null>(null)
 	const returnFocusCollectionRoot = useRef<HTMLElement | null>(null)
+	const returnFocusTaskId = useRef<string | null>(null)
 	const wasOpen = useRef(false)
 
 	useLayoutEffect(() => {
@@ -44,16 +45,21 @@ export function EntityDetailDrawerHost({
 				activeElement instanceof HTMLElement
 					? activeElement.closest<HTMLElement>('[data-board-root="true"]')
 					: null
+			returnFocusTaskId.current =
+				activeElement instanceof HTMLElement
+					? (activeElement.closest<HTMLElement>('[data-task-id]')?.dataset.taskId ?? null)
+					: null
 		}
 
 		if (!open && wasOpen.current) {
 			queueMicrotask(() => {
-				const focusTarget = returnFocusTarget.current?.isConnected
-					? returnFocusTarget.current
-					: returnFocusCollectionRoot.current?.isConnected
-						? returnFocusCollectionRoot.current
-						: null
-				focusTarget?.focus({ preventScroll: true })
+				if (returnFocusTarget.current?.isConnected) {
+					returnFocusTarget.current.focus({ preventScroll: true })
+					return
+				}
+
+				returnFocusCollectionRoot.current?.focus({ preventScroll: true })
+				if (returnFocusTaskId.current) focusTaskBoardTaskId(returnFocusTaskId.current)
 			})
 		}
 
