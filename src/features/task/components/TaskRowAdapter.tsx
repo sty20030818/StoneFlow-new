@@ -1,4 +1,5 @@
-import { memo, useMemo } from 'react'
+import { memo, useMemo, type Ref } from 'react'
+import type { GridListItemAria } from 'react-aria'
 
 import { COMMAND_IDS, CommandShortcut } from '@/features/command'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
@@ -29,6 +30,7 @@ import {
 } from '@/shared/components/row'
 import { ActionTooltip } from '@/shared/components/tooltip'
 import { formatShortDate } from '@/shared/lib/date'
+import { cn } from '@/shared/lib/utils'
 
 export type TaskRowAdapterProps = {
 	task: TaskListItem
@@ -37,15 +39,15 @@ export type TaskRowAdapterProps = {
 		isActive: boolean
 		isSelected: boolean
 		isPending: boolean
-		isHovered?: boolean
-		hoverSource?: 'pointer' | 'keyboard' | null
+		isFocused?: boolean
+		isFocusVisible?: boolean
 	}
-	rowShortcutHandlers?: {
-		onHover: (taskId: string | null) => void
-		onPointerMove: (taskId: string, point: { x: number; y: number }) => void
-	}
+	rowProps?: GridListItemAria['rowProps']
+	gridCellProps?: GridListItemAria['gridCellProps']
+	rowRef?: Ref<HTMLDivElement>
 	selectionGroupPosition?: RowSelectionGroupPosition
 	contextMenuActions?: TaskContextMenuBulkActions
+	onContextMenuOpenChange?: (open: boolean) => void
 	projectBinding?: {
 		projectOptions?: Array<{ id: string; name: string; spaceId: string }>
 		/** 含 iconKey/colorKey 时可渲染 Space 真实彩色图标 */
@@ -78,24 +80,22 @@ function taskRowAdapterPropsEqual(prev: TaskRowAdapterProps, next: TaskRowAdapte
 	if (prev.task !== next.task) return false
 	if (prev.actions !== next.actions) return false
 	if (prev.contextMenuActions !== next.contextMenuActions) return false
+	if (prev.onContextMenuOpenChange !== next.onContextMenuOpenChange) return false
 	if (prev.projectBinding !== next.projectBinding) return false
 	if (prev.visibleProperties !== next.visibleProperties) return false
 	if (prev.showSpaceLabel !== next.showSpaceLabel) return false
 	if (prev.selectionGroupPosition !== next.selectionGroupPosition) return false
-	if (
-		prev.rowShortcutHandlers?.onHover !== next.rowShortcutHandlers?.onHover ||
-		prev.rowShortcutHandlers?.onPointerMove !== next.rowShortcutHandlers?.onPointerMove
-	) {
-		return false
-	}
+	if (prev.rowProps !== next.rowProps) return false
+	if (prev.gridCellProps !== next.gridCellProps) return false
+	if (prev.rowRef !== next.rowRef) return false
 	const ps = prev.rowState
 	const ns = next.rowState
 	if (
 		ps.isActive !== ns.isActive ||
 		ps.isSelected !== ns.isSelected ||
 		ps.isPending !== ns.isPending ||
-		ps.isHovered !== ns.isHovered ||
-		ps.hoverSource !== ns.hoverSource
+		ps.isFocused !== ns.isFocused ||
+		ps.isFocusVisible !== ns.isFocusVisible
 	) {
 		return false
 	}
@@ -116,15 +116,19 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 	task,
 	contextTasks,
 	rowState,
-	rowShortcutHandlers,
+	rowProps,
+	gridCellProps,
+	rowRef,
 	selectionGroupPosition,
 	contextMenuActions,
+	onContextMenuOpenChange,
 	projectBinding,
 	visibleProperties,
 	showSpaceLabel = false,
 	actions,
 }: TaskRowAdapterProps) {
-	const { isActive, isSelected, isPending, isHovered = false, hoverSource = null } = rowState
+	const { isActive, isSelected, isPending, isFocused = false, isFocusVisible = false } = rowState
+	const { onClick: _reactAriaPressClick, ...ariaRowProps } = rowProps ?? {}
 	const actionTargets = contextTasks && contextTasks.length > 0 ? contextTasks : [task]
 	const isDoneLike = task.status === 'done' || task.status === 'canceled'
 	const hasProjectOptions = Boolean(
@@ -193,6 +197,7 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 			dangerEntityLabel={task.title}
 			isBusy={isPending}
 			moveToTrashRequiresConfirm={!usesBulkDangerActions}
+			onOpenChange={onContextMenuOpenChange}
 			onArchive={
 				actions.onArchiveTask
 					? () =>
@@ -265,147 +270,147 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 			dueAt={task.dueAt}
 		>
 			<RowShell.Root
+				{...ariaRowProps}
+				ref={rowRef}
 				aria-label={`打开任务 ${task.title}`}
+				className={cn(
+					'h-9 cursor-pointer outline-none',
+					isSelected ? 'hover:bg-accent-soft-hover' : 'hover:bg-surface-hover',
+					isActive && 'border-border-secondary',
+					isSelected && !selectionGroupPosition && 'bg-accent-soft',
+					isFocusVisible && 'ring-2 ring-focus ring-inset',
+				)}
+				data-focused={isFocused || undefined}
+				data-focus-visible={isFocusVisible || undefined}
 				data-shell-task-card='true'
 				data-task-id={task.id}
-				interactive
-				active={isActive}
 				pending={isPending}
-				hovered={isHovered}
-				hoverSource={hoverSource}
-				selected={isSelected}
 				selectionGroupPosition={selectionGroupPosition}
 				onClick={() => actions.onOpenTask(task.id)}
-				onMouseEnter={() => rowShortcutHandlers?.onHover(task.id)}
-				onMouseLeave={() => rowShortcutHandlers?.onHover(null)}
-				onMouseMove={(event) =>
-					rowShortcutHandlers?.onPointerMove(task.id, { x: event.clientX, y: event.clientY })
-				}
-				onPointerMove={(event) =>
-					rowShortcutHandlers?.onPointerMove(task.id, { x: event.clientX, y: event.clientY })
-				}
 			>
-				<RowShell.Left>
-					<RowShell.Leading>
-						<RowSelectionCell
-							ariaLabel={`选择任务：${task.title}`}
-							checked={isSelected}
-							disabled={isPending}
-							disabledReason='正在更新任务，暂时无法更改选择'
-							label='选择任务'
-							tooltipShortcut={<CommandShortcut commandId={COMMAND_IDS.taskSelect} scope='row' />}
-							visible={isSelected || isHovered}
-							onCheckedChange={() => actions.onToggleTaskSelection(task.id)}
-						/>
-						{showPriority ? (
-							<MetadataFieldDropdown
-								ariaLabel={`修改优先级：${task.title}`}
-								buttonAppearance='row-icon'
-								compact
+				<div {...gridCellProps} className='flex min-w-0 flex-1 items-center gap-3'>
+					<RowShell.Left>
+						<RowShell.Leading>
+							<RowSelectionCell
+								ariaLabel={`选择任务：${task.title}`}
+								checked={isSelected}
 								disabled={isPending}
-								disabledReason='正在更新任务，暂时无法修改优先级'
-								fieldKey='priority'
-								label='优先级'
-								menuLabel={priorityDropdownProps.menuLabel}
-								options={priorityDropdownProps.options}
-								shortcut={{ commandId: COMMAND_IDS.taskSetPriority, scope: 'row' }}
-								stopPropagation
-								tooltipLabel='修改优先级'
-								value={task.priority}
-								onChange={(priority) => void actions.onUpdateTaskPriority(task, priority)}
+								disabledReason='正在更新任务，暂时无法更改选择'
+								label='选择任务'
+								tooltipShortcut={<CommandShortcut commandId={COMMAND_IDS.taskSelect} scope='row' />}
+								visible={isSelected || isFocused}
+								onCheckedChange={() => actions.onToggleTaskSelection(task.id)}
 							/>
-						) : null}
-						{showStatus ? (
-							<MetadataFieldDropdown
-								ariaLabel={`修改状态：${task.title}`}
-								buttonAppearance='row-icon'
-								compact
-								disabled={isPending}
-								disabledReason='正在更新任务，暂时无法修改状态'
-								fieldKey='status'
-								label='状态'
-								menuLabel={statusDropdownProps.menuLabel}
-								options={statusDropdownProps.options}
-								shortcut={{ commandId: COMMAND_IDS.taskSetStatus, scope: 'row' }}
-								stopPropagation
-								tooltipLabel='修改状态'
-								value={task.status}
-								onChange={(status) => void actions.onUpdateTaskStatus(task, status)}
-							/>
-						) : null}
-					</RowShell.Leading>
+							{showPriority ? (
+								<MetadataFieldDropdown
+									ariaLabel={`修改优先级：${task.title}`}
+									buttonAppearance='row-icon'
+									compact
+									disabled={isPending}
+									disabledReason='正在更新任务，暂时无法修改优先级'
+									fieldKey='priority'
+									label='优先级'
+									menuLabel={priorityDropdownProps.menuLabel}
+									options={priorityDropdownProps.options}
+									shortcut={{ commandId: COMMAND_IDS.taskSetPriority, scope: 'row' }}
+									stopPropagation
+									tooltipLabel='修改优先级'
+									value={task.priority}
+									onChange={(priority) => void actions.onUpdateTaskPriority(task, priority)}
+								/>
+							) : null}
+							{showStatus ? (
+								<MetadataFieldDropdown
+									ariaLabel={`修改状态：${task.title}`}
+									buttonAppearance='row-icon'
+									compact
+									disabled={isPending}
+									disabledReason='正在更新任务，暂时无法修改状态'
+									fieldKey='status'
+									label='状态'
+									menuLabel={statusDropdownProps.menuLabel}
+									options={statusDropdownProps.options}
+									shortcut={{ commandId: COMMAND_IDS.taskSetStatus, scope: 'row' }}
+									stopPropagation
+									tooltipLabel='修改状态'
+									value={task.status}
+									onChange={(status) => void actions.onUpdateTaskStatus(task, status)}
+								/>
+							) : null}
+						</RowShell.Leading>
 
-					<RowShell.Title>
-						<RowTitleCell doneLike={isDoneLike} title={task.title} />
-					</RowShell.Title>
-				</RowShell.Left>
+						<RowShell.Title>
+							<RowTitleCell doneLike={isDoneLike} title={task.title} />
+						</RowShell.Title>
+					</RowShell.Left>
 
-				<RowShell.Right>
-					<RowShell.Fields className='@min-[560px]/task-list:flex'>
-						{showDueAt ? (
-							<MetadataDateDropdown
-								ariaLabel={`修改截止时间：${task.title}`}
-								compact
-								disabled={isPending}
-								disabledReason='正在更新任务，暂时无法修改截止时间'
-								hideWhenEmpty
-								icon={taskDateMetadataIcons.due}
-								label='截止时间'
-								menuAlign='end'
-								shortcut={{ commandId: COMMAND_IDS.taskOpenDateMenu, scope: 'row' }}
-								stopPropagation
-								tooltipLabel='修改截止时间'
-								value={task.dueAt}
-								onChange={(value) => void actions.onUpdateTaskDueDate?.(task, value)}
-							/>
-						) : null}
-						{showScheduledAt ? (
-							<MetadataDateDropdown
-								ariaLabel={`修改计划时间：${task.title}`}
-								compact
-								disabled={isPending}
-								disabledReason='正在更新任务，暂时无法修改计划时间'
-								hideWhenEmpty
-								icon={taskDateMetadataIcons.scheduled}
-								label='计划时间'
-								menuAlign='end'
-								stopPropagation
-								tooltipLabel='修改计划时间'
-								value={task.plannedAt}
-								onChange={(value) => void actions.onUpdateTaskScheduledAt?.(task, value)}
-							/>
-						) : null}
-						{showProject ? (
-							<MetadataPlacementDropdown
-								compact
-								disabled={isPending}
-								disabledReason='正在更新任务，暂时无法修改归属'
-								groups={placementDropdownProps.groups}
-								label='归属'
-								menuAlign='end'
-								menuLabel={placementDropdownProps.menuLabel}
-								shortcutMode='clear-only'
-								shortcut={{ commandId: COMMAND_IDS.taskChangePlacement, scope: 'row' }}
-								stopPropagation
-								value={projectValue}
-								onChange={(value: TaskPlacementTarget) =>
-									projectBinding?.onSelectPlacement?.(task, value)
-								}
-							/>
-						) : null}
-						{/* All scope：Space 以行右侧按钮形式展示（与归属/日期并列） */}
-						{showSpaceLabel && spaceButtonVisual.label ? (
-							<MetadataFieldValue
-								ariaLabel={`所属空间 ${spaceButtonVisual.label}`}
-								compact
-								icon={spaceButtonVisual.icon}
-								label={spaceButtonVisual.label}
-							/>
-						) : null}
-						{showUpdatedAt ? <UpdatedAtCell value={task.updatedAt} /> : null}
-						{showCreatedAt ? <CreatedAtCell value={task.createdAt} /> : null}
-					</RowShell.Fields>
-				</RowShell.Right>
+					<RowShell.Right>
+						<RowShell.Fields className='@min-[560px]/task-list:flex'>
+							{showDueAt ? (
+								<MetadataDateDropdown
+									ariaLabel={`修改截止时间：${task.title}`}
+									compact
+									disabled={isPending}
+									disabledReason='正在更新任务，暂时无法修改截止时间'
+									hideWhenEmpty
+									icon={taskDateMetadataIcons.due}
+									label='截止时间'
+									menuAlign='end'
+									shortcut={{ commandId: COMMAND_IDS.taskOpenDateMenu, scope: 'row' }}
+									stopPropagation
+									tooltipLabel='修改截止时间'
+									value={task.dueAt}
+									onChange={(value) => void actions.onUpdateTaskDueDate?.(task, value)}
+								/>
+							) : null}
+							{showScheduledAt ? (
+								<MetadataDateDropdown
+									ariaLabel={`修改计划时间：${task.title}`}
+									compact
+									disabled={isPending}
+									disabledReason='正在更新任务，暂时无法修改计划时间'
+									hideWhenEmpty
+									icon={taskDateMetadataIcons.scheduled}
+									label='计划时间'
+									menuAlign='end'
+									stopPropagation
+									tooltipLabel='修改计划时间'
+									value={task.plannedAt}
+									onChange={(value) => void actions.onUpdateTaskScheduledAt?.(task, value)}
+								/>
+							) : null}
+							{showProject ? (
+								<MetadataPlacementDropdown
+									compact
+									disabled={isPending}
+									disabledReason='正在更新任务，暂时无法修改归属'
+									groups={placementDropdownProps.groups}
+									label='归属'
+									menuAlign='end'
+									menuLabel={placementDropdownProps.menuLabel}
+									shortcutMode='clear-only'
+									shortcut={{ commandId: COMMAND_IDS.taskChangePlacement, scope: 'row' }}
+									stopPropagation
+									value={projectValue}
+									onChange={(value: TaskPlacementTarget) =>
+										projectBinding?.onSelectPlacement?.(task, value)
+									}
+								/>
+							) : null}
+							{/* All scope：Space 以行右侧按钮形式展示（与归属/日期并列） */}
+							{showSpaceLabel && spaceButtonVisual.label ? (
+								<MetadataFieldValue
+									ariaLabel={`所属空间 ${spaceButtonVisual.label}`}
+									compact
+									icon={spaceButtonVisual.icon}
+									label={spaceButtonVisual.label}
+								/>
+							) : null}
+							{showUpdatedAt ? <UpdatedAtCell value={task.updatedAt} /> : null}
+							{showCreatedAt ? <CreatedAtCell value={task.createdAt} /> : null}
+						</RowShell.Fields>
+					</RowShell.Right>
+				</div>
 			</RowShell.Root>
 		</TaskContextMenu>
 	)
@@ -419,7 +424,7 @@ function UpdatedAtCell({ value }: { value: string | null | undefined }) {
 
 	return (
 		<ActionTooltip label={`更新于 ${formatted}`}>
-			<span className='shrink-0 text-xs tabular-nums text-sf-text-tertiary'>{formatted}</span>
+			<span className='shrink-0 text-xs tabular-nums text-muted'>{formatted}</span>
 		</ActionTooltip>
 	)
 }

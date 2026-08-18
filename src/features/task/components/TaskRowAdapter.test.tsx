@@ -1,4 +1,5 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { createRef } from 'react'
 
 import {
 	DEFAULT_KEYBINDINGS,
@@ -7,7 +8,6 @@ import {
 } from '@/features/command'
 import { DangerConfirmProvider } from '@/features/danger-confirm'
 import type { TaskPlacementTarget } from '@/features/metadata-fields'
-import { ROW_SHELL_ACTIVE_CLASS, ROW_SHELL_SELECTED_CLASS } from '@/shared/components/row'
 import type { TaskListItem } from '@/shared/types'
 
 import { TaskRowAdapter, type TaskRowAdapterProps } from './TaskRowAdapter'
@@ -86,6 +86,10 @@ function renderTaskRowAdapter({
 	contextTasks,
 	visibleProperties,
 	showSpaceLabel = false,
+	rowProps,
+	gridCellProps,
+	rowRef,
+	onContextMenuOpenChange,
 }: {
 	task?: TaskListItem
 	rowState?: TaskRowAdapterProps['rowState']
@@ -95,6 +99,10 @@ function renderTaskRowAdapter({
 	contextTasks?: TaskListItem[]
 	visibleProperties?: TaskRowAdapterProps['visibleProperties']
 	showSpaceLabel?: boolean
+	rowProps?: TaskRowAdapterProps['rowProps']
+	gridCellProps?: TaskRowAdapterProps['gridCellProps']
+	rowRef?: TaskRowAdapterProps['rowRef']
+	onContextMenuOpenChange?: TaskRowAdapterProps['onContextMenuOpenChange']
 } = {}) {
 	const { container } = render(
 		<TestProviders>
@@ -102,7 +110,11 @@ function renderTaskRowAdapter({
 				actions={actions}
 				contextMenuActions={contextMenuActions}
 				contextTasks={contextTasks}
+				gridCellProps={gridCellProps}
+				onContextMenuOpenChange={onContextMenuOpenChange}
 				projectBinding={projectBinding}
+				rowProps={rowProps}
+				rowRef={rowRef}
 				rowState={rowState}
 				showSpaceLabel={showSpaceLabel}
 				task={task}
@@ -118,8 +130,43 @@ describe('TaskRowAdapter', () => {
 	it('行点击触发打开详情', () => {
 		const { actions } = renderTaskRowAdapter()
 
-		fireEvent.click(screen.getByRole('button', { name: '打开任务 任务 A' }))
+		fireEvent.click(screen.getByLabelText('打开任务 任务 A'))
 		expect(actions.onOpenTask).toHaveBeenCalledWith('task-1')
+	})
+
+	it('接收 React Aria row/gridcell/ref，并覆盖 press click 保持行点击只打开详情', () => {
+		const reactAriaPressClick = vi.fn()
+		const rowRef = createRef<HTMLDivElement>()
+		const { actions } = renderTaskRowAdapter({
+			rowState: {
+				isActive: false,
+				isSelected: false,
+				isPending: false,
+				isFocused: true,
+				isFocusVisible: true,
+			},
+			rowProps: {
+				role: 'row',
+				tabIndex: 0,
+				'aria-selected': false,
+				onClick: reactAriaPressClick,
+			},
+			gridCellProps: { role: 'gridcell' },
+			rowRef,
+		})
+
+		const row = screen.getByRole('row', { name: '打开任务 任务 A' })
+		expect(rowRef.current).toBe(row)
+		expect(row).toHaveAttribute('data-focused', 'true')
+		expect(row).toHaveAttribute('data-focus-visible', 'true')
+		expect(row).toHaveClass('h-9')
+		expect(row.className).toContain('ring-focus')
+		expect(within(row).getByRole('gridcell')).toBeInTheDocument()
+		fireEvent.click(row)
+
+		expect(actions.onOpenTask).toHaveBeenCalledWith('task-1')
+		expect(actions.onToggleTaskSelection).not.toHaveBeenCalled()
+		expect(reactAriaPressClick).not.toHaveBeenCalled()
 	})
 
 	it('showSpaceLabel 时固定展示 Space 名与真实彩色 icon', () => {
@@ -290,15 +337,19 @@ describe('TaskRowAdapter', () => {
 		const contextTasks = [task, buildTask({ id: 'task-2', title: '任务 B', projectId: null })]
 		const contextMenuActions = buildContextMenuActions()
 		const projectBinding = createProjectBinding()
+		const onContextMenuOpenChange = vi.fn()
 
 		renderTaskRowAdapter({
 			contextMenuActions,
 			contextTasks,
+			onContextMenuOpenChange,
 			projectBinding,
 			task,
 		})
 
-		fireEvent.contextMenu(screen.getByRole('button', { name: '打开任务 任务 A' }))
+		fireEvent.contextMenu(screen.getByLabelText('打开任务 任务 A'))
+		await screen.findByRole('menu', { name: '任务操作' })
+		expect(onContextMenuOpenChange).toHaveBeenCalledWith(true)
 		fireEvent.click(await screen.findByRole('menuitem', { name: /归属/ }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /独立事项/ }))
 		expect(contextMenuActions.onSelectPlacement).toHaveBeenCalledWith(contextTasks, {
@@ -307,7 +358,7 @@ describe('TaskRowAdapter', () => {
 		})
 		expect(projectBinding.onSelectPlacement).not.toHaveBeenCalled()
 
-		fireEvent.contextMenu(screen.getByRole('button', { name: '打开任务 任务 A' }))
+		fireEvent.contextMenu(screen.getByLabelText('打开任务 任务 A'))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /归属/ }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /项目 B/ }))
 		expect(contextMenuActions.onSelectPlacement).toHaveBeenCalledWith(contextTasks, {
@@ -315,6 +366,7 @@ describe('TaskRowAdapter', () => {
 			spaceId: 'space-1',
 			projectId: 'project-2',
 		})
+		await waitFor(() => expect(onContextMenuOpenChange).toHaveBeenCalledWith(false))
 	})
 
 	it('active/selected/pending 映射到行壳状态 class', () => {
@@ -335,8 +387,8 @@ describe('TaskRowAdapter', () => {
 			</TestProviders>,
 		)
 
-		const row = screen.getByRole('button', { name: '打开任务 任务 A' })
-		expect(row.className).toContain(ROW_SHELL_ACTIVE_CLASS)
+		const row = screen.getByLabelText('打开任务 任务 A')
+		expect(row.className).toContain('border-border-secondary')
 		expect(row.className).toContain('opacity-75')
 
 		rerender(
@@ -354,8 +406,8 @@ describe('TaskRowAdapter', () => {
 			</TestProviders>,
 		)
 
-		const selectedRow = screen.getByRole('button', { name: '打开任务 任务 A' })
-		expect(selectedRow.className).toContain(ROW_SHELL_SELECTED_CLASS)
+		const selectedRow = screen.getByLabelText('打开任务 任务 A')
+		expect(selectedRow.className).toContain('bg-accent-soft')
 		expect(screen.getByRole('checkbox', { name: '选择任务：任务 A' })).toHaveAttribute(
 			'aria-checked',
 			'true',
@@ -364,7 +416,7 @@ describe('TaskRowAdapter', () => {
 
 	it('右键菜单危险动作触发任务动作回调', async () => {
 		const { actions } = renderTaskRowAdapter()
-		const row = screen.getByRole('button', { name: '打开任务 任务 A' })
+		const row = screen.getByLabelText('打开任务 任务 A')
 
 		fireEvent.contextMenu(row)
 		fireEvent.click(await screen.findByRole('menuitem', { name: /归档任务/ }))

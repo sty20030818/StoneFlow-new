@@ -10,7 +10,19 @@ import {
 import type { TaskListItem } from '@/shared/types'
 
 import { runTaskRowBulkCommand } from '../commands/taskBulkCommandHandlers'
-import type { TaskRowCommandActions } from './types'
+
+type TaskRowCommandActions = {
+	complete: () => void | Promise<void>
+	select: () => void
+	peek: () => void
+	openDetail: () => void
+	archive: () => void | Promise<void>
+	deleteTask: () => void | Promise<void>
+	openPriorityMenu: () => void
+	openStatusMenu: () => void
+	openDateMenu: () => void
+	openPlacementMenu: () => void
+}
 
 const ROW_COMMAND_DISABLED_REASON = 'Row 上下文尚未接入'
 

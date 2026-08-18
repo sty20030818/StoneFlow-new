@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest'
 import type { TaskListItem } from '@/shared/types'
 
 import {
+	TASK_BOARD_HEADER_HEIGHT,
 	TASK_BOARD_HEADER_SIZE,
+	TASK_BOARD_ROW_HEIGHT,
 	TASK_BOARD_ROW_SIZE,
 	buildTaskBoardExtent,
 	buildTaskBoardFlatItems,
@@ -37,6 +39,13 @@ function task(
 }
 
 describe('taskBoardModel', () => {
+	it('几何保持紧凑桌面密度', () => {
+		expect(TASK_BOARD_ROW_HEIGHT).toBeGreaterThanOrEqual(32)
+		expect(TASK_BOARD_ROW_HEIGHT).toBeLessThanOrEqual(36)
+		expect(TASK_BOARD_HEADER_HEIGHT).toBeGreaterThanOrEqual(28)
+		expect(TASK_BOARD_HEADER_HEIGHT).toBeLessThanOrEqual(32)
+	})
+
 	it('flatItems：展开分区含 header+行；折叠去掉行', () => {
 		const tasks = [
 			task({ id: 'a', title: 'A', status: 'todo' }),

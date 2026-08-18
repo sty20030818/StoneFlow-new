@@ -1,16 +1,22 @@
-/**
- * Virtual Board 与键盘滚动的薄桥：Board 注册 scrollToTaskId，shortcut 调用。
- * 避免 shortcuts 直接依赖 virtualizer 实现。
- */
+/** Virtual Board 的外部目标桥；调用方不接触 virtualizer 或 DOM。 */
 
-type ScrollToTaskId = (taskId: string) => void
+type TaskBoardTargetHandler = (taskId: string) => void
 
-let scrollToTaskIdImpl: ScrollToTaskId | null = null
+let scrollToTaskIdImpl: TaskBoardTargetHandler | null = null
+let focusTaskIdImpl: TaskBoardTargetHandler | null = null
 
-export function registerTaskBoardScrollToTaskId(fn: ScrollToTaskId | null) {
+export function registerTaskBoardScrollToTaskId(fn: TaskBoardTargetHandler | null) {
 	scrollToTaskIdImpl = fn
 }
 
 export function scrollTaskBoardToTaskId(taskId: string) {
 	scrollToTaskIdImpl?.(taskId)
+}
+
+export function registerTaskBoardFocusTaskId(fn: TaskBoardTargetHandler | null) {
+	focusTaskIdImpl = fn
+}
+
+export function focusTaskBoardTaskId(taskId: string) {
+	focusTaskIdImpl?.(taskId)
 }

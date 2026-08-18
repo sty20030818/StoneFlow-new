@@ -1,29 +1,45 @@
-import { useEntitySelection } from '@/features/selection'
+import { useMemo } from 'react'
+
+import { useCollectionInteraction, type CollectionProjection } from '@/features/selection'
+
+type TaskSelectionSnapshot = Readonly<{
+	type: 'task'
+	ids: readonly string[]
+	idSet: ReadonlySet<string>
+	count: number
+	hasSelection: boolean
+	isSingleSelection: boolean
+	isMultiSelection: boolean
+}>
 
 /**
- * 为任务列表提供最小可用的本地选择状态，并在数据刷新后自动剔除失效项。
+ * task 域对 collection interaction 的只读投影；不拥有第二份选择或焦点状态。
  */
-export function useTaskSelection(taskIds: string[]) {
-	const selection = useEntitySelection(taskIds)
+export function useTaskSelection(projection: CollectionProjection<string>) {
+	const interaction = useCollectionInteraction({
+		eligibleKeys: projection.eligibleKeys,
+		navigableKeys: projection.navigableKeys,
+	})
+	const selectionSnapshot = useMemo<TaskSelectionSnapshot>(() => {
+		const ids = interaction.projection.eligibleKeys.filter((key) =>
+			interaction.selectedKeys.has(key),
+		)
+		const count = ids.length
+
+		return {
+			type: 'task',
+			ids,
+			idSet: new Set(ids),
+			count,
+			hasSelection: count > 0,
+			isSingleSelection: count === 1,
+			isMultiSelection: count > 1,
+		}
+	}, [interaction.projection.eligibleKeys, interaction.selectedKeys])
 
 	return {
-		selectedTaskIds: selection.selectedIds,
-		selectedTaskIdSet: selection.selectedIdSet,
-		selectionSnapshot: {
-			...selection.selectionSnapshot,
-			type: 'task' as const,
-		},
-		selectedCount: selection.selectedCount,
-		focusedTaskId: selection.focusedId,
-		focusedTaskIndex: selection.focusedIndex,
-		selectionAnchorId: selection.selectionAnchorId,
-		setFocusedTaskId: selection.setFocusedId,
-		moveFocus: selection.moveFocus,
-		rangeSelectTo: selection.rangeSelectTo,
-		selectOnly: selection.selectOnly,
-		toggleTaskSelection: selection.toggleSelection,
-		clearTaskSelection: selection.clearSelection,
-		selectTaskIds: selection.selectIds,
-		selectAllTasks: selection.selectAll,
+		interaction,
+		selectionSnapshot,
+		selectedCount: selectionSnapshot.count,
 	}
 }

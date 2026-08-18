@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 
 type UseSectionSelectionOptions = {
 	sectionIds: string[]
-	selectedIdSet?: Set<string>
+	selectedIdSet?: ReadonlySet<string>
 	onToggleSelection?: (id: string) => void
 }
 

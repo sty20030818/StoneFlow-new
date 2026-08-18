@@ -2,8 +2,8 @@ import type { CommandSelectionContext } from '@/features/command'
 import type { TaskListItem } from '@/shared/types'
 
 type BuildTaskCommandSelectionInput = {
-	selectedIds: string[]
-	tasks: TaskListItem[]
+	selectedIds: readonly string[]
+	tasks: readonly TaskListItem[]
 	fallbackSubtitle: string | ((task: TaskListItem) => string)
 	focusedTaskId?: string | null
 	clearSelection?: () => void

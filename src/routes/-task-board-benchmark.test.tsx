@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { fireEvent, screen } from '@testing-library/react'
 
 import { TaskBoardPerformancePage } from '@/features/task/page'
 import { renderWithInteractionProviders } from '@/test/TestInteractionProviders'
@@ -34,7 +34,7 @@ describe('TaskBoard benchmark', () => {
 		expect(screen.getByRole('textbox', { name: 'Commit' })).toHaveValue('benchmark-commit')
 		expect(container.querySelector('[data-task-board-virtual="sections"]')).toHaveAttribute(
 			'data-task-board-extent',
-			'100840',
+			'76680',
 		)
 		expect(
 			(screen.getByRole('textbox', { name: '性能测量 JSON' }) as HTMLTextAreaElement).value,
@@ -42,6 +42,11 @@ describe('TaskBoard benchmark', () => {
 		expect(
 			(screen.getByRole('textbox', { name: '性能测量 JSON' }) as HTMLTextAreaElement).value,
 		).toContain(`"width": ${window.innerWidth}`)
+		fireEvent.change(screen.getByRole('combobox', { name: '性能 fixture' }), {
+			target: { value: 'paged' },
+		})
+		expect(screen.getByRole('combobox', { name: '性能 fixture' })).toHaveValue('paged')
+		expect(screen.getByRole('grid', { name: '任务列表' })).toBeInTheDocument()
 	})
 
 	it('启用 benchmark build 时，根 loader 在读取业务数据前重定向', async () => {

@@ -2,12 +2,14 @@ import { useCallback, useMemo, useRef, useState } from 'react'
 
 import { BulkActionProvider, type BulkAction } from '@/features/bulk-action'
 import { DangerConfirmProvider } from '@/features/danger-confirm'
+import { useCollectionInteraction } from '@/features/selection'
 import { AppScrollArea } from '@/shared/components/AppScrollArea'
-import type { TaskListItem } from '@/shared/types'
 
 import { TaskBoard } from '../components/TaskBoard'
-import { scrollTaskBoardToTaskId } from '../components/taskBoardScroll'
+import { focusTaskBoardTaskId } from '../components/taskBoardScroll'
 import { TaskPreviewProvider } from '../detail/model/TaskPreviewProvider'
+import { buildTaskBoardFlatItems } from '../model/taskBoardModel'
+import { TASK_BOARD_STATUS_ORDER } from '../model/taskBoardOrder'
 import {
 	createGroupedTaskBoardPerformanceFixture,
 	createPagedTaskBoardPerformanceFixture,
@@ -17,9 +19,10 @@ const SCROLL_RUN_COUNT = 5
 const SCROLL_RUN_DURATION_MS = 5_000
 const WARMUP_DURATION_MS = 1_000
 const FOCUS_SAMPLE_COUNT = 50
+const KEYBOARD_MOVE_COUNT = 100
+const LONG_TASK_THRESHOLD_MS = 200
 const SCROLL_STEP_MS = 50
 const ROW_SELECTOR = '[data-task-id]'
-const EMPTY_SELECTED_TASK_IDS = new Set<string>()
 const EMPTY_BULK_ACTIONS: BulkAction[] = []
 
 type FixtureKey = 'grouped' | 'paged'
@@ -29,6 +32,22 @@ type ScrollRunResult = {
 	mountedRowPeak: number
 	mountCount: number
 	unmountCount: number
+}
+
+type KeyboardMoveResult = {
+	index: number
+	fromTaskId: string | null
+	expectedTaskId: string
+	actualTaskId: string | null
+	durationMs: number
+	defaultPrevented: boolean
+}
+
+type KeyboardLongTaskEvidence = {
+	supported: boolean
+	thresholdMs: typeof LONG_TASK_THRESHOLD_MS
+	samples: Array<{ startTimeMs: number; durationMs: number }>
+	overBudgetMoves: Array<{ index: number; durationMs: number }>
 }
 
 type TaskBoardScenarioResult = {
@@ -43,6 +62,8 @@ type TaskBoardScenarioResult = {
 	fetchRequestsDuringMeasurement: number
 	duplicateFetchCount: number
 	focusSamplesMs: Array<number | null>
+	keyboardMoves: KeyboardMoveResult[]
+	keyboardLongTasks: KeyboardLongTaskEvidence
 }
 
 type TaskBoardBenchmarkReport = {
@@ -98,6 +119,23 @@ export function TaskBoardPerformancePage() {
 				: createPagedTaskBoardPerformanceFixture(),
 		[fixtureKey],
 	)
+	const flatItems = useMemo(
+		() =>
+			buildTaskBoardFlatItems({
+				tasks: fixture.tasks,
+				openSections: TASK_BOARD_STATUS_ORDER,
+				customSections: fixture.customSections,
+			}),
+		[fixture.customSections, fixture.tasks],
+	)
+	const navigableKeys = useMemo(
+		() => flatItems.flatMap((item) => (item.kind === 'row' ? [item.key] : [])),
+		[flatItems],
+	)
+	const collectionInteraction = useCollectionInteraction({
+		eligibleKeys: navigableKeys,
+		navigableKeys,
+	})
 
 	const report = useMemo<TaskBoardBenchmarkReport>(
 		() => ({
@@ -158,7 +196,9 @@ export function TaskBoardPerformancePage() {
 			}
 
 			setStatus(`正在测量 ${FOCUS_SAMPLE_COUNT} 次焦点恢复…`)
-			const focusSamplesMs = await measureFocusSamples(fixture.tasks)
+			const focusSamplesMs = await measureFocusSamples(navigableKeys)
+			setStatus(`正在测量 ${KEYBOARD_MOVE_COUNT} 次 J 键移动…`)
+			const { keyboardMoves, keyboardLongTasks } = await measureKeyboardMoves(navigableKeys)
 			const fetchRequestsDuringMeasurement =
 				fetchRequestsRef.current - fetchRequestsBeforeMeasurement
 			const nextResult: TaskBoardScenarioResult = {
@@ -173,6 +213,8 @@ export function TaskBoardPerformancePage() {
 				fetchRequestsDuringMeasurement,
 				duplicateFetchCount: duplicateFetchRequestsRef.current,
 				focusSamplesMs,
+				keyboardMoves,
+				keyboardLongTasks,
 			}
 
 			setResults((current) => [
@@ -243,19 +285,23 @@ export function TaskBoardPerformancePage() {
 								>
 									<TaskBoard
 										activeTaskId={null}
-										customSections={fixture.customSections}
+										collectionInteraction={collectionInteraction}
+										flatItems={flatItems}
+										focusIntent={null}
 										hasNextPage={fixture.hasNextPage}
 										isFetchingNextPage={isFetchingNextPage}
 										loadedCount={fixture.loadedCount}
 										onEmptyAction={noop}
+										onCollapseAll={noop}
+										onExpandAll={noop}
 										onFetchNextPage={handleFetchNextPage}
+										onFocusIntentConsumed={noop}
 										onOpenTask={noop}
-										onToggleTaskSelection={noop}
+										onSectionOpenChange={noop}
 										onToggleTaskStatus={noopAsync}
 										onUpdateTaskPriority={noopAsync}
 										onUpdateTaskStatus={noopAsync}
 										pendingTaskId={null}
-										selectedTaskIdSet={EMPTY_SELECTED_TASK_IDS}
 										showProjectCellOptions={false}
 										status='ready'
 										tasks={fixture.tasks}
@@ -340,38 +386,117 @@ function countRows(nodes: NodeList) {
 	return count
 }
 
-async function measureFocusSamples(tasks: readonly TaskListItem[]) {
+async function measureFocusSamples(taskIds: readonly string[]) {
 	const samples: Array<number | null> = []
 	for (let index = 0; index < FOCUS_SAMPLE_COUNT; index += 1) {
-		const taskIndex = Math.round((index / (FOCUS_SAMPLE_COUNT - 1)) * (tasks.length - 1))
-		const task = tasks[taskIndex]
-		if (!task) {
+		const taskIndex = Math.round((index / (FOCUS_SAMPLE_COUNT - 1)) * (taskIds.length - 1))
+		const taskId = taskIds[taskIndex]
+		if (!taskId) {
 			samples.push(null)
 			continue
 		}
 
 		const startedAt = performance.now()
-		scrollTaskBoardToTaskId(task.id)
-		const row = await waitForTaskRow(task.id)
-		if (!row) {
-			samples.push(null)
-			continue
-		}
-
-		row.focus({ preventScroll: true })
-		samples.push(document.activeElement === row ? roundMs(performance.now() - startedAt) : null)
+		focusTaskBoardTaskId(taskId)
+		samples.push((await waitForFocusedTask(taskId)) ? roundMs(performance.now() - startedAt) : null)
 	}
 	return samples
 }
 
-async function waitForTaskRow(taskId: string) {
+async function measureKeyboardMoves(taskIds: readonly string[]) {
+	const firstTaskId = taskIds[0]
+	if (!firstTaskId || taskIds.length <= KEYBOARD_MOVE_COUNT) {
+		throw new Error(`fixture 至少需要 ${KEYBOARD_MOVE_COUNT + 1} 个可导航任务`)
+	}
+
+	focusTaskBoardTaskId(firstTaskId)
+	if (!(await waitForFocusedTask(firstTaskId))) {
+		throw new Error('无法通过 TaskBoard focus bridge 聚焦键盘测量起点')
+	}
+
+	const longTaskObserver = observeLongTasks()
+	const keyboardMoves: KeyboardMoveResult[] = []
+	try {
+		for (let index = 0; index < KEYBOARD_MOVE_COUNT; index += 1) {
+			const expectedTaskId = taskIds[index + 1]!
+			const event = new KeyboardEvent('keydown', {
+				key: 'j',
+				code: 'KeyJ',
+				bubbles: true,
+				cancelable: true,
+			})
+			const startedAt = performance.now()
+			const activeElement = document.activeElement
+			if (activeElement instanceof HTMLElement) {
+				activeElement.dispatchEvent(event)
+			}
+
+			await waitForFocusedTask(expectedTaskId)
+			keyboardMoves.push({
+				index: index + 1,
+				fromTaskId: getFocusedTaskId(activeElement),
+				expectedTaskId,
+				actualTaskId: getFocusedTaskId(document.activeElement),
+				durationMs: roundMs(performance.now() - startedAt),
+				defaultPrevented: event.defaultPrevented,
+			})
+			await wait(0)
+		}
+		const overBudgetMoves = keyboardMoves
+			.filter((move) => move.durationMs >= LONG_TASK_THRESHOLD_MS)
+			.map(({ index, durationMs }) => ({ index, durationMs }))
+		return {
+			keyboardMoves,
+			keyboardLongTasks: longTaskObserver.read(overBudgetMoves),
+		}
+	} finally {
+		longTaskObserver.disconnect()
+	}
+}
+
+async function waitForFocusedTask(taskId: string) {
 	const deadline = performance.now() + 500
 	while (performance.now() < deadline) {
-		const row = document.querySelector<HTMLElement>(`[data-task-id="${taskId}"]`)
-		if (row) return row
+		if (getFocusedTaskId(document.activeElement) === taskId) return true
 		await wait(8)
 	}
-	return null
+	return false
+}
+
+function getFocusedTaskId(element: Element | null) {
+	return element instanceof HTMLElement ? (element.dataset.taskId ?? null) : null
+}
+
+function observeLongTasks() {
+	const supported =
+		typeof PerformanceObserver !== 'undefined' &&
+		PerformanceObserver.supportedEntryTypes.includes('longtask')
+	const samples: Array<{ startTimeMs: number; durationMs: number }> = []
+	const observer = supported
+		? new PerformanceObserver((list) => {
+				for (const entry of list.getEntries()) {
+					if (entry.duration >= LONG_TASK_THRESHOLD_MS) {
+						samples.push({
+							startTimeMs: roundMs(entry.startTime),
+							durationMs: roundMs(entry.duration),
+						})
+					}
+				}
+			})
+		: null
+	observer?.observe({ type: 'longtask' })
+
+	return {
+		read: (
+			overBudgetMoves: KeyboardLongTaskEvidence['overBudgetMoves'],
+		): KeyboardLongTaskEvidence => ({
+			supported,
+			thresholdMs: LONG_TASK_THRESHOLD_MS,
+			samples: [...samples],
+			overBudgetMoves,
+		}),
+		disconnect: () => observer?.disconnect(),
+	}
 }
 
 function wait(durationMs: number) {

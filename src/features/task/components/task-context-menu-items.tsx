@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { ContextMenuItem, ContextMenuSubTrigger } from '@/shared/components/base/context-menu'
+import { ContextMenu } from '@heroui-pro/react'
 import { CheckIcon, FolderIcon, MinusIcon, TargetIcon } from 'lucide-react'
 import type { TaskPlacementTarget } from '@/features/metadata-fields'
 
@@ -15,45 +15,54 @@ export function getPlacementIcon(target: TaskPlacementTarget) {
 
 export function PropertySubTrigger({
 	children,
-	disabled,
+	id,
+	isDisabled,
 	icon,
 	shortcut,
+	textValue,
 }: {
 	children: ReactNode
-	disabled?: boolean
+	id: string
+	isDisabled?: boolean
 	icon: ReactNode
 	shortcut: ReactNode
+	textValue: string
 }) {
 	return (
-		<ContextMenuSubTrigger disabled={disabled} className='[&>svg:last-child]:ml-1'>
+		<ContextMenu.Item id={id} isDisabled={isDisabled} textValue={textValue}>
 			{icon}
 			<span>{children}</span>
 			<MenuShortcut>{shortcut}</MenuShortcut>
-		</ContextMenuSubTrigger>
+			<ContextMenu.SubmenuIndicator className='ml-1' />
+		</ContextMenu.Item>
 	)
 }
 
 export function PropertyOptionItem({
 	children,
 	checked = false,
+	id,
 	indicator = checked ? 'checked' : null,
-	disabled,
+	isDisabled,
 	icon,
-	onSelect,
+	onAction,
 	shortcut,
+	textValue,
 	trailing,
 }: {
 	children: ReactNode
 	checked?: boolean
+	id: string
 	indicator?: PropertyOptionIndicator
-	disabled?: boolean
+	isDisabled?: boolean
 	icon: ReactNode
-	onSelect: () => void
+	onAction: () => void
 	shortcut?: string
+	textValue: string
 	trailing?: ReactNode
 }) {
 	return (
-		<ContextMenuItem disabled={disabled} onSelect={onSelect}>
+		<ContextMenu.Item id={id} isDisabled={isDisabled} onAction={onAction} textValue={textValue}>
 			{icon}
 			<span className='min-w-0 flex-1 truncate'>{children}</span>
 			<span className='ml-auto flex min-w-12 items-center justify-end gap-2 text-[11px] text-muted-foreground'>
@@ -61,7 +70,7 @@ export function PropertyOptionItem({
 				{shortcut ? <span className='tabular-nums'>{shortcut}</span> : null}
 				{!shortcut && trailing ? <span className='tabular-nums'>{trailing}</span> : null}
 			</span>
-		</ContextMenuItem>
+		</ContextMenu.Item>
 	)
 }
 
