@@ -275,8 +275,8 @@
 
 **阶段 H：单一 Collection 交互基础**
 
-- [x] T60 在 `src/features/selection/model/collectionState.ts` 与测试中建立稳定 key 的纯投影与不变量，覆盖显式 `selectedKeys`、`focusedKey`、range anchor、`eligibleKeys`、`navigableKeys`、筛选裁剪、折叠、删除和增量加载。
-  - 纯模型只产出 focus intent：折叠含 focusedKey 的分组时指向折叠按钮，再次进入时指向分组后首项或 collection root；anchor 不可导航时在下一次 range 前重置为当前 focusedKey，不在模型内操作 DOM。
+- [x] T60 在 `src/features/selection/model/collectionState.ts` 与测试中建立稳定 key 的纯投影与不变量，覆盖显式 `selectedKeys`、`focusedKey`、`eligibleKeys`、`navigableKeys`、筛选裁剪、折叠、删除和增量加载。
+  - 纯模型只产出 focus intent：折叠含 focusedKey 的分组时指向折叠按钮，再次进入时指向分组后首项或 collection root，不在模型内操作 DOM。
   _对应验收标准：AC-27, AC-28, AC-34, AC-36_
   _测试先行：`src/features/selection/model/collectionState.test.ts`_
 
@@ -285,7 +285,8 @@
   _对应验收标准：AC-26, AC-28, AC-31, AC-34, AC-36_
   _测试先行：`src/features/selection/model/useCollectionInteraction.test.tsx`、`src/features/selection/model/CommandSelectionProvider.test.tsx`、`src/features/bulk-action/core/command-bulk-selection-snapshot.test.ts`_
 
-- [x] T62 在 `src/features/selection/shortcuts/useCollectionKeyboardAdapter.ts` 及测试中复用 `src/features/command/keybinding/input-guard.ts`，集中适配 Arrow、`J/K`、Home/End、`X`、`Space`、`Enter`、Shift range 与 loaded-only Cmd/Ctrl+A，并丢弃密集或已滞后的 repeat；React Aria 保持标准焦点与选择语义 owner。
+- [x] T62 在 `src/features/selection/shortcuts/useCollectionKeyboardAdapter.ts` 及测试中复用 `src/features/command/keybinding/input-guard.ts`，集中适配 Arrow、`J/K`、Home/End、`X`、`Space`、`Enter`、Shift 逐项 toggle 与 loaded-only Cmd/Ctrl+A，并丢弃密集或已滞后的 repeat；React Aria 保持标准焦点与选择语义 owner。
+  - `useCollectionInteraction` 只保留唯一 `{ direction, lastToggledKey }` 手势：沿连续区段逐项 toggle，同方向继续相邻项，反向先撤销上一项；普通 focus/selection、删除、筛选、折叠或重排终止，只有既有有序前缀不变且仅尾部追加的纯增量加载保留。
   - 覆盖 input、textarea、contenteditable、编辑器与 IME composition 隔离。
   _对应验收标准：AC-25, AC-26, AC-27, AC-28, AC-29_
   _测试先行：`src/features/selection/shortcuts/useCollectionKeyboardAdapter.test.tsx`_
@@ -304,11 +305,11 @@
 **阶段 I：TaskBoard 交互与虚拟化 hard cut**
 
 - [x] T66 在 `src/features/task/model/taskBoardCollection.ts` 与 `src/features/task/model/taskBoardCollection.test.ts` 从现有 flat board 数据纯派生 eligibility、navigation、stable key/index、分组按钮 key 与删除 fallback，不复制 virtual geometry。
-  - 测试必须覆盖折叠分组的 focus intent、再次进入 fallback 与不可导航 anchor 重置。
+  - 测试必须覆盖折叠分组的 focus intent、再次进入 fallback，以及删除、筛选、折叠、重排与纯 ordered-prefix 增量追加的稳定有序投影；Shift 手势的终止/保留合同由 collection interaction 测试覆盖。
   _对应验收标准：AC-27, AC-28, AC-33, AC-34, AC-36_
   _测试先行：`src/features/task/model/taskBoardCollection.test.ts`_
 
-- [x] T67 在 `src/features/task/hooks/useTaskCollectionScene.ts`、`src/features/task/hooks/useTaskSelection.ts` 与 `src/features/task/components/TaskListSceneView.test.tsx` 将 TaskBoard 选择、焦点和 anchor 一次切到阶段 H collection state，领域 selection 只保留只读 snapshot，并向视图输出折叠/删除后的唯一 focus intent。
+- [x] T67 在 `src/features/task/hooks/useTaskCollectionScene.ts`、`src/features/task/hooks/useTaskSelection.ts` 与 `src/features/task/components/TaskListSceneView.test.tsx` 将 TaskBoard 选择、焦点和唯一 Shift 手势一次切到阶段 H collection interaction，领域 selection 只保留只读 snapshot，并向视图输出折叠/删除后的唯一 focus intent。
   _对应验收标准：AC-27, AC-32, AC-34, AC-35, AC-36_
   _测试先行：`src/features/task/components/TaskListSceneView.test.tsx`_
 
@@ -317,7 +318,7 @@
   _测试先行：`src/features/task/components/TaskBoard.test.tsx`、`src/features/task/components/TaskRowAdapter.test.tsx`_
 
 - [x] T69 在 `src/features/task/components/TaskBoard.tsx`、`src/features/task/components/taskBoardScroll.ts` 与测试中接入 stable key/ref focus bridge，向 bridge 注册 row、分组折叠按钮与 collection root，并保留 TanStack Virtual 的分组、sticky、range extractor、总高度、分页与 `scrollToTaskId`。
-  - `TaskBoard.test.tsx` 覆盖“焦点行被折叠 → 折叠按钮 → 再次进入首项/root → anchor 重置”、删除聚焦行与离屏挂载后聚焦。
+  - `TaskBoard.test.tsx` 覆盖“焦点行被折叠 → 折叠按钮 → 再次进入首项/root”、删除聚焦行、离屏挂载后聚焦及对应 Shift 手势终止。
   _对应验收标准：AC-32, AC-33, AC-35, AC-36_
   _测试先行：`src/features/task/components/TaskBoard.test.tsx`_
 
@@ -325,7 +326,7 @@
   _对应验收标准：AC-31, AC-32, AC-35, AC-39_
   _测试先行：`src/features/task/components/TaskRowAdapter.test.tsx`、`src/features/task/components/useTaskContextMenuBulkActions.test.tsx`_
 
-- [x] T71 在 `src/features/task/components/TaskBoard.tsx`、`src/features/task/components/TaskRowAdapter.tsx`、`src/features/task/model/indicators/PriorityIcon.tsx` 与 `src/features/task/model/indicators/TaskStatusIndicator.tsx` 重建单项/连续选择、优先级与状态视觉，以唯一 current key 统一 pointer hover 与键盘焦点并仅按交互来源显示边框，不保留旧 `--sf-*` 视觉引用；随后删除 `src/features/task/shortcuts/` 中被新合同取代且零引用的视觉 hover、Shift session、DOM 查询与 row/list 双层快捷键。
+- [x] T71 在 `src/features/task/components/TaskBoard.tsx`、`src/features/task/components/TaskRowAdapter.tsx`、`src/features/task/model/indicators/PriorityIcon.tsx` 与 `src/features/task/model/indicators/TaskStatusIndicator.tsx` 重建单项/连续选择、优先级与状态视觉，以唯一 current key 统一 pointer hover 与键盘焦点并仅按交互来源显示边框，不保留旧 `--sf-*` 视觉引用；随后删除 `src/features/task/shortcuts/` 中被新合同取代且零引用的 feature 局部视觉 hover、Shift 状态机、DOM 查询与 row/list 双层快捷键。
   - Project/Lifecycle 尚有消费者的 `EntityRowShortcutScope` 不在本阶段提前删除。
   _对应验收标准：AC-2, AC-8, AC-26, AC-33, AC-36_
   _测试先行：`src/features/task/components/TaskBoard.test.tsx`、`src/features/selection/components/CollectionInteractionContract.test.tsx`_
@@ -333,7 +334,7 @@
 - T72（延期，已移出本任务）原计划使用 `src/routes/debug.task-board.tsx` 与 T5 fixture 采集迁移后性能；现保留入口、fixture 与历史基线，交由独立 MainCard + TaskBoard 虚拟列表/焦点链路性能重构重新基线，不阻塞阶段 I。
 
 - [ ] T73（任务发起人验收 U3）在 production Tauri build 完整验证 TaskBoard pointer hover 起点、root 无行 current 的键盘进入、Arrow/J/K/Home/End、方向键长按松键、X、Shift、Space Peek、Enter 详情、Cmd/Ctrl+A、右键、Escape 与输入/IME 隔离，并在本文件记录“通过”或精确问题。
-  - 另一定验证“折叠焦点行 → 分组按钮 → 再次进入”、删除聚焦行、离屏挂载后聚焦与 anchor 重置；执行者先提供固定步骤、录屏与已知差异，AI 不得代为勾选。
+  - 另一定验证“折叠焦点行 → 分组按钮 → 再次进入”、删除聚焦行、离屏挂载后聚焦；普通 focus/selection、删除、筛选、折叠或重排终止 Shift 手势，纯 ordered-prefix 增量追加保留手势；键盘 Peek 打开时保留真实焦点但临时隐藏普通模式行边框，关闭后恢复，forced-colors 仍显示 `Highlight`。执行者先提供固定步骤、录屏与已知差异，AI 不得代为勾选。
   _对应验收标准：AC-26, AC-27, AC-32, AC-35, AC-36_
 
 - [ ] T74 完成阶段 I 收口：确认 U3 通过，运行 Task/Selection/Bulk 测试、根级门禁与 build，确认旧 TaskBoard 状态机零引用；获准提交时引用 PLAN 的阶段 I 文案。
@@ -353,7 +354,7 @@
   _对应验收标准：AC-3, AC-8, AC-31, AC-39_
   _测试先行：`src/features/command/components/ShortcutHelp.test.tsx`_
 
-- [ ] T78 将 `src/features/task/components/TaskContextMenu.tsx`、`src/features/task/components/TaskRowAdapter.tsx` 与 `src/features/selection/shortcuts/useCollectionKeyboardAdapter.ts` 接到本阶段的统一 command 投影：导航、`X`、Shift range 与 Cmd/Ctrl+A 仍直接操作唯一 SelectionManager，只有 Space Peek、Enter 打开和领域 action 按 command ID 执行；不复制可用性、disabled reason 或 mutation。
+- [ ] T78 将 `src/features/task/components/TaskContextMenu.tsx`、`src/features/task/components/TaskRowAdapter.tsx` 与 `src/features/selection/shortcuts/useCollectionKeyboardAdapter.ts` 接到本阶段的统一 command 投影：导航、`X`、Shift 逐项 toggle 与 Cmd/Ctrl+A 仍直接操作唯一 SelectionManager，只有 Space Peek、Enter 打开和领域 action 按 command ID 执行；不复制可用性、disabled reason 或 mutation。
   - 以 execute spy 证明 J/K/X/Shift/Cmd+A 不调用 Command Runtime，Space/Enter 才调用预期 command ID。
   _对应验收标准：AC-26, AC-27, AC-30, AC-31, AC-34_
   _测试先行：`src/features/selection/shortcuts/useCollectionKeyboardAdapter.test.tsx`、`src/features/command/core/command-runtime.test.ts`、`src/features/task/components/TaskRowAdapter.test.tsx`_
@@ -540,7 +541,8 @@
 - 2026-08-14：阶段 C 根级检查暴露一个与 UI 重构无关、在未改动 Rust 文件中可单独复现的 Space 删除错误文案断言失败；未将其混入 HeroUI 重构修改，登记为 T120 前必须处理的仓库既有失败。
 - 2026-08-14：阶段 E 的已连接 trigger 使用真实 DOM ref 恢复，trigger 卸载时回退到打开时捕获的 collection root；虚拟行离屏后重挂载并恢复当前实体行，仍按 PLAN 由阶段 H/I 的 stable key/ref bridge 完成，本阶段不新增 querySelector 兼容桥。
 - 2026-08-16：任务发起人确认最终合同：列表打开只写 `?task=`；窗口 `<1024px` 始终使用 HeroUI Sheet，`>=1024px` 始终使用 Aside；跨断点只换容器，不改 URL、不关闭、不跳页。Sidebar 同用 `1024px` 产品边界但 owner 独立；列表最小 `352px`，Aside 最小/默认/最大为 `320/360/440px`，任务列表只保留 `<560px` 一档容器自适应；完整页仅显式打开。T43 据此再次重开。
-- 2026-08-17：锁定版 `react-stately@3.49.0` 的公开 `MultipleSelectionManager` 不暴露 range anchor 的读取或重置能力；阶段 H 不使用 private import 或类型强转，仍由 manager 唯一拥有 `selectedKeys`/`focusedKey`，仅在同一 collection interaction owner 内保留一个 `rangeAnchorKey` 交互元数据，并以显式 key Set 落选择结果。
+- 2026-08-18：U3 确认不保留额外范围起点或固定起点范围合同；React Stately manager 仍唯一拥有 `selectedKeys`/`focusedKey`，`useCollectionInteraction` 只保留唯一 `{ direction, lastToggledKey }` Shift 手势元数据。该手势沿连续区段逐项 toggle，不复制 selection/focus；普通 focus/selection、删除、筛选、折叠或重排终止，只有既有有序前缀不变且仅尾部追加的纯增量加载保留。
+- 2026-08-18：任务发起人确认 TaskBoard `focus-subtle` 中性灰 `1px` 行边框是显式低对比视觉例外，不宣称达到 `3:1`；forced-colors 回退系统 `Highlight`，其他必要焦点提示仍须达到 `3:1`。键盘 Peek 打开期间保留目标行真实焦点，仅在普通配色模式临时隐藏边框，关闭后恢复。
 - 2026-08-18：任务发起人明确将 MainCard + TaskBoard 虚拟列表/焦点链路的整体性能重构延期到独立后续任务；本轮 HeroUI 重构不执行 T72/T113 的量化性能采集，也不以旧性能预算阻塞 T74、U5 或 T120，且不得据此宣称性能预算已通过。T5/T6 fixture 与迁移前基线继续保留为后续重新基线的输入；阶段 I 仍以自动化正确性门禁和 T73/U3 的真实 Tauri 交互验收收口。
 
 ## 完成记录
@@ -573,7 +575,7 @@
 - 2026-08-17：完成 T45/U2。任务发起人在真实 Tauri 中完成阶段 E 连续复验并确认通过；最终保留单一 `1024px` 边界、宽窗 Resizable Aside、窄窗 MainCard 内 Card Sheet、单一详情 view model、任务列表单档容器自适应及显式完整页入口。
 - 2026-08-17：完成 T46 与阶段 E 收口。详情/Sidebar 聚焦测试 11 个文件共 69 项、全量前端 190 个文件共 1003 项、release 146 项、第一方动画扫描、typecheck、lint、模块边界、格式与 production build 均通过；`test:rust` 仅复现已登记且与本阶段无关的 Space 回收站文案断言失败，继续由 T120 收口。阶段 E 建议 commit 文案：`refactor(task): 收敛任务详情 Aside 与 Sheet`；本次只更新任务记录，不自动提交。
 - 2026-08-17：完成 T47–T50 与阶段 F 收口。Activity Debug 和根/壳路由反馈直接切到 HeroUI 表单、Button、Link、EmptyState 与反馈组件；ShortcutTokens/MainCard 保留产品语义并直接组合 HeroUI Kbd/Button；普通 MainCard/Detail 使用 ScrollShadow，TaskBoard 三条页面路径通过显式 `PageFrame.VirtualizedBody` 继续拥有唯一 AppScrollArea viewport。`Sidebar.Content` 已由 HeroUI 提供 ScrollShadow，验证后不再嵌套第二层。删除零消费者的 Activity Debug/MainCard pattern、ShortcutMenuItemHint 与旧 Kbd primitive；AppScrollArea/OverlayScrollbar 因真实消费者继续保留。全量前端 191 个文件共 1009 项、release 146 项、第一方动画扫描、typecheck、lint、模块边界、格式与 production build 均通过；`test:rust` 仅复现已登记的 Space 回收站文案断言失败。阶段 F 建议 commit 文案：`refactor(ui): 迁移 HeroUI 标准控件与表单`；未提交、未改动 Git 暂存区。
-- 2026-08-17：完成 T60–T65 与阶段 H 收口。建立 stable-key collection 投影、唯一 React Stately owner、loaded-only 显式全选、Linear 键位 adapter 与异步 stable key/ref focus bridge；折叠项保留选择但由 React Aria navigation-disabled keys 跳过，range anchor 仅在下一次范围动作前修复。Command 注册改为只读订阅源，领域批量 snapshot 在执行瞬间复制；HeroUI Pro ListView 仅保留测试 probe，不新增生产 wrapper，也未提前迁移 TaskBoard。阶段专项 30 个文件共 237 项、全量前端 199 个文件共 1065 项、typecheck、lint、模块边界、格式、第一方动画扫描与 production build 均通过；阶段 H 建议 commit 文案：`refactor(selection): 建立单一集合交互状态`；未提交、未改动 Git 暂存区。
-- 2026-08-17：完成 T66–T71。TaskBoard 以阶段 H collection state 为选择、焦点与 anchor 唯一 owner，使用 React Aria Grid 真实行焦点和 stable key/ref bridge，并保留唯一 TanStack Virtual、sticky、分页与总高度。右键 hard cut 到 HeroUI Pro ContextMenu；旧 Task 视觉 hover、Shift session、DOM 查询与双层快捷键状态机在零引用后删除，Project/Lifecycle 的共享旧 owner 留待所属阶段。阶段 I 聚焦回归 12 个文件共 86 项通过，包含折叠/删除恢复、离屏滚动挂载后聚焦、右键回焦、行内输入隔离与 React Aria typeahead 冲突回归；typecheck、lint、模块边界、格式、第一方动画扫描与 diff check 通过。T72 的 production 采样、T73/U3 与 T74 尚未完成；未提交、未改动 Git 暂存区。
-- 2026-08-18：根据 U3 首轮反馈收口 TaskBoard 密度与 current 视觉：任务行/分组标题/文字统一为 `44/34/13px`；pointer hover 与键盘共享唯一 current，pointer 无边框、键盘为 `1px` 细边框，selected 与 selected-hover 使用无边框浅蓝/灰蓝表面，右键不改变 selection。collection root 在无行 current 时仍可按方向建立首/尾项、Shift anchor 与 loaded-only 全选；Arrow repeat 增加密集限流和积压丢弃，避免松键后继续翻动。相关 12 个文件 96 项、全量前端 200 个文件共 1060 项、typecheck、lint、模块边界、格式、第一方动画扫描、diff check 与 production build 通过；方向键长按手感仍待真实 Tauri 复验。T72 随后按同日范围变更移出本任务，T73/U3 与 T74 保持未完成。
+- 2026-08-17：完成 T60–T65 与阶段 H 收口。建立 stable-key collection 投影、唯一 React Stately owner、loaded-only 显式全选、Linear 键位 adapter 与异步 stable key/ref focus bridge；折叠项保留选择但由 React Aria navigation-disabled keys 跳过，Shift 交互随后按 U3 收敛为唯一 `{ direction, lastToggledKey }` 逐项 toggle 手势。Command 注册改为只读订阅源，领域批量 snapshot 在执行瞬间复制；HeroUI Pro ListView 仅保留测试 probe，不新增生产 wrapper，也未提前迁移 TaskBoard。阶段专项 30 个文件共 237 项、全量前端 199 个文件共 1065 项、typecheck、lint、模块边界、格式、第一方动画扫描与 production build 均通过；阶段 H 建议 commit 文案：`refactor(selection): 建立单一集合交互状态`；未提交、未改动 Git 暂存区。
+- 2026-08-17：完成 T66–T71。TaskBoard 以阶段 H collection interaction 为选择、焦点与唯一 Shift 手势 owner，使用 React Aria Grid 真实行焦点和 stable key/ref bridge，并保留唯一 TanStack Virtual、sticky、分页与总高度。右键 hard cut 到 HeroUI Pro ContextMenu；旧 Task 视觉 hover、feature 局部 Shift 状态机、DOM 查询与双层快捷键状态机在零引用后删除，Project/Lifecycle 的共享旧 owner 留待所属阶段。阶段 I 聚焦回归 12 个文件共 86 项通过，包含折叠/删除恢复、离屏滚动挂载后聚焦、右键回焦、行内输入隔离与 React Aria typeahead 冲突回归；typecheck、lint、模块边界、格式、第一方动画扫描与 diff check 通过。T72 的 production 采样、T73/U3 与 T74 尚未完成；未提交、未改动 Git 暂存区。
+- 2026-08-18：根据 U3 首轮反馈收口 TaskBoard 密度与 current 视觉：任务行/分组标题/文字统一为 `44/34/13px`；pointer hover 与键盘共享唯一 current，pointer 无边框、键盘为 `1px` 细边框，selected 与 selected-hover 使用无边框浅蓝/灰蓝表面，右键不改变 selection。collection root 在无行 current 时仍可按方向从首项或末项建立 Shift 手势起点并执行 loaded-only 全选；Arrow repeat 增加密集限流和积压丢弃，避免松键后继续翻动。相关 12 个文件 96 项、全量前端 200 个文件共 1060 项、typecheck、lint、模块边界、格式、第一方动画扫描、diff check 与 production build 通过；方向键长按手感仍待真实 Tauri 复验。T72 随后按同日范围变更移出本任务，T73/U3 与 T74 保持未完成。
 - 2026-08-18：继续根据 U3 截图收口 TaskBoard 行状态：将键盘细边框调浅并只交给真实行 `:focus-visible`；collection root 固定抑制 macOS WebKit 原生 outline，Space/X/Enter 从 root 执行时先把真实焦点归还 current 行；正式详情关闭时通过 stable task id 恢复已虚拟卸载的触发行；done/canceled 标题不再因 pointer hover 意外提亮。8 个聚焦文件共 78 项、全量前端 200 个文件共 1062 项、typecheck、lint、模块边界、格式、第一方动画扫描、diff check 与 production build 通过；粉色系统 outline 是否在真实 WKWebView 消失仍由 T73/U3 复验。

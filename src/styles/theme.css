@@ -94,6 +94,7 @@
 	--separator-secondary: #dbdbdb;
 	--separator-tertiary: #e5e5e6;
 	--focus: #5e6ad2;
+	--focus-subtle: var(--border-secondary);
 	--link: #5e6ad2;
 	--backdrop: rgb(0 0 0 / 0.2);
 
@@ -110,6 +111,7 @@
 }
 
 @theme inline {
+	--color-focus-subtle: var(--focus-subtle);
 	--color-info: var(--info);
 	--color-info-foreground: var(--info-foreground);
 	--color-info-hover: var(--info-hover);

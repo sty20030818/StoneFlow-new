@@ -162,8 +162,9 @@ describe('TaskRowAdapter', () => {
 		expect(title).toHaveClass('font-medium')
 		expect(title).not.toHaveClass('text-[13px]')
 		expect(row).toHaveAttribute('data-focus-source', 'keyboard')
-		expect(row.className).toContain('focus-visible:border-foreground/55')
-		expect(row.className.split(/\s+/)).not.toContain('border-foreground/55')
+		expect(row.className).toContain('focus-visible:border-focus-subtle')
+		expect(row.className).toContain('forced-colors:focus-visible:border-[Highlight]')
+		expect(row.className.split(/\s+/)).not.toContain('border-focus-subtle')
 		expect(row.className).not.toContain('ring-focus')
 		expect(within(row).getByRole('gridcell')).toBeInTheDocument()
 		fireEvent.click(row)
@@ -400,8 +401,8 @@ describe('TaskRowAdapter', () => {
 		const row = screen.getByLabelText('打开任务 任务 A')
 		expect(row.className).toContain('bg-surface-hover')
 		expect(row.className).toContain('focus-visible:border-transparent')
-		expect(row.className).not.toContain('focus-visible:border-foreground/55')
-		expect(row.className.split(/\s+/)).not.toContain('border-foreground/55')
+		expect(row.className).not.toContain('focus-visible:border-focus-subtle')
+		expect(row.className.split(/\s+/)).not.toContain('border-focus-subtle')
 
 		rerender(
 			<TestProviders>
@@ -421,8 +422,33 @@ describe('TaskRowAdapter', () => {
 		)
 
 		expect(row.className).toContain('bg-accent-soft-hover')
-		expect(row.className).toContain('focus-visible:border-foreground/55')
-		expect(row.className.split(/\s+/)).not.toContain('border-foreground/55')
+		expect(row.className).toContain('focus-visible:border-focus-subtle')
+		expect(row.className.split(/\s+/)).not.toContain('border-focus-subtle')
+
+		rerender(
+			<TestProviders>
+				<TaskRowAdapter
+					actions={actions}
+					projectBinding={createProjectBinding()}
+					rowState={{
+						isSelected: true,
+						isPending: false,
+						isFocused: true,
+						focusSource: 'keyboard',
+						suppressFocusIndicator: true,
+					}}
+					selectionGroupPosition='single'
+					task={task}
+				/>
+			</TestProviders>,
+		)
+
+		expect(row).toHaveAttribute('data-focus-source', 'keyboard')
+		expect(row).toHaveClass('border-transparent')
+		expect(row.className).toContain('focus-visible:border-transparent')
+		expect(row.className).not.toContain('focus-visible:border-focus-subtle')
+		expect(row.className.split(/\s+/)).not.toContain('border-focus-subtle')
+		expect(row.className).toContain('forced-colors:focus-visible:border-[Highlight]')
 
 		rerender(
 			<TestProviders>
@@ -441,7 +467,7 @@ describe('TaskRowAdapter', () => {
 		)
 
 		expect(row.className).toContain('hover:bg-transparent')
-		expect(row.className.split(/\s+/)).not.toContain('border-foreground/55')
+		expect(row.className.split(/\s+/)).not.toContain('border-focus-subtle')
 	})
 
 	it('selected/pending 由 RowShell 统一映射表面状态', () => {
@@ -467,7 +493,7 @@ describe('TaskRowAdapter', () => {
 		const row = screen.getByLabelText('打开任务 任务 A')
 		expect(row.className).toContain('bg-accent-soft')
 		expect(row.className).toContain('hover:bg-accent-soft-hover')
-		expect(row).not.toHaveClass('border-foreground/55')
+		expect(row).not.toHaveClass('border-focus-subtle')
 		expect(row.className).toContain('opacity-75')
 
 		rerender(

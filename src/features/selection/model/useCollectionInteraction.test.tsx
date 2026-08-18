@@ -53,99 +53,61 @@ describe('useCollectionInteraction', () => {
 		expect(delegate.getKeyBelow('task-a')).toBe('task-c')
 	})
 
-	it('范围选择固定 anchor，并在 stale anchor 上从当前焦点重新开始', () => {
-		const { result, rerender } = renderHook(
-			({ navigableKeys }) =>
-				useCollectionInteraction({
-					eligibleKeys: ['task-a', 'task-b', 'task-c', 'task-d'],
-					navigableKeys,
-				}),
-			{ initialProps: { navigableKeys: ['task-a', 'task-b', 'task-c', 'task-d'] } },
-		)
-
-		act(() => {
-			result.current.focusKey('task-b')
-			result.current.selectRangeTo('task-d')
-		})
-		expect([...result.current.getSnapshot().selectedKeys]).toEqual(['task-b', 'task-c', 'task-d'])
-		expect(result.current.getSnapshot().rangeAnchorKey).toBe('task-b')
-
-		act(() => result.current.selectRangeTo('task-c'))
-		expect([...result.current.getSnapshot().selectedKeys]).toEqual(['task-b', 'task-c'])
-
-		rerender({ navigableKeys: ['task-a', 'task-c', 'task-d'] })
-		expect(result.current.getSnapshot().rangeAnchorKey).toBe('task-b')
-		act(() => result.current.focusKey('task-c', { preserveRangeAnchor: true }))
-		act(() => result.current.selectRangeTo('task-d'))
-
-		expect([...result.current.getSnapshot().selectedKeys]).toEqual(['task-b', 'task-c', 'task-d'])
-		expect(result.current.getSnapshot().rangeAnchorKey).toBe('task-c')
-	})
-
-	it('范围伸缩保留范围外选择，并只替换上一段范围', () => {
+	it('Shift 会话按当前行逐项切换，并在反向时先恢复最后一项', () => {
 		const { result } = renderHook(() =>
 			useCollectionInteraction({
-				eligibleKeys: ['task-a', 'task-b', 'task-c', 'task-d'],
-				navigableKeys: ['task-a', 'task-b', 'task-c', 'task-d'],
-				defaultSelectedKeys: ['task-a'],
+				eligibleKeys: ['task-a', 'task-b', 'task-c', 'task-d', 'task-e'],
+				navigableKeys: ['task-a', 'task-b', 'task-c', 'task-d', 'task-e'],
+				defaultSelectedKeys: ['task-a', 'task-b', 'task-c', 'task-d', 'task-e'],
 			}),
 		)
 
-		act(() => result.current.focusKey('task-b'))
-		act(() => result.current.selectRangeTo('task-d'))
-		expect([...result.current.getSnapshot().selectedKeys]).toEqual([
-			'task-a',
-			'task-b',
-			'task-c',
-			'task-d',
-		])
+		act(() => result.current.focusKey('task-c'))
+		act(() => result.current.toggleRangeStep(1))
+		expect([...result.current.selectedKeys]).toEqual(['task-a', 'task-b', 'task-d', 'task-e'])
 
-		act(() => result.current.selectRangeTo('task-c'))
-		expect([...result.current.getSnapshot().selectedKeys]).toEqual(['task-a', 'task-b', 'task-c'])
+		act(() => result.current.toggleRangeStep(1))
+		expect([...result.current.selectedKeys]).toEqual(['task-a', 'task-b', 'task-e'])
+		expect(result.current.focusedKey).toBe('task-d')
+
+		act(() => result.current.toggleRangeStep(-1))
+		expect([...result.current.selectedKeys]).toEqual(['task-a', 'task-b', 'task-d', 'task-e'])
+		expect(result.current.focusedKey).toBe('task-d')
 	})
 
-	it('投影迁移焦点不提前改写 anchor，下一次范围才修复', () => {
+	it('增量追加期间保留 Shift 会话，并从最新尾项继续', () => {
 		const { result, rerender } = renderHook(
-			({ eligibleKeys, navigableKeys }) =>
-				useCollectionInteraction({ eligibleKeys, navigableKeys }),
-			{
-				initialProps: {
-					eligibleKeys: ['task-a', 'task-b', 'task-c'],
-					navigableKeys: ['task-a', 'task-b', 'task-c'],
-				},
-			},
+			({ keys }) => useCollectionInteraction({ eligibleKeys: keys, navigableKeys: keys }),
+			{ initialProps: { keys: ['task-a', 'task-b'] } },
 		)
 
-		act(() => result.current.focusKey('task-b'))
-		rerender({
-			eligibleKeys: ['task-a', 'task-c'],
-			navigableKeys: ['task-a', 'task-c'],
-		})
+		act(() => result.current.focusKey('task-a'))
+		act(() => result.current.toggleRangeStep(1))
+		act(() => result.current.toggleRangeStep(1))
+		expect([...result.current.selectedKeys]).toEqual(['task-a', 'task-b'])
 
+		rerender({ keys: ['task-a', 'task-b', 'task-c'] })
+		act(() => result.current.toggleRangeStep(1))
+
+		expect([...result.current.selectedKeys]).toEqual(['task-a', 'task-b', 'task-c'])
 		expect(result.current.focusedKey).toBe('task-c')
-		expect(result.current.rangeAnchorKey).toBe('task-b')
-
-		act(() => result.current.selectRangeTo('task-a'))
-		expect([...result.current.getSnapshot().selectedKeys]).toEqual(['task-a', 'task-c'])
-		expect(result.current.rangeAnchorKey).toBe('task-c')
 	})
 
-	it('anchor 与 focusedKey 都已折叠时从 range target 重新开始', () => {
+	it('重排会结束上一段 Shift 手势', () => {
 		const { result, rerender } = renderHook(
-			({ navigableKeys }) =>
-				useCollectionInteraction({
-					eligibleKeys: ['task-a', 'task-b', 'hidden'],
-					navigableKeys,
-				}),
-			{ initialProps: { navigableKeys: ['task-a', 'task-b', 'hidden'] } },
+			({ keys }) => useCollectionInteraction({ eligibleKeys: keys, navigableKeys: keys }),
+			{ initialProps: { keys: ['task-a', 'task-b', 'task-c'] } },
 		)
 
-		act(() => result.current.focusKey('hidden'))
-		rerender({ navigableKeys: ['task-a', 'task-b'] })
-		act(() => result.current.selectRangeTo('task-a'))
+		act(() => result.current.focusKey('task-b'))
+		act(() => result.current.toggleRangeStep(1))
+		expect([...result.current.selectedKeys]).toEqual(['task-b'])
 
-		expect([...result.current.getSnapshot().selectedKeys]).toEqual(['task-a'])
-		expect(result.current.rangeAnchorKey).toBe('task-a')
+		rerender({ keys: ['task-b', 'task-a', 'task-c'] })
+		act(() => result.current.toggleRangeStep(1))
+
+		expect([...result.current.selectedKeys]).toEqual([])
+		expect(result.current.focusedKey).toBe('task-b')
 	})
 
 	it('忽略 collection 外或不可导航的焦点目标', () => {
@@ -162,7 +124,6 @@ describe('useCollectionInteraction', () => {
 
 		expect(result.current.getSnapshot()).toMatchObject({
 			focusedKey: 'task-a',
-			rangeAnchorKey: 'task-a',
 		})
 	})
 
@@ -179,26 +140,6 @@ describe('useCollectionInteraction', () => {
 
 		expect([...result.current.selectedKeys]).toEqual(['task-b'])
 		expect(result.current.focusedKey).toBe('task-a')
-		expect(result.current.rangeAnchorKey).toBe('task-a')
-	})
-
-	it('投影修复后普通焦点移动会建立新 anchor', () => {
-		const { result, rerender } = renderHook(
-			({ navigableKeys }) =>
-				useCollectionInteraction({
-					eligibleKeys: ['task-a', 'task-b', 'task-c'],
-					navigableKeys,
-				}),
-			{ initialProps: { navigableKeys: ['task-a', 'task-b', 'task-c'] } },
-		)
-
-		act(() => result.current.focusKey('task-b'))
-		rerender({ navigableKeys: ['task-a', 'task-c'] })
-		act(() => result.current.focusKey('task-c', { preserveRangeAnchor: true }))
-		act(() => result.current.listState.selectionManager.setFocusedKey('task-a'))
-
-		expect(result.current.focusedKey).toBe('task-a')
-		expect(result.current.rangeAnchorKey).toBe('task-a')
 	})
 
 	it('执行时 snapshot 是副本，不能反向修改 collection', () => {

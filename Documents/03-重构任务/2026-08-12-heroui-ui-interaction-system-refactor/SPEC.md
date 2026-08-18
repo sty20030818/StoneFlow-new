@@ -116,17 +116,17 @@ StoneFlow 已具备较完整的桌面产品能力，但 UI 实现形成了多条
   |---|---|---|---|
   | 未选 | 无 | 透明 | 无 |
   | 未选 | Pointer | 中性灰 hover | 无 |
-  | 未选 | Keyboard | 中性灰 hover | `1px` 较浅中性边框 |
+  | 未选 | Keyboard | 中性灰 hover | `1px` 中性灰边框 |
   | 已选 | 无 | 浅蓝 selected | 无 |
   | 已选 | Pointer | 更深、低饱和的灰蓝 | 无 |
-  | 已选 | Keyboard | 更深、低饱和的灰蓝 | `1px` 较浅中性边框 |
+  | 已选 | Keyboard | 更深、低饱和的灰蓝 | `1px` 中性灰边框 |
 
-- 键盘边框只属于真实 `:focus-visible` 行，不属于 collection root 或逻辑 current；浅色表面上的边框仍保持至少 `3:1` 的非文本对比。Pointer 聚焦、右键和普通点击不得显示边框。
+- 键盘边框只属于真实 `:focus-visible` 行，不属于 collection root 或逻辑 current；`focus-subtle` 复用 HeroUI 中性边框语义色，并在 forced-colors 下回退系统 `Highlight`。该边框是任务发起人确认的低对比视觉例外，是克制的辅助提示，不单独承担控件识别；Pointer 聚焦、右键和普通点击不得显示边框。
 - ContextMenu 打开不改变 selection：已选触发行继续使用 selection 目标和灰蓝表面，未选触发行只作为本次单项目标并使用普通灰 hover；菜单本身不增加行状态。
-- Detail 与非模态 Space Peek 不增加专用行颜色，也不独立锁定 current；pointer 仍在移出时清空，键盘触发项关闭后若虚拟行卸载，则按 stable task id 滚动、重挂并恢复真实焦点；实体不存在时回退集合根，集合已为空时回退空态主操作。
+- Detail 与非模态 Space Peek 不增加专用行颜色，也不独立锁定 current；键盘 Peek 打开期间保留目标行真实焦点，仅在普通配色模式暂时隐藏中性灰边框，关闭后自然恢复，forced-colors 仍保留系统 `Highlight`。pointer 仍在移出时清空，键盘触发项关闭后若虚拟行卸载，则按 stable task id 滚动、重挂并恢复真实焦点；实体不存在时回退集合根，集合已为空时回退空态主操作。
 - Pending 只叠加透明度与禁用 mutation 控件；连续选择只改变首/中/尾圆角与间隙底色；done/canceled 只叠加弱化文字与删除线。这些修饰不得改写六种核心表面。
 - 有 current 时，`↑/↓`、`J/K` 与 `Home/End` 从该项移动真实焦点并将目标滚入视野；collection root 有焦点但没有行 current 时，向下/Home 从首项、向上/End 从末项建立键盘 current。
-- `X` 切换当前焦点项；`Shift+方向键` 从固定 anchor 扩展或收缩连续范围。
+- `X` 切换当前焦点项；`Shift+方向键` 由 `useCollectionInteraction` 内唯一 `{ direction, lastToggledKey }` 手势会话沿连续区段逐项 toggle：首键先切换 current，同方向继续相邻项，反向先撤销上一项；从已选区中间开始时因此稳定取消对应区段。普通 focus/selection，以及删除、筛选、折叠或重排都会终止该手势；只有既有有序前缀不变、仅在尾部追加项目的纯增量加载保留会话。
 - `Space` 只控制 Peek，`Enter` 写入 `?task=` 并按窗口 `1024px` 边界打开 Aside 或 Sheet；关闭正式详情后恢复原集合焦点。
 - `Cmd/Ctrl+A` 在 collection root 或行拥有真实焦点时选择按键时当前视图中已经加载且可操作的项目，不要求预先存在行 current；之后增量加载的项目不自动加入。查询级“包含尚未加载结果的全选”不在本 UI 重构内隐式引入。
 - 右键不改变 selection，也不增加选中边框：右键已选项时以整个 selection 为目标，右键未选项时仅以该项为目标，并保持普通 pointer hover 表面。
@@ -236,7 +236,7 @@ StoneFlow 已具备较完整的桌面产品能力，但 UI 实现形成了多条
 - **AC-6**：当浅色主题加载时，系统应当按本 SPEC 的已确认色彩合同呈现近中性灰层级，使 `#f3f3f4` 壳层后退、`#fcfcfd` 主工作面突出、`#ffffff` 抬升表面可辨识且主布局无厚重投影。
 - **AC-7**：当任意 HeroUI 组件使用背景、表面、文字、边界、Accent、focus、success、warning 或 danger 语义时，系统应当从同一套 HeroUI semantic theme 或本 SPEC 登记的全局组件状态配方取值；feature 不得复制这些色值建立私有皮肤。
 - **AC-8**：当组件进入 Hover、Active/Pressed/Open、Focus-visible、Selected/Current、Disabled、Loading、Invalid 或 Closed 状态时，同类组件应当获得一致且可区分的反馈；Active 不得冒充 Focus-visible，Focus-visible 不得只依赖中性背景或边框变化。
-- **AC-9**：当文本或交互图形使用最终色板时，普通重要文本应当达到 `4.5:1` 对比度，必要非文本控件与焦点提示应当达到 `3:1`；低对比中性边框只能作为装饰分层，disabled 与纯装饰内容应单独标记。
+- **AC-9**：当文本或交互图形使用最终色板时，普通重要文本应当达到 `4.5:1` 对比度，必要非文本控件与焦点提示应当达到 `3:1`。TaskBoard 用户确认的 `focus-subtle` 中性灰 `1px` 行边框是显式登记的低对比视觉例外，不宣称达到 `3:1`，且不得单独承担控件识别；forced-colors 必须回退系统 `Highlight`。除该例外外，其他必要焦点提示仍须达到 `3:1`；disabled 与纯装饰内容应单独标记。
 - **AC-10**：当主窗口或 Launcher 渲染文字时，拉丁字符与数字应当使用本地 Inter Variable，中文应当使用统一系统中文 fallback，并且 400/500/600 实际字重不得依赖伪粗体。
 - **AC-11**：当进行视觉回归时，系统应当以本 SPEC 的色值表与对比度结果为颜色真相，并使用同步后的 HeroUI 原型和新版 StoneFlow 关键页面截图验证渲染结果；迁移前 StoneFlow 与 Linear 截图不得作为逐像素复制要求。
 - **AC-12**：当任务完成时，系统应当只提供浅色主题，生产样式不得残留会生成另一套未维护视觉结果的旧 dark token 或 `dark:` 分支。
@@ -258,12 +258,12 @@ StoneFlow 已具备较完整的桌面产品能力，但 UI 实现形成了多条
 - **AC-22**：当用户从任务集合打开正式详情且窗口宽度 `<1024px` 时，系统应当保留 `?task=` URL 并以 HeroUI Sheet 渲染同一份可编辑详情，不得自动导航 canonical 完整页。
 - **AC-23**：当 active `?task=` 详情跨越窗口 `1024px` 时，系统应当只在 Aside 与 Sheet 之间替换容器；`?task=`、任务 ID、草稿、autosave 和路由历史不变，不自动关闭详情或进入完整页。Sidebar 与详情应当消费同一 `isCompact`，保留各自 open state，并保证窄窗两张模态 Sheet 不同时打开。
 - **AC-24**：当用户关闭 Aside 或 Sheet 时，如果原触发项仍存在，系统应当恢复原触发项；否则恢复当前实体行，实体已不存在时恢复集合根。Aside 不得形成模态焦点陷阱，Sheet 使用 HeroUI 的标准模态焦点语义。
-- **AC-25**：当用户按 `Space` 时，系统应当只控制 Peek；当用户按 `Enter` 时，系统应当写入 `?task=` 并按窗口 `1024px` 边界打开 Aside 或 Sheet；只有当用户在详情 Header 显式选择“打开完整页”时，系统才应当先 flush 当前草稿再导航 canonical 路径。
+- **AC-25**：当用户按 `Space` 时，系统应当只控制 Peek；键盘 Peek 打开期间应保留目标行真实焦点，仅在普通配色模式临时隐藏行边框并在关闭后恢复，forced-colors 仍保留系统 `Highlight`。当用户按 `Enter` 时，系统应当写入 `?task=` 并按窗口 `1024px` 边界打开 Aside 或 Sheet；只有当用户在详情 Header 显式选择“打开完整页”时，系统才应当先 flush 当前草稿再导航 canonical 路径。
 
 ### 键盘、焦点与命令
 
 - **AC-26**：当 pointer hover 建立唯一 current 后按方向键、`J/K` 或 `Home/End` 时，系统应当从该项移动真实集合焦点、切换为键盘细边框并将目标滚入视野；pointer current 本身无边框。collection root 有焦点但没有行 current 时，应当按方向从首项或末项建立键盘 current。
-- **AC-27**：当用户按 `X` 或 `Shift+方向键` 时，系统应当分别执行 current 项切换或固定 anchor 的连续范围选择，并以单一 selection 状态为结果真相；没有行 current 的首次 Shift 导航按方向从首项或末项建立 anchor。
+- **AC-27**：当用户按 `X` 或 `Shift+方向键` 时，系统应当分别切换 current 项，或由 `useCollectionInteraction` 内唯一 `{ direction, lastToggledKey }` 手势会话从 current 开始沿连续区段逐项 toggle；同方向继续相邻项、反向先撤销上一项，并以单一 selection 状态为结果真相。没有行 current 的首次 Shift 导航按方向从首项或末项开始；普通 focus/selection，以及删除、筛选、折叠或重排必须终止手势，只有既有有序前缀不变、仅尾部追加项目的纯增量加载可以保留。
 - **AC-28**：当 collection root 或行拥有真实焦点且用户按 `Cmd/Ctrl+A` 时，系统应当选择按键时当前视图中已加载且可操作的项目，之后加载的项目不得自动加入；当焦点位于输入/编辑器或集合之外时，系统应当保留原有快捷键语义。
 - **AC-29**：只要输入框、编辑器、contenteditable 或 IME 正在接收输入，系统就不得触发 `J/K/X/Space/P/S/D` 等产品字符快捷键。
 - **AC-30**：当多个 overlay、Detail Aside、Peek、选择和页面层同时存在且用户按 Escape 时，系统应当按“输入法/编辑 → 当前 Menu/Dialog/Sheet → Detail Aside → Peek → Selection → 页面”的顺序只消费最高优先级层。

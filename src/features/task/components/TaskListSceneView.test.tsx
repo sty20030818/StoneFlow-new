@@ -11,6 +11,7 @@ import { useShellPreferenceStore } from '@/features/shell-dialogs'
 
 import { TaskListSceneView } from './TaskListSceneView'
 import { TaskPreviewProvider } from '../detail/model/TaskPreviewProvider'
+import { useTaskPreviewController } from '../detail/model/useTaskPreviewController'
 import { useTaskCollectionScene } from '../hooks/useTaskCollectionScene'
 
 const openCreate = vi.fn()
@@ -145,7 +146,6 @@ describe('TaskListSceneView', () => {
 		await waitFor(() => expect(screen.getByTestId('owner-focused')).toHaveTextContent('todo-a'))
 		expect(screen.getByTestId('owner-rows')).toHaveTextContent('todo-a,todo-b')
 		expect(screen.getByTestId('owner-selected')).toHaveTextContent('doing-c')
-		expect(screen.getByTestId('owner-anchor')).toHaveTextContent('doing-c')
 		expect(screen.getByTestId('owner-intent')).toHaveTextContent(
 			JSON.stringify({
 				type: 'group-trigger',
@@ -168,7 +168,19 @@ describe('TaskListSceneView', () => {
 		expect(screen.getByTestId('owner-intent')).toHaveTextContent(
 			JSON.stringify({ type: 'item', key: 'doing-c' }),
 		)
-		expect(screen.getByTestId('owner-anchor')).toHaveTextContent('todo-b')
+	})
+
+	it('键盘 Peek 打开时隐藏当前行焦点边框，关闭后恢复', () => {
+		renderTaskCollectionOwner()
+
+		fireEvent.click(screen.getByRole('button', { name: '键盘预览待执行 A' }))
+		expect(screen.getByTestId('owner-suppressed-focus')).toHaveTextContent('true')
+
+		fireEvent.click(screen.getByRole('button', { name: '关闭键盘预览' }))
+		expect(screen.getByTestId('owner-suppressed-focus')).toHaveTextContent('false')
+
+		fireEvent.click(screen.getByRole('button', { name: '鼠标预览待执行 A' }))
+		expect(screen.getByTestId('owner-suppressed-focus')).toHaveTextContent('false')
 	})
 })
 
@@ -218,6 +230,7 @@ function renderTaskCollectionOwner() {
 
 function TaskCollectionOwnerHarness() {
 	const [tasks, setTasks] = useState(OWNER_TASKS)
+	const taskPreviewController = useTaskPreviewController()
 	const scene = useTaskCollectionScene({
 		source: { items: tasks, status: 'ready' },
 		displayPageKey: 'task:all',
@@ -227,7 +240,7 @@ function TaskCollectionOwnerHarness() {
 		activeTaskId: null,
 		onCreateTask: () => undefined,
 		onOpenTask: () => undefined,
-		onPeekTask: () => undefined,
+		onPeekTask: taskPreviewController.openPreview,
 		projectOptions: [],
 		spaces: [],
 		showProjectCellOptions: false,
@@ -237,6 +250,15 @@ function TaskCollectionOwnerHarness() {
 
 	return (
 		<div>
+			<button onClick={() => taskPreviewController.openPreview('todo-a', 'keyboard')} type='button'>
+				键盘预览待执行 A
+			</button>
+			<button onClick={taskPreviewController.closePreview} type='button'>
+				关闭键盘预览
+			</button>
+			<button onClick={() => taskPreviewController.openPreview('todo-a', 'pointer')} type='button'>
+				鼠标预览待执行 A
+			</button>
 			<button
 				onClick={() => {
 					collectionInteraction.focusKey('doing-c')
@@ -285,9 +307,11 @@ function TaskCollectionOwnerHarness() {
 				{flatItems.flatMap((item) => (item.kind === 'row' ? [item.key] : [])).join(',')}
 			</div>
 			<div data-testid='owner-focused'>{collectionInteraction.focusedKey ?? 'none'}</div>
-			<div data-testid='owner-anchor'>{collectionInteraction.rangeAnchorKey ?? 'none'}</div>
 			<div data-testid='owner-selected'>{[...collectionInteraction.selectedKeys].join(',')}</div>
 			<div data-testid='owner-intent'>{focusIntent ? JSON.stringify(focusIntent) : 'none'}</div>
+			<div data-testid='owner-suppressed-focus'>
+				{String(scene.boardProps.suppressFocusIndicator)}
+			</div>
 		</div>
 	)
 }

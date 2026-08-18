@@ -34,6 +34,7 @@ vi.mock('@/features/task/components/TaskRowAdapter', () => ({
 		gridCellProps,
 		rowProps,
 		rowRef,
+		rowState,
 		task,
 		selectionGroupPosition,
 		onContextMenuOpenChange,
@@ -42,6 +43,7 @@ vi.mock('@/features/task/components/TaskRowAdapter', () => ({
 		gridCellProps?: React.HTMLAttributes<HTMLDivElement>
 		rowProps?: React.HTMLAttributes<HTMLDivElement>
 		rowRef?: React.Ref<HTMLDivElement>
+		rowState: { suppressFocusIndicator?: boolean }
 		task: TaskListItem
 		selectionGroupPosition?: RowSelectionGroupPosition
 		onContextMenuOpenChange?: (open: boolean) => void
@@ -52,6 +54,7 @@ vi.mock('@/features/task/components/TaskRowAdapter', () => ({
 				{...ariaRowProps}
 				ref={rowRef}
 				aria-label={`打开任务 ${task.title}`}
+				data-suppress-focus-indicator={String(rowState.suppressFocusIndicator ?? false)}
 				data-selection-group-position={selectionGroupPosition}
 				onClick={() => actions.onOpenTask(task.id)}
 				onContextMenu={() => onContextMenuOpenChange?.(true)}
@@ -334,6 +337,8 @@ describe('TaskBoard', () => {
 		fireEvent.keyDown(rows[0]!, { key: 'j' })
 		await waitFor(() => expect(rows[1]).toHaveFocus())
 		fireEvent.keyDown(rows[1]!, { key: 'j', shiftKey: true })
+		await waitFor(() => expect(rows[1]).toHaveAttribute('aria-selected', 'true'))
+		fireEvent.keyDown(rows[1]!, { key: 'j', shiftKey: true })
 		await waitFor(() => {
 			expect(rows[1]).toHaveAttribute('aria-selected', 'true')
 			expect(rows[2]).toHaveAttribute('aria-selected', 'true')
@@ -357,6 +362,54 @@ describe('TaskBoard', () => {
 		act(() => inlineButton.focus())
 		fireEvent.keyDown(inlineButton, { key: 'j' })
 		expect(inlineButton).toHaveFocus()
+	})
+
+	it('键盘 Peek 打开和切行时隐藏行边框，关闭后恢复且不搬走焦点', async () => {
+		const tasks = [
+			createTask({ id: 'task-1', title: '任务 A' }),
+			createTask({ id: 'task-2', title: '任务 B' }),
+		]
+		function PeekProbe() {
+			const [open, setOpen] = useState(false)
+			return (
+				<TaskBoardHarness
+					activeTaskId={null}
+					onEmptyAction={() => undefined}
+					onOpenTask={() => undefined}
+					onPeekTask={() => setOpen((current) => !current)}
+					onToggleTaskStatus={async () => undefined}
+					onUpdateTaskPriority={async () => undefined}
+					onUpdateTaskStatus={async () => undefined}
+					pendingTaskId={null}
+					status='ready'
+					suppressFocusIndicator={open}
+					tasks={tasks}
+				/>
+			)
+		}
+
+		renderTaskBoard(<PeekProbe />)
+		const rows = screen.getAllByRole('row')
+		act(() => rows[0]?.focus())
+
+		fireEvent.keyDown(rows[0]!, { key: ' ' })
+		await waitFor(() => {
+			expect(rows[0]).toHaveFocus()
+			expect(rows[0]).toHaveAttribute('data-suppress-focus-indicator', 'true')
+			expect(rows[1]).toHaveAttribute('data-suppress-focus-indicator', 'true')
+		})
+
+		fireEvent.keyDown(rows[0]!, { key: 'ArrowDown' })
+		await waitFor(() => {
+			expect(rows[1]).toHaveFocus()
+			expect(rows[1]).toHaveAttribute('data-suppress-focus-indicator', 'true')
+		})
+
+		fireEvent.keyDown(rows[1]!, { key: ' ' })
+		await waitFor(() => {
+			expect(rows[1]).toHaveFocus()
+			expect(rows[1]).toHaveAttribute('data-suppress-focus-indicator', 'false')
+		})
 	})
 
 	it('领域字符快捷键不被 Grid typeahead 抢占', async () => {
@@ -602,7 +655,7 @@ describe('TaskBoard', () => {
 		await waitFor(() => expect(screen.getByRole('button', { name: '创建任务' })).toHaveFocus())
 	})
 
-	it('分组全选一次更新 selection，不改动 focus 与 range anchor', async () => {
+	it('分组全选一次更新 selection，不改动 focus', async () => {
 		const tasks = [
 			createTask({ id: 'task-1', title: '任务 A', status: 'todo' }),
 			createTask({ id: 'task-2', title: '任务 B', status: 'todo' }),
@@ -624,7 +677,6 @@ describe('TaskBoard', () => {
 
 		fireEvent.pointerMove(screen.getByRole('row', { name: '打开任务 任务 C' }))
 		await waitFor(() => expect(screen.getByTestId('focused-key')).toHaveTextContent('task-3'))
-		expect(screen.getByTestId('range-anchor-key')).toHaveTextContent('task-3')
 
 		const visibleHeader = screen
 			.getByRole('button', { name: '折叠 待执行' })
@@ -642,7 +694,6 @@ describe('TaskBoard', () => {
 			)
 		})
 		expect(screen.getByTestId('focused-key')).toHaveTextContent('task-3')
-		expect(screen.getByTestId('range-anchor-key')).toHaveTextContent('task-3')
 	})
 })
 
@@ -719,9 +770,6 @@ function TaskBoardHarness({
 				onSectionOpenChange={() => undefined}
 			/>
 			<output data-testid='focused-key'>{collectionInteraction.focusedKey ?? 'none'}</output>
-			<output data-testid='range-anchor-key'>
-				{collectionInteraction.rangeAnchorKey ?? 'none'}
-			</output>
 			<output data-testid='selected-keys'>
 				{[...collectionInteraction.selectedKeys].join(',') || 'none'}
 			</output>

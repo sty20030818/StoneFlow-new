@@ -88,7 +88,8 @@ describe('RowShell', () => {
 
 		const row = screen.getByTestId('row')
 		expect(row.className).toContain('hover:bg-surface-hover')
-		expect(row.className).toContain('focus-visible:border-foreground/55')
+		expect(row.className).toContain('focus-visible:border-focus-subtle')
+		expect(row.className).toContain('forced-colors:focus-visible:border-[Highlight]')
 		expect(row.className).toContain('focus-visible:bg-surface-hover')
 		expect(row.className).not.toContain('outline-2')
 

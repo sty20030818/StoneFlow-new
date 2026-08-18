@@ -41,6 +41,7 @@ export type TaskRowAdapterProps = {
 		isPending: boolean
 		isFocused: boolean
 		focusSource: 'pointer' | 'keyboard' | null
+		suppressFocusIndicator?: boolean
 	}
 	rowProps?: GridListItemAria['rowProps']
 	gridCellProps?: GridListItemAria['gridCellProps']
@@ -94,7 +95,8 @@ function taskRowAdapterPropsEqual(prev: TaskRowAdapterProps, next: TaskRowAdapte
 		ps.isSelected !== ns.isSelected ||
 		ps.isPending !== ns.isPending ||
 		ps.isFocused !== ns.isFocused ||
-		ps.focusSource !== ns.focusSource
+		ps.focusSource !== ns.focusSource ||
+		ps.suppressFocusIndicator !== ns.suppressFocusIndicator
 	) {
 		return false
 	}
@@ -126,7 +128,7 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 	showSpaceLabel = false,
 	actions,
 }: TaskRowAdapterProps) {
-	const { isSelected, isPending, isFocused, focusSource } = rowState
+	const { isSelected, isPending, isFocused, focusSource, suppressFocusIndicator } = rowState
 	const { onClick: _reactAriaPressClick, ...ariaRowProps } = rowProps ?? {}
 	const actionTargets = contextTasks && contextTasks.length > 0 ? contextTasks : [task]
 	const isDoneLike = task.status === 'done' || task.status === 'canceled'
@@ -275,6 +277,8 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 				className={cn(
 					'text-[13px] leading-5 outline-none',
 					focusSource === 'pointer' && isFocused && 'focus-visible:border-transparent',
+					suppressFocusIndicator &&
+						'border-transparent focus-visible:border-transparent forced-colors:focus-visible:border-[Highlight]',
 					focusSource === 'keyboard' &&
 						!isFocused &&
 						(isSelected ? 'hover:bg-accent-soft' : 'hover:bg-transparent'),

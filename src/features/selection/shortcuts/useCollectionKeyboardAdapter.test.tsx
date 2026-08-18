@@ -7,7 +7,7 @@ import { createCollectionFocusBridge } from '../model/collectionFocusBridge'
 import { useCollectionKeyboardAdapter } from './useCollectionKeyboardAdapter'
 
 describe('useCollectionKeyboardAdapter', () => {
-	it('统一处理 Arrow/Home/End 与 J/K，并集中处理 Shift range', () => {
+	it('统一处理 Arrow/Home/End 与 J/K，并集中处理 Shift 逐项切换', () => {
 		const onReactAriaKeyDown = vi.fn()
 		render(<CollectionProbe onReactAriaKeyDown={onReactAriaKeyDown} />)
 
@@ -29,6 +29,9 @@ describe('useCollectionKeyboardAdapter', () => {
 		fireEvent.keyDown(rowA, { key: 'j' })
 
 		fireEvent.keyDown(rowB, { key: 'j', shiftKey: true })
+		expect(screen.getByTestId('selected-keys')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('focused-key')).toHaveTextContent('task-b')
+		fireEvent.keyDown(rowB, { key: 'j', shiftKey: true })
 		expect(screen.getByTestId('selected-keys')).toHaveTextContent('task-b,task-c')
 		expect(screen.getByTestId('focused-key')).toHaveTextContent('task-c')
 
@@ -44,6 +47,44 @@ describe('useCollectionKeyboardAdapter', () => {
 		expect(fireEvent.keyDown(rowC, { key: 'ArrowUp' })).toBe(false)
 		expect(rowB).toHaveFocus()
 		expect(onReactAriaKeyDown).not.toHaveBeenCalled()
+	})
+
+	it('从已选区中间开始 Shift 时逐行取消，反向时先恢复上一行', () => {
+		render(
+			<CollectionProbe
+				defaultSelectedKeys={['task-a', 'task-b', 'task-c', 'task-d', 'task-e']}
+				eligibleKeys={['task-a', 'task-b', 'task-c', 'task-d', 'task-e']}
+			/>,
+		)
+
+		const rowC = screen.getByTestId('row-task-c')
+		const rowD = screen.getByTestId('row-task-d')
+		fireEvent.pointerMove(rowC)
+
+		fireEvent.keyDown(rowC, { key: 'ArrowDown', shiftKey: true })
+		expect(screen.getByTestId('selected-keys')).toHaveTextContent('task-a,task-b,task-d,task-e')
+		expect(rowC).toHaveFocus()
+
+		fireEvent.keyDown(rowC, { key: 'ArrowDown', shiftKey: true })
+		expect(screen.getByTestId('selected-keys')).toHaveTextContent('task-a,task-b,task-e')
+		expect(rowD).toHaveFocus()
+
+		fireEvent.keyDown(rowD, { key: 'ArrowUp', shiftKey: true })
+		expect(screen.getByTestId('selected-keys')).toHaveTextContent('task-a,task-b,task-d,task-e')
+		expect(rowD).toHaveFocus()
+	})
+
+	it('普通边界导航也会结束上一段 Shift 手势', () => {
+		render(<CollectionProbe eligibleKeys={['task-a']} />)
+		const row = screen.getByTestId('row-task-a')
+		fireEvent.pointerMove(row)
+
+		fireEvent.keyDown(row, { key: 'ArrowDown', shiftKey: true })
+		expect(screen.getByTestId('selected-keys')).toHaveTextContent('task-a')
+
+		fireEvent.keyDown(row, { key: 'ArrowDown' })
+		fireEvent.keyDown(row, { key: 'ArrowDown', shiftKey: true })
+		expect(screen.getByTestId('selected-keys')).toHaveTextContent('none')
 	})
 
 	it('丢弃积压或过密的系统 repeat，新的离散按键仍立即执行', () => {
@@ -171,6 +212,7 @@ describe('useCollectionKeyboardAdapter', () => {
 })
 
 type CollectionProbeProps = {
+	defaultSelectedKeys?: string[]
 	eligibleKeys?: string[]
 	onOpen?: (key: string) => void
 	onPeek?: (key: string) => void
@@ -178,12 +220,14 @@ type CollectionProbeProps = {
 }
 
 function CollectionProbe({
+	defaultSelectedKeys,
 	eligibleKeys = ['task-a', 'task-b', 'task-c'],
 	onOpen,
 	onPeek,
 	onReactAriaKeyDown,
 }: CollectionProbeProps) {
 	const interaction = useCollectionInteraction({
+		defaultSelectedKeys,
 		eligibleKeys,
 		navigableKeys: eligibleKeys,
 	})

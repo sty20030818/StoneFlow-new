@@ -18,7 +18,7 @@ export type CollectionKeyboardInteraction<K extends CollectionKey = CollectionKe
 	focusedKey: K | null
 	focusKey: (key: K | null) => void
 	toggleSelection: (key?: K | null) => void
-	selectRangeTo: (key: K) => void
+	toggleRangeStep: (direction: -1 | 1) => K | null
 	selectEligibleKeys: () => void
 }
 
@@ -71,17 +71,13 @@ export function useCollectionKeyboardAdapter<K extends CollectionKey>({
 				if (shouldDropRepeat(event, repeatRef.current)) return
 				onKeyboardInteraction()
 
-				const nextKey = resolveNavigationKey(
-					interaction.projection.navigableKeys,
-					currentKey,
-					navigation,
-				)
-				if (nextKey === null || nextKey === currentKey) return
-				if (event.shiftKey) {
-					interaction.selectRangeTo(nextKey)
-				} else {
-					interaction.focusKey(nextKey)
-				}
+				const isRangeStep = event.shiftKey && typeof navigation === 'number'
+				const nextKey = isRangeStep
+					? interaction.toggleRangeStep(navigation)
+					: resolveNavigationKey(interaction.projection.navigableKeys, currentKey, navigation)
+				if (nextKey === null) return
+				if (!isRangeStep) interaction.focusKey(nextKey)
+				if (nextKey === currentKey && !isRangeStep) return
 				requestFocus({ type: 'item', key: nextKey })
 				return
 			}

@@ -62,8 +62,8 @@ export function RowShellRoot({
 					: null,
 				interactive
 					? selected
-						? 'focus-visible:border-foreground/55 focus-visible:bg-accent-soft-hover'
-						: 'focus-visible:border-foreground/55 focus-visible:bg-surface-hover'
+						? 'focus-visible:border-focus-subtle focus-visible:bg-accent-soft-hover forced-colors:focus-visible:border-[Highlight]'
+						: 'focus-visible:border-focus-subtle focus-visible:bg-surface-hover forced-colors:focus-visible:border-[Highlight]'
 					: null,
 				focusBorderClass,
 				groupedSelected ? ROW_SHELL_GROUP_POSITION_CLASS[selectionGroupPosition] : null,

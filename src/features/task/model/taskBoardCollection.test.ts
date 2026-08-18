@@ -1,10 +1,8 @@
-import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 import {
 	reconcileCollapsedGroup,
 	reconcileCollectionProjection,
-	useCollectionInteraction,
 	type CollectionState,
 } from '@/features/selection'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
@@ -45,7 +43,6 @@ describe('taskBoardCollection', () => {
 		const state = createState({
 			selectedKeys: new Set(['todo-b', 'doing-c']),
 			focusedKey: 'todo-b',
-			rangeAnchorKey: 'todo-a',
 		})
 
 		const transition = reconcileCollapsedGroup(state, previous.projection, next.projection, {
@@ -60,7 +57,6 @@ describe('taskBoardCollection', () => {
 		expect(transition.state).toEqual({
 			selectedKeys: state.selectedKeys,
 			focusedKey: 'doing-c',
-			rangeAnchorKey: 'todo-a',
 		})
 		expect(transition.focusIntent).toEqual({
 			type: 'group-trigger',
@@ -99,7 +95,6 @@ describe('taskBoardCollection', () => {
 			createState({
 				selectedKeys: new Set(['todo-b']),
 				focusedKey: 'todo-b',
-				rangeAnchorKey: 'todo-b',
 			}),
 			previous.projection,
 			next.projection,
@@ -109,33 +104,6 @@ describe('taskBoardCollection', () => {
 		expect(transition.state.selectedKeys).toEqual(new Set())
 		expect(transition.state.focusedKey).toBe('doing-c')
 		expect(transition.focusIntent).toEqual({ type: 'item', key: 'doing-c' })
-	})
-
-	it('折叠使 anchor 不可导航时，只在下一次范围操作前重置', () => {
-		const expanded = buildCollection(TASKS, ['todo', 'doing'])
-		const collapsed = buildCollection(TASKS, ['doing'])
-		const { result, rerender } = renderHook(
-			({ collection }) =>
-				useCollectionInteraction({
-					eligibleKeys: collection.projection.eligibleKeys,
-					navigableKeys: collection.projection.navigableKeys,
-				}),
-			{ initialProps: { collection: expanded } },
-		)
-
-		act(() => {
-			result.current.focusKey('todo-b')
-		})
-		expect(result.current.rangeAnchorKey).toBe('todo-b')
-
-		rerender({ collection: collapsed })
-		expect(result.current.rangeAnchorKey).toBe('todo-b')
-
-		act(() => {
-			result.current.selectRangeTo('doing-c')
-		})
-		expect(result.current.rangeAnchorKey).toBe('doing-c')
-		expect(result.current.selectedKeys).toEqual(new Set(['doing-c']))
 	})
 
 	it('拒绝重复 flat key，避免 virtual index 静默覆盖', () => {
@@ -172,7 +140,6 @@ function createState(overrides: Partial<CollectionState<string>> = {}): Collecti
 	return {
 		selectedKeys: new Set(),
 		focusedKey: null,
-		rangeAnchorKey: null,
 		...overrides,
 	}
 }

@@ -87,6 +87,7 @@ export type TaskBoardProps = {
 	onDeleteTask?: (task: TaskListItem) => Promise<void>
 	onOpenTask: (taskId: string) => void
 	onPeekTask?: (taskId: string, source: 'keyboard' | 'pointer') => void
+	suppressFocusIndicator?: boolean
 	projectOptions?: Array<{ id: string; name: string; spaceId: string }>
 	spaces?: Array<{ id: string; name: string; iconKey?: string; colorKey?: string }>
 	onSelectPlacement?: (task: TaskListItem, target: TaskPlacementTarget) => void
@@ -139,6 +140,7 @@ export function TaskBoard({
 	onDeleteTask,
 	onOpenTask,
 	onPeekTask,
+	suppressFocusIndicator = false,
 	projectOptions,
 	spaces,
 	onSelectPlacement,
@@ -493,6 +495,7 @@ export function TaskBoard({
 						isFocused: focusedTaskId === task.id,
 						isPending: pendingTaskId === task.id,
 						isSelected: selectedTaskIdSet.has(task.id),
+						suppressFocusIndicator,
 					}}
 					selectionGroupPosition={selectionGroupPosition}
 					showSpaceLabel={showSpaceLabel}
@@ -515,6 +518,7 @@ export function TaskBoard({
 			selectedTaskIdSet,
 			showSpaceLabel,
 			selectedTasks,
+			suppressFocusIndicator,
 			visibleProperties,
 		],
 	)

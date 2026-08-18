@@ -9,7 +9,6 @@ export type CollectionKey = string
 export type CollectionState<K extends CollectionKey = CollectionKey> = Readonly<{
 	selectedKeys: ReadonlySet<K>
 	focusedKey: K | null
-	rangeAnchorKey: K | null
 }>
 
 export type CollectionProjection<K extends CollectionKey = CollectionKey> = Readonly<{
@@ -86,7 +85,6 @@ export function reconcileCollectionProjection<K extends CollectionKey>(
 			: {
 					selectedKeys,
 					focusedKey,
-					rangeAnchorKey: state.rangeAnchorKey,
 				}
 
 	const shouldRestoreDeletedFocus =
@@ -125,7 +123,6 @@ export function reconcileCollapsedGroup<
 		state: {
 			selectedKeys: state.selectedKeys,
 			focusedKey: reentryKey,
-			rangeAnchorKey: state.rangeAnchorKey,
 		},
 		focusIntent: {
 			type: 'group-trigger',
@@ -134,30 +131,6 @@ export function reconcileCollapsedGroup<
 		},
 	}
 }
-
-/** anchor 只在下一次范围操作开始前修复，投影变化本身不提前改写它。 */
-export function resetRangeAnchorBeforeRange<K extends CollectionKey>(
-	state: CollectionState<K>,
-	navigableKeys: readonly K[],
-): CollectionState<K> {
-	const navigableKeySet = new Set(navigableKeys)
-	if (state.rangeAnchorKey !== null && navigableKeySet.has(state.rangeAnchorKey)) {
-		return state
-	}
-
-	const rangeAnchorKey =
-		state.focusedKey !== null && navigableKeySet.has(state.focusedKey) ? state.focusedKey : null
-	if (rangeAnchorKey === state.rangeAnchorKey) {
-		return state
-	}
-
-	return {
-		selectedKeys: state.selectedKeys,
-		focusedKey: state.focusedKey,
-		rangeAnchorKey,
-	}
-}
-
 function assertUniqueKeys<K extends CollectionKey>(keys: readonly K[], name: string) {
 	const seenKeys = new Set<K>()
 	for (const key of keys) {

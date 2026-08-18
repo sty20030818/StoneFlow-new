@@ -5,7 +5,6 @@ import {
 	materializeEligibleSelection,
 	reconcileCollapsedGroup,
 	reconcileCollectionProjection,
-	resetRangeAnchorBeforeRange,
 	type CollectionState,
 } from './collectionState'
 
@@ -42,7 +41,6 @@ describe('collectionState', () => {
 		const state = createState({
 			selectedKeys,
 			focusedKey: 'task-b',
-			rangeAnchorKey: 'task-b',
 		})
 		const previous = createCollectionProjection(
 			['task-a', 'task-b', 'task-c'],
@@ -54,7 +52,6 @@ describe('collectionState', () => {
 
 		expect(transition.state.selectedKeys).toEqual(new Set(['task-a']))
 		expect(transition.state.focusedKey).toBe('task-c')
-		expect(transition.state.rangeAnchorKey).toBe('task-b')
 		expect(transition.focusIntent).toBeNull()
 		expect(selectedKeys).toEqual(new Set(['task-a', 'task-b']))
 	})
@@ -67,7 +64,6 @@ describe('collectionState', () => {
 		const state = createState({
 			selectedKeys: new Set(['task-b']),
 			focusedKey: 'task-b',
-			rangeAnchorKey: 'task-b',
 		})
 
 		const successor = reconcileCollectionProjection(
@@ -77,7 +73,7 @@ describe('collectionState', () => {
 			'delete',
 		)
 		expect(successor).toMatchObject({
-			state: { focusedKey: 'task-c', rangeAnchorKey: 'task-b' },
+			state: { focusedKey: 'task-c' },
 			focusIntent: { type: 'item', key: 'task-c' },
 		})
 
@@ -104,7 +100,6 @@ describe('collectionState', () => {
 		const state = createState({
 			selectedKeys,
 			focusedKey: 'task-b',
-			rangeAnchorKey: 'task-c',
 		})
 		const previous = createCollectionProjection(
 			['task-a', 'task-b', 'task-c', 'task-d'],
@@ -123,7 +118,6 @@ describe('collectionState', () => {
 
 		expect(transition.state.selectedKeys).toBe(selectedKeys)
 		expect(transition.state.focusedKey).toBe('task-d')
-		expect(transition.state.rangeAnchorKey).toBe('task-c')
 		expect(transition.focusIntent).toEqual({
 			type: 'group-trigger',
 			groupKey: 'group-todo',
@@ -158,7 +152,6 @@ describe('collectionState', () => {
 		const state = createState({
 			selectedKeys: new Set(['task-a']),
 			focusedKey: 'task-b',
-			rangeAnchorKey: 'task-a',
 		})
 		const transition = reconcileCollectionProjection(
 			state,
@@ -171,33 +164,12 @@ describe('collectionState', () => {
 		expect(transition.state.selectedKeys).toEqual(new Set(['task-a']))
 		expect(transition.focusIntent).toBeNull()
 	})
-
-	it('只在 range 动作前按 navigableKeys 延迟重置 anchor', () => {
-		const valid = createState({ focusedKey: 'task-b', rangeAnchorKey: 'task-a' })
-		expect(resetRangeAnchorBeforeRange(valid, ['task-a', 'task-b'])).toBe(valid)
-
-		const stale = createState({ focusedKey: 'task-b', rangeAnchorKey: 'task-hidden' })
-		const reset = resetRangeAnchorBeforeRange(stale, ['task-a', 'task-b'])
-		expect(reset).toEqual({
-			selectedKeys: stale.selectedKeys,
-			focusedKey: 'task-b',
-			rangeAnchorKey: 'task-b',
-		})
-		expect(stale.rangeAnchorKey).toBe('task-hidden')
-
-		const unavailable = createState({
-			focusedKey: 'task-hidden',
-			rangeAnchorKey: 'task-hidden',
-		})
-		expect(resetRangeAnchorBeforeRange(unavailable, ['task-a']).rangeAnchorKey).toBeNull()
-	})
 })
 
 function createState(overrides: Partial<CollectionState> = {}): CollectionState {
 	return {
 		selectedKeys: new Set(),
 		focusedKey: null,
-		rangeAnchorKey: null,
 		...overrides,
 	}
 }

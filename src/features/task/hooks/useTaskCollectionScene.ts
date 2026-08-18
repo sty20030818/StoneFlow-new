@@ -28,6 +28,7 @@ import { useEventSubscription } from '@/shared/events'
 
 import type { TaskBoardProps } from '../components/TaskBoard'
 import { useRegisterTaskPreviewSource } from '../detail/model/TaskPreviewProvider'
+import { useTaskPreviewController } from '../detail/model/useTaskPreviewController'
 import { buildTaskCommandSelection } from '../model/buildTaskCommandSelection'
 import { buildTaskBoardCollection } from '../model/taskBoardCollection'
 import { buildTaskBoardFlatItems } from '../model/taskBoardModel'
@@ -120,6 +121,7 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 		[displayResult.selectionOrderIds, flatItems],
 	)
 	const selection = useTaskSelection(collection.projection)
+	const taskPreviewController = useTaskPreviewController()
 	const mutations = useTaskListController()
 	useEventSubscription('task:deleted', (event) => {
 		if (
@@ -167,9 +169,7 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 			'delete',
 		)
 		if (reconciliation.state.focusedKey !== pendingBatch.state.focusedKey) {
-			selection.interaction.focusKey(reconciliation.state.focusedKey, {
-				preserveRangeAnchor: true,
-			})
+			selection.interaction.focusKey(reconciliation.state.focusedKey)
 		}
 		setFocusIntent(reconciliation.focusIntent)
 	}, [collection.projection, selection.interaction])
@@ -218,9 +218,7 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 					{ groupKey: collapsedGroupKey, collapsedKeys },
 				)
 				if (reconciliation.state.focusedKey !== currentState.focusedKey) {
-					selection.interaction.focusKey(reconciliation.state.focusedKey, {
-						preserveRangeAnchor: true,
-					})
+					selection.interaction.focusKey(reconciliation.state.focusedKey)
 				}
 				nextFocusIntent = reconciliation.focusIntent
 			}
@@ -316,6 +314,9 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 			showSpaceLabel: input.showSpaceLabel ?? false,
 			spaces: input.spaces,
 			status: input.source.status,
+			suppressFocusIndicator:
+				taskPreviewController.previewState.open &&
+				taskPreviewController.previewState.lastAnchorReason === 'keyboard',
 			tasks: displayResult.orderedItems,
 			visibleProperties: displayResult.visibleProperties,
 			hasNextPage: input.hasNextPage,
@@ -355,6 +356,8 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 			input.loadedCount,
 			mutations,
 			selection.interaction,
+			taskPreviewController.previewState.lastAnchorReason,
+			taskPreviewController.previewState.open,
 		],
 	)
 

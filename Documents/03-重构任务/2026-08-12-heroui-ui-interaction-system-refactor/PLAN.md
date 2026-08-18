@@ -141,7 +141,7 @@ src/styles/
 | Main hover | `--surface-hover` |
 | 次级文字 | `--muted` |
 | 普通边界 | `--border`、`--separator`，按是否是控件边界区分 |
-| Accent / 键盘焦点 | `--accent`、`--focus` |
+| Accent / 键盘焦点 | `--accent`、`--focus`；TaskBoard 辅助边框由 `--focus-subtle` 复用 `--border-secondary` |
 | 表单状态 | `--field-*` 与 HeroUI invalid/disabled 状态 |
 | Success / Warning / Danger | HeroUI 对应 semantic status |
 | Info | 在 HeroUI theme 中增加唯一的 `info` semantic extension |
@@ -273,7 +273,7 @@ HeroUI Sidebar 与 Sheet 使用各自公开的 controlled-open props；Shell rai
 - active `?task=` 详情跨越断点时只换 Aside/Sheet 容器；任务 ID、URL、draft、autosave controller 与 history 不变，不发起保存驱动的响应式导航。
 - 任务列表 Panel 本身使用一档 CSS container query：`<560px` 进入紧凑行布局，其余宽度使用标准行布局。不建立 JS 宽度 store 或第二档响应式分支。
 
-Aside、Sheet 与完整页复用同一详情领域能力；详情 Header 保留“打开完整页”动作，先 flush 当前草稿再显式导航。显式关闭 Aside/Sheet 时用 trigger entity ID 恢复焦点；虚拟行先滚动挂载，实体消失则回 collection root。Space Peek 保持独立只读层，不复用正式详情 open state。
+Aside、Sheet 与完整页复用同一详情领域能力；详情 Header 保留“打开完整页”动作，先 flush 当前草稿再显式导航。显式关闭 Aside/Sheet 时用 trigger entity ID 恢复焦点；虚拟行先滚动挂载，实体消失则回 collection root。Space Peek 保持独立只读层，不复用正式详情 open state；键盘 Peek 打开期间保留目标行真实焦点，仅在普通配色模式临时隐藏行边框，关闭后恢复，forced-colors 继续显示系统 `Highlight`。
 
 ## 集合、键盘与虚拟化
 
@@ -283,13 +283,12 @@ Aside、Sheet 与完整页复用同一详情领域能力；详情 Header 保留�
 
 - 显式 `selectedKeys: Set<Key>`；永远不使用 `'all'` sentinel。
 - `focusedKey`。
-- range anchor。
 
-StoneFlow 不再并行维护 `keyboardHoveredId`、第二份 focused ID 或第二套 Shift session。pointer 与 keyboard 共用 manager 的唯一 current key，只保留一个不承载实体真相的 interaction source 来决定是否显示键盘边框。Command/Bulk 在执行瞬间从同一个 manager 派生不可变 `SelectionSnapshot`；snapshot 不可反向写 collection。
+StoneFlow 不再并行维护 `keyboardHoveredId`、第二份 focused ID、额外范围起点或 feature 局部 Shift 状态机。pointer 与 keyboard 共用 manager 的唯一 current key；`useCollectionInteraction` 只保留一份 `{ direction, lastToggledKey }` Shift 手势元数据，沿连续区段逐项 toggle，selection 仍以 manager 的显式 Set 为唯一真相。另保留一个不承载实体真相的 interaction source 来决定是否显示键盘边框。Command/Bulk 在执行瞬间从同一个 manager 派生不可变 `SelectionSnapshot`；snapshot 不可反向写 collection。
 
 `Cmd/Ctrl+A` 将按键时“当前查询内已加载且可操作”的稳定 ID 写入显式 Set，后续加载不自动加入。本任务不改 bulk API，不引入 `query + excludedIds` 的后端全选协议。
 
-pointer hover 建立唯一 current，移出 pointer-owned 行时清空行 current 并把键盘入口留在 collection root；后续键盘导航从 hover 行开始并切换为细边框。root 有焦点但没有行 current 时，导航/Shift range 按方向从首项或末项建立起点，Cmd/Ctrl+A 仍物化当前 loaded eligible keys。鼠标主点击打开详情，checkbox 或 X 改变选择。右键不改变 selection：已选行作用于整组 selection，未选行只作用于该行，视觉只保持普通 hover 表面。
+pointer hover 建立唯一 current，移出 pointer-owned 行时清空行 current 并把键盘入口留在 collection root；后续键盘导航从 hover 行开始并切换为细边框。root 有焦点但没有行 current 时，导航/Shift 手势按方向从首项或末项建立起点，Cmd/Ctrl+A 仍物化当前 loaded eligible keys。鼠标主点击打开详情，checkbox 或 X 改变选择。右键不改变 selection：已选行作用于整组 selection，未选行只作用于该行，视觉只保持普通 hover 表面。
 
 Task collection 明确区分三份投影：
 
@@ -297,12 +296,12 @@ Task collection 明确区分三份投影：
 - `navigableKeys`：从 `eligibleKeys + collapsedGroups` 纯派生出的当前可见顺序；keyboard delegate 只在这里移动并跳过隐藏项。
 - `mountedKeys`：TanStack 当前挂载窗口，只用于 ref/focus bridge，不参与选择真相。
 
-logical collection 包含 `eligibleKeys`，因此折叠不会清除选择；折叠包含当前 `focusedKey` 的分组时，焦点转到折叠按钮，下一次进入集合时落到折叠分组之后的首个 navigable item，否则回 collection root；range anchor 若不可导航则在下一次范围操作前重置为当前 focused key。
+logical collection 包含 `eligibleKeys`，因此折叠不会清除选择；折叠包含当前 `focusedKey` 的分组时，焦点转到折叠按钮，下一次进入集合时落到折叠分组之后的首个 navigable item，否则回 collection root。普通 focus/selection，以及删除、筛选、折叠或重排都终止当前 Shift 手势；只有投影既有有序前缀完全不变、仅在尾部追加项目的纯增量加载保留 `{ direction, lastToggledKey }`。
 
 ### 键盘事件所有权
 
-- React Aria 负责标准焦点、选择语义和读屏输出；collection-root 产品适配器集中处理 Arrow、J/K、Home/End、X、Space Peek、Enter 与 Shift range，避免虚拟列表 DOM delegate 在按键 repeat 时积压布局和焦点任务。
-- 适配器只读写同一个 SelectionManager/current key，并丢弃已明显滞后的 repeat；不得创建第二套导航状态。
+- React Aria 负责标准焦点、选择语义和读屏输出；collection-root 产品适配器集中处理 Arrow、J/K、Home/End、X、Space Peek、Enter 与 Shift 逐项 toggle，避免虚拟列表 DOM delegate 在按键 repeat 时积压布局和焦点任务。
+- 适配器只读写同一个 SelectionManager/current key，并丢弃已明显滞后的 repeat；Shift 首键切换 current，同方向继续相邻项，反向先撤销上一项。唯一 `{ direction, lastToggledKey }` 手势元数据集中在 `useCollectionInteraction`，不得在 TaskBoard 再建第二套导航状态。
 - Space 与 React Aria 默认选择冲突只能在这一处解决；禁止每行拦截、再同步第二份状态。
 - input、textarea、contenteditable、编辑器和 composition 优先接收字符键；Command Runtime 不捕获这些事件。
 - Group header 不进入任务行焦点序列；其 collapse Button 自身仍可 Tab 聚焦。
