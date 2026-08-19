@@ -6,7 +6,6 @@ import {
 	taskDateMetadataIcons,
 } from '@/features/metadata-fields'
 import type { AutosaveController } from '@/shared/autosave'
-import { DetailFieldRow } from '@/shared/components/detail'
 import { formatTaskPriorityLabel } from '@/features/task/model/taskPriority'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 
@@ -22,8 +21,9 @@ export function TaskPropertiesSection({ autosave, disabled = false }: TaskProper
 	const priorityDropdownProps = createTaskPriorityMetadataDropdownProps()
 
 	return (
-		<div className='space-y-2' data-task-properties='stack'>
-			<DetailFieldRow className='items-center' label='状态' labelClassName='pt-0'>
+		<div className='flex flex-col gap-2' data-task-properties='stack'>
+			<div className='grid grid-cols-[5rem_minmax(0,1fr)] items-center gap-3'>
+				<span className='text-xs font-medium text-muted'>状态</span>
 				<MetadataFieldDropdown
 					buttonLabel={formatTaskStatusLabel(autosave.draft.status)}
 					disabled={disabled}
@@ -40,9 +40,10 @@ export function TaskPropertiesSection({ autosave, disabled = false }: TaskProper
 						})
 					}
 				/>
-			</DetailFieldRow>
+			</div>
 
-			<DetailFieldRow className='items-center' label='优先级' labelClassName='pt-0'>
+			<div className='grid grid-cols-[5rem_minmax(0,1fr)] items-center gap-3'>
+				<span className='text-xs font-medium text-muted'>优先级</span>
 				<MetadataFieldDropdown
 					buttonLabel={formatTaskPriorityLabel(autosave.draft.priority)}
 					disabled={disabled}
@@ -59,9 +60,10 @@ export function TaskPropertiesSection({ autosave, disabled = false }: TaskProper
 						})
 					}
 				/>
-			</DetailFieldRow>
+			</div>
 
-			<DetailFieldRow className='items-center' label='截止时间' labelClassName='pt-0'>
+			<div className='grid grid-cols-[5rem_minmax(0,1fr)] items-center gap-3'>
+				<span className='text-xs font-medium text-muted'>截止时间</span>
 				<MetadataDateDropdown
 					disabled={disabled}
 					disabledReason='回收站中的任务为只读'
@@ -75,9 +77,10 @@ export function TaskPropertiesSection({ autosave, disabled = false }: TaskProper
 						})
 					}
 				/>
-			</DetailFieldRow>
+			</div>
 
-			<DetailFieldRow className='items-center' label='计划时间' labelClassName='pt-0'>
+			<div className='grid grid-cols-[5rem_minmax(0,1fr)] items-center gap-3'>
+				<span className='text-xs font-medium text-muted'>计划时间</span>
 				<MetadataDateDropdown
 					disabled={disabled}
 					disabledReason='回收站中的任务为只读'
@@ -91,9 +94,10 @@ export function TaskPropertiesSection({ autosave, disabled = false }: TaskProper
 						})
 					}
 				/>
-			</DetailFieldRow>
+			</div>
 
-			<DetailFieldRow className='items-center' label='提醒时间' labelClassName='pt-0'>
+			<div className='grid grid-cols-[5rem_minmax(0,1fr)] items-center gap-3'>
+				<span className='text-xs font-medium text-muted'>提醒时间</span>
 				<MetadataDateDropdown
 					disabled={disabled}
 					disabledReason='回收站中的任务为只读'
@@ -107,7 +111,7 @@ export function TaskPropertiesSection({ autosave, disabled = false }: TaskProper
 						})
 					}
 				/>
-			</DetailFieldRow>
+			</div>
 		</div>
 	)
 }

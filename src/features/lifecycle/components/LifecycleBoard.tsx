@@ -1,317 +1,241 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Alert, Button, Skeleton } from '@heroui/react'
+import { ContextMenu, EmptyState } from '@heroui-pro/react'
+import { ArchiveIcon, ChevronRightIcon, TrashIcon } from 'lucide-react'
+import { useMemo, useState } from 'react'
 
 import {
-	BoardCollapsibleSection,
-	BoardEmptyState,
-	BoardLoadingState,
-	BoardRoot,
-	BoardSectionContextMenu,
-	type BoardSection,
-} from '@/shared/components/board'
-import { useSectionSelection } from '@/features/bulk-action'
-import { entityBoardMutedIconClass } from '@/shared/components/patterns/entity-board'
+	CollectionGridGroupTrigger,
+	CollectionGridRoot,
+	CollectionGridRow,
+	type CollectionGridRootState,
+	type GroupedCollectionInteraction,
+} from '@/features/selection'
+import { BoardSectionContextMenu } from '@/shared/components/board'
 import type { LifecycleEntry, LifecycleMode } from '@/shared/types'
-import { ArchiveIcon, BoxIcon, FolderIcon, TrashIcon } from 'lucide-react'
-import { LifecycleRowAdapter } from './LifecycleRowAdapter'
-import { EntityRowShortcutScope, type EntityRowShortcutState } from '@/features/selection'
-import { StatusNotice } from '@/shared/components/StatusNotice'
 
-export type LifecycleBoardSection = BoardSection<LifecycleEntry>
+import type { LifecycleSection, LifecycleSectionKey } from '../model/buildLifecycleSections'
+import { LifecycleRowAdapter } from './LifecycleRowAdapter'
+
+export type LifecycleBoardSection = LifecycleSection
 
 export type LifecycleBoardProps = {
 	mode: LifecycleMode
 	sections: LifecycleBoardSection[]
+	collection: GroupedCollectionInteraction<string, LifecycleSectionKey>
 	status?: 'idle' | 'loading' | 'ready' | 'error'
-	pendingEntryId: string | null
 	emptyTitle: string
 	emptyDescription: string
 	emptyActionLabel?: string
 	onEmptyAction?: () => void
-	onRestore: (entry: LifecycleEntry) => void
-	onRestoreEntries?: (entries: LifecycleEntry[]) => void
-	onMoveToTrash?: (entry: LifecycleEntry) => void
-	onMoveToTrashEntries?: (entries: LifecycleEntry[]) => void
-	onPermanentlyDelete?: (entry: LifecycleEntry) => void
-	onPermanentlyDeleteEntries?: (entries: LifecycleEntry[]) => void
 	onOpenDetail?: (entry: LifecycleEntry) => void
-	selectedEntryIdSet?: Set<string>
-	focusedEntryId?: string | null
-	onToggleEntrySelection?: (entryId: string) => void
-	onSetFocusedEntry?: (entryId: string | null) => void
-	onMoveEntryFocus?: (
-		delta: number,
-		options?: {
-			preserveAnchor?: boolean
-			selectRange?: boolean
-			startFromId?: string | null
-			resetAnchorToStart?: boolean
-		},
-	) => string | null
-	onClearEntrySelection?: () => void
-	onSelectAllEntries?: (entryIds: string[]) => void
 }
 
-/**
- * 生命周期页专用 board。
- * 差异只保留在 row 内容，section / row 表面全部复用 entity scene 的共享基建。
- */
+/** 生命周期 Board 只组合 HeroUI 与 Stage H collection，所有写动作由行内 command 投影执行。 */
 export function LifecycleBoard({
 	mode,
 	sections,
+	collection,
 	status = 'ready',
-	pendingEntryId,
 	emptyTitle,
 	emptyDescription,
 	emptyActionLabel,
 	onEmptyAction,
-	onRestore,
-	onRestoreEntries,
-	onMoveToTrash,
-	onMoveToTrashEntries,
-	onPermanentlyDelete,
-	onPermanentlyDeleteEntries,
 	onOpenDetail,
-	selectedEntryIdSet,
-	focusedEntryId = null,
-	onToggleEntrySelection,
-	onSetFocusedEntry,
-	onMoveEntryFocus,
-	onClearEntrySelection,
-	onSelectAllEntries,
 }: LifecycleBoardProps) {
-	const visibleSections = sections.filter((section) => section.items.length > 0)
-	const [openSections, setOpenSections] = useState<Set<string>>(
-		() => new Set(visibleSections.map((s) => s.key)),
-	)
-	const hasInitializedFromDataRef = useRef(visibleSections.length > 0)
-
-	useEffect(() => {
-		if (visibleSections.length === 0) {
-			hasInitializedFromDataRef.current = false
-			return
-		}
-
-		if (hasInitializedFromDataRef.current) {
-			return
-		}
-
-		hasInitializedFromDataRef.current = true
-		setOpenSections(new Set(visibleSections.map((section) => section.key)))
-	}, [visibleSections])
-
-	if (status === 'idle' || status === 'loading') {
-		return <BoardLoadingState />
-	}
+	if (status === 'idle' || status === 'loading') return <LifecycleBoardLoading />
 
 	if (status === 'error') {
 		return (
-			<StatusNotice
-				description='归档数据暂时无法读取，请稍后重试。'
-				title='读取归档失败'
-				variant='danger'
-			/>
+			<Alert role='alert' status='danger'>
+				<Alert.Indicator />
+				<Alert.Content>
+					<Alert.Title>{mode === 'archive' ? '读取归档失败' : '读取回收站失败'}</Alert.Title>
+					<Alert.Description>生命周期数据暂时无法读取，请稍后重试。</Alert.Description>
+				</Alert.Content>
+			</Alert>
 		)
 	}
 
-	if (status === 'ready' && visibleSections.length === 0) {
+	const visibleSections = sections.filter((section) => section.items.length > 0)
+	if (visibleSections.length === 0) {
 		return (
-			<BoardEmptyState
-				actionLabel={emptyActionLabel}
-				description={emptyDescription}
-				icon={mode === 'archive' ? <BoxIcon /> : <FolderIcon />}
-				onAction={onEmptyAction}
-				title={emptyTitle}
-			/>
+			<EmptyState className='mx-auto my-auto max-w-md'>
+				<EmptyState.Header>
+					{mode === 'archive' ? <ArchiveIcon /> : <TrashIcon />}
+					<EmptyState.Title>{emptyTitle}</EmptyState.Title>
+					<EmptyState.Description>{emptyDescription}</EmptyState.Description>
+				</EmptyState.Header>
+				{onEmptyAction && emptyActionLabel ? (
+					<EmptyState.Content>
+						<Button onPress={onEmptyAction}>{emptyActionLabel}</Button>
+					</EmptyState.Content>
+				) : null}
+			</EmptyState>
 		)
 	}
 
-	function handleOpenChange(key: string, open: boolean) {
-		setOpenSections((prev) => {
-			const next = new Set(prev)
-			if (open) next.add(key)
-			else next.delete(key)
-			return next
-		})
-	}
-
-	function handleCollapseAll() {
-		setOpenSections(new Set())
-	}
-
-	function handleExpandAll() {
-		setOpenSections(new Set(visibleSections.map((s) => s.key)))
-	}
-
-	// 合并 filter + flatMap 为单次遍历
-	const visibleEntries: LifecycleEntry[] = []
-	for (const section of visibleSections) {
-		if (openSections.has(section.key)) {
-			visibleEntries.push(...section.items)
-		}
-	}
-	const allSelectedEntries = visibleEntries.filter(
-		(entry) => selectedEntryIdSet?.has(entry.id) ?? false,
-	)
+	const selectedEntries = sections
+		.flatMap((section) => section.items)
+		.filter((entry) => collection.interaction.selectedKeys.has(entry.id))
 
 	return (
-		<EntityRowShortcutScope
-			focusedId={focusedEntryId}
-			ids={visibleEntries.map((entry) => entry.id)}
-			onClearSelection={onClearEntrySelection}
-			onMoveFocus={onMoveEntryFocus}
-			onSelectAll={onSelectAllEntries}
-			onSetFocusedId={onSetFocusedEntry}
-			onToggleSelection={onToggleEntrySelection}
-			selectedIdSet={selectedEntryIdSet}
+		<CollectionGridRoot
+			ariaLabel={mode === 'archive' ? '归档列表' : '回收站列表'}
+			className='flex min-h-0 flex-1 flex-col gap-1 outline-none'
+			focusIntent={collection.focusIntent}
+			interaction={collection.interaction}
+			onFocusIntentConsumed={collection.consumeFocusIntent}
 		>
-			{(rowShortcutState) => (
-				<BoardRoot>
+			{(rootState) => (
+				<>
 					{visibleSections.map((section) => (
 						<LifecycleBoardSectionBlock
-							allSelectedEntries={allSelectedEntries}
-							items={section.items}
+							collection={collection}
+							contextEntries={selectedEntries}
 							key={section.key}
-							label={section.label}
 							mode={mode}
-							onCollapseAll={handleCollapseAll}
-							onExpandAll={handleExpandAll}
-							onOpenChange={(open) => handleOpenChange(section.key, open)}
 							onOpenDetail={onOpenDetail}
-							onPermanentlyDelete={onPermanentlyDelete}
-							onPermanentlyDeleteEntries={onPermanentlyDeleteEntries}
-							onRestore={onRestore}
-							onRestoreEntries={onRestoreEntries}
-							onMoveToTrash={onMoveToTrash}
-							onMoveToTrashEntries={onMoveToTrashEntries}
-							onToggleEntrySelection={onToggleEntrySelection}
-							open={openSections.has(section.key)}
-							pendingEntryId={pendingEntryId}
-							rowShortcutState={rowShortcutState}
-							selectedEntryIdSet={selectedEntryIdSet}
+							rootState={rootState}
+							section={section}
 						/>
 					))}
-				</BoardRoot>
+				</>
 			)}
-		</EntityRowShortcutScope>
+		</CollectionGridRoot>
 	)
 }
 
 function LifecycleBoardSectionBlock({
-	allSelectedEntries,
-	label,
-	items,
+	section,
 	mode,
-	open,
-	onOpenChange,
-	pendingEntryId,
-	onRestore,
-	onRestoreEntries,
-	onMoveToTrash,
-	onMoveToTrashEntries,
-	onPermanentlyDelete,
-	onPermanentlyDeleteEntries,
+	collection,
+	rootState,
+	contextEntries,
 	onOpenDetail,
-	selectedEntryIdSet,
-	onToggleEntrySelection,
-	onCollapseAll,
-	onExpandAll,
-	rowShortcutState,
 }: {
-	allSelectedEntries: LifecycleEntry[]
-	label: string
-	items: LifecycleEntry[]
+	section: LifecycleBoardSection
 	mode: LifecycleMode
-	open: boolean
-	onOpenChange: (open: boolean) => void
-	pendingEntryId: string | null
-	onRestore: (entry: LifecycleEntry) => void
-	onRestoreEntries?: (entries: LifecycleEntry[]) => void
-	onMoveToTrash?: (entry: LifecycleEntry) => void
-	onMoveToTrashEntries?: (entries: LifecycleEntry[]) => void
-	onPermanentlyDelete?: (entry: LifecycleEntry) => void
-	onPermanentlyDeleteEntries?: (entries: LifecycleEntry[]) => void
+	collection: LifecycleBoardProps['collection']
+	rootState: CollectionGridRootState<string>
+	contextEntries: LifecycleEntry[]
 	onOpenDetail?: (entry: LifecycleEntry) => void
-	selectedEntryIdSet?: Set<string>
-	onToggleEntrySelection?: (entryId: string) => void
-	onCollapseAll: () => void
-	onExpandAll: () => void
-	rowShortcutState: EntityRowShortcutState
 }) {
-	const sectionIds = useMemo(() => items.map((item) => item.id), [items])
-	const { selectedCount, handleSelectAll, handleDeselectAll } = useSectionSelection({
-		sectionIds,
-		selectedIdSet: selectedEntryIdSet,
-		onToggleSelection: onToggleEntrySelection,
-	})
+	const [contextMenuOpen, setContextMenuOpen] = useState(false)
+	const sectionIds = useMemo(() => section.items.map((entry) => entry.id), [section.items])
+	const open = collection.openGroupKeys.has(section.key)
+	const selectedCount = sectionIds.filter((id) =>
+		collection.interaction.selectedKeys.has(id),
+	).length
+	const handleSelectAll = () =>
+		collection.interaction.replaceSelection([...collection.interaction.selectedKeys, ...sectionIds])
+	const handleDeselectAll = () =>
+		collection.interaction.replaceSelection(
+			[...collection.interaction.selectedKeys].filter((id) => !sectionIds.includes(id)),
+		)
 
 	return (
-		<BoardCollapsibleSection
-			contextMenuContent={
-				onToggleEntrySelection ? (
-					<BoardSectionContextMenu
-						onCollapse={() => onOpenChange(false)}
-						onCollapseAll={onCollapseAll}
-						onDeselectAll={handleDeselectAll}
-						onExpand={() => onOpenChange(true)}
-						onExpandAll={onExpandAll}
-						onSelectAll={handleSelectAll}
-						open={open}
-						selectedCount={selectedCount}
-					/>
-				) : undefined
-			}
-			count={items.length}
-			getItemId={(_child, index) => items[index]?.id}
-			icon={<LifecycleModeIcon mode={mode} />}
-			label={label}
-			onOpenChange={onOpenChange}
-			open={open}
-			selectedCount={selectedCount}
-			selectedIdSet={selectedEntryIdSet}
-		>
-			{items.map((entry) => (
-				<LifecycleRowAdapter
-					actions={{
-						onOpenDetail,
-						onPermanentlyDelete,
-						onPermanentlyDeleteEntries,
-						onRestore,
-						onRestoreEntries,
-						onMoveToTrash,
-						onMoveToTrashEntries,
-						onToggleSelected: onToggleEntrySelection
-							? () => onToggleEntrySelection(entry.id)
-							: () => undefined,
-					}}
-					contextEntries={
-						(selectedEntryIdSet?.has(entry.id) ?? false) && allSelectedEntries.length > 1
-							? allSelectedEntries
-							: undefined
-					}
-					key={entry.id}
-					mode={mode}
-					entry={entry}
-					rowState={{
-						isPending: pendingEntryId === entry.id,
-						isSelected: selectedEntryIdSet?.has(entry.id) ?? false,
-						isHovered: rowShortcutState.hoveredId === entry.id,
-						hoverSource:
-							rowShortcutState.hoveredId === entry.id ? rowShortcutState.hoverSource : null,
-					}}
-					rowShortcutHandlers={{
-						onHover: rowShortcutState.onRowHover,
-					}}
+		<section className='flex flex-col gap-1 pb-1 last:pb-2' data-lifecycle-section={section.key}>
+			<ContextMenu open={contextMenuOpen} onOpenChange={setContextMenuOpen}>
+				<ContextMenu.Trigger
+					className='sticky top-0 z-10 flex min-h-9 items-center gap-2 rounded-lg bg-background px-1'
+					onDoubleClick={() => collection.setGroupOpen(section.key, !open)}
+				>
+					<CollectionGridGroupTrigger groupKey={section.key} rootState={rootState}>
+						{({ triggerRef, onBlur }) => (
+							<Button
+								ref={triggerRef}
+								aria-label={`${open ? '折叠' : '展开'} ${section.label}`}
+								isIconOnly
+								size='sm'
+								variant='ghost'
+								onBlur={onBlur}
+								onPress={() => collection.setGroupOpen(section.key, !open)}
+							>
+								<ChevronRightIcon className={open ? 'size-3.5 rotate-90' : 'size-3.5'} />
+							</Button>
+						)}
+					</CollectionGridGroupTrigger>
+					<LifecycleModeIcon mode={mode} />
+					<span className='min-w-0 truncate text-sm font-semibold'>{section.label}</span>
+					<span className='rounded-full bg-surface-secondary px-2 py-0.5 text-xs text-muted tabular-nums'>
+						{section.items.length}
+					</span>
+					{selectedCount > 0 ? (
+						<span className='rounded-full bg-accent-soft px-2 py-0.5 text-xs text-accent tabular-nums'>
+							已选 {selectedCount}
+						</span>
+					) : null}
+				</ContextMenu.Trigger>
+				<BoardSectionContextMenu
+					onCollapse={() => collection.setGroupOpen(section.key, false)}
+					onCollapseAll={collection.collapseAll}
+					onDeselectAll={handleDeselectAll}
+					onExpand={() => collection.setGroupOpen(section.key, true)}
+					onExpandAll={collection.expandAll}
+					onSelectAll={handleSelectAll}
+					open={open}
+					selectedCount={selectedCount}
 				/>
+			</ContextMenu>
+
+			{open ? (
+				<div className='flex flex-col gap-1' role='presentation'>
+					{section.items.map((entry) => {
+						const isSelected = collection.interaction.selectedKeys.has(entry.id)
+						return (
+							<CollectionGridRow
+								interaction={collection.interaction}
+								itemKey={entry.id}
+								key={entry.id}
+								rootState={rootState}
+							>
+								{({ rowProps, gridCellProps, rowRef, onContextMenuOpenChange }) => (
+									<LifecycleRowAdapter
+										actions={{
+											onOpenDetail,
+											onToggleSelected: () => collection.interaction.toggleSelection(entry.id),
+										}}
+										contextEntries={
+											isSelected && contextEntries.length > 1 ? contextEntries : undefined
+										}
+										entry={entry}
+										gridCellProps={gridCellProps}
+										mode={mode}
+										onContextMenuOpenChange={onContextMenuOpenChange}
+										rowProps={rowProps}
+										rowRef={rowRef}
+										rowState={{
+											focusSource: rootState.focusedKey === entry.id ? rootState.focusSource : null,
+											isFocused: rootState.focusedKey === entry.id,
+											isSelected,
+										}}
+									/>
+								)}
+							</CollectionGridRow>
+						)
+					})}
+				</div>
+			) : null}
+		</section>
+	)
+}
+
+function LifecycleBoardLoading() {
+	return (
+		<div aria-busy='true' aria-label='正在读取生命周期数据' className='flex flex-col gap-2'>
+			{Array.from({ length: 2 }, (_, sectionIndex) => (
+				<div className='flex flex-col gap-1' key={sectionIndex}>
+					<Skeleton animationType='none' className='h-9 w-40 rounded-lg' />
+					{Array.from({ length: 3 }, (_, rowIndex) => (
+						<Skeleton animationType='none' className='h-11 w-full rounded-lg' key={rowIndex} />
+					))}
+				</div>
 			))}
-		</BoardCollapsibleSection>
+		</div>
 	)
 }
 
 function LifecycleModeIcon({ mode }: { mode: LifecycleMode }) {
 	const Icon = mode === 'archive' ? ArchiveIcon : TrashIcon
-	return (
-		<span className={entityBoardMutedIconClass}>
-			<Icon className='size-3.5' />
-		</span>
-	)
+	return <Icon className='size-4 shrink-0 text-muted' />
 }

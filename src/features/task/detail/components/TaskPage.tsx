@@ -1,19 +1,14 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useMemo } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 
 import { MainCard } from '@/shared/components/main-card/MainCardLayout'
 import { openSection } from '@/app/navigation'
-import { useProjectOptions } from '@/features/project'
-import { useSpaces } from '@/features/space'
-import type { Scope, Space, TaskDetail } from '@/shared/types'
-import type { ProjectOption } from '@/features/project'
+import type { Scope, TaskDetail } from '@/shared/types'
 import { DetailPageGrid, DetailPageMain, DetailPageSidebar } from '@/shared/components/detail'
 import { AppBreadcrumb } from '@/shared/components/AppBreadcrumb'
 import { resolveBreadcrumb } from '@/app/navigation'
 
-import { createTaskDetailDraft } from '../model/taskDetailDraft'
-import { useTaskAutosaveAdapter } from '../model/useTaskAutosaveAdapter'
-import { useSuspenseTaskDetailQuery } from '@/features/task/hooks/task.queries'
+import { type TaskDetailViewModel, useTaskDetailViewModel } from '../model/useTaskDetailViewModel'
 import { TaskPageMain as TaskPageMainContent } from './TaskPageMain'
 import { TaskPageSidebar as TaskPageSidebarContent } from './TaskPageSidebar'
 import { TaskPageState } from './TaskPageState'
@@ -25,52 +20,49 @@ type TaskPageProps = {
 
 export function TaskPage({ taskId, scope }: TaskPageProps) {
 	const navigate = useNavigate({ from: '/' })
-	const projects = useProjectOptions(scope)
-	const { spaces } = useSpaces()
-	const { data: task } = useSuspenseTaskDetailQuery(taskId)
-	const isReadOnly = Boolean(task.deletedAt)
+	const returnToTaskList = () => {
+		void navigate({
+			to: openSection(scope, 'tasks', scope.type === 'space' ? scope.spaceId : null) as never,
+		})
+	}
+	const viewModel = useTaskDetailViewModel({ taskId, onClose: returnToTaskList })
 
-	if (!task) {
+	if (viewModel.status === 'loading') {
+		return <TaskPageState description='正在读取任务数据。' title='加载任务详情' />
+	}
+
+	if (viewModel.status === 'error') {
+		return (
+			<TaskPageState
+				actionLabel='返回任务列表'
+				description={viewModel.error ?? '任务详情加载失败，请稍后重试。'}
+				onAction={returnToTaskList}
+				title='无法加载任务'
+			/>
+		)
+	}
+
+	if (!viewModel.task) {
 		return (
 			<TaskPageState
 				actionLabel='返回任务列表'
 				description='这个任务不存在，或者当前已经不可见。'
-				onAction={() =>
-					void navigate({
-						to: openSection(scope, 'tasks', scope.type === 'space' ? scope.spaceId : null) as never,
-					})
-				}
+				onAction={returnToTaskList}
 				title='任务不存在'
 			/>
 		)
 	}
 
-	return <TaskPageLoaded isReadOnly={isReadOnly} projects={projects} spaces={spaces} task={task} />
+	return <TaskPageLoaded task={viewModel.task} viewModel={viewModel} />
 }
 
 type TaskPageLoadedProps = {
 	task: TaskDetail
-	projects: ProjectOption[]
-	spaces: Space[]
-	isReadOnly: boolean
+	viewModel: TaskDetailViewModel
 }
 
-function TaskPageLoaded({ task, projects, spaces, isReadOnly }: TaskPageLoadedProps) {
-	const autosaveBase = useMemo(() => createTaskDetailDraft(task), [task])
-	const autosave = useTaskAutosaveAdapter({
-		base: autosaveBase,
-		disabled: isReadOnly,
-	})
-	const flushRef = useRef(autosave.flushNow)
-	useEffect(() => {
-		flushRef.current = autosave.flushNow
-	}, [autosave.flushNow])
-	useEffect(
-		() => () => {
-			void flushRef.current()
-		},
-		[],
-	)
+function TaskPageLoaded({ task, viewModel }: TaskPageLoadedProps) {
+	const isReadOnly = Boolean(task.deletedAt)
 	const breadcrumbItems = useMemo(
 		() =>
 			resolveBreadcrumb({
@@ -119,7 +111,7 @@ function TaskPageLoaded({ task, projects, spaces, isReadOnly }: TaskPageLoadedPr
 					<DetailPageGrid>
 						<DetailPageMain>
 							<TaskPageMainContent
-								autosave={autosave}
+								autosave={viewModel.autosave}
 								isReadOnly={isReadOnly}
 								spaceId={task.spaceId}
 								taskId={task.id}
@@ -127,10 +119,10 @@ function TaskPageLoaded({ task, projects, spaces, isReadOnly }: TaskPageLoadedPr
 						</DetailPageMain>
 						<DetailPageSidebar>
 							<TaskPageSidebarContent
-								autosave={autosave}
+								autosave={viewModel.autosave}
 								isReadOnly={isReadOnly}
-								projects={projects}
-								spaces={spaces}
+								projects={viewModel.projects}
+								spaces={viewModel.spaces}
 								task={task}
 							/>
 						</DetailPageSidebar>

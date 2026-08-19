@@ -1,5 +1,7 @@
 'use client'
 
+import { ToggleButton } from '@heroui/react'
+
 import { cn } from '@/shared/lib/utils'
 
 type PropertyToggleItem = {
@@ -26,22 +28,17 @@ export function PropertyToggleGrid({ items, className }: PropertyToggleGridProps
 			role='group'
 		>
 			{items.map((item) => (
-				<button
-					aria-pressed={item.checked}
-					className={cn(
-						'h-7 rounded-full px-2.5 text-[12px] font-medium',
-						item.checked
-							? 'bg-legacy-muted text-legacy-foreground'
-							: 'border border-legacy-border/80 bg-transparent text-sf-text-secondary hover:bg-legacy-muted/50',
-						item.disabled && 'pointer-events-none opacity-50',
-					)}
-					disabled={item.disabled}
+				<ToggleButton
+					className='h-7 rounded-full border border-border bg-transparent px-2.5 text-[12px] font-medium text-muted data-[selected=true]:border-transparent data-[selected=true]:bg-default data-[selected=true]:text-foreground'
+					isDisabled={item.disabled}
+					isSelected={item.checked}
 					key={item.key}
-					onClick={item.onToggle}
-					type='button'
+					onChange={item.onToggle}
+					size='sm'
+					variant='ghost'
 				>
 					{item.label}
-				</button>
+				</ToggleButton>
 			))}
 		</div>
 	)

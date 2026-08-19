@@ -1,4 +1,6 @@
 import { useState, type ReactNode } from 'react'
+import { Dropdown } from '@heroui/react'
+import { Header } from 'react-aria-components'
 import { FolderIcon, TargetIcon } from 'lucide-react'
 
 import { CommandShortcut } from '@/features/command'
@@ -11,12 +13,6 @@ import {
 	type TaskPlacementGroup,
 	type TaskPlacementTarget,
 } from '@/features/metadata-fields/core'
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuLabel,
-	DropdownMenuTrigger,
-} from '@/shared/components/base/dropdown-menu'
 import { ShortcutDigitSelectLayer } from '@/shared/components/shortcut-menu'
 import { ActionTooltip, DisabledActionTooltip } from '@/shared/components/tooltip'
 
@@ -70,7 +66,6 @@ function GroupedPlacementDropdown({
 	onChange,
 }: MetadataPlacementDropdownProps) {
 	const [menuOpen, setMenuOpen] = useState(false)
-	const [tooltipOpen, setTooltipOpen] = useState(false)
 	const currentItem = findTaskPlacementGroupItem(groups, value)
 	const selectedValues = values ?? [value]
 	const flatItems = groups.flatMap((group) => group.items)
@@ -88,32 +83,22 @@ function GroupedPlacementDropdown({
 	}
 
 	const trigger = (
-		<DropdownMenuTrigger asChild>
-			<MetadataFieldButton
-				ariaLabel={ariaLabel ?? label}
-				appearance={buttonAppearance}
-				compact={compact}
-				disabled={disabled}
-				icon={buttonIcon ?? getGroupedPlacementIcon(currentItem)}
-				label={buttonLabel ?? currentItem.title}
-				stopPropagation={stopPropagation}
-				suppressOverflowTooltip={menuOpen}
-			/>
-		</DropdownMenuTrigger>
+		<MetadataFieldButton
+			ariaLabel={ariaLabel ?? label}
+			appearance={buttonAppearance}
+			compact={compact}
+			disabled={disabled}
+			icon={buttonIcon ?? getGroupedPlacementIcon(currentItem)}
+			label={buttonLabel ?? currentItem.title}
+			stopPropagation={stopPropagation}
+			suppressOverflowTooltip={menuOpen}
+		/>
 	)
 	const shouldShowTooltip = buttonAppearance === 'row-icon' || shortcut !== undefined
 	const triggerLabel = ariaLabel ?? label
 
 	return (
-		<DropdownMenu
-			onOpenChange={(open) => {
-				setMenuOpen(open)
-				if (open) {
-					setTooltipOpen(false)
-				}
-			}}
-			open={menuOpen}
-		>
+		<Dropdown isOpen={menuOpen} onOpenChange={setMenuOpen}>
 			{disabled && disabledReason ? (
 				<DisabledActionTooltip
 					label={triggerLabel}
@@ -128,9 +113,7 @@ function GroupedPlacementDropdown({
 				</DisabledActionTooltip>
 			) : shouldShowTooltip && !disabled ? (
 				<ActionTooltip
-					isOpen={tooltipOpen && !menuOpen}
 					label={triggerLabel}
-					onOpenChange={(open) => setTooltipOpen(open && !menuOpen)}
 					shortcut={
 						shortcut ? (
 							<CommandShortcut commandId={shortcut.commandId} scope={shortcut.scope} />
@@ -142,42 +125,54 @@ function GroupedPlacementDropdown({
 			) : (
 				trigger
 			)}
-			<DropdownMenuContent
-				align={menuAlign}
+			<Dropdown.Popover
 				data-drawer-owned-overlay={drawerOwnedOverlay ? 'true' : undefined}
-				sideOffset={6}
+				offset={6}
+				placement={resolveMenuPlacement(menuAlign)}
 			>
-				<ShortcutDigitSelectLayer items={shortcutItems} onSelect={(item) => onChange(item.value)} />
-				<DropdownMenuLabel className='px-2 py-1.5 text-[12px] normal-case tracking-normal'>
-					<span className='flex items-center gap-2'>
-						<span className='min-w-0 flex-1 truncate'>{menuLabel}</span>
-						{shortcut ? (
-							<CommandShortcut commandId={shortcut.commandId} scope={shortcut.scope} />
-						) : null}
-					</span>
-				</DropdownMenuLabel>
-				<MetadataPlacementGroupList
-					getDigit={(item) => {
-						if (!item?.showsDigit) {
-							return ''
-						}
-						return item.digit ?? ''
+				<ShortcutDigitSelectLayer
+					items={shortcutItems}
+					onSelect={(item) => {
+						onChange(item.value)
+						setMenuOpen(false)
 					}}
-					getIcon={getGroupedPlacementIcon}
-					getIndicator={(target) =>
-						getMetadataFieldIndicator({
-							optionValue: target,
-							selectedValues,
-							isValueEqual: isTaskPlacementTargetEqual,
-						})
-					}
-					groups={groups}
-					stopPropagation={stopPropagation}
-					onChange={onChange}
 				/>
-			</DropdownMenuContent>
-		</DropdownMenu>
+				<Dropdown.Menu aria-label={menuLabel ?? label}>
+					<Dropdown.Section>
+						<Header className='flex items-center gap-2 px-2 py-1.5 text-[12px] font-medium text-muted'>
+							<span className='min-w-0 flex-1 truncate'>{menuLabel ?? label}</span>
+							{shortcut ? (
+								<CommandShortcut commandId={shortcut.commandId} scope={shortcut.scope} />
+							) : null}
+						</Header>
+					</Dropdown.Section>
+					<MetadataPlacementGroupList
+						getDigit={(item) => {
+							if (!item?.showsDigit) {
+								return ''
+							}
+							return item.digit ?? ''
+						}}
+						getIcon={getGroupedPlacementIcon}
+						getIndicator={(target) =>
+							getMetadataFieldIndicator({
+								optionValue: target,
+								selectedValues,
+								isValueEqual: isTaskPlacementTargetEqual,
+							})
+						}
+						groups={groups}
+						stopPropagation={stopPropagation}
+						onChange={onChange}
+					/>
+				</Dropdown.Menu>
+			</Dropdown.Popover>
+		</Dropdown>
 	)
+}
+
+function resolveMenuPlacement(align: 'start' | 'center' | 'end') {
+	return align === 'center' ? 'bottom' : (`bottom ${align}` as const)
 }
 
 function getGroupedPlacementIcon(

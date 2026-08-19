@@ -51,7 +51,7 @@ import { buildTaskBoardCollection } from '@/features/task/model/taskBoardCollect
 import { TaskStatusIndicator } from '@/features/task/model/indicators/TaskStatusIndicator'
 import { useTaskContextMenuBulkActions } from '@/features/task/components/useTaskContextMenuBulkActions'
 import { useTaskRowCommandShortcuts } from '@/features/task/shortcuts/useTaskRowCommandShortcuts'
-import { useCommandRuntimeContext, type CommandId } from '@/features/command'
+import { COMMAND_IDS, useCommandRuntimeContext, type CommandId } from '@/features/command'
 import { buildTaskCommandContext } from '@/features/task/commands/buildTaskCommandContext'
 import type { TaskPlacementTarget } from '@/features/metadata-fields'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
@@ -366,7 +366,8 @@ export function TaskBoard({
 		resolveRowKey: focusBridge.getItemKey,
 		requestFocus: focusBridge.requestFocus,
 		onKeyboardInteraction: markKeyboardInteraction,
-		onExecuteCommand: executeCollectionCommand,
+		onPreview: (taskId) => executeCollectionCommand(COMMAND_IDS.taskPeek, taskId),
+		onActivate: (taskId) => executeCollectionCommand(COMMAND_IDS.taskOpenDetail, taskId),
 	})
 	useTaskRowCommandShortcuts({
 		tasks,
@@ -600,7 +601,7 @@ export function TaskBoard({
 	)
 
 	return (
-		// 不用 BoardRoot 的 flex-1：虚拟列表必须由内容定高驱动 scrollHeight
+		// 虚拟列表必须由内容定高驱动 scrollHeight。
 		<div
 			{...gridProps}
 			ref={gridRef}

@@ -12,7 +12,7 @@ type TaskLinkListProps = {
 
 export function TaskLinkList({ links, onOpen, onEdit, onRemove }: TaskLinkListProps) {
 	return (
-		<div className='space-y-2'>
+		<div className='flex flex-col gap-2'>
 			{links.map((link) => (
 				<TaskLinkRow
 					key={link.id}

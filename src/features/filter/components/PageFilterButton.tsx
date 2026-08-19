@@ -3,10 +3,10 @@
  * 必须位于 ListFilterUiProvider 内。
  */
 import { useEffect, useState } from 'react'
+import { Button } from '@heroui/react'
 import { ListFilterIcon } from 'lucide-react'
 
 import { COMMAND_IDS, CommandActionTooltip } from '@/features/command'
-import { Button } from '@/shared/components/base/button'
 
 import { subscribeFilterUiEvent } from '../model/filterUiEvents'
 import { useListFilterUi } from '../model/ListFilterUiContext'
@@ -49,11 +49,12 @@ export function PageFilterButton({ className }: PageFilterButtonProps) {
 			<Button
 				aria-label={label}
 				className={className}
-				size='icon-sm'
+				isIconOnly
+				size='sm'
 				type='button'
 				variant='outline'
 			>
-				<ListFilterIcon />
+				<ListFilterIcon className='size-4' />
 			</Button>
 		</CommandActionTooltip>
 	)

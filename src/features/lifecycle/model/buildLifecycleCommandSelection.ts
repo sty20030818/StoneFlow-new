@@ -2,9 +2,10 @@ import type { CommandSelectionContext } from '@/features/command'
 import type { LifecycleEntry, LifecycleMode } from '@/shared/types'
 
 type BuildLifecycleCommandSelectionInput = {
-	selectedIds: string[]
-	entries: LifecycleEntry[]
+	selectedIds: readonly string[]
+	entries: readonly LifecycleEntry[]
 	mode: LifecycleMode
+	focusedEntryId?: string | null
 	clearSelection?: () => void
 }
 
@@ -13,6 +14,7 @@ export function buildLifecycleCommandSelection({
 	selectedIds,
 	entries,
 	mode,
+	focusedEntryId = null,
 	clearSelection,
 }: BuildLifecycleCommandSelectionInput): CommandSelectionContext {
 	const entryById = new Map(entries.map((entry) => [entry.id, entry]))
@@ -35,12 +37,15 @@ export function buildLifecycleCommandSelection({
 	})
 	const ids = entities.map((entity) => entity.id)
 	const count = ids.length
+	const focusedEntry = focusedEntryId ? (entryById.get(focusedEntryId) ?? null) : null
 
 	return {
 		type: count > 0 ? 'lifecycle' : undefined,
 		ids,
 		entities,
 		primaryEntity: entities[0],
+		focusedId: focusedEntry?.id,
+		focusedType: focusedEntry ? 'lifecycle' : undefined,
 		clearSelection,
 		source: count > 0 ? 'lifecycle-list' : 'none',
 		hasSelection: count > 0,

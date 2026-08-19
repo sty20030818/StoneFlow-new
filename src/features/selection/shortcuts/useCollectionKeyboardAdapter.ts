@@ -5,7 +5,7 @@ import {
 	type KeyboardEventHandler,
 } from 'react'
 
-import { COMMAND_IDS, shouldIgnoreKeybindingEvent, type CommandId } from '@/features/command'
+import { shouldIgnoreKeybindingEvent } from '@/features/command'
 
 import type {
 	CollectionEntryTarget,
@@ -27,7 +27,8 @@ export type UseCollectionKeyboardAdapterOptions<K extends CollectionKey = Collec
 	/** 只解析已注册 row 本体；不得沿祖先向上查找 row。 */
 	resolveRowKey: (target: HTMLElement) => K | null
 	requestFocus: (intent: CollectionEntryTarget<K>) => void
-	onExecuteCommand: (commandId: CommandId, key: K) => void
+	onPreview?: (key: K) => void
+	onActivate?: (key: K) => void
 	onKeyboardInteraction: () => void
 }
 
@@ -39,7 +40,8 @@ export function useCollectionKeyboardAdapter<K extends CollectionKey>({
 	interaction,
 	resolveRowKey,
 	requestFocus,
-	onExecuteCommand,
+	onPreview,
+	onActivate,
 	onKeyboardInteraction,
 }: UseCollectionKeyboardAdapterOptions<K>): {
 	onKeyDownCapture: KeyboardEventHandler<HTMLElement>
@@ -93,22 +95,22 @@ export function useCollectionKeyboardAdapter<K extends CollectionKey>({
 				return
 			}
 
-			if (isSpaceKey(event.key)) {
+			if (isSpaceKey(event.key) && onPreview) {
 				consumeEvent(event)
 				onKeyboardInteraction()
 				requestFocus({ type: 'item', key: currentKey })
-				onExecuteCommand(COMMAND_IDS.taskPeek, currentKey)
+				onPreview(currentKey)
 				return
 			}
 
-			if (event.key === 'Enter') {
+			if (event.key === 'Enter' && onActivate) {
 				consumeEvent(event)
 				onKeyboardInteraction()
 				requestFocus({ type: 'item', key: currentKey })
-				onExecuteCommand(COMMAND_IDS.taskOpenDetail, currentKey)
+				onActivate(currentKey)
 			}
 		},
-		[interaction, onExecuteCommand, onKeyboardInteraction, requestFocus, resolveRowKey],
+		[interaction, onActivate, onKeyboardInteraction, onPreview, requestFocus, resolveRowKey],
 	)
 
 	return { onKeyDownCapture }

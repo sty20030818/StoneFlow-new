@@ -22,9 +22,13 @@ const taskDetailQueryState = vi.hoisted(() => ({
 	data: createTaskDetail(),
 }))
 
-vi.mock('@/features/task/hooks/task.queries', () => ({
-	useSuspenseTaskDetailQuery: () => ({
-		data: taskDetailQueryState.data,
+vi.mock('../model/useTaskDetailController', () => ({
+	useTaskDetailController: () => ({
+		task: taskDetailQueryState.data,
+		status: 'ready' as const,
+		error: null,
+		archiveOrRestore: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+		moveToTrash: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
 	}),
 }))
 
@@ -111,7 +115,9 @@ describe('TaskPage', () => {
 		expect(screen.getByText('真实任务标题')).toBeInTheDocument()
 		expect(screen.getByRole('link', { name: '独立事项' })).toBeInTheDocument()
 		expect(screen.getByText('Links for task-1')).toBeInTheDocument()
-		expect(mockAutosave.value.reset).not.toHaveBeenCalled()
+		expect(mockAutosave.value.reset).toHaveBeenCalledWith(
+			expect.objectContaining({ id: 'task-1', title: '真实任务标题' }),
+		)
 
 		await waitFor(() => {
 			expect(getEntityActivitiesMock).toHaveBeenCalledWith({

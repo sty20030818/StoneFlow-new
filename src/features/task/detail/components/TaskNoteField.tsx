@@ -1,5 +1,6 @@
+import { TextArea, TextField } from '@heroui/react'
+
 import type { AutosaveController } from '@/shared/autosave'
-import { Textarea } from '@/shared/components/base/textarea'
 
 import type { TaskDetailDraft } from '../model/taskDetailDraft'
 
@@ -10,15 +11,19 @@ type TaskNoteFieldProps = {
 
 export function TaskNoteField({ autosave, disabled = false }: TaskNoteFieldProps) {
 	return (
-		<Textarea
+		<TextField
 			aria-label='任务备注'
-			className='min-h-40 resize-none border-0 bg-transparent px-0 text-[13px] shadow-none focus-visible:ring-0'
-			disabled={disabled}
-			onChange={(event) =>
-				autosave.setField('note', event.currentTarget.value, { saveMode: 'debounced' })
-			}
-			placeholder='添加备注...'
+			fullWidth
+			isDisabled={disabled}
 			value={autosave.draft.note}
-		/>
+			onChange={(value) => autosave.setField('note', value, { saveMode: 'debounced' })}
+		>
+			<TextArea
+				aria-label='任务备注'
+				className='min-h-40 resize-none text-[13px]'
+				placeholder='添加备注...'
+				variant='secondary'
+			/>
+		</TextField>
 	)
 }

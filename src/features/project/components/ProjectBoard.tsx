@@ -1,31 +1,26 @@
+import { Alert, Button, Skeleton } from '@heroui/react'
+import { ContextMenu, EmptyState } from '@heroui-pro/react'
+import { ArchiveIcon, CheckIcon, ChevronRightIcon, FolderIcon, PlayIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import {
-	BoardCollapsibleSection,
-	BoardEmptyState,
-	BoardLoadingState,
-	BoardRoot,
-	BoardSectionContextMenu,
-	type BoardSection,
-} from '@/shared/components/board'
-import { useSectionSelection } from '@/features/bulk-action'
+	CollectionGridGroupTrigger,
+	CollectionGridRoot,
+	CollectionGridRow,
+	type CollectionGridRootState,
+	type GroupedCollectionInteraction,
+} from '@/features/selection'
+import { BoardSectionContextMenu } from '@/shared/components/board'
 import type { ProjectOverviewItem } from '@/shared/types'
-import { ArchiveIcon, FolderIcon, PlayIcon, CheckIcon } from 'lucide-react'
-import { entityBoardMutedIconClass } from '@/shared/components/patterns/entity-board'
-import { StatusNotice } from '@/shared/components/StatusNotice'
 
+import type { ProjectSection, ProjectSectionKey } from '../model/buildProjectSections'
 import { ProjectRowAdapter } from './ProjectRowAdapter'
-import { EntityRowShortcutScope, type EntityRowShortcutState } from '@/features/selection'
-
-type ProjectBoardSectionKey = 'active' | 'completed' | 'archived'
 
 export type ProjectBoardProps = {
-	variant: 'overview'
-	items: ProjectOverviewItem[]
+	sections: ProjectSection[]
+	collection: GroupedCollectionInteraction<string, ProjectSectionKey>
 	status: 'idle' | 'loading' | 'ready' | 'error'
 	busyProjectId: string | null
-	selectedProjectIds?: Set<string>
-	focusedProjectId?: string | null
 	emptyTitle: string
 	emptyDescription: string
 	emptyActionLabel?: string
@@ -33,278 +28,236 @@ export type ProjectBoardProps = {
 	onOpen: (projectId: string) => void
 	onComplete: (projectId: string) => void
 	onReopen: (projectId: string) => void
-	onArchive: (projectId: string) => void
-	onDelete: (projectId: string) => void
-	onToggleProjectSelection?: (projectId: string) => void
-	onSetFocusedProject?: (projectId: string | null) => void
-	onMoveProjectFocus?: (
-		delta: number,
-		options?: {
-			preserveAnchor?: boolean
-			selectRange?: boolean
-			startFromId?: string | null
-			resetAnchorToStart?: boolean
-		},
-	) => string | null
-	onClearProjectSelection?: () => void
-	onSelectAllProjects?: (projectIds: string[]) => void
 }
 
-const PROJECT_SECTION_ORDER: ProjectBoardSectionKey[] = ['active', 'completed', 'archived']
-
-/**
- * 项目实体侧统一 board。
- * 项目总览映射到共享 board 的 section + row 结构。
- */
-export function ProjectBoard(props: ProjectBoardProps) {
-	const [openSections, setOpenSections] = useState<Set<string>>(
-		() => new Set(PROJECT_SECTION_ORDER),
-	)
-
-	if (props.status === 'idle' || props.status === 'loading') {
-		return <BoardLoadingState />
-	}
-
-	if (props.status === 'error') {
-		return (
-			<StatusNotice
-				description='项目数据暂时无法读取，请稍后重试。'
-				title='读取项目失败'
-				variant='danger'
-			/>
-		)
-	}
-
-	if (props.status === 'ready' && props.items.length === 0) {
-		return (
-			<BoardEmptyState
-				actionLabel={props.emptyActionLabel}
-				description={props.emptyDescription}
-				icon={<FolderIcon />}
-				onAction={props.onEmptyAction}
-				title={props.emptyTitle}
-			/>
-		)
-	}
-
-	const sections = buildProjectSections(props.items).filter((section) => section.items.length > 0)
-
-	function handleOpenChange(key: string, open: boolean) {
-		setOpenSections((prev) => {
-			const next = new Set(prev)
-			if (open) next.add(key)
-			else next.delete(key)
-			return next
-		})
-	}
-
-	function handleCollapseAll() {
-		setOpenSections(new Set())
-	}
-
-	function handleExpandAll() {
-		setOpenSections(new Set(sections.map((s) => s.key)))
-	}
-
-	// 合并 filter + flatMap 为单次遍历
-	const visibleProjects: ProjectOverviewItem[] = []
-	for (const section of sections) {
-		if (openSections.has(section.key)) {
-			visibleProjects.push(...section.items)
-		}
-	}
-
-	return (
-		<EntityRowShortcutScope
-			focusedId={props.focusedProjectId ?? null}
-			ids={visibleProjects.map((project) => project.id)}
-			onClearSelection={props.onClearProjectSelection}
-			onMoveFocus={props.onMoveProjectFocus}
-			onSelectAll={props.onSelectAllProjects}
-			onSetFocusedId={props.onSetFocusedProject}
-			onToggleSelection={props.onToggleProjectSelection}
-			selectedIdSet={props.selectedProjectIds}
-		>
-			{(rowShortcutState) => (
-				<BoardRoot>
-					{sections.map((section) => (
-						<ProjectBoardSectionBlock
-							busyProjectId={props.busyProjectId}
-							key={section.key}
-							onArchive={props.onArchive}
-							onCollapseAll={handleCollapseAll}
-							onComplete={props.onComplete}
-							onDelete={props.onDelete}
-							onExpandAll={handleExpandAll}
-							onOpen={props.onOpen}
-							onOpenChange={(open) => handleOpenChange(section.key, open)}
-							onReopen={props.onReopen}
-							onToggleProjectSelection={props.onToggleProjectSelection}
-							open={openSections.has(section.key)}
-							section={section}
-							selectedProjectIds={props.selectedProjectIds}
-							rowShortcutState={rowShortcutState}
-						/>
-					))}
-				</BoardRoot>
-			)}
-		</EntityRowShortcutScope>
-	)
-}
-
-function ProjectBoardSectionBlock({
-	section,
+/** 项目浏览表面只渲染分组与行；selection/focus 由 scene 的阶段 H collection 持有。 */
+export function ProjectBoard({
+	sections,
+	collection,
+	status,
 	busyProjectId,
-	selectedProjectIds,
-	open,
-	onOpenChange,
+	emptyTitle,
+	emptyDescription,
+	emptyActionLabel,
+	onEmptyAction,
 	onOpen,
 	onComplete,
 	onReopen,
-	onArchive,
-	onDelete,
-	onToggleProjectSelection,
-	onCollapseAll,
-	onExpandAll,
-	rowShortcutState,
-}: {
-	section: BoardSection<ProjectOverviewItem> & {
-		key: ProjectBoardSectionKey
+}: ProjectBoardProps) {
+	if (status === 'idle' || status === 'loading') return <ProjectBoardLoading />
+
+	if (status === 'error') {
+		return (
+			<Alert role='alert' status='danger'>
+				<Alert.Indicator />
+				<Alert.Content>
+					<Alert.Title>读取项目失败</Alert.Title>
+					<Alert.Description>项目数据暂时无法读取，请稍后重试。</Alert.Description>
+				</Alert.Content>
+			</Alert>
+		)
 	}
-	busyProjectId: string | null
-	selectedProjectIds?: Set<string>
-	open: boolean
-	onOpenChange: (open: boolean) => void
-	onOpen: (projectId: string) => void
-	onComplete: (projectId: string) => void
-	onReopen: (projectId: string) => void
-	onArchive: (projectId: string) => void
-	onDelete: (projectId: string) => void
-	onToggleProjectSelection?: (projectId: string) => void
-	onCollapseAll: () => void
-	onExpandAll: () => void
-	rowShortcutState: EntityRowShortcutState
-}) {
-	const sectionIds = useMemo(() => section.items.map((p) => p.id), [section.items])
-	const { selectedCount, handleSelectAll, handleDeselectAll } = useSectionSelection({
-		sectionIds,
-		selectedIdSet: selectedProjectIds,
-		onToggleSelection: onToggleProjectSelection,
-	})
+
+	const visibleSections = sections.filter((section) => section.items.length > 0)
+	if (visibleSections.length === 0) {
+		return (
+			<EmptyState className='mx-auto my-auto max-w-md'>
+				<EmptyState.Header>
+					<FolderIcon />
+					<EmptyState.Title>{emptyTitle}</EmptyState.Title>
+					<EmptyState.Description>{emptyDescription}</EmptyState.Description>
+				</EmptyState.Header>
+				{onEmptyAction && emptyActionLabel ? (
+					<EmptyState.Content>
+						<Button onPress={onEmptyAction}>{emptyActionLabel}</Button>
+					</EmptyState.Content>
+				) : null}
+			</EmptyState>
+		)
+	}
+
+	const selectedProjects = sections
+		.flatMap((section) => section.items)
+		.filter((project) => collection.interaction.selectedKeys.has(project.id))
 
 	return (
-		<BoardCollapsibleSection
-			contextMenuContent={
-				onToggleProjectSelection ? (
-					<BoardSectionContextMenu
-						onCollapse={() => onOpenChange(false)}
-						onCollapseAll={onCollapseAll}
-						onDeselectAll={handleDeselectAll}
-						onExpand={() => onOpenChange(true)}
-						onExpandAll={onExpandAll}
-						onSelectAll={handleSelectAll}
-						open={open}
-						selectedCount={selectedCount}
-					/>
-				) : undefined
-			}
-			count={section.items.length}
-			getItemId={(_child, index) => section.items[index]?.id}
-			icon={<ProjectSectionStatusIcon sectionKey={section.key} />}
-			label={section.label}
-			onOpenChange={onOpenChange}
-			open={open}
-			selectedCount={selectedCount}
-			selectedIdSet={selectedProjectIds}
+		<CollectionGridRoot
+			ariaLabel='项目列表'
+			className='flex min-h-0 flex-1 flex-col gap-1 outline-none'
+			focusIntent={collection.focusIntent}
+			interaction={collection.interaction}
+			onActivate={onOpen}
+			onFocusIntentConsumed={collection.consumeFocusIntent}
 		>
-			{section.items.map((project) => (
-				<ProjectRowAdapter
-					actions={{
-						onArchiveProject: onArchive,
-						onCompleteProject: onComplete,
-						onDeleteProject: onDelete,
-						onOpenProject: onOpen,
-						onReopenProject: onReopen,
-						onToggleSelected: onToggleProjectSelection,
-					}}
-					key={project.id}
-					project={project}
-					rowState={{
-						isPending: busyProjectId === project.id,
-						isSelected: selectedProjectIds?.has(project.id) ?? false,
-						isHovered: rowShortcutState.hoveredId === project.id,
-						hoverSource:
-							rowShortcutState.hoveredId === project.id ? rowShortcutState.hoverSource : null,
-					}}
-					rowShortcutHandlers={{
-						onHover: rowShortcutState.onRowHover,
-					}}
-				/>
-			))}
-		</BoardCollapsibleSection>
+			{(rootState) => (
+				<>
+					{visibleSections.map((section) => (
+						<ProjectBoardSection
+							busyProjectId={busyProjectId}
+							collection={collection}
+							contextProjects={selectedProjects}
+							key={section.key}
+							onComplete={onComplete}
+							onOpen={onOpen}
+							onReopen={onReopen}
+							rootState={rootState}
+							section={section}
+						/>
+					))}
+				</>
+			)}
+		</CollectionGridRoot>
 	)
 }
 
-function buildProjectSections(
-	items: ProjectOverviewItem[],
-): Array<BoardSection<ProjectOverviewItem> & { key: ProjectBoardSectionKey }> {
-	const grouped = new Map<ProjectBoardSectionKey, ProjectOverviewItem[]>([
-		['active', []],
-		['completed', []],
-		['archived', []],
-	])
+function ProjectBoardSection({
+	section,
+	collection,
+	rootState,
+	contextProjects,
+	busyProjectId,
+	onOpen,
+	onComplete,
+	onReopen,
+}: {
+	section: ProjectSection
+	collection: ProjectBoardProps['collection']
+	rootState: CollectionGridRootState<string>
+	contextProjects: ProjectOverviewItem[]
+	busyProjectId: string | null
+	onOpen: ProjectBoardProps['onOpen']
+	onComplete: ProjectBoardProps['onComplete']
+	onReopen: ProjectBoardProps['onReopen']
+}) {
+	const [contextMenuOpen, setContextMenuOpen] = useState(false)
+	const sectionIds = useMemo(() => section.items.map((project) => project.id), [section.items])
+	const open = collection.openGroupKeys.has(section.key)
+	const selectedCount = sectionIds.filter((id) =>
+		collection.interaction.selectedKeys.has(id),
+	).length
+	const handleSelectAll = () =>
+		collection.interaction.replaceSelection([...collection.interaction.selectedKeys, ...sectionIds])
+	const handleDeselectAll = () =>
+		collection.interaction.replaceSelection(
+			[...collection.interaction.selectedKeys].filter((id) => !sectionIds.includes(id)),
+		)
 
-	for (const project of items) {
-		grouped.get(getProjectSectionKey(project))?.push(project)
-	}
+	return (
+		<section className='flex flex-col gap-1 pb-1 last:pb-2' data-project-section={section.key}>
+			<ContextMenu open={contextMenuOpen} onOpenChange={setContextMenuOpen}>
+				<ContextMenu.Trigger
+					className='sticky top-0 z-10 flex min-h-9 items-center gap-2 rounded-lg bg-background px-1'
+					onDoubleClick={() => collection.setGroupOpen(section.key, !open)}
+				>
+					<CollectionGridGroupTrigger groupKey={section.key} rootState={rootState}>
+						{({ triggerRef, onBlur }) => (
+							<Button
+								ref={triggerRef}
+								aria-label={`${open ? '折叠' : '展开'} ${section.label}`}
+								isIconOnly
+								size='sm'
+								variant='ghost'
+								onBlur={onBlur}
+								onPress={() => collection.setGroupOpen(section.key, !open)}
+							>
+								<ChevronRightIcon className={open ? 'size-3.5 rotate-90' : 'size-3.5'} />
+							</Button>
+						)}
+					</CollectionGridGroupTrigger>
+					<ProjectSectionStatusIcon sectionKey={section.key} />
+					<span className='min-w-0 truncate text-sm font-semibold'>{section.label}</span>
+					<span className='rounded-full bg-surface-secondary px-2 py-0.5 text-xs text-muted tabular-nums'>
+						{section.items.length}
+					</span>
+					{selectedCount > 0 ? (
+						<span className='rounded-full bg-accent-soft px-2 py-0.5 text-xs text-accent tabular-nums'>
+							已选 {selectedCount}
+						</span>
+					) : null}
+				</ContextMenu.Trigger>
+				<BoardSectionContextMenu
+					onCollapse={() => collection.setGroupOpen(section.key, false)}
+					onCollapseAll={collection.collapseAll}
+					onDeselectAll={handleDeselectAll}
+					onExpand={() => collection.setGroupOpen(section.key, true)}
+					onExpandAll={collection.expandAll}
+					onSelectAll={handleSelectAll}
+					open={open}
+					selectedCount={selectedCount}
+				/>
+			</ContextMenu>
 
-	return PROJECT_SECTION_ORDER.map((key) => ({
-		key,
-		label: getProjectSectionLabel(key),
-		items: grouped.get(key) ?? [],
-	}))
+			{open ? (
+				<div className='flex flex-col gap-1' role='presentation'>
+					{section.items.map((project) => {
+						const isSelected = collection.interaction.selectedKeys.has(project.id)
+						return (
+							<CollectionGridRow
+								interaction={collection.interaction}
+								itemKey={project.id}
+								key={project.id}
+								rootState={rootState}
+							>
+								{({ rowProps, gridCellProps, rowRef, onContextMenuOpenChange }) => (
+									<ProjectRowAdapter
+										actions={{
+											onCompleteProject: onComplete,
+											onOpenProject: onOpen,
+											onReopenProject: onReopen,
+											onToggleSelected: () => collection.interaction.toggleSelection(project.id),
+										}}
+										contextProjects={
+											isSelected && contextProjects.length > 1 ? contextProjects : undefined
+										}
+										gridCellProps={gridCellProps}
+										onContextMenuOpenChange={onContextMenuOpenChange}
+										project={project}
+										rowProps={rowProps}
+										rowRef={rowRef}
+										rowState={{
+											isFocused: rootState.focusedKey === project.id,
+											focusSource:
+												rootState.focusedKey === project.id ? rootState.focusSource : null,
+											isPending: busyProjectId === project.id,
+											isSelected,
+										}}
+									/>
+								)}
+							</CollectionGridRow>
+						)
+					})}
+				</div>
+			) : null}
+		</section>
+	)
 }
 
-function getProjectSectionKey(project: ProjectOverviewItem): ProjectBoardSectionKey {
-	if (project.archivedAt) {
-		return 'archived'
-	}
-	if (project.completedAt) {
-		return 'completed'
-	}
-	return 'active'
+function ProjectBoardLoading() {
+	return (
+		<div aria-busy='true' aria-label='正在读取项目' className='flex flex-col gap-2'>
+			{Array.from({ length: 2 }, (_, sectionIndex) => (
+				<div className='flex flex-col gap-1' key={sectionIndex}>
+					<Skeleton animationType='none' className='h-9 w-40 rounded-lg' />
+					{Array.from({ length: 3 }, (_, rowIndex) => (
+						<Skeleton animationType='none' className='h-11 w-full rounded-lg' key={rowIndex} />
+					))}
+				</div>
+			))}
+		</div>
+	)
 }
 
-function getProjectSectionLabel(key: ProjectBoardSectionKey) {
-	switch (key) {
-		case 'completed':
-			return '已完成项目'
-		case 'archived':
-			return '已归档项目'
-		default:
-			return '进行中项目'
-	}
-}
-
-function ProjectSectionStatusIcon({ sectionKey }: { sectionKey: ProjectBoardSectionKey }) {
+function ProjectSectionStatusIcon({ sectionKey }: { sectionKey: ProjectSectionKey }) {
 	switch (sectionKey) {
 		case 'completed':
 			return (
-				<span className='flex size-4 shrink-0 items-center justify-center rounded-full bg-sf-success-surface-text text-white'>
+				<span className='flex size-4 shrink-0 items-center justify-center rounded-full bg-success text-success-foreground'>
 					<CheckIcon className='size-3' />
 				</span>
 			)
 		case 'archived':
-			return (
-				<span className={entityBoardMutedIconClass}>
-					<ArchiveIcon className='size-3.5' />
-				</span>
-			)
+			return <ArchiveIcon className='size-4 shrink-0 text-muted' />
 		default:
-			return (
-				<span className='flex size-4 shrink-0 items-center justify-center text-sf-info-surface-text'>
-					<PlayIcon className='size-3 fill-current' />
-				</span>
-			)
+			return <PlayIcon className='size-4 shrink-0 fill-current text-accent' />
 	}
 }

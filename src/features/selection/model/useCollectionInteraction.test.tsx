@@ -142,6 +142,20 @@ describe('useCollectionInteraction', () => {
 		expect(result.current.focusedKey).toBe('task-a')
 	})
 
+	it('一次替换分区 selection，并剔除 collection 外的 key', () => {
+		const { result } = renderHook(() =>
+			useCollectionInteraction<string>({
+				eligibleKeys: ['task-a', 'task-b', 'task-c'],
+				navigableKeys: ['task-a', 'task-b', 'task-c'],
+				defaultSelectedKeys: ['task-a'],
+			}),
+		)
+
+		act(() => result.current.replaceSelection(['task-b', 'task-c', 'missing']))
+
+		expect([...result.current.selectedKeys]).toEqual(['task-b', 'task-c'])
+	})
+
 	it('执行时 snapshot 是副本，不能反向修改 collection', () => {
 		const { result } = renderHook(() =>
 			useCollectionInteraction({

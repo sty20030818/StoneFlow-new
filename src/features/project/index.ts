@@ -61,6 +61,12 @@ export { projectBulkActions, createProjectBulkAdapter } from './bulk'
 
 /** 命令选中快照（项目列表 → command）。 */
 export { buildProjectCommandSelection } from './model/buildProjectCommandSelection'
+export {
+	buildProjectSections,
+	PROJECT_SECTION_ORDER,
+	type ProjectSection,
+	type ProjectSectionKey,
+} from './model/buildProjectSections'
 
 /** 项目多选 bulk 命令 handlers（供壳 compose）。 */
 export { registerProjectCommands } from './commands/registerProjectCommands'

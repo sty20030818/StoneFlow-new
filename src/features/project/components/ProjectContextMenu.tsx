@@ -1,72 +1,72 @@
-import type { ReactNode } from 'react'
-
-import { useDangerConfirm } from '@/features/danger-confirm'
-import {
-	ContextMenu,
-	ContextMenuContent,
-	ContextMenuGroup,
-	ContextMenuItem,
-	ContextMenuSeparator,
-	ContextMenuTrigger,
-} from '@/shared/components/base/context-menu'
+import { ContextMenu } from '@heroui-pro/react'
 import { ExternalLinkIcon, Trash2Icon } from 'lucide-react'
+import { useState, type ReactNode } from 'react'
+
+import { COMMAND_IDS, type CommandId, type CommandProjection } from '@/features/command'
 
 type ProjectContextMenuProps = {
 	children: ReactNode
 	isBusy?: boolean
-	projectName?: string
 	onOpenProject: () => void
-	onMoveToTrash: () => void
+	onOpenChange?: (open: boolean) => void
+	projectCommand: (commandId: CommandId) => CommandProjection | null
 }
 
-/**
- * Project 在 sidebar 与主内容区共用同一组管理动作。
- */
+/** 项目右键表面只消费壳层唯一 Command Runtime 的目标投影。 */
 export function ProjectContextMenu({
 	children,
 	isBusy,
-	projectName,
 	onOpenProject,
-	onMoveToTrash,
+	onOpenChange,
+	projectCommand,
 }: ProjectContextMenuProps) {
-	const { requestDangerConfirm } = useDangerConfirm()
+	const [open, setOpen] = useState(false)
+	const deleteCommand = open ? projectCommand(COMMAND_IDS.projectDelete) : null
 
 	return (
-		<ContextMenu>
-			<ContextMenuTrigger asChild onContextMenu={(event) => event.stopPropagation()}>
+		<ContextMenu
+			open={open}
+			onOpenChange={(nextOpen) => {
+				setOpen(nextOpen)
+				onOpenChange?.(nextOpen)
+			}}
+		>
+			<ContextMenu.Trigger
+				className='group/project-context-menu block w-full'
+				data-open={open || undefined}
+			>
 				{children}
-			</ContextMenuTrigger>
-			<ContextMenuContent className='w-44'>
-				<ContextMenuGroup>
-					<ContextMenuItem onSelect={onOpenProject}>
-						<ExternalLinkIcon />
-						打开项目
-					</ContextMenuItem>
-				</ContextMenuGroup>
-				<ContextMenuSeparator />
-				<ContextMenuGroup>
-					<ContextMenuItem
-						disabled={isBusy}
-						onSelect={async () => {
-							if (
-								!(await requestDangerConfirm({
-									intent: 'trash',
-									entityType: 'project',
-									count: 1,
-									entityLabel: projectName,
-								}))
-							) {
-								return
-							}
-							onMoveToTrash()
-						}}
-						variant='destructive'
-					>
-						<Trash2Icon />
-						移入回收站
-					</ContextMenuItem>
-				</ContextMenuGroup>
-			</ContextMenuContent>
+			</ContextMenu.Trigger>
+			{open ? (
+				<ContextMenu.Popover className='w-48'>
+					<ContextMenu.Menu aria-label='项目操作'>
+						<ContextMenu.Section>
+							<ContextMenu.Item id='project-open' onAction={onOpenProject} textValue='打开项目'>
+								<ExternalLinkIcon />
+								打开项目
+							</ContextMenu.Item>
+						</ContextMenu.Section>
+						{deleteCommand?.visible ? (
+							<>
+								<ContextMenu.Separator />
+								<ContextMenu.Section>
+									<ContextMenu.Item
+										aria-description={deleteCommand.disabledReason}
+										id='project-move-to-trash'
+										isDisabled={isBusy || !deleteCommand.enabled}
+										onAction={() => void deleteCommand.execute({ source: 'context-menu' })}
+										textValue='移入回收站'
+										variant='danger'
+									>
+										<Trash2Icon />
+										移入回收站
+									</ContextMenu.Item>
+								</ContextMenu.Section>
+							</>
+						) : null}
+					</ContextMenu.Menu>
+				</ContextMenu.Popover>
+			) : null}
 		</ContextMenu>
 	)
 }

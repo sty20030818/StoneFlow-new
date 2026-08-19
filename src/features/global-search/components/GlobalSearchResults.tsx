@@ -1,22 +1,15 @@
 import { useEffect, useRef } from 'react'
 
+import { ListView } from '@heroui-pro/react'
+
 import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
 import { cn } from '@/shared/lib/utils'
-import { AppScrollArea } from '@/shared/components/AppScrollArea'
-import { formatTaskPriorityLabel } from '@/features/task'
-import { formatTaskStatusLabel } from '@/features/task'
-import { PriorityIcon } from '@/features/task'
-import { TaskStatusIndicator } from '@/features/task'
 import {
-	globalSearchGroupHeadingClass,
-	globalSearchResultsPopoverClass,
-	globalSearchStateMutedClass,
-} from '@/shared/components/patterns/global-search'
-import {
-	ROW_SHELL_ACTIVE_CLASS,
-	ROW_SHELL_BASE_CLASS,
-	ROW_SHELL_IDLE_CLASS,
-} from '@/shared/components/patterns/row-tokens'
+	formatTaskPriorityLabel,
+	formatTaskStatusLabel,
+	PriorityIcon,
+	TaskStatusIndicator,
+} from '@/features/task'
 import { OverflowTooltip } from '@/shared/components/tooltip'
 import { FolderIcon, SearchIcon } from 'lucide-react'
 
@@ -50,8 +43,11 @@ export function GlobalSearchResults({
 	}, [highlightedIndex])
 
 	return (
-		<div className={globalSearchResultsPopoverClass}>
-			<AppScrollArea className='max-h-96' ref={rootRef} viewportClassName='p-2.5'>
+		<div
+			className='absolute left-1/2 top-full z-40 mt-1.5 w-[max(32rem,50vw)] max-w-[calc(100vw-2rem)] -translate-x-1/2 overflow-hidden rounded-xl border border-border bg-overlay shadow-overlay'
+			id='global-search-results'
+		>
+			<div className='max-h-96 overflow-y-auto p-2.5' ref={rootRef}>
 				{errorMessage && !hasResults ? (
 					<SearchPanelState label={errorMessage} tone='danger' />
 				) : !hasResults ? (
@@ -63,7 +59,7 @@ export function GlobalSearchResults({
 						{taskItems.length > 0 ? (
 							<section className='space-y-1'>
 								<SearchGroupHeading title='任务' />
-								<div className='space-y-0.5'>
+								<ListView aria-label='任务搜索结果' className='gap-0.5' variant='secondary'>
 									{taskItems.map(({ index, item }) => (
 										<SearchTaskResultRow
 											isActive={highlightedIndex === index}
@@ -74,14 +70,14 @@ export function GlobalSearchResults({
 											onSelect={() => onSelectTask(item)}
 										/>
 									))}
-								</div>
+								</ListView>
 							</section>
 						) : null}
 
 						{projectItems.length > 0 ? (
 							<section className='space-y-1'>
 								<SearchGroupHeading title='项目' />
-								<div className='space-y-0.5'>
+								<ListView aria-label='项目搜索结果' className='gap-0.5' variant='secondary'>
 									{projectItems.map(({ index, item }) => (
 										<SearchProjectResultRow
 											isActive={highlightedIndex === index}
@@ -92,12 +88,12 @@ export function GlobalSearchResults({
 											onSelect={() => onSelectProject(item)}
 										/>
 									))}
-								</div>
+								</ListView>
 							</section>
 						) : null}
 					</div>
 				)}
-			</AppScrollArea>
+			</div>
 		</div>
 	)
 }
@@ -120,23 +116,23 @@ function SearchTaskResultRow({
 	const placementLabel = task.projectName ?? '独立事项'
 
 	return (
-		<button
+		<ListView.Item
 			aria-label={`打开任务 ${task.title}`}
 			className={cn(
-				ROW_SHELL_BASE_CLASS,
-				'h-11 w-full gap-2.5 px-3',
-				isActive ? ROW_SHELL_ACTIVE_CLASS : ROW_SHELL_IDLE_CLASS,
+				'h-11 w-full cursor-default gap-2.5 rounded-lg px-3',
+				isActive && 'bg-accent-soft text-accent-soft-foreground',
 			)}
 			data-search-index={taskIndex}
-			onClick={onSelect}
-			onMouseEnter={onHighlight}
-			type='button'
+			id={`task:${task.id}`}
+			onAction={onSelect}
+			onHoverStart={onHighlight}
+			textValue={task.title}
 		>
-			<div className='flex min-w-0 flex-1 items-center gap-2.5'>
+			<ListView.ItemContent className='gap-2.5'>
 				<EntityLabel label='任务' />
 				<span
 					aria-label={`优先级 ${formatTaskPriorityLabel(task.priority)}`}
-					className='flex shrink-0 items-center justify-center text-sf-shell-text-secondary'
+					className='flex shrink-0 items-center justify-center text-muted'
 				>
 					<PriorityIcon priority={task.priority} size='sm' />
 				</span>
@@ -147,19 +143,16 @@ function SearchTaskResultRow({
 					<TaskStatusIndicator status={task.status} />
 				</span>
 				<div className='min-w-0 flex-1'>
-					<OverflowTooltip
-						className='text-[13px] font-medium text-legacy-foreground'
-						content={task.title}
-					>
+					<OverflowTooltip className='text-[13px] font-medium text-foreground' content={task.title}>
 						{task.title}
 					</OverflowTooltip>
 				</div>
-			</div>
-			<div className='ml-auto hidden shrink-0 items-center gap-1.5 md:flex'>
+			</ListView.ItemContent>
+			<ListView.ItemAction className='hidden shrink-0 items-center gap-1.5 md:flex'>
 				<ContextPill label={placementLabel} />
 				<ContextPill label={task.spaceName} />
-			</div>
-		</button>
+			</ListView.ItemAction>
+		</ListView.Item>
 	)
 }
 
@@ -179,42 +172,46 @@ function SearchProjectResultRow({
 	onSelect,
 }: SearchProjectResultRowProps) {
 	return (
-		<button
+		<ListView.Item
 			aria-label={`打开项目 ${project.name}`}
 			className={cn(
-				ROW_SHELL_BASE_CLASS,
-				'h-11 w-full gap-2.5 px-3',
-				isActive ? ROW_SHELL_ACTIVE_CLASS : ROW_SHELL_IDLE_CLASS,
+				'h-11 w-full cursor-default gap-2.5 rounded-lg px-3',
+				isActive && 'bg-accent-soft text-accent-soft-foreground',
 			)}
 			data-search-index={projectIndex}
-			onClick={onSelect}
-			onMouseEnter={onHighlight}
-			type='button'
+			id={`project:${project.id}`}
+			onAction={onSelect}
+			onHoverStart={onHighlight}
+			textValue={project.name}
 		>
-			<div className='flex min-w-0 flex-1 items-center gap-2.5'>
+			<ListView.ItemContent className='gap-2.5'>
 				<EntityLabel label='项目' />
-				<span className='flex shrink-0 items-center justify-center text-sf-shell-text-secondary'>
+				<span className='flex shrink-0 items-center justify-center text-muted'>
 					<FolderIcon className='size-3.5' />
 				</span>
 				<div className='min-w-0 flex-1'>
 					<OverflowTooltip
-						className='text-[13px] font-medium text-legacy-foreground'
+						className='text-[13px] font-medium text-foreground'
 						content={project.name}
 					>
 						{project.name}
 					</OverflowTooltip>
 				</div>
-			</div>
-			<div className='ml-auto hidden shrink-0 items-center gap-1.5 md:flex'>
+			</ListView.ItemContent>
+			<ListView.ItemAction className='hidden shrink-0 items-center gap-1.5 md:flex'>
 				{project.completedAt ? <ContextPill label='已完成' /> : null}
 				<ContextPill label={project.spaceName} />
-			</div>
-		</button>
+			</ListView.ItemAction>
+		</ListView.Item>
 	)
 }
 
 function SearchGroupHeading({ title }: { title: string }) {
-	return <div className={globalSearchGroupHeadingClass}>{title}</div>
+	return (
+		<div className='px-1 text-[10.5px] font-medium tracking-[0.06em] text-muted uppercase'>
+			{title}
+		</div>
+	)
 }
 
 function SearchPanelState({ label, tone = 'muted' }: { label: string; tone?: 'muted' | 'danger' }) {
@@ -223,8 +220,8 @@ function SearchPanelState({ label, tone = 'muted' }: { label: string; tone?: 'mu
 			className={cn(
 				'flex items-center gap-2 rounded-lg border px-3 py-3 text-[12px]',
 				tone === 'danger'
-					? 'border-sf-danger-surface-border bg-sf-danger-surface text-sf-danger-surface-text'
-					: globalSearchStateMutedClass,
+					? 'border-danger/30 bg-danger-soft text-danger-soft-foreground'
+					: 'border-border bg-surface-secondary text-muted',
 			)}
 		>
 			<SearchIcon className='size-3.5 shrink-0' />
@@ -235,7 +232,7 @@ function SearchPanelState({ label, tone = 'muted' }: { label: string; tone?: 'mu
 
 function EntityLabel({ label }: { label: string }) {
 	return (
-		<span className='shrink-0 text-[10px] font-medium tracking-[0.08em] text-sf-shell-text-secondary uppercase'>
+		<span className='shrink-0 text-[10px] font-medium tracking-[0.08em] text-muted uppercase'>
 			{label}
 		</span>
 	)
@@ -244,7 +241,7 @@ function EntityLabel({ label }: { label: string }) {
 function ContextPill({ label }: { label: string }) {
 	return (
 		<OverflowTooltip
-			className='inline-flex max-w-36 items-center rounded-md bg-sf-list-section-bg px-2 py-1 text-[11px] font-medium text-sf-shell-text-secondary'
+			className='inline-flex max-w-36 items-center rounded-md bg-surface-secondary px-2 py-1 text-[11px] font-medium text-muted'
 			content={label}
 		>
 			{label}

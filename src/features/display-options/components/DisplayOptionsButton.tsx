@@ -4,12 +4,12 @@
  * 工具条「显示」入口：锚定 Display 面板；订阅 Shift+F / 命令 open-menu。
  */
 import { useEffect, useState } from 'react'
+import { Button } from '@heroui/react'
 import { SlidersHorizontalIcon } from 'lucide-react'
 
 import { COMMAND_IDS, CommandActionTooltip } from '@/features/command'
 import type { TaskDisplayPageKey } from '@/features/display-options/core'
 import { useTaskDisplayOptions } from '@/features/display-options/model'
-import { Button } from '@/shared/components/base/button'
 
 import { subscribeDisplayUiEvent } from '../model/displayUiEvents'
 import { DisplayOptionsPopover } from './DisplayOptionsPopover'
@@ -53,8 +53,8 @@ export function DisplayOptionsButton({ pageKey }: DisplayOptionsButtonProps) {
 					onOpenChange={(nextOpen) => setTooltipOpen(open ? false : nextOpen)}
 					isOpen={tooltipOpen}
 				>
-					<Button aria-label='显示选项' size='icon-sm' type='button' variant='outline'>
-						<SlidersHorizontalIcon />
+					<Button aria-label='显示选项' isIconOnly size='sm' type='button' variant='outline'>
+						<SlidersHorizontalIcon className='size-4' />
 					</Button>
 				</CommandActionTooltip>
 			}

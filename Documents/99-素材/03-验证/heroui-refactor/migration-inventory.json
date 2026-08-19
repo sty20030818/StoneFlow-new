@@ -84,7 +84,7 @@
 			"disposition": "retain-through-final-performance-comparison-then-delete-with-benchmark-route"
 		},
 		{
-			"path": "src/routes/-task-board-benchmark.test.tsx",
+			"path": "src/routes/-task-board-benchmark.test.ts",
 			"kind": "benchmark-route-contract-test",
 			"ownerTask": "T113",
 			"disposition": "retain-through-final-performance-comparison-then-delete-with-benchmark-route"

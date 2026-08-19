@@ -1,6 +1,6 @@
 # project · 项目域
 
-> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-07-19
+> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-08-19
 
 ---
 
@@ -19,6 +19,7 @@
   → 壳 Overlay 挂 ProjectCreateContent
 
 批量 / 命令
+  → 行与右键动作统一投影为 Command selection
   → bulk/（动作定义 + adapter）
   → commands/registerProjectCommands
 ```
@@ -40,7 +41,7 @@ src/features/project/
 │   ├── project.keys|queries|mutations
 │   ├── useProjectData       # options / sidebar / overview / detail
 │   └── useProjectDetailScene  # 详情页编排（组合 task public）
-├── model/                   # 纯类型 + buildProjectCommandSelection（无 React hook）
+├── model/                   # sections + command selection 纯模型（无 React hook）
 ├── bulk/                    # 批量动作 + adapter
 ├── commands/                # registerProjectCommands
 └── components/

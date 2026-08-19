@@ -74,7 +74,7 @@ function buildTaskActivityDisplayItem(
 			return [
 				{
 					id: entry.id,
-					icon: <ListTodoIcon className='size-4 text-sf-icon-secondary' />,
+					icon: <ListTodoIcon className='size-4 text-muted' />,
 					text: `${actorLabel} 创建了任务`,
 					relativeTime,
 				},
@@ -83,7 +83,7 @@ function buildTaskActivityDisplayItem(
 			return [
 				{
 					id: entry.id,
-					icon: <Link2Icon className='size-4 text-sf-icon-secondary' />,
+					icon: <Link2Icon className='size-4 text-muted' />,
 					text: `${actorLabel} 添加了链接 ${formatQuotedText(metadata.title)}`,
 					relativeTime,
 				},
@@ -92,7 +92,7 @@ function buildTaskActivityDisplayItem(
 			return [
 				{
 					id: entry.id,
-					icon: <Link2Icon className='size-4 text-sf-icon-secondary' />,
+					icon: <Link2Icon className='size-4 text-muted' />,
 					text: `${actorLabel} 更新了链接 ${formatQuotedText(metadata.title)}`,
 					relativeTime,
 				},
@@ -101,7 +101,7 @@ function buildTaskActivityDisplayItem(
 			return [
 				{
 					id: entry.id,
-					icon: <Link2Icon className='size-4 text-sf-icon-secondary' />,
+					icon: <Link2Icon className='size-4 text-muted' />,
 					text: `${actorLabel} 移除了链接 ${formatQuotedText(metadata.title)}`,
 					relativeTime,
 				},
@@ -110,7 +110,7 @@ function buildTaskActivityDisplayItem(
 			return [
 				{
 					id: entry.id,
-					icon: <ArchiveIcon className='size-4 text-sf-icon-secondary' />,
+					icon: <ArchiveIcon className='size-4 text-muted' />,
 					text: `${actorLabel} 归档了任务`,
 					relativeTime,
 				},
@@ -119,7 +119,7 @@ function buildTaskActivityDisplayItem(
 			return [
 				{
 					id: entry.id,
-					icon: <Undo2Icon className='size-4 text-sf-icon-secondary' />,
+					icon: <Undo2Icon className='size-4 text-muted' />,
 					text: `${actorLabel} 恢复了任务`,
 					relativeTime,
 				},
@@ -129,7 +129,7 @@ function buildTaskActivityDisplayItem(
 			return [
 				{
 					id: entry.id,
-					icon: <Trash2Icon className='size-4 text-sf-icon-secondary' />,
+					icon: <Trash2Icon className='size-4 text-muted' />,
 					text: `${actorLabel} 删除了任务`,
 					relativeTime,
 				},
@@ -158,7 +158,7 @@ function buildTaskActivityDisplayItem(
 	return [
 		{
 			id: entry.id,
-			icon: <NotebookPenIcon className='size-4 text-sf-icon-secondary' />,
+			icon: <NotebookPenIcon className='size-4 text-muted' />,
 			text: formatFallbackText(entry.summary, actorLabel),
 			relativeTime,
 		},
@@ -187,7 +187,7 @@ function buildFieldChangeActivityItem({
 			const nextLabel = formatTaskPriorityLabel(nextPriority)
 			return {
 				id: entry.id,
-				icon: <PriorityIcon className='text-sf-icon-secondary' priority={nextPriority} size='md' />,
+				icon: <PriorityIcon className='text-muted' priority={nextPriority} size='md' />,
 				text: `${actorLabel} 将优先级从 ${prevLabel} 调整为 ${nextLabel}`,
 				relativeTime,
 			}
@@ -235,7 +235,7 @@ function buildFieldChangeActivityItem({
 			const nextLabel = resolveProjectLabel(asStringValue(change.newValue), projects)
 			return {
 				id: entry.id,
-				icon: <FolderIcon className='size-4 text-sf-icon-secondary' />,
+				icon: <FolderIcon className='size-4 text-muted' />,
 				text: buildAssignmentText(actorLabel, '项目', prevLabel, nextLabel),
 				relativeTime,
 			}
@@ -245,15 +245,13 @@ function buildFieldChangeActivityItem({
 			const prevLabel = resolveSpaceLabel(asStringValue(change.oldValue), spaces)
 			const nextLabel = resolveSpaceLabel(asStringValue(change.newValue), spaces)
 			const SpaceIcon = nextSpace ? getSpaceVisual(nextSpace).icon : null
-			const iconClassName = nextSpace
-				? getSpaceVisual(nextSpace).iconClassName
-				: 'text-sf-icon-secondary'
+			const iconClassName = nextSpace ? getSpaceVisual(nextSpace).iconClassName : 'text-muted'
 			return {
 				id: entry.id,
 				icon: SpaceIcon ? (
 					<SpaceIcon className={`size-4 ${iconClassName}`} />
 				) : (
-					<TagIcon className='size-4 text-sf-icon-secondary' />
+					<TagIcon className='size-4 text-muted' />
 				),
 				text: buildAssignmentText(actorLabel, '空间', prevLabel, nextLabel),
 				relativeTime,
@@ -262,14 +260,14 @@ function buildFieldChangeActivityItem({
 		case 'note':
 			return {
 				id: entry.id,
-				icon: <NotebookPenIcon className='size-4 text-sf-icon-secondary' />,
+				icon: <NotebookPenIcon className='size-4 text-muted' />,
 				text: buildTextFieldActivityText(actorLabel, '备注', change),
 				relativeTime,
 			}
 		case 'title':
 			return {
 				id: entry.id,
-				icon: <NotebookPenIcon className='size-4 text-sf-icon-secondary' />,
+				icon: <NotebookPenIcon className='size-4 text-muted' />,
 				text: buildTextFieldActivityText(actorLabel, '标题', change),
 				relativeTime,
 			}

@@ -33,22 +33,22 @@ export function renderMetadataActionIcon(iconKey: MetadataActionIconKey | undefi
 
 	switch (iconKey) {
 		case 'calendar-off':
-			return <CalendarOffIcon className='size-3.5 text-sf-icon-secondary' />
+			return <CalendarOffIcon className='size-3.5 text-muted' />
 		case 'calendar-1':
-			return <Calendar1Icon className='size-3.5 text-sf-icon-secondary' />
+			return <Calendar1Icon className='size-3.5 text-muted' />
 		case 'calendar-days':
-			return <CalendarDaysIcon className='size-3.5 text-sf-icon-secondary' />
+			return <CalendarDaysIcon className='size-3.5 text-muted' />
 		case 'calendar-cog':
-			return <CalendarCogIcon className='size-3.5 text-sf-icon-secondary' />
+			return <CalendarCogIcon className='size-3.5 text-muted' />
 		case 'calendar-x-2':
-			return <CalendarX2Icon className='size-3.5 text-sf-icon-secondary' />
+			return <CalendarX2Icon className='size-3.5 text-muted' />
 		case 'folder':
-			return <FolderIcon className='size-3.5 text-sf-icon-secondary' />
+			return <FolderIcon className='size-3.5 text-muted' />
 		case 'target':
-			return <TargetIcon className='size-3.5 text-sf-icon-secondary' />
+			return <TargetIcon className='size-3.5 text-muted' />
 		case 'space':
-			return <OrbitIcon className='size-3.5 text-sf-icon-secondary' />
+			return <OrbitIcon className='size-3.5 text-muted' />
 		default:
-			return <CalendarIcon className='size-3.5 text-sf-icon-secondary' />
+			return <CalendarIcon className='size-3.5 text-muted' />
 	}
 }

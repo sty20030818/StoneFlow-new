@@ -20,7 +20,7 @@ describe('TaskPlacementSection', () => {
 			/>,
 		)
 
-		fireEvent.pointerDown(screen.getByRole('button', { name: '归属' }))
+		fireEvent.click(screen.getByRole('button', { name: '归属' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /项目 B/ }))
 
 		expect(autosave.setDraft).toHaveBeenCalledOnce()

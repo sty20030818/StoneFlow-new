@@ -1,14 +1,6 @@
 export type CustomDateFieldKey = 'dueDate' | 'scheduledDate' | 'reminderDate'
 
-export function formatCustomDateInputValue(value: string | null | undefined) {
-	if (!value) {
-		return ''
-	}
-
-	return value.slice(0, 10).replaceAll('-', '/')
-}
-
-export function normalizeCustomDateInputValue(value: string) {
+function normalizeCustomDateInputValue(value: string) {
 	return value.trim().replaceAll('-', '/')
 }
 

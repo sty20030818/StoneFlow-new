@@ -1,5 +1,6 @@
+import { Input, TextField } from '@heroui/react'
+
 import type { AutosaveController } from '@/shared/autosave'
-import { Input } from '@/shared/components/base/input'
 
 import type { TaskDetailDraft } from '../model/taskDetailDraft'
 
@@ -10,15 +11,19 @@ type TaskTitleFieldProps = {
 
 export function TaskTitleField({ autosave, disabled = false }: TaskTitleFieldProps) {
 	return (
-		<Input
+		<TextField
 			aria-label='任务标题'
-			className='h-11 border-0 bg-transparent px-0 text-[20px] font-bold shadow-none focus-visible:ring-0 md:text-[22px]'
-			disabled={disabled}
-			onChange={(event) =>
-				autosave.setField('title', event.currentTarget.value, { saveMode: 'debounced' })
-			}
-			placeholder='任务标题'
+			fullWidth
+			isDisabled={disabled}
 			value={autosave.draft.title}
-		/>
+			onChange={(value) => autosave.setField('title', value, { saveMode: 'debounced' })}
+		>
+			<Input
+				aria-label='任务标题'
+				className='text-[20px] font-bold md:text-[22px]'
+				placeholder='任务标题'
+				variant='secondary'
+			/>
+		</TextField>
 	)
 }

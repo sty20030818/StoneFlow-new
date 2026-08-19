@@ -59,7 +59,7 @@ export function TaskDetailContent({
 
 function TaskDetailState({ message, onClose }: { message: string; onClose?: () => void }) {
 	return (
-		<div className='flex min-h-0 flex-1 flex-col items-center justify-center gap-3 p-4 text-[12px] text-sf-text-tertiary'>
+		<div className='flex min-h-0 flex-1 flex-col items-center justify-center gap-3 p-4 text-xs text-muted'>
 			<p>{message}</p>
 			{onClose ? (
 				<Button onPress={onClose} size='sm' variant='outline'>

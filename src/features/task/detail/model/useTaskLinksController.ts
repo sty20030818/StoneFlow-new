@@ -1,6 +1,6 @@
 import { openUrl } from '@tauri-apps/plugin-opener'
+import { toast } from '@heroui/react'
 import { useCallback } from 'react'
-import { toast } from 'sonner'
 
 import {
 	useCreateTaskLinkMutation,
@@ -42,7 +42,7 @@ export function useTaskLinksController(taskId: string): UseTaskLinksControllerRe
 			} catch (nextError) {
 				const message =
 					nextError instanceof Error && nextError.message ? nextError.message : failureMessage
-				toast.error(message)
+				toast.danger(message)
 				throw nextError
 			}
 		},
@@ -102,7 +102,9 @@ export function useTaskLinksController(taskId: string): UseTaskLinksControllerRe
 			if (typeof window !== 'undefined') {
 				window.open(normalizedUrl, '_blank', 'noopener,noreferrer')
 			}
-			toast.error(nextError instanceof Error ? nextError.message : '打开链接失败，已尝试浏览器回退')
+			toast.danger(
+				nextError instanceof Error ? nextError.message : '打开链接失败，已尝试浏览器回退',
+			)
 		}
 	}, [])
 

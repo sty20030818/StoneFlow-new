@@ -1,4 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react'
+import { Dropdown } from '@heroui/react'
+import { Header } from 'react-aria-components'
 
 import { CommandShortcut, type CommandId, type KeybindingScope } from '@/features/command'
 import {
@@ -9,13 +11,6 @@ import {
 	type MetadataShortcutMode,
 	type MetadataValueComparator,
 } from '@/features/metadata-fields/core'
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuGroup,
-	DropdownMenuLabel,
-	DropdownMenuTrigger,
-} from '@/shared/components/base/dropdown-menu'
 import { buildDigitShortcutMap, ShortcutDigitSelectLayer } from '@/shared/components/shortcut-menu'
 import { ActionTooltip, DisabledActionTooltip } from '@/shared/components/tooltip'
 
@@ -89,7 +84,6 @@ export function MetadataFieldDropdown<TValue>({
 	onChange,
 }: MetadataFieldDropdownProps<TValue>) {
 	const [menuOpen, setMenuOpen] = useState(false)
-	const [tooltipOpen, setTooltipOpen] = useState(false)
 	const currentOption = options.find((option) => isValueEqual(option.value, value)) ?? options[0]
 	const selectedValues = values ?? [value]
 	const shortcutItems = useMemo(
@@ -106,31 +100,21 @@ export function MetadataFieldDropdown<TValue>({
 	const resolvedTooltipLabel = tooltipLabel ?? label
 
 	const trigger = (
-		<DropdownMenuTrigger asChild>
-			<MetadataFieldButton
-				ariaLabel={resolvedAriaLabel}
-				appearance={buttonAppearance}
-				compact={compact}
-				disabled={disabled}
-				icon={buttonIcon === undefined ? currentOption.icon : buttonIcon}
-				label={buttonLabel ?? currentOption.label}
-				stopPropagation={stopPropagation}
-				suppressOverflowTooltip={menuOpen}
-			/>
-		</DropdownMenuTrigger>
+		<MetadataFieldButton
+			ariaLabel={resolvedAriaLabel}
+			appearance={buttonAppearance}
+			compact={compact}
+			disabled={disabled}
+			icon={buttonIcon === undefined ? currentOption.icon : buttonIcon}
+			label={buttonLabel ?? currentOption.label}
+			stopPropagation={stopPropagation}
+			suppressOverflowTooltip={menuOpen}
+		/>
 	)
 	const shouldShowTooltip = buttonAppearance === 'row-icon' || shortcut !== undefined
 
 	return (
-		<DropdownMenu
-			onOpenChange={(open) => {
-				setMenuOpen(open)
-				if (open) {
-					setTooltipOpen(false)
-				}
-			}}
-			open={menuOpen}
-		>
+		<Dropdown isOpen={menuOpen} onOpenChange={setMenuOpen}>
 			{disabled && disabledReason ? (
 				<DisabledActionTooltip
 					ariaLabel={resolvedAriaLabel}
@@ -146,9 +130,7 @@ export function MetadataFieldDropdown<TValue>({
 				</DisabledActionTooltip>
 			) : shouldShowTooltip && !disabled ? (
 				<ActionTooltip
-					isOpen={tooltipOpen && !menuOpen}
 					label={resolvedTooltipLabel}
-					onOpenChange={(open) => setTooltipOpen(open && !menuOpen)}
 					shortcut={
 						shortcut ? (
 							<CommandShortcut commandId={shortcut.commandId} scope={shortcut.scope} />
@@ -160,62 +142,73 @@ export function MetadataFieldDropdown<TValue>({
 			) : (
 				trigger
 			)}
-			<DropdownMenuContent
-				align={menuAlign}
+			<Dropdown.Popover
 				data-drawer-owned-overlay={drawerOwnedOverlay ? 'true' : undefined}
-				sideOffset={6}
+				offset={6}
+				placement={resolveMenuPlacement(menuAlign)}
 			>
-				<ShortcutDigitSelectLayer items={shortcutItems} onSelect={(item) => onChange(item.value)} />
-				<DropdownMenuLabel className='px-2 py-1.5 text-[12px] normal-case tracking-normal'>
-					<span className='flex items-center gap-2'>
-						<span className='min-w-0 flex-1 truncate'>{resolvedMenuLabel}</span>
-						{shortcut ? (
-							<CommandShortcut commandId={shortcut.commandId} scope={shortcut.scope} />
-						) : null}
-					</span>
-				</DropdownMenuLabel>
-				<DropdownMenuGroup>
-					{options.map((option, index) => {
-						const shortcutDigit =
-							digitShortcutMap.find((entry) => isValueEqual(entry.item.value, option.value))
-								?.digit ?? ''
+				<ShortcutDigitSelectLayer
+					items={shortcutItems}
+					onSelect={(item) => {
+						onChange(item.value)
+						setMenuOpen(false)
+					}}
+				/>
+				<Dropdown.Menu aria-label={resolvedMenuLabel}>
+					<Dropdown.Section>
+						<Header className='flex items-center gap-2 px-2 py-1.5 text-[12px] font-medium text-muted'>
+							<span className='min-w-0 flex-1 truncate'>{resolvedMenuLabel}</span>
+							{shortcut ? (
+								<CommandShortcut commandId={shortcut.commandId} scope={shortcut.scope} />
+							) : null}
+						</Header>
+						{options.map((option, index) => {
+							const shortcutDigit =
+								digitShortcutMap.find((entry) => isValueEqual(entry.item.value, option.value))
+									?.digit ?? ''
 
-						return (
-							<MetadataFieldMenuItem
-								disabled={option.disabled}
-								digit={
-									shortcutMode === 'clear-only'
-										? option.isEmptyValue
-											? shortcutDigit
-											: ''
-										: shortcutDigit
-								}
-								icon={option.icon}
-								indicator={getMetadataFieldIndicator({
-									optionValue: option.value,
-									selectedValues,
-									isValueEqual,
-								})}
-								key={option.key ?? String(option.value)}
-								label={option.label}
-								stopPropagation={stopPropagation}
-								trailing={option.trailing}
-								value={option.value}
-								onSelect={(nextValue) => {
-									if (option.action === 'openCustomDateDialog') {
-										onSelectCustomOption?.(option.key ?? String(index))
-										return
+							return (
+								<MetadataFieldMenuItem
+									disabled={option.disabled}
+									digit={
+										shortcutMode === 'clear-only'
+											? option.isEmptyValue
+												? shortcutDigit
+												: ''
+											: shortcutDigit
 									}
+									icon={option.icon}
+									id={option.key ?? String(option.value)}
+									indicator={getMetadataFieldIndicator({
+										optionValue: option.value,
+										selectedValues,
+										isValueEqual,
+									})}
+									key={option.key ?? String(option.value)}
+									label={option.label}
+									stopPropagation={stopPropagation}
+									trailing={option.trailing}
+									value={option.value}
+									onSelect={(nextValue) => {
+										if (option.action === 'openCustomDateDialog') {
+											onSelectCustomOption?.(option.key ?? String(index))
+											return
+										}
 
-									onChange(nextValue)
-								}}
-							/>
-						)
-					})}
-				</DropdownMenuGroup>
-			</DropdownMenuContent>
-		</DropdownMenu>
+										onChange(nextValue)
+									}}
+								/>
+							)
+						})}
+					</Dropdown.Section>
+				</Dropdown.Menu>
+			</Dropdown.Popover>
+		</Dropdown>
 	)
+}
+
+function resolveMenuPlacement(align: MetadataMenuAlign) {
+	return align === 'center' ? 'bottom' : (`bottom ${align}` as const)
 }
 
 function buildMetadataMenuLabel(fieldKey: MetadataFieldKey | undefined, fallbackLabel: string) {

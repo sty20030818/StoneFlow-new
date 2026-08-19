@@ -69,8 +69,10 @@ describe('TaskLinksSection', () => {
 
 		render(<TaskLinksSection taskId='task-1' />)
 
-		fireEvent.click(screen.getByRole('button', { name: '添加链接' }))
-		fireEvent.change(screen.getByPlaceholderText('例如：技术方案文档'), {
+		const addButton = screen.getByRole('button', { name: '添加链接' })
+		act(() => addButton.focus())
+		fireEvent.click(addButton)
+		fireEvent.change(await screen.findByPlaceholderText('例如：技术方案文档'), {
 			target: { value: '技术方案文档' },
 		})
 		fireEvent.change(screen.getByPlaceholderText('https://example.com/spec'), {
@@ -84,24 +86,20 @@ describe('TaskLinksSection', () => {
 				url: 'https://example.com/spec',
 			})
 		})
+		await waitFor(() => expect(addButton).toHaveFocus())
 	})
 
-	it('可从更多菜单编辑和删除链接', async () => {
+	it('可编辑和删除链接，并在 Popover 关闭后恢复触发项焦点', async () => {
 		mockTaskLinksController.value = createTaskLinksControllerState({
 			links: [createTaskLink()],
 		})
 
 		render(<TaskLinksSection taskId='task-1' />)
 
-		const moreButton = screen.getByRole('button', { name: '更多链接操作：技术方案' })
-		fireEvent.keyDown(document, { key: 'Tab' })
-		act(() => moreButton.focus())
-		expect(await screen.findByRole('tooltip')).toHaveTextContent('更多链接操作')
-		fireEvent.pointerDown(moreButton)
-		expect(await screen.findByText('编辑链接')).toBeInTheDocument()
-		await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument())
-		fireEvent.click(screen.getByText('编辑链接'))
-		fireEvent.change(screen.getByDisplayValue('技术方案'), {
+		const editButton = screen.getByRole('button', { name: '编辑链接：技术方案' })
+		act(() => editButton.focus())
+		fireEvent.click(editButton)
+		fireEvent.change(await screen.findByDisplayValue('技术方案'), {
 			target: { value: '最终方案' },
 		})
 		fireEvent.change(screen.getByDisplayValue('https://example.com/spec'), {
@@ -115,9 +113,9 @@ describe('TaskLinksSection', () => {
 				url: 'https://example.com/spec-final',
 			})
 		})
+		await waitFor(() => expect(editButton).toHaveFocus())
 
-		fireEvent.pointerDown(screen.getByRole('button', { name: '更多链接操作：技术方案' }))
-		fireEvent.click(await screen.findByText('删除链接'))
+		fireEvent.click(screen.getByRole('button', { name: '删除链接：技术方案' }))
 
 		await waitFor(() => {
 			expect(mockTaskLinksController.value.removeLink).toHaveBeenCalledWith('link-1')

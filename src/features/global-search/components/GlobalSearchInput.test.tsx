@@ -64,6 +64,8 @@ describe('GlobalSearchInput', () => {
 
 		expect((await screen.findAllByText('任务')).length).toBeGreaterThan(0)
 		expect(screen.getAllByText('项目').length).toBeGreaterThan(0)
+		expect(screen.getByRole('grid', { name: '任务搜索结果' })).toBeInTheDocument()
+		expect(screen.getByRole('grid', { name: '项目搜索结果' })).toBeInTheDocument()
 		expect(screen.getByText('独立事项')).toBeInTheDocument()
 		expect(screen.getAllByText('工作').length).toBeGreaterThan(0)
 	})
@@ -147,7 +149,7 @@ describe('GlobalSearchInput', () => {
 
 		fireEvent.change(input, { target: { value: '项' } })
 		await flushSearch(2)
-		fireEvent.click(screen.getByRole('button', { name: '打开项目 项目 A' }))
+		fireEvent.click(screen.getByRole('row', { name: '打开项目 项目 A' }))
 
 		expect(onOpenProject).toHaveBeenCalledWith(expect.objectContaining({ id: 'project-1' }))
 	})

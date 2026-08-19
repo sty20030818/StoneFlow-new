@@ -1,15 +1,9 @@
 import { render, screen } from '@testing-library/react'
 
-vi.mock('./OverlayScrollbar', () => ({
-	OverlayScrollbar: ({ className }: { className?: string }) => (
-		<div aria-hidden='true' className={className} data-testid='overlay-scrollbar' />
-	),
-}))
-
 import { CreateModalContent } from './create-modal-content'
 
 describe('CreateModalContent', () => {
-	it('Body 使用 AppScrollArea 作为真实滚动容器，并把描述区间距挂在 viewport', () => {
+	it('Body 使用 HeroUI ScrollShadow 作为真实滚动容器', () => {
 		render(
 			<CreateModalContent>
 				<CreateModalContent.Title>
@@ -27,14 +21,12 @@ describe('CreateModalContent', () => {
 			</CreateModalContent>,
 		)
 
-		const viewport = screen.getByText('body content').closest('[data-scroll-container="true"]')
-		const wrapper = viewport?.parentElement
+		const viewport = screen.getByText('body content').closest('[data-slot="scroll-shadow"]')
 
-		expect(viewport).toHaveAttribute('data-scroll-container', 'true')
+		expect(viewport).toHaveAttribute('data-slot', 'scroll-shadow')
 		expect(viewport?.className).toContain('px-5')
 		expect(viewport?.className).toContain('overflow-y-auto')
-		expect(wrapper?.className).toContain('min-h-0')
-		expect(wrapper?.className).toContain('flex-1')
-		expect(wrapper?.className).not.toContain('px-5')
+		expect(viewport?.className).toContain('min-h-0')
+		expect(viewport?.className).toContain('flex-1')
 	})
 })

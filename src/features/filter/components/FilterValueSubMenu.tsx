@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 
-import { Input } from '@/shared/components/base/input'
+import { Dropdown, SearchField } from '@heroui/react'
 
 import type { FilterField } from '../core'
 import { formatFilterFieldLabel } from './filterLabels'
@@ -31,34 +31,51 @@ export function FilterValueSubMenu({
 	}, [options, query])
 
 	return (
-		<div className='flex max-h-72 flex-col'>
-			<div className='shrink-0 border-b border-legacy-border px-2 py-1.5'>
-				<Input
-					aria-label={`${formatFilterFieldLabel(field)} 筛选`}
-					className='h-7 border-0 bg-transparent px-1 shadow-none focus-visible:ring-0'
-					onChange={(event) => setQuery(event.target.value)}
-					onKeyDown={(event) => event.stopPropagation()}
-					placeholder='筛选…'
-					value={query}
-				/>
-			</div>
-			<div className='min-h-0 overflow-y-auto p-1'>
+		<>
+			<SearchField
+				aria-label={`${formatFilterFieldLabel(field)} 筛选`}
+				className='shrink-0 border-b border-separator p-2'
+				fullWidth
+				onChange={setQuery}
+				value={query}
+				variant='secondary'
+			>
+				<SearchField.Group className='h-8 shadow-none'>
+					<SearchField.SearchIcon />
+					<SearchField.Input
+						onKeyDown={(event) => {
+							if (event.key !== 'Escape') event.stopPropagation()
+						}}
+						placeholder='筛选…'
+					/>
+					<SearchField.ClearButton aria-label='清空筛选值搜索' />
+				</SearchField.Group>
+			</SearchField>
+			<Dropdown.Menu
+				aria-label={`${formatFilterFieldLabel(field)} 筛选值`}
+				className='max-h-60 overflow-y-auto p-1'
+				selectedKeys={options
+					.filter((option) => isChecked(option.value))
+					.map((option) => option.value)}
+				selectionMode='multiple'
+				shouldCloseOnSelect={false}
+			>
 				{visibleOptions.map((option) => (
 					<FilterValueOption
-						checked={isChecked(option.value)}
 						count={option.count}
 						key={option.value}
 						label={option.label}
 						leading={option.leading}
 						onToggle={() => onToggle(option.value)}
+						value={option.value}
 					/>
 				))}
 				{visibleOptions.length === 0 ? (
-					<p className='px-2 py-2 text-[13px] text-sf-text-tertiary' role='status'>
+					<Dropdown.Item id='empty' isDisabled textValue='无匹配项'>
 						无匹配项
-					</p>
+					</Dropdown.Item>
 				) : null}
-			</div>
-		</div>
+			</Dropdown.Menu>
+		</>
 	)
 }

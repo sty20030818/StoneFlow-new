@@ -1,15 +1,12 @@
 import { useCallback, useRef, useState } from 'react'
 import { FormProvider, useController } from 'react-hook-form'
+import { Alert, Button, FieldError, Form, Input, Switch, TextArea, TextField } from '@heroui/react'
 
 import { useCreateProjectMutation } from '../hooks/project.mutations'
 import type { ProjectDetail } from '../model/types'
 import { COMMAND_IDS, CommandActionTooltip, DisabledCommandActionTooltip } from '@/features/command'
 import { useSubmitTargetFromForm, type SubmitIntent } from '@/features/submit'
 import { normalizeSubmitError, useZodForm } from '@/shared/form'
-import { Button } from '@/shared/components/base/button'
-import { Input } from '@/shared/components/base/input'
-import { Switch } from '@/shared/components/base/switch'
-import { Textarea } from '@/shared/components/base/textarea'
 import { CreateModalContent } from '@/shared/components/create-modal-content'
 import {
 	buildProjectCreateDefaultValues,
@@ -37,8 +34,11 @@ export function ProjectCreateContent({
 		schema: projectCreateSchema,
 		defaultValues: buildProjectCreateDefaultValues(),
 	})
-	const { field: nameField } = useController({ control: form.control, name: 'name' })
-	const { field: descriptionField } = useController({
+	const { field: nameField, fieldState: nameFieldState } = useController({
+		control: form.control,
+		name: 'name',
+	})
+	const { field: descriptionField, fieldState: descriptionFieldState } = useController({
 		control: form.control,
 		name: 'description',
 	})
@@ -114,71 +114,111 @@ export function ProjectCreateContent({
 	})
 
 	const submitButton = (
-		<Button disabled={!canSubmit} onClick={() => void submitProject('default')} size='sm'>
+		<Button isDisabled={!canSubmit} isPending={isSubmitting} size='sm' type='submit'>
 			{submitState === 'submitting' ? '创建中…' : '创建项目'}
 		</Button>
 	)
 
 	return (
 		<FormProvider {...form}>
-			<CreateModalContent>
-				<CreateModalContent.Title>
-					<Input
-						ref={titleInputRef}
-						autoFocus
-						className='h-auto border-none bg-transparent px-0 text-lg font-black shadow-none focus-visible:ring-0 md:text-lg md:font-black'
-						onBlur={nameField.onBlur}
-						onChange={nameField.onChange}
-						placeholder='项目名称'
-						value={nameField.value}
-					/>
-				</CreateModalContent.Title>
-
-				<CreateModalContent.Body>
-					<Textarea
-						className='min-h-20 resize-none border-none bg-transparent px-0 text-[13px] leading-5 shadow-none placeholder:text-sf-text-quaternary focus-visible:ring-0'
-						onBlur={descriptionField.onBlur}
-						onChange={descriptionField.onChange}
-						placeholder='添加项目说明…'
-						value={descriptionField.value}
-					/>
-				</CreateModalContent.Body>
-
-				{submitState === 'error' ? (
-					<CreateModalContent.Metadata error={errorMessage}>{null}</CreateModalContent.Metadata>
-				) : null}
-
-				<CreateModalContent.Footer>
-					<span aria-hidden />
-
-					<div className='flex items-center gap-3'>
-						<p
-							aria-live='polite'
-							className='min-w-30 text-right text-[11px] font-medium tabular-nums text-sf-text-tertiary'
+			<Form
+				aria-label='创建项目'
+				className='flex min-h-0 flex-1 flex-col'
+				validationBehavior='aria'
+				onSubmit={(event) => {
+					event.preventDefault()
+					void submitProject('default')
+				}}
+			>
+				<CreateModalContent>
+					<CreateModalContent.Title>
+						<TextField
+							aria-label='项目名称'
+							fullWidth
+							isInvalid={nameFieldState.invalid}
+							isRequired
+							name={nameField.name}
+							value={nameField.value}
+							onChange={nameField.onChange}
 						>
-							{createdCount > 0 ? `已创建 ${createdCount} 个项目` : '\u00A0'}
-						</p>
-						<div className='flex items-center gap-1.5 text-[12px] text-sf-text-secondary select-none'>
-							<Switch
-								checked={createMoreField.value}
-								onCheckedChange={(checked) => createMoreField.onChange(checked === true)}
-								disabled={isSubmitting}
-								size='sm'
+							<Input
+								ref={titleInputRef}
+								autoFocus
+								aria-label='项目名称'
+								className='h-auto text-lg font-semibold'
+								onBlur={nameField.onBlur}
+								placeholder='项目名称'
+								variant='secondary'
 							/>
-							创建更多
+							<FieldError>{nameFieldState.error?.message}</FieldError>
+						</TextField>
+					</CreateModalContent.Title>
+
+					<CreateModalContent.Body>
+						<TextField
+							aria-label='项目说明'
+							fullWidth
+							isInvalid={descriptionFieldState.invalid}
+							name={descriptionField.name}
+							value={descriptionField.value}
+							onChange={descriptionField.onChange}
+						>
+							<TextArea
+								aria-label='项目说明'
+								className='min-h-20 resize-none text-[13px] leading-5'
+								onBlur={descriptionField.onBlur}
+								placeholder='添加项目说明…'
+								variant='secondary'
+							/>
+							<FieldError>{descriptionFieldState.error?.message}</FieldError>
+						</TextField>
+						{submitState === 'error' ? (
+							<Alert role='alert' status='danger'>
+								<Alert.Indicator />
+								<Alert.Content>
+									<Alert.Title>项目创建失败</Alert.Title>
+									<Alert.Description>{errorMessage}</Alert.Description>
+								</Alert.Content>
+							</Alert>
+						) : null}
+					</CreateModalContent.Body>
+
+					<CreateModalContent.Footer>
+						<span aria-hidden />
+
+						<div className='flex items-center gap-3'>
+							<p
+								aria-live='polite'
+								className='min-w-30 text-right text-[11px] font-medium tabular-nums text-muted'
+							>
+								{createdCount > 0 ? `已创建 ${createdCount} 个项目` : '\u00A0'}
+							</p>
+							<Switch
+								isDisabled={isSubmitting}
+								isSelected={createMoreField.value}
+								size='sm'
+								onChange={createMoreField.onChange}
+							>
+								<Switch.Content>
+									<Switch.Control>
+										<Switch.Thumb />
+									</Switch.Control>
+									创建更多
+								</Switch.Content>
+							</Switch>
+							{canSubmit ? (
+								<CommandActionTooltip commandId={COMMAND_IDS.saveOrSubmit} label='创建项目'>
+									{submitButton}
+								</CommandActionTooltip>
+							) : (
+								<DisabledCommandActionTooltip commandId={COMMAND_IDS.saveOrSubmit} label='创建项目'>
+									{submitButton}
+								</DisabledCommandActionTooltip>
+							)}
 						</div>
-						{canSubmit ? (
-							<CommandActionTooltip commandId={COMMAND_IDS.saveOrSubmit} label='创建项目'>
-								{submitButton}
-							</CommandActionTooltip>
-						) : (
-							<DisabledCommandActionTooltip commandId={COMMAND_IDS.saveOrSubmit} label='创建项目'>
-								{submitButton}
-							</DisabledCommandActionTooltip>
-						)}
-					</div>
-				</CreateModalContent.Footer>
-			</CreateModalContent>
+					</CreateModalContent.Footer>
+				</CreateModalContent>
+			</Form>
 		</FormProvider>
 	)
 }

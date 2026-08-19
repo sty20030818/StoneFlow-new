@@ -1,20 +1,12 @@
 import { FolderIcon } from 'lucide-react'
+import { Button } from '@heroui/react'
+import { EmptyState } from '@heroui-pro/react'
 
 import { PageFrame } from '@/shared/components/page-frame'
 import { DisplayOptionsButton } from '@/features/display-options'
 import { FilterBar, ListFilterUiProvider, PageFilterButton } from '@/features/filter'
 import type { Scope } from '@/shared/types'
-import { Button } from '@/shared/components/base/button'
 import { AppBreadcrumb } from '@/shared/components/AppBreadcrumb'
-import {
-	Empty,
-	EmptyContent,
-	EmptyDescription,
-	EmptyHeader,
-	EmptyMedia,
-	EmptyPage,
-	EmptyTitle,
-} from '@/shared/components/base/empty'
 
 import { useProjectDetailScene } from '../hooks/useProjectDetailScene'
 import { TaskBoard } from '@/features/task'
@@ -38,26 +30,26 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 						scene.project ? (
 							<div className='flex items-center gap-2'>
 								<Button
-									disabled={scene.busyAction !== null}
-									onClick={scene.completeOrReopen}
+									isDisabled={scene.busyAction !== null}
 									size='sm'
 									variant='outline'
+									onPress={scene.completeOrReopen}
 								>
 									{scene.project.completedAt ? '重开' : '完成'}
 								</Button>
 								<Button
-									disabled={scene.busyAction !== null}
-									onClick={() => void scene.archive()}
+									isDisabled={scene.busyAction !== null}
 									size='sm'
 									variant='outline'
+									onPress={() => void scene.archive()}
 								>
 									归档
 								</Button>
 								<Button
-									disabled={scene.busyAction !== null}
-									onClick={() => void scene.remove()}
+									isDisabled={scene.busyAction !== null}
 									size='sm'
 									variant='outline'
+									onPress={() => void scene.remove()}
 								>
 									删除
 								</Button>
@@ -74,22 +66,18 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 				/>
 				{!scene.project ? (
 					<PageFrame.Body>
-						<EmptyPage>
-							<Empty>
-								<EmptyHeader>
-									<EmptyMedia variant='icon'>
-										<FolderIcon />
-									</EmptyMedia>
-									<EmptyTitle>当前项目不可见</EmptyTitle>
-									<EmptyDescription>它可能已被归档、删除，或当前 Scope 已切走。</EmptyDescription>
-								</EmptyHeader>
-								<EmptyContent>
-									<Button onClick={scene.goToProjectsOverview} type='button'>
-										返回项目总览
-									</Button>
-								</EmptyContent>
-							</Empty>
-						</EmptyPage>
+						<EmptyState className='mx-auto my-auto max-w-md'>
+							<EmptyState.Header>
+								<FolderIcon />
+								<EmptyState.Title>当前项目不可见</EmptyState.Title>
+								<EmptyState.Description>
+									它可能已被归档、删除，或当前 Scope 已切走。
+								</EmptyState.Description>
+							</EmptyState.Header>
+							<EmptyState.Content>
+								<Button onPress={scene.goToProjectsOverview}>返回项目总览</Button>
+							</EmptyState.Content>
+						</EmptyState>
 					</PageFrame.Body>
 				) : (
 					<PageFrame.VirtualizedBody>

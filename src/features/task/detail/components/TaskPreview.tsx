@@ -1,5 +1,7 @@
 import { type ReactNode } from 'react'
 
+import { Card, Separator, Surface } from '@heroui/react'
+
 import { taskDateMetadataIcons } from '@/features/metadata-fields'
 import { useTaskDetailData } from '@/features/task/hooks/useTaskData'
 import { formatTaskPriorityLabel } from '@/features/task/model/taskPriority'
@@ -7,17 +9,8 @@ import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { PriorityIcon } from '@/features/task/model/indicators/PriorityIcon'
 import { formatShortDate } from '@/shared/lib/date'
 import { OverflowTooltip } from '@/shared/components/tooltip'
-import { cn } from '@/shared/lib/utils'
 import type { TaskListItem } from '@/shared/types'
 import { CircleIcon, Link2Icon } from 'lucide-react'
-
-import {
-	taskPreviewCardClass,
-	taskPreviewHeaderClass,
-	taskPreviewHostClass,
-	taskPreviewMetaRowClass,
-	taskPreviewSectionClass,
-} from './taskPreviewTokens'
 
 // 模块级 Intl 格式化器：避免每次调用都重建，格式选项固定不变
 const updatedAtFormatter = new Intl.DateTimeFormat('zh-CN', {
@@ -77,16 +70,16 @@ export function TaskPreview({
 	}
 
 	return (
-		<div className={taskPreviewHostClass}>
-			<section
+		<div className='pointer-events-none absolute right-3 top-3 z-30 block sm:right-5 sm:top-5'>
+			<Card
 				aria-label='任务预览'
-				className={taskPreviewCardClass}
+				className='pointer-events-auto w-[min(24rem,calc(100vw-8rem))] overflow-hidden'
 				data-task-preview-root='true'
 				onPointerEnter={onPointerEnter}
 				onPointerLeave={onPointerLeave}
 			>
-				<header className={taskPreviewHeaderClass}>
-					<div className='flex items-center justify-between gap-3 text-[11px] leading-4 text-sf-text-tertiary'>
+				<Card.Header className='flex flex-col gap-2'>
+					<div className='flex items-center justify-between gap-3 text-[11px] leading-4 text-muted'>
 						<OverflowTooltip className='min-w-0' content={breadcrumbLabel}>
 							{breadcrumbLabel}
 						</OverflowTooltip>
@@ -98,24 +91,18 @@ export function TaskPreview({
 						</OverflowTooltip>
 					</div>
 					<div className='flex flex-col gap-1.5'>
-						<h2>
+						<Card.Title>
 							<OverflowTooltip
-								className='!line-clamp-2 !whitespace-normal text-[20px] font-semibold leading-tight text-legacy-foreground'
+								className='!line-clamp-2 !whitespace-normal text-[20px] font-semibold leading-tight text-foreground'
 								content={task.title}
 							>
 								{task.title}
 							</OverflowTooltip>
-						</h2>
-						<div className={taskPreviewMetaRowClass}>
+						</Card.Title>
+						<div className='flex flex-wrap items-center gap-x-3 gap-y-2 text-xs leading-4 text-muted'>
 							<MetaPill icon={<StatusDot />} label={formatTaskStatusLabel(task.status)} />
 							<MetaPill
-								icon={
-									<PriorityIcon
-										className='text-sf-text-secondary'
-										priority={task.priority}
-										size='sm'
-									/>
-								}
+								icon={<PriorityIcon className='text-muted' priority={task.priority} size='sm' />}
 								label={formatTaskPriorityLabel(task.priority)}
 							/>
 							{dateItems.map((item) => (
@@ -123,51 +110,55 @@ export function TaskPreview({
 							))}
 						</div>
 					</div>
-				</header>
+				</Card.Header>
 
-				<section className={cn(taskPreviewSectionClass, 'pt-3')}>
+				<Separator variant='tertiary' />
+				<Card.Content className='flex flex-col gap-2'>
 					{note ? (
 						<p>
 							<OverflowTooltip
-								className='!line-clamp-5 !whitespace-normal text-[13px] leading-6 text-sf-text-secondary'
+								className='!line-clamp-5 !whitespace-normal text-[13px] leading-6 text-muted'
 								content={note}
 							>
 								{note}
 							</OverflowTooltip>
 						</p>
 					) : (
-						<div className='rounded-md border border-dashed border-sf-border-subtle bg-legacy-muted/30 px-3 py-3 text-[12px] leading-5 text-sf-text-tertiary'>
+						<Surface className='p-3 text-xs leading-5 text-muted' variant='secondary'>
 							{detail.status === 'loading' ? '加载备注…' : '暂无备注'}
-						</div>
+						</Surface>
 					)}
-				</section>
+				</Card.Content>
 
 				{linkSummary && linkSummary.items.length > 0 ? (
-					<section className={cn(taskPreviewSectionClass, 'pt-4')}>
-						<h3 className='text-[11px] font-medium uppercase tracking-[0.16em] text-sf-text-tertiary'>
-							链接
-						</h3>
-						<div className='flex flex-col gap-1.5'>
-							{linkSummary.items.map((item) => (
-								<div
-									className='flex items-center gap-2 text-[12px] leading-5 text-sf-text-secondary'
-									key={item.id}
-								>
-									<Link2Icon className='size-3.5 shrink-0 text-sf-text-tertiary' />
-									<OverflowTooltip className='min-w-0' content={item.title}>
-										{item.title}
-									</OverflowTooltip>
-								</div>
-							))}
-							{linkSummary.remainingCount > 0 ? (
-								<span className='pl-5 text-[11px] text-sf-text-tertiary'>
-									+{linkSummary.remainingCount} more
-								</span>
-							) : null}
-						</div>
-					</section>
+					<>
+						<Separator variant='tertiary' />
+						<Card.Content className='flex flex-col gap-2'>
+							<h3 className='text-[11px] font-medium uppercase tracking-[0.16em] text-muted'>
+								链接
+							</h3>
+							<div className='flex flex-col gap-1.5'>
+								{linkSummary.items.map((item) => (
+									<div
+										className='flex items-center gap-2 text-xs leading-5 text-muted'
+										key={item.id}
+									>
+										<Link2Icon className='size-3.5 shrink-0' />
+										<OverflowTooltip className='min-w-0' content={item.title}>
+											{item.title}
+										</OverflowTooltip>
+									</div>
+								))}
+								{linkSummary.remainingCount > 0 ? (
+									<span className='pl-5 text-[11px] text-muted'>
+										+{linkSummary.remainingCount} more
+									</span>
+								) : null}
+							</div>
+						</Card.Content>
+					</>
 				) : null}
-			</section>
+			</Card>
 		</div>
 	)
 }
@@ -179,7 +170,7 @@ function MetaPill({ icon, label }: { icon: ReactNode; label: string | null }) {
 
 	return (
 		<span className='inline-flex min-w-0 items-center gap-1.5'>
-			<span className='shrink-0 text-sf-text-tertiary'>{icon}</span>
+			<span className='shrink-0 text-muted'>{icon}</span>
 			<OverflowTooltip className='min-w-0' content={label}>
 				{label}
 			</OverflowTooltip>

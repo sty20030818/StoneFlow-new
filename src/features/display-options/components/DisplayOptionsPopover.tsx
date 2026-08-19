@@ -1,13 +1,14 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import { cloneElement, type ReactElement } from 'react'
+
+import { Popover } from '@heroui/react'
 
 import type {
 	ResolvedTaskDisplayOptions,
 	TaskDisplayPageKey,
 } from '@/features/display-options/core'
 import { cn } from '@/shared/lib/utils'
-import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/base/popover'
 
 import { DisplayOptionsPanel } from './DisplayOptionsPanel'
 
@@ -17,7 +18,7 @@ type DisplayOptionsPopoverProps = {
 	status: 'loading' | 'ready' | 'error'
 	error?: string | null
 	actions: React.ComponentProps<typeof DisplayOptionsPanel>['actions']
-	trigger: ReactNode
+	trigger: ReactElement<Record<string, unknown>>
 	open?: boolean
 	onOpenChange?: (open: boolean) => void
 	className?: string
@@ -35,21 +36,27 @@ export function DisplayOptionsPopover({
 	className,
 }: DisplayOptionsPopoverProps) {
 	return (
-		<Popover onOpenChange={onOpenChange} open={open}>
-			<PopoverTrigger asChild>{trigger}</PopoverTrigger>
-			<PopoverContent
-				align='end'
-				className={cn('w-[min(320px,calc(100vw-24px))] p-2', className)}
-				sideOffset={8}
+		<Popover isOpen={open} onOpenChange={onOpenChange}>
+			<Popover.Trigger
+				render={({ children: _children, ...props }) =>
+					cloneElement(trigger, props as Record<string, unknown>)
+				}
+			/>
+			<Popover.Content
+				className={cn('w-[min(320px,calc(100vw-24px))] p-0', className)}
+				offset={8}
+				placement='bottom end'
 			>
-				<DisplayOptionsPanel
-					actions={actions}
-					error={error}
-					options={options}
-					pageKey={pageKey}
-					status={status}
-				/>
-			</PopoverContent>
+				<Popover.Dialog aria-label='显示选项' className='p-2'>
+					<DisplayOptionsPanel
+						actions={actions}
+						error={error}
+						options={options}
+						pageKey={pageKey}
+						status={status}
+					/>
+				</Popover.Dialog>
+			</Popover.Content>
 		</Popover>
 	)
 }

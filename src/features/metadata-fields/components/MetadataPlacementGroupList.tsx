@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react'
+import { Dropdown } from '@heroui/react'
+import { Header } from 'react-aria-components'
 
 import type {
 	MetadataFieldIndicator,
@@ -6,12 +8,6 @@ import type {
 	TaskPlacementGroupItem,
 	TaskPlacementTarget,
 } from '@/features/metadata-fields/core'
-import {
-	DropdownMenuGroup,
-	DropdownMenuLabel,
-	DropdownMenuSeparator,
-} from '@/shared/components/base/dropdown-menu'
-
 import { MetadataFieldMenuItem } from './MetadataFieldMenuItem'
 
 export type MetadataPlacementGroupListProps = {
@@ -31,27 +27,23 @@ export function MetadataPlacementGroupList({
 	stopPropagation,
 	onChange,
 }: MetadataPlacementGroupListProps) {
-	return groups.map((group, index) => (
-		<div key={group.spaceId}>
-			{index > 0 ? <DropdownMenuSeparator /> : null}
-			<DropdownMenuLabel className='px-2 py-1.5 text-[12px] normal-case tracking-normal text-muted-foreground'>
-				{group.heading}
-			</DropdownMenuLabel>
-			<DropdownMenuGroup>
-				{group.items.map((item) => (
-					<MetadataFieldMenuItem
-						digit={getDigit(item)}
-						icon={getIcon(item)}
-						indicator={getIndicator(item.target)}
-						key={item.key}
-						label={item.title}
-						stopPropagation={stopPropagation}
-						trailing={item.meta}
-						value={item.target}
-						onSelect={onChange}
-					/>
-				))}
-			</DropdownMenuGroup>
-		</div>
+	return groups.map((group) => (
+		<Dropdown.Section key={group.spaceId}>
+			<Header className='px-2 py-1.5 text-[12px] font-medium text-muted'>{group.heading}</Header>
+			{group.items.map((item) => (
+				<MetadataFieldMenuItem
+					digit={getDigit(item)}
+					icon={getIcon(item)}
+					id={item.key}
+					indicator={getIndicator(item.target)}
+					key={item.key}
+					label={item.title}
+					stopPropagation={stopPropagation}
+					trailing={item.meta}
+					value={item.target}
+					onSelect={onChange}
+				/>
+			))}
+		</Dropdown.Section>
 	))
 }

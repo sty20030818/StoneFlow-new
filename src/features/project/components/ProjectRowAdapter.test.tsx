@@ -1,9 +1,115 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 
-import { DangerConfirmProvider } from '@/features/danger-confirm'
+import {
+	COMMAND_IDS,
+	CommandRegistry,
+	CommandRuntime,
+	CommandRuntimeProvider,
+	createEmptyCommandContext,
+	type Command,
+	type CommandInvocation,
+} from '@/features/command'
 import type { ProjectOverviewItem } from '@/shared/types'
 import { renderWithInteractionProviders as render } from '@/test/TestInteractionProviders'
+
 import { ProjectRowAdapter, type ProjectRowAdapterProps } from './ProjectRowAdapter'
+
+describe('ProjectRowAdapter', () => {
+	it('整行打开与完成动作仍走项目领域回调', () => {
+		const actions = buildActions()
+		renderProjectRow({ actions })
+
+		fireEvent.click(screen.getByRole('row', { name: '打开项目 项目 A' }))
+		fireEvent.click(screen.getByRole('button', { name: '完成' }))
+		const checkbox = screen.getByRole('checkbox', { name: '选择项目 项目 A' })
+		fireEvent.pointerDown(checkbox)
+		fireEvent.click(checkbox)
+
+		expect(actions.onOpenProject).toHaveBeenCalledWith('project-1')
+		expect(actions.onOpenProject).toHaveBeenCalledTimes(1)
+		expect(actions.onCompleteProject).toHaveBeenCalledWith('project-1')
+		expect(actions.onToggleSelected).toHaveBeenCalledTimes(1)
+	})
+
+	it('行按钮与右键菜单分别执行 row singleton 和 context-menu command projection', async () => {
+		const runCommand =
+			vi.fn<
+				(ctx: ReturnType<typeof createEmptyCommandContext>, invocation: CommandInvocation) => void
+			>()
+		renderProjectRow({ runCommand })
+
+		fireEvent.click(screen.getByRole('button', { name: '归档' }))
+		await waitFor(() => {
+			expect(runCommand).toHaveBeenCalledWith(
+				expect.objectContaining({
+					selection: expect.objectContaining({ ids: ['project-1'] }),
+				}),
+				{ source: 'row' },
+			)
+		})
+
+		fireEvent.contextMenu(screen.getByRole('row', { name: '打开项目 项目 A' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: '移入回收站' }))
+
+		await waitFor(() => {
+			expect(runCommand).toHaveBeenLastCalledWith(
+				expect.objectContaining({
+					selection: expect.objectContaining({ ids: ['project-1'] }),
+				}),
+				{ source: 'context-menu' },
+			)
+		})
+	})
+})
+
+function renderProjectRow({
+	actions = buildActions(),
+	runCommand = vi.fn(),
+}: {
+	actions?: ProjectRowAdapterProps['actions']
+	runCommand?: (
+		ctx: ReturnType<typeof createEmptyCommandContext>,
+		invocation: CommandInvocation,
+	) => void
+} = {}) {
+	const context = createEmptyCommandContext()
+	const commands: Command[] = [COMMAND_IDS.projectArchive, COMMAND_IDS.projectDelete].map((id) => ({
+		id,
+		title: id === COMMAND_IDS.projectArchive ? '归档项目' : '删除项目',
+		category: 'project',
+		scope: ['project-list'],
+		isEnabled: (ctx) => ctx.selection.type === 'project' && ctx.selection.ids.length > 0,
+		run: runCommand,
+	}))
+	const runtime = new CommandRuntime({
+		registry: new CommandRegistry(commands),
+		getContext: () => context,
+	})
+
+	return render(
+		<CommandRuntimeProvider context={context} runtime={runtime}>
+			<ProjectRowAdapter
+				actions={actions}
+				project={createProject({ id: 'project-1', name: '项目 A' })}
+				rowState={{
+					focusSource: null,
+					isFocused: false,
+					isPending: false,
+					isSelected: false,
+				}}
+			/>
+		</CommandRuntimeProvider>,
+	)
+}
+
+function buildActions(): ProjectRowAdapterProps['actions'] {
+	return {
+		onOpenProject: vi.fn(),
+		onCompleteProject: vi.fn(),
+		onReopenProject: vi.fn(),
+		onToggleSelected: vi.fn(),
+	}
+}
 
 function createProject(
 	overrides: Partial<ProjectOverviewItem> & Pick<ProjectOverviewItem, 'id' | 'name'>,
@@ -30,125 +136,3 @@ function createProject(
 		updatedAt: overrides.updatedAt ?? '2026-05-01T00:00:00Z',
 	}
 }
-
-function buildActions(): ProjectRowAdapterProps['actions'] {
-	return {
-		onOpenProject: vi.fn(),
-		onCompleteProject: vi.fn(),
-		onReopenProject: vi.fn(),
-		onArchiveProject: vi.fn(),
-		onDeleteProject: vi.fn(),
-	}
-}
-
-function renderProjectRowAdapter({
-	project = createProject({ id: 'project-1', name: '项目 A' }),
-	rowState = { isPending: false },
-	actions = buildActions(),
-	projectBinding,
-}: {
-	project?: ProjectOverviewItem
-	rowState?: ProjectRowAdapterProps['rowState']
-	actions?: ProjectRowAdapterProps['actions']
-	projectBinding?: ProjectRowAdapterProps['projectBinding']
-} = {}) {
-	render(
-		<DangerConfirmProvider>
-			<ProjectRowAdapter
-				actions={actions}
-				project={project}
-				projectBinding={projectBinding}
-				rowState={rowState}
-			/>
-		</DangerConfirmProvider>,
-	)
-	return { project, rowState, actions, projectBinding }
-}
-
-describe('ProjectRowAdapter', () => {
-	it('点击整行触发打开项目', () => {
-		const { actions } = renderProjectRowAdapter()
-
-		fireEvent.click(screen.getByRole('button', { name: '打开项目 项目 A' }))
-		expect(actions.onOpenProject).toHaveBeenCalledWith('project-1')
-	})
-
-	it('根据完成态切换动作按钮并透传回调', () => {
-		const running = renderProjectRowAdapter()
-		fireEvent.click(screen.getByRole('button', { name: '完成' }))
-		expect(running.actions.onCompleteProject).toHaveBeenCalledWith('project-1')
-
-		const reopenActions = buildActions()
-		render(
-			<DangerConfirmProvider>
-				<ProjectRowAdapter
-					actions={reopenActions}
-					project={createProject({
-						id: 'project-2',
-						name: '项目 B',
-						completedAt: '2026-05-02T00:00:00Z',
-					})}
-					rowState={{ isPending: false }}
-				/>
-			</DangerConfirmProvider>,
-		)
-
-		fireEvent.click(screen.getByRole('button', { name: '重开' }))
-		expect(reopenActions.onReopenProject).toHaveBeenCalledWith('project-2')
-	})
-
-	it('右键菜单可触发移入回收站', async () => {
-		const { actions } = renderProjectRowAdapter()
-		const row = screen.getByRole('button', { name: '打开项目 项目 A' })
-
-		fireEvent.contextMenu(row)
-		fireEvent.click(await screen.findByRole('menuitem', { name: '移入回收站' }))
-		expect(actions.onDeleteProject).not.toHaveBeenCalled()
-		await screen.findByRole('alertdialog')
-		fireEvent.click(screen.getByRole('button', { name: '移入回收站' }))
-		await waitFor(() => {
-			expect(actions.onDeleteProject).toHaveBeenCalledWith('project-1')
-		})
-	})
-
-	it('showProjectCell=true 时可渲染并选择父项目', async () => {
-		const projectBinding = {
-			showProjectCell: true,
-			projectOptions: [
-				{ id: 'project-1', name: '项目 A' },
-				{ id: 'project-2', name: '项目 B' },
-			],
-			onSelectProject: vi.fn(),
-			onSelectStandalone: vi.fn(),
-		}
-
-		renderProjectRowAdapter({ projectBinding })
-
-		fireEvent.pointerDown(screen.getByRole('button', { name: '父项目' }))
-		fireEvent.click(await screen.findByRole('menuitem', { name: /项目 B/ }))
-		expect(projectBinding.onSelectProject).toHaveBeenCalledWith('project-2')
-
-		fireEvent.pointerDown(screen.getByRole('button', { name: '父项目' }))
-		fireEvent.click(await screen.findByRole('menuitem', { name: /无父项目/ }))
-		expect(projectBinding.onSelectStandalone).toHaveBeenCalledTimes(1)
-	})
-
-	it('字段点击不会触发行打开，日期无值时不渲染', async () => {
-		const { actions } = renderProjectRowAdapter({
-			project: createProject({ id: 'project-1', name: '项目 A', dueAt: null }),
-			projectBinding: {
-				showProjectCell: true,
-				projectOptions: [{ id: 'project-2', name: '项目 B' }],
-				onSelectProject: vi.fn(),
-				onSelectStandalone: vi.fn(),
-			},
-		})
-
-		expect(screen.queryByRole('button', { name: /截止 项目 A/ })).not.toBeInTheDocument()
-
-		fireEvent.pointerDown(screen.getByRole('button', { name: '父项目' }))
-		fireEvent.click(await screen.findByRole('menuitem', { name: /项目 B/ }))
-
-		expect(actions.onOpenProject).not.toHaveBeenCalled()
-	})
-})

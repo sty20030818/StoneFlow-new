@@ -30,7 +30,7 @@ export function createRunEntityBulkActionFromCommand(runBulkAction: RunBulkActio
 		const snapshot = createCommandBulkSelectionSnapshot(
 			ctx.selection,
 			entity,
-			resolveBulkSelectionSource(invocation),
+			resolveBulkSelectionSource(invocation, ctx.selection.ids.length),
 		)
 		const result = await runBulkAction(actionId, snapshot, payload)
 		if (shouldClearBulkSelection(result)) {
@@ -43,9 +43,9 @@ export function createRunEntityBulkActionFromCommand(runBulkAction: RunBulkActio
 	}
 }
 
-function resolveBulkSelectionSource(invocation: CommandInvocation) {
-	if (invocation.source === 'row') {
-		throw new Error('行指针操作不能执行批量命令')
+function resolveBulkSelectionSource(invocation: CommandInvocation, selectionCount: number) {
+	if (invocation.source === 'row' && selectionCount !== 1) {
+		throw new Error('行操作只能执行单条命令')
 	}
 	return invocation.source
 }

@@ -93,7 +93,7 @@ describe('ShellSidebar', () => {
 		fireEvent.click(await screen.findByRole('menuitem', { name: '新建空间' }))
 		expect(await screen.findByRole('dialog', { name: '新建 Space' })).toBeInTheDocument()
 
-		fireEvent.click(screen.getByRole('button', { name: '关闭' }))
+		fireEvent.click(screen.getByRole('button', { name: '取消' }))
 		await waitFor(() => {
 			expect(screen.queryByRole('dialog', { name: '新建 Space' })).not.toBeInTheDocument()
 		})

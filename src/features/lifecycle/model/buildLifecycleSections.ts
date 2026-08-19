@@ -1,6 +1,14 @@
 import type { LifecycleEntry, LifecycleMode, Scope } from '@/shared/types'
 
 export type LifecycleEntityFilter = 'all' | 'space' | 'project' | 'task'
+export type LifecycleSectionKey = Exclude<LifecycleEntityFilter, 'all'>
+export type LifecycleSection = {
+	key: LifecycleSectionKey
+	label: string
+	items: LifecycleEntry[]
+}
+
+export const LIFECYCLE_SECTION_ORDER: readonly LifecycleSectionKey[] = ['space', 'project', 'task']
 
 /**
  * 按实体类型过滤并分组为看板 sections。
@@ -10,7 +18,7 @@ export function buildLifecycleSections(
 	filter: LifecycleEntityFilter,
 	mode: LifecycleMode,
 	scope: Scope,
-) {
+): LifecycleSection[] {
 	const showSpace = scope.type === 'all'
 	const filteredEntries = showSpace
 		? entries
@@ -47,7 +55,7 @@ export function buildLifecycleSections(
 		]
 	}
 
-	const sections = []
+	const sections: LifecycleSection[] = []
 	if (showSpace) {
 		sections.push({
 			key: 'space',

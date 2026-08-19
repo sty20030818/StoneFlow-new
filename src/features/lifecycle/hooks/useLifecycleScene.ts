@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { toast } from 'sonner'
 
 import {
 	openSection,
@@ -8,27 +7,16 @@ import {
 	resolveShellRouteScope,
 	useCurrentShellRoute,
 } from '@/app/navigation'
-import {
-	LIFECYCLE_BULK_ACTION_IDS,
-	createLifecycleBulkSelectionSnapshot,
-	shouldClearBulkSelection,
-	showBulkActionResultToast,
-	useBulkActionContext,
-	type BulkActionId,
-} from '@/features/bulk-action'
 import { useEntityDetailController } from '@/features/entity-detail'
-import { useEntitySelection, useRegisterCommandSelection } from '@/features/selection'
+import { useGroupedCollectionInteraction, useRegisterCommandSelection } from '@/features/selection'
 import type { LifecycleEntry, LifecycleMode } from '@/shared/types'
-import { normalizeTauriError } from '@/shared/lib/normalize-tauri-error'
-
-import {
-	useDeleteLifecycleEntryMutation,
-	usePermanentlyDeleteLifecycleEntryMutation,
-	useRestoreLifecycleEntryMutation,
-} from './lifecycle.mutations'
 import { useLifecycleEntriesQuery } from './lifecycle.queries'
 import { buildLifecycleCommandSelection } from '../model/buildLifecycleCommandSelection'
-import { buildLifecycleSections, type LifecycleEntityFilter } from '../model/buildLifecycleSections'
+import {
+	buildLifecycleSections,
+	LIFECYCLE_SECTION_ORDER,
+	type LifecycleEntityFilter,
+} from '../model/buildLifecycleSections'
 import type { LifecycleBoardProps } from '../components/LifecycleBoard'
 
 const EMPTY_LIFECYCLE_ENTRIES: LifecycleEntry[] = []
@@ -44,12 +32,7 @@ export function useLifecycleScene(mode: LifecycleMode) {
 	const scope = resolveShellRouteScope(shellRoute)
 	const spaceId = shellRoute.spaceId
 	const entriesQuery = useLifecycleEntriesQuery(mode, scope)
-	const restoreEntry = useRestoreLifecycleEntryMutation()
-	const deleteEntry = useDeleteLifecycleEntryMutation()
-	const permanentlyDeleteEntry = usePermanentlyDeleteLifecycleEntryMutation()
-	const { runBulkAction } = useBulkActionContext()
 	const [entityFilter, setEntityFilter] = useState<LifecycleEntityFilter>('all')
-	const [pendingEntryId, setPendingEntryId] = useState<string | null>(null)
 
 	const breadcrumbItems = useMemo(() => resolveBreadcrumb({ route: shellRoute }), [shellRoute])
 
@@ -59,27 +42,49 @@ export function useLifecycleScene(mode: LifecycleMode) {
 			? 'loading'
 			: 'ready'
 	const sliceItems = entriesQuery.data ?? EMPTY_LIFECYCLE_ENTRIES
-
-	const {
-		selectedIdSet: selectedEntryIdSet,
-		selectionSnapshot,
-		focusedId: focusedEntryId,
-		toggleSelection: toggleEntrySelection,
-		clearSelection: clearEntrySelection,
-		setFocusedId: setFocusedEntryId,
-		moveFocus,
-		selectIds: selectEntryIds,
-	} = useEntitySelection(sliceItems.map((entry) => entry.id))
+	const sections = useMemo(
+		() => buildLifecycleSections(sliceItems, entityFilter, mode, scope),
+		[entityFilter, mode, sliceItems, scope],
+	)
+	const lifecycleGroups = useMemo(
+		() =>
+			sections.map((section) => ({
+				key: section.key,
+				itemKeys: section.items.map((entry) => entry.id),
+			})),
+		[sections],
+	)
+	const lifecycleCollection = useGroupedCollectionInteraction({
+		groups: lifecycleGroups,
+		defaultOpenGroupKeys: LIFECYCLE_SECTION_ORDER,
+	})
+	const selectedEntryIds = useMemo(
+		() =>
+			lifecycleCollection.interaction.projection.eligibleKeys.filter((entryId) =>
+				lifecycleCollection.interaction.selectedKeys.has(entryId),
+			),
+		[
+			lifecycleCollection.interaction.projection.eligibleKeys,
+			lifecycleCollection.interaction.selectedKeys,
+		],
+	)
 
 	const commandSelection = useMemo(
 		() =>
 			buildLifecycleCommandSelection({
-				selectedIds: selectionSnapshot.ids,
+				selectedIds: selectedEntryIds,
 				entries: sliceItems,
 				mode,
-				clearSelection: clearEntrySelection,
+				focusedEntryId: lifecycleCollection.interaction.focusedKey,
+				clearSelection: lifecycleCollection.interaction.clearSelection,
 			}),
-		[clearEntrySelection, mode, selectionSnapshot.ids, sliceItems],
+		[
+			lifecycleCollection.interaction.clearSelection,
+			lifecycleCollection.interaction.focusedKey,
+			mode,
+			selectedEntryIds,
+			sliceItems,
+		],
 	)
 	const readCommandSelection = useCallback(() => commandSelection, [commandSelection])
 	useRegisterCommandSelection(readCommandSelection)
@@ -132,43 +137,11 @@ export function useLifecycleScene(mode: LifecycleMode) {
 		}
 	}
 
-	const runLifecycleBulkAction = useCallback(
-		async (actionId: BulkActionId, entries: LifecycleEntry[]) => {
-			const result = await runBulkAction(
-				actionId,
-				createLifecycleBulkSelectionSnapshot(entries, 'context-menu'),
-			)
-			if (shouldClearBulkSelection(result)) {
-				clearEntrySelection()
-			}
-			showBulkActionResultToast(result, { successVerb: '处理', entityLabel: '条目' })
-		},
-		[clearEntrySelection, runBulkAction],
-	)
-
-	async function runEntryMutation(entry: LifecycleEntry, runner: () => Promise<unknown>) {
-		setPendingEntryId(entry.id)
-		try {
-			await runner()
-		} catch (error) {
-			toast.error(normalizeTauriError(error, '操作失败，请稍后重试'))
-		} finally {
-			setPendingEntryId(null)
-		}
-	}
-
-	const sections = useMemo(
-		() => buildLifecycleSections(sliceItems, entityFilter, mode, scope),
-		[entityFilter, mode, sliceItems, scope],
-	)
-
 	const lifecycleBoardProps: LifecycleBoardProps = {
 		mode,
 		sections,
+		collection: lifecycleCollection,
 		status: sliceStatus,
-		pendingEntryId,
-		selectedEntryIdSet,
-		focusedEntryId,
 		emptyActionLabel: '返回独立事项',
 		emptyDescription:
 			mode === 'archive'
@@ -179,29 +152,6 @@ export function useLifecycleScene(mode: LifecycleMode) {
 			void navigate({ to: openSection(scope, 'standalone', spaceId) as never })
 		},
 		onOpenDetail: mode === 'archive' ? handleOpenDetail : undefined,
-		onRestore: (entry: LifecycleEntry) => {
-			void runEntryMutation(entry, () => restoreEntry.mutateAsync(entry))
-		},
-		onRestoreEntries: (entries: LifecycleEntry[]) => {
-			void runLifecycleBulkAction(LIFECYCLE_BULK_ACTION_IDS.restoreSelected, entries)
-		},
-		onMoveToTrash: (entry: LifecycleEntry) => {
-			void runEntryMutation(entry, () => deleteEntry.mutateAsync(entry))
-		},
-		onMoveToTrashEntries: (entries: LifecycleEntry[]) => {
-			void runLifecycleBulkAction(LIFECYCLE_BULK_ACTION_IDS.deleteSelected, entries)
-		},
-		onPermanentlyDelete: (entry: LifecycleEntry) => {
-			void runEntryMutation(entry, () => permanentlyDeleteEntry.mutateAsync(entry))
-		},
-		onPermanentlyDeleteEntries: (entries: LifecycleEntry[]) => {
-			void runLifecycleBulkAction(LIFECYCLE_BULK_ACTION_IDS.deletePermanentlySelected, entries)
-		},
-		onSelectAllEntries: selectEntryIds,
-		onToggleEntrySelection: toggleEntrySelection,
-		onSetFocusedEntry: setFocusedEntryId,
-		onMoveEntryFocus: moveFocus,
-		onClearEntrySelection: clearEntrySelection,
 	}
 
 	return {

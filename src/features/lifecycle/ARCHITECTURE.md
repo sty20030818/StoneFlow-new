@@ -1,6 +1,6 @@
 # lifecycle · 归档 / 回收站编排
 
-> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-07-19
+> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-08-19
 
 ---
 
@@ -9,7 +9,7 @@
 ```txt
 routes 薄页
   → LifecycleList（薄壳）
-  → useLifecycleScene(mode)（选择 / bulk / 打开详情）
+  → useLifecycleScene(mode)（查询 / 分组 / 唯一 collection owner）
   → PageFrame + LifecycleBoard
 
 写路径
@@ -17,6 +17,7 @@ routes 薄页
   → 本域不复制实体业务规则
 
 批量 / 命令
+  → 行与右键动作统一投影为 Command selection
   → bulk/（动作定义 + adapter）
   → commands/registerLifecycleCommands
 ```
@@ -35,7 +36,7 @@ src/features/lifecycle/
 ├── index.ts                 # 主 public
 ├── api/                     # list + 编排型 delete/restore/permanent
 ├── hooks/                   # keys · queries · mutations · useLifecycleScene
-├── model/                   # command selection · sections 纯函数
+├── model/                   # command selection · sections · collection 纯模型
 ├── bulk/                    # 批量动作 + adapter
 ├── commands/                # registerLifecycleCommands
 └── components/
@@ -43,7 +44,7 @@ src/features/lifecycle/
     ├── LifecycleBoard · LifecycleRowAdapter · LifecycleContextMenu
 ```
 
-列表编排在 `hooks/useLifecycleScene`；`LifecycleList` 只组合页面框架与生命周期 Board。
+列表编排在 `hooks/useLifecycleScene`；它是选择、焦点与分组折叠的唯一 collection owner。`LifecycleList` 只组合页面框架与生命周期 Board，行与右键写操作统一消费 Command projection。
 
 ---
 

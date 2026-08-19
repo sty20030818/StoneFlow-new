@@ -1,24 +1,13 @@
 export {
-	RowActionButton,
 	RowMetaButton,
 	RowSelectionCell,
 	RowTitleCell,
 	stopRowEventPropagation,
-	type RowActionButtonProps,
 	type RowMetaButtonProps,
 	type RowSelectionCellProps,
 	type RowTitleCellProps,
 } from './RowFieldCells'
-export {
-	CreatedAtCell,
-	IconCell,
-	RestoreActionCell,
-	TagsCell,
-	type CreatedAtCellProps,
-	type IconCellProps,
-	type RestoreActionCellProps,
-	type TagsCellProps,
-} from './cells'
+export { CreatedAtCell, TagsCell, type CreatedAtCellProps, type TagsCellProps } from './cells'
 export {
 	ROW_SHELL_ACTIVE_CLASS,
 	ROW_SHELL_BASE_CLASS,

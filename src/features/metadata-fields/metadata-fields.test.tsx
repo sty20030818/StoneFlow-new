@@ -2,6 +2,7 @@ import { CalendarIcon } from 'lucide-react'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 
 import {
+	CustomDateDialog,
 	createTaskPlacementGroupedDropdownProps,
 	MetadataDateDropdown,
 	MetadataFieldDropdown,
@@ -29,7 +30,7 @@ describe('metadata-fields', () => {
 			/>,
 		)
 
-		fireEvent.pointerDown(screen.getByRole('button', { name: '优先级' }))
+		fireEvent.click(screen.getByRole('button', { name: '优先级' }))
 		expect(await screen.findByText('设置优先级为...')).toBeInTheDocument()
 		fireEvent.keyDown(window, { key: '1' })
 
@@ -72,7 +73,7 @@ describe('metadata-fields', () => {
 			/>,
 		)
 
-		fireEvent.pointerDown(screen.getByRole('button', { name: '截止时间' }))
+		fireEvent.click(screen.getByRole('button', { name: '截止时间' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /移除当前日期/ }))
 		expect(onChange).toHaveBeenCalledWith(null)
 
@@ -84,7 +85,7 @@ describe('metadata-fields', () => {
 				onChange={onChange}
 			/>,
 		)
-		fireEvent.pointerDown(screen.getByRole('button', { name: '截止时间' }))
+		fireEvent.click(screen.getByRole('button', { name: '截止时间' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /自定义日期/ }))
 
 		expect(useDialogStore.getState().customDateDialog).toMatchObject({
@@ -93,6 +94,29 @@ describe('metadata-fields', () => {
 			value: null,
 			hasExistingValue: false,
 		})
+	})
+
+	it('自定义日期用原生日期输入提交 canonical 日期值', () => {
+		const onOpenChange = vi.fn()
+		const onSubmit = vi.fn()
+
+		render(
+			<CustomDateDialog
+				fieldKey='dueDate'
+				hasExistingValue={false}
+				label='截止时间'
+				onOpenChange={onOpenChange}
+				onSubmit={onSubmit}
+				open
+				value={null}
+			/>,
+		)
+
+		fireEvent.change(screen.getByLabelText('截止时间'), { target: { value: '2026-05-10' } })
+		fireEvent.click(screen.getByRole('button', { name: '保存截止时间' }))
+
+		expect(onSubmit).toHaveBeenCalledWith('2026-05-10')
+		expect(onOpenChange).toHaveBeenCalledWith(false)
 	})
 
 	it('grouped placement 按 Space 呈现，并返回 stable target', async () => {
@@ -119,7 +143,7 @@ describe('metadata-fields', () => {
 			/>,
 		)
 
-		fireEvent.pointerDown(screen.getByRole('button', { name: '归属' }))
+		fireEvent.click(screen.getByRole('button', { name: '归属' }))
 		expect(await screen.findByText('工作')).toBeInTheDocument()
 		expect(screen.getByText('生活')).toBeInTheDocument()
 		fireEvent.click(screen.getByRole('menuitem', { name: /项目 A/ }))

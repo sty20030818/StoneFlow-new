@@ -2,8 +2,9 @@ import type { CommandSelectionContext } from '@/features/command'
 import type { ProjectOverviewItem } from '@/shared/types'
 
 type BuildProjectCommandSelectionInput = {
-	selectedIds: string[]
-	projects: ProjectOverviewItem[]
+	selectedIds: readonly string[]
+	projects: readonly ProjectOverviewItem[]
+	focusedProjectId?: string | null
 	clearSelection?: () => void
 }
 
@@ -11,6 +12,7 @@ type BuildProjectCommandSelectionInput = {
 export function buildProjectCommandSelection({
 	selectedIds,
 	projects,
+	focusedProjectId = null,
 	clearSelection,
 }: BuildProjectCommandSelectionInput): CommandSelectionContext {
 	const projectById = new Map(projects.map((project) => [project.id, project]))
@@ -32,12 +34,15 @@ export function buildProjectCommandSelection({
 	})
 	const ids = entities.map((entity) => entity.id)
 	const count = ids.length
+	const focusedProject = focusedProjectId ? (projectById.get(focusedProjectId) ?? null) : null
 
 	return {
 		type: count > 0 ? 'project' : undefined,
 		ids,
 		entities,
 		primaryEntity: entities[0],
+		focusedId: focusedProject?.id,
+		focusedType: focusedProject ? 'project' : undefined,
 		clearSelection,
 		source: count > 0 ? 'project-list' : 'none',
 		hasSelection: count > 0,

@@ -1,7 +1,7 @@
 /**
  * @fileoverview **selection · 唯一对外公共面（`@/features/selection`）**
  *
- * 选择 / 命令选中注册 / 行快捷键作用域。壳装配 Provider，列表页注册 selection。
+ * Collection 交互 / 命令选中注册。壳装配 Provider，列表页注册只读 selection 投影。
  *
  * 外模块：`import { … } from '@/features/selection'`
  * 禁止：`@/features/selection/model|components/…`
@@ -26,6 +26,7 @@ export {
 	reconcileCollapsedGroup,
 	reconcileCollectionProjection,
 	useCollectionInteraction,
+	useGroupedCollectionInteraction,
 } from './model'
 export type {
 	CollectionEntryTarget,
@@ -35,21 +36,16 @@ export type {
 	CollectionProjection,
 	CollectionState,
 	CollectionTransition,
+	CollectionGroup,
+	GroupedCollectionInteraction,
 } from './model'
 
-/** 通用实体多选 / 焦点（task/project/lifecycle 列表）。 */
-export { useEntitySelection } from './model/useEntitySelection'
-
-// ── 行快捷键作用域 ──────────────────────────────────────────────────────────
-
-/**
- * 看板行级键盘/指针 hover-focus 作用域。
- * board 组件渲染行时使用。
- */
 export {
-	EntityRowShortcutScope,
-	type EntityRowShortcutState,
-} from './components/EntityRowShortcutScope'
+	CollectionGridRoot,
+	CollectionGridGroupTrigger,
+	CollectionGridRow,
+	type CollectionGridRootState,
+} from './components/CollectionGrid'
 
 /** 由 AppProviders 在组合根注入统一 KeybindingRegistry。 */
 export { SELECTION_SHORTCUT_BINDINGS, useCollectionKeyboardAdapter } from './shortcuts'

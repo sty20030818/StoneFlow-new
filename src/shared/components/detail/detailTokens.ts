@@ -21,15 +21,6 @@ export const detailSectionDescriptionClass = 'text-[12px] leading-5 text-sf-text
 
 export const detailSectionContentClass = 'space-y-2'
 
-export const detailFieldRowClass = 'flex min-w-0 items-start gap-3'
-
-export const detailFieldLabelClass =
-	'w-20 shrink-0 pt-1 text-[11px] font-medium text-sf-text-tertiary'
-
-export const detailFieldContentClass = 'min-w-0 flex-1'
-
-export const detailFieldDescriptionClass = 'mt-1 text-[11px] leading-4 text-sf-text-tertiary'
-
 export const detailSaveStatusClass = 'text-[11px] leading-none text-sf-text-tertiary'
 
 export const detailSaveStatusErrorClass = 'text-[11px] leading-none text-sf-danger-surface-text'

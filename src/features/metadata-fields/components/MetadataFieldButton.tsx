@@ -1,18 +1,14 @@
-import { forwardRef, type ComponentProps, type ReactNode } from 'react'
+import { forwardRef, type ReactNode } from 'react'
+import { Dropdown } from '@heroui/react'
 
-import { cn } from '@/shared/lib/utils'
-import { Button } from '@/shared/components/base/button'
 import { OverflowTooltip } from '@/shared/components/tooltip'
+import { cn } from '@/shared/lib/utils'
 
 type StopEvent = {
 	stopPropagation: () => void
 }
 
-function stopMetadataFieldEventPropagation(event: StopEvent) {
-	event.stopPropagation()
-}
-
-export type MetadataFieldButtonProps = Omit<ComponentProps<typeof Button>, 'children'> & {
+export type MetadataFieldButtonProps = {
 	icon?: ReactNode
 	label: ReactNode
 	trailing?: ReactNode
@@ -20,9 +16,11 @@ export type MetadataFieldButtonProps = Omit<ComponentProps<typeof Button>, 'chil
 	stopPropagation?: boolean
 	compact?: boolean
 	appearance?: 'default' | 'row-icon'
+	disabled?: boolean
 	suppressOverflowTooltip?: boolean
 }
 
+/** Dropdown 专用触发按钮，外观与事件边界由 metadata-fields 自己拥有。 */
 export const MetadataFieldButton = forwardRef<HTMLButtonElement, MetadataFieldButtonProps>(
 	function MetadataFieldButton(
 		{
@@ -33,81 +31,46 @@ export const MetadataFieldButton = forwardRef<HTMLButtonElement, MetadataFieldBu
 			stopPropagation = false,
 			compact = false,
 			appearance = 'default',
+			disabled,
 			suppressOverflowTooltip = false,
-			className,
-			onClick,
-			onKeyDownCapture,
-			onPointerDown,
-			variant = 'outline',
-			size = 'sm',
-			type = 'button',
-			...props
 		},
 		ref,
 	) {
+		const stopWhenRequested = (event: StopEvent) => {
+			if (stopPropagation) {
+				event.stopPropagation()
+			}
+		}
+
 		if (appearance === 'row-icon') {
 			return (
-				<button
-					{...props}
+				<Dropdown.Trigger
 					aria-label={ariaLabel}
-					className={cn(
-						'flex size-5 shrink-0 items-center justify-center rounded-full border border-transparent bg-transparent p-0 text-legacy-foreground shadow-none outline-none focus-visible:border-legacy-border focus-visible:ring-0 disabled:pointer-events-none disabled:opacity-50',
-						className,
-					)}
-					onClick={(event) => {
-						if (stopPropagation) {
-							stopMetadataFieldEventPropagation(event)
-						}
-						onClick?.(event)
-					}}
-					onKeyDownCapture={(event) => {
-						if (stopPropagation) {
-							stopMetadataFieldEventPropagation(event)
-						}
-						onKeyDownCapture?.(event)
-					}}
-					onPointerDown={(event) => {
-						if (stopPropagation) {
-							stopMetadataFieldEventPropagation(event)
-						}
-						onPointerDown?.(event)
-					}}
+					className='flex size-5 shrink-0 items-center justify-center rounded-full border border-transparent bg-transparent p-0 text-foreground outline-none focus-visible:border-focus-subtle data-[disabled]:pointer-events-none data-[disabled]:opacity-50'
+					isDisabled={disabled}
+					onClick={stopWhenRequested}
+					onKeyDown={stopWhenRequested}
+					onPointerDown={stopWhenRequested}
 					ref={ref}
-					type={type}
 				>
 					{icon}
 					<span className='sr-only'>{label}</span>
-				</button>
+				</Dropdown.Trigger>
 			)
 		}
 
 		return (
-			<Button
-				{...props}
+			<Dropdown.Trigger
 				aria-label={ariaLabel}
-				className={cn(compact ? 'max-w-45' : 'max-w-52', className)}
-				onClick={(event) => {
-					if (stopPropagation) {
-						stopMetadataFieldEventPropagation(event)
-					}
-					onClick?.(event)
-				}}
-				onKeyDownCapture={(event) => {
-					if (stopPropagation) {
-						stopMetadataFieldEventPropagation(event)
-					}
-					onKeyDownCapture?.(event)
-				}}
-				onPointerDown={(event) => {
-					if (stopPropagation) {
-						stopMetadataFieldEventPropagation(event)
-					}
-					onPointerDown?.(event)
-				}}
+				className={cn(
+					'flex h-8 items-center gap-1 rounded-full border border-default bg-default px-2.5 text-[13px] font-medium text-foreground shadow-xs outline-none focus-visible:border-focus-subtle data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+					compact ? 'max-w-45' : 'max-w-52',
+				)}
+				isDisabled={disabled}
+				onClick={stopWhenRequested}
+				onKeyDown={stopWhenRequested}
+				onPointerDown={stopWhenRequested}
 				ref={ref}
-				size={size}
-				type={type}
-				variant={variant}
 			>
 				{icon}
 				{suppressOverflowTooltip ? (
@@ -118,7 +81,7 @@ export const MetadataFieldButton = forwardRef<HTMLButtonElement, MetadataFieldBu
 					</OverflowTooltip>
 				)}
 				{trailing}
-			</Button>
+			</Dropdown.Trigger>
 		)
 	},
 )

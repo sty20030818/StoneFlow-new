@@ -4,19 +4,11 @@
  * Linear 式筛选菜单：一级字段列表 + 侧向 Sub 二级值列表。
  * 勾选即写入 FilterQuery；无 drill-in、无「应用」按钮。
  */
-import { useState, type ReactNode } from 'react'
+import { cloneElement, useState, type ReactElement } from 'react'
+
+import { Dropdown, SearchField } from '@heroui/react'
 
 import { COMMAND_IDS, CommandShortcut } from '@/features/command'
-import { Input } from '@/shared/components/base/input'
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuSub,
-	DropdownMenuSubContent,
-	DropdownMenuSubTrigger,
-	DropdownMenuTrigger,
-} from '@/shared/components/base/dropdown-menu'
 import { setFilterFieldClause, type FilterField, type FilterQuery } from '../core'
 import { useListFilterUi } from '../model/ListFilterUiContext'
 import { FILTER_MENU_FIELDS, formatFilterFieldLabel } from './filterLabels'
@@ -24,7 +16,7 @@ import { getFilterFieldLeading } from './filterOptionCatalog'
 import { FilterValueSubMenu } from './FilterValueSubMenu'
 
 type FilterMenuProps = {
-	trigger: ReactNode
+	trigger: ReactElement<Record<string, unknown>>
 	open: boolean
 	onOpenChange: (open: boolean) => void
 }
@@ -62,50 +54,61 @@ export function FilterMenu({ trigger, open, onOpenChange }: FilterMenuProps) {
 	}
 
 	return (
-		<DropdownMenu onOpenChange={handleOpenChange} open={open}>
-			<DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
-			<DropdownMenuContent align='end' className='w-60 min-w-60' sideOffset={6}>
-				{/* 顶部搜索与 canonical 筛选快捷键提示。 */}
-				<div className='flex items-center gap-2 border-b border-legacy-border px-2 py-1.5'>
-					<Input
-						aria-label='筛选字段'
-						className='h-7 border-0 bg-transparent px-1 shadow-none focus-visible:ring-0'
-						onChange={(event) => setQuery(event.target.value)}
-						onKeyDown={(event) => event.stopPropagation()}
-						placeholder='添加筛选…'
-						value={query}
-					/>
-					<CommandShortcut className='shrink-0' commandId={COMMAND_IDS.filterAdd} />
-				</div>
+		<Dropdown isOpen={open} onOpenChange={handleOpenChange}>
+			<Dropdown.Trigger
+				render={({ children: _children, ...props }) =>
+					cloneElement(trigger, props as Record<string, unknown>)
+				}
+			/>
+			<Dropdown.Popover className='w-60 min-w-60 p-0' offset={6} placement='bottom end'>
+				<SearchField
+					aria-label='筛选字段'
+					className='border-b border-separator p-2'
+					fullWidth
+					onChange={setQuery}
+					value={query}
+					variant='secondary'
+				>
+					<SearchField.Group className='h-8 shadow-none'>
+						<SearchField.SearchIcon />
+						<SearchField.Input
+							onKeyDown={(event) => {
+								if (event.key !== 'Escape') event.stopPropagation()
+							}}
+							placeholder='添加筛选…'
+						/>
+						<SearchField.ClearButton aria-label='清空筛选字段搜索' />
+						<CommandShortcut className='mr-2 shrink-0' commandId={COMMAND_IDS.filterAdd} />
+					</SearchField.Group>
+				</SearchField>
 
-				<DropdownMenuGroupSection>
+				<Dropdown.Menu aria-label='筛选字段' className='p-1'>
 					{visibleFields.map((field) => (
-						<DropdownMenuSub key={field}>
-							<DropdownMenuSubTrigger className='gap-2'>
+						<Dropdown.SubmenuTrigger key={field}>
+							<Dropdown.Item className='gap-2' id={field} textValue={formatFilterFieldLabel(field)}>
 								<span className='flex size-4 shrink-0 items-center justify-center' aria-hidden>
 									{getFilterFieldLeading(field)}
 								</span>
 								<span className='flex-1'>{formatFilterFieldLabel(field)}</span>
-							</DropdownMenuSubTrigger>
-							<DropdownMenuSubContent className='w-56 overflow-hidden p-0'>
+								<Dropdown.SubmenuIndicator />
+							</Dropdown.Item>
+							<Dropdown.Popover className='w-56 overflow-hidden p-0' placement='right top'>
 								<FilterValueSubMenu
 									field={field}
 									isChecked={(value) => isChecked(field, value)}
 									onToggle={(value) => toggleValue(field, value)}
 									projects={projects}
 								/>
-							</DropdownMenuSubContent>
-						</DropdownMenuSub>
+							</Dropdown.Popover>
+						</Dropdown.SubmenuTrigger>
 					))}
 					{visibleFields.length === 0 ? (
-						<DropdownMenuItem disabled>无匹配字段</DropdownMenuItem>
+						<Dropdown.Item id='empty' isDisabled textValue='无匹配字段'>
+							无匹配字段
+						</Dropdown.Item>
 					) : null}
-				</DropdownMenuGroupSection>
-			</DropdownMenuContent>
-		</DropdownMenu>
+				</Dropdown.Menu>
+			</Dropdown.Popover>
+		</Dropdown>
 	)
-}
-
-function DropdownMenuGroupSection({ children }: { children: ReactNode }) {
-	return <div className='p-1'>{children}</div>
 }

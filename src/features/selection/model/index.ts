@@ -10,6 +10,7 @@ export {
 } from './collectionState'
 export { createCollectionFocusBridge } from './collectionFocusBridge'
 export { useCollectionInteraction } from './useCollectionInteraction'
+export { useGroupedCollectionInteraction } from './useGroupedCollectionInteraction'
 export type {
 	CollectionEntryTarget,
 	CollectionFocusIntent,
@@ -19,4 +20,7 @@ export type {
 	CollectionTransition,
 } from './collectionState'
 export type { CollectionInteraction } from './useCollectionInteraction'
-export { useEntitySelection } from './useEntitySelection'
+export type {
+	CollectionGroup,
+	GroupedCollectionInteraction,
+} from './useGroupedCollectionInteraction'

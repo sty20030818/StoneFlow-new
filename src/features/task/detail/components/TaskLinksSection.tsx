@@ -1,8 +1,7 @@
+import { Alert, Button, Spinner } from '@heroui/react'
 import { PlusIcon } from 'lucide-react'
-import { useState } from 'react'
 
 import { useTaskLinksController } from '@/features/task/detail/model/useTaskLinksController'
-import { DetailMetaButton, DetailSection } from '@/shared/components/detail'
 
 import { TaskLinkEditorPopover } from './TaskLinkEditorPopover'
 import { TaskLinkList } from './TaskLinkList'
@@ -14,48 +13,49 @@ type TaskLinksSectionProps = {
 export function TaskLinksSection({ taskId }: TaskLinksSectionProps) {
 	const { links, status, error, addLink, editLink, removeLink, reloadLinks, openLink } =
 		useTaskLinksController(taskId)
-	const [isCreateOpen, setCreateOpen] = useState(false)
 
 	return (
-		<DetailSection title='链接'>
-			<div className='space-y-3'>
-				{status === 'loading' || status === 'idle' ? (
-					<p className='text-[12px] text-sf-shell-text-tertiary'>正在加载链接...</p>
-				) : null}
-
-				{status === 'error' ? (
-					<div className='flex items-center justify-between gap-2 rounded-xl border border-dashed border-sf-border-secondary px-3 py-2 text-[12px] text-sf-shell-text-tertiary'>
-						<span>{error ?? '链接加载失败'}</span>
-						<button
-							className='text-sf-text-interactive hover:underline'
-							onClick={() => void reloadLinks()}
-							type='button'
-						>
-							重试
-						</button>
-					</div>
-				) : null}
-
-				{status === 'ready' && links.length > 0 ? (
-					<TaskLinkList links={links} onEdit={editLink} onOpen={openLink} onRemove={removeLink} />
-				) : null}
-
+		<section aria-labelledby={`task-links-${taskId}`} className='flex flex-col gap-3'>
+			<div className='flex items-center justify-between gap-3'>
+				<h3 className='text-sm font-semibold text-foreground' id={`task-links-${taskId}`}>
+					链接
+				</h3>
 				<TaskLinkEditorPopover
-					anchor={
-						<DetailMetaButton
-							disabled={status !== 'ready'}
-							icon={<PlusIcon className='size-3.5' />}
-							label='添加链接'
-							onClick={() => setCreateOpen(true)}
-						/>
-					}
 					contentDrawerOwnedOverlay
 					mode='create'
-					open={isCreateOpen}
-					onOpenChange={setCreateOpen}
+					trigger={
+						<Button isDisabled={status !== 'ready'} size='sm' type='button' variant='outline'>
+							<PlusIcon aria-hidden='true' className='size-3.5' />
+							添加链接
+						</Button>
+					}
 					onSubmit={addLink}
 				/>
 			</div>
-		</DetailSection>
+
+			{status === 'loading' || status === 'idle' ? (
+				<div className='flex items-center gap-2 text-xs text-muted' role='status'>
+					<Spinner color='current' size='sm' />
+					正在加载链接...
+				</div>
+			) : null}
+
+			{status === 'error' ? (
+				<Alert status='danger'>
+					<Alert.Indicator />
+					<Alert.Content>
+						<Alert.Title>链接加载失败</Alert.Title>
+						<Alert.Description>{error ?? '请稍后重试。'}</Alert.Description>
+					</Alert.Content>
+					<Button onPress={() => void reloadLinks()} size='sm' type='button' variant='danger'>
+						重试
+					</Button>
+				</Alert>
+			) : null}
+
+			{status === 'ready' && links.length > 0 ? (
+				<TaskLinkList links={links} onEdit={editLink} onOpen={openLink} onRemove={removeLink} />
+			) : null}
+		</section>
 	)
 }

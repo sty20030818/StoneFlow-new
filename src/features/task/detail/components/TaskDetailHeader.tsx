@@ -24,9 +24,9 @@ export function TaskDetailHeader(props: TaskDetailHeaderProps) {
 	}
 
 	return (
-		<DetailHeader className='h-12 items-center gap-2 border-sf-border-subtle py-0 pl-3 pr-2'>
+		<DetailHeader className='h-12 items-center gap-2 border-separator py-0 pl-3 pr-2'>
 			<div className='min-w-0 flex flex-1 items-center gap-2'>
-				<h2 className='shrink-0 text-[12px] font-medium text-sf-text-secondary'>任务详情</h2>
+				<h2 className='shrink-0 text-xs font-medium text-muted'>任务详情</h2>
 				<DetailSaveStatus
 					className='truncate'
 					error={autosave.error}

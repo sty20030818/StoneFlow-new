@@ -18,6 +18,7 @@ const detailController = vi.hoisted(() => ({
 }))
 const autosaveAdapter = vi.hoisted(() => ({
 	value: null as unknown as AutosaveController<TaskDetailDraft>,
+	options: null as { disabled?: boolean } | null,
 }))
 
 vi.mock('./useTaskDetailController', () => ({
@@ -25,7 +26,10 @@ vi.mock('./useTaskDetailController', () => ({
 }))
 
 vi.mock('./useTaskAutosaveAdapter', () => ({
-	useTaskAutosaveAdapter: () => autosaveAdapter.value,
+	useTaskAutosaveAdapter: (options: { disabled?: boolean }) => {
+		autosaveAdapter.options = options
+		return autosaveAdapter.value
+	},
 }))
 
 vi.mock('@/features/project', () => ({
@@ -46,6 +50,7 @@ describe('useTaskDetailViewModel', () => {
 			moveToTrash: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
 		}
 		autosaveAdapter.value = createAutosaveController()
+		autosaveAdapter.options = null
 	})
 
 	it('本地 draft 未保存时忽略同任务的远端刷新', () => {
@@ -112,6 +117,17 @@ describe('useTaskDetailViewModel', () => {
 
 		expect(detailController.value.archiveOrRestore).not.toHaveBeenCalled()
 		expect(detailController.value.moveToTrash).not.toHaveBeenCalled()
+	})
+
+	it('回收站任务复用同一详情 owner，但禁用 autosave 写入', () => {
+		detailController.value = {
+			...detailController.value,
+			task: createTaskDetail({ deletedAt: '2026-08-19T00:00:00Z' }),
+		}
+
+		renderViewModel()
+
+		expect(autosaveAdapter.options?.disabled).toBe(true)
 	})
 })
 

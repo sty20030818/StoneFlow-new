@@ -1,6 +1,8 @@
 import { useCallback, useRef, useState } from 'react'
 import { FormProvider, useController } from 'react-hook-form'
 
+import { Button, FieldError, Form, Input, Switch, TextArea, TextField } from '@heroui/react'
+
 import { useEntityDetailController } from '@/features/entity-detail'
 import { COMMAND_IDS, CommandActionTooltip, DisabledCommandActionTooltip } from '@/features/command'
 import { MetadataDateDropdown, taskDateMetadataIcons } from '@/features/metadata-fields'
@@ -15,10 +17,6 @@ import {
 import { useSubmitTargetFromForm, type SubmitIntent } from '@/features/submit'
 import { normalizeSubmitError, useZodForm } from '@/shared/form'
 import type { Scope, Space, TaskPlacement, TaskStatus } from '@/shared/types'
-import { Button } from '@/shared/components/base/button'
-import { Input } from '@/shared/components/base/input'
-import { Switch } from '@/shared/components/base/switch'
-import { Textarea } from '@/shared/components/base/textarea'
 import { CreateModalContent } from '@/shared/components/create-modal-content'
 import {
 	buildTaskCreateDefaultValues,
@@ -67,8 +65,14 @@ export function TaskCreateContent({
 			projects,
 		}),
 	})
-	const { field: titleField } = useController({ control: form.control, name: 'title' })
-	const { field: noteField } = useController({ control: form.control, name: 'note' })
+	const { field: titleField, fieldState: titleFieldState } = useController({
+		control: form.control,
+		name: 'title',
+	})
+	const { field: noteField, fieldState: noteFieldState } = useController({
+		control: form.control,
+		name: 'note',
+	})
 	const { field: priorityField } = useController({
 		control: form.control,
 		name: 'priority',
@@ -113,6 +117,9 @@ export function TaskCreateContent({
 	const hasPlacementTarget =
 		placement === 'project' ? projectId.trim().length > 0 : spaceId.trim().length > 0
 	const canSubmit = !isSubmitting && titleField.value.trim().length > 0 && hasPlacementTarget
+	const placementError =
+		form.formState.errors.projectId?.message ?? form.formState.errors.spaceId?.message ?? null
+	const metadataError = submitState === 'error' ? errorMessage : placementError
 
 	const resetFieldsOnly = useCallback(() => {
 		const currentValues = form.getValues()
@@ -175,122 +182,157 @@ export function TaskCreateContent({
 	})
 
 	const submitButton = (
-		<Button disabled={!canSubmit} onClick={() => void submitTask('default')} size='sm'>
+		<Button isDisabled={!canSubmit} isPending={isSubmitting} size='sm' type='submit'>
 			{submitState === 'submitting' ? '创建中…' : '创建任务'}
 		</Button>
 	)
 
 	return (
 		<FormProvider {...form}>
-			<CreateModalContent>
-				<CreateModalContent.Title>
-					<Input
-						ref={titleInputRef}
-						autoFocus
-						className='h-auto border-none bg-transparent px-0 text-lg font-black shadow-none focus-visible:ring-0 md:text-lg md:font-black'
-						onBlur={titleField.onBlur}
-						onChange={titleField.onChange}
-						placeholder='任务标题'
-						value={titleField.value}
-					/>
-				</CreateModalContent.Title>
-
-				<CreateModalContent.Body>
-					<Textarea
-						className='min-h-20 resize-none border-none bg-transparent px-0 text-[13px] leading-5 shadow-none placeholder:text-sf-text-quaternary focus-visible:ring-0'
-						onBlur={noteField.onBlur}
-						onChange={noteField.onChange}
-						placeholder='添加描述...'
-						value={noteField.value}
-					/>
-				</CreateModalContent.Body>
-
-				<CreateModalContent.Metadata error={submitState === 'error' ? errorMessage : null}>
-					<StatusMetaAction
-						disabled={false}
-						status={status}
-						onStatusChange={statusField.onChange}
-					/>
-					<PriorityMetaAction
-						disabled={false}
-						priority={priority}
-						onPriorityChange={priorityField.onChange}
-					/>
-					<PlacementMetaAction
-						disabled={projectsLoading}
-						placement={placement}
-						spaceId={spaceId}
-						projectId={projectId}
-						projects={projects}
-						spaces={spaces.map((space) => ({ id: space.id, name: space.name }))}
-						onPlacementChange={(newPlacement, newProjectId) => {
-							placementField.onChange(newPlacement)
-							projectIdField.onChange(newProjectId ?? '')
-							if (newPlacement === 'project' && newProjectId) {
-								const targetProject = projects.find((project) => project.id === newProjectId)
-								if (targetProject) {
-									spaceIdField.onChange(targetProject.spaceId)
-								}
-								return
-							}
-
-							form.setValue('spaceId', spaceId, {
-								shouldDirty: true,
-								shouldValidate: true,
-							})
-						}}
-					/>
-					<MetadataDateDropdown
-						icon={taskDateMetadataIcons.due}
-						label='截止时间'
-						value={dueAt}
-						onChange={dueAtField.onChange}
-					/>
-					<MetadataDateDropdown
-						icon={taskDateMetadataIcons.scheduled}
-						label='计划时间'
-						value={plannedAt}
-						onChange={plannedAtField.onChange}
-					/>
-					<MetadataDateDropdown
-						icon={taskDateMetadataIcons.reminder}
-						label='提醒时间'
-						value={remindAt}
-						onChange={remindAtField.onChange}
-					/>
-				</CreateModalContent.Metadata>
-
-				<CreateModalContent.Footer>
-					<span aria-hidden />
-
-					<div className='flex items-center gap-3'>
-						<p
-							aria-live='polite'
-							className='min-w-30 text-right text-[11px] font-medium tabular-nums text-sf-text-tertiary'
+			<Form
+				aria-label='创建任务'
+				className='flex min-h-0 flex-1 flex-col'
+				validationBehavior='aria'
+				onSubmit={(event) => {
+					event.preventDefault()
+					void submitTask('default')
+				}}
+			>
+				<CreateModalContent>
+					<CreateModalContent.Title>
+						<TextField
+							aria-label='任务标题'
+							fullWidth
+							isInvalid={titleFieldState.invalid}
+							isRequired
+							name={titleField.name}
+							value={titleField.value}
+							onChange={titleField.onChange}
 						>
-							{createdCount > 0 ? `已创建 ${createdCount} 条任务` : '\u00A0'}
-						</p>
-						<div className='flex items-center gap-1.5 text-[12px] text-sf-text-secondary select-none'>
-							<Switch
-								checked={createMoreField.value}
-								onCheckedChange={(checked) => createMoreField.onChange(checked === true)}
-								disabled={isSubmitting}
-								size='sm'
+							<Input
+								ref={titleInputRef}
+								autoFocus
+								aria-label='任务标题'
+								className='h-auto text-lg font-semibold'
+								onBlur={titleField.onBlur}
+								placeholder='任务标题'
+								variant='secondary'
 							/>
-							创建更多
+							<FieldError>{titleFieldState.error?.message}</FieldError>
+						</TextField>
+					</CreateModalContent.Title>
+
+					<CreateModalContent.Body>
+						<TextField
+							aria-label='任务描述'
+							fullWidth
+							isInvalid={noteFieldState.invalid}
+							name={noteField.name}
+							value={noteField.value}
+							onChange={noteField.onChange}
+						>
+							<TextArea
+								aria-label='任务描述'
+								className='min-h-20 resize-none text-[13px] leading-5'
+								onBlur={noteField.onBlur}
+								placeholder='添加描述...'
+								variant='secondary'
+							/>
+							<FieldError>{noteFieldState.error?.message}</FieldError>
+						</TextField>
+					</CreateModalContent.Body>
+
+					<CreateModalContent.Metadata error={metadataError}>
+						<StatusMetaAction
+							disabled={false}
+							status={status}
+							onStatusChange={statusField.onChange}
+						/>
+						<PriorityMetaAction
+							disabled={false}
+							priority={priority}
+							onPriorityChange={priorityField.onChange}
+						/>
+						<PlacementMetaAction
+							disabled={projectsLoading}
+							placement={placement}
+							spaceId={spaceId}
+							projectId={projectId}
+							projects={projects}
+							spaces={spaces.map((space) => ({ id: space.id, name: space.name }))}
+							onPlacementChange={(newPlacement, newProjectId) => {
+								placementField.onChange(newPlacement)
+								projectIdField.onChange(newProjectId ?? '')
+								if (newPlacement === 'project' && newProjectId) {
+									const targetProject = projects.find((project) => project.id === newProjectId)
+									if (targetProject) {
+										spaceIdField.onChange(targetProject.spaceId)
+									}
+									return
+								}
+
+								form.setValue('spaceId', spaceId, {
+									shouldDirty: true,
+									shouldValidate: true,
+								})
+							}}
+						/>
+						<MetadataDateDropdown
+							icon={taskDateMetadataIcons.due}
+							label='截止时间'
+							value={dueAt}
+							onChange={dueAtField.onChange}
+						/>
+						<MetadataDateDropdown
+							icon={taskDateMetadataIcons.scheduled}
+							label='计划时间'
+							value={plannedAt}
+							onChange={plannedAtField.onChange}
+						/>
+						<MetadataDateDropdown
+							icon={taskDateMetadataIcons.reminder}
+							label='提醒时间'
+							value={remindAt}
+							onChange={remindAtField.onChange}
+						/>
+					</CreateModalContent.Metadata>
+
+					<CreateModalContent.Footer>
+						<span aria-hidden />
+
+						<div className='flex items-center gap-3'>
+							<p
+								aria-live='polite'
+								className='min-w-30 text-right text-[11px] font-medium tabular-nums text-muted'
+							>
+								{createdCount > 0 ? `已创建 ${createdCount} 条任务` : '\u00A0'}
+							</p>
+							<Switch
+								isDisabled={isSubmitting}
+								isSelected={createMoreField.value}
+								size='sm'
+								onChange={createMoreField.onChange}
+							>
+								<Switch.Content>
+									<Switch.Control>
+										<Switch.Thumb />
+									</Switch.Control>
+									创建更多
+								</Switch.Content>
+							</Switch>
+							{canSubmit ? (
+								<CommandActionTooltip commandId={COMMAND_IDS.saveOrSubmit} label='创建任务'>
+									{submitButton}
+								</CommandActionTooltip>
+							) : (
+								<DisabledCommandActionTooltip commandId={COMMAND_IDS.saveOrSubmit} label='创建任务'>
+									{submitButton}
+								</DisabledCommandActionTooltip>
+							)}
 						</div>
-						{canSubmit ? (
-							<CommandActionTooltip commandId={COMMAND_IDS.saveOrSubmit} label='创建任务'>
-								{submitButton}
-							</CommandActionTooltip>
-						) : (
-							<DisabledCommandActionTooltip commandId={COMMAND_IDS.saveOrSubmit} label='创建任务'>
-								{submitButton}
-							</DisabledCommandActionTooltip>
-						)}
-					</div>
-				</CreateModalContent.Footer>
-			</CreateModalContent>
+					</CreateModalContent.Footer>
+				</CreateModalContent>
+			</Form>
 		</FormProvider>
 	)
 }

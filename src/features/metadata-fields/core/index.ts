@@ -50,13 +50,11 @@ export {
 } from './metadata-date-options'
 export type { CustomDateFieldKey } from './custom-date-dialog'
 export {
-	formatCustomDateInputValue,
 	formatCustomDateStorageValue,
 	getCustomDateDialogDescription,
 	getCustomDateDialogRemoveLabel,
 	getCustomDateDialogSubmitLabel,
 	getCustomDateDialogTitle,
-	normalizeCustomDateInputValue,
 	parseCustomDateInputValue,
 } from './custom-date-dialog'
 export {

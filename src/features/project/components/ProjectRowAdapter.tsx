@@ -1,247 +1,246 @@
-import type { ProjectOverviewItem } from '@/shared/types'
-import { useDangerConfirm } from '@/features/danger-confirm'
-import { formatShortDate } from '@/shared/lib/date'
-import {
-	createProjectParentMetadataDropdownProps,
-	MetadataFieldValue,
-	MetadataFieldDropdown,
-	projectDateMetadataIcons,
-} from '@/features/metadata-fields'
-import {
-	CreatedAtCell,
-	IconCell,
-	RowActionButton,
-	RowSelectionCell,
-	RowShell,
-	RowTitleCell,
-	type RowSelectionGroupPosition,
-} from '@/shared/components/row'
-import { FolderIcon } from 'lucide-react'
+import { Button, Checkbox } from '@heroui/react'
+import { ArchiveIcon, FolderIcon, Trash2Icon } from 'lucide-react'
+import { useCallback, useMemo, useState, type Ref } from 'react'
+import type { GridListItemAria } from 'react-aria'
 
+import {
+	COMMAND_IDS,
+	useCommandRuntimeContext,
+	type CommandContext,
+	type CommandId,
+	type CommandProjection,
+} from '@/features/command'
+import type { ProjectOverviewItem } from '@/shared/types'
+import { formatShortDate } from '@/shared/lib/date'
+import { cn } from '@/shared/lib/utils'
+
+import { buildProjectCommandSelection } from '../model/buildProjectCommandSelection'
 import { ProjectContextMenu } from './ProjectContextMenu'
-import { projectOverviewActionButtonClass } from '@/shared/components/patterns/project-overview'
 
 type ProjectRowAdapterProps = {
 	project: ProjectOverviewItem
+	contextProjects?: ProjectOverviewItem[]
 	rowState: {
 		isPending: boolean
-		isSelected?: boolean
-		isHovered?: boolean
-		hoverSource?: 'pointer' | 'keyboard' | null
+		isSelected: boolean
+		isFocused: boolean
+		focusSource: 'pointer' | 'keyboard' | null
 	}
-	rowShortcutHandlers?: {
-		onHover: (projectId: string | null) => void
-	}
-	selectionGroupPosition?: RowSelectionGroupPosition
-	projectBinding?: {
-		showProjectCell?: boolean
-		projectOptions?: Array<{ id: string; name: string }>
-		onSelectProject?: (projectId: string) => void
-		onSelectStandalone?: () => void
-	}
+	rowProps?: GridListItemAria['rowProps']
+	gridCellProps?: GridListItemAria['gridCellProps']
+	rowRef?: Ref<HTMLDivElement>
+	onContextMenuOpenChange?: (open: boolean) => void
 	actions: {
 		onOpenProject: (projectId: string) => void
 		onCompleteProject: (projectId: string) => void
 		onReopenProject: (projectId: string) => void
-		onArchiveProject: (projectId: string) => void
-		onDeleteProject: (projectId: string) => void
-		onToggleSelected?: (projectId: string) => void
+		onToggleSelected: () => void
 	}
 }
 
-/**
- * ProjectRowAdapter 负责把项目实体语义翻译为统一 RowShell + Field Cells。
- */
+/** 项目行直接组合 HeroUI；危险写入只执行 Stage J Command projection。 */
 export function ProjectRowAdapter({
 	project,
+	contextProjects,
 	rowState,
-	rowShortcutHandlers,
-	selectionGroupPosition,
-	projectBinding,
+	rowProps,
+	gridCellProps,
+	rowRef,
+	onContextMenuOpenChange,
 	actions,
 }: ProjectRowAdapterProps) {
-	const { requestDangerConfirm } = useDangerConfirm()
-	const showProjectCell = projectBinding?.showProjectCell ?? false
-	const hasProjectOptions = Boolean(
-		showProjectCell &&
-		projectBinding?.projectOptions &&
-		projectBinding.onSelectProject &&
-		projectBinding.onSelectStandalone,
+	const { runtime, context } = useCommandRuntimeContext()
+	const [isExecuting, setExecuting] = useState(false)
+	const { onClick: _reactAriaPressClick, ...ariaRowProps } = rowProps ?? {}
+	const contextTargets = useMemo(
+		() => (contextProjects && contextProjects.length > 0 ? contextProjects : [project]),
+		[contextProjects, project],
 	)
-	const hasSelection = typeof actions.onToggleSelected === 'function'
-	const isSelected = rowState.isSelected ?? false
-	const isHovered = rowState.isHovered ?? false
-	const hoverSource = rowState.hoverSource ?? null
-	const projectPlacementDropdownProps = createProjectParentMetadataDropdownProps(
-		projectBinding?.projectOptions ?? [],
+	const rowCommandContext = useMemo(
+		() =>
+			buildProjectCommandContext({
+				baseContext: context,
+				projects: [project],
+				targetIds: [project.id],
+				focusedProjectId: project.id,
+				rowTargetId: project.id,
+				rowTargetSource: rowState.focusSource === 'keyboard' ? 'focus' : 'hover',
+			}),
+		[context, project, rowState.focusSource],
 	)
+	const contextMenuCommandContext = useMemo(
+		() =>
+			buildProjectCommandContext({
+				baseContext: context,
+				projects: contextTargets,
+				targetIds: contextTargets.map((item) => item.id),
+				focusedProjectId: project.id,
+				rowTargetId: project.id,
+				rowTargetSource: 'context-menu',
+				clearSelection: contextProjects ? context.selection.clearSelection : undefined,
+			}),
+		[context, contextProjects, contextTargets, project.id],
+	)
+	const projectContextMenuCommand = useCallback(
+		(commandId: CommandId) => runtime.project(commandId, contextMenuCommandContext),
+		[contextMenuCommandContext, runtime],
+	)
+	const archiveCommand = runtime.project(COMMAND_IDS.projectArchive, rowCommandContext)
+	const deleteCommand = runtime.project(COMMAND_IDS.projectDelete, rowCommandContext)
+	const busy = rowState.isPending || isExecuting
+
+	const executeRowCommand = useCallback(async (command: CommandProjection | null) => {
+		if (!command?.enabled) return
+		setExecuting(true)
+		try {
+			await command.execute({ source: 'row' })
+		} finally {
+			setExecuting(false)
+		}
+	}, [])
 
 	return (
 		<ProjectContextMenu
-			isBusy={rowState.isPending}
-			projectName={project.name}
-			onMoveToTrash={() => actions.onDeleteProject(project.id)}
+			isBusy={busy}
+			onOpenChange={onContextMenuOpenChange}
 			onOpenProject={() => actions.onOpenProject(project.id)}
+			projectCommand={projectContextMenuCommand}
 		>
-			<RowShell.Root
+			<div
+				{...ariaRowProps}
+				ref={rowRef}
 				aria-label={`打开项目 ${project.name}`}
+				role={ariaRowProps.role ?? 'row'}
+				className={cn(
+					'group/project-row flex min-h-11 w-full items-center rounded-lg border border-transparent px-3 py-2 text-[13px] leading-5 outline-none',
+					rowState.isSelected
+						? 'bg-accent-soft hover:bg-accent-soft-hover group-data-[open=true]/project-context-menu:bg-accent-soft-hover'
+						: 'hover:bg-surface-hover group-data-[open=true]/project-context-menu:bg-surface-hover',
+					rowState.isFocused && rowState.focusSource === 'keyboard' ? 'border-focus-subtle' : null,
+					busy ? 'opacity-70' : null,
+				)}
 				data-project-id={project.id}
-				interactive
-				hovered={isHovered}
-				hoverSource={hoverSource}
-				selected={isSelected}
-				selectionGroupPosition={selectionGroupPosition}
+				data-focus-source={rowState.isFocused ? rowState.focusSource : undefined}
 				onClick={() => actions.onOpenProject(project.id)}
-				onKeyDown={(event) => {
-					if (event.key === 'Enter' || event.key === ' ') {
-						event.preventDefault()
-						actions.onOpenProject(project.id)
-					}
-				}}
-				onMouseEnter={() => rowShortcutHandlers?.onHover(project.id)}
-				onMouseLeave={() => rowShortcutHandlers?.onHover(null)}
-				pending={rowState.isPending}
 			>
-				<RowShell.Left className='gap-3'>
-					<RowShell.Leading>
-						{hasSelection ? (
-							<RowSelectionCell
-								checked={isSelected}
-								disabled={rowState.isPending}
-								disabledReason='正在更新项目，暂时无法更改选择'
-								label={`选择项目 ${project.name}`}
-								visible={isSelected || isHovered}
-								onCheckedChange={() => actions.onToggleSelected?.(project.id)}
-							/>
-						) : null}
-						<IconCell icon={<FolderIcon className='size-4' />} />
-					</RowShell.Leading>
+				<div {...gridCellProps} className='flex min-w-0 flex-1 items-center gap-3'>
+					<span
+						className={cn(
+							'flex size-5 shrink-0 items-center justify-center',
+							rowState.isSelected
+								? 'opacity-100'
+								: 'opacity-0 group-hover/project-row:opacity-100 group-focus-within/project-row:opacity-100',
+						)}
+						onClick={(event) => event.stopPropagation()}
+						onKeyDown={(event) => event.stopPropagation()}
+						onPointerDown={(event) => event.stopPropagation()}
+					>
+						<Checkbox
+							aria-label={`选择项目 ${project.name}`}
+							isDisabled={busy}
+							isSelected={rowState.isSelected}
+							onChange={actions.onToggleSelected}
+							onClick={(event) => event.stopPropagation()}
+							onKeyDown={(event) => event.stopPropagation()}
+						>
+							<Checkbox.Content>
+								<Checkbox.Control>
+									<Checkbox.Indicator />
+								</Checkbox.Control>
+							</Checkbox.Content>
+						</Checkbox>
+					</span>
+					<FolderIcon className='size-4 shrink-0 text-muted' />
+					<span className='min-w-0 flex-1 truncate font-medium'>{project.name}</span>
 
-					<RowShell.Title>
-						<RowTitleCell title={project.name} />
-					</RowShell.Title>
-				</RowShell.Left>
+					<div
+						className='ml-auto flex shrink-0 items-center gap-1'
+						onClick={(event) => event.stopPropagation()}
+						onKeyDown={(event) => event.stopPropagation()}
+						onPointerDown={(event) => event.stopPropagation()}
+					>
+						<Button
+							isDisabled={busy}
+							size='sm'
+							variant='ghost'
+							onPress={() =>
+								project.completedAt
+									? actions.onReopenProject(project.id)
+									: actions.onCompleteProject(project.id)
+							}
+						>
+							{project.completedAt ? '重开' : '完成'}
+						</Button>
+						{archiveCommand?.visible ? (
+							<Button
+								aria-description={archiveCommand.disabledReason}
+								isDisabled={busy || !archiveCommand.enabled}
+								size='sm'
+								variant='ghost'
+								onPress={() => void executeRowCommand(archiveCommand)}
+							>
+								<ArchiveIcon />
+								归档
+							</Button>
+						) : null}
+						{deleteCommand?.visible ? (
+							<Button
+								aria-description={deleteCommand.disabledReason}
+								isDisabled={busy || !deleteCommand.enabled}
+								size='sm'
+								variant='ghost'
+								onPress={() => void executeRowCommand(deleteCommand)}
+							>
+								<Trash2Icon />
+								删除
+							</Button>
+						) : null}
+					</div>
 
-				<RowShell.Right>
-					<RowShell.Actions className='flex-wrap'>
-						<ProjectActions
-							completedAt={project.completedAt}
-							disabled={rowState.isPending}
-							projectName={project.name}
-							projectId={project.id}
-							requestDangerConfirm={requestDangerConfirm}
-							actions={actions}
-						/>
-					</RowShell.Actions>
-					<RowShell.Fields className='md:flex'>
-						{showProjectCell ? (
-							<MetadataFieldDropdown
-								compact
-								disabled={rowState.isPending}
-								disabledReason='正在更新项目，暂时无法修改父项目'
-								fieldKey='parentProject'
-								label='父项目'
-								menuLabel={projectPlacementDropdownProps.menuLabel}
-								options={projectPlacementDropdownProps.options}
-								stopPropagation
-								value=''
-								onChange={(value: string) => {
-									if (!hasProjectOptions) {
-										return
-									}
-									if (value) {
-										projectBinding?.onSelectProject?.(value)
-										return
-									}
-									projectBinding?.onSelectStandalone?.()
-								}}
-							/>
-						) : null}
-						{project.dueAt ? (
-							<MetadataFieldValue
-								ariaLabel={`截止 ${project.name}`}
-								compact
-								icon={projectDateMetadataIcons.due}
-								label={`截止 ${formatShortDate(project.dueAt)}`}
-							/>
-						) : null}
-						<CreatedAtCell formatter={formatShortDate} value={project.createdAt} />
-					</RowShell.Fields>
-				</RowShell.Right>
-			</RowShell.Root>
+					<div className='hidden shrink-0 items-center gap-3 text-xs text-muted md:flex'>
+						{project.dueAt ? <span>截止 {formatShortDate(project.dueAt)}</span> : null}
+						<span>创建 {formatShortDate(project.createdAt)}</span>
+					</div>
+				</div>
+			</div>
 		</ProjectContextMenu>
 	)
 }
 
-const actionButtonProps = {
-	className: projectOverviewActionButtonClass,
-	size: 'sm' as const,
-	variant: 'outline' as const,
-}
-
-function ProjectActions({
-	completedAt,
-	disabled,
-	projectName,
-	projectId,
-	requestDangerConfirm,
-	actions,
+function buildProjectCommandContext({
+	baseContext,
+	projects,
+	targetIds,
+	focusedProjectId,
+	rowTargetId,
+	rowTargetSource,
+	clearSelection,
 }: {
-	completedAt: string | null
-	disabled: boolean
-	projectName: string
-	projectId: string
-	requestDangerConfirm: ReturnType<typeof useDangerConfirm>['requestDangerConfirm']
-	actions: ProjectRowAdapterProps['actions']
-}) {
-	const toggleLabel = completedAt ? '重开' : '完成'
-	const onToggle = completedAt
-		? () => actions.onReopenProject(projectId)
-		: () => actions.onCompleteProject(projectId)
-
-	return (
-		<>
-			<RowActionButton {...actionButtonProps} disabled={disabled} onClick={onToggle}>
-				{toggleLabel}
-			</RowActionButton>
-			<RowActionButton
-				{...actionButtonProps}
-				disabled={disabled}
-				onClick={async () => {
-					const confirmed = await requestDangerConfirm({
-						intent: 'archive',
-						entityType: 'project',
-						count: 1,
-						entityLabel: projectName,
-					})
-					if (!confirmed) {
-						return
-					}
-					actions.onArchiveProject(projectId)
-				}}
-			>
-				归档
-			</RowActionButton>
-			<RowActionButton
-				{...actionButtonProps}
-				disabled={disabled}
-				onClick={async () => {
-					const confirmed = await requestDangerConfirm({
-						intent: 'trash',
-						entityType: 'project',
-						count: 1,
-						entityLabel: projectName,
-					})
-					if (!confirmed) {
-						return
-					}
-					actions.onDeleteProject(projectId)
-				}}
-			>
-				删除
-			</RowActionButton>
-		</>
-	)
+	baseContext: CommandContext
+	projects: readonly ProjectOverviewItem[]
+	targetIds: readonly string[]
+	focusedProjectId: string
+	rowTargetId: string
+	rowTargetSource: 'hover' | 'focus' | 'context-menu'
+	clearSelection?: () => void
+}): CommandContext {
+	return {
+		...baseContext,
+		selection: buildProjectCommandSelection({
+			selectedIds: targetIds,
+			projects,
+			focusedProjectId,
+			clearSelection,
+		}),
+		rowTarget: {
+			targetId: rowTargetId,
+			targetType: 'project',
+			source: rowTargetSource,
+			hasTarget: true,
+			isTaskTarget: false,
+			isProjectTarget: true,
+		},
+	}
 }
 
 export type { ProjectRowAdapterProps }

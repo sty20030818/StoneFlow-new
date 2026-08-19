@@ -4,6 +4,7 @@
  * Linear 式显示选项面板：紧凑行（左标签 + 右控件）+ 属性 pill + 底栏 Reset / 设为默认。
  */
 import type { ReactNode } from 'react'
+import { Button, ListBox, Select, Separator, Switch } from '@heroui/react'
 import { ArrowUpIcon, ArrowDownIcon } from 'lucide-react'
 
 import {
@@ -13,16 +14,6 @@ import {
 	type TaskDisplayPropertyKey,
 } from '@/features/display-options/core'
 import { cn } from '@/shared/lib/utils'
-import { Separator } from '@/shared/components/base/separator'
-import {
-	Select,
-	SelectContent,
-	SelectGroup,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from '@/shared/components/base/select'
-import { Switch } from '@/shared/components/base/switch'
 import { ActionTooltip, DisabledActionTooltip } from '@/shared/components/tooltip'
 
 import { PropertyToggleGrid } from './PropertyToggleGrid'
@@ -187,12 +178,19 @@ export function DisplayOptionsPanel({
 					<DisplayOptionRow label='完成按近到远'>
 						<Switch
 							aria-label='已完成项按最近变更优先排序'
-							checked={orderCompletedByRecency}
-							disabled={isPending}
-							onCheckedChange={(checked) =>
-								void actions.setCompletedOrder(checked ? 'recency' : 'natural')
+							isDisabled={isPending}
+							isSelected={orderCompletedByRecency}
+							onChange={(isSelected) =>
+								void actions.setCompletedOrder(isSelected ? 'recency' : 'natural')
 							}
-						/>
+							size='sm'
+						>
+							<Switch.Content>
+								<Switch.Control>
+									<Switch.Thumb />
+								</Switch.Control>
+							</Switch.Content>
+						</Switch>
 					</DisplayOptionRow>
 				) : null}
 			</div>
@@ -219,15 +217,22 @@ export function DisplayOptionsPanel({
 
 			{/* 列表选项 */}
 			<div className='flex flex-col gap-0.5 px-1 py-2'>
-				<p className='px-1 pb-1 text-[12px] font-medium text-sf-text-secondary'>列表选项</p>
+				<p className='px-1 pb-1 text-[12px] font-medium text-muted'>列表选项</p>
 				{canToggleShowEmptyGroups ? (
 					<DisplayOptionRow label='显示空分组'>
 						<Switch
 							aria-label='显示空分组'
-							checked={options.showEmptyGroups}
-							disabled={isPending}
-							onCheckedChange={(checked) => void actions.applyPartial({ showEmptyGroups: checked })}
-						/>
+							isDisabled={isPending}
+							isSelected={options.showEmptyGroups}
+							onChange={(isSelected) => void actions.applyPartial({ showEmptyGroups: isSelected })}
+							size='sm'
+						>
+							<Switch.Content>
+								<Switch.Control>
+									<Switch.Thumb />
+								</Switch.Control>
+							</Switch.Content>
+						</Switch>
 					</DisplayOptionRow>
 				) : null}
 			</div>
@@ -236,7 +241,7 @@ export function DisplayOptionsPanel({
 
 			{/* 显示属性 pills — Linear 风格 */}
 			<div className='flex flex-col gap-2 px-2 py-2'>
-				<p className='text-[12px] font-medium text-sf-text-secondary'>显示属性</p>
+				<p className='text-[12px] font-medium text-muted'>显示属性</p>
 				<PropertyToggleGrid
 					items={capabilities.allowedVisibleProperties.map((key) => ({
 						key,
@@ -255,28 +260,30 @@ export function DisplayOptionsPanel({
 
 			{/* 底栏：Reset 左 · 设为默认 右 */}
 			<div className='flex items-center justify-between gap-2 px-2 py-2'>
-				<button
-					className='text-[13px] text-sf-text-secondary hover:text-legacy-foreground disabled:opacity-50'
-					disabled={isPending}
-					onClick={() => void actions.resetToDefault()}
+				<Button
+					isDisabled={isPending}
+					onPress={() => void actions.resetToDefault()}
+					size='sm'
 					type='button'
+					variant='ghost'
 				>
 					重置
-				</button>
-				<button
-					className='text-[13px] font-medium text-primary hover:underline disabled:opacity-50'
-					disabled={isPending}
-					onClick={() => void actions.setAsDefault()}
+				</Button>
+				<Button
+					isDisabled={isPending}
+					onPress={() => void actions.setAsDefault()}
+					size='sm'
 					type='button'
+					variant='tertiary'
 				>
 					设为默认
-				</button>
+				</Button>
 			</div>
 
 			{isErrored && error ? (
-				<p className='px-2 pb-2 text-[12px] text-destructive'>{error}</p>
+				<p className='px-2 pb-2 text-[12px] text-danger'>{error}</p>
 			) : isPending ? (
-				<p className='px-2 pb-2 text-[12px] text-sf-text-tertiary'>正在读取显示偏好…</p>
+				<p className='px-2 pb-2 text-[12px] text-muted'>正在读取显示偏好…</p>
 			) : null}
 		</div>
 	)
@@ -293,19 +300,21 @@ function OrderDirectionButton({
 }) {
 	const label = direction === 'asc' ? '切换为降序' : '切换为升序'
 	const button = (
-		<button
+		<Button
 			aria-label={label}
-			className='flex size-8 items-center justify-center rounded-md text-sf-text-tertiary hover:bg-legacy-muted hover:text-legacy-foreground'
-			disabled={disabled}
-			onClick={onToggle}
+			isDisabled={disabled}
+			isIconOnly
+			onPress={onToggle}
+			size='sm'
 			type='button'
+			variant='ghost'
 		>
 			{direction === 'asc' ? (
 				<ArrowUpIcon className='size-3.5' />
 			) : (
 				<ArrowDownIcon className='size-3.5' />
 			)}
-		</button>
+		</Button>
 	)
 
 	if (disabled) {
@@ -330,7 +339,7 @@ function DisplayOptionRow({
 }) {
 	return (
 		<div className='flex min-h-9 items-center gap-2 px-1'>
-			<span className='min-w-0 flex-1 text-[13px] text-sf-text-secondary'>{label}</span>
+			<span className='min-w-0 flex-1 text-[13px] text-muted'>{label}</span>
 			{leading}
 			<div className='flex shrink-0 items-center justify-end'>{children}</div>
 		</div>
@@ -351,22 +360,29 @@ function CompactSelect({
 	ariaLabel: string
 }) {
 	return (
-		<Select disabled={disabled} onValueChange={onValueChange} value={value}>
-			<SelectTrigger
-				aria-label={ariaLabel}
-				className='h-8 w-auto min-w-30 max-w-40 justify-between rounded-full border-legacy-border/80 bg-legacy-muted/40 px-3 text-[13px] shadow-none'
-			>
-				<SelectValue />
-			</SelectTrigger>
-			<SelectContent position='popper'>
-				<SelectGroup>
+		<Select
+			aria-label={ariaLabel}
+			isDisabled={disabled}
+			onChange={(nextValue) => {
+				if (typeof nextValue === 'string') onValueChange(nextValue)
+			}}
+			value={value}
+			variant='secondary'
+		>
+			<Select.Trigger className='h-8 w-auto min-w-30 max-w-40 justify-between rounded-full bg-surface-secondary px-3 text-[13px] shadow-none'>
+				<Select.Value />
+				<Select.Indicator />
+			</Select.Trigger>
+			<Select.Popover placement='bottom end'>
+				<ListBox>
 					{options.map((option) => (
-						<SelectItem key={option.value} value={option.value}>
+						<ListBox.Item id={option.value} key={option.value} textValue={option.label}>
 							{option.label}
-						</SelectItem>
+							<ListBox.ItemIndicator />
+						</ListBox.Item>
 					))}
-				</SelectGroup>
-			</SelectContent>
+				</ListBox>
+			</Select.Popover>
 		</Select>
 	)
 }

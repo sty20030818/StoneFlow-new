@@ -1,172 +1,234 @@
-import type { LifecycleEntry, LifecycleMode } from '@/shared/types'
-import { LifecycleContextMenu } from './LifecycleContextMenu'
+import { Button, Checkbox } from '@heroui/react'
+import { ArchiveRestoreIcon, BoxIcon, FolderIcon, ListTodoIcon } from 'lucide-react'
+import { useCallback, useMemo, useState, type Ref } from 'react'
+import type { GridListItemAria } from 'react-aria'
+
 import {
-	CreatedAtCell,
-	IconCell,
-	RestoreActionCell,
-	RowSelectionCell,
-	RowShell,
-	RowTitleCell,
-	type RowSelectionGroupPosition,
-} from '@/shared/components/row'
-import { BoxIcon, FolderIcon, ListTodoIcon } from 'lucide-react'
+	COMMAND_IDS,
+	useCommandRuntimeContext,
+	type CommandContext,
+	type CommandId,
+	type CommandProjection,
+} from '@/features/command'
+import type { LifecycleEntry, LifecycleMode } from '@/shared/types'
+import { formatShortDate } from '@/shared/lib/date'
+import { cn } from '@/shared/lib/utils'
+
+import { buildLifecycleCommandSelection } from '../model/buildLifecycleCommandSelection'
+import { LifecycleContextMenu } from './LifecycleContextMenu'
 
 type LifecycleRowAdapterProps = {
 	entry: LifecycleEntry
 	mode: LifecycleMode
+	contextEntries?: LifecycleEntry[]
 	rowState: {
 		isSelected: boolean
-		isPending: boolean
-		isHovered?: boolean
-		hoverSource?: 'pointer' | 'keyboard' | null
+		isFocused: boolean
+		focusSource: 'pointer' | 'keyboard' | null
 	}
-	rowShortcutHandlers?: {
-		onHover: (entryId: string | null) => void
-	}
-	contextEntries?: LifecycleEntry[]
-	selectionGroupPosition?: RowSelectionGroupPosition
+	rowProps?: GridListItemAria['rowProps']
+	gridCellProps?: GridListItemAria['gridCellProps']
+	rowRef?: Ref<HTMLDivElement>
+	onContextMenuOpenChange?: (open: boolean) => void
 	actions: {
 		onToggleSelected: () => void
-		onRestore: (entry: LifecycleEntry) => void
-		onRestoreEntries?: (entries: LifecycleEntry[]) => void
 		onOpenDetail?: (entry: LifecycleEntry) => void
-		onMoveToTrash?: (entry: LifecycleEntry) => void
-		onMoveToTrashEntries?: (entries: LifecycleEntry[]) => void
-		onPermanentlyDelete?: (entry: LifecycleEntry) => void
-		onPermanentlyDeleteEntries?: (entries: LifecycleEntry[]) => void
 	}
 }
 
-/**
- * LifecycleRowAdapter 负责生命周期实体到统一 RowShell 的语义翻译。
- * 行内主操作只保留恢复，其余动作不进入 Row 主界面。
- */
+/** 生命周期行直接消费 Command projection，不保留 mutation 或 bulk 旁路。 */
 export function LifecycleRowAdapter({
 	entry,
 	mode,
-	rowState,
-	rowShortcutHandlers,
 	contextEntries,
-	selectionGroupPosition,
+	rowState,
+	rowProps,
+	gridCellProps,
+	rowRef,
+	onContextMenuOpenChange,
 	actions,
 }: LifecycleRowAdapterProps) {
-	const Icon = getLifecycleEntityIcon(entry.entityType)
-	const targetEntries = contextEntries && contextEntries.length > 0 ? contextEntries : [entry]
-	const isBulkContext = targetEntries.length > 1
+	const { runtime, context } = useCommandRuntimeContext()
+	const [isExecuting, setExecuting] = useState(false)
+	const {
+		onClick: _reactAriaPressClick,
+		onKeyDown: reactAriaKeyDown,
+		...ariaRowProps
+	} = rowProps ?? {}
+	const contextTargets = useMemo(
+		() => (contextEntries && contextEntries.length > 0 ? contextEntries : [entry]),
+		[contextEntries, entry],
+	)
 	const canOpenDetail =
-		!isBulkContext &&
+		contextTargets.length === 1 &&
 		mode === 'archive' &&
 		entry.entityType !== 'project' &&
 		typeof actions.onOpenDetail === 'function'
+	const rowCommandContext = useMemo(
+		() =>
+			buildLifecycleCommandContext({
+				baseContext: context,
+				entries: [entry],
+				targetIds: [entry.id],
+				focusedEntryId: entry.id,
+				mode,
+			}),
+		[context, entry, mode],
+	)
+	const contextMenuCommandContext = useMemo(
+		() =>
+			buildLifecycleCommandContext({
+				baseContext: context,
+				entries: contextTargets,
+				targetIds: contextTargets.map((item) => item.id),
+				focusedEntryId: entry.id,
+				mode,
+				clearSelection: contextEntries ? context.selection.clearSelection : undefined,
+			}),
+		[context, contextEntries, contextTargets, entry.id, mode],
+	)
+	const lifecycleCommand = useCallback(
+		(commandId: CommandId) => runtime.project(commandId, contextMenuCommandContext),
+		[contextMenuCommandContext, runtime],
+	)
+	const restoreCommand = runtime.project(COMMAND_IDS.lifecycleRestore, rowCommandContext)
 	const createdAtValue = mode === 'archive' ? entry.archivedAt : entry.deletedAt
-	const isHovered = rowState.isHovered ?? false
-	const hoverSource = rowState.hoverSource ?? null
+
+	const executeRowCommand = useCallback(async (command: CommandProjection | null) => {
+		if (!command?.enabled) return
+		setExecuting(true)
+		try {
+			await command.execute({ source: 'row' })
+		} finally {
+			setExecuting(false)
+		}
+	}, [])
 
 	return (
 		<LifecycleContextMenu
-			entityLabel={entry.title}
-			entityType={entry.entityType}
-			isBusy={rowState.isPending}
-			onMoveToTrash={
-				mode === 'archive'
-					? () => {
-							if (isBulkContext) {
-								actions.onMoveToTrashEntries?.(targetEntries)
-								return
-							}
-							actions.onMoveToTrash?.(entry)
-						}
-					: undefined
-			}
+			isBusy={isExecuting}
+			lifecycleCommand={lifecycleCommand}
+			onOpenChange={onContextMenuOpenChange}
 			onOpenDetail={canOpenDetail ? () => actions.onOpenDetail?.(entry) : undefined}
-			onPermanentlyDelete={
-				mode === 'trash'
-					? () => {
-							if (isBulkContext) {
-								actions.onPermanentlyDeleteEntries?.(targetEntries)
-								return
-							}
-							actions.onPermanentlyDelete?.(entry)
-						}
-					: undefined
-			}
-			onRestore={() => {
-				if (isBulkContext) {
-					actions.onRestoreEntries?.(targetEntries)
-					return
-				}
-				actions.onRestore(entry)
-			}}
-			targetCount={targetEntries.length}
+			targetCount={contextTargets.length}
 		>
-			<RowShell.Root
-				aria-label={canOpenDetail ? `打开 ${entry.title}` : undefined}
-				className={canOpenDetail ? undefined : 'cursor-default'}
+			<div
+				{...ariaRowProps}
+				ref={rowRef}
+				aria-label={canOpenDetail ? `打开 ${entry.title}` : entry.title}
+				className={cn(
+					'group/lifecycle-row flex min-h-11 w-full items-center rounded-lg border border-transparent px-3 py-2 text-[13px] leading-5 outline-none',
+					rowState.isSelected
+						? 'bg-accent-soft hover:bg-accent-soft-hover group-data-[open=true]/lifecycle-context-menu:bg-accent-soft-hover'
+						: 'hover:bg-surface-hover group-data-[open=true]/lifecycle-context-menu:bg-surface-hover',
+					rowState.isFocused && rowState.focusSource === 'keyboard' ? 'border-focus-subtle' : null,
+					canOpenDetail ? 'cursor-pointer' : 'cursor-default',
+					isExecuting ? 'opacity-70' : null,
+				)}
 				data-lifecycle-entity={entry.entityType}
-				interactive={canOpenDetail}
-				hovered={isHovered}
-				hoverSource={hoverSource}
-				pending={rowState.isPending}
-				selected={rowState.isSelected}
-				selectionGroupPosition={selectionGroupPosition}
+				data-focus-source={rowState.isFocused ? rowState.focusSource : undefined}
+				role={ariaRowProps.role ?? 'row'}
 				onClick={canOpenDetail ? () => actions.onOpenDetail?.(entry) : undefined}
-				onMouseEnter={() => rowShortcutHandlers?.onHover(entry.id)}
-				onMouseLeave={() => rowShortcutHandlers?.onHover(null)}
-				onKeyDown={
-					canOpenDetail
-						? (event) => {
-								if (event.key === 'Enter' || event.key === ' ') {
-									event.preventDefault()
-									actions.onOpenDetail?.(entry)
-								}
-							}
-						: undefined
-				}
+				onKeyDown={(event) => {
+					if (canOpenDetail && (event.key === 'Enter' || event.key === ' ')) {
+						event.preventDefault()
+						event.stopPropagation()
+						actions.onOpenDetail?.(entry)
+						return
+					}
+					reactAriaKeyDown?.(event)
+				}}
 			>
-				<RowShell.Left>
-					<RowShell.Leading>
-						<RowSelectionCell
-							checked={rowState.isSelected}
-							disabled={rowState.isPending}
-							disabledReason='正在处理该条目，暂时无法更改选择'
-							label={`选择 ${entry.title}`}
-							visible={rowState.isSelected || isHovered}
-							onCheckedChange={actions.onToggleSelected}
-						/>
-					</RowShell.Leading>
+				<div {...gridCellProps} className='flex min-w-0 flex-1 items-center gap-3'>
+					<span
+						className={cn(
+							'flex size-5 shrink-0 items-center justify-center',
+							rowState.isSelected
+								? 'opacity-100'
+								: 'opacity-0 group-hover/lifecycle-row:opacity-100 group-focus-within/lifecycle-row:opacity-100',
+						)}
+						onClick={(event) => event.stopPropagation()}
+						onKeyDown={(event) => event.stopPropagation()}
+						onPointerDown={(event) => event.stopPropagation()}
+					>
+						<Checkbox
+							aria-label={`选择 ${entry.title}`}
+							isDisabled={isExecuting}
+							isSelected={rowState.isSelected}
+							onChange={actions.onToggleSelected}
+							onClick={(event) => event.stopPropagation()}
+							onKeyDown={(event) => event.stopPropagation()}
+						>
+							<Checkbox.Content>
+								<Checkbox.Control>
+									<Checkbox.Indicator />
+								</Checkbox.Control>
+							</Checkbox.Content>
+						</Checkbox>
+					</span>
+					<LifecycleEntityIcon entityType={entry.entityType} />
+					<span className='min-w-0 flex-1 truncate font-medium'>{entry.title}</span>
 
-					<IconCell icon={<Icon className='size-4' />} />
-
-					<RowShell.Title>
-						<RowTitleCell title={entry.title} />
-					</RowShell.Title>
-				</RowShell.Left>
-
-				<RowShell.Right>
-					<RowShell.Actions>
-						<RestoreActionCell
-							disabled={rowState.isPending}
-							onRestore={() => actions.onRestore(entry)}
-						/>
-					</RowShell.Actions>
-					<RowShell.Fields className='md:flex'>
-						<CreatedAtCell value={createdAtValue} />
-					</RowShell.Fields>
-				</RowShell.Right>
-			</RowShell.Root>
+					{restoreCommand?.visible ? (
+						<span
+							onClick={(event) => event.stopPropagation()}
+							onKeyDown={(event) => event.stopPropagation()}
+							onPointerDown={(event) => event.stopPropagation()}
+						>
+							<Button
+								aria-description={restoreCommand.disabledReason}
+								isDisabled={isExecuting || !restoreCommand.enabled}
+								size='sm'
+								variant='ghost'
+								onPress={() => void executeRowCommand(restoreCommand)}
+							>
+								<ArchiveRestoreIcon />
+								恢复
+							</Button>
+						</span>
+					) : null}
+					{createdAtValue ? (
+						<span className='hidden shrink-0 text-xs text-muted md:inline'>
+							{mode === 'archive' ? '归档' : '删除'} {formatShortDate(createdAtValue)}
+						</span>
+					) : null}
+				</div>
+			</div>
 		</LifecycleContextMenu>
 	)
 }
 
-function getLifecycleEntityIcon(entityType: LifecycleEntry['entityType']) {
-	switch (entityType) {
-		case 'space':
-			return FolderIcon
-		case 'project':
-			return BoxIcon
-		default:
-			return ListTodoIcon
+function buildLifecycleCommandContext({
+	baseContext,
+	entries,
+	targetIds,
+	focusedEntryId,
+	mode,
+	clearSelection,
+}: {
+	baseContext: CommandContext
+	entries: readonly LifecycleEntry[]
+	targetIds: readonly string[]
+	focusedEntryId: string
+	mode: LifecycleMode
+	clearSelection?: () => void
+}): CommandContext {
+	return {
+		...baseContext,
+		selection: buildLifecycleCommandSelection({
+			selectedIds: targetIds,
+			entries,
+			mode,
+			focusedEntryId,
+			clearSelection,
+		}),
 	}
+}
+
+function LifecycleEntityIcon({ entityType }: { entityType: LifecycleEntry['entityType'] }) {
+	const Icon =
+		entityType === 'space' ? FolderIcon : entityType === 'project' ? BoxIcon : ListTodoIcon
+	return <Icon className='size-4 shrink-0 text-muted' />
 }
 
 export type { LifecycleRowAdapterProps }

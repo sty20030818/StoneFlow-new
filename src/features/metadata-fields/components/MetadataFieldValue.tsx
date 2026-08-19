@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { Chip } from '@heroui/react'
 
 import { cn } from '@/shared/lib/utils'
 import { OverflowTooltip } from '@/shared/components/tooltip'
@@ -22,18 +23,22 @@ export function MetadataFieldValue({
 	className,
 }: MetadataFieldValueProps) {
 	return (
-		<span
+		<Chip
 			aria-label={ariaLabel}
 			className={cn(
-				'inline-flex h-[30px] shrink-0 items-center gap-1 rounded-full border border-sf-border-interactive bg-sf-surface-interactive px-2.5 text-[0.8rem] leading-none font-medium whitespace-nowrap text-sf-text-interactive shadow-(--sf-shadow-interactive) [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-3.5',
+				'shrink-0 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-3.5',
 				compact ? 'max-w-45' : 'max-w-52',
 				className,
 			)}
+			size='sm'
+			variant='secondary'
 		>
 			{icon}
-			<OverflowTooltip className='min-w-0' content={label}>
-				{label}
-			</OverflowTooltip>
-		</span>
+			<Chip.Label className='min-w-0'>
+				<OverflowTooltip className='min-w-0' content={label}>
+					{label}
+				</OverflowTooltip>
+			</Chip.Label>
+		</Chip>
 	)
 }

@@ -33,12 +33,12 @@ export function TaskDrawerBody({
 				<TaskTitleField autosave={autosave} />
 				<TaskNoteField autosave={autosave} />
 				{/* 属性块：状态、优先级、日期、归属 */}
-				<div className='mt-3 space-y-2 border-t border-sf-divider pt-3'>
+				<div className='mt-3 space-y-2 border-t border-separator pt-3'>
 					<TaskPropertiesSection autosave={autosave} />
 					<TaskPlacementSection autosave={autosave} projects={projects} spaces={spaces} />
 				</div>
 				{/* 链接块 */}
-				<div className='mt-3 border-t border-sf-divider pt-3'>
+				<div className='mt-3 border-t border-separator pt-3'>
 					<TaskLinksSection taskId={taskId} />
 				</div>
 			</div>

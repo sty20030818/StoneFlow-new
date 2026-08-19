@@ -4,18 +4,10 @@
  * 筛选公式条：chip（field 固定 / op·值可改）+ Clear（仅 dirty）+ Save。
  */
 import { useState } from 'react'
+import { Button, Dropdown, Input, Label, Modal, type Selection } from '@heroui/react'
 import { PlusIcon, XIcon } from 'lucide-react'
 
 import { COMMAND_IDS, CommandActionTooltip } from '@/features/command'
-import { Button } from '@/shared/components/base/button'
-import {
-	Dialog,
-	DialogContent,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from '@/shared/components/base/dialog'
-import { Input } from '@/shared/components/base/input'
 import { ActionTooltip, OverflowTooltip } from '@/shared/components/tooltip'
 import { cn } from '@/shared/lib/utils'
 
@@ -34,7 +26,6 @@ import {
 	formatFilterOpLabel,
 } from './filterLabels'
 import { getFilterValueOptions } from './filterOptionCatalog'
-import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/base/popover'
 
 export function FilterBar({ className }: { className?: string }) {
 	const { session, projects, canOverwriteView, onSave } = useListFilterUi()
@@ -65,7 +56,7 @@ export function FilterBar({ className }: { className?: string }) {
 
 	return (
 		<div className={cn('flex flex-col gap-1.5', className)}>
-			<div className='flex flex-wrap items-center gap-1.5 rounded-lg border border-legacy-border/80 bg-legacy-muted/30 px-2 py-1.5'>
+			<div className='flex flex-wrap items-center gap-1.5 rounded-lg border border-border bg-surface-secondary px-2 py-1.5'>
 				{effective.clauses.map((clause) => (
 					<FilterChip
 						clause={clause}
@@ -90,13 +81,7 @@ export function FilterBar({ className }: { className?: string }) {
 							label='添加筛选'
 							onOpenChange={(nextOpen) => setFilterTooltipOpen(nextOpen && !filterMenuOpen)}
 						>
-							<Button
-								aria-label='添加筛选'
-								className='size-7'
-								size='icon'
-								type='button'
-								variant='ghost'
-							>
+							<Button aria-label='添加筛选' isIconOnly size='sm' type='button' variant='ghost'>
 								<PlusIcon className='size-3.5' />
 							</Button>
 						</CommandActionTooltip>
@@ -104,12 +89,12 @@ export function FilterBar({ className }: { className?: string }) {
 				/>
 				<div className='ml-auto flex items-center gap-1.5'>
 					{dirty ? (
-						<Button onClick={() => clearTemp()} size='sm' type='button' variant='ghost'>
+						<Button onPress={() => clearTemp()} size='sm' type='button' variant='ghost'>
 							清除
 						</Button>
 					) : null}
 					{!isEmpty && onSave ? (
-						<Button onClick={() => setSaveOpen(true)} size='sm' type='button' variant='outline'>
+						<Button onPress={() => setSaveOpen(true)} size='sm' type='button' variant='outline'>
 							保存
 						</Button>
 					) : null}
@@ -141,8 +126,8 @@ function FilterChip({
 }) {
 	const multi = clause.values.length > 1
 	return (
-		<div className='inline-flex max-w-full items-center gap-0.5 rounded-md border border-legacy-border bg-legacy-background px-1.5 py-0.5 text-[12px]'>
-			<span className='shrink-0 px-0.5 font-medium text-sf-text-secondary'>
+		<div className='inline-flex max-w-full items-center gap-0.5 rounded-md border border-border bg-surface px-1.5 py-0.5 text-[12px]'>
+			<span className='shrink-0 px-0.5 font-medium text-muted'>
 				{formatFilterFieldLabel(clause.field)}
 			</span>
 			<OpPicker multi={multi} op={clause.op} onChange={(op) => onUpdate({ ...clause, op })} />
@@ -154,14 +139,17 @@ function FilterChip({
 				projects={projects}
 			/>
 			<ActionTooltip label='删除筛选条件'>
-				<button
+				<Button
 					aria-label='删除筛选条件'
-					className='rounded p-0.5 text-sf-text-tertiary hover:bg-legacy-muted hover:text-legacy-foreground'
-					onClick={onRemove}
+					className='size-5 min-w-5 rounded text-muted'
+					isIconOnly
+					onPress={onRemove}
+					size='sm'
 					type='button'
+					variant='ghost'
 				>
 					<XIcon className='size-3' />
-				</button>
+				</Button>
 			</ActionTooltip>
 		</div>
 	)
@@ -176,36 +164,33 @@ function OpPicker({
 	multi: boolean
 	onChange: (op: FilterOp) => void
 }) {
-	const [open, setOpen] = useState(false)
 	return (
-		<Popover onOpenChange={setOpen} open={open}>
-			<PopoverTrigger asChild>
-				<button
-					className='rounded px-1 text-sf-text-tertiary hover:bg-legacy-muted hover:text-legacy-foreground'
-					type='button'
-				>
-					{formatFilterOpLabel(op, multi)}
-				</button>
-			</PopoverTrigger>
-			<PopoverContent align='start' className='w-28 p-1'>
-				{(['is', 'is_not'] as const).map((value) => (
-					<button
-						className={cn(
-							'flex w-full rounded-md px-2 py-1.5 text-left text-sm hover:bg-legacy-muted',
-							value === op && 'font-medium',
-						)}
-						key={value}
-						onClick={() => {
-							onChange(value)
-							setOpen(false)
-						}}
-						type='button'
-					>
-						{formatFilterOpLabel(value, multi)}
-					</button>
-				))}
-			</PopoverContent>
-		</Popover>
+		<Dropdown>
+			<Button
+				aria-label='筛选运算符'
+				className='h-6 min-w-0 rounded px-1 text-muted'
+				size='sm'
+				type='button'
+				variant='ghost'
+			>
+				{formatFilterOpLabel(op, multi)}
+			</Button>
+			<Dropdown.Popover className='w-28' placement='bottom start'>
+				<Dropdown.Menu aria-label='筛选运算符' selectedKeys={[op]} selectionMode='single'>
+					{(['is', 'is_not'] as const).map((value) => (
+						<Dropdown.Item
+							id={value}
+							key={value}
+							onAction={() => onChange(value)}
+							textValue={formatFilterOpLabel(value, multi)}
+						>
+							<Dropdown.ItemIndicator />
+							{formatFilterOpLabel(value, multi)}
+						</Dropdown.Item>
+					))}
+				</Dropdown.Menu>
+			</Dropdown.Popover>
+		</Dropdown>
 	)
 }
 
@@ -218,61 +203,65 @@ function ValuesPicker({
 	onChange: (values: string[]) => void
 	projects?: Array<{ id: string; name: string }>
 }) {
-	const [open, setOpen] = useState(false)
 	const options = getFilterValueOptions(clause.field, projects)
 	const summary = formatClauseValuesSummary(clause, projects)
 
-	function toggle(value: string) {
-		const next = clause.values.includes(value)
-			? clause.values.filter((v) => v !== value)
-			: [...clause.values, value]
+	function handleSelectionChange(selection: Selection) {
+		const selectedKeys =
+			selection === 'all' ? new Set(options.map((option) => option.value)) : selection
+		const next = options
+			.filter((option) => selectedKeys.has(option.value))
+			.map((option) => option.value)
 		if (next.length > 0) {
 			onChange(next)
 		}
 	}
 
 	return (
-		<Popover onOpenChange={setOpen} open={open}>
-			<PopoverTrigger asChild>
-				<button
-					className='flex max-w-35 min-w-0 rounded px-1 font-medium hover:bg-legacy-muted'
-					type='button'
+		<Dropdown>
+			<Button
+				aria-label={`筛选值 ${summary}`}
+				className='h-6 max-w-35 min-w-0 rounded px-1 font-medium'
+				size='sm'
+				type='button'
+				variant='ghost'
+			>
+				<span className='min-w-0 truncate' title={summary}>
+					{summary}
+				</span>
+			</Button>
+			<Dropdown.Popover className='w-48' placement='bottom start'>
+				<Dropdown.Menu
+					aria-label='筛选值'
+					disallowEmptySelection
+					selectedKeys={clause.values}
+					selectionMode='multiple'
+					shouldCloseOnSelect={false}
+					onSelectionChange={handleSelectionChange}
 				>
-					{open ? (
-						<span className='min-w-0 truncate'>{summary}</span>
-					) : (
-						<OverflowTooltip className='min-w-0' content={summary}>
-							{summary}
-						</OverflowTooltip>
-					)}
-				</button>
-			</PopoverTrigger>
-			<PopoverContent align='start' className='max-h-56 w-48 overflow-y-auto p-1'>
-				{options.map((option) => {
-					const checked = clause.values.includes(option.value)
-					return (
-						<button
-							className={cn(
-								'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-legacy-muted',
-								checked && 'font-medium',
-							)}
-							key={option.value}
-							onClick={() => toggle(option.value)}
-							type='button'
-						>
-							{option.leading ? (
-								<span className='flex size-4 shrink-0 items-center justify-center' aria-hidden>
-									{option.leading}
-								</span>
-							) : null}
-							<OverflowTooltip className='min-w-0 flex-1' content={option.label}>
-								{option.label}
-							</OverflowTooltip>
-						</button>
-					)
-				})}
-			</PopoverContent>
-		</Popover>
+					{options.map((option) => {
+						return (
+							<Dropdown.Item
+								id={option.value}
+								key={option.value}
+								shouldCloseOnSelect={false}
+								textValue={option.label}
+							>
+								<Dropdown.ItemIndicator />
+								{option.leading ? (
+									<span className='flex size-4 shrink-0 items-center justify-center' aria-hidden>
+										{option.leading}
+									</span>
+								) : null}
+								<OverflowTooltip className='min-w-0 flex-1' content={option.label}>
+									{option.label}
+								</OverflowTooltip>
+							</Dropdown.Item>
+						)
+					})}
+				</Dropdown.Menu>
+			</Dropdown.Popover>
+		</Dropdown>
 	)
 }
 
@@ -303,46 +292,51 @@ function FilterSaveDialog({
 	}
 
 	return (
-		<Dialog onOpenChange={onOpenChange} open={open}>
-			<DialogContent className='max-w-sm'>
-				<DialogHeader>
-					<DialogTitle>保存为视图</DialogTitle>
-				</DialogHeader>
-				<div className='grid gap-3 py-2'>
-					<label className='grid gap-1.5 text-sm'>
-						<span className='text-sf-text-secondary'>视图名称</span>
-						<Input
-							disabled={busy}
-							onChange={(event) => setName(event.target.value)}
-							placeholder='例如：高优先级进行中'
-							value={name}
-						/>
-					</label>
-					<p className='text-[12px] text-sf-text-tertiary'>仅保存筛选条件，不包含显示选项。</p>
-				</div>
-				<DialogFooter className='gap-2 sm:gap-2'>
-					<Button onClick={() => onOpenChange(false)} type='button' variant='outline'>
-						取消
-					</Button>
-					{canOverwrite ? (
-						<Button
-							disabled={busy}
-							onClick={() => void run('overwrite')}
-							type='button'
-							variant='secondary'
-						>
-							覆盖当前
+		<Modal.Backdrop isOpen={open} onOpenChange={onOpenChange}>
+			<Modal.Container placement='center'>
+				<Modal.Dialog className='max-w-sm gap-0 overflow-hidden p-0'>
+					<Modal.Header className='px-5 py-4'>
+						<Modal.Heading>保存为视图</Modal.Heading>
+					</Modal.Header>
+					<Modal.Body className='grid gap-3 px-5 py-2'>
+						<div className='grid gap-1.5 text-sm'>
+							<Label htmlFor='filter-view-name'>视图名称</Label>
+							<Input
+								fullWidth
+								id='filter-view-name'
+								disabled={busy}
+								onChange={(event) => setName(event.currentTarget.value)}
+								placeholder='例如：高优先级进行中'
+								value={name}
+							/>
+						</div>
+						<p className='text-[12px] text-muted'>仅保存筛选条件，不包含显示选项。</p>
+					</Modal.Body>
+					<Modal.Footer className='gap-2 px-5 py-4'>
+						<Button onPress={() => onOpenChange(false)} type='button' variant='tertiary'>
+							取消
 						</Button>
-					) : null}
-					<Button
-						disabled={busy || name.trim().length === 0}
-						onClick={() => void run('create')}
-						type='button'
-					>
-						另存为
-					</Button>
-				</DialogFooter>
-			</DialogContent>
-		</Dialog>
+						{canOverwrite ? (
+							<Button
+								isDisabled={busy}
+								onPress={() => void run('overwrite')}
+								type='button'
+								variant='secondary'
+							>
+								覆盖当前
+							</Button>
+						) : null}
+						<Button
+							isDisabled={busy || name.trim().length === 0}
+							isPending={busy}
+							onPress={() => void run('create')}
+							type='button'
+						>
+							另存为
+						</Button>
+					</Modal.Footer>
+				</Modal.Dialog>
+			</Modal.Container>
+		</Modal.Backdrop>
 	)
 }

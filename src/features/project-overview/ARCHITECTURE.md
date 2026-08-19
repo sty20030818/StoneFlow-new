@@ -1,6 +1,6 @@
 # project-overview · 项目总览
 
-> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-07-19
+> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-08-19
 
 ---
 
@@ -9,7 +9,7 @@
 ```txt
 routes 薄页
   → ProjectOverviewPage（薄壳）
-  → useProjectOverviewScene（视图轨 / 选择 / bulk / 行动作）
+  → useProjectOverviewScene（视图轨 / 分组 / 唯一 collection owner）
   → PageFrame + ProjectBoard（组合 project public）
 
 不负责
@@ -52,7 +52,8 @@ src/features/project-overview/
 |------|------|
 | project | overview 数据 + mutations + command selection |
 | view | `useViewsQuery('project')` 侧栏视图轨 |
-| selection / bulk-action / shell-dialogs | 页编排消费 |
+| selection / command | 页编排持有 collection，行与右键消费 Command projection |
+| bulk-action / shell-dialogs | Command Runtime 统一执行与危险确认 |
 | routes | 极薄挂 Page |
 
 ---

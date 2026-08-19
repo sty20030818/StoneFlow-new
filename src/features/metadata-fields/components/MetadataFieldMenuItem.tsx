@@ -1,15 +1,15 @@
 import type { ReactNode } from 'react'
 
-import { Kbd } from '@heroui/react'
+import { Dropdown, Kbd } from '@heroui/react'
 import { CheckIcon, MinusIcon } from 'lucide-react'
 
 import type { MetadataFieldIndicator } from '@/features/metadata-fields/core'
 import { cn } from '@/shared/lib/utils'
-import { DropdownMenuItem } from '@/shared/components/base/dropdown-menu'
 
 export type MetadataFieldMenuItemProps<TValue> = {
+	id: string
 	value: TValue
-	label: ReactNode
+	label: string
 	icon?: ReactNode
 	trailing?: ReactNode
 	digit?: string
@@ -20,6 +20,7 @@ export type MetadataFieldMenuItemProps<TValue> = {
 }
 
 export function MetadataFieldMenuItem<TValue>({
+	id,
 	value,
 	label,
 	icon,
@@ -33,9 +34,10 @@ export function MetadataFieldMenuItem<TValue>({
 	const hasTrailing = trailing !== undefined && trailing !== null
 
 	return (
-		<DropdownMenuItem
+		<Dropdown.Item
 			className='gap-2 p-2'
-			disabled={disabled}
+			id={id}
+			isDisabled={disabled}
 			onClick={(event) => {
 				if (stopPropagation) {
 					event.stopPropagation()
@@ -46,7 +48,8 @@ export function MetadataFieldMenuItem<TValue>({
 					event.stopPropagation()
 				}
 			}}
-			onSelect={() => onSelect(value)}
+			onAction={() => onSelect(value)}
+			textValue={label}
 		>
 			{icon}
 			<span className='min-w-0 flex-1 truncate'>{label}</span>
@@ -70,7 +73,7 @@ export function MetadataFieldMenuItem<TValue>({
 				</span>
 				{hasTrailing ? <span className='min-w-0 text-right tabular-nums'>{trailing}</span> : null}
 			</span>
-		</DropdownMenuItem>
+		</Dropdown.Item>
 	)
 }
 
@@ -78,7 +81,7 @@ function MetadataFieldIndicatorIcon({ indicator }: { indicator: MetadataFieldInd
 	if (indicator === 'checked') {
 		return (
 			<CheckIcon
-				className='size-3.5 text-sf-icon-secondary'
+				className='size-3.5 text-muted'
 				data-indicator='checked'
 				data-slot='metadata-field-indicator'
 			/>
@@ -88,7 +91,7 @@ function MetadataFieldIndicatorIcon({ indicator }: { indicator: MetadataFieldInd
 	if (indicator === 'mixed') {
 		return (
 			<MinusIcon
-				className='size-3.5 text-sf-icon-secondary'
+				className='size-3.5 text-muted'
 				data-indicator='mixed'
 				data-slot='metadata-field-indicator'
 			/>

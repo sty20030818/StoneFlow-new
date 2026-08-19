@@ -1,92 +1,41 @@
 import type { ReactNode } from 'react'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 
-import { BulkActionProvider } from '@/features/bulk-action'
-import { KeybindingRegistry, ShortcutRegistryProvider } from '@/features/command'
-import { DangerConfirmProvider } from '@/features/danger-confirm'
-import { createLifecycleBulkAdapter, lifecycleBulkActions } from '@/features/lifecycle'
+import {
+	COMMAND_IDS,
+	CommandRegistry,
+	CommandRuntime,
+	CommandRuntimeProvider,
+	createEmptyCommandContext,
+	type Command,
+} from '@/features/command'
 import { LifecycleList } from '@/features/lifecycle/components/LifecycleList'
-import type { LifecycleEntry, Scope } from '@/shared/types'
+import type { LifecycleEntry, LifecycleMode, Scope } from '@/shared/types'
 import { renderWithRouterContext } from '@/test/renderWithRouter'
 
-const loadArchiveSpy = vi.fn<(scope: Scope) => Promise<void>>()
-const loadTrashSpy = vi.fn<(scope: Scope) => Promise<void>>()
-const restoreEntrySpy = vi.fn<(entry: LifecycleEntry) => Promise<void>>()
-const deleteEntrySpy = vi.fn<(entry: LifecycleEntry) => Promise<void>>()
-const permanentlyDeleteEntrySpy = vi.fn<(entry: LifecycleEntry) => Promise<void>>()
-const restoreLifecycleEntrySpy = vi.fn<(entry: LifecycleEntry) => Promise<unknown>>()
-const permanentlyDeleteLifecycleEntrySpy = vi.fn<(entry: LifecycleEntry) => Promise<unknown>>()
-const refreshLoadedSlicesSpy = vi.fn<() => Promise<void>>()
 const openTaskDetailSpy = vi.fn<(taskId: string) => void>()
-const toastSuccessSpy = vi.fn<(message: string) => void>()
-const toastErrorSpy = vi.fn<(message: string) => void>()
-
 let mockScope: Scope = { type: 'all' }
-let storeState = createStoreState()
-type MockQueryStatus = 'loading' | 'ready' | 'error'
-const TEST_SHORTCUT_REGISTRY = new KeybindingRegistry([])
-
-vi.mock('@/shared/components/main-card/MainCardLayout', () => ({
-	MainCard: {
-		Root: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-		Header: ({ breadcrumb }: { breadcrumb: ReactNode }) => <div>{breadcrumb}</div>,
-		Toolbar: ({ pills }: { pills: Array<{ label: string }> }) => (
-			<div>
-				{pills.map((pill) => (
-					<span key={pill.label}>{pill.label}</span>
-				))}
-			</div>
-		),
-		Body: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-		Empty: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-		NoticeGroup: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-		GhostAction: ({ children }: { children: ReactNode }) => (
-			<button type='button'>{children}</button>
-		),
-	},
-}))
+let archiveState = createQueryState(createEntries('archive'))
+let trashState = createQueryState(createEntries('trash'))
 
 vi.mock('@/features/entity-detail', () => ({
 	useEntityDetailController: () => ({
-		activeDetail: null,
-		isOpen: false,
 		openTaskDetail: openTaskDetailSpy,
-		closeDrawer: vi.fn(),
-		openPage: vi.fn(),
 	}),
 }))
 
 vi.mock('@/features/lifecycle/hooks/lifecycle.queries', () => ({
-	useLifecycleEntriesQuery: (mode: 'archive' | 'trash') => {
-		const slice = mode === 'archive' ? storeState.archiveEntries : storeState.trashEntries
+	useLifecycleEntriesQuery: (mode: LifecycleMode) => {
+		const state = mode === 'archive' ? archiveState : trashState
 		return {
-			data: slice.items,
-			isError: slice.status === 'error',
-			isLoading: slice.status === 'loading',
-			isPending: slice.status === 'loading',
-			error: slice.error,
-			refetch: mode === 'archive' ? loadArchiveSpy : loadTrashSpy,
+			data: state.items,
+			isError: state.status === 'error',
+			isLoading: state.status === 'loading',
+			isPending: state.status === 'loading',
+			error: state.error,
+			refetch: vi.fn(),
 		}
 	},
-}))
-
-vi.mock('@/features/lifecycle/hooks/lifecycle.mutations', () => ({
-	useRestoreLifecycleEntryMutation: () => ({
-		mutateAsync: restoreEntrySpy,
-	}),
-	useDeleteLifecycleEntryMutation: () => ({
-		mutateAsync: deleteEntrySpy,
-	}),
-	usePermanentlyDeleteLifecycleEntryMutation: () => ({
-		mutateAsync: permanentlyDeleteEntrySpy,
-	}),
-}))
-
-vi.mock('@/features/lifecycle/api/lifecycle', () => ({
-	deleteLifecycleEntry: vi.fn<(entry: LifecycleEntry) => Promise<unknown>>(),
-	restoreLifecycleEntry: (entry: LifecycleEntry) => restoreLifecycleEntrySpy(entry),
-	permanentlyDeleteLifecycleEntry: (entry: LifecycleEntry) =>
-		permanentlyDeleteLifecycleEntrySpy(entry),
 }))
 
 vi.mock('@/app/navigation/ShellRouteContext', () => ({
@@ -96,62 +45,26 @@ vi.mock('@/app/navigation/ShellRouteContext', () => ({
 	}),
 }))
 
-vi.mock('@/shared/events', () => ({
-	emitEvent: vi.fn(),
-}))
-
-vi.mock('sonner', () => ({
-	toast: {
-		success: (message: string) => toastSuccessSpy(message),
-		error: (message: string) => toastErrorSpy(message),
-	},
-}))
-
 describe('LifecycleList', () => {
 	beforeEach(() => {
 		mockScope = { type: 'all' }
-		storeState = createStoreState()
-		loadArchiveSpy.mockReset()
-		loadTrashSpy.mockReset()
-		restoreEntrySpy.mockReset()
-		deleteEntrySpy.mockReset()
-		deleteEntrySpy.mockResolvedValue()
-		permanentlyDeleteEntrySpy.mockReset()
-		permanentlyDeleteEntrySpy.mockResolvedValue()
-		restoreLifecycleEntrySpy.mockReset()
-		restoreLifecycleEntrySpy.mockResolvedValue({})
-		permanentlyDeleteLifecycleEntrySpy.mockReset()
-		permanentlyDeleteLifecycleEntrySpy.mockResolvedValue({})
-		refreshLoadedSlicesSpy.mockReset()
-		refreshLoadedSlicesSpy.mockResolvedValue()
+		archiveState = createQueryState(createEntries('archive'))
+		trashState = createQueryState(createEntries('trash'))
 		openTaskDetailSpy.mockReset()
-		toastSuccessSpy.mockReset()
-		toastErrorSpy.mockReset()
 	})
 
-	it('Archive 模式渲染三分区与对应操作按钮', async () => {
-		await renderLifecycleList({ mode: 'archive' })
+	it('Archive 模式保留空间、项目、任务三分区', async () => {
+		await renderLifecycleList('archive')
 
 		expect(screen.getByText('已归档的空间')).toBeInTheDocument()
 		expect(screen.getByText('已归档的项目')).toBeInTheDocument()
 		expect(screen.getByText('已归档的任务')).toBeInTheDocument()
 		expect(screen.getAllByRole('button', { name: '恢复' })).toHaveLength(3)
-		expect(screen.queryByRole('button', { name: '打开' })).not.toBeInTheDocument()
-		expect(screen.queryByRole('button', { name: '永久删除' })).not.toBeInTheDocument()
 	})
 
-	it('Trash 模式在空列表时展示页面空状态', async () => {
-		storeState = createStoreState({
-			trashEntries: {
-				items: [],
-				status: 'ready',
-				error: null,
-				scope: { type: 'all' },
-				entityFilter: undefined,
-			},
-		})
-
-		await renderLifecycleList({ mode: 'trash' })
+	it('Trash 空查询结果展示标准空态', async () => {
+		trashState = createQueryState([])
+		await renderLifecycleList('trash')
 
 		expect(screen.getByText('当前没有已删除内容')).toBeInTheDocument()
 		expect(
@@ -161,152 +74,97 @@ describe('LifecycleList', () => {
 		).toBeInTheDocument()
 	})
 
-	it('archive 单条 task 右键可移入回收站，trash 单条 task 右键可永久删除', async () => {
-		await renderLifecycleList({ mode: 'archive' })
+	it('查询失败保留页面错误结果', async () => {
+		archiveState = { items: [], status: 'error', error: new Error('读取失败') }
+		await renderLifecycleList('archive')
 
-		fireEvent.contextMenu(screen.getByRole('button', { name: '打开 补齐生命周期页面' }))
-		fireEvent.click(await screen.findByRole('menuitem', { name: '移入回收站' }))
-		fireEvent.click(await screen.findByRole('button', { name: '移入回收站' }))
-
-		await waitFor(() => {
-			expect(deleteEntrySpy).toHaveBeenCalledWith(
-				expect.objectContaining({ id: 'task-1', entityType: 'task' }),
-			)
-		})
-
-		await renderLifecycleList({ mode: 'trash' })
-
-		fireEvent.contextMenu(screen.getByText('待永久删除任务'))
-		fireEvent.click(await screen.findByRole('menuitem', { name: '永久删除' }))
-		fireEvent.click(await screen.findByRole('button', { name: '永久删除' }))
-
-		await waitFor(() => {
-			expect(permanentlyDeleteEntrySpy).toHaveBeenCalledWith(
-				expect.objectContaining({ id: 'task-2', entityType: 'task' }),
-			)
-		})
-	})
-
-	it('归档条目删除失败时显示错误，不产生未处理 Promise', async () => {
-		deleteEntrySpy.mockRejectedValueOnce({ message: '当前条目不可删除' })
-		await renderLifecycleList({ mode: 'archive' })
-
-		fireEvent.contextMenu(screen.getByRole('button', { name: '打开 补齐生命周期页面' }))
-		fireEvent.click(await screen.findByRole('menuitem', { name: '移入回收站' }))
-		fireEvent.click(await screen.findByRole('button', { name: '移入回收站' }))
-
-		await waitFor(() => {
-			expect(toastErrorSpy).toHaveBeenCalledWith('当前条目不可删除')
-		})
+		expect(screen.getByRole('alert')).toHaveTextContent('读取归档失败')
 	})
 })
 
-async function renderLifecycleList(props: { mode: 'archive' | 'trash' }) {
+async function renderLifecycleList(mode: LifecycleMode) {
 	return renderWithRouterContext(
-		<TestBulkActionBoundary mode={props.mode}>
-			<LifecycleList {...props} />
-		</TestBulkActionBoundary>,
+		<LifecycleCommandBoundary mode={mode}>
+			<LifecycleList mode={mode} />
+		</LifecycleCommandBoundary>,
 	)
 }
 
-function TestBulkActionBoundary({
+function LifecycleCommandBoundary({
 	children,
 	mode,
 }: {
 	children: ReactNode
-	mode: 'archive' | 'trash'
+	mode: LifecycleMode
 }) {
-	const archiveEntries = storeState.archiveEntries
-	const trashEntries = storeState.trashEntries
-	const slice = mode === 'archive' ? archiveEntries : trashEntries
-	const adapter = createLifecycleBulkAdapter({
-		entries: slice.items,
-		refreshLoadedSlices: refreshLoadedSlicesSpy,
+	const context = createEmptyCommandContext()
+	context.route.page = mode === 'archive' ? 'archive' : 'trash'
+	const runtime = new CommandRuntime({
+		registry: new CommandRegistry(createLifecycleCommands()),
+		getContext: () => context,
 	})
 
 	return (
-		<ShortcutRegistryProvider registry={TEST_SHORTCUT_REGISTRY}>
-			<DangerConfirmProvider>
-				<BulkActionProvider actions={lifecycleBulkActions} context={{ adapter }}>
-					{children}
-				</BulkActionProvider>
-			</DangerConfirmProvider>
-		</ShortcutRegistryProvider>
+		<CommandRuntimeProvider context={context} runtime={runtime}>
+			{children}
+		</CommandRuntimeProvider>
 	)
 }
 
-function createStoreState(overrides?: Partial<ReturnType<typeof createStoreStateBase>>) {
+function createLifecycleCommands(): Command[] {
+	return [
+		createCommand(COMMAND_IDS.lifecycleRestore, '恢复'),
+		createCommand(COMMAND_IDS.lifecycleDelete, '删除', 'archive'),
+		createCommand(COMMAND_IDS.lifecycleDeletePermanently, '永久删除', 'trash'),
+	]
+}
+
+function createCommand(id: Command['id'], title: string, page?: 'archive' | 'trash'): Command {
 	return {
-		...createStoreStateBase(),
-		...overrides,
+		id,
+		title,
+		category: 'lifecycle',
+		scope: ['task-list'],
+		isEnabled: (ctx) => ctx.selection.type === 'lifecycle' && ctx.selection.ids.length > 0,
+		isVisible: page ? (ctx) => ctx.route.page === page : undefined,
+		run: () => undefined,
 	}
 }
 
-function createStoreStateBase() {
+function createQueryState(items: LifecycleEntry[]) {
 	return {
-		archiveEntries: {
-			items: [
-				createEntry({ id: 'space-1', entityType: 'space', title: '工作', projectName: null }),
-				createEntry({
-					id: 'project-1',
-					entityType: 'project',
-					title: '阶段 10',
-					projectId: 'project-1',
-					projectName: '阶段 10',
-				}),
-				createEntry({
-					id: 'task-1',
-					entityType: 'task',
-					title: '补齐生命周期页面',
-					projectId: 'project-1',
-					projectName: '阶段 10',
-				}),
-			],
-			status: 'ready' as MockQueryStatus,
-			error: null,
-			scope: { type: 'all' } as Scope,
-			entityFilter: undefined,
-		},
-		trashEntries: {
-			items: [
-				createEntry({
-					id: 'task-2',
-					entityType: 'task',
-					title: '待永久删除任务',
-					deletedAt: '2026-05-03T10:00:00Z',
-					archivedAt: null,
-				}),
-			],
-			status: 'ready' as MockQueryStatus,
-			error: null,
-			scope: { type: 'all' } as Scope,
-			entityFilter: undefined,
-		},
-		pendingEntryId: null,
-		loadArchive: loadArchiveSpy,
-		loadTrash: loadTrashSpy,
-		restoreEntry: restoreEntrySpy,
-		deleteEntry: deleteEntrySpy,
-		permanentlyDeleteEntry: permanentlyDeleteEntrySpy,
-		refreshLoadedSlices: refreshLoadedSlicesSpy,
+		items,
+		status: 'ready' as 'loading' | 'ready' | 'error',
+		error: null as Error | null,
 	}
 }
 
-function createEntry(
-	overrides: Partial<LifecycleEntry> & Pick<LifecycleEntry, 'id' | 'entityType' | 'title'>,
-): LifecycleEntry {
+function createEntries(mode: LifecycleMode): LifecycleEntry[] {
+	return [
+		createEntry({ id: 'space-1', entityType: 'space', title: '工作', mode }),
+		createEntry({ id: 'project-1', entityType: 'project', title: '阶段 K', mode }),
+		createEntry({ id: 'task-1', entityType: 'task', title: '完成生命周期迁移', mode }),
+	]
+}
+
+function createEntry({
+	id,
+	entityType,
+	title,
+	mode,
+}: Pick<LifecycleEntry, 'id' | 'entityType' | 'title'> & { mode: LifecycleMode }): LifecycleEntry {
 	return {
-		id: overrides.id,
-		entityType: overrides.entityType,
-		title: overrides.title,
-		spaceId: overrides.spaceId ?? 'space-1',
-		spaceName: overrides.spaceName ?? '工作',
-		projectId: overrides.projectId ?? null,
-		projectName: overrides.projectName ?? null,
-		archivedAt: overrides.archivedAt ?? '2026-05-03T10:00:00Z',
-		deletedAt: overrides.deletedAt ?? null,
-		sourceType: overrides.sourceType ?? 'self',
-		sourceId: overrides.sourceId ?? overrides.id,
-		restoreHint: overrides.restoreHint ?? '恢复提示',
+		id,
+		entityType,
+		title,
+		spaceId: 'space-1',
+		spaceName: '工作',
+		projectId: entityType === 'task' ? 'project-1' : null,
+		projectName: entityType === 'task' ? '阶段 K' : null,
+		archivedAt: mode === 'archive' ? '2026-08-19T00:00:00Z' : null,
+		deletedAt: mode === 'trash' ? '2026-08-19T00:00:00Z' : null,
+		sourceType: 'self',
+		sourceId: id,
+		restoreHint: '恢复提示',
 	}
 }

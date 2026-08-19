@@ -2,7 +2,7 @@ import { forwardRef } from 'react'
 import type { ComponentProps, ReactNode } from 'react'
 
 import { cn } from '@/shared/lib/utils'
-import { Button, buttonVariants } from '@/shared/components/base/button'
+import { buttonVariants } from '@/shared/components/base/button'
 import { Checkbox } from '@/shared/components/base/checkbox'
 import { ActionTooltip, DisabledActionTooltip, OverflowTooltip } from '@/shared/components/tooltip'
 import type { VariantProps } from 'class-variance-authority'
@@ -38,8 +38,6 @@ export type RowMetaButtonProps = Omit<ComponentProps<'button'>, 'children'> &
 		trailing?: ReactNode
 		children?: ReactNode
 	}
-
-export type RowActionButtonProps = ComponentProps<typeof Button>
 
 /**
  * 行级选择框：保持固定 20x20 布局占位；命中区域由基础 Checkbox 扩展。
@@ -171,36 +169,5 @@ export const RowMetaButton = forwardRef<HTMLButtonElement, RowMetaButtonProps>(
 		)
 	},
 )
-
-export function RowActionButton({
-	className,
-	variant = 'outline',
-	size = 'sm',
-	onClick,
-	onPointerDown,
-	onKeyDownCapture,
-	...props
-}: RowActionButtonProps) {
-	return (
-		<Button
-			{...props}
-			className={className}
-			onClick={(event) => {
-				stopRowEventPropagation(event)
-				onClick?.(event)
-			}}
-			onKeyDownCapture={(event) => {
-				stopRowEventPropagation(event)
-				onKeyDownCapture?.(event)
-			}}
-			onPointerDown={(event) => {
-				stopRowEventPropagation(event)
-				onPointerDown?.(event)
-			}}
-			size={size}
-			variant={variant}
-		/>
-	)
-}
 
 export { stopRowEventPropagation }

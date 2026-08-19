@@ -1,34 +1,34 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
-import { DangerConfirmProvider } from '@/features/danger-confirm'
 import {
-	LifecycleBoard,
-	type LifecycleBoardSection,
-} from '@/features/lifecycle/components/LifecycleBoard'
-import type { LifecycleEntry } from '@/shared/types'
+	COMMAND_IDS,
+	CommandRegistry,
+	CommandRuntime,
+	CommandRuntimeProvider,
+	createEmptyCommandContext,
+	type Command,
+} from '@/features/command'
+import { useGroupedCollectionInteraction } from '@/features/selection'
+import type { LifecycleEntry, LifecycleMode } from '@/shared/types'
 import { renderWithInteractionProviders as render } from '@/test/TestInteractionProviders'
 
+import { LIFECYCLE_SECTION_ORDER } from '../model/buildLifecycleSections'
+import { LifecycleBoard, type LifecycleBoardSection } from './LifecycleBoard'
+
 describe('LifecycleBoard', () => {
-	it('异步加载到首批 section 后默认展开', async () => {
-		render(
-			<DangerConfirmProvider>
-				<LifecycleBoardAsyncHarness />
-			</DangerConfirmProvider>,
-		)
+	it('异步加载到首批 section 后保持默认展开', async () => {
+		render(<LifecycleBoardAsyncHarness />)
 
-		expect(screen.queryByRole('button', { name: '打开 任务 A' })).not.toBeInTheDocument()
-		expect(screen.getByRole('button', { name: '加载数据' })).toBeInTheDocument()
-
+		expect(screen.queryByRole('row', { name: '打开 任务 A' })).not.toBeInTheDocument()
 		fireEvent.click(screen.getByRole('button', { name: '加载数据' }))
 
 		await waitFor(() => {
-			expect(screen.getByRole('button', { name: '打开 任务 A' })).toBeInTheDocument()
+			expect(screen.getByRole('row', { name: '打开 任务 A' })).toBeInTheDocument()
 		})
 	})
 
-	it('右键已选中行时菜单动作使用全部前缀', async () => {
-		const onRestoreEntries = vi.fn()
+	it('右键已选中行时命令目标使用全部已选条目', async () => {
 		const sections: LifecycleBoardSection[] = [
 			{
 				key: 'task',
@@ -39,26 +39,28 @@ describe('LifecycleBoard', () => {
 				],
 			},
 		]
+		const runCommand = vi.fn()
 
 		render(
-			<DangerConfirmProvider>
-				<LifecycleBoard
-					emptyDescription='empty'
-					emptyTitle='empty'
-					mode='trash'
-					onRestore={() => undefined}
-					onRestoreEntries={onRestoreEntries}
-					pendingEntryId={null}
-					sections={sections}
-					selectedEntryIdSet={new Set(['task-1', 'task-2'])}
-				/>
-			</DangerConfirmProvider>,
+			<LifecycleBoardHarness
+				defaultSelectedKeys={['task-1', 'task-2']}
+				mode='trash'
+				runCommand={runCommand}
+				sections={sections}
+			/>,
 		)
 
-		fireEvent.contextMenu(screen.getByText('任务 A'))
+		fireEvent.contextMenu(screen.getByRole('row', { name: '任务 A' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: '全部恢复' }))
 
-		expect(onRestoreEntries).toHaveBeenCalledWith(sections[0].items)
+		await waitFor(() => {
+			expect(runCommand).toHaveBeenCalledWith(
+				expect.objectContaining({
+					selection: expect.objectContaining({ ids: ['task-1', 'task-2'] }),
+				}),
+				{ source: 'context-menu' },
+			)
+		})
 	})
 })
 
@@ -81,17 +83,75 @@ function LifecycleBoardAsyncHarness() {
 			>
 				加载数据
 			</button>
-			<LifecycleBoard
-				emptyDescription='empty'
-				emptyTitle='empty'
-				mode='archive'
-				onOpenDetail={() => undefined}
-				onRestore={() => undefined}
-				pendingEntryId={null}
-				sections={sections}
-			/>
+			<LifecycleBoardHarness mode='archive' sections={sections} />
 		</div>
 	)
+}
+
+function LifecycleBoardHarness({
+	mode,
+	sections,
+	defaultSelectedKeys = [],
+	runCommand = vi.fn(),
+}: {
+	mode: LifecycleMode
+	sections: LifecycleBoardSection[]
+	defaultSelectedKeys?: string[]
+	runCommand?: Command['run']
+}) {
+	const groups = useMemo(
+		() =>
+			sections.map((section) => ({
+				key: section.key,
+				itemKeys: section.items.map((entry) => entry.id),
+			})),
+		[sections],
+	)
+	const collection = useGroupedCollectionInteraction({
+		groups,
+		defaultOpenGroupKeys: LIFECYCLE_SECTION_ORDER,
+		defaultSelectedKeys,
+	})
+	const context = createEmptyCommandContext()
+	context.route.page = mode === 'archive' ? 'archive' : 'trash'
+	const commands = createLifecycleCommands(runCommand)
+	const runtime = new CommandRuntime({
+		registry: new CommandRegistry(commands),
+		getContext: () => context,
+	})
+
+	return (
+		<CommandRuntimeProvider context={context} runtime={runtime}>
+			<LifecycleBoard
+				collection={collection}
+				emptyDescription='empty'
+				emptyTitle='empty'
+				mode={mode}
+				onOpenDetail={() => undefined}
+				sections={sections}
+			/>
+		</CommandRuntimeProvider>
+	)
+}
+
+function createLifecycleCommands(run: Command['run']): Command[] {
+	return [
+		{ id: COMMAND_IDS.lifecycleRestore, title: '恢复' },
+		{ id: COMMAND_IDS.lifecycleDelete, title: '删除', page: 'archive' as const },
+		{
+			id: COMMAND_IDS.lifecycleDeletePermanently,
+			title: '永久删除',
+			page: 'trash' as const,
+		},
+	].map(({ id, title, page }) => ({
+		id,
+		title,
+		category: 'lifecycle',
+		scope: ['task-list'],
+		isEnabled: (ctx) => ctx.selection.type === 'lifecycle' && ctx.selection.ids.length > 0,
+		isVisible: page ? (ctx) => ctx.route.page === page : undefined,
+		run,
+	}))
 }
 
 function createEntry(

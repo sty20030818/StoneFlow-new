@@ -1,11 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from '@/shared/components/base/dropdown-menu'
+import { Dropdown } from '@heroui/react'
 
 import { FilterValueOption } from './FilterValueOption'
 
@@ -13,12 +8,14 @@ describe('filter value options', () => {
 	it('勾选值后保持菜单打开', () => {
 		const onToggle = vi.fn()
 		render(
-			<DropdownMenu defaultOpen>
-				<DropdownMenuTrigger>筛选</DropdownMenuTrigger>
-				<DropdownMenuContent>
-					<FilterValueOption checked={false} label='高' onToggle={onToggle} />
-				</DropdownMenuContent>
-			</DropdownMenu>,
+			<Dropdown defaultOpen>
+				<Dropdown.Trigger>筛选</Dropdown.Trigger>
+				<Dropdown.Popover>
+					<Dropdown.Menu aria-label='筛选值' selectionMode='multiple'>
+						<FilterValueOption label='高' onToggle={onToggle} value='high' />
+					</Dropdown.Menu>
+				</Dropdown.Popover>
+			</Dropdown>,
 		)
 
 		const option = screen.getByRole('menuitemcheckbox', { name: '高' })
@@ -28,15 +25,21 @@ describe('filter value options', () => {
 		expect(screen.getByRole('menuitemcheckbox', { name: '高' })).toBeInTheDocument()
 	})
 
-	it('菜单内容阻断全局冒泡时仍保留 Radix typeahead', async () => {
+	it('HeroUI 菜单保留 typeahead', async () => {
 		render(
-			<DropdownMenu defaultOpen>
-				<DropdownMenuTrigger>筛选</DropdownMenuTrigger>
-				<DropdownMenuContent>
-					<DropdownMenuItem>Alpha</DropdownMenuItem>
-					<DropdownMenuItem>Beta</DropdownMenuItem>
-				</DropdownMenuContent>
-			</DropdownMenu>,
+			<Dropdown defaultOpen>
+				<Dropdown.Trigger>筛选</Dropdown.Trigger>
+				<Dropdown.Popover>
+					<Dropdown.Menu aria-label='筛选值'>
+						<Dropdown.Item id='alpha' textValue='Alpha'>
+							Alpha
+						</Dropdown.Item>
+						<Dropdown.Item id='beta' textValue='Beta'>
+							Beta
+						</Dropdown.Item>
+					</Dropdown.Menu>
+				</Dropdown.Popover>
+			</Dropdown>,
 		)
 
 		fireEvent.keyDown(screen.getByRole('menu'), { key: 'b' })

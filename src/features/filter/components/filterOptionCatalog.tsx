@@ -43,9 +43,9 @@ const DATE_OPTIONS: FilterValueOptionModel[] = FILTER_DATE_VALUE_VALUES.map((val
 const FIELD_LEADING: Record<FilterField, ReactNode> = {
 	status: <TaskStatusIndicator status='todo' />,
 	priority: <PriorityIcon priority={3} size='sm' />,
-	project: <FolderIcon className='size-4 text-sf-text-tertiary' />,
-	due: <CalendarIcon className='size-4 text-sf-text-tertiary' />,
-	planned: <CalendarClockIcon className='size-4 text-sf-text-tertiary' />,
+	project: <FolderIcon className='size-4 text-muted' />,
+	due: <CalendarIcon className='size-4 text-muted' />,
+	planned: <CalendarClockIcon className='size-4 text-muted' />,
 }
 
 export function getFilterFieldLeading(field: FilterField): ReactNode {

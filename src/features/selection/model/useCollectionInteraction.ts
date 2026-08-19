@@ -37,6 +37,7 @@ export type CollectionInteraction<K extends CollectionKey> = {
 	focusKey: (key: K | null) => void
 	toggleSelection: (key?: K | null) => void
 	toggleRangeStep: (direction: -1 | 1) => K | null
+	replaceSelection: (keys: Iterable<K>) => void
 	selectEligibleKeys: () => void
 	clearSelection: () => void
 	getSnapshot: () => CollectionState<K>
@@ -199,6 +200,13 @@ export function useCollectionInteraction<K extends CollectionKey>({
 		)
 	}, [])
 
+	const replaceSelection = useCallback((keys: Iterable<K>) => {
+		rangeToggleSessionRef.current = null
+		listStateRef.current.selectionManager.setSelectedKeys(
+			intersectKeys(keys, projectionRef.current.eligibleKeys),
+		)
+	}, [])
+
 	const clearSelection = useCallback(() => {
 		rangeToggleSessionRef.current = null
 		listStateRef.current.selectionManager.clearSelection()
@@ -212,6 +220,7 @@ export function useCollectionInteraction<K extends CollectionKey>({
 		focusKey,
 		toggleSelection,
 		toggleRangeStep,
+		replaceSelection,
 		selectEligibleKeys,
 		clearSelection,
 		getSnapshot,

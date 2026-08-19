@@ -32,6 +32,7 @@ export type BulkSelectionSource =
 	| 'command-menu'
 	| 'context-menu'
 	| 'global-shortcut'
+	| 'row'
 	| 'row-shortcut'
 	| 'section-menu'
 	| 'page'

@@ -28,7 +28,7 @@ export function useTaskDetailViewModel({ taskId, onClose }: UseTaskDetailViewMod
 	)
 	const autosave = useTaskAutosaveAdapter({
 		base: baseDraft,
-		disabled: !autosaveTask,
+		disabled: !autosaveTask || Boolean(autosaveTask.deletedAt),
 	})
 	const { flushNow, isDirty, reset } = autosave
 	const lastTaskIdRef = useRef(taskId)

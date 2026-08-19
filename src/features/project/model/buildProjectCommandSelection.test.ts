@@ -14,6 +14,7 @@ describe('buildProjectCommandSelection', () => {
 					completedAt: '2026-05-16T00:00:00Z',
 				}),
 			],
+			focusedProjectId: 'project-a',
 		})
 
 		expect(selection).toMatchObject({
@@ -41,6 +42,8 @@ describe('buildProjectCommandSelection', () => {
 			},
 		])
 		expect(selection.primaryEntity).toEqual(selection.entities[0])
+		expect(selection.focusedId).toBe('project-a')
+		expect(selection.focusedType).toBe('project')
 	})
 
 	it('没有有效项目时返回空 selection', () => {

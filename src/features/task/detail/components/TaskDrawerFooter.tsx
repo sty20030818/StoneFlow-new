@@ -1,4 +1,4 @@
-import { Button } from '@/shared/components/base/button'
+import { Button } from '@heroui/react'
 import { DetailFooter } from '@/shared/components/detail'
 import { OverflowTooltip } from '@/shared/components/tooltip'
 import type { TaskDetail } from '@/shared/types'
@@ -29,16 +29,16 @@ export function TaskDrawerFooter({
 }: TaskDrawerFooterProps) {
 	return (
 		<DetailFooter className='items-center gap-2 py-2 pl-4 pr-2'>
-			<div className='min-w-0 flex-1 text-[11px] text-sf-text-tertiary'>
+			<div className='min-w-0 flex-1 text-[11px] text-muted'>
 				<OverflowTooltip content={`更新于 ${formatUpdatedAt(task.updatedAt)}`}>
 					更新于 {formatUpdatedAt(task.updatedAt)}
 				</OverflowTooltip>
 			</div>
 			<div className='flex min-w-0 shrink-0 items-center gap-2'>
 				<Button
-					className='h-7 px-2 text-[12px]'
-					disabled={isArchiveBusy}
-					onClick={onArchiveOrRestore}
+					className='h-7 px-2 text-xs'
+					isDisabled={isArchiveBusy}
+					onPress={onArchiveOrRestore}
 					size='sm'
 					variant='outline'
 				>
@@ -46,11 +46,11 @@ export function TaskDrawerFooter({
 					{task.archivedAt ? '恢复' : '归档'}
 				</Button>
 				<Button
-					className='h-7 px-2 text-[12px]'
-					disabled={isDeleteBusy}
-					onClick={onMoveToTrash}
+					className='h-7 px-2 text-xs'
+					isDisabled={isDeleteBusy}
+					onPress={onMoveToTrash}
 					size='sm'
-					variant='destructive'
+					variant='danger'
 				>
 					<Trash2Icon className='size-3.5' />
 					移入回收站

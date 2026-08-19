@@ -35,6 +35,22 @@ describe('DisplayOptionsButton', () => {
 		expect(await screen.findByText('分组')).toBeInTheDocument()
 		await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument())
 	})
+
+	it('Esc 关闭面板后把焦点还给入口', async () => {
+		renderWithQueryClient(<DisplayOptionsButton pageKey='task:all' />)
+
+		const trigger = screen.getByRole('button', { name: '显示选项' })
+		act(() => trigger.focus())
+		fireEvent.click(trigger)
+		const dialog = await screen.findByRole('dialog', { name: '显示选项' })
+
+		fireEvent.keyDown(dialog, { key: 'Escape' })
+
+		await waitFor(() => {
+			expect(screen.queryByRole('dialog', { name: '显示选项' })).not.toBeInTheDocument()
+			expect(trigger).toHaveFocus()
+		})
+	})
 })
 
 function renderWithQueryClient(ui: React.ReactNode) {

@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
+import { SearchField } from '@heroui/react'
+
 import {
 	selectSearchFocusRequestVersion,
 	useSearchFocusIntentStore,
@@ -8,9 +10,6 @@ import { useGlobalSearch } from '@/features/global-search/model/useGlobalSearch'
 import { GlobalSearchResults } from '@/features/global-search/components/GlobalSearchResults'
 import { COMMAND_IDS, CommandActionTooltip, CommandShortcut } from '@/features/command'
 import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
-import { InputGroup, InputGroupAddon } from '@/shared/components/base/input-group'
-import { globalSearchInputShellClass } from '@/shared/components/patterns/global-search'
-import { SearchIcon } from 'lucide-react'
 
 type GlobalSearchInputProps = {
 	onOpenTask: (task: SearchTaskItem) => void
@@ -20,7 +19,6 @@ type GlobalSearchInputProps = {
 export function GlobalSearchInput({ onOpenTask, onOpenProject }: GlobalSearchInputProps) {
 	const rootRef = useRef<HTMLDivElement>(null)
 	const inputRef = useRef<HTMLInputElement>(null)
-	const lastKeyboardMoveAtRef = useRef(0)
 	const focusRequestVersion = useSearchFocusIntentStore(selectSearchFocusRequestVersion)
 	const [query, setQuery] = useState('')
 	const [isFocused, setIsFocused] = useState(false)
@@ -149,18 +147,12 @@ export function GlobalSearchInput({ onOpenTask, onOpenProject }: GlobalSearchInp
 
 		if (event.key === 'ArrowDown') {
 			event.preventDefault()
-			if (shouldThrottleKeyboardMove(lastKeyboardMoveAtRef)) {
-				return
-			}
 			setHighlightedIndex((currentIndex) => (currentIndex + 1) % flatItems.length)
 			return
 		}
 
 		if (event.key === 'ArrowUp') {
 			event.preventDefault()
-			if (shouldThrottleKeyboardMove(lastKeyboardMoveAtRef)) {
-				return
-			}
 			setHighlightedIndex(
 				(currentIndex) => (currentIndex - 1 + flatItems.length) % flatItems.length,
 			)
@@ -174,23 +166,29 @@ export function GlobalSearchInput({ onOpenTask, onOpenProject }: GlobalSearchInp
 	}
 
 	return (
-		<div className='relative mx-auto w-full min-w-0 max-w-100' data-sf-search-root='true'>
-			<div ref={rootRef}>
-				<InputGroup className={globalSearchInputShellClass}>
-					<InputGroupAddon align='inline-start' className='px-2.5 text-sf-icon-subtle'>
-						<SearchIcon className='size-3.5' />
-					</InputGroupAddon>
-
-					<input
+		<div
+			className='relative mx-auto w-full min-w-0 max-w-100'
+			data-sf-search-root='true'
+			ref={rootRef}
+		>
+			<SearchField
+				aria-label='全局搜索'
+				fullWidth
+				onChange={(value) => {
+					setQuery(value)
+					setIsFocused(true)
+				}}
+				onClear={clearSearch}
+				value={query}
+				variant='secondary'
+			>
+				<SearchField.Group className='h-8 w-full rounded-lg border-border bg-surface-secondary shadow-none'>
+					<SearchField.SearchIcon className='ml-2.5 mr-0 size-3.5 text-muted' />
+					<SearchField.Input
 						aria-expanded={isOpen}
-						aria-label='全局搜索'
+						aria-controls={shouldShowResults ? 'global-search-results' : undefined}
 						autoComplete='off'
-						className='flex h-full min-w-0 flex-1 bg-transparent px-0 py-1 text-[12.5px] text-legacy-foreground outline-none placeholder:text-sf-text-quaternary'
-						data-slot='input-group-control'
-						onChange={(event) => {
-							setQuery(event.target.value)
-							setIsFocused(true)
-						}}
+						className='h-full min-w-0 flex-1 bg-transparent px-2 py-1 text-[12.5px] text-foreground outline-none placeholder:text-muted'
 						onFocus={() => {
 							setIsFocused(true)
 						}}
@@ -198,27 +196,24 @@ export function GlobalSearchInput({ onOpenTask, onOpenProject }: GlobalSearchInp
 						placeholder='搜索任务、项目...'
 						ref={inputRef}
 						spellCheck={false}
-						value={query}
 					/>
 
-					<InputGroupAddon align='inline-end' className='px-2.5'>
-						{shouldShowClearHint ? (
-							<CommandActionTooltip commandId={COMMAND_IDS.close} label='清空并关闭搜索'>
-								<button
-									aria-label='清空并关闭搜索'
-									className='flex items-center'
-									onClick={clearSearch}
-									type='button'
-								>
-									<CommandShortcut commandId={COMMAND_IDS.close} />
-								</button>
-							</CommandActionTooltip>
-						) : (
+					{shouldShowClearHint ? (
+						<CommandActionTooltip commandId={COMMAND_IDS.close} label='清空并关闭搜索'>
+							<SearchField.ClearButton
+								aria-label='清空并关闭搜索'
+								className='mr-1 shrink-0 text-muted'
+							>
+								<CommandShortcut commandId={COMMAND_IDS.close} />
+							</SearchField.ClearButton>
+						</CommandActionTooltip>
+					) : (
+						<span className='mr-2.5 shrink-0' aria-hidden>
 							<CommandShortcut commandId={COMMAND_IDS.openSearch} />
-						)}
-					</InputGroupAddon>
-				</InputGroup>
-			</div>
+						</span>
+					)}
+				</SearchField.Group>
+			</SearchField>
 
 			{shouldShowResults ? (
 				<GlobalSearchResults
@@ -239,16 +234,4 @@ export function GlobalSearchInput({ onOpenTask, onOpenProject }: GlobalSearchInp
 			) : null}
 		</div>
 	)
-}
-
-const KEYBOARD_NAV_THROTTLE_MS = 100
-
-function shouldThrottleKeyboardMove(lastKeyboardMoveAtRef: React.MutableRefObject<number>) {
-	const now = performance.now()
-	if (now - lastKeyboardMoveAtRef.current < KEYBOARD_NAV_THROTTLE_MS) {
-		return true
-	}
-
-	lastKeyboardMoveAtRef.current = now
-	return false
 }

@@ -1,14 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { createRef } from 'react'
 
-import {
-	DetailBody,
-	DetailDrawerShell,
-	DetailFieldRow,
-	DetailFooter,
-	DetailHeader,
-	DetailSection,
-} from './index'
+import { DetailBody, DetailDrawerShell, DetailFooter, DetailHeader, DetailSection } from './index'
 
 describe('详情通用界面基元', () => {
 	it('按头部、正文、底部顺序渲染并暴露抽屉壳协议', () => {
@@ -66,19 +59,15 @@ describe('详情通用界面基元', () => {
 		expect(footer.className).toContain('shrink-0')
 	})
 
-	it('分区和字段行只提供通用布局语义', () => {
+	it('分区只提供通用布局语义', () => {
 		render(
 			<DetailSection description='说明' title='属性'>
-				<DetailFieldRow description='字段说明' label='状态'>
-					<button type='button'>待办</button>
-				</DetailFieldRow>
+				<button type='button'>待办</button>
 			</DetailSection>,
 		)
 
 		expect(screen.getByText('属性')).toBeInTheDocument()
 		expect(screen.getByText('说明')).toBeInTheDocument()
-		expect(screen.getByText('状态')).toBeInTheDocument()
-		expect(screen.getByText('字段说明')).toBeInTheDocument()
 		expect(screen.getByRole('button', { name: '待办' })).toBeInTheDocument()
 	})
 })

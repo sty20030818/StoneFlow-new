@@ -1,5 +1,6 @@
+import { Card, Separator } from '@heroui/react'
+
 import type { AutosaveController } from '@/shared/autosave'
-import { DetailSection } from '@/shared/components/detail'
 
 import type { TaskDetailDraft } from '../model/taskDetailDraft'
 import { TaskActivityTimeline } from './TaskActivityTimeline'
@@ -17,23 +18,25 @@ type TaskPageMainProps = {
 export function TaskPageMain({ taskId, spaceId, autosave, isReadOnly }: TaskPageMainProps) {
 	return (
 		<div className='flex min-w-0 flex-col gap-5'>
-			<section className='rounded-xl border border-sf-border-subtle bg-card px-4 py-4 md:px-5 md:py-5'>
-				<TaskTitleField autosave={autosave} disabled={isReadOnly} />
-				<div className='mt-3 border-t border-sf-divider pt-4'>
+			<Card>
+				<Card.Content className='flex flex-col gap-4'>
+					<TaskTitleField autosave={autosave} disabled={isReadOnly} />
+					<Separator variant='tertiary' />
 					<TaskNoteField autosave={autosave} disabled={isReadOnly} />
-				</div>
-			</section>
+				</Card.Content>
+			</Card>
 
-			<DetailSection
-				className='rounded-xl border border-sf-border-subtle bg-card px-4 py-4 md:px-5 md:py-5'
-				contentClassName='pt-0'
-			>
-				<TaskLinksSection taskId={taskId} />
-			</DetailSection>
+			<Card>
+				<Card.Content>
+					<TaskLinksSection taskId={taskId} />
+				</Card.Content>
+			</Card>
 
-			<div className='rounded-xl border border-sf-border-subtle bg-card px-4 py-4 md:px-5 md:py-5'>
-				<TaskActivityTimeline spaceId={spaceId} taskId={taskId} />
-			</div>
+			<Card>
+				<Card.Content>
+					<TaskActivityTimeline spaceId={spaceId} taskId={taskId} />
+				</Card.Content>
+			</Card>
 		</div>
 	)
 }

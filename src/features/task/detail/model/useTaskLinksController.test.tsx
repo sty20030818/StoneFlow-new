@@ -27,9 +27,9 @@ vi.mock('@tauri-apps/plugin-opener', () => ({
 	openUrl: (url: string) => openUrlMock(url),
 }))
 
-vi.mock('sonner', () => ({
+vi.mock('@heroui/react', () => ({
 	toast: {
-		error: (message: string) => toastErrorMock(message),
+		danger: (message: string) => toastErrorMock(message),
 	},
 }))
 

@@ -6,7 +6,6 @@ import {
 } from '@/features/metadata-fields'
 import type { ProjectOption } from '@/features/project'
 import type { AutosaveController } from '@/shared/autosave'
-import { DetailFieldRow } from '@/shared/components/detail'
 
 import { applyTaskPlacementDraftChange, type TaskDetailDraft } from '../model/taskDetailDraft'
 
@@ -38,7 +37,8 @@ export function TaskPlacementSection({
 	})
 
 	return (
-		<DetailFieldRow className='items-center' label='归属' labelClassName='pt-0'>
+		<div className='grid grid-cols-[5rem_minmax(0,1fr)] items-center gap-3'>
+			<span className='text-xs font-medium text-muted'>归属</span>
 			<MetadataPlacementDropdown
 				disabled={disabled}
 				disabledReason='回收站中的任务为只读'
@@ -53,6 +53,6 @@ export function TaskPlacementSection({
 					})
 				}
 			/>
-		</DetailFieldRow>
+		</div>
 	)
 }

@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useEffectEvent, useState } from 'react'
+import { Alert, Button, Input, Label, ListBox, Modal, Select } from '@heroui/react'
+import { useCallback, useEffect, useEffectEvent, useId, useState } from 'react'
 import { FormProvider, useController } from 'react-hook-form'
 
 import {
@@ -12,29 +13,6 @@ import type { Space } from '@/shared/types'
 import { normalizeSubmitError, useZodForm } from '@/shared/form'
 import { useSubmitTargetFromForm } from '@/features/submit'
 import { cn } from '@/shared/lib/utils'
-import { StatusNotice } from '@/shared/components/StatusNotice'
-import { Button } from '@/shared/components/base/button'
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-} from '@/shared/components/base/dialog'
-import { Input } from '@/shared/components/base/input'
-import { Select, SelectContent, SelectItem, SelectTrigger } from '@/shared/components/base/select'
-import {
-	dialogShellBodyClass,
-	dialogShellContentVariants,
-	dialogShellDescriptionClass,
-	dialogShellFooterClass,
-	dialogShellHeaderClass,
-	dialogShellTitleClass,
-} from '@/shared/components/patterns/dialog-shell'
-import {
-	formFieldLabelVariants,
-	formFieldStackClass,
-} from '@/shared/components/patterns/form-field'
 import { buildSpaceEditorDefaultValues, spaceEditorSchema } from './SpaceEditorDialog.form'
 
 type SpaceEditorDialogProps = {
@@ -72,6 +50,7 @@ export function SpaceEditorDialog({
 	const previewVisual = getSpaceVisual({ iconKey, colorKey })
 	const PreviewIcon = previewVisual.icon
 	const SelectedIcon = selectedIconOption.icon
+	const descriptionId = useId()
 	const submitSpace = useEffectEvent(onSubmit)
 	const closeDialog = useEffectEvent(onClose)
 
@@ -126,141 +105,181 @@ export function SpaceEditorDialog({
 	})
 
 	return (
-		<Dialog onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>
-			<DialogContent className={dialogShellContentVariants({ size: 'lg' })}>
-				<FormProvider {...form}>
-					<DialogHeader className={dialogShellHeaderClass}>
-						<DialogTitle className={dialogShellTitleClass}>
-							{mode === 'create' ? '新建 Space' : '编辑 Space'}
-						</DialogTitle>
-						<DialogDescription className={dialogShellDescriptionClass}>
-							Space 只承载顶级上下文。先收口名称、图标和颜色，后续再承接更多真实业务。
-						</DialogDescription>
-					</DialogHeader>
-
-					<div className={cn('flex flex-col gap-4', dialogShellBodyClass)}>
-						<div className='flex items-center gap-3 rounded-xl border border-sf-divider bg-card/70 px-4 py-3'>
-							<span
-								className={cn(
-									'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-(--sf-shadow-panel)',
-									previewVisual.iconBadgeClassName,
-								)}
-							>
-								<PreviewIcon className='size-5 text-white' />
-							</span>
-							<div className='min-w-0'>
-								<p className='truncate text-[13px] font-medium text-legacy-foreground'>
-									{name.trim() || 'Space 预览'}
+		<Modal.Backdrop isOpen={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+			<Modal.Container placement='center' size='lg'>
+				<Modal.Dialog
+					aria-describedby={descriptionId}
+					className='gap-0 overflow-hidden p-0'
+					render={(dialogProps) => (
+						<section
+							{...dialogProps}
+							onKeyDown={(event) => {
+								if (event.key !== 'Escape' || event.defaultPrevented) event.stopPropagation()
+							}}
+						/>
+					)}
+				>
+					<FormProvider {...form}>
+						<form
+							onSubmit={(event) => {
+								event.preventDefault()
+								void handleSubmit()
+							}}
+						>
+							<Modal.Header className='gap-1 px-5 pt-5 pb-3'>
+								<Modal.Heading>{mode === 'create' ? '新建 Space' : '编辑 Space'}</Modal.Heading>
+								<p className='text-sm text-muted' id={descriptionId}>
+									Space 只承载顶级上下文。设置名称、图标和颜色即可。
 								</p>
-								<p className='text-[12px] text-muted-foreground'>
-									{selectedIconOption.label} · {selectedColorOption.label}
-								</p>
-							</div>
-						</div>
+							</Modal.Header>
 
-						<label className={formFieldStackClass} htmlFor='space-editor-name'>
-							<span className={formFieldLabelVariants()}>名称</span>
-							<Input
-								autoFocus
-								className='h-11 rounded-md border-input bg-card'
-								disabled={submitting}
-								id='space-editor-name'
-								onBlur={nameField.onBlur}
-								onChange={nameField.onChange}
-								placeholder='例如：个人 / 工作 / 学习'
-								value={nameField.value}
-							/>
-						</label>
+							<Modal.Body className='gap-4 px-5 py-2'>
+								<div className='flex items-center gap-3 rounded-xl border border-separator bg-surface-secondary px-4 py-3'>
+									<span
+										className={cn(
+											'flex size-10 shrink-0 items-center justify-center rounded-xl text-white',
+											previewVisual.iconBadgeClassName,
+										)}
+									>
+										<PreviewIcon className='size-5 text-white' />
+									</span>
+									<div className='min-w-0'>
+										<p className='truncate text-sm font-medium text-foreground'>
+											{name.trim() || 'Space 预览'}
+										</p>
+										<p className='text-xs text-muted'>
+											{selectedIconOption.label} · {selectedColorOption.label}
+										</p>
+									</div>
+								</div>
 
-						<div className='grid gap-4 sm:grid-cols-2'>
-							<label className={formFieldStackClass}>
-								<span className={formFieldLabelVariants()}>图标</span>
-								<Select disabled={submitting} onValueChange={iconKeyField.onChange} value={iconKey}>
-									<SelectTrigger className='h-11 rounded-md border-input bg-card'>
-										<div className='flex min-w-0 items-center gap-2'>
-											<SelectedIcon
-												className={cn('size-4 shrink-0', previewVisual.iconClassName)}
-											/>
-											<span className='truncate'>{selectedIconOption.label}</span>
-										</div>
-									</SelectTrigger>
-									<SelectContent position='popper'>
-										{SPACE_ICON_OPTIONS.map((option) => (
-											<SelectItem key={option.value} value={option.value}>
-												<div className='flex items-center gap-2'>
-													<option.icon
+								<div className='grid gap-1.5'>
+									<Label htmlFor='space-editor-name'>名称</Label>
+									<Input
+										autoFocus
+										disabled={submitting}
+										fullWidth
+										id='space-editor-name'
+										onBlur={nameField.onBlur}
+										onChange={nameField.onChange}
+										placeholder='例如：个人 / 工作 / 学习'
+										value={nameField.value}
+									/>
+								</div>
+
+								<div className='grid gap-4 sm:grid-cols-2'>
+									<Select
+										isDisabled={submitting}
+										onChange={(key) => typeof key === 'string' && iconKeyField.onChange(key)}
+										value={iconKey}
+									>
+										<Label>图标</Label>
+										<Select.Trigger>
+											<Select.Value>
+												<div className='flex min-w-0 items-center gap-2'>
+													<SelectedIcon
 														className={cn('size-4 shrink-0', previewVisual.iconClassName)}
 													/>
-													<span>{option.label}</span>
+													<span className='truncate'>{selectedIconOption.label}</span>
 												</div>
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-							</label>
+											</Select.Value>
+											<Select.Indicator />
+										</Select.Trigger>
+										<Select.Popover>
+											<ListBox>
+												{SPACE_ICON_OPTIONS.map((option) => (
+													<ListBox.Item
+														id={option.value}
+														key={option.value}
+														textValue={option.label}
+													>
+														<div className='flex items-center gap-2'>
+															<option.icon className='size-4 shrink-0 text-muted' />
+															<span>{option.label}</span>
+														</div>
+														<ListBox.ItemIndicator />
+													</ListBox.Item>
+												))}
+											</ListBox>
+										</Select.Popover>
+									</Select>
 
-							<label className={formFieldStackClass}>
-								<span className={formFieldLabelVariants()}>颜色</span>
-								<Select
-									disabled={submitting}
-									onValueChange={colorKeyField.onChange}
-									value={colorKey}
-								>
-									<SelectTrigger className='h-11 rounded-md border-input bg-card'>
-										<div className='flex min-w-0 items-center gap-2'>
-											<span
-												className={cn(
-													'size-3 shrink-0 rounded-full border border-black/8',
-													selectedColorOption.swatchClassName,
-												)}
-											/>
-											<span className='truncate'>{selectedColorOption.label}</span>
-										</div>
-									</SelectTrigger>
-									<SelectContent position='popper'>
-										{SPACE_COLOR_OPTIONS.map((option) => (
-											<SelectItem key={option.value} value={option.value}>
-												<div className='flex items-center gap-2'>
+									<Select
+										isDisabled={submitting}
+										onChange={(key) => typeof key === 'string' && colorKeyField.onChange(key)}
+										value={colorKey}
+									>
+										<Label>颜色</Label>
+										<Select.Trigger>
+											<Select.Value>
+												<div className='flex min-w-0 items-center gap-2'>
 													<span
 														className={cn(
-															'size-3 shrink-0 rounded-full border border-black/8',
-															option.swatchClassName,
+															'size-3 shrink-0 rounded-full border border-separator',
+															selectedColorOption.swatchClassName,
 														)}
 													/>
-													<span>{option.label}</span>
+													<span className='truncate'>{selectedColorOption.label}</span>
 												</div>
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-							</label>
-						</div>
+											</Select.Value>
+											<Select.Indicator />
+										</Select.Trigger>
+										<Select.Popover>
+											<ListBox>
+												{SPACE_COLOR_OPTIONS.map((option) => (
+													<ListBox.Item
+														id={option.value}
+														key={option.value}
+														textValue={option.label}
+													>
+														<div className='flex items-center gap-2'>
+															<span
+																className={cn(
+																	'size-3 shrink-0 rounded-full border border-separator',
+																	option.swatchClassName,
+																)}
+															/>
+															<span>{option.label}</span>
+														</div>
+														<ListBox.ItemIndicator />
+													</ListBox.Item>
+												))}
+											</ListBox>
+										</Select.Popover>
+									</Select>
+								</div>
 
-						{error ? (
-							<StatusNotice role='alert' size='sm' variant='danger'>
-								{error}
-							</StatusNotice>
-						) : null}
+								{error ? (
+									<Alert role='alert' status='danger'>
+										<Alert.Indicator />
+										<Alert.Content>
+											<Alert.Title>保存失败</Alert.Title>
+											<Alert.Description>{error}</Alert.Description>
+										</Alert.Content>
+									</Alert>
+								) : null}
+							</Modal.Body>
 
-						<div className={dialogShellFooterClass}>
-							<Button disabled={submitting} onClick={onClose} variant='ghost'>
-								取消
-							</Button>
-							<Button
-								disabled={
-									submitting ||
-									nameField.value.trim().length === 0 ||
-									iconKeyField.value.trim().length === 0 ||
-									colorKeyField.value.trim().length === 0
-								}
-								onClick={() => void handleSubmit()}
-							>
-								{mode === 'create' ? '创建 Space' : '保存变更'}
-							</Button>
-						</div>
-					</div>
-				</FormProvider>
-			</DialogContent>
-		</Dialog>
+							<Modal.Footer>
+								<Button isDisabled={submitting} onPress={onClose} type='button' variant='ghost'>
+									取消
+								</Button>
+								<Button
+									isDisabled={
+										submitting ||
+										nameField.value.trim().length === 0 ||
+										iconKeyField.value.trim().length === 0 ||
+										colorKeyField.value.trim().length === 0
+									}
+									type='submit'
+								>
+									{mode === 'create' ? '创建 Space' : '保存变更'}
+								</Button>
+							</Modal.Footer>
+						</form>
+					</FormProvider>
+				</Modal.Dialog>
+			</Modal.Container>
+		</Modal.Backdrop>
 	)
 }

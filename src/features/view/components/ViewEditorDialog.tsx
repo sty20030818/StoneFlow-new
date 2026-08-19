@@ -1,37 +1,20 @@
-import { useCallback, useEffect, useMemo } from 'react'
+import {
+	Button,
+	Input,
+	Label,
+	ListBox,
+	Modal,
+	Select,
+	ToggleButton,
+	ToggleButtonGroup,
+} from '@heroui/react'
+import { useCallback, useEffect, useId, useMemo } from 'react'
 import { FormProvider, useController } from 'react-hook-form'
 
 import type { ProjectOption } from '@/features/project'
 import { useZodForm } from '@/shared/form'
 import { useSubmitTargetFromForm } from '@/features/submit'
-import { cn } from '@/shared/lib/utils'
 import type { CreateViewInput, TaskStatus, UpdateViewInput, View } from '@/shared/types'
-import { Button } from '@/shared/components/base/button'
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from '@/shared/components/base/dialog'
-import { Input } from '@/shared/components/base/input'
-import {
-	Select,
-	SelectContent,
-	SelectGroup,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from '@/shared/components/base/select'
-import {
-	dialogShellContentVariants,
-	dialogShellDescriptionClass,
-	dialogShellPanelFooterClass,
-	dialogShellHeaderClass,
-	dialogShellTitleClass,
-} from '@/shared/components/patterns/dialog-shell'
-import { formFieldGridClass, formFieldLabelVariants } from '@/shared/components/patterns/form-field'
 import {
 	buildViewEditorDefaultValues,
 	type PriorityMode,
@@ -115,16 +98,9 @@ export function ViewEditorDialog({
 	const specificProjectId = specificProjectIdField.value
 	const dueMode = dueModeField.value
 	const plannedMode = plannedModeField.value
+	const descriptionId = useId()
 	const hasSpecificProject = projectMode !== 'specific' || specificProjectId !== 'none'
 	const canSubmit = nameField.value.trim().length > 0 && statusList.length > 0 && hasSpecificProject
-
-	function toggleStatus(status: TaskStatus) {
-		statusListField.onChange(
-			statusList.includes(status)
-				? statusList.filter((item) => item !== status)
-				: [...statusList, status],
-		)
-	}
 
 	const handleSubmit = useCallback(async () => {
 		const isValid = await form.trigger()
@@ -155,134 +131,144 @@ export function ViewEditorDialog({
 	})
 
 	return (
-		<Dialog onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>
-			<DialogContent className={dialogShellContentVariants({ size: 'wide' })}>
-				<FormProvider {...form}>
-					<DialogHeader className={dialogShellHeaderClass}>
-						<DialogTitle className={dialogShellTitleClass}>{title}</DialogTitle>
-						<DialogDescription className={`max-w-140 ${dialogShellDescriptionClass}`}>
-							自定义视图只保存筛选条件（Filter）；分组与排序请在「显示」中设置。
-						</DialogDescription>
-					</DialogHeader>
-
-					<div className='grid gap-5 px-6 py-5'>
-						<div className={formFieldGridClass}>
-							<label
-								className={formFieldLabelVariants({ tone: 'muted' })}
-								htmlFor='view-editor-name'
-							>
-								名称
-							</label>
-							<Input
-								id='view-editor-name'
-								onBlur={nameField.onBlur}
-								onChange={nameField.onChange}
-								value={nameField.value}
-							/>
-						</div>
-
-						<section className='grid gap-2'>
-							<div className={formFieldLabelVariants({ tone: 'muted' })}>状态筛选</div>
-							<div className='flex flex-wrap gap-2'>
-								{STATUS_OPTIONS.map((status) => (
-									<Button
-										className={cn(
-											'rounded-full',
-											statusList.includes(status.key)
-												? 'border-primary bg-primary text-primary-foreground'
-												: undefined,
-										)}
-										key={status.key}
-										onClick={() => toggleStatus(status.key)}
-										type='button'
-										variant={statusList.includes(status.key) ? 'default' : 'outline'}
-									>
-										{status.label}
-									</Button>
-								))}
-							</div>
-						</section>
-
-						<section className='grid gap-3 md:grid-cols-2'>
-							<DialogSelect
-								label='优先级'
-								onValueChange={(value) => priorityModeField.onChange(value as PriorityMode)}
-								options={[
-									{ value: 'any', label: '不限' },
-									{ value: 'p4', label: '仅 P4' },
-									{ value: 'p3+', label: 'P3 及以上' },
-									{ value: 'p2+', label: 'P2 及以上' },
-									{ value: 'p1+', label: 'P1 及以上' },
-								]}
-								value={priorityMode}
-							/>
-							<DialogSelect
-								label='项目归属'
-								onValueChange={(value) =>
-									projectModeField.onChange(value as 'any' | 'none' | 'specific')
-								}
-								options={[
-									{ value: 'any', label: '不限' },
-									{ value: 'none', label: '仅独立事项' },
-									{ value: 'specific', label: '指定项目' },
-								]}
-								value={projectMode}
-							/>
-							<DialogSelect
-								disabled={projectMode !== 'specific'}
-								label='指定项目'
-								onValueChange={specificProjectIdField.onChange}
-								options={[
-									{ value: 'none', label: '请选择项目' },
-									...activeProjectOptions.map((project) => ({
-										value: project.id,
-										label: project.name,
-									})),
-								]}
-								value={specificProjectId}
-							/>
-							<DialogSelect
-								label='截止时间'
-								onValueChange={dueModeField.onChange}
-								options={[
-									{ value: 'none', label: '不限' },
-									{ value: 'today', label: '今天' },
-									{ value: 'overdue', label: '已逾期' },
-									{ value: 'future', label: '未来' },
-									{ value: 'hasDate', label: '有日期' },
-								]}
-								value={dueMode}
-							/>
-							<DialogSelect
-								label='计划时间'
-								onValueChange={plannedModeField.onChange}
-								options={[
-									{ value: 'none', label: '不限' },
-									{ value: 'today', label: '今天' },
-									{ value: 'future', label: '未来' },
-									{ value: 'overdue', label: '已逾期' },
-									{ value: 'hasDate', label: '有日期' },
-								]}
-								value={plannedMode}
-							/>
-						</section>
-					</div>
-
-					<DialogFooter className={dialogShellPanelFooterClass}>
-						<Button onClick={onClose} type='button' variant='outline'>
-							取消
-						</Button>
-						<Button
-							disabled={!canSubmit || isSubmitting}
-							onClick={() => void handleSubmit()}
-							type='button'
+		<Modal.Backdrop isOpen={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+			<Modal.Container placement='center' scroll='inside' size='lg'>
+				<Modal.Dialog
+					aria-describedby={descriptionId}
+					className='max-w-3xl gap-0 overflow-hidden p-0'
+					render={(dialogProps) => (
+						<section
+							{...dialogProps}
+							onKeyDown={(event) => {
+								if (event.key !== 'Escape' || event.defaultPrevented) event.stopPropagation()
+							}}
+						/>
+					)}
+				>
+					<FormProvider {...form}>
+						<form
+							onSubmit={(event) => {
+								event.preventDefault()
+								void handleSubmit()
+							}}
 						>
-							{submitLabel}
-						</Button>
-					</DialogFooter>
-				</FormProvider>
-			</DialogContent>
-		</Dialog>
+							<Modal.Header className='gap-1 px-5 pt-5 pb-3'>
+								<Modal.Heading>{title}</Modal.Heading>
+								<p className='max-w-140 text-sm text-muted' id={descriptionId}>
+									自定义视图只保存筛选条件（Filter）；分组与排序请在「显示」中设置。
+								</p>
+							</Modal.Header>
+
+							<Modal.Body className='grid gap-5 px-5 py-2'>
+								<div className='grid gap-1.5'>
+									<Label htmlFor='view-editor-name'>名称</Label>
+									<Input
+										fullWidth
+										id='view-editor-name'
+										onBlur={nameField.onBlur}
+										onChange={nameField.onChange}
+										value={nameField.value}
+									/>
+								</div>
+
+								<section className='grid gap-2'>
+									<Label>状态筛选</Label>
+									<ToggleButtonGroup
+										aria-label='状态筛选'
+										className='flex flex-wrap'
+										isDetached
+										selectedKeys={statusList}
+										selectionMode='multiple'
+										onSelectionChange={(keys) =>
+											statusListField.onChange(Array.from(keys, String) as TaskStatus[])
+										}
+									>
+										{STATUS_OPTIONS.map((status) => (
+											<ToggleButton id={status.key} key={status.key} variant='ghost'>
+												{status.label}
+											</ToggleButton>
+										))}
+									</ToggleButtonGroup>
+								</section>
+
+								<section className='grid gap-3 md:grid-cols-2'>
+									<DialogSelect
+										label='优先级'
+										onValueChange={(value) => priorityModeField.onChange(value as PriorityMode)}
+										options={[
+											{ value: 'any', label: '不限' },
+											{ value: 'p4', label: '仅 P4' },
+											{ value: 'p3+', label: 'P3 及以上' },
+											{ value: 'p2+', label: 'P2 及以上' },
+											{ value: 'p1+', label: 'P1 及以上' },
+										]}
+										value={priorityMode}
+									/>
+									<DialogSelect
+										label='项目归属'
+										onValueChange={(value) =>
+											projectModeField.onChange(value as 'any' | 'none' | 'specific')
+										}
+										options={[
+											{ value: 'any', label: '不限' },
+											{ value: 'none', label: '仅独立事项' },
+											{ value: 'specific', label: '指定项目' },
+										]}
+										value={projectMode}
+									/>
+									<DialogSelect
+										disabled={projectMode !== 'specific'}
+										label='指定项目'
+										onValueChange={specificProjectIdField.onChange}
+										options={[
+											{ value: 'none', label: '请选择项目' },
+											...activeProjectOptions.map((project) => ({
+												value: project.id,
+												label: project.name,
+											})),
+										]}
+										value={specificProjectId}
+									/>
+									<DialogSelect
+										label='截止时间'
+										onValueChange={dueModeField.onChange}
+										options={[
+											{ value: 'none', label: '不限' },
+											{ value: 'today', label: '今天' },
+											{ value: 'overdue', label: '已逾期' },
+											{ value: 'future', label: '未来' },
+											{ value: 'hasDate', label: '有日期' },
+										]}
+										value={dueMode}
+									/>
+									<DialogSelect
+										label='计划时间'
+										onValueChange={plannedModeField.onChange}
+										options={[
+											{ value: 'none', label: '不限' },
+											{ value: 'today', label: '今天' },
+											{ value: 'future', label: '未来' },
+											{ value: 'overdue', label: '已逾期' },
+											{ value: 'hasDate', label: '有日期' },
+										]}
+										value={plannedMode}
+									/>
+								</section>
+							</Modal.Body>
+
+							<Modal.Footer>
+								<Button onPress={onClose} type='button' variant='ghost'>
+									取消
+								</Button>
+								<Button isDisabled={!canSubmit || isSubmitting} type='submit'>
+									{submitLabel}
+								</Button>
+							</Modal.Footer>
+						</form>
+					</FormProvider>
+				</Modal.Dialog>
+			</Modal.Container>
+		</Modal.Backdrop>
 	)
 }
 
@@ -300,22 +286,27 @@ function DialogSelect({
 	disabled?: boolean
 }) {
 	return (
-		<div className={formFieldGridClass}>
-			<label className={formFieldLabelVariants({ tone: 'muted' })}>{label}</label>
-			<Select disabled={disabled} onValueChange={onValueChange} value={value}>
-				<SelectTrigger className='w-full'>
-					<SelectValue />
-				</SelectTrigger>
-				<SelectContent position='popper'>
-					<SelectGroup>
-						{options.map((option) => (
-							<SelectItem key={option.value} value={option.value}>
-								{option.label}
-							</SelectItem>
-						))}
-					</SelectGroup>
-				</SelectContent>
-			</Select>
-		</div>
+		<Select
+			fullWidth
+			isDisabled={disabled}
+			onChange={(key) => typeof key === 'string' && onValueChange(key)}
+			value={value}
+		>
+			<Label>{label}</Label>
+			<Select.Trigger>
+				<Select.Value />
+				<Select.Indicator />
+			</Select.Trigger>
+			<Select.Popover>
+				<ListBox>
+					{options.map((option) => (
+						<ListBox.Item id={option.value} key={option.value} textValue={option.label}>
+							{option.label}
+							<ListBox.ItemIndicator />
+						</ListBox.Item>
+					))}
+				</ListBox>
+			</Select.Popover>
+		</Select>
 	)
 }

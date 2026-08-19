@@ -1,119 +1,111 @@
-import type { ReactNode } from 'react'
-
-import { useDangerConfirm } from '@/features/danger-confirm'
-import {
-	ContextMenu,
-	ContextMenuContent,
-	ContextMenuGroup,
-	ContextMenuItem,
-	ContextMenuSeparator,
-	ContextMenuTrigger,
-} from '@/shared/components/base/context-menu'
+import { ContextMenu } from '@heroui-pro/react'
 import { ArchiveRestoreIcon, FolderOpenIcon, Trash2Icon } from 'lucide-react'
+import { useState, type ReactNode } from 'react'
+
+import { COMMAND_IDS, type CommandId, type CommandProjection } from '@/features/command'
 
 type LifecycleContextMenuProps = {
 	children: ReactNode
-	entityType: 'task' | 'project' | 'space'
-	entityLabel: string
 	targetCount: number
 	isBusy?: boolean
 	onOpenDetail?: () => void
-	onRestore: () => void
-	onMoveToTrash?: () => void
-	onPermanentlyDelete?: () => void
+	onOpenChange?: (open: boolean) => void
+	lifecycleCommand: (commandId: CommandId) => CommandProjection | null
 }
 
+/** 恢复与危险处置统一由 Command projection 决定可见性、确认与执行结果。 */
 export function LifecycleContextMenu({
 	children,
-	entityType,
-	entityLabel,
 	targetCount,
 	isBusy,
 	onOpenDetail,
-	onRestore,
-	onMoveToTrash,
-	onPermanentlyDelete,
+	onOpenChange,
+	lifecycleCommand,
 }: LifecycleContextMenuProps) {
-	const { requestDangerConfirm } = useDangerConfirm()
+	const [open, setOpen] = useState(false)
 	const isBulk = targetCount > 1
+	const restoreCommand = open ? lifecycleCommand(COMMAND_IDS.lifecycleRestore) : null
+	const deleteCommand = open ? lifecycleCommand(COMMAND_IDS.lifecycleDelete) : null
+	const permanentDeleteCommand = open
+		? lifecycleCommand(COMMAND_IDS.lifecycleDeletePermanently)
+		: null
 
 	return (
-		<ContextMenu>
-			<ContextMenuTrigger asChild onContextMenu={(event) => event.stopPropagation()}>
+		<ContextMenu
+			open={open}
+			onOpenChange={(nextOpen) => {
+				setOpen(nextOpen)
+				onOpenChange?.(nextOpen)
+			}}
+		>
+			<ContextMenu.Trigger
+				className='group/lifecycle-context-menu block w-full'
+				data-open={open || undefined}
+			>
 				{children}
-			</ContextMenuTrigger>
-			<ContextMenuContent className='w-48'>
-				{onOpenDetail ? (
-					<>
-						<ContextMenuGroup>
-							<ContextMenuItem disabled={isBusy} onSelect={onOpenDetail}>
-								<FolderOpenIcon />
-								{getOpenLabel(entityType)}
-							</ContextMenuItem>
-						</ContextMenuGroup>
-						<ContextMenuSeparator />
-					</>
-				) : null}
-				<ContextMenuGroup>
-					<ContextMenuItem disabled={isBusy} onSelect={onRestore}>
-						<ArchiveRestoreIcon />
-						{isBulk ? '全部恢复' : '恢复'}
-					</ContextMenuItem>
-					{onMoveToTrash ? (
-						<ContextMenuItem
-							disabled={isBusy}
-							onSelect={async () => {
-								const confirmed = await requestDangerConfirm({
-									intent: 'trash',
-									entityType,
-									count: targetCount,
-									entityLabel: isBulk ? undefined : entityLabel,
-								})
-								if (!confirmed) {
-									return
-								}
-								onMoveToTrash()
-							}}
-							variant='destructive'
-						>
-							<Trash2Icon />
-							{isBulk ? '全部移入回收站' : '移入回收站'}
-						</ContextMenuItem>
-					) : null}
-					{onPermanentlyDelete ? (
-						<ContextMenuItem
-							disabled={isBusy}
-							onSelect={async () => {
-								const confirmed = await requestDangerConfirm({
-									intent: 'permanent-delete',
-									entityType,
-									count: targetCount,
-									entityLabel: isBulk ? undefined : entityLabel,
-								})
-								if (!confirmed) {
-									return
-								}
-								onPermanentlyDelete()
-							}}
-							variant='destructive'
-						>
-							<Trash2Icon />
-							{isBulk ? '全部永久删除' : '永久删除'}
-						</ContextMenuItem>
-					) : null}
-				</ContextMenuGroup>
-			</ContextMenuContent>
+			</ContextMenu.Trigger>
+			{open ? (
+				<ContextMenu.Popover className='w-52'>
+					<ContextMenu.Menu aria-label='生命周期操作'>
+						{onOpenDetail ? (
+							<>
+								<ContextMenu.Section>
+									<ContextMenu.Item
+										id='lifecycle-open'
+										isDisabled={isBusy}
+										onAction={onOpenDetail}
+										textValue='打开详情'
+									>
+										<FolderOpenIcon />
+										打开详情
+									</ContextMenu.Item>
+								</ContextMenu.Section>
+								<ContextMenu.Separator />
+							</>
+						) : null}
+						<ContextMenu.Section>
+							{restoreCommand?.visible ? (
+								<ContextMenu.Item
+									aria-description={restoreCommand.disabledReason}
+									id='lifecycle-restore'
+									isDisabled={isBusy || !restoreCommand.enabled}
+									onAction={() => void restoreCommand.execute({ source: 'context-menu' })}
+									textValue={isBulk ? '全部恢复' : '恢复'}
+								>
+									<ArchiveRestoreIcon />
+									{isBulk ? '全部恢复' : '恢复'}
+								</ContextMenu.Item>
+							) : null}
+							{deleteCommand?.visible ? (
+								<ContextMenu.Item
+									aria-description={deleteCommand.disabledReason}
+									id='lifecycle-move-to-trash'
+									isDisabled={isBusy || !deleteCommand.enabled}
+									onAction={() => void deleteCommand.execute({ source: 'context-menu' })}
+									textValue={isBulk ? '全部移入回收站' : '移入回收站'}
+									variant='danger'
+								>
+									<Trash2Icon />
+									{isBulk ? '全部移入回收站' : '移入回收站'}
+								</ContextMenu.Item>
+							) : null}
+							{permanentDeleteCommand?.visible ? (
+								<ContextMenu.Item
+									aria-description={permanentDeleteCommand.disabledReason}
+									id='lifecycle-delete-permanently'
+									isDisabled={isBusy || !permanentDeleteCommand.enabled}
+									onAction={() => void permanentDeleteCommand.execute({ source: 'context-menu' })}
+									textValue={isBulk ? '全部永久删除' : '永久删除'}
+									variant='danger'
+								>
+									<Trash2Icon />
+									{isBulk ? '全部永久删除' : '永久删除'}
+								</ContextMenu.Item>
+							) : null}
+						</ContextMenu.Section>
+					</ContextMenu.Menu>
+				</ContextMenu.Popover>
+			) : null}
 		</ContextMenu>
 	)
-}
-
-function getOpenLabel(entityType: LifecycleContextMenuProps['entityType']) {
-	switch (entityType) {
-		case 'project':
-			return '打开项目'
-		case 'space':
-			return '前往该 Space'
-		case 'task':
-			return '打开详情'
-	}
 }

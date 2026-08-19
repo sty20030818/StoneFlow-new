@@ -1,16 +1,7 @@
-import { useState } from 'react'
+import { Dropdown } from '@heroui/react'
 import { EllipsisIcon, PencilIcon, PlusIcon, Trash2Icon } from 'lucide-react'
 
-import { Button } from '@/shared/components/base/button'
 import { ActionTooltip } from '@/shared/components/tooltip'
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuGroup,
-	DropdownMenuItem,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from '@/shared/components/base/dropdown-menu'
 import type { View } from '@/shared/types'
 
 type ViewActionsMenuProps = {
@@ -22,68 +13,46 @@ type ViewActionsMenuProps = {
 
 export function ViewActionsMenu({ activeView, onCreate, onEdit, onDelete }: ViewActionsMenuProps) {
 	const canMutateActiveView = activeView?.kind === 'custom'
-	const [menuOpen, setMenuOpen] = useState(false)
-	const [tooltipOpen, setTooltipOpen] = useState(false)
-
-	function handleMenuOpenChange(nextOpen: boolean) {
-		setMenuOpen(nextOpen)
-		if (nextOpen) {
-			setTooltipOpen(false)
-		}
-	}
 
 	return (
-		<DropdownMenu onOpenChange={handleMenuOpenChange} open={menuOpen}>
-			<ActionTooltip
-				isOpen={tooltipOpen}
-				label='视图操作'
-				onOpenChange={(nextOpen) => setTooltipOpen(menuOpen ? false : nextOpen)}
-			>
-				<DropdownMenuTrigger asChild>
-					<Button aria-label='视图操作' size='icon-sm' type='button' variant='outline'>
-						<EllipsisIcon />
-					</Button>
-				</DropdownMenuTrigger>
+		<Dropdown>
+			<ActionTooltip label='视图操作'>
+				<Dropdown.Trigger
+					aria-label='视图操作'
+					className='flex size-8 items-center justify-center rounded-lg border border-default text-muted hover:bg-default'
+				>
+					<EllipsisIcon className='size-4' />
+				</Dropdown.Trigger>
 			</ActionTooltip>
-			<DropdownMenuContent align='end'>
-				<DropdownMenuGroup>
-					<DropdownMenuItem
-						onSelect={(event) => {
-							event.preventDefault()
-							onCreate()
-						}}
-					>
+			<Dropdown.Popover placement='bottom end'>
+				<Dropdown.Menu aria-label='视图操作'>
+					<Dropdown.Item id='create-view' onAction={onCreate} textValue='新建自定义视图'>
 						<PlusIcon />
 						新建自定义视图
-					</DropdownMenuItem>
+					</Dropdown.Item>
 					{canMutateActiveView ? (
-						<DropdownMenuItem
-							onSelect={(event) => {
-								event.preventDefault()
-								onEdit(activeView)
-							}}
+						<Dropdown.Item
+							id='edit-view'
+							onAction={() => onEdit(activeView)}
+							textValue='编辑当前视图'
 						>
 							<PencilIcon />
 							编辑当前视图
-						</DropdownMenuItem>
+						</Dropdown.Item>
 					) : null}
-				</DropdownMenuGroup>
-				{canMutateActiveView ? (
-					<>
-						<DropdownMenuSeparator />
-						<DropdownMenuItem
-							onSelect={(event) => {
-								event.preventDefault()
-								onDelete(activeView)
-							}}
-							variant='destructive'
+					{canMutateActiveView ? (
+						<Dropdown.Item
+							id='delete-view'
+							onAction={() => onDelete(activeView)}
+							textValue='删除当前视图'
+							variant='danger'
 						>
 							<Trash2Icon />
 							删除当前视图
-						</DropdownMenuItem>
-					</>
-				) : null}
-			</DropdownMenuContent>
-		</DropdownMenu>
+						</Dropdown.Item>
+					) : null}
+				</Dropdown.Menu>
+			</Dropdown.Popover>
+		</Dropdown>
 	)
 }

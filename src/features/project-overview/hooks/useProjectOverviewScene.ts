@@ -10,15 +10,15 @@ import {
 import { useDialogStore } from '@/features/shell-dialogs'
 import type { ProjectOverviewViewKey } from '@/features/project'
 import {
+	buildProjectSections,
 	buildProjectCommandSelection,
+	PROJECT_SECTION_ORDER,
 	type ProjectBoardProps,
-	useArchiveProjectMutation,
 	useCompleteProjectMutation,
-	useDeleteProjectMutation,
 	useProjectOverviewData,
 	useReopenProjectMutation,
 } from '@/features/project'
-import { useEntitySelection, useRegisterCommandSelection } from '@/features/selection'
+import { useGroupedCollectionInteraction, useRegisterCommandSelection } from '@/features/selection'
 
 /**
  * 项目总览页唯一 wiring：视图轨 / 命令选择上下文 / 行动作。
@@ -36,28 +36,45 @@ export function useProjectOverviewScene() {
 	const overview = useProjectOverviewData(scope, viewKey)
 	const completeProject = useCompleteProjectMutation()
 	const reopenProject = useReopenProjectMutation()
-	const archiveProject = useArchiveProjectMutation()
-	const deleteProject = useDeleteProjectMutation()
 	const overviewStatus = overview.status
 	const overviewItems = overview.items
-	const {
-		selectedIdSet: selectedProjectIds,
-		selectionSnapshot,
-		focusedId: focusedProjectId,
-		toggleSelection: toggleProjectSelection,
-		clearSelection: clearProjectSelection,
-		setFocusedId: setFocusedProjectId,
-		moveFocus,
-		selectIds: selectProjectIds,
-	} = useEntitySelection(overviewItems.map((item) => item.id))
+	const projectSections = useMemo(() => buildProjectSections(overviewItems), [overviewItems])
+	const projectGroups = useMemo(
+		() =>
+			projectSections.map((section) => ({
+				key: section.key,
+				itemKeys: section.items.map((project) => project.id),
+			})),
+		[projectSections],
+	)
+	const projectCollection = useGroupedCollectionInteraction({
+		groups: projectGroups,
+		defaultOpenGroupKeys: PROJECT_SECTION_ORDER,
+	})
+	const selectedProjectIds = useMemo(
+		() =>
+			projectCollection.interaction.projection.eligibleKeys.filter((projectId) =>
+				projectCollection.interaction.selectedKeys.has(projectId),
+			),
+		[
+			projectCollection.interaction.projection.eligibleKeys,
+			projectCollection.interaction.selectedKeys,
+		],
+	)
 	const commandSelection = useMemo(
 		() =>
 			buildProjectCommandSelection({
-				selectedIds: selectionSnapshot.ids,
+				selectedIds: selectedProjectIds,
 				projects: overviewItems,
-				clearSelection: clearProjectSelection,
+				focusedProjectId: projectCollection.interaction.focusedKey,
+				clearSelection: projectCollection.interaction.clearSelection,
 			}),
-		[clearProjectSelection, overviewItems, selectionSnapshot.ids],
+		[
+			overviewItems,
+			projectCollection.interaction.clearSelection,
+			projectCollection.interaction.focusedKey,
+			selectedProjectIds,
+		],
 	)
 	const readCommandSelection = useCallback(() => commandSelection, [commandSelection])
 	useRegisterCommandSelection(readCommandSelection)
@@ -71,33 +88,17 @@ export function useProjectOverviewScene() {
 	}
 
 	const projectBoardProps: ProjectBoardProps = {
-		variant: 'overview',
-		items: overviewItems,
+		sections: projectSections,
+		collection: projectCollection,
 		status: overviewStatus,
 		busyProjectId,
-		selectedProjectIds,
-		focusedProjectId,
 		emptyActionLabel: '创建项目',
 		emptyDescription:
 			'这里还没有项目，可以先从一个项目开始。点「创建项目」先建起来，后面的任务和节奏就有地方承接了。',
 		emptyTitle: '当前没有项目',
-		onToggleProjectSelection: toggleProjectSelection,
-		onSetFocusedProject: setFocusedProjectId,
-		onMoveProjectFocus: moveFocus,
-		onClearProjectSelection: clearProjectSelection,
-		onArchive: (projectId) => {
-			void runRowAction(projectId, async () => {
-				await archiveProject.mutateAsync(projectId)
-			})
-		},
 		onComplete: (projectId) => {
 			void runRowAction(projectId, async () => {
 				await completeProject.mutateAsync(projectId)
-			})
-		},
-		onDelete: (projectId) => {
-			void runRowAction(projectId, async () => {
-				await deleteProject.mutateAsync(projectId)
 			})
 		},
 		onEmptyAction: () => openProjectCreateDialog(),
@@ -105,7 +106,6 @@ export function useProjectOverviewScene() {
 			void navigate({
 				to: openProjectDetail(projectId, { scope, fallbackSpaceId: spaceId }) as never,
 			}),
-		onSelectAllProjects: selectProjectIds,
 		onReopen: (projectId) => {
 			void runRowAction(projectId, async () => {
 				await reopenProject.mutateAsync(projectId)

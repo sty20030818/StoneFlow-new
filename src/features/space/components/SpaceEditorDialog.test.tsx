@@ -21,8 +21,8 @@ describe('SpaceEditorDialog', () => {
 		)
 
 		expect(screen.getByRole('dialog', { name: '新建 Space' })).toBeInTheDocument()
-		expect(screen.getByRole('combobox', { name: '图标' })).toBeInTheDocument()
-		expect(screen.getByRole('combobox', { name: '颜色' })).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: /图标/ })).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: /颜色/ })).toBeInTheDocument()
 	})
 
 	it('编辑弹窗可以稳定渲染', async () => {
@@ -48,7 +48,7 @@ describe('SpaceEditorDialog', () => {
 		)
 
 		expect(screen.getByRole('dialog', { name: '编辑 Space' })).toBeInTheDocument()
-		expect(await screen.findByDisplayValue('个人')).toBeInTheDocument()
+		expect(await screen.findByRole('textbox', { name: '名称' })).toHaveValue('个人')
 	})
 
 	it('在提交注册上下文中输入名称时不会触发无限更新', async () => {
@@ -68,7 +68,7 @@ describe('SpaceEditorDialog', () => {
 
 		await waitFor(() => {
 			expect(input).toHaveValue('工作')
-			expect(screen.getByText('工作')).toBeInTheDocument()
+			expect(screen.getByText('工作', { selector: 'p' })).toBeInTheDocument()
 		})
 	})
 
