@@ -1,10 +1,4 @@
-/**
- * 系统状态 Chip 队列（底部非模态）。
- *
- * 优先级（设计方案）：更新就绪 > 同步错误/需处理 > 其它。
- * 同一时间只展示最高优先级一条，避免多 pill 叠放。
- */
-
+import { Alert, Button } from '@heroui/react'
 import { useSharedSyncStatus } from '@/features/sync'
 import { formatReplicaState, formatSyncStatus } from '@/features/sync'
 import {
@@ -12,8 +6,6 @@ import {
 	selectUpdateSnapshot,
 	useUpdateStore,
 } from '../model/useUpdateStore'
-import { Button } from '@/shared/components/base/button'
-import { cn } from '@/shared/lib/utils'
 
 type ChipKind = 'update-ready' | 'sync-attention'
 
@@ -45,57 +37,40 @@ export function SystemStatusChip() {
 	const active = resolveActiveChip({ updateReady, syncAttention })
 	if (!active) return null
 
-	const shellClass = cn(
-		'pointer-events-none fixed inset-x-0 bottom-10 z-40 flex justify-center px-3',
-	)
-	const pillClass = cn(
-		'pointer-events-auto flex max-w-md items-center gap-3 rounded-full',
-		'border border-legacy-border bg-legacy-background/95 px-3 py-1.5 shadow-(--sf-shadow-float)',
-		'backdrop-blur-sm supports-backdrop-filter:bg-legacy-background/85',
-	)
+	const shellClass = 'pointer-events-none fixed inset-x-0 bottom-10 z-40 flex justify-center px-3'
 
 	if (active === 'update-ready') {
 		const version = snapshot.update?.version ?? ''
 		const installFailed = Boolean(snapshot.errorMessage)
 		return (
-			<div role='status' aria-live='polite' className={shellClass}>
-				<div className={pillClass}>
-					<span
-						className={cn(
-							'size-2 shrink-0 rounded-full',
-							installFailed ? 'bg-red-500' : 'bg-emerald-500',
-						)}
-						aria-hidden
-					/>
-					<p className='min-w-0 truncate text-[13px] font-medium text-legacy-foreground'>
-						{installFailed
-							? version
-								? `v${version} 安装失败`
-								: '安装失败'
-							: version
-								? `v${version} 已就绪`
-								: '更新已就绪'}
-					</p>
+			<div className={shellClass}>
+				<Alert
+					aria-live='polite'
+					className='pointer-events-auto max-w-md'
+					role='status'
+					status={installFailed ? 'danger' : 'success'}
+				>
+					<Alert.Indicator />
+					<Alert.Content>
+						<Alert.Title>
+							{installFailed
+								? version
+									? `v${version} 安装失败`
+									: '安装失败'
+								: version
+									? `v${version} 已就绪`
+									: '更新已就绪'}
+						</Alert.Title>
+					</Alert.Content>
 					<div className='flex shrink-0 items-center gap-1'>
-						<Button
-							type='button'
-							size='sm'
-							variant='ghost'
-							className='h-7 rounded-full px-2.5 text-[12px]'
-							onClick={dismissReadyChip}
-						>
+						<Button onPress={dismissReadyChip} size='sm' type='button' variant='ghost'>
 							稍后
 						</Button>
-						<Button
-							type='button'
-							size='sm'
-							className='h-7 rounded-full px-2.5 text-[12px]'
-							onClick={openDialog}
-						>
+						<Button onPress={openDialog} size='sm' type='button'>
 							查看
 						</Button>
 					</div>
-				</div>
+				</Alert>
 			</div>
 		)
 	}
@@ -108,25 +83,29 @@ export function SystemStatusChip() {
 			: formatSyncStatus(displayedStatus)
 
 	return (
-		<div role='status' aria-live='polite' className={shellClass}>
-			<div className={pillClass}>
-				<span className='size-2 shrink-0 rounded-full bg-red-500' aria-hidden />
-				<p className='min-w-0 truncate text-[13px] font-medium text-legacy-foreground'>
-					同步：{syncLabel}
-				</p>
+		<div className={shellClass}>
+			<Alert
+				aria-live='polite'
+				className='pointer-events-auto max-w-md'
+				role='status'
+				status='danger'
+			>
+				<Alert.Indicator />
+				<Alert.Content>
+					<Alert.Title>同步：{syncLabel}</Alert.Title>
+				</Alert.Content>
 				<div className='flex shrink-0 items-center gap-1'>
 					<Button
-						type='button'
+						isDisabled={running || blocked}
+						onPress={() => void runNow()}
 						size='sm'
+						type='button'
 						variant='ghost'
-						className='h-7 rounded-full px-2.5 text-[12px]'
-						disabled={running || blocked}
-						onClick={() => void runNow()}
 					>
 						{running ? '同步中…' : '重试'}
 					</Button>
 				</div>
-			</div>
+			</Alert>
 		</div>
 	)
 }

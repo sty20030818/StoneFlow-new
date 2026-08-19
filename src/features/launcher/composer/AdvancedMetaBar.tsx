@@ -4,16 +4,16 @@ import { useLauncher } from '../domain/LauncherDomainProvider'
 import type { LauncherPopoverKey } from '../model/types'
 import { DateControl } from './controls/DateControl'
 import { StatusControl } from './controls/StatusControl'
-import { launcherAdvancedRowClass } from '@/shared/components/patterns/launcher'
 
-/**
- * Advanced 字段行；显隐由壳内折叠槽控制，本组件始终渲染内容以便动画收合。
- */
+/** Advanced 字段行；只在展开时挂载，不保留隐藏浮层或布局动画。 */
 export function AdvancedMetaBar() {
 	const { actions, state } = useLauncher()
 
 	return (
-		<div className={launcherAdvancedRowClass} data-testid='launcher-advanced-meta-bar'>
+		<div
+			className='flex h-10 flex-nowrap items-center gap-2 overflow-x-auto px-3'
+			data-testid='launcher-advanced-meta-bar'
+		>
 			<StatusControl
 				onOpenChange={(open) => actions.setPopover(open ? 'status' : null)}
 				onStatusChange={actions.setStatus}

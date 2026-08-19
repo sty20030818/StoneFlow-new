@@ -19,33 +19,19 @@ import { useLauncherSubmitActions } from './useLauncherSubmitActions'
 import { useLauncherTransientUi } from './useLauncherTransientUi'
 import { createLauncherInitialState, launcherDomainReducer } from './launcherDomainReducer'
 import { useLauncherSession } from '../session/SessionProvider'
+import { getLauncherResultKey } from '../model/types'
+import { createCollectionFocusBridge, useCollectionInteraction } from '@/features/selection'
 
 const LauncherDomainContext = createContext<LauncherContextValue | null>(null)
 
 export function LauncherDomainProvider({ children }: PropsWithChildren) {
 	const { actions: sessionActions, state: sessionState } = useLauncherSession()
 	const [state, dispatch] = useReducer(launcherDomainReducer, undefined, createLauncherInitialState)
-	const {
-		closeWindow,
-		focusInput,
-		projectSearchRef,
-		registerHandleEscape,
-		scheduleClose,
-		titleInputRef,
-	} = useLauncherTransientUi({
-		activePopover: state.activePopover,
-		requestClose: (reason) => sessionActions.requestClose(reason),
-	})
+	const { closeWindow, focusInput, registerHandleEscape, scheduleClose, titleInputRef } =
+		useLauncherTransientUi({
+			requestClose: (reason) => sessionActions.requestClose(reason),
+		})
 	const loadProjectsForSpace = useLauncherProjectOptions({ dispatch })
-
-	const { refreshRecent } = useLauncherLifecycleBridge({
-		dispatch,
-		fetchRecent: getRecentData,
-		focusInput,
-		nextOpenContext: 'openContext' in sessionState.phase ? sessionState.phase.openContext : null,
-		onRefreshRecentError: logRefreshRecentError,
-		shouldFocusInput: sessionState.phase.type === 'visible',
-	})
 
 	useLauncherSearchEffect({
 		dispatch,
@@ -53,8 +39,54 @@ export function LauncherDomainProvider({ children }: PropsWithChildren) {
 		searchFn: search,
 	})
 
-	const derived = useLauncherDerivedState(state)
-	const { flatItems, hasTitle } = derived
+	const baseDerived = useLauncherDerivedState(state)
+	const { flatItems, hasTitle } = baseDerived
+	const resultKeys = useMemo(() => flatItems.map(getLauncherResultKey), [flatItems])
+	const resultCollection = useCollectionInteraction({
+		eligibleKeys: resultKeys,
+		navigableKeys: resultKeys,
+	})
+	const { focusKey: focusResultKey } = resultCollection
+	const clearResultFocus = useCallback(() => focusResultKey(null), [focusResultKey])
+	const resultFocusBridge = useMemo(
+		() => createCollectionFocusBridge({ requestScroll: () => undefined }),
+		[],
+	)
+	const { refreshRecent } = useLauncherLifecycleBridge({
+		clearResultFocus,
+		dispatch,
+		fetchRecent: getRecentData,
+		focusInput,
+		nextOpenContext: 'openContext' in sessionState.phase ? sessionState.phase.openContext : null,
+		onRefreshRecentError: logRefreshRecentError,
+		shouldFocusInput: sessionState.phase.type === 'visible',
+	})
+	const requestResultFocus = useCallback(
+		(key: string) => {
+			resultFocusBridge.requestFocus({ type: 'item', key })
+			const activeElement = document.activeElement
+			if (
+				activeElement instanceof HTMLElement &&
+				resultFocusBridge.getItemKey(activeElement) === key
+			) {
+				activeElement.scrollIntoView?.({ block: 'nearest' })
+			}
+		},
+		[resultFocusBridge],
+	)
+	const activeResultIndex = resultCollection.focusedKey
+		? resultKeys.indexOf(resultCollection.focusedKey)
+		: -1
+	const focusedResult = activeResultIndex < 0 ? null : (flatItems[activeResultIndex] ?? null)
+	const derived = useMemo(
+		() => ({
+			...baseDerived,
+			activeResultIndex,
+			enterLabel: activeResultIndex < 0 ? ('创建' as const) : ('打开' as const),
+			isCreateFocused: state.focusTarget === 'create',
+		}),
+		[activeResultIndex, baseDerived, state.focusTarget],
+	)
 	const { buildCreateInput, createAndOpenTask, createTask, openTargetResult } = useLauncherCommands(
 		{
 			dispatch,
@@ -71,7 +103,6 @@ export function LauncherDomainProvider({ children }: PropsWithChildren) {
 		setDate,
 		setPopover,
 		setPriority,
-		setProjectSearch,
 		setStatus,
 		setTitle,
 		toggleAdvanced,
@@ -79,26 +110,27 @@ export function LauncherDomainProvider({ children }: PropsWithChildren) {
 		dispatch,
 		focusInput,
 		focusTarget: state.focusTarget,
-		flatItemCount: flatItems.length,
 		hasTitle,
 		loadProjectsForSpace,
+		requestResultFocus,
+		resultCollection,
 	})
 
 	const {
 		handleEscape: baseHandleEscape,
-		handleInputKeyDown,
+		handleKeyDown,
 		submit,
 	} = useLauncherSubmitActions({
 		buildCreateInput,
+		clearResultFocus,
 		closeWindow,
 		continuousCreateCount: state.continuousCreateCount,
 		createAndOpenTask,
 		createTask,
 		dispatch,
 		draft: state.draft,
-		flatItems,
 		focusInput,
-		focusTarget: state.focusTarget,
+		focusedResult,
 		hasTitle,
 		moveFocus,
 		openTargetResult,
@@ -125,7 +157,7 @@ export function LauncherDomainProvider({ children }: PropsWithChildren) {
 			focusInput,
 			focusResult,
 			handleEscape,
-			handleInputKeyDown,
+			handleKeyDown,
 			moveFocus,
 			openResult: openTargetResult,
 			selectPlacement,
@@ -133,7 +165,6 @@ export function LauncherDomainProvider({ children }: PropsWithChildren) {
 			setDate,
 			setPopover,
 			setPriority,
-			setProjectSearch,
 			setStatus,
 			setTitle,
 			submit,
@@ -144,7 +175,7 @@ export function LauncherDomainProvider({ children }: PropsWithChildren) {
 			focusInput,
 			focusResult,
 			handleEscape,
-			handleInputKeyDown,
+			handleKeyDown,
 			moveFocus,
 			openTargetResult,
 			selectPlacement,
@@ -152,7 +183,6 @@ export function LauncherDomainProvider({ children }: PropsWithChildren) {
 			setDate,
 			setPopover,
 			setPriority,
-			setProjectSearch,
 			setStatus,
 			setTitle,
 			submit,
@@ -164,13 +194,14 @@ export function LauncherDomainProvider({ children }: PropsWithChildren) {
 		() => ({
 			state,
 			derived,
+			resultCollection,
 			refs: {
 				titleInputRef,
-				projectSearchRef,
+				resultFocusBridge,
 			},
 			actions,
 		}),
-		[actions, derived, projectSearchRef, state, titleInputRef],
+		[actions, derived, resultCollection, resultFocusBridge, state, titleInputRef],
 	)
 
 	return <LauncherDomainContext.Provider value={value}>{children}</LauncherDomainContext.Provider>

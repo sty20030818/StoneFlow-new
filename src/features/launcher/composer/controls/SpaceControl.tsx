@@ -1,20 +1,9 @@
 import { useState } from 'react'
+import { Button, Dropdown } from '@heroui/react'
 import { CheckIcon } from 'lucide-react'
 
 import type { LauncherSpaceSummary } from '../../model/types'
 import { getSpaceVisual } from '@/features/space'
-import { Button } from '@/shared/components/base/button'
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuGroup,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from '@/shared/components/base/dropdown-menu'
-import {
-	launcherMenuContentClass,
-	launcherMenuItemClass,
-} from '@/shared/components/patterns/launcher'
 import { ActionTooltip, OverflowTooltip } from '@/shared/components/tooltip'
 
 type SpaceControlProps = {
@@ -41,29 +30,28 @@ export function SpaceControl({
 	const currentVisual = currentSpace ? getSpaceVisual(currentSpace) : null
 	const CurrentIcon = currentVisual?.icon
 	const trigger = (
-		<DropdownMenuTrigger asChild>
-			<Button
-				aria-label='空间选择'
-				className={iconOnly ? undefined : 'max-w-44'}
-				size={iconOnly ? 'icon-sm' : 'sm'}
-				variant='outline'
-			>
-				{CurrentIcon ? (
-					<CurrentIcon
-						className={`size-3.5 shrink-0 ${currentVisual?.iconClassName ?? 'text-sf-text-secondary'}`}
-					/>
-				) : null}
-				{iconOnly ? (
-					<span className='sr-only'>{label}</span>
-				) : open ? (
-					<span className='min-w-0 flex-1 truncate'>{label}</span>
-				) : (
-					<OverflowTooltip className='min-w-0 flex-1' content={label}>
-						{label}
-					</OverflowTooltip>
-				)}
-			</Button>
-		</DropdownMenuTrigger>
+		<Button
+			aria-label='空间选择'
+			className={iconOnly ? undefined : 'max-w-44'}
+			isIconOnly={iconOnly}
+			size='sm'
+			variant='outline'
+		>
+			{CurrentIcon ? (
+				<CurrentIcon
+					className={`size-3.5 shrink-0 ${currentVisual?.iconClassName ?? 'text-muted'}`}
+				/>
+			) : null}
+			{iconOnly ? (
+				<span className='sr-only'>{label}</span>
+			) : open ? (
+				<span className='min-w-0 flex-1 truncate'>{label}</span>
+			) : (
+				<OverflowTooltip className='min-w-0 flex-1' content={label}>
+					{label}
+				</OverflowTooltip>
+			)}
+		</Button>
 	)
 
 	function handleMenuOpenChange(nextOpen: boolean) {
@@ -74,7 +62,7 @@ export function SpaceControl({
 	}
 
 	return (
-		<DropdownMenu onOpenChange={handleMenuOpenChange} open={open}>
+		<Dropdown isOpen={open} onOpenChange={handleMenuOpenChange}>
 			{iconOnly ? (
 				<ActionTooltip
 					isOpen={tooltipOpen}
@@ -86,31 +74,30 @@ export function SpaceControl({
 			) : (
 				trigger
 			)}
-			<DropdownMenuContent align='end' className={`w-48 ${launcherMenuContentClass}`}>
-				<DropdownMenuGroup>
+			<Dropdown.Popover className='w-48' placement='bottom end'>
+				<Dropdown.Menu aria-label='选择空间'>
 					{spaces.map((space) => {
 						const visual = getSpaceVisual(space)
 						const SpaceIcon = visual.icon
 
 						return (
-							<DropdownMenuItem
-								className={launcherMenuItemClass}
+							<Dropdown.Item
+								className='gap-2 p-2 text-[12.5px]'
+								id={space.id}
 								key={space.id}
-								onSelect={() => onSelectSpace(space.id)}
+								onAction={() => onSelectSpace(space.id)}
+								textValue={space.name}
 							>
 								<SpaceIcon className={`size-3.5 shrink-0 ${visual.iconClassName}`} />
 								<span className='min-w-0 flex-1 truncate'>{space.name}</span>
 								{space.id === selectedSpaceId ? (
-									<CheckIcon
-										aria-hidden
-										className='ml-auto size-3.5 shrink-0 text-sf-icon-secondary'
-									/>
+									<CheckIcon aria-hidden className='ml-auto size-3.5 shrink-0 text-muted' />
 								) : null}
-							</DropdownMenuItem>
+							</Dropdown.Item>
 						)
 					})}
-				</DropdownMenuGroup>
-			</DropdownMenuContent>
-		</DropdownMenu>
+				</Dropdown.Menu>
+			</Dropdown.Popover>
+		</Dropdown>
 	)
 }

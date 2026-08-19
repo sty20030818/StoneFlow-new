@@ -45,10 +45,6 @@ vi.mock('@tauri-apps/api/event', () => ({
 	listen: (...args: unknown[]) => listenMock(...args),
 }))
 
-vi.mock('@/shared/components/base/calendar', () => ({
-	Calendar: () => <div data-testid='calendar' />,
-}))
-
 const mockedCloseSession = vi.mocked(closeSession)
 const mockedCreate = vi.mocked(create)
 const mockedCreateAndOpen = vi.mocked(createAndOpen)
@@ -175,6 +171,21 @@ describe('LauncherPage', () => {
 		expect(input).toHaveValue('输入法')
 	})
 
+	it('中文组合输入期间 Escape 不清空草稿或关闭窗口', async () => {
+		render(<LauncherPage />)
+		await screen.findByTestId('launcher-recent-tasks-section')
+		const input = screen.getByLabelText('Launcher 输入')
+
+		fireEvent.compositionStart(input)
+		fireEvent.change(input, { target: { value: '组合中' }, nativeEvent: { isComposing: true } })
+		fireEvent.keyDown(input, { key: 'Escape', isComposing: true, keyCode: 229 })
+
+		expect(input).toHaveValue('组合中')
+		expect(mockedCloseSession).not.toHaveBeenCalled()
+		fireEvent.compositionEnd(input, { target: { value: '组合完成' } })
+		await waitFor(() => expect(input).toHaveValue('组合完成'))
+	})
+
 	it('空搜索结果不回退最近内容，并保留创建入口', async () => {
 		mockedSearch.mockResolvedValueOnce({ tasks: [], projects: [] })
 		render(<LauncherPage />)
@@ -202,13 +213,63 @@ describe('LauncherPage', () => {
 		mockedCreate.mockClear()
 		fireEvent.change(input, { target: { value: 'Again' } })
 		await waitFor(() => expect(mockedSearch).toHaveBeenCalledWith('Again', 20))
+		const taskResult = await screen.findByRole('button', { name: '打开任务 Stone 搜索任务' })
+		const projectResult = screen.getByRole('button', { name: '打开项目 Stone 搜索项目' })
 		fireEvent.keyDown(input, { key: 'ArrowDown' })
-		fireEvent.keyDown(input, { key: 'Enter' })
+		await waitFor(() => expect(taskResult).toHaveFocus())
+		fireEvent.keyDown(taskResult, { key: 'ArrowDown' })
+		await waitFor(() => expect(projectResult).toHaveFocus())
+		fireEvent.keyDown(projectResult, { key: 'ArrowUp' })
+		await waitFor(() => expect(taskResult).toHaveFocus())
+		fireEvent.keyDown(taskResult, { key: 'Enter' })
 
 		await waitFor(() =>
 			expect(mockedOpenTarget).toHaveBeenCalledWith({ kind: 'task', id: 'task-search' }),
 		)
+		expect(mockedOpenTarget).toHaveBeenCalledTimes(1)
 		expect(mockedCreate).not.toHaveBeenCalled()
+	})
+
+	it('无结果 current 时 ArrowUp 从末项建立真实焦点', async () => {
+		render(<LauncherPage />)
+		await screen.findByTestId('launcher-recent-projects-section')
+		const input = screen.getByLabelText('Launcher 输入')
+		const lastResult = screen.getByRole('button', { name: '打开项目 最近项目 A' })
+
+		fireEvent.keyDown(input, { key: 'ArrowUp' })
+
+		await waitFor(() => expect(lastResult).toHaveFocus())
+	})
+
+	it('CreateRow 获得真实焦点后清除旧结果 current，并继续使用 Launcher keymap', async () => {
+		render(<LauncherPage />)
+		await screen.findByTestId('launcher-recent-tasks-section')
+		const input = screen.getByLabelText('Launcher 输入')
+
+		fireEvent.change(input, { target: { value: '从创建行提交' } })
+		await waitFor(() => expect(mockedSearch).toHaveBeenCalledWith('从创建行提交', 20))
+		const taskResult = await screen.findByRole('button', { name: '打开任务 Stone 搜索任务' })
+		const createRow = screen.getByRole('button', { name: '创建任务 从创建行提交' })
+		fireEvent.keyDown(input, { key: 'ArrowDown' })
+		await waitFor(() => expect(taskResult).toHaveFocus())
+		fireEvent.pointerEnter(createRow, { pointerType: 'mouse' })
+		await waitFor(() => expect(createRow).toHaveClass('bg-accent-soft'))
+		expect(taskResult).toHaveFocus()
+		fireEvent.keyDown(taskResult, { key: 'ArrowUp' })
+		await waitFor(() => expect(input).toHaveFocus())
+
+		await act(async () => {
+			createRow.focus()
+		})
+		expect(createRow).toHaveFocus()
+		await waitFor(() => expect(createRow).toHaveClass('bg-accent-soft'))
+		fireEvent.keyDown(createRow, { key: 'Enter' })
+
+		await waitFor(() =>
+			expect(mockedCreate).toHaveBeenCalledWith(expect.objectContaining({ title: '从创建行提交' })),
+		)
+		expect(mockedCreate).toHaveBeenCalledTimes(1)
+		expect(mockedOpenTarget).not.toHaveBeenCalled()
 	})
 
 	it('Mod+Enter 使用 Registry binding 创建并打开', async () => {
@@ -233,11 +294,18 @@ describe('LauncherPage', () => {
 	})
 
 	it('Escape 依次关闭弹层、清空输入并关闭窗口', async () => {
+		mockedSearch.mockResolvedValueOnce({
+			tasks: [createTaskResult({ id: 'task-recent', title: '搜索中的最近任务' })],
+			projects: [],
+		})
 		render(<LauncherPage />)
 		await screen.findByTestId('launcher-recent-tasks-section')
 		const input = screen.getByLabelText('Launcher 输入')
 
 		fireEvent.change(input, { target: { value: 'Stone' } })
+		const searchResult = await screen.findByRole('button', { name: '打开任务 搜索中的最近任务' })
+		fireEvent.keyDown(input, { key: 'ArrowDown' })
+		await waitFor(() => expect(searchResult).toHaveFocus())
 		fireEvent.pointerDown(screen.getByRole('button', { name: '优先级' }), {
 			button: 0,
 			ctrlKey: false,
@@ -255,6 +323,8 @@ describe('LauncherPage', () => {
 		fireEvent.keyDown(document, { key: 'Escape' })
 		await waitFor(() => expect(input).toHaveValue(''))
 		expect(mockedCloseSession).not.toHaveBeenCalled()
+		fireEvent.keyDown(input, { key: 'Enter' })
+		expect(mockedOpenTarget).not.toHaveBeenCalled()
 
 		fireEvent.keyDown(document, { key: 'Escape' })
 		await waitFor(() =>

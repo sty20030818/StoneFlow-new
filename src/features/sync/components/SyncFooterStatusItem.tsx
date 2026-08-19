@@ -3,11 +3,12 @@
  * 容器：接状态 → view model → 拼装零件（灯 / 文案 / 按钮分离）。
  */
 
+import { Button, Spinner } from '@heroui/react'
 import { RefreshCwIcon } from 'lucide-react'
 
 import { deriveSyncFooterView } from '@/features/sync/model/deriveSyncFooterView'
 import { useSharedSyncStatus } from '@/features/sync/model/SyncStatusProvider'
-import { ShellFooterStatus } from '@/shared/components/patterns/ShellFooterStatus'
+import { cn } from '@/shared/lib/utils'
 
 export function SyncFooterStatusItem() {
 	const { displayedStatus, loading, message, runNow, running, statusPayload } =
@@ -26,26 +27,32 @@ export function SyncFooterStatusItem() {
 				}
 			: null,
 	})
-	const disabledReason =
-		view.actionDisabled && view.actionLabel !== view.title ? view.title : undefined
-
 	return (
-		<ShellFooterStatus.Root role='status' aria-live='polite' aria-label={view.title}>
-			<ShellFooterStatus.Dot className={view.tone.dotClassName} busy={view.busy} />
-			<ShellFooterStatus.StaticLabel overflowContent={view.title}>
-				{view.label}
-			</ShellFooterStatus.StaticLabel>
-			<ShellFooterStatus.IconButton
-				disabled={view.actionDisabled}
-				disabledReason={disabledReason}
+		<div
+			aria-label={view.title}
+			aria-live='polite'
+			className='flex min-w-0 items-center gap-1.5'
+			role='status'
+			title={view.title}
+		>
+			{view.busy ? (
+				<Spinner aria-hidden='true' color='current' size='sm' />
+			) : (
+				<span aria-hidden className={cn('size-2 shrink-0 rounded-full', view.tone.dotClassName)} />
+			)}
+			<span className='max-w-28 truncate text-xs text-muted'>{view.label}</span>
+			<Button
 				aria-label={view.actionLabel}
-				onClick={() => {
-					if (view.actionDisabled) return
-					void runNow()
-				}}
+				className='size-6 min-w-6'
+				isDisabled={view.actionDisabled}
+				isIconOnly
+				onPress={() => void runNow()}
+				size='sm'
+				type='button'
+				variant='ghost'
 			>
 				<RefreshCwIcon aria-hidden className='size-3' />
-			</ShellFooterStatus.IconButton>
-		</ShellFooterStatus.Root>
+			</Button>
+		</div>
 	)
 }

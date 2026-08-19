@@ -1,18 +1,7 @@
+import { Button, Dropdown } from '@heroui/react'
 import { CheckIcon, FolderIcon, TargetIcon } from 'lucide-react'
 
 import type { LauncherPlacement, LauncherProjectOption } from '../../model/types'
-import { Button } from '@/shared/components/base/button'
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuGroup,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from '@/shared/components/base/dropdown-menu'
-import {
-	launcherMenuContentClass,
-	launcherMenuItemClass,
-} from '@/shared/components/patterns/launcher'
 import { OverflowTooltip } from '@/shared/components/tooltip'
 
 type PlacementControlProps = {
@@ -25,10 +14,7 @@ type PlacementControlProps = {
 	onPlacementChange: (placement: LauncherPlacement) => void
 }
 
-/**
- * 项目归属控件。
- * 这里保留项目搜索能力，因此继续使用 Popover，而不是退化成无搜索 dropdown。
- */
+/** 项目归属控件；HeroUI Dropdown 自带键盘导航与 typeahead。 */
 export function PlacementControl({
 	open,
 	disabled = false,
@@ -41,64 +27,63 @@ export function PlacementControl({
 	const TriggerIcon = value.kind === 'standalone' ? TargetIcon : FolderIcon
 
 	return (
-		<DropdownMenu onOpenChange={onOpenChange} open={open}>
-			<DropdownMenuTrigger asChild>
-				<Button
-					aria-label='项目选择'
-					className='max-w-52'
-					disabled={disabled}
-					size='sm'
-					variant='outline'
-				>
-					<TriggerIcon className='size-3.5 text-sf-text-secondary' />
-					{open ? (
-						<span className='min-w-0 flex-1 truncate text-[12px]'>{label}</span>
-					) : (
-						<OverflowTooltip className='min-w-0 flex-1 text-[12px]' content={label}>
-							{label}
-						</OverflowTooltip>
-					)}
-				</Button>
-			</DropdownMenuTrigger>
-			<DropdownMenuContent align='end' className={`w-60 ${launcherMenuContentClass}`}>
-				<DropdownMenuGroup className='max-h-64 space-y-0.5 overflow-y-auto pr-0.5'>
+		<Dropdown isOpen={open} onOpenChange={onOpenChange}>
+			<Button
+				aria-label='项目选择'
+				className='max-w-52'
+				isDisabled={disabled}
+				size='sm'
+				variant='outline'
+			>
+				<TriggerIcon className='size-3.5 text-muted' />
+				{open ? (
+					<span className='min-w-0 flex-1 truncate text-[12px]'>{label}</span>
+				) : (
+					<OverflowTooltip className='min-w-0 flex-1 text-[12px]' content={label}>
+						{label}
+					</OverflowTooltip>
+				)}
+			</Button>
+			<Dropdown.Popover className='w-60' placement='bottom end'>
+				<Dropdown.Menu aria-label='选择项目' className='max-h-64 overflow-y-auto'>
 					{options.map((option) => {
 						const isSelected =
 							option.kind === value.kind &&
 							(option.kind !== 'project' || option.id === value.projectId)
 
 						return (
-							<DropdownMenuItem
-								className={launcherMenuItemClass}
+							<Dropdown.Item
+								className='gap-2 p-2 text-[12.5px]'
+								id={`${option.kind}-${option.id ?? option.spaceId}`}
 								key={`${option.kind}-${option.id ?? option.spaceId}`}
-								onSelect={() =>
+								onAction={() =>
 									onPlacementChange(
 										option.kind === 'project'
 											? { kind: 'project', projectId: option.id }
 											: { kind: 'standalone', projectId: null },
 									)
 								}
+								textValue={option.name}
 							>
 								{option.kind === 'standalone' ? (
-									<TargetIcon className='size-3.5 text-sf-text-secondary' />
+									<TargetIcon className='size-3.5 text-muted' />
 								) : (
-									<FolderIcon className='size-3.5 text-sf-text-secondary' />
+									<FolderIcon className='size-3.5 text-muted' />
 								)}
 								<span className='min-w-0 flex-1 truncate'>{option.name}</span>
 								{isSelected ? (
-									<CheckIcon
-										aria-hidden
-										className='ml-auto size-3.5 shrink-0 text-sf-icon-secondary'
-									/>
+									<CheckIcon aria-hidden className='ml-auto size-3.5 shrink-0 text-muted' />
 								) : null}
-							</DropdownMenuItem>
+							</Dropdown.Item>
 						)
 					})}
 					{options.length === 0 ? (
-						<div className='px-2 py-3 text-[12px] text-sf-text-quaternary'>没有匹配的项目</div>
+						<Dropdown.Item id='empty' isDisabled textValue='没有可用项目'>
+							没有可用项目
+						</Dropdown.Item>
 					) : null}
-				</DropdownMenuGroup>
-			</DropdownMenuContent>
-		</DropdownMenu>
+				</Dropdown.Menu>
+			</Dropdown.Popover>
+		</Dropdown>
 	)
 }

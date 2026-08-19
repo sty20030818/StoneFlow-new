@@ -1,4 +1,6 @@
 import { useEffect } from 'react'
+import { Breadcrumbs } from '@heroui/react'
+import { Settings2Icon } from 'lucide-react'
 
 import { useCurrentShellRoute } from '@/app/navigation'
 import {
@@ -10,19 +12,8 @@ import {
 import { SettingsGeneralPanel } from './panels/SettingsGeneralPanel'
 import { SettingsSidebarPanel } from './panels/SettingsSidebarPanel'
 import { SettingsSyncPanel } from './panels/SettingsSyncPanel'
+import { SettingsSection } from './settingsShared'
 import { UpdateSettingsSection } from '@/features/update'
-import {
-	Breadcrumb,
-	BreadcrumbItem,
-	BreadcrumbList,
-	BreadcrumbPage,
-	BreadcrumbSeparator,
-} from '@/shared/components/base/breadcrumb'
-import {
-	breadcrumbLeadClass,
-	breadcrumbLeadIconClass,
-} from '@/shared/components/patterns/breadcrumb'
-import { Settings2Icon } from 'lucide-react'
 import { PageFrame } from '@/shared/components/page-frame'
 
 function resolveActiveSection(section: SettingsSectionKey | null | undefined): SettingsSectionKey {
@@ -40,7 +31,12 @@ function renderPanel(section: SettingsSectionKey) {
 		case 'update':
 			return (
 				<div className='flex w-full min-w-0 flex-col gap-4'>
-					<UpdateSettingsSection />
+					<SettingsSection
+						description='控制 StoneFlow 如何检查和安装更新。更新包从 release.sty20030818.space 的 Cloudflare R2 分发。'
+						title='应用更新'
+					>
+						<UpdateSettingsSection />
+					</SettingsSection>
 				</div>
 			)
 		default: {
@@ -70,20 +66,15 @@ export function SettingsPage() {
 		<PageFrame.Root>
 			<PageFrame.Header
 				breadcrumb={
-					<Breadcrumb>
-						<BreadcrumbList className='text-sm font-semibold leading-5'>
-							<BreadcrumbItem>
-								<span className={breadcrumbLeadClass}>
-									<Settings2Icon aria-hidden className={breadcrumbLeadIconClass} />
-									设置
-								</span>
-							</BreadcrumbItem>
-							<BreadcrumbSeparator />
-							<BreadcrumbItem>
-								<BreadcrumbPage>{sectionLabel}</BreadcrumbPage>
-							</BreadcrumbItem>
-						</BreadcrumbList>
-					</Breadcrumb>
+					<Breadcrumbs aria-label='设置路径' className='text-sm font-semibold leading-5'>
+						<Breadcrumbs.Item>
+							<span className='inline-flex items-center gap-1.5 text-foreground'>
+								<Settings2Icon aria-hidden className='size-4 shrink-0 text-muted' />
+								设置
+							</span>
+						</Breadcrumbs.Item>
+						<Breadcrumbs.Item>{sectionLabel}</Breadcrumbs.Item>
+					</Breadcrumbs>
 				}
 			/>
 			<PageFrame.Body className='gap-4 p-2'>{renderPanel(section)}</PageFrame.Body>

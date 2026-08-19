@@ -1,11 +1,8 @@
 import type { ReactNode } from 'react'
+import { Button, Input, Popover } from '@heroui/react'
 
 import { formatDateLabel, getLauncherDatePreset } from '../../model/launcherFormatters'
 import type { LauncherPopoverKey } from '../../model/types'
-import { Button } from '@/shared/components/base/button'
-import { Calendar } from '@/shared/components/base/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/base/popover'
-import { cn } from '@/shared/lib/utils'
 
 type DateField = 'dueAt' | 'plannedAt' | 'remindAt'
 
@@ -31,46 +28,49 @@ export function DateControl({
 	onDateChange,
 }: DateControlProps) {
 	return (
-		<Popover onOpenChange={(nextOpen) => onOpenChange(nextOpen, popoverKey)} open={open}>
-			<PopoverTrigger asChild>
-				<Button
-					className={cn(value ? 'text-legacy-foreground' : 'text-sf-text-quaternary')}
-					size='sm'
-					variant='outline'
-				>
-					<span className='text-sf-text-secondary'>{icon}</span>
-					{value ? `${label.slice(0, 2)} ${formatDateLabel(value)}` : label}
-				</Button>
-			</PopoverTrigger>
-			<PopoverContent align='start' className='w-74.5 rounded-xl p-0'>
-				<div className='flex flex-wrap gap-1 px-3 pt-3'>
-					<DatePresetButton field={field} label='今天' preset='today' onDateChange={onDateChange} />
-					<DatePresetButton
-						field={field}
-						label='明天'
-						preset='tomorrow'
-						onDateChange={onDateChange}
+		<Popover isOpen={open} onOpenChange={(nextOpen) => onOpenChange(nextOpen, popoverKey)}>
+			<Button className={value ? 'text-foreground' : 'text-muted'} size='sm' variant='outline'>
+				<span className='text-muted'>{icon}</span>
+				{value ? `${label.slice(0, 2)} ${formatDateLabel(value)}` : label}
+			</Button>
+			<Popover.Content className='w-72' placement='bottom start'>
+				<Popover.Dialog aria-label={`设置${label}`} className='space-y-3'>
+					<div className='flex flex-wrap gap-1'>
+						<DatePresetButton
+							field={field}
+							label='今天'
+							preset='today'
+							onDateChange={onDateChange}
+						/>
+						<DatePresetButton
+							field={field}
+							label='明天'
+							preset='tomorrow'
+							onDateChange={onDateChange}
+						/>
+						<DatePresetButton
+							field={field}
+							label='本周'
+							preset='week'
+							onDateChange={onDateChange}
+						/>
+						<Button onPress={() => onDateChange(field, null)} size='sm' variant='ghost'>
+							清除
+						</Button>
+					</div>
+					<Input
+						aria-label={`${label}日期`}
+						fullWidth
+						type='date'
+						value={value ?? ''}
+						onChange={(event) => {
+							if (event.currentTarget.value) {
+								onDateChange(field, event.currentTarget.value)
+							}
+						}}
 					/>
-					<DatePresetButton field={field} label='本周' preset='week' onDateChange={onDateChange} />
-					<Button
-						className='h-7 rounded-md px-2.5 text-[11.5px]'
-						onClick={() => onDateChange(field, null)}
-						size='sm'
-						variant='ghost'
-					>
-						清除
-					</Button>
-				</div>
-				<Calendar
-					className='mx-auto'
-					mode='single'
-					onSelect={(selected) => {
-						if (!selected) return
-						onDateChange(field, getLocalDateValue(selected))
-					}}
-					selected={value ? new Date(`${value}T00:00:00`) : undefined}
-				/>
-			</PopoverContent>
+				</Popover.Dialog>
+			</Popover.Content>
 		</Popover>
 	)
 }
@@ -88,19 +88,11 @@ function DatePresetButton({
 }) {
 	return (
 		<Button
-			className='h-7 rounded-md px-2.5 text-[11.5px]'
-			onClick={() => onDateChange(field, getLauncherDatePreset(preset))}
+			onPress={() => onDateChange(field, getLauncherDatePreset(preset))}
 			size='sm'
 			variant='ghost'
 		>
 			{label}
 		</Button>
 	)
-}
-
-function getLocalDateValue(date: Date) {
-	const year = date.getFullYear()
-	const month = `${date.getMonth() + 1}`.padStart(2, '0')
-	const day = `${date.getDate()}`.padStart(2, '0')
-	return `${year}-${month}-${day}`
 }

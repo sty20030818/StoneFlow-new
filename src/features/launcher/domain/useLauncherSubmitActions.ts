@@ -5,7 +5,6 @@ import type { LauncherAction } from './launcherDomainTypes'
 import { matchLauncherShortcut, type LauncherShortcutId } from '../model/launcherShortcutKeymap'
 import type {
 	LauncherDraft,
-	LauncherFocusTarget,
 	LauncherResultItem,
 	LauncherSubmitAction,
 	LauncherSubmitState,
@@ -13,12 +12,12 @@ import type {
 
 type UseLauncherSubmitActionsArgs = {
 	buildCreateInput: (draft: LauncherDraft) => LauncherInput
+	clearResultFocus: () => void
 	closeWindow: () => Promise<void>
 	dispatch: React.ActionDispatch<[action: LauncherAction]>
 	draft: LauncherDraft
-	flatItems: LauncherResultItem[]
 	focusInput: () => void
-	focusTarget: LauncherFocusTarget
+	focusedResult: LauncherResultItem | null
 	hasTitle: boolean
 	moveFocus: (direction: 1 | -1) => void
 	openTargetResult: (item: LauncherResultItem) => Promise<void>
@@ -32,15 +31,15 @@ type UseLauncherSubmitActionsArgs = {
 
 export function useLauncherSubmitActions({
 	buildCreateInput,
+	clearResultFocus,
 	closeWindow,
 	continuousCreateCount,
 	createAndOpenTask,
 	createTask,
 	dispatch,
 	draft,
-	flatItems,
 	focusInput,
-	focusTarget,
+	focusedResult,
 	hasTitle,
 	moveFocus,
 	openTargetResult,
@@ -75,6 +74,7 @@ export function useLauncherSubmitActions({
 				await createTask(input)
 				refreshRecent()
 				if (action === 'createAndContinue') {
+					clearResultFocus()
 					dispatch({
 						type: 'continuousCreateSucceeded',
 						message: `已连续创建 ${continuousCreateCount + 1} 条`,
@@ -94,6 +94,7 @@ export function useLauncherSubmitActions({
 		},
 		[
 			buildCreateInput,
+			clearResultFocus,
 			continuousCreateCount,
 			createAndOpenTask,
 			createTask,
@@ -109,16 +110,21 @@ export function useLauncherSubmitActions({
 
 	const handleEscape = useCallback(() => {
 		if (draft.title.trim()) {
+			clearResultFocus()
 			dispatch({ type: 'titleCleared' })
 			focusInput()
 			return
 		}
 
 		void closeWindow()
-	}, [closeWindow, dispatch, draft.title, focusInput])
+	}, [clearResultFocus, closeWindow, dispatch, draft.title, focusInput])
 
-	const handleInputKeyDown = useCallback(
-		(event: KeyboardEvent<HTMLInputElement>) => {
+	const handleKeyDown = useCallback(
+		(event: KeyboardEvent<HTMLElement>) => {
+			if (event.defaultPrevented || event.nativeEvent.isComposing) {
+				return
+			}
+
 			const shortcut = matchLauncherShortcut(event, {
 				isEnabled: (id) => isShortcutEnabled(id, hasTitle),
 			})
@@ -154,24 +160,21 @@ export function useLauncherSubmitActions({
 				return
 			}
 
-			if (focusTarget !== 'none' && focusTarget !== 'create') {
-				const item = flatItems[focusTarget.index]
-				if (item) {
-					void openTargetResult(item)
-					return
-				}
+			if (focusedResult) {
+				void openTargetResult(focusedResult)
+				return
 			}
 
 			if (hasTitle) {
 				void submit('create')
 			}
 		},
-		[flatItems, focusTarget, handleEscape, hasTitle, moveFocus, openTargetResult, submit],
+		[focusedResult, handleEscape, hasTitle, moveFocus, openTargetResult, submit],
 	)
 
 	return {
 		handleEscape,
-		handleInputKeyDown,
+		handleKeyDown,
 		submit,
 	}
 }

@@ -1,9 +1,5 @@
-/**
- * 设置页「应用更新」区块容器：读写偏好 / 手动检查。
- * 选项卡 UI 见 UpdateSettingsSection.presentation。
- */
-
 import { useCallback, useEffect, useState } from 'react'
+import { Alert, Button, Spinner } from '@heroui/react'
 import { RefreshCwIcon } from 'lucide-react'
 
 import {
@@ -17,17 +13,7 @@ import {
 	type UpdateCheckMode,
 } from '../api/updates'
 import { useManualUpdateCheck } from '../hooks/useManualUpdateCheck'
-import { formFieldHintClass } from '@/shared/components/patterns/form-field'
-import {
-	settingsPanelDescriptionClass,
-	settingsPanelHeaderWrapClass,
-	settingsPanelSectionClass,
-	settingsPanelTitleClass,
-} from '@/shared/components/patterns/settings-panel'
-import { Button } from '@/shared/components/base/button'
 import { normalizeTauriError } from '@/shared/lib/normalize-tauri-error'
-import { cn } from '@/shared/lib/utils'
-import { StatusNotice } from '@/shared/components/StatusNotice'
 import {
 	UpdateChannelOptions,
 	UpdateCheckModeOptions,
@@ -115,74 +101,73 @@ export function UpdateSettingsSection() {
 
 	if (loading) {
 		return (
-			<section className={settingsPanelSectionClass}>
-				<div className={settingsPanelHeaderWrapClass}>
-					<h2 className={settingsPanelTitleClass}>应用更新</h2>
-					<p className={settingsPanelDescriptionClass}>加载中...</p>
-				</div>
-			</section>
+			<Alert aria-busy='true' aria-live='polite' role='status' status='accent'>
+				<Alert.Indicator>
+					<Spinner aria-hidden color='current' size='sm' />
+				</Alert.Indicator>
+				<Alert.Content>
+					<Alert.Title>正在读取更新设置</Alert.Title>
+					<Alert.Description>请稍候。</Alert.Description>
+				</Alert.Content>
+			</Alert>
 		)
 	}
 
 	return (
-		<section className={settingsPanelSectionClass}>
-			<div className={settingsPanelHeaderWrapClass}>
-				<h2 className={settingsPanelTitleClass}>应用更新</h2>
-				<p className={settingsPanelDescriptionClass}>
-					控制 StoneFlow 如何检查和安装更新。更新包从 release.sty20030818.space 的 Cloudflare R2
-					分发。
-				</p>
-			</div>
+		<div className='space-y-5'>
+			{error ? (
+				<Alert role='alert' status='danger'>
+					<Alert.Indicator />
+					<Alert.Content>
+						<Alert.Title>更新设置出错</Alert.Title>
+						<Alert.Description>{error}</Alert.Description>
+					</Alert.Content>
+				</Alert>
+			) : null}
 
-			<div className='space-y-4'>
-				{error ? (
-					<StatusNotice
-						className='text-sm'
-						description={error}
-						layout='split'
-						role='alert'
-						size='sm'
-						title='更新设置出错'
-						variant='danger'
-					/>
-				) : null}
+			<UpdateCheckModeOptions
+				disabled={saving}
+				onChange={(mode) => void handleCheckModeChange(mode)}
+				value={settings?.checkMode}
+			/>
 
-				<UpdateCheckModeOptions
-					value={settings?.checkMode}
+			<UpdateChannelOptions
+				disabled={saving}
+				onChange={(channel) => void handleChannelChange(channel)}
+				value={settings?.channel}
+			/>
+
+			{settings?.checkMode !== 'manual' ? (
+				<UpdateIntervalOptions
 					disabled={saving}
-					onChange={(mode) => void handleCheckModeChange(mode)}
+					onChange={(intervalSecs) => void handleIntervalChange(intervalSecs)}
+					value={settings?.checkIntervalSecs}
 				/>
+			) : null}
 
-				<UpdateChannelOptions
-					value={settings?.channel}
-					disabled={saving}
-					onChange={(channel) => void handleChannelChange(channel)}
-				/>
-
-				{settings?.checkMode !== 'manual' ? (
-					<UpdateIntervalOptions
-						value={settings?.checkIntervalSecs}
-						disabled={saving}
-						onChange={(intervalSecs) => void handleIntervalChange(intervalSecs)}
-					/>
-				) : null}
-
-				<div className='flex items-center justify-between rounded-xl border border-sf-border-subtle bg-legacy-muted/25 p-4'>
-					<div>
-						<p className='text-sm font-medium text-legacy-foreground'>手动检查更新</p>
-						<p className={cn(formFieldHintClass, 'mt-0.5')}>立即向服务器查询是否有新版本可用。</p>
-					</div>
-					<Button
-						disabled={disabled || saving}
-						onClick={() => void checkNow()}
-						type='button'
-						variant='default'
-					>
-						<RefreshCwIcon aria-hidden className='-ml-0.5 mr-1.5 size-4' />
-						{isChecking ? '检查中...' : '检查更新'}
-					</Button>
+			<div className='flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center'>
+				<div>
+					<p className='text-sm font-medium text-foreground'>手动检查更新</p>
+					<p className='mt-1 text-xs leading-5 text-muted'>立即向服务器查询是否有新版本可用。</p>
 				</div>
+				<Button
+					isDisabled={disabled || saving}
+					isPending={isChecking}
+					onPress={() => void checkNow()}
+					type='button'
+				>
+					{({ isPending }) => (
+						<>
+							{isPending ? (
+								<Spinner aria-hidden color='current' size='sm' />
+							) : (
+								<RefreshCwIcon aria-hidden className='size-4' />
+							)}
+							{isPending ? '检查中...' : '检查更新'}
+						</>
+					)}
+				</Button>
 			</div>
-		</section>
+		</div>
 	)
 }

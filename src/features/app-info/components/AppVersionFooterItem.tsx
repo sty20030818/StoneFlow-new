@@ -1,6 +1,6 @@
-import { shellFooterStaticTextClass } from '@/shared/components/patterns/shell-footer'
+import { Chip } from '@heroui/react'
+
 import { ActionTooltip } from '@/shared/components/tooltip'
-import { cn } from '@/shared/lib/utils'
 
 import { useAppVersion } from '../hooks/useAppVersion'
 
@@ -12,16 +12,15 @@ export function AppVersionFooterItem() {
 
 	return (
 		<ActionTooltip label={label}>
-			<span
+			<Chip
 				aria-label={label}
-				className={cn(
-					shellFooterStaticTextClass,
-					'flex shrink-0 items-center rounded-sm tabular-nums outline-none focus-visible:ring-1 focus-visible:ring-ring',
-				)}
+				className='shrink-0 tabular-nums'
+				size='sm'
 				tabIndex={0}
+				variant='tertiary'
 			>
-				v{version}
-			</span>
+				<Chip.Label>v{version}</Chip.Label>
+			</Chip>
 		</ActionTooltip>
 	)
 }

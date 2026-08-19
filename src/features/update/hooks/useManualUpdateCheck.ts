@@ -1,4 +1,4 @@
-import { toast } from 'sonner'
+import { toast } from '@heroui/react'
 
 import { normalizeTauriError } from '@/shared/lib/normalize-tauri-error'
 import { checkUpdate } from '../api/updates'
@@ -32,7 +32,7 @@ export function useManualUpdateCheck() {
 				store.openDialog()
 			}
 		} catch (error) {
-			toast.error(normalizeTauriError(error, '检查更新失败'))
+			toast.danger(normalizeTauriError(error, '检查更新失败'))
 		} finally {
 			store.setManualCheckPending(false)
 		}

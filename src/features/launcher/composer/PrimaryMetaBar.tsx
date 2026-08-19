@@ -1,13 +1,11 @@
-import { ChevronDownIcon } from 'lucide-react'
+import { Button } from '@heroui/react'
+import { ChevronDownIcon, ChevronUpIcon } from 'lucide-react'
 
 import { useLauncher } from '../domain/LauncherDomainProvider'
 import { PlacementControl } from './controls/PlacementControl'
 import { PriorityControl } from './controls/PriorityControl'
 import { TitleInput } from './TitleInput'
 import { SpaceControl } from './controls/SpaceControl'
-import { Button } from '@/shared/components/base/button'
-import { cn } from '@/shared/lib/utils'
-import { launcherToolbarRowClass } from '@/shared/components/patterns/launcher'
 import { ActionTooltip } from '@/shared/components/tooltip'
 
 export function PrimaryMetaBar() {
@@ -15,7 +13,7 @@ export function PrimaryMetaBar() {
 	const advancedActionLabel = state.isAdvancedOpen ? '收起更多参数' : '展开更多参数'
 
 	return (
-		<div className={launcherToolbarRowClass} data-testid='launcher-primary-meta-bar'>
+		<div className='flex h-11 items-center gap-2 px-3' data-testid='launcher-primary-meta-bar'>
 			<PriorityControl
 				disabled={state.submitState === 'submitting'}
 				onOpenChange={(open) => actions.setPopover(open ? 'priority' : null)}
@@ -50,14 +48,17 @@ export function PrimaryMetaBar() {
 				<Button
 					aria-expanded={state.isAdvancedOpen}
 					aria-label='更多参数'
-					className={cn(
-						state.isAdvancedOpen ? 'border-primary text-primary' : 'text-sf-text-quaternary',
-					)}
-					onClick={actions.toggleAdvanced}
-					size='icon-sm'
+					className={state.isAdvancedOpen ? 'text-accent' : 'text-muted'}
+					isIconOnly
+					onPress={actions.toggleAdvanced}
+					size='sm'
 					variant='outline'
 				>
-					<ChevronDownIcon className={cn('size-4', state.isAdvancedOpen ? 'rotate-180' : '')} />
+					{state.isAdvancedOpen ? (
+						<ChevronUpIcon className='size-4' />
+					) : (
+						<ChevronDownIcon className='size-4' />
+					)}
 				</Button>
 			</ActionTooltip>
 		</div>

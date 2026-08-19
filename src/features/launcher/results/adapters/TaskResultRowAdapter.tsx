@@ -1,79 +1,75 @@
+import { Button } from '@heroui/react'
 import { FolderIcon } from 'lucide-react'
+import type { KeyboardEventHandler, Ref } from 'react'
 
 import { PriorityIcon } from '@/features/task'
 import { TaskStatusIndicator } from '@/features/task'
 import type { LauncherTaskItem } from '../../model/types'
-import { RowShell } from '@/shared/components/row'
 import { OverflowTooltip } from '@/shared/components/tooltip'
 import { cn } from '@/shared/lib/utils'
 
 type TaskResultRowAdapterProps = {
 	item: LauncherTaskItem
-	index: number
 	isActive: boolean
 	onOpen: (item: LauncherTaskItem) => void
-	onHover: (index: number) => void
+	onFocus: () => void
+	onKeyDown: KeyboardEventHandler<HTMLButtonElement>
+	rowRef: Ref<HTMLButtonElement>
 }
 
 export function TaskResultRowAdapter({
 	item,
-	index,
 	isActive,
 	onOpen,
-	onHover,
+	onFocus,
+	onKeyDown,
+	rowRef,
 }: TaskResultRowAdapterProps) {
 	const subtitle = getTaskSubtitle(item)
 
 	return (
-		<RowShell.Root
-			active={isActive}
-			aria-label={`打开任务 ${item.title}`}
-			interactive
-			onClick={() => onOpen(item)}
-			onKeyDown={(event) => {
-				if (event.key === 'Enter' || event.key === ' ') {
-					event.preventDefault()
-					onOpen(item)
-				}
-			}}
-			onMouseEnter={() => onHover(index)}
-		>
-			<RowShell.Left>
-				<RowShell.Leading className='gap-1.5'>
-					<TaskStatusIndicator status={item.status} />
-					<PriorityIcon priority={item.priority} size='sm' />
-				</RowShell.Leading>
+		<div role='listitem'>
+			<Button
+				aria-label={`打开任务 ${item.title}`}
+				className={cn(
+					'h-auto min-h-12 w-full justify-start gap-3 rounded-lg px-3 py-1.5 text-left',
+					isActive && 'bg-accent-soft text-accent-soft-foreground',
+				)}
+				fullWidth
+				onFocus={onFocus}
+				onHoverStart={onFocus}
+				onKeyDown={onKeyDown}
+				onPress={() => onOpen(item)}
+				ref={rowRef}
+				type='button'
+				variant='ghost'
+			>
+				<div className='flex min-w-0 flex-1 items-center gap-2.5'>
+					<div className='flex shrink-0 items-center gap-1.5'>
+						<TaskStatusIndicator status={item.status} />
+						<PriorityIcon priority={item.priority} size='sm' />
+					</div>
 
-				<RowShell.Title>
-					<div className='min-w-0'>
-						<OverflowTooltip className='text-[12.5px] text-legacy-foreground' content={item.title}>
+					<div className='min-w-0 flex-1'>
+						<OverflowTooltip className='text-[12.5px] text-foreground' content={item.title}>
 							{item.title}
 						</OverflowTooltip>
-						<OverflowTooltip
-							className='mt-0.5 text-[11px] text-sf-text-quaternary'
-							content={subtitle}
-						>
+						<OverflowTooltip className='mt-0.5 text-[11px] text-muted' content={subtitle}>
 							{subtitle}
 						</OverflowTooltip>
 					</div>
-				</RowShell.Title>
-			</RowShell.Left>
+				</div>
 
-			<RowShell.Right>
-				<RowShell.Actions className='gap-1.5'>
-					<span className='flex size-7 items-center justify-center rounded-md bg-primary/10 text-primary'>
+				<div className='flex shrink-0 items-center gap-1.5'>
+					<span className='flex size-7 items-center justify-center rounded-md bg-accent-soft text-accent-soft-foreground'>
 						<FolderIcon className='size-3.5' />
 					</span>
-					<span
-						className={cn(
-							'rounded border border-sf-border-subtle px-1.5 py-0.5 text-[10.5px] text-sf-text-quaternary',
-						)}
-					>
+					<span className='rounded border border-border px-1.5 py-0.5 text-[10.5px] text-muted'>
 						任务
 					</span>
-				</RowShell.Actions>
-			</RowShell.Right>
-		</RowShell.Root>
+				</div>
+			</Button>
+		</div>
 	)
 }
 

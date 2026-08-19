@@ -87,7 +87,7 @@
 
 ## 展示
 
-`ChangelogRelease` 直接展示六个中文规范分类，并展示版本、日期和撤回状态。`ChangelogMarkdown` 只支持当前更新日志需要的标题、段落、两级缩进列表、加粗和围栏代码，水平分隔线不显示；围栏内的标题和列表按代码原文展示。它不执行 HTML，也不承担通用 Markdown 兼容。
+`ChangelogRelease` 直接展示六个中文规范分类，并展示版本、日期和撤回状态。`ChangelogMarkdown` 使用 React Markdown 与 GFM/换行插件，水平分隔线不显示，代码块保持普通等宽文本且不引入高亮运行时；React Markdown 默认不执行原始 HTML。
 
 完整历史由 `ChangelogDialog` 在有界滚动区内展示。更新对话框渲染版本区间中的多个 `ChangelogRelease`；查询为空或回退失败时只省略说明，更新按钮保持可用。
 

@@ -78,20 +78,35 @@ describe('launcherDomainReducer', () => {
 		expect(state.searchView).toBe('empty')
 	})
 
-	it('focusChanged 可在 create 与 result index 间切换', () => {
+	it('focusChanged 只记录独立的 create lane', () => {
 		let state = launcherDomainReducer(createLauncherInitialState(), openSession())
 		state = launcherDomainReducer(state, { type: 'titleChanged', title: 'x' })
-		state = launcherDomainReducer(state, {
-			type: 'focusChanged',
-			focusTarget: { kind: 'result', index: 0 },
-		})
-		expect(state.focusTarget).toEqual({ kind: 'result', index: 0 })
-
 		state = launcherDomainReducer(state, {
 			type: 'focusChanged',
 			focusTarget: 'create',
 		})
 		expect(state.focusTarget).toBe('create')
+
+		state = launcherDomainReducer(state, {
+			type: 'focusChanged',
+			focusTarget: 'none',
+		})
+		expect(state.focusTarget).toBe('none')
+	})
+
+	it('收起高级参数时同步关闭已卸载的浮层', () => {
+		let state = launcherDomainReducer(createLauncherInitialState(), {
+			type: 'advancedToggled',
+		})
+		state = launcherDomainReducer(state, {
+			type: 'activePopoverChanged',
+			key: 'due',
+		})
+
+		const next = launcherDomainReducer(state, { type: 'advancedToggled' })
+
+		expect(next.isAdvancedOpen).toBe(false)
+		expect(next.activePopover).toBeNull()
 	})
 
 	it('切换 Space 时重置为独立事项并开始加载新项目', () => {
@@ -100,13 +115,10 @@ describe('launcherDomainReducer', () => {
 			type: 'placementChanged',
 			placement: { kind: 'project', projectId: 'project-1' },
 		})
-		state = launcherDomainReducer(state, { type: 'projectSearchChanged', query: '项目 A' })
-
 		const next = launcherDomainReducer(state, { type: 'spaceChanged', spaceId: 'space-2' })
 
 		expect(next.draft.spaceId).toBe('space-2')
 		expect(next.draft.placement).toEqual({ kind: 'standalone', projectId: null })
-		expect(next.projectSearch).toBe('')
 		expect(next.isProjectOptionsLoading).toBe(true)
 	})
 

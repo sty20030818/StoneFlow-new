@@ -5,6 +5,7 @@ import type { LauncherOpenSessionResponse } from '../api/launcherApi'
 import type { LauncherAction } from './launcherDomainTypes'
 
 type UseLauncherLifecycleBridgeArgs = {
+	clearResultFocus: () => void
 	dispatch: React.ActionDispatch<[action: LauncherAction]>
 	fetchRecent: () => Promise<LauncherRecentData>
 	focusInput: () => void
@@ -14,6 +15,7 @@ type UseLauncherLifecycleBridgeArgs = {
 }
 
 export function useLauncherLifecycleBridge({
+	clearResultFocus,
 	dispatch,
 	fetchRecent,
 	focusInput,
@@ -47,9 +49,10 @@ export function useLauncherLifecycleBridge({
 			return
 		}
 
+		clearResultFocus()
 		dispatch({ type: 'sessionOpened', payload: nextOpenContext })
 		refreshRecentRef.current()
-	}, [dispatch, nextOpenContext])
+	}, [clearResultFocus, dispatch, nextOpenContext])
 
 	useEffect(() => {
 		if (!shouldFocusInput) {

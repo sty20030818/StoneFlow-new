@@ -1,4 +1,5 @@
 import type { KeyboardEvent, RefObject } from 'react'
+import type { CollectionInteraction, createCollectionFocusBridge } from '@/features/selection'
 
 import type {
 	LauncherFocusTarget,
@@ -30,7 +31,6 @@ export type LauncherAction =
 	| { type: 'dateChanged'; field: 'dueAt' | 'plannedAt' | 'remindAt'; value: string | null }
 	| { type: 'advancedToggled' }
 	| { type: 'activePopoverChanged'; key: LauncherPopoverKey | null }
-	| { type: 'projectSearchChanged'; query: string }
 	| { type: 'projectsLoadingStarted' }
 	| { type: 'projectsLoadingSucceeded'; options: LauncherProjectOption[] }
 	| { type: 'projectsLoadingFailed'; message: string }
@@ -67,21 +67,25 @@ export type LauncherDerivedState = {
 	continuousToastVisible: boolean
 }
 
+export type LauncherBaseDerivedState = Omit<
+	LauncherDerivedState,
+	'activeResultIndex' | 'enterLabel' | 'isCreateFocused'
+>
+
 export type LauncherDomainActions = {
 	setTitle: (title: string) => void
 	setPriority: (priority: LauncherPriority) => void
 	setStatus: (status: LauncherStatus) => void
 	toggleAdvanced: () => void
 	setPopover: (key: LauncherPopoverKey | null) => void
-	setProjectSearch: (query: string) => void
 	selectPlacement: (placement: LauncherPlacement) => void
 	selectSpace: (spaceId: string) => void
 	setDate: (field: 'dueAt' | 'plannedAt' | 'remindAt', value: string | null) => void
 	moveFocus: (direction: 1 | -1) => void
 	focusCreate: () => void
-	focusResult: (index: number) => void
+	focusResult: (key: string) => void
 	handleEscape: () => void
-	handleInputKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void
+	handleKeyDown: (event: KeyboardEvent<HTMLElement>) => void
 	submit: (action: Exclude<LauncherSubmitAction, 'openResult'>) => Promise<void>
 	openResult: (item: LauncherResultItem) => Promise<void>
 	focusInput: () => void
@@ -90,9 +94,10 @@ export type LauncherDomainActions = {
 export type LauncherContextValue = {
 	state: LauncherPanelState
 	derived: LauncherDerivedState
+	resultCollection: CollectionInteraction<string>
 	refs: {
 		titleInputRef: RefObject<HTMLInputElement | null>
-		projectSearchRef: RefObject<HTMLInputElement | null>
+		resultFocusBridge: ReturnType<typeof createCollectionFocusBridge>
 	}
 	actions: LauncherDomainActions
 }

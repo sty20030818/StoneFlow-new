@@ -1,16 +1,9 @@
-import { ExternalLinkIcon, HistoryIcon, InfoIcon, RefreshCwIcon, XIcon } from 'lucide-react'
+import { Alert, Button, Modal, Spinner } from '@heroui/react'
+import { ExternalLinkIcon, HistoryIcon, InfoIcon, RefreshCwIcon } from 'lucide-react'
+import { useId } from 'react'
 
-import { Button } from '@/shared/components/base/button'
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogTitle,
-} from '@/shared/components/base/dialog'
-import { dialogShellReadingClass } from '@/shared/components/patterns/dialog-shell'
-import { ActionTooltip, DisabledActionTooltip } from '@/shared/components/tooltip'
-import { cn } from '@/shared/lib/utils'
 import { useManualUpdateCheck } from '@/features/update'
+import { ActionTooltip, DisabledActionTooltip } from '@/shared/components/tooltip'
 
 import { openAppInfoUrl } from '../api/appInfo'
 import { useAppVersion } from '../hooks/useAppVersion'
@@ -22,10 +15,10 @@ type AboutDialogProps = {
 	onOpenChangelog: () => void
 }
 
-/** StoneFlow 的低频应用信息与资料入口。 */
 export function AboutDialog({ open, onOpenChange, onOpenChangelog }: AboutDialogProps) {
 	const { checkNow, disabled, isChecking } = useManualUpdateCheck()
 	const { version, isLoading, hasError } = useAppVersion()
+	const descriptionId = useId()
 
 	function handleOpenChangelog() {
 		onOpenChange(false)
@@ -39,112 +32,128 @@ export function AboutDialog({ open, onOpenChange, onOpenChangelog }: AboutDialog
 		})
 	}
 
-	const versionText = version
-		? `v${version}`
-		: isLoading
-			? '正在读取版本信息...'
-			: '版本信息暂不可用'
-
 	return (
-		<Dialog onOpenChange={onOpenChange} open={open}>
-			<DialogContent className={cn(dialogShellReadingClass, 'sm:max-w-lg')} showCloseButton={false}>
-				<DialogTitle className='sr-only'>关于 StoneFlow</DialogTitle>
-				<DialogDescription className='sr-only'>
-					查看 StoneFlow 版本、更新和资料入口。
-				</DialogDescription>
-
-				<ActionTooltip label='关闭'>
-					<Button
-						aria-label='关闭关于 StoneFlow'
-						className='absolute top-3 right-3 size-8'
-						onClick={() => onOpenChange(false)}
-						type='button'
-						variant='ghost'
-					>
-						<XIcon aria-hidden className='size-4' />
-					</Button>
-				</ActionTooltip>
-
-				<div className='flex items-center gap-3 px-5 pt-4 pb-3 pr-14'>
-					<div className='flex min-w-0 items-center gap-3'>
-						<img
-							alt='StoneFlow'
-							className='size-12 shrink-0 rounded-xl outline outline-black/10 dark:outline-white/10'
-							src='/StoneFlow.png'
+		<Modal.Backdrop isOpen={open} onOpenChange={onOpenChange}>
+			<Modal.Container placement='center' size='lg'>
+				<Modal.Dialog
+					aria-describedby={descriptionId}
+					className='gap-0 overflow-hidden p-0'
+					render={(dialogProps) => (
+						<section
+							{...dialogProps}
+							onKeyDown={(event) => {
+								if (event.key !== 'Escape' || event.defaultPrevented) event.stopPropagation()
+							}}
 						/>
+					)}
+				>
+					<ActionTooltip label='关闭'>
+						<Modal.CloseTrigger aria-label='关闭关于 StoneFlow' className='end-3 top-3' />
+					</ActionTooltip>
+
+					<Modal.Header className='flex-row items-center gap-3 px-5 pt-5 pr-14 pb-3'>
+						<img alt='StoneFlow' className='size-12 shrink-0 rounded-xl' src='/StoneFlow.png' />
 						<div className='min-w-0'>
-							<h2 className='truncate text-[16px] font-medium text-legacy-foreground'>StoneFlow</h2>
-							<p className='mt-1 truncate text-[12px] text-sf-text-tertiary'>
+							<Modal.Heading>StoneFlow</Modal.Heading>
+							<p className='mt-1 truncate text-xs text-muted' id={descriptionId}>
 								专注于日常工作的本地优先工作流。
 							</p>
 						</div>
-					</div>
-				</div>
+					</Modal.Header>
 
-				<div className='space-y-4 px-5 pb-5'>
-					<div className='flex items-center justify-between rounded-xl border border-sf-border-subtle bg-legacy-muted/25 px-3 py-2.5'>
-						<span className='text-[13px] text-sf-text-secondary'>当前版本</span>
-						<span
-							className='text-[13px] font-medium text-legacy-foreground tabular-nums'
-							data-error={hasError || undefined}
-						>
-							{versionText}
-						</span>
-					</div>
-
-					<div className='grid grid-cols-2 gap-2'>
-						<Button onClick={handleOpenChangelog} size='sm' type='button' variant='outline'>
-							<HistoryIcon aria-hidden className='size-3.5' />
-							更新日志
-						</Button>
-						<Button disabled={disabled} onClick={() => void checkNow()} size='sm' type='button'>
-							<RefreshCwIcon aria-hidden className='size-3.5' />
-							{isChecking ? '检查中...' : '检查更新'}
-						</Button>
-					</div>
-
-					<div className='space-y-1.5'>
-						<p className='px-0.5 text-[12px] font-medium text-sf-text-secondary'>资料与支持</p>
-						<div className='grid grid-cols-2 gap-2'>
-							{appInfoLinks.map((link) => {
-								const canOpen = isConfiguredAppInfoUrl(link.url)
-								const linkButton = (
-									<Button
-										aria-label={canOpen ? link.label : `${link.label}，待配置`}
-										className='w-full justify-start'
-										disabled={!canOpen}
-										key={link.key}
-										onClick={() => handleOpenLink(link.url)}
-										size='sm'
-										type='button'
-										variant='ghost'
-									>
-										{link.key === 'license' ? (
-											<InfoIcon aria-hidden className='size-3.5' />
-										) : (
-											<ExternalLinkIcon aria-hidden className='size-3.5' />
-										)}
-										<span className='truncate'>{link.label}</span>
-										{canOpen ? null : <span className='ml-auto text-[11px]'>待配置</span>}
-									</Button>
-								)
-
-								return canOpen ? (
-									linkButton
-								) : (
-									<DisabledActionTooltip
-										key={link.key}
-										label={link.label}
-										reason='此资料入口尚未配置'
-									>
-										{linkButton}
-									</DisabledActionTooltip>
-								)
-							})}
+					<Modal.Body className='gap-4 px-5 py-2'>
+						<div className='flex items-center justify-between gap-3'>
+							<span className='text-sm text-muted'>当前版本</span>
+							{version ? (
+								<span className='text-sm font-medium text-foreground tabular-nums'>v{version}</span>
+							) : isLoading ? (
+								<span className='inline-flex items-center gap-2 text-sm text-muted'>
+									<Spinner aria-hidden size='sm' />
+									正在读取版本信息...
+								</span>
+							) : (
+								<span className='text-sm text-muted'>版本信息暂不可用</span>
+							)}
 						</div>
-					</div>
-				</div>
-			</DialogContent>
-		</Dialog>
+
+						{hasError ? (
+							<Alert role='alert' status='danger'>
+								<Alert.Indicator />
+								<Alert.Content>
+									<Alert.Title>版本信息读取失败</Alert.Title>
+									<Alert.Description>仍可查看更新日志或稍后重新打开。</Alert.Description>
+								</Alert.Content>
+							</Alert>
+						) : null}
+
+						<div className='grid grid-cols-2 gap-2'>
+							<Button onPress={handleOpenChangelog} size='sm' type='button' variant='outline'>
+								<HistoryIcon aria-hidden className='size-3.5' />
+								更新日志
+							</Button>
+							<Button
+								isDisabled={disabled}
+								isPending={isChecking}
+								onPress={() => void checkNow()}
+								size='sm'
+								type='button'
+							>
+								{({ isPending }) => (
+									<>
+										{isPending ? (
+											<Spinner aria-hidden color='current' size='sm' />
+										) : (
+											<RefreshCwIcon aria-hidden className='size-3.5' />
+										)}
+										{isPending ? '检查中...' : '检查更新'}
+									</>
+								)}
+							</Button>
+						</div>
+
+						<div className='space-y-2'>
+							<p className='text-xs font-medium text-muted'>资料与支持</p>
+							<div className='grid grid-cols-2 gap-2'>
+								{appInfoLinks.map((link) => {
+									const canOpen = isConfiguredAppInfoUrl(link.url)
+									const linkButton = (
+										<Button
+											aria-label={canOpen ? link.label : `${link.label}，待配置`}
+											className='w-full justify-start'
+											isDisabled={!canOpen}
+											key={link.key}
+											onPress={() => handleOpenLink(link.url)}
+											size='sm'
+											type='button'
+											variant='ghost'
+										>
+											{link.key === 'license' ? (
+												<InfoIcon aria-hidden className='size-3.5' />
+											) : (
+												<ExternalLinkIcon aria-hidden className='size-3.5' />
+											)}
+											<span className='truncate'>{link.label}</span>
+											{canOpen ? null : <span className='ml-auto text-xs'>待配置</span>}
+										</Button>
+									)
+
+									return canOpen ? (
+										linkButton
+									) : (
+										<DisabledActionTooltip
+											key={link.key}
+											label={link.label}
+											reason='此资料入口尚未配置'
+										>
+											{linkButton}
+										</DisabledActionTooltip>
+									)
+								})}
+							</div>
+						</div>
+					</Modal.Body>
+				</Modal.Dialog>
+			</Modal.Container>
+		</Modal.Backdrop>
 	)
 }

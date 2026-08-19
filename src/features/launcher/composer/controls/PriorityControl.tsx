@@ -1,22 +1,10 @@
 import { useState } from 'react'
+import { Button, Dropdown } from '@heroui/react'
 import { CheckIcon } from 'lucide-react'
 
 import type { LauncherPriority } from '../../model/types'
 import { TASK_PRIORITY_OPTIONS } from '@/features/task'
 import { PriorityIcon } from '@/features/task'
-import { Button } from '@/shared/components/base/button'
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuGroup,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from '@/shared/components/base/dropdown-menu'
-import { cn } from '@/shared/lib/utils'
-import {
-	launcherMenuContentClass,
-	launcherMenuItemClass,
-} from '@/shared/components/patterns/launcher'
 import { ActionTooltip, DisabledActionTooltip } from '@/shared/components/tooltip'
 
 type PriorityControlProps = {
@@ -27,10 +15,7 @@ type PriorityControlProps = {
 	onPriorityChange: (priority: LauncherPriority) => void
 }
 
-/**
- * Launcher 优先级控件。
- * 触发器改成 icon-only，菜单实现回到共享 DropdownMenu 体系。
- */
+/** Launcher 优先级控件；触发器保持紧凑，菜单直接使用 HeroUI Dropdown。 */
 export function PriorityControl({
 	open,
 	priority,
@@ -47,25 +32,13 @@ export function PriorityControl({
 		}
 	}
 	const trigger = (
-		<DropdownMenuTrigger asChild>
-			<Button
-				aria-label='优先级'
-				className={cn(
-					priority === 0
-						? 'border-sf-border-subtle text-sf-text-quaternary'
-						: 'border-sf-border-interactive text-sf-text-interactive',
-				)}
-				disabled={disabled}
-				size='icon-sm'
-				variant='outline'
-			>
-				<PriorityIcon priority={priority} size='md' />
-			</Button>
-		</DropdownMenuTrigger>
+		<Button aria-label='优先级' isDisabled={disabled} isIconOnly size='sm' variant='outline'>
+			<PriorityIcon priority={priority} size='md' />
+		</Button>
 	)
 
 	return (
-		<DropdownMenu onOpenChange={handleMenuOpenChange} open={open}>
+		<Dropdown isOpen={open} onOpenChange={handleMenuOpenChange}>
 			{disabled ? (
 				<DisabledActionTooltip label='设置优先级' reason='正在创建，暂时无法修改优先级'>
 					{trigger}
@@ -79,26 +52,25 @@ export function PriorityControl({
 					{trigger}
 				</ActionTooltip>
 			)}
-			<DropdownMenuContent align='start' className={`w-46 ${launcherMenuContentClass}`}>
-				<DropdownMenuGroup>
+			<Dropdown.Popover className='w-46' placement='bottom start'>
+				<Dropdown.Menu aria-label='设置优先级'>
 					{TASK_PRIORITY_OPTIONS.map((option) => (
-						<DropdownMenuItem
-							className={launcherMenuItemClass}
+						<Dropdown.Item
+							className='gap-2 p-2 text-[12.5px]'
+							id={String(option.value)}
 							key={option.value}
-							onSelect={() => onPriorityChange(option.value)}
+							onAction={() => onPriorityChange(option.value)}
+							textValue={option.label}
 						>
 							<PriorityIcon priority={option.value} size='md' />
 							<span className='min-w-0 flex-1 truncate'>{option.label}</span>
 							{priority === option.value ? (
-								<CheckIcon
-									aria-hidden
-									className='ml-auto size-3.5 shrink-0 text-sf-icon-secondary'
-								/>
+								<CheckIcon aria-hidden className='ml-auto size-3.5 shrink-0 text-muted' />
 							) : null}
-						</DropdownMenuItem>
+						</Dropdown.Item>
 					))}
-				</DropdownMenuGroup>
-			</DropdownMenuContent>
-		</DropdownMenu>
+				</Dropdown.Menu>
+			</Dropdown.Popover>
+		</Dropdown>
 	)
 }

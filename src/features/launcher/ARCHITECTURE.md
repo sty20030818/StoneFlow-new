@@ -21,7 +21,7 @@ Launcher 不经过主应用 Router 或 Shell Provider。`launcher:session-prepar
 |----|------|------|
 | **session** | phase、bridge、present、close、becameKey focus 许可 | draft、搜索规则 |
 | **domain** | draft / search / submit / derived（flatItems） | NSPanel、窗尺寸、Board |
-| **chrome** | Surface / Panel / Footer；唯一 chrome class 真相 | domain 业务字段细节 |
+| **chrome** | HeroUI Surface / ScrollShadow / Spinner 与 Panel / Footer 组合 | domain 业务字段细节 |
 | **composer / create / results** | 输入、新建行、列表 IA | 直接 invoke、platform |
 | **api** | 窗 IPC + map*（create→task，search→global-search） | 第二套 create/search 规则 |
 
@@ -46,7 +46,7 @@ src/features/launcher/
 └── model/                   # types · formatters · interleaveResults
 ```
 
-共享 pattern：`src/shared/components/patterns/launcher.ts`。
+界面直接组合 HeroUI；Launcher 不维护第二套 base / pattern 表面。
 关闭：`SessionProvider.requestClose` → `launcher_close_session`。
 
 ---
@@ -57,11 +57,11 @@ src/features/launcher/
 |----|------|
 | 壳尺寸 | **720 × 500** logical px |
 | 空态 | 最近任务 ≤5 + 最近项目 ≤5；轻标题；无折叠 / sticky / 灰条 |
-| Results 滚动 | `AppScrollArea` |
+| Results 滚动 | HeroUI `ScrollShadow`；collection 状态仍由 selection feature 提供 |
 | 搜索 | flat 交错流；「搜索结果」轻标题钉在滚动区外 |
 | 新建行 | 有标题时钉在 Results 上方；↑↓ 独立 focus lane |
 | 圆角 | Win **8** / Mac **16** → `--launcher-panel-radius` |
-| 复用 | 主站 sf token + RowShell 原样；禁止 RowShell/Board launcher variant |
+| 复用 | HeroUI 组件 + 主站语义 token；禁止 Launcher 专属兼容 facade |
 | 快捷键 | Launcher 独占本地 binding / 匹配；键帽与读屏语义复用 shared |
 
 ---
@@ -75,10 +75,12 @@ SEARCH_RESULT_LIMIT = 20
 
 mode: 'recent' | 'search' | 'search-empty' | 'recent-empty'
 flatItems: ResultItem[]
-focusTarget: 'none' | 'create' | { kind: 'result', index }
+focusTarget: 'none' | 'create'
+resultCollection.focusedKey: `${kind}:${id}` | null
 ```
 
-Create **不在** `flatItems` 内。搜索混排：`interleaveTaskProjectResults`。
+Create **不在** `flatItems` 内。结果导航复用 selection feature 的 collection 合同，
+不再在 Launcher reducer 内保存第二份 result index。搜索混排：`interleaveTaskProjectResults`。
 
 ---
 

@@ -1,11 +1,13 @@
-/**
- * UpdateSettingsSection 纯展示：选项常量与选项卡 UI。
- * 容器负责读写设置 / 检查更新；本文件无副作用。
- */
+import {
+	Chip,
+	Description,
+	Label,
+	Radio,
+	RadioGroup,
+	ToggleButton,
+	ToggleButtonGroup,
+} from '@heroui/react'
 
-import { formFieldHintClass } from '@/shared/components/patterns/form-field'
-import { Badge } from '@/shared/components/base/badge'
-import { cn } from '@/shared/lib/utils'
 import type { CheckIntervalSecs, UpdateChannel, UpdateCheckMode } from '../api/updates'
 
 export const CHECK_MODE_OPTIONS: Array<{
@@ -64,37 +66,29 @@ export function UpdateCheckModeOptions({
 	onChange: (mode: UpdateCheckMode) => void
 }) {
 	return (
-		<div className='grid gap-3'>
-			<p className={cn(formFieldHintClass, 'text-legacy-foreground font-medium')}>更新检查方式</p>
+		<RadioGroup
+			className='gap-3'
+			isDisabled={disabled}
+			name='update-check-mode'
+			onChange={(nextValue) => onChange(nextValue as UpdateCheckMode)}
+			value={value}
+			variant='secondary'
+		>
+			<Label>更新检查方式</Label>
 			{CHECK_MODE_OPTIONS.map((option) => {
-				const checked = value === option.value
 				return (
-					<label
-						className={cn(
-							'flex items-start gap-3 rounded-xl border border-sf-border-subtle bg-legacy-muted/25 p-3',
-							disabled
-								? 'cursor-not-allowed opacity-70'
-								: 'cursor-pointer hover:bg-legacy-muted/45',
-							checked && 'border-primary/40 bg-primary/5',
-						)}
-						key={option.value}
-					>
-						<input
-							checked={checked}
-							className='mt-1 size-4 accent-primary'
-							disabled={disabled}
-							name='update-check-mode'
-							onChange={() => onChange(option.value)}
-							type='radio'
-						/>
-						<div className='min-w-0'>
-							<p className='text-sm font-medium text-legacy-foreground'>{option.label}</p>
-							<p className={formFieldHintClass}>{option.description}</p>
-						</div>
-					</label>
+					<Radio key={option.value} value={option.value}>
+						<Radio.Content>
+							<Radio.Control>
+								<Radio.Indicator />
+							</Radio.Control>
+							{option.label}
+						</Radio.Content>
+						<Description>{option.description}</Description>
+					</Radio>
 				)
 			})}
-		</div>
+		</RadioGroup>
 	)
 }
 
@@ -108,46 +102,34 @@ export function UpdateChannelOptions({
 	onChange: (channel: UpdateChannel) => void
 }) {
 	return (
-		<div className='grid gap-3 pt-1'>
-			<p className={cn(formFieldHintClass, 'text-legacy-foreground font-medium')}>更新渠道</p>
-			<div className='grid gap-3 md:grid-cols-2'>
-				{CHANNEL_OPTIONS.map((option) => {
-					const checked = value === option.value
-					return (
-						<label
-							className={cn(
-								'flex items-start gap-3 rounded-xl border border-sf-border-subtle bg-legacy-muted/25 p-3',
-								disabled
-									? 'cursor-not-allowed opacity-70'
-									: 'cursor-pointer hover:bg-legacy-muted/45',
-								checked && 'border-primary/40 bg-primary/5',
-							)}
-							key={option.value}
-						>
-							<input
-								checked={checked}
-								className='mt-1 size-4 accent-primary'
-								disabled={disabled}
-								name='update-channel'
-								onChange={() => onChange(option.value)}
-								type='radio'
-							/>
-							<div className='min-w-0'>
-								<p className='flex items-center gap-2 text-sm font-medium text-legacy-foreground'>
-									{option.label}
-									{option.badge ? (
-										<Badge variant='warning' className='text-[10px] px-1 py-0'>
-											{option.badge}
-										</Badge>
-									) : null}
-								</p>
-								<p className={formFieldHintClass}>{option.description}</p>
-							</div>
-						</label>
-					)
-				})}
-			</div>
-		</div>
+		<RadioGroup
+			className='grid gap-3 md:grid-cols-2'
+			isDisabled={disabled}
+			name='update-channel'
+			onChange={(nextValue) => onChange(nextValue as UpdateChannel)}
+			value={value}
+			variant='secondary'
+		>
+			<Label className='md:col-span-2'>更新渠道</Label>
+			{CHANNEL_OPTIONS.map((option) => (
+				<Radio key={option.value} value={option.value}>
+					<Radio.Content>
+						<Radio.Control>
+							<Radio.Indicator />
+						</Radio.Control>
+						<span className='flex items-center gap-2'>
+							{option.label}
+							{option.badge ? (
+								<Chip color='warning' size='sm' variant='soft'>
+									{option.badge}
+								</Chip>
+							) : null}
+						</span>
+					</Radio.Content>
+					<Description>{option.description}</Description>
+				</Radio>
+			))}
+		</RadioGroup>
 	)
 }
 
@@ -161,31 +143,31 @@ export function UpdateIntervalOptions({
 	onChange: (intervalSecs: CheckIntervalSecs) => void
 }) {
 	return (
-		<div className='grid gap-3 pt-1'>
-			<p className={cn(formFieldHintClass, 'text-legacy-foreground font-medium')}>自动检查间隔</p>
-			<p className={formFieldHintClass}>启动约 3 秒后会检查一次；之后按此间隔定期检查。</p>
-			<div className='flex flex-wrap gap-2'>
-				{INTERVAL_OPTIONS.map((option) => {
-					const checked = value === option.value
-					return (
-						<button
-							key={option.value}
-							type='button'
-							disabled={disabled}
-							onClick={() => onChange(option.value)}
-							className={cn(
-								'rounded-full border px-3 py-1.5 text-[13px]',
-								disabled && 'cursor-not-allowed opacity-70',
-								checked
-									? 'border-primary/40 bg-primary/10 font-medium text-legacy-foreground'
-									: 'border-sf-border-subtle bg-legacy-muted/25 text-sf-shell-text-tertiary hover:bg-legacy-muted/45',
-							)}
-						>
-							{option.label}
-						</button>
-					)
-				})}
-			</div>
+		<div className='grid gap-2'>
+			<p className='text-sm font-medium text-foreground'>自动检查间隔</p>
+			<p className='text-xs leading-5 text-muted'>
+				启动约 3 秒后会检查一次；之后按此间隔定期检查。
+			</p>
+			<ToggleButtonGroup
+				aria-label='自动检查间隔'
+				disallowEmptySelection
+				isDetached
+				isDisabled={disabled}
+				onSelectionChange={(keys) => {
+					const selected = [...keys][0]
+					const option = INTERVAL_OPTIONS.find((item) => String(item.value) === selected)
+					if (option) onChange(option.value)
+				}}
+				selectedKeys={value === undefined ? [] : [String(value)]}
+				selectionMode='single'
+				size='sm'
+			>
+				{INTERVAL_OPTIONS.map((option) => (
+					<ToggleButton id={String(option.value)} key={option.value}>
+						{option.label}
+					</ToggleButton>
+				))}
+			</ToggleButtonGroup>
 		</div>
 	)
 }

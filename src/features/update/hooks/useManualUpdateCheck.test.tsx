@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react'
-import { toast } from 'sonner'
+import { toast } from '@heroui/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { checkUpdate, type ManualUpdateCheckResult } from '../api/updates'
@@ -10,9 +10,9 @@ vi.mock('../api/updates', () => ({
 	checkUpdate: vi.fn(),
 }))
 
-vi.mock('sonner', () => ({
+vi.mock('@heroui/react', () => ({
 	toast: {
-		error: vi.fn(),
+		danger: vi.fn(),
 		success: vi.fn(),
 	},
 }))
@@ -114,7 +114,7 @@ describe('useManualUpdateCheck', () => {
 			revision: 1,
 			errorMessage: '更新失败: 网络不可用',
 		})
-		expect(toast.error).toHaveBeenCalledWith('更新失败: 网络不可用')
+		expect(toast.danger).toHaveBeenCalledWith('更新失败: 网络不可用')
 	})
 
 	it('迟到的 noUpdate 响应不能遮住更高 revision 的新版本', async () => {

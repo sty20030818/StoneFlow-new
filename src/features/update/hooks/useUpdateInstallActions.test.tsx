@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react'
-import { toast } from 'sonner'
+import { toast } from '@heroui/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { downloadUpdate, installStagedUpdate } from '../api/updates'
@@ -12,8 +12,8 @@ vi.mock('../api/updates', () => ({
 	installStagedUpdate: vi.fn(),
 }))
 
-vi.mock('sonner', () => ({
-	toast: { error: vi.fn() },
+vi.mock('@heroui/react', () => ({
+	toast: { danger: vi.fn() },
 }))
 
 describe('useUpdateInstallActions', () => {
@@ -49,7 +49,7 @@ describe('useUpdateInstallActions', () => {
 
 		expect(downloadUpdate).toHaveBeenCalledWith('0.2.0', 'beta')
 		expect(useUpdateStore.getState().snapshot).toMatchObject({ revision: 2, phase: 'idle' })
-		expect(toast.error).toHaveBeenCalledWith('候选已失效')
+		expect(toast.danger).toHaveBeenCalledWith('候选已失效')
 	})
 
 	it('下载失败事件丢失时仍从命令响应恢复权威 snapshot', async () => {
@@ -82,7 +82,7 @@ describe('useUpdateInstallActions', () => {
 			phase: 'available',
 			errorMessage: '更新失败: 下载中断',
 		})
-		expect(toast.error).toHaveBeenCalledWith('更新失败: 下载中断')
+		expect(toast.danger).toHaveBeenCalledWith('更新失败: 下载中断')
 	})
 
 	it('Ready 安装失败可直接携带精确渠道重试同一暂存版本', async () => {

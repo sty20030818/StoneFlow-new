@@ -5,19 +5,13 @@ import { matchLauncherShortcut } from '../model/launcherShortcutKeymap'
 const PANEL_CLOSE_DELAY_MS = 220
 
 type UseLauncherTransientUiArgs = {
-	activePopover: string | null
 	requestClose: (reason: 'escape' | 'submit') => Promise<void>
 }
 
-export function useLauncherTransientUi({
-	activePopover,
-	requestClose,
-}: UseLauncherTransientUiArgs) {
+export function useLauncherTransientUi({ requestClose }: UseLauncherTransientUiArgs) {
 	const titleInputRef = useRef<HTMLInputElement>(null)
-	const projectSearchRef = useRef<HTMLInputElement>(null)
 	const closeTimerRef = useRef<number | null>(null)
 	const focusFrameRefs = useRef<number[]>([])
-	const projectFocusFrameRef = useRef<number | null>(null)
 	const handleEscapeRef = useRef<() => void>(() => {})
 
 	const focusInput = useCallback(() => {
@@ -55,25 +49,12 @@ export function useLauncherTransientUi({
 	}, [requestClose])
 
 	useEffect(() => {
-		if (activePopover !== 'project') {
-			return
-		}
-
-		projectFocusFrameRef.current = window.requestAnimationFrame(() => {
-			projectSearchRef.current?.focus()
-		})
-
-		return () => {
-			if (projectFocusFrameRef.current !== null) {
-				window.cancelAnimationFrame(projectFocusFrameRef.current)
-				projectFocusFrameRef.current = null
-			}
-		}
-	}, [activePopover])
-
-	useEffect(() => {
 		const handler = (event: globalThis.KeyboardEvent) => {
-			if (event.defaultPrevented || matchLauncherShortcut(event) !== 'clearOrClose') {
+			if (
+				event.defaultPrevented ||
+				event.isComposing ||
+				matchLauncherShortcut(event) !== 'clearOrClose'
+			) {
 				return
 			}
 
@@ -92,17 +73,12 @@ export function useLauncherTransientUi({
 				window.cancelAnimationFrame(frameId)
 			}
 			focusFrameRefs.current = []
-			if (projectFocusFrameRef.current !== null) {
-				window.cancelAnimationFrame(projectFocusFrameRef.current)
-				projectFocusFrameRef.current = null
-			}
 		}
 	}, [])
 
 	return {
 		closeWindow,
 		focusInput,
-		projectSearchRef,
 		registerHandleEscape: (handleEscape: () => void) => {
 			handleEscapeRef.current = handleEscape
 		},

@@ -1,32 +1,8 @@
-/**
- * UpdateDialog 容器：store / 动作接线与相位编排。
- * 壳层复用 create-dialog compact；目标版本说明由 changelog 模块提供。
- */
-
-import { useEffect, useState } from 'react'
+import { Alert, Button, Modal, ProgressBar, ScrollShadow, Spinner, toast } from '@heroui/react'
+import { useEffect, useId, useState } from 'react'
 import { DownloadIcon, RefreshCwIcon, XIcon } from 'lucide-react'
-import { toast } from 'sonner'
-
-import { Button } from '@/shared/components/base/button'
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogTitle,
-} from '@/shared/components/base/dialog'
-import {
-	createDialogCompactShellClass,
-	createDialogFooterClass,
-	createDialogHeaderClass,
-} from '@/shared/components/patterns/create-dialog'
-import {
-	dialogShellDescriptionClass,
-	dialogShellTitleClass,
-} from '@/shared/components/patterns/dialog-shell'
-import { StatusNotice } from '@/shared/components/StatusNotice'
 import { ActionTooltip, DisabledActionTooltip } from '@/shared/components/tooltip'
 import { normalizeTauriError } from '@/shared/lib/normalize-tauri-error'
-import { cn } from '@/shared/lib/utils'
 import { ChangelogRelease, useChangelog } from '@/features/changelog'
 import {
 	getCurrentVersion,
@@ -56,6 +32,7 @@ export function UpdateDialog() {
 	const updateInfo = snapshot.update
 	const [currentVersion, setCurrentVersion] = useState<string | null>(null)
 	const [readySettings, setReadySettings] = useState<ReadySettingsState>(null)
+	const descriptionId = useId()
 
 	const isDownloading = phase === 'downloading'
 	const isReady = phase === 'ready'
@@ -143,10 +120,6 @@ export function UpdateDialog() {
 		}
 	}
 
-	function handleClose() {
-		closeDialog()
-	}
-
 	async function handleSkip() {
 		if (!updateInfo) return
 		try {
@@ -155,7 +128,7 @@ export function UpdateDialog() {
 			if (result.status !== 'ok') throw new Error(result.message)
 			closeDialog()
 		} catch (error) {
-			toast.error(normalizeTauriError(error, '跳过版本失败'))
+			toast.danger(normalizeTauriError(error, '跳过版本失败'))
 		}
 	}
 
@@ -211,216 +184,227 @@ export function UpdateDialog() {
 							: '建议及时更新以获得最新功能和问题修复。'
 
 	return (
-		<Dialog onOpenChange={handleOpenChange} open={dialogVisible}>
-			{/*
-			 * 对齐创建任务/项目弹窗（CreateDialogShell）：
-			 * - 外壳 p-0，分区自管 padding
-			 * - 关闭钮在 header 行内 size-7（不是 absolute top-2 贴边）
-			 * - 底栏复用 createDialogFooterClass
-			 */}
-			<DialogContent
-				className={createDialogCompactShellClass}
-				showCloseButton={false}
-				onEscapeKeyDown={(event) => {
-					if (isInstalling) event.preventDefault()
-				}}
-				onInteractOutside={(event) => {
-					if (isInstalling) event.preventDefault()
-				}}
-			>
-				<DialogTitle className='sr-only'>{titleText}</DialogTitle>
-				<DialogDescription className='sr-only'>{descText}</DialogDescription>
-
-				<div className={cn(createDialogHeaderClass, 'items-start gap-2')}>
-					<div className='min-w-0 flex-1 space-y-1'>
-						<h2 className={dialogShellTitleClass}>{titleText}</h2>
-						<p className={dialogShellDescriptionClass}>{descText}</p>
-					</div>
-					{isInstalling ? (
-						<DisabledActionTooltip label='关闭' reason='安装完成前无法关闭更新窗口'>
-							<Button
-								aria-label='关闭'
-								className='size-7 shrink-0 text-sf-icon-secondary'
-								disabled
-								size='icon-sm'
-								type='button'
-								variant='ghost'
-							>
-								<XIcon aria-hidden className='size-3.5' />
-							</Button>
-						</DisabledActionTooltip>
-					) : (
-						<ActionTooltip label='关闭'>
-							<Button
-								aria-label='关闭'
-								className='size-7 shrink-0 text-sf-icon-secondary'
-								onClick={handleClose}
-								size='icon-sm'
-								type='button'
-								variant='ghost'
-							>
-								<XIcon aria-hidden className='size-3.5' />
-							</Button>
-						</ActionTooltip>
+		<Modal.Backdrop
+			isDismissable={!isInstalling}
+			isKeyboardDismissDisabled={isInstalling}
+			isOpen={dialogVisible}
+			onOpenChange={handleOpenChange}
+		>
+			<Modal.Container placement='center' scroll='inside' size='lg'>
+				<Modal.Dialog
+					aria-describedby={descriptionId}
+					className='max-h-[min(42rem,calc(100dvh-3rem))] gap-0 overflow-hidden p-0'
+					render={(dialogProps) => (
+						<section
+							{...dialogProps}
+							onKeyDown={(event) => {
+								if (event.key !== 'Escape' || event.defaultPrevented) event.stopPropagation()
+							}}
+						/>
 					)}
-				</div>
-
-				{showBody ? (
-					<div className='min-h-0 space-y-3 px-3'>
-						{showNotes ? (
-							<div
-								aria-label='本次累计更新说明'
-								className='max-h-64 space-y-5 overflow-y-auto rounded-xl bg-legacy-muted p-3'
-								role='region'
-							>
-								{releases.map((release) => (
-									<ChangelogRelease key={release.version} release={release} />
-								))}
-							</div>
-						) : null}
-
-						{isDownloading ? (
-							<div className='space-y-2'>
-								<div className='h-1.5 w-full overflow-hidden rounded-full bg-legacy-muted'>
-									<div
-										className='h-full rounded-full bg-primary'
-										style={{ width: `${progressPercent}%` }}
-									/>
-								</div>
-								<p className='text-[12px] leading-none text-sf-shell-text-tertiary tabular-nums'>
-									{formatDownloadBytesLine(downloaded, total)}
-								</p>
-							</div>
-						) : null}
-
+				>
+					<Modal.Header className='flex-row items-start gap-3 px-5 pt-5 pb-3'>
+						<div className='min-w-0 flex-1 space-y-1'>
+							<Modal.Heading>{titleText}</Modal.Heading>
+							<p className='text-sm leading-5 text-muted' id={descriptionId}>
+								{descText}
+							</p>
+						</div>
 						{isInstalling ? (
-							<StatusNotice
-								size='sm'
-								variant='neutral'
-								description='系统安装器正在处理已验证的安装包。完成前所有更新操作均已锁定。'
-							/>
-						) : null}
+							<DisabledActionTooltip label='关闭' reason='安装完成前无法关闭更新窗口'>
+								<Button
+									aria-label='关闭'
+									isDisabled
+									isIconOnly
+									size='sm'
+									type='button'
+									variant='ghost'
+								>
+									<XIcon aria-hidden className='size-4' />
+								</Button>
+							</DisabledActionTooltip>
+						) : (
+							<ActionTooltip label='关闭'>
+								<Modal.CloseTrigger aria-label='关闭' className='static shrink-0' />
+							</ActionTooltip>
+						)}
+					</Modal.Header>
 
-						{isReady && !errorMessage ? (
-							<StatusNotice
-								size='sm'
-								variant='success'
-								description='安装包已就绪。只有点击「立即重启」才会开始安装并退出当前进程。'
-							/>
-						) : null}
+					{showBody ? (
+						<Modal.Body className='gap-3 px-5 py-2'>
+							{showNotes ? (
+								<ScrollShadow
+									aria-label='本次累计更新说明'
+									className='max-h-64 space-y-5 overflow-y-auto pe-2'
+									role='region'
+								>
+									{releases.map((release) => (
+										<ChangelogRelease key={release.version} release={release} />
+									))}
+								</ScrollShadow>
+							) : null}
 
-						{errorMessage ? (
-							<StatusNotice role='alert' size='sm' variant='danger' description={errorMessage} />
-						) : null}
+							{isDownloading ? (
+								<div className='space-y-2'>
+									<ProgressBar aria-label='下载进度' size='sm' value={progressPercent}>
+										<ProgressBar.Track>
+											<ProgressBar.Fill />
+										</ProgressBar.Track>
+									</ProgressBar>
+									<p className='text-xs leading-none text-muted tabular-nums'>
+										{formatDownloadBytesLine(downloaded, total)}
+									</p>
+								</div>
+							) : null}
 
-						{isReady && settingsLoading ? (
-							<StatusNotice size='sm' variant='neutral' description='正在确认当前更新渠道…' />
-						) : null}
+							{isInstalling ? (
+								<Alert status='accent'>
+									<Alert.Indicator>
+										<Spinner aria-hidden color='current' size='sm' />
+									</Alert.Indicator>
+									<Alert.Content>
+										<Alert.Title>正在安装</Alert.Title>
+										<Alert.Description>
+											系统安装器正在处理已验证的安装包。完成前所有更新操作均已锁定。
+										</Alert.Description>
+									</Alert.Content>
+								</Alert>
+							) : null}
 
-						{isReady && settingsError ? (
-							<StatusNotice role='alert' size='sm' variant='danger' description={settingsError} />
-						) : null}
+							{isReady && !errorMessage ? (
+								<Alert status='success'>
+									<Alert.Indicator />
+									<Alert.Content>
+										<Alert.Title>安装包已就绪</Alert.Title>
+										<Alert.Description>
+											只有点击「立即重启」才会开始安装并退出当前进程。
+										</Alert.Description>
+									</Alert.Content>
+								</Alert>
+							) : null}
 
-						{isReady && crossChannel ? (
-							<StatusNotice
-								size='sm'
-								variant='warning'
-								description={`当前配置为 ${configuredChannelLabel} 渠道，仍将安装 ${sourceChannelLabel} v${displayVersion}。`}
-							/>
-						) : null}
-					</div>
-				) : null}
+							{errorMessage ? (
+								<Alert role='alert' status='danger'>
+									<Alert.Indicator />
+									<Alert.Content>
+										<Alert.Title>更新失败</Alert.Title>
+										<Alert.Description>{errorMessage}</Alert.Description>
+									</Alert.Content>
+								</Alert>
+							) : null}
 
-				<div className={cn(createDialogFooterClass, 'justify-end')}>
-					{isInstalling ? (
-						<Button disabled size='sm' type='button'>
-							<span
-								aria-hidden
-								className='-ml-0.5 mr-2 size-3 rounded-full border-2 border-current'
-							/>
-							正在安装...
-						</Button>
-					) : isReady ? (
-						<>
-							<Button onClick={closeDialog} size='sm' type='button' variant='ghost'>
-								稍后重启
+							{isReady && settingsLoading ? (
+								<Alert aria-busy='true' aria-live='polite' role='status' status='accent'>
+									<Alert.Indicator>
+										<Spinner aria-hidden color='current' size='sm' />
+									</Alert.Indicator>
+									<Alert.Content>
+										<Alert.Title>正在确认当前更新渠道</Alert.Title>
+									</Alert.Content>
+								</Alert>
+							) : null}
+
+							{isReady && settingsError ? (
+								<Alert role='alert' status='danger'>
+									<Alert.Indicator />
+									<Alert.Content>
+										<Alert.Title>读取更新渠道失败</Alert.Title>
+										<Alert.Description>{settingsError}</Alert.Description>
+									</Alert.Content>
+								</Alert>
+							) : null}
+
+							{isReady && crossChannel ? (
+								<Alert status='warning'>
+									<Alert.Indicator />
+									<Alert.Content>
+										<Alert.Title>更新渠道已切换</Alert.Title>
+										<Alert.Description>{`当前配置为 ${configuredChannelLabel} 渠道，仍将安装 ${sourceChannelLabel} v${displayVersion}。`}</Alert.Description>
+									</Alert.Content>
+								</Alert>
+							) : null}
+						</Modal.Body>
+					) : null}
+
+					<Modal.Footer>
+						{isInstalling ? (
+							<Button isDisabled isPending size='sm' type='button'>
+								<Spinner aria-hidden color='current' size='sm' />
+								正在安装...
 							</Button>
-							<Button
-								disabled={!canInstall}
-								onClick={() => void install(crossChannel ? (updateInfo?.channel ?? null) : null)}
-								size='sm'
-								type='button'
-							>
-								<RefreshCwIcon aria-hidden className='-ml-0.5 mr-1 size-3.5' />
-								{settingsLoading
-									? '正在确认...'
-									: errorMessage
-										? '重试安装'
-										: crossChannel
-											? '确认安装并重启'
-											: '立即重启'}
+						) : isReady ? (
+							<>
+								<Button onPress={closeDialog} size='sm' type='button' variant='ghost'>
+									稍后重启
+								</Button>
+								<Button
+									isDisabled={!canInstall}
+									onPress={() => void install(crossChannel ? (updateInfo?.channel ?? null) : null)}
+									size='sm'
+									type='button'
+								>
+									<RefreshCwIcon aria-hidden className='size-3.5' />
+									{settingsLoading
+										? '正在确认...'
+										: errorMessage
+											? '重试安装'
+											: crossChannel
+												? '确认安装并重启'
+												: '立即重启'}
+								</Button>
+							</>
+						) : isDownloading ? (
+							<>
+								<Button
+									className='mr-auto'
+									onPress={() => void cancelDownload()}
+									size='sm'
+									type='button'
+									variant='ghost'
+								>
+									取消下载
+								</Button>
+								<Button onPress={closeDialog} size='sm' type='button' variant='ghost'>
+									后台继续
+								</Button>
+								<Button isDisabled isPending size='sm' type='button'>
+									<Spinner aria-hidden color='current' size='sm' />
+									下载中
+								</Button>
+							</>
+						) : isChecking ? (
+							<Button isDisabled isPending size='sm' type='button'>
+								<Spinner aria-hidden color='current' size='sm' />
+								正在检查...
 							</Button>
-						</>
-					) : isDownloading ? (
-						<>
-							{/* 取消下载单独靠左，远离右侧主操作，降低误触 */}
-							<Button
-								onClick={() => void cancelDownload()}
-								size='sm'
-								type='button'
-								variant='ghost'
-								className='mr-auto text-muted-foreground'
-							>
-								取消下载
-							</Button>
-							<Button onClick={closeDialog} size='sm' type='button' variant='ghost'>
-								后台继续
-							</Button>
-							<Button disabled size='sm' type='button'>
-								<span
-									aria-hidden
-									className='-ml-0.5 mr-2 size-3 rounded-full border-2 border-current'
-								/>
-								下载中
-							</Button>
-						</>
-					) : isChecking ? (
-						<Button disabled size='sm' type='button'>
-							<span
-								aria-hidden
-								className='-ml-0.5 mr-2 size-3 rounded-full border-2 border-current'
-							/>
-							正在检查...
-						</Button>
-					) : isCheckError ? (
-						<>
-							<Button onClick={handleRetryCheck} size='sm' type='button'>
-								<RefreshCwIcon aria-hidden className='-ml-0.5 mr-1 size-3.5' />
+						) : isCheckError ? (
+							<Button onPress={handleRetryCheck} size='sm' type='button'>
+								<RefreshCwIcon aria-hidden className='size-3.5' />
 								重新检查
 							</Button>
-						</>
-					) : phase === 'available' ? (
-						<>
-							<Button onClick={handleSkip} size='sm' type='button' variant='ghost'>
-								跳过此版本
+						) : phase === 'available' ? (
+							<>
+								<Button onPress={() => void handleSkip()} size='sm' type='button' variant='ghost'>
+									跳过此版本
+								</Button>
+								<Button
+									isDisabled={!canDownload}
+									onPress={() => void startDownload()}
+									size='sm'
+									type='button'
+								>
+									<DownloadIcon aria-hidden className='size-3.5' />
+									{errorMessage ? '重新下载' : '立即更新'}
+								</Button>
+							</>
+						) : (
+							<Button onPress={closeDialog} size='sm' type='button' variant='ghost'>
+								关闭
 							</Button>
-							<Button
-								disabled={!canDownload}
-								onClick={() => void startDownload()}
-								size='sm'
-								type='button'
-							>
-								<DownloadIcon aria-hidden className='-ml-0.5 mr-1 size-3.5' />
-								{errorMessage ? '重新下载' : '立即更新'}
-							</Button>
-						</>
-					) : (
-						<Button onClick={closeDialog} size='sm' type='button' variant='ghost'>
-							关闭
-						</Button>
-					)}
-				</div>
-			</DialogContent>
-		</Dialog>
+						)}
+					</Modal.Footer>
+				</Modal.Dialog>
+			</Modal.Container>
+		</Modal.Backdrop>
 	)
 }

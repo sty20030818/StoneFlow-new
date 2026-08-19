@@ -28,7 +28,7 @@ changelog 不负责：
 | `useChangelog.ts` | 查询、请求合并、缓存和回退 | 不创建全局 store |
 | `ChangelogRelease.tsx` | 单版本分类与撤回状态展示 | 只消费已解析 release |
 | `ChangelogDialog.tsx` | 按渠道展示历史并定位版本 | 渠道和开关由调用方显式传入 |
-| `ChangelogMarkdown.tsx` | 受限 Markdown 展示 | 不是通用 Markdown 引擎 |
+| `ChangelogMarkdown.tsx` | 标准 Markdown/GFM 展示 | 不执行原始 HTML，隐藏水平分隔线 |
 | `index.ts` | React 公共入口 | 显式导出，禁止 `export *` |
 
 ## 依赖方向

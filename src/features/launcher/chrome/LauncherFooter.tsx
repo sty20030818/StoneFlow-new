@@ -1,10 +1,10 @@
-import { AlertTriangleIcon, CheckCircle2Icon, LoaderCircleIcon } from 'lucide-react'
+import { Spinner } from '@heroui/react'
+import { AlertTriangleIcon, CheckCircle2Icon } from 'lucide-react'
 
 import { useLauncher } from '../domain/LauncherDomainProvider'
 import { getLauncherShortcutTokens, type LauncherShortcutId } from '../model/launcherShortcutKeymap'
 import { cn } from '@/shared/lib/utils'
 import { ShortcutTokens } from '@/shared/components/ShortcutTokens'
-import { launcherFooterChromeClass } from '@/shared/components/patterns/launcher'
 import { OverflowTooltip } from '@/shared/components/tooltip'
 
 export function LauncherFooter() {
@@ -13,8 +13,7 @@ export function LauncherFooter() {
 	return (
 		<div
 			className={cn(
-				launcherFooterChromeClass,
-				'flex min-h-11 items-center gap-3 px-4 text-[11px] text-sf-text-tertiary',
+				'shrink-0 flex min-h-11 items-center gap-3 rounded-b-[var(--launcher-panel-radius,8px)] border-t border-separator bg-surface px-4 text-[11px] text-muted',
 			)}
 			data-testid='launcher-footer'
 		>
@@ -23,10 +22,10 @@ export function LauncherFooter() {
 				className={cn(
 					'flex min-w-0 items-center gap-1.5',
 					state.submitState === 'error'
-						? 'text-sf-danger-surface-text'
+						? 'text-danger'
 						: state.submitState === 'success'
-							? 'text-sf-success-surface-text'
-							: 'text-sf-text-tertiary',
+							? 'text-success'
+							: 'text-muted',
 				)}
 			>
 				{state.submitState === 'error' ? <AlertTriangleIcon className='size-3.5 shrink-0' /> : null}
@@ -34,7 +33,7 @@ export function LauncherFooter() {
 					<CheckCircle2Icon className='size-3.5 shrink-0' />
 				) : null}
 				{state.submitState === 'submitting' ? (
-					<LoaderCircleIcon className='size-3.5 shrink-0' />
+					<Spinner aria-hidden color='current' size='sm' />
 				) : null}
 				<OverflowTooltip className='flex-1' content={state.message}>
 					{state.message}

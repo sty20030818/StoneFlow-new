@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Alert, Button, Spinner } from '@heroui/react'
 
 import {
 	selectSidebarSettings,
@@ -8,9 +9,6 @@ import {
 } from '../../model/useSidebarSettingsStore'
 import type { SidebarMainItemKey } from '../../api/sidebarSettings'
 import { SettingCheckboxRow, SettingsPreferenceGroup, SettingsSection } from '../settingsShared'
-import { Button } from '@/shared/components/base/button'
-import { statusNoticeCompactTextClass } from '@/shared/components/patterns/status-notice'
-import { StatusNotice } from '@/shared/components/StatusNotice'
 
 const MAIN_ITEM_OPTIONS: Array<{
 	key: SidebarMainItemKey
@@ -126,29 +124,36 @@ export function SettingsSidebarPanel() {
 	}
 
 	if (isSettingsLoading) {
-		return <StatusNotice description='正在读取 Sidebar 设置。' title='加载中' variant='warning' />
+		return (
+			<Alert aria-busy='true' aria-live='polite' role='status' status='accent'>
+				<Alert.Indicator>
+					<Spinner aria-hidden='true' color='current' size='sm' />
+				</Alert.Indicator>
+				<Alert.Content>
+					<Alert.Title>加载中</Alert.Title>
+					<Alert.Description>正在读取 Sidebar 设置。</Alert.Description>
+				</Alert.Content>
+			</Alert>
+		)
 	}
 
 	if (sidebarStatus === 'error' && sidebarSettings === null) {
 		return (
-			<StatusNotice
-				actions={
-					<Button
-						onClick={() => {
-							void loadSidebarSettings().catch(() => undefined)
-						}}
-						size='sm'
-						type='button'
-						variant='secondary'
-					>
-						重试
-					</Button>
-				}
-				description={sidebarError ?? 'Sidebar 设置加载失败。'}
-				layout='split'
-				title='无法读取设置'
-				variant='danger'
-			/>
+			<Alert role='alert' status='danger'>
+				<Alert.Indicator />
+				<Alert.Content>
+					<Alert.Title>无法读取设置</Alert.Title>
+					<Alert.Description>{sidebarError ?? 'Sidebar 设置加载失败。'}</Alert.Description>
+				</Alert.Content>
+				<Button
+					onPress={() => void loadSidebarSettings().catch(() => undefined)}
+					size='sm'
+					type='button'
+					variant='danger'
+				>
+					重试
+				</Button>
+			</Alert>
 		)
 	}
 
@@ -179,14 +184,13 @@ export function SettingsSidebarPanel() {
 					})}
 				</SettingsPreferenceGroup>
 				{sectionErrors.mainItems ? (
-					<StatusNotice
-						className={`mt-4 ${statusNoticeCompactTextClass}`}
-						role='alert'
-						size='sm'
-						variant='danger'
-					>
-						{sectionErrors.mainItems}
-					</StatusNotice>
+					<Alert className='mt-4' role='alert' status='danger'>
+						<Alert.Indicator />
+						<Alert.Content>
+							<Alert.Title>主导航更新失败</Alert.Title>
+							<Alert.Description>{sectionErrors.mainItems}</Alert.Description>
+						</Alert.Content>
+					</Alert>
 				) : null}
 			</SettingsSection>
 
@@ -217,14 +221,13 @@ export function SettingsSidebarPanel() {
 					/>
 				</SettingsPreferenceGroup>
 				{sectionErrors.footerItems ? (
-					<StatusNotice
-						className={`mt-4 ${statusNoticeCompactTextClass}`}
-						role='alert'
-						size='sm'
-						variant='danger'
-					>
-						{sectionErrors.footerItems}
-					</StatusNotice>
+					<Alert className='mt-4' role='alert' status='danger'>
+						<Alert.Indicator />
+						<Alert.Content>
+							<Alert.Title>辅助入口更新失败</Alert.Title>
+							<Alert.Description>{sectionErrors.footerItems}</Alert.Description>
+						</Alert.Content>
+					</Alert>
 				) : null}
 			</SettingsSection>
 
@@ -256,14 +259,13 @@ export function SettingsSidebarPanel() {
 					/>
 				</SettingsPreferenceGroup>
 				{sectionErrors.projectSection ? (
-					<StatusNotice
-						className={`mt-4 ${statusNoticeCompactTextClass}`}
-						role='alert'
-						size='sm'
-						variant='danger'
-					>
-						{sectionErrors.projectSection}
-					</StatusNotice>
+					<Alert className='mt-4' role='alert' status='danger'>
+						<Alert.Indicator />
+						<Alert.Content>
+							<Alert.Title>项目分区更新失败</Alert.Title>
+							<Alert.Description>{sectionErrors.projectSection}</Alert.Description>
+						</Alert.Content>
+					</Alert>
 				) : null}
 			</SettingsSection>
 		</div>

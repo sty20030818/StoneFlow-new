@@ -1,4 +1,3 @@
-import React from 'react'
 import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import { listen } from '@tauri-apps/api/event'
 import type * as TauriEvent from '@tauri-apps/api/event'
@@ -83,52 +82,6 @@ vi.mock('@/app/navigation/ShellRouteContext', () => ({
 		isSettingsPath: true,
 	}),
 }))
-
-vi.mock('@/shared/components/base/select', () => {
-	return {
-		Select: ({
-			value,
-			onValueChange,
-			disabled,
-			children,
-		}: {
-			value?: string
-			onValueChange?: (value: string) => void
-			disabled?: boolean
-			children: React.ReactNode
-		}) => {
-			const trigger = React.Children.toArray(children).find(
-				(child) => React.isValidElement(child) && child.type === MockSelectTrigger,
-			)
-			const triggerProps =
-				React.isValidElement(trigger) && typeof trigger.props === 'object'
-					? (trigger.props as Record<string, unknown>)
-					: {}
-
-			return (
-				<select
-					aria-label={triggerProps['aria-label'] as string | undefined}
-					disabled={disabled}
-					onChange={(event) => onValueChange?.(event.currentTarget.value)}
-					value={value}
-				>
-					{children}
-				</select>
-			)
-		},
-		SelectTrigger: MockSelectTrigger,
-		SelectValue: () => null,
-		SelectContent: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-		SelectGroup: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-		SelectItem: ({ value, children }: { value: string; children: React.ReactNode }) => (
-			<option value={value}>{children}</option>
-		),
-	}
-
-	function MockSelectTrigger(_props: { children?: React.ReactNode; 'aria-label'?: string }) {
-		return null
-	}
-})
 
 describe('SettingsPage', () => {
 	beforeEach(() => {
@@ -308,7 +261,8 @@ describe('SettingsPage', () => {
 		mockSettingsSection = 'general'
 		await renderSettingsPage()
 
-		fireEvent.change(screen.getByLabelText('默认空间'), { target: { value: 'space-2' } })
+		fireEvent.click(screen.getByRole('button', { name: /默认空间/ }))
+		fireEvent.click(await screen.findByRole('option', { name: '生活' }))
 
 		await waitFor(() => {
 			expect(setDefaultSpaceSpy).toHaveBeenCalledWith('space-2')
@@ -655,7 +609,7 @@ describe('SettingsPage', () => {
 		mockSettingsSection = 'sync'
 		await renderSettingsPage()
 
-		expect(screen.getByText('需要首次同步建立基线')).toBeInTheDocument()
+		expect(screen.getAllByText('需要首次同步建立基线').length).toBeGreaterThanOrEqual(1)
 		expect(screen.getAllByText('缺少基线').length).toBeGreaterThanOrEqual(1)
 		// 允许点「建立基线并同步」：会 origin seed + 上传，不会 wipe 本机
 		expect(screen.getByRole('button', { name: '建立基线并同步' })).toBeEnabled()
@@ -720,25 +674,7 @@ function createSyncStatusPayload(overrides: Record<string, unknown>) {
 }
 
 function getCheckboxByLabel(label: string) {
-	const labelEl = screen.getByText(label).closest('label')
-	if (!labelEl) {
-		throw new Error(`未找到 ${label} 对应的设置项容器`)
-	}
-
-	const htmlFor = labelEl.getAttribute('for')
-	if (htmlFor) {
-		const byId = document.getElementById(htmlFor)
-		if (byId instanceof HTMLInputElement) {
-			return byId
-		}
-	}
-
-	const nested = labelEl.querySelector('input[type="checkbox"]')
-	if (nested instanceof HTMLInputElement) {
-		return nested
-	}
-
-	throw new Error(`未找到 ${label} 对应的 checkbox`)
+	return screen.getByRole('switch', { name: label })
 }
 
 function createSidebarStoreState() {

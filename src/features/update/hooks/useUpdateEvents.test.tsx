@@ -1,8 +1,8 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
+import { toast } from '@heroui/react'
 import { isTauri } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import type * as TauriEvent from '@tauri-apps/api/event'
-import { toast } from 'sonner'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -30,7 +30,7 @@ vi.mock('../api/updates', () => ({
 	UPDATE_SESSION_CHANGED_EVENT: 'update-session-changed',
 }))
 
-vi.mock('sonner', () => ({
+vi.mock('@heroui/react', () => ({
 	toast: { success: vi.fn() },
 }))
 
@@ -336,9 +336,9 @@ describe('useUpdateEvents', () => {
 		renderHook(() => useUpdateEvents(onCompletedUpdate))
 		await waitFor(() => expect(toast.success).toHaveBeenCalledTimes(1))
 		const options = vi.mocked(toast.success).mock.calls[0]?.[1]
-		const action = options?.action
-		if (action && typeof action === 'object' && 'onClick' in action) {
-			act(() => action.onClick({} as never))
+		const action = options?.actionProps
+		if (action && typeof action === 'object' && 'onPress' in action) {
+			act(() => action.onPress?.({} as never))
 		}
 
 		expect(onCompletedUpdate).toHaveBeenCalledWith('0.2.0-beta.3', 'beta')

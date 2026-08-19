@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 
-import type { LauncherDerivedState } from './launcherDomainTypes'
+import type { LauncherBaseDerivedState } from './launcherDomainTypes'
 import { formatDateLabel, formatStatusLabel } from '../model/launcherFormatters'
 import type {
 	LauncherPanelState,
@@ -16,7 +16,7 @@ const RECENT_TASK_LIMIT = 5
 const RECENT_PROJECT_LIMIT = 5
 export const SEARCH_RESULT_LIMIT = 20
 
-export function useLauncherDerivedState(state: LauncherPanelState): LauncherDerivedState {
+export function useLauncherDerivedState(state: LauncherPanelState): LauncherBaseDerivedState {
 	const normalizedTitle = state.draft.title.trim()
 	const hasTitle = normalizedTitle.length > 0
 	const isSearchingMode = normalizedTitle.length > 0
@@ -74,21 +74,6 @@ export function useLauncherDerivedState(state: LauncherPanelState): LauncherDeri
 	const currentSpace =
 		state.openContext?.spaces.find((space) => space.id === state.draft.spaceId) ?? null
 
-	const projectOptions = useMemo(() => {
-		if (!state.projectSearch.trim()) {
-			return state.projectOptions
-		}
-
-		const normalizedQuery = state.projectSearch.trim().toLowerCase()
-		return state.projectOptions.filter((option) => {
-			if (option.kind !== 'project') {
-				return true
-			}
-
-			return option.name.toLowerCase().includes(normalizedQuery)
-		})
-	}, [state.projectOptions, state.projectSearch])
-
 	const placementLabel = useMemo(() => {
 		if (state.draft.placement.kind === 'project') {
 			return (
@@ -130,22 +115,18 @@ export function useLauncherDerivedState(state: LauncherPanelState): LauncherDeri
 	])
 
 	return {
-		activeResultIndex:
-			state.focusTarget !== 'none' && state.focusTarget !== 'create' ? state.focusTarget.index : -1,
 		continuousToastVisible: state.continuousCreateCount > 0 && !hasTitle,
 		createMeta,
 		displayProjects,
 		displayTasks,
-		enterLabel: state.focusTarget !== 'none' && state.focusTarget !== 'create' ? '打开' : '创建',
 		flatItems,
 		hasTitle,
-		isCreateFocused: state.focusTarget === 'create',
 		isSearchEmpty,
 		isSearchingMode,
 		isShowingRecent,
 		mode,
 		placementLabel,
-		projectOptions,
+		projectOptions: state.projectOptions,
 		spaceName: currentSpace?.name ?? '加载中...',
 	}
 }

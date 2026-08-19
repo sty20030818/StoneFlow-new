@@ -1,67 +1,66 @@
+import { Button } from '@heroui/react'
 import { FolderIcon } from 'lucide-react'
+import type { KeyboardEventHandler, Ref } from 'react'
 
 import type { LauncherProjectItem } from '../../model/types'
-import { RowShell } from '@/shared/components/row'
 import { OverflowTooltip } from '@/shared/components/tooltip'
+import { cn } from '@/shared/lib/utils'
 
 type ProjectResultRowAdapterProps = {
 	item: LauncherProjectItem
-	index: number
 	isActive: boolean
 	onOpen: (item: LauncherProjectItem) => void
-	onHover: (index: number) => void
+	onFocus: () => void
+	onKeyDown: KeyboardEventHandler<HTMLButtonElement>
+	rowRef: Ref<HTMLButtonElement>
 }
 
 export function ProjectResultRowAdapter({
 	item,
-	index,
 	isActive,
 	onOpen,
-	onHover,
+	onFocus,
+	onKeyDown,
+	rowRef,
 }: ProjectResultRowAdapterProps) {
 	return (
-		<RowShell.Root
-			active={isActive}
-			aria-label={`打开项目 ${item.name}`}
-			interactive
-			onClick={() => onOpen(item)}
-			onKeyDown={(event) => {
-				if (event.key === 'Enter' || event.key === ' ') {
-					event.preventDefault()
-					onOpen(item)
-				}
-			}}
-			onMouseEnter={() => onHover(index)}
-		>
-			<RowShell.Left className='gap-3'>
-				<RowShell.Leading>
-					<span className='flex size-7 items-center justify-center rounded-md bg-sf-success-surface text-sf-success-surface-text'>
+		<div role='listitem'>
+			<Button
+				aria-label={`打开项目 ${item.name}`}
+				className={cn(
+					'h-auto min-h-12 w-full justify-start gap-3 rounded-lg px-3 py-1.5 text-left',
+					isActive && 'bg-accent-soft text-accent-soft-foreground',
+				)}
+				fullWidth
+				onFocus={onFocus}
+				onHoverStart={onFocus}
+				onKeyDown={onKeyDown}
+				onPress={() => onOpen(item)}
+				ref={rowRef}
+				type='button'
+				variant='ghost'
+			>
+				<div className='flex min-w-0 flex-1 items-center gap-3'>
+					<span className='flex size-7 shrink-0 items-center justify-center rounded-md bg-success-soft text-success-soft-foreground'>
 						<FolderIcon className='size-3.5' />
 					</span>
-				</RowShell.Leading>
 
-				<RowShell.Title>
-					<div className='min-w-0'>
-						<OverflowTooltip className='text-[12.5px] text-legacy-foreground' content={item.name}>
+					<div className='min-w-0 flex-1'>
+						<OverflowTooltip className='text-[12.5px] text-foreground' content={item.name}>
 							{item.name}
 						</OverflowTooltip>
-						<OverflowTooltip
-							className='mt-0.5 text-[11px] text-sf-text-quaternary'
-							content={item.spaceName}
-						>
+						<OverflowTooltip className='mt-0.5 text-[11px] text-muted' content={item.spaceName}>
 							{item.spaceName}
 						</OverflowTooltip>
 					</div>
-				</RowShell.Title>
-			</RowShell.Left>
+				</div>
 
-			<RowShell.Right>
-				<RowShell.Actions>
-					<span className='rounded border border-sf-border-subtle px-1.5 py-0.5 text-[10.5px] text-sf-text-quaternary'>
+				<div className='shrink-0'>
+					<span className='rounded border border-border px-1.5 py-0.5 text-[10.5px] text-muted'>
 						项目
 					</span>
-				</RowShell.Actions>
-			</RowShell.Right>
-		</RowShell.Root>
+				</div>
+			</Button>
+		</div>
 	)
 }

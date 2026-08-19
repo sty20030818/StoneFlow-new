@@ -17,7 +17,7 @@ describe('ChangelogMarkdown', () => {
 
 		const items = screen.getAllByRole('listitem')
 		expect(items).toHaveLength(2)
-		expect(items[1]).toHaveClass('ml-5')
+		expect(items[0]).toContainElement(items[1])
 	})
 
 	it('围栏中的标题按代码原文展示', () => {

@@ -1,175 +1,33 @@
-import type { ReactNode } from 'react'
+import ReactMarkdown, { type Components } from 'react-markdown'
+import remarkBreaks from 'remark-breaks'
+import remarkGfm from 'remark-gfm'
 
+const components: Components = {
+	hr: () => null,
+	h2: ({ children }) => (
+		<h3 className='m-0 pt-1.5 text-[15px] font-semibold text-foreground'>{children}</h3>
+	),
+	h3: ({ children }) => (
+		<h4 className='m-0 pt-1.5 text-[14px] font-semibold text-foreground'>{children}</h4>
+	),
+	ul: ({ children }) => (
+		<ul className='m-0 list-disc space-y-1.5 pl-5 marker:text-muted'>{children}</ul>
+	),
+	p: ({ children }) => <p className='m-0 text-muted'>{children}</p>,
+	pre: ({ children }) => (
+		<pre className='m-0 overflow-x-auto rounded-md bg-surface-secondary px-3 py-2 font-mono text-xs text-muted'>
+			{children}
+		</pre>
+	),
+}
+
+/** 发布记录只需标准 Markdown/GFM；原始 HTML 不执行，分割线按产品合同隐藏。 */
 export function ChangelogMarkdown({ content }: { content: string }) {
-	const blocks = parseSimpleMarkdown(content)
 	return (
-		<div className='space-y-3.5 text-[13px] leading-6 text-sf-text-secondary'>
-			{blocks.map((block, index) => {
-				if (block.type === 'h2') {
-					return (
-						<h3 className='m-0 pt-1.5 text-[15px] font-semibold text-sf-text-primary' key={index}>
-							{renderInline(block.text)}
-						</h3>
-					)
-				}
-				if (block.type === 'h3') {
-					return (
-						<h4 className='m-0 pt-1.5 text-[14px] font-semibold text-sf-text-primary' key={index}>
-							{renderInline(block.text)}
-						</h4>
-					)
-				}
-				if (block.type === 'list') {
-					return (
-						<ul className='m-0 space-y-1.5 p-0' key={index}>
-							{block.items.map((item, itemIndex) => (
-								<li
-									className={
-										item.level === 0
-											? itemIndex > 0 && block.items[itemIndex - 1].level > 0
-												? 'mt-2.5 flex items-start gap-2'
-												: 'flex items-start gap-2'
-											: item.level === 1
-												? 'ml-5 flex items-start gap-2'
-												: 'ml-10 flex items-start gap-2'
-									}
-									key={itemIndex}
-								>
-									<span
-										className={
-											item.level === 0
-												? 'mt-2.25 size-1 shrink-0 rounded-full bg-sf-text-tertiary'
-												: 'mt-2.5 h-px w-1.5 shrink-0 bg-sf-text-quaternary'
-										}
-									/>
-									<span className='text-sf-text-secondary'>{renderInline(item.text)}</span>
-								</li>
-							))}
-						</ul>
-					)
-				}
-				if (block.type === 'code') {
-					return (
-						<pre
-							className='m-0 overflow-x-auto rounded-md bg-sf-surface-panel-muted px-3 py-2 font-mono text-xs text-sf-text-secondary'
-							key={index}
-						>
-							<code>{block.text}</code>
-						</pre>
-					)
-				}
-				return (
-					<p className='m-0 text-sf-text-secondary' key={index}>
-						{renderInline(block.text)}
-					</p>
-				)
-			})}
+		<div className='space-y-3.5 text-[13px] leading-6 text-muted'>
+			<ReactMarkdown components={components} remarkPlugins={[remarkGfm, remarkBreaks]}>
+				{content}
+			</ReactMarkdown>
 		</div>
 	)
-}
-
-type MarkdownBlock =
-	| { type: 'h2'; text: string }
-	| { type: 'h3'; text: string }
-	| { type: 'list'; items: MarkdownListItem[] }
-	| { type: 'code'; text: string }
-	| { type: 'p'; text: string }
-
-type MarkdownListItem = {
-	level: number
-	text: string
-}
-
-function parseSimpleMarkdown(content: string): MarkdownBlock[] {
-	const blocks: MarkdownBlock[] = []
-	let listItems: MarkdownListItem[] = []
-	let paragraph: string[] = []
-	let fence: { marker: '`' | '~'; length: number; lines: string[] } | null = null
-	const flushParagraph = () => {
-		if (paragraph.length) {
-			blocks.push({ type: 'p', text: paragraph.join(' ').trim() })
-			paragraph = []
-		}
-	}
-	const flushList = () => {
-		if (listItems.length) {
-			blocks.push({ type: 'list', items: listItems })
-			listItems = []
-		}
-	}
-	for (const rawLine of content.split('\n')) {
-		if (fence) {
-			const closing = new RegExp(`^ {0,3}\\${fence.marker}{${fence.length},}[ \\t]*$`)
-			if (closing.test(rawLine)) {
-				blocks.push({ type: 'code', text: fence.lines.join('\n') })
-				fence = null
-			} else {
-				fence.lines.push(rawLine)
-			}
-			continue
-		}
-		const opening = /^ {0,3}(`{3,}|~{3,})(.*)$/.exec(rawLine)
-		if (opening && !(opening[1][0] === '`' && opening[2].includes('`'))) {
-			flushParagraph()
-			flushList()
-			fence = {
-				marker: opening[1][0] as '`' | '~',
-				length: opening[1].length,
-				lines: [],
-			}
-			continue
-		}
-		const line = rawLine.trimEnd()
-		if (/^ {0,3}(-{3,}|_{3,}|\*{3,})\s*$/.test(line)) {
-			flushParagraph()
-			flushList()
-			continue
-		}
-		if (line.startsWith('## ')) {
-			flushParagraph()
-			flushList()
-			blocks.push({ type: 'h2', text: line.slice(3).trim() })
-			continue
-		}
-		if (line.startsWith('### ')) {
-			flushParagraph()
-			flushList()
-			blocks.push({ type: 'h3', text: line.slice(4).trim() })
-			continue
-		}
-		const listMatch = line.match(/^(\s*)[-*]\s+(.+)$/)
-		if (listMatch) {
-			flushParagraph()
-			listItems.push({
-				level: Math.min(Math.floor(listMatch[1].replaceAll('\t', '  ').length / 2), 2),
-				text: listMatch[2].trim(),
-			})
-			continue
-		}
-		if (!line.trim()) {
-			flushParagraph()
-			flushList()
-			continue
-		}
-		flushList()
-		paragraph.push(line.trim())
-	}
-	if (fence) blocks.push({ type: 'code', text: fence.lines.join('\n') })
-	flushParagraph()
-	flushList()
-	return blocks
-}
-
-function renderInline(text: string): ReactNode {
-	const parts: ReactNode[] = []
-	const regex = /\*\*(.+?)\*\*/g
-	let lastIndex = 0
-	let match: RegExpExecArray | null
-	while ((match = regex.exec(text)) !== null) {
-		if (match.index > lastIndex) parts.push(text.slice(lastIndex, match.index))
-		parts.push(<strong key={match.index}>{match[1]}</strong>)
-		lastIndex = regex.lastIndex
-	}
-	if (lastIndex < text.length) parts.push(text.slice(lastIndex))
-	return parts
 }

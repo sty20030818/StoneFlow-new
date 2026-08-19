@@ -1,4 +1,4 @@
-import { toast } from 'sonner'
+import { toast } from '@heroui/react'
 
 import { normalizeTauriError } from '@/shared/lib/normalize-tauri-error'
 import {
@@ -24,7 +24,7 @@ export function useUpdateInstallActions() {
 		try {
 			applyLifecycleResult(await downloadUpdate(snapshot.update.version, snapshot.update.channel))
 		} catch (error) {
-			toast.error(normalizeTauriError(error, '下载更新失败'))
+			toast.danger(normalizeTauriError(error, '下载更新失败'))
 		}
 	}
 
@@ -35,7 +35,7 @@ export function useUpdateInstallActions() {
 			useUpdateStore.getState().applySnapshot(snapshot)
 			useUpdateStore.getState().closeDialog()
 		} catch (error) {
-			toast.error(normalizeTauriError(error, '取消下载失败'))
+			toast.danger(normalizeTauriError(error, '取消下载失败'))
 		}
 	}
 
@@ -48,7 +48,7 @@ export function useUpdateInstallActions() {
 				await installStagedUpdate(snapshot.update.version, confirmedSourceChannel),
 			)
 		} catch (error) {
-			toast.error(normalizeTauriError(error, '安装更新失败'))
+			toast.danger(normalizeTauriError(error, '安装更新失败'))
 		}
 	}
 

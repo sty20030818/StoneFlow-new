@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 
 import type { LauncherAction } from './launcherDomainTypes'
+import type { CollectionInteraction } from '@/features/selection'
 import type {
 	LauncherFocusTarget,
 	LauncherPlacement,
@@ -13,24 +14,27 @@ type UseLauncherDraftActionsArgs = {
 	dispatch: React.ActionDispatch<[action: LauncherAction]>
 	focusInput: () => void
 	focusTarget: LauncherFocusTarget
-	flatItemCount: number
 	hasTitle: boolean
 	loadProjectsForSpace: (spaceId: string) => Promise<void>
+	requestResultFocus: (key: string) => void
+	resultCollection: CollectionInteraction<string>
 }
 
 export function useLauncherDraftActions({
 	dispatch,
 	focusInput,
 	focusTarget,
-	flatItemCount,
 	hasTitle,
 	loadProjectsForSpace,
+	requestResultFocus,
+	resultCollection,
 }: UseLauncherDraftActionsArgs) {
 	const setTitle = useCallback(
 		(title: string) => {
+			resultCollection.focusKey(null)
 			dispatch({ type: 'titleChanged', title })
 		},
-		[dispatch],
+		[dispatch, resultCollection],
 	)
 
 	const setPriority = useCallback(
@@ -89,55 +93,57 @@ export function useLauncherDraftActions({
 		focusInput()
 	}, [dispatch, focusInput])
 
-	const setProjectSearch = useCallback(
-		(query: string) => {
-			dispatch({ type: 'projectSearchChanged', query })
-		},
-		[dispatch],
-	)
-
 	const moveFocus = useCallback(
 		(direction: 1 | -1) => {
-			if (flatItemCount === 0) {
+			const keys = resultCollection.projection.navigableKeys
+			if (keys.length === 0) {
 				return
 			}
 
 			if (focusTarget === 'create') {
-				if (direction === 1) {
-					dispatch({ type: 'focusChanged', focusTarget: { kind: 'result', index: 0 } })
+				if (direction < 0) {
+					focusInput()
+					return
 				}
+				focusResultKey(keys[0])
 				return
 			}
 
-			if (focusTarget === 'none') {
-				dispatch({ type: 'focusChanged', focusTarget: { kind: 'result', index: 0 } })
-				return
-			}
-
-			const nextIndex = focusTarget.index + direction
+			const currentIndex = resultCollection.focusedKey
+				? keys.indexOf(resultCollection.focusedKey)
+				: -1
+			const nextIndex =
+				currentIndex < 0 ? (direction > 0 ? 0 : keys.length - 1) : currentIndex + direction
 			if (nextIndex < 0) {
+				resultCollection.focusKey(null)
 				dispatch({ type: 'focusChanged', focusTarget: hasTitle ? 'create' : 'none' })
+				focusInput()
 				return
 			}
 
-			dispatch({
-				type: 'focusChanged',
-				focusTarget: { kind: 'result', index: Math.min(nextIndex, flatItemCount - 1) },
-			})
+			focusResultKey(keys[Math.min(nextIndex, keys.length - 1)])
+
+			function focusResultKey(key: string | undefined) {
+				if (!key) return
+				dispatch({ type: 'focusChanged', focusTarget: 'none' })
+				resultCollection.focusKey(key)
+				requestResultFocus(key)
+			}
 		},
-		[dispatch, flatItemCount, focusTarget, hasTitle],
+		[dispatch, focusInput, focusTarget, hasTitle, requestResultFocus, resultCollection],
 	)
 
 	const focusCreate = useCallback(() => {
+		resultCollection.focusKey(null)
 		dispatch({ type: 'focusChanged', focusTarget: hasTitle ? 'create' : 'none' })
-		focusInput()
-	}, [dispatch, focusInput, hasTitle])
+	}, [dispatch, hasTitle, resultCollection])
 
 	const focusResult = useCallback(
-		(index: number) => {
-			dispatch({ type: 'focusChanged', focusTarget: { kind: 'result', index } })
+		(key: string) => {
+			dispatch({ type: 'focusChanged', focusTarget: 'none' })
+			resultCollection.focusKey(key)
 		},
-		[dispatch],
+		[dispatch, resultCollection],
 	)
 
 	return {
@@ -149,7 +155,6 @@ export function useLauncherDraftActions({
 		setDate,
 		setPopover,
 		setPriority,
-		setProjectSearch,
 		setStatus,
 		setTitle,
 		toggleAdvanced,

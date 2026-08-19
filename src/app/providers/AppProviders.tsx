@@ -1,4 +1,5 @@
 import type { PropsWithChildren } from 'react'
+import { Toast } from '@heroui/react'
 
 import {
 	DEFAULT_KEYBINDINGS,
@@ -19,6 +20,7 @@ export function AppProviders({ children }: PropsWithChildren) {
 	return (
 		<ShortcutRegistryProvider registry={APP_SHORTCUT_REGISTRY}>
 			{children}
+			<Toast.Provider placement='bottom end' />
 			<Toaster />
 		</ShortcutRegistryProvider>
 	)

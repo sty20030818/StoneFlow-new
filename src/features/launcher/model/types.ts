@@ -74,6 +74,10 @@ export type LauncherResultItem =
 	| ({ kind: 'task' } & LauncherTaskItem)
 	| ({ kind: 'project' } & LauncherProjectItem)
 
+export function getLauncherResultKey(item: LauncherResultItem) {
+	return `${item.kind}:${item.id}`
+}
+
 export type LauncherOpenContext = {
 	currentScope: LauncherScope
 	defaultSpaceId: string
@@ -120,7 +124,7 @@ export type LauncherPopoverKey =
 	| 'reminder'
 	| 'space'
 
-export type LauncherFocusTarget = 'none' | 'create' | { kind: 'result'; index: number }
+export type LauncherFocusTarget = 'none' | 'create'
 
 export type LauncherSubmitAction = 'create' | 'createAndOpen' | 'createAndContinue' | 'openResult'
 
@@ -132,7 +136,6 @@ export type LauncherPanelState = {
 	recentStatus: 'idle' | 'loading' | 'ready' | 'error'
 	draft: LauncherDraft
 	projectOptions: LauncherProjectOption[]
-	projectSearch: string
 	isProjectOptionsLoading: boolean
 	activePopover: LauncherPopoverKey | null
 	isAdvancedOpen: boolean

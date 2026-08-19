@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { Card, Chip } from '@heroui/react'
 
 import {
 	formatReplicaState,
@@ -12,14 +13,15 @@ import {
 	type SyncStatusPayload,
 } from '@/features/sync'
 import { cn } from '@/shared/lib/utils'
-import { Badge } from '@/shared/components/base/badge'
 
 export function SyncMetricCard({ label, value }: { label: string; value: ReactNode }) {
 	return (
-		<div className='rounded-2xl border border-sf-border-subtle bg-legacy-muted/25 px-3 py-2'>
-			<p className='text-[11px] font-medium text-muted-foreground'>{label}</p>
-			<div className='mt-1 text-sm text-legacy-foreground'>{value}</div>
-		</div>
+		<Card variant='tertiary'>
+			<Card.Content className='px-3 py-2'>
+				<p className='text-[11px] font-medium text-muted'>{label}</p>
+				<div className='mt-1 text-sm text-foreground'>{value}</div>
+			</Card.Content>
+		</Card>
 	)
 }
 
@@ -31,25 +33,23 @@ export function SyncTimestampValue({
 	emptyLabel?: string
 }) {
 	if (!timestamp) {
-		return <span className='text-slate-500'>{emptyLabel}</span>
+		return <span className='text-muted'>{emptyLabel}</span>
 	}
 
 	return (
 		<div className='flex flex-col gap-1'>
-			<span className='font-medium text-legacy-foreground'>
-				{formatSyncRelativeTime(timestamp)}
-			</span>
-			<span className='text-xs text-slate-500'>{formatSyncExactTime(timestamp)}</span>
+			<span className='font-medium text-foreground'>{formatSyncRelativeTime(timestamp)}</span>
+			<span className='text-xs text-muted'>{formatSyncExactTime(timestamp)}</span>
 		</div>
 	)
 }
 
 export function SyncCursorValue({ value }: { value: number | null }) {
 	if (value === null) {
-		return <span className='text-slate-500'>未记录</span>
+		return <span className='text-muted'>未记录</span>
 	}
 
-	return <span className='font-medium text-legacy-foreground'>{value}</span>
+	return <span className='font-medium text-foreground'>{value}</span>
 }
 
 export function SyncCountsSummaryValue({
@@ -67,8 +67,8 @@ export function SyncCountsSummaryValue({
 }) {
 	return (
 		<div className='flex flex-col gap-1'>
-			<span className='font-medium text-legacy-foreground'>{formatSyncCountsSummary(counts)}</span>
-			<span className='text-xs text-slate-500'>总计 {counts.totalItems} 条主数据</span>
+			<span className='font-medium text-foreground'>{formatSyncCountsSummary(counts)}</span>
+			<span className='text-xs text-muted'>总计 {counts.totalItems} 条主数据</span>
 		</div>
 	)
 }
@@ -77,10 +77,10 @@ export function SyncStatusBadge({ status }: { status: SyncStatus }) {
 	const tone = getSyncStatusTone(status)
 
 	return (
-		<Badge variant={tone.badgeVariant}>
+		<Chip color={tone.color} size='sm' variant='soft'>
 			<span className={cn('size-2 shrink-0 rounded-full', tone.dotClassName)} />
-			{formatSyncStatus(status)}
-		</Badge>
+			<Chip.Label>{formatSyncStatus(status)}</Chip.Label>
+		</Chip>
 	)
 }
 
@@ -88,10 +88,10 @@ export function SyncReplicaBadge({ state }: { state: SyncReplicaState }) {
 	const tone = getSyncReplicaTone(state)
 
 	return (
-		<Badge variant={tone.badgeVariant}>
+		<Chip color={tone.color} size='sm' variant='soft'>
 			<span className={cn('size-2 shrink-0 rounded-full', tone.dotClassName)} />
-			{formatReplicaState(state)}
-		</Badge>
+			<Chip.Label>{formatReplicaState(state)}</Chip.Label>
+		</Chip>
 	)
 }
 
@@ -104,19 +104,19 @@ export function SyncCloudConfigBadge({
 	const configured = credentialState === 'available'
 	const label = unavailable ? '同步凭据不可用' : configured ? '云端副本已配置' : '云端副本未配置'
 	return (
-		<Badge variant={unavailable ? 'destructive' : configured ? 'success' : 'outline'}>
+		<Chip
+			color={unavailable ? 'danger' : configured ? 'success' : 'default'}
+			size='sm'
+			variant='soft'
+		>
 			<span
 				className={cn(
 					'size-2 shrink-0 rounded-full',
-					unavailable
-						? 'bg-sf-danger'
-						: configured
-							? 'bg-sf-success-strong'
-							: 'bg-(--sf-neutral-500)',
+					unavailable ? 'bg-danger' : configured ? 'bg-success' : 'bg-default',
 				)}
 			/>
-			{label}
-		</Badge>
+			<Chip.Label>{label}</Chip.Label>
+		</Chip>
 	)
 }
 
@@ -277,14 +277,14 @@ export function getSyncStatusCopy({
 				summary:
 					'在项目根目录 .env.local 设置 STONEFLOW_SYNC_DATABASE_URL 后重启开发应用；连接串不会写入系统钥匙串。',
 				statusDescription: '开发构建尚未读取到 .env.local 中的同步连接串。',
-				variant: 'neutral' as const,
+				variant: 'default' as const,
 			}
 		}
 		return {
 			title: '尚未启用云同步',
 			summary: '当前还没有保存可用的同步数据库连接。完成配置前，所有数据只会保留在本地数据库。',
 			statusDescription: '未配置云端副本，本机只保留本地数据。',
-			variant: 'neutral' as const,
+			variant: 'default' as const,
 		}
 	}
 
@@ -346,7 +346,7 @@ export function getSyncStatusCopy({
 				title: '同步概览',
 				summary: '当前同步状态已更新。',
 				statusDescription: '当前同步状态已更新。',
-				variant: 'neutral' as const,
+				variant: 'default' as const,
 			}
 	}
 }

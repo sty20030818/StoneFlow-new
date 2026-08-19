@@ -1,9 +1,9 @@
 /** 更新事件监听：先订阅唯一 snapshot 事件，再 hydrate 当前会话。 */
 
 import { useEffect } from 'react'
+import { toast } from '@heroui/react'
 import { isTauri } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
-import { toast } from 'sonner'
 
 import {
 	consumeCompletedUpdate,
@@ -111,9 +111,9 @@ export function useUpdateEvents(
 			.then((version) => {
 				if (!disposed && version) {
 					toast.success(`已更新至 ${version}`, {
-						action: {
-							label: '查看更新内容',
-							onClick: () =>
+						actionProps: {
+							children: '查看更新内容',
+							onPress: () =>
 								onCompletedUpdate?.(version, version.includes('-beta.') ? 'beta' : 'stable'),
 						},
 					})

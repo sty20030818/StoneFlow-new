@@ -1,12 +1,12 @@
+import { Button } from '@heroui/react'
+
 import { useLauncher } from '../domain/LauncherDomainProvider'
 import { PriorityIcon } from '@/features/task'
 import { TaskStatusIndicator } from '@/features/task'
-import { RowShell } from '@/shared/components/row'
 import { OverflowTooltip } from '@/shared/components/tooltip'
+import { cn } from '@/shared/lib/utils'
 
-/**
- * 钉在 Results 上方的新建行：把当前草稿翻译为统一 RowShell。
- */
+/** 钉在 Results 上方的新建动作；交互与语义由 HeroUI Button 承担。 */
 export function CreateRow() {
 	const { actions, derived, state } = useLauncher()
 
@@ -16,44 +16,39 @@ export function CreateRow() {
 
 	return (
 		<div data-testid='launcher-create-section'>
-			<RowShell.Root
-				active={derived.isCreateFocused}
+			<Button
 				aria-label={`创建任务 ${state.draft.title.trim()}`}
-				className='border-transparent bg-sf-selection-surface hover:bg-sf-selection-surface-hover'
-				interactive
-				onClick={() => void actions.submit('create')}
-				onKeyDown={(event) => {
-					if (event.key === 'Enter' || event.key === ' ') {
-						event.preventDefault()
-						void actions.submit('create')
-					}
-				}}
-				onMouseEnter={actions.focusCreate}
+				className={cn(
+					'h-auto min-h-14 w-full justify-start gap-2.5 rounded-lg px-3 py-2 text-left',
+					derived.isCreateFocused && 'bg-accent-soft text-accent-soft-foreground',
+				)}
+				fullWidth
+				onFocus={actions.focusCreate}
+				onHoverStart={actions.focusCreate}
+				onKeyDown={actions.handleKeyDown}
+				onPress={() => void actions.submit('create')}
+				type='button'
+				variant='ghost'
 			>
-				<RowShell.Left>
-					<RowShell.Leading className='gap-1.5'>
+				<div className='flex min-w-0 flex-1 items-center gap-2.5'>
+					<div className='flex shrink-0 items-center gap-1.5'>
 						<TaskStatusIndicator status={state.draft.status} />
 						<PriorityIcon priority={state.draft.priority} size='sm' />
-					</RowShell.Leading>
+					</div>
 
-					<RowShell.Title>
-						<div className='min-w-0'>
-							<OverflowTooltip
-								className='text-[12.5px] text-legacy-foreground'
-								content={state.draft.title.trim()}
-							>
-								{state.draft.title.trim()}
-							</OverflowTooltip>
-							<OverflowTooltip
-								className='mt-0.5 text-[11px] text-sf-text-quaternary'
-								content={derived.createMeta}
-							>
-								{derived.createMeta}
-							</OverflowTooltip>
-						</div>
-					</RowShell.Title>
-				</RowShell.Left>
-			</RowShell.Root>
+					<div className='min-w-0 flex-1'>
+						<OverflowTooltip
+							className='text-[12.5px] text-foreground'
+							content={state.draft.title.trim()}
+						>
+							{state.draft.title.trim()}
+						</OverflowTooltip>
+						<OverflowTooltip className='mt-0.5 text-[11px] text-muted' content={derived.createMeta}>
+							{derived.createMeta}
+						</OverflowTooltip>
+					</div>
+				</div>
+			</Button>
 		</div>
 	)
 }

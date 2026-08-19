@@ -1,5 +1,17 @@
+import {
+	Alert,
+	Button,
+	Disclosure,
+	Input,
+	Label,
+	Radio,
+	RadioGroup,
+	Surface,
+	TextField,
+} from '@heroui/react'
 import { useEffect, useState } from 'react'
 import { listen } from '@tauri-apps/api/event'
+import { SettingsIcon } from 'lucide-react'
 
 import {
 	configureSync,
@@ -15,25 +27,9 @@ import {
 	type SyncStatus,
 	type SyncStatusPayload,
 } from '@/features/sync'
-import { cn } from '@/shared/lib/utils'
-import { Button } from '@/shared/components/base/button'
-import { Input } from '@/shared/components/base/input'
 import { normalizeTauriError } from '@/shared/lib/normalize-tauri-error'
-import {
-	formFieldHintClass,
-	formFieldLabelVariants,
-	formFieldStackClass,
-} from '@/shared/components/patterns/form-field'
 import { SettingInfoRow, SettingsSection } from '../settingsShared'
-import { statusNoticeCompactTextClass } from '@/shared/components/patterns/status-notice'
-import { StatusNotice } from '@/shared/components/StatusNotice'
 import { ActionTooltip, DisabledActionTooltip } from '@/shared/components/tooltip'
-import {
-	Collapsible,
-	CollapsibleContent,
-	CollapsibleTrigger,
-} from '@/shared/components/base/collapsible'
-import { ChevronDownIcon, SettingsIcon } from 'lucide-react'
 
 import {
 	formatSyncPolicySummary,
@@ -317,9 +313,10 @@ export function SettingsSyncPanel() {
 	const configureButton = (
 		<Button
 			aria-label='配置同步数据库'
-			disabled={syncActionBusy}
-			onClick={() => setSyncConfigDialogOpen(true)}
-			size='icon-sm'
+			isDisabled={syncActionBusy}
+			isIconOnly
+			onPress={() => setSyncConfigDialogOpen(true)}
+			size='sm'
 			type='button'
 			variant='ghost'
 		>
@@ -328,8 +325,8 @@ export function SettingsSyncPanel() {
 	)
 	const syncNowButton = (
 		<Button
-			disabled={syncNowDisabled}
-			onClick={() => void handleRunSync()}
+			isDisabled={syncNowDisabled}
+			onPress={() => void handleRunSync()}
 			type='button'
 			variant='secondary'
 		>
@@ -342,8 +339,8 @@ export function SettingsSyncPanel() {
 	)
 	const refreshDiagnosticsButton = (
 		<Button
-			disabled={diagnosticsDisabled}
-			onClick={() => void refreshSyncDiagnostics()}
+			isDisabled={diagnosticsDisabled}
+			onPress={() => void refreshSyncDiagnostics()}
 			size='sm'
 			type='button'
 			variant='secondary'
@@ -358,7 +355,7 @@ export function SettingsSyncPanel() {
 				description='所有业务仍然只读写本地数据库；这里仅配置云端 Postgres 副本，并在需要时手动或自动触发同步。'
 				title='云同步'
 			>
-				<div className='overflow-hidden rounded-xl border border-sf-border-subtle bg-card'>
+				<Surface className='overflow-hidden rounded-xl border border-separator' variant='secondary'>
 					<div className='p-4'>
 						<div className='flex flex-col gap-4 md:flex-row md:items-start md:justify-between'>
 							<div className='min-w-0'>
@@ -369,10 +366,10 @@ export function SettingsSyncPanel() {
 										credentialState={syncStatus?.credentialState ?? 'missing'}
 									/>
 								</div>
-								<h3 className='mt-3 text-base font-semibold tracking-tight text-legacy-foreground'>
+								<h3 className='mt-3 text-base font-semibold tracking-tight text-foreground'>
 									{syncStatusCopy.title}
 								</h3>
-								<p className='mt-1 max-w-2xl text-sm leading-6 text-muted-foreground'>
+								<p className='mt-1 max-w-2xl text-sm leading-6 text-muted'>
 									{syncStatusCopy.statusDescription}
 								</p>
 							</div>
@@ -406,7 +403,7 @@ export function SettingsSyncPanel() {
 							<SyncMetricCard
 								label='待同步'
 								value={
-									<span className='font-medium text-legacy-foreground'>
+									<span className='font-medium text-foreground'>
 										{syncDiagnostics?.local.pendingMutationCount ?? 0} 条
 									</span>
 								}
@@ -415,47 +412,46 @@ export function SettingsSyncPanel() {
 						</div>
 
 						<div className='mt-4 flex min-w-0 flex-col gap-3'>
-							<div className={formFieldStackClass}>
-								<span className={formFieldLabelVariants()}>同步频率</span>
-								<div aria-label='同步频率' className='grid gap-2 sm:grid-cols-3' role='radiogroup'>
-									{SYNC_MODE_OPTIONS.map((option) => {
-										const selected = policyMode === option.mode
-										return (
-											<button
-												aria-checked={selected}
-												className={cn(
-													'flex min-w-0 flex-col items-start gap-0.5 rounded-xl border px-3 py-2.5 text-left',
-													selected
-														? 'border-primary bg-primary/5 shadow-sm'
-														: 'border-sf-border-subtle bg-card hover:border-sf-border-secondary',
-													syncActionBusy && 'pointer-events-none opacity-60',
-												)}
-												disabled={syncActionBusy}
-												key={option.mode}
-												onClick={() => void handleSyncModeChange(option.mode)}
-												role='radio'
-												type='button'
-											>
-												<span className='text-sm font-medium text-legacy-foreground'>
-													{option.label}
+							<div className='flex flex-col gap-1.5'>
+								<span className='text-xs font-medium text-foreground'>同步频率</span>
+								<RadioGroup
+									aria-label='同步频率'
+									className='grid gap-2 sm:grid-cols-3'
+									isDisabled={syncActionBusy}
+									onChange={(value) => void handleSyncModeChange(value as SyncPolicyMode)}
+									value={policyMode}
+								>
+									{SYNC_MODE_OPTIONS.map((option) => (
+										<Radio
+											className='min-w-0 rounded-xl border border-separator bg-surface px-3 py-2.5 data-[selected=true]:border-accent data-[selected=true]:bg-accent-soft'
+											key={option.mode}
+											value={option.mode}
+										>
+											<Radio.Content className='flex w-full items-start gap-3'>
+												<span className='min-w-0 flex-1 text-left'>
+													<span className='block text-sm font-medium text-foreground'>
+														{option.label}
+													</span>
+													<span className='block text-[11px] leading-4 text-muted'>
+														{option.description}
+													</span>
 												</span>
-												<span className='text-[11px] leading-4 text-muted-foreground'>
-													{option.description}
-												</span>
-											</button>
-										)
-									})}
-								</div>
+												<Radio.Control className='mt-0.5 shrink-0'>
+													<Radio.Indicator />
+												</Radio.Control>
+											</Radio.Content>
+										</Radio>
+									))}
+								</RadioGroup>
 							</div>
 
 							{policyMode === 'interval' ? (
-								<label className={`${formFieldStackClass} max-w-xs`}>
-									<span className={formFieldLabelVariants()}>同步间隔（分钟）</span>
+								<TextField className='max-w-xs' isDisabled={syncActionBusy}>
+									<Label>同步间隔（分钟）</Label>
 									<div className='flex items-center gap-2'>
 										<Input
 											aria-label='同步间隔分钟'
-											className='h-10 w-28 tabular-nums'
-											disabled={syncActionBusy}
+											className='w-28 tabular-nums'
 											inputMode='numeric'
 											max={MAX_INTERVAL_MINUTES}
 											min={MIN_INTERVAL_MINUTES}
@@ -471,62 +467,65 @@ export function SettingsSyncPanel() {
 											type='number'
 											value={intervalMinutesDraft}
 										/>
-										<span className='text-sm text-muted-foreground'>分钟</span>
+										<span className='text-sm text-muted'>分钟</span>
 									</div>
-									<p className={formFieldHintClass}>
+									<p className='mt-1 text-xs leading-5 text-muted'>
 										可填 {MIN_INTERVAL_MINUTES}–{MAX_INTERVAL_MINUTES}
 										（1 天）；精确到 1 分钟。
 									</p>
-								</label>
+								</TextField>
 							) : null}
 
-							<p className={formFieldHintClass}>{formatSyncPolicySummary(syncStatus)}</p>
+							<p className='text-xs leading-5 text-muted'>{formatSyncPolicySummary(syncStatus)}</p>
 						</div>
 					</div>
 
-					<Collapsible onOpenChange={setSyncDetailsOpen} open={syncDetailsOpen}>
-						<CollapsibleTrigger
-							className={cn(
-								'flex w-full items-center justify-between border-t border-sf-border-subtle bg-legacy-muted/20 px-4 py-2.5 text-left text-sm text-muted-foreground hover:bg-legacy-muted/35 hover:text-legacy-foreground',
-								syncDetailsOpen && 'bg-legacy-muted/30 text-legacy-foreground',
-							)}
-							type='button'
-						>
-							<span className='font-medium'>详情与诊断</span>
-							<ChevronDownIcon className={cn('size-4 shrink-0', syncDetailsOpen && 'rotate-180')} />
-						</CollapsibleTrigger>
-						<CollapsibleContent className='overflow-hidden border-t border-sf-border-subtle'>
-							<div className='flex flex-col gap-4 bg-legacy-muted/10 p-4'>
-								<StatusNotice
-									description={syncStatusCopy.summary}
-									title={syncStatusCopy.title}
-									variant={syncStatusCopy.variant}
-								/>
+					<Disclosure isExpanded={syncDetailsOpen} onExpandedChange={setSyncDetailsOpen}>
+						<Disclosure.Heading className='border-t border-separator'>
+							<Disclosure.Trigger className='flex w-full items-center justify-between px-4 py-2.5 text-left text-sm text-muted'>
+								<span className='font-medium'>详情与诊断</span>
+								<Disclosure.Indicator className='size-4 shrink-0' />
+							</Disclosure.Trigger>
+						</Disclosure.Heading>
+						<Disclosure.Content className='border-t border-separator'>
+							<Disclosure.Body className='flex flex-col gap-4 p-4'>
+								<Alert
+									aria-busy={syncLoading || syncSaving || syncRunning}
+									aria-live='polite'
+									status={syncStatusCopy.variant}
+								>
+									<Alert.Indicator />
+									<Alert.Content>
+										<Alert.Title>{syncStatusCopy.title}</Alert.Title>
+										<Alert.Description>{syncStatusCopy.summary}</Alert.Description>
+									</Alert.Content>
+								</Alert>
 
 								{replicaState === 'baseline_required' && syncStatus?.replicaReason ? (
-									<StatusNotice
-										description={syncStatus.replicaReason}
-										title='当前设备需要建立同步基线'
-										variant='warning'
-									/>
+									<Alert status='warning'>
+										<Alert.Indicator />
+										<Alert.Content>
+											<Alert.Title>当前设备需要建立同步基线</Alert.Title>
+											<Alert.Description>{syncStatus.replicaReason}</Alert.Description>
+										</Alert.Content>
+									</Alert>
 								) : null}
 
 								{effectiveSyncError ? (
-									<StatusNotice
-										className={statusNoticeCompactTextClass}
-										description={effectiveSyncError}
-										role='alert'
-										size='sm'
-										title={effectiveSyncErrorTitle}
-										variant='danger'
-									/>
+									<Alert role='alert' status='danger'>
+										<Alert.Indicator />
+										<Alert.Content>
+											<Alert.Title>{effectiveSyncErrorTitle}</Alert.Title>
+											<Alert.Description>{effectiveSyncError}</Alert.Description>
+										</Alert.Content>
+									</Alert>
 								) : null}
 
 								<div className='flex flex-col gap-3'>
 									<div className='flex items-center justify-between gap-3'>
 										<div className='min-w-0'>
-											<h3 className='text-sm font-semibold text-legacy-foreground'>同步诊断</h3>
-											<p className={formFieldHintClass}>
+											<h3 className='text-sm font-semibold text-foreground'>同步诊断</h3>
+											<p className='mt-1 text-xs leading-5 text-muted'>
 												只读查看当前设备与云端副本的同步序号和工作集摘要，用于排查同步问题。
 											</p>
 										</div>
@@ -545,7 +544,7 @@ export function SettingsSyncPanel() {
 												description='当前保存并正在使用的云端副本地址（已脱敏）。'
 												label='云端副本'
 												value={
-													<span className='break-all font-medium text-legacy-foreground'>
+													<span className='break-all font-medium text-foreground'>
 														{syncDiagnostics.remoteHost ?? '未读取'}
 													</span>
 												}
@@ -566,7 +565,7 @@ export function SettingsSyncPanel() {
 												description='当前设备本地还没提交成功的 mutation 数量。'
 												label='待同步 mutation'
 												value={
-													<span className='font-medium text-legacy-foreground'>
+													<span className='font-medium text-foreground'>
 														{syncDiagnostics.local.pendingMutationCount} 条
 													</span>
 												}
@@ -583,31 +582,33 @@ export function SettingsSyncPanel() {
 											/>
 										</div>
 									) : (
-										<StatusNotice
-											description={
-												syncStatus?.hasRemoteConfig
-													? '点击「刷新诊断」后，会显示本地 cursor、远端 cursor 和工作集计数。'
-													: '先保存可用的同步数据库连接，才能读取远端诊断信息。'
-											}
-											title='尚未读取同步诊断'
-										/>
+										<Alert>
+											<Alert.Indicator />
+											<Alert.Content>
+												<Alert.Title>尚未读取同步诊断</Alert.Title>
+												<Alert.Description>
+													{syncStatus?.hasRemoteConfig
+														? '点击「刷新诊断」后，会显示本地 cursor、远端 cursor 和工作集计数。'
+														: '先保存可用的同步数据库连接，才能读取远端诊断信息。'}
+												</Alert.Description>
+											</Alert.Content>
+										</Alert>
 									)}
 
 									{syncDiagnosticsMessage ? (
-										<StatusNotice
-											className={statusNoticeCompactTextClass}
-											description={syncDiagnosticsMessage}
-											role='alert'
-											size='sm'
-											title='同步诊断读取失败'
-											variant='danger'
-										/>
+										<Alert role='alert' status='danger'>
+											<Alert.Indicator />
+											<Alert.Content>
+												<Alert.Title>同步诊断读取失败</Alert.Title>
+												<Alert.Description>{syncDiagnosticsMessage}</Alert.Description>
+											</Alert.Content>
+										</Alert>
 									) : null}
 								</div>
-							</div>
-						</CollapsibleContent>
-					</Collapsible>
-				</div>
+							</Disclosure.Body>
+						</Disclosure.Content>
+					</Disclosure>
+				</Surface>
 
 				<SyncConfigDialog
 					configSource={syncStatus?.configSource ?? 'system_keychain'}

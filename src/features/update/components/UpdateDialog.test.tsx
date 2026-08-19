@@ -41,8 +41,9 @@ vi.mock('../api/updates', () => ({
 	skipVersion: mocks.skipVersion,
 }))
 
-vi.mock('sonner', () => ({
-	toast: { error: mocks.toastError },
+vi.mock('@heroui/react', async (importOriginal) => ({
+	...(await importOriginal<typeof import('@heroui/react')>()),
+	toast: { danger: mocks.toastError },
 }))
 
 const stableSettings = {
@@ -247,7 +248,7 @@ describe('UpdateDialog', () => {
 
 		const retryButton = await screen.findByRole('button', { name: '重试安装' })
 		expect(screen.getByText('系统安装器拒绝了安装包')).toBeInTheDocument()
-		expect(screen.getAllByText(/安装包仍然完整保留/)).toHaveLength(2)
+		expect(screen.getByText(/安装包仍然完整保留/)).toBeInTheDocument()
 		fireEvent.click(retryButton)
 
 		expect(mocks.install).toHaveBeenCalledWith(null)
@@ -259,7 +260,7 @@ describe('UpdateDialog', () => {
 		showSnapshot('installing')
 		renderUpdateDialog()
 
-		expect(screen.getAllByText('正在安装更新')).toHaveLength(2)
+		expect(screen.getByRole('heading', { name: '正在安装更新' })).toBeInTheDocument()
 		expect(screen.getByRole('button', { name: '正在安装...' })).toBeDisabled()
 		const closeButton = screen.getByRole('button', { name: '关闭' })
 		expect(closeButton).toBeDisabled()

@@ -19,7 +19,6 @@ export function createLauncherInitialState(): LauncherPanelState {
 		recentStatus: 'idle',
 		draft: defaultDraft,
 		projectOptions: [],
-		projectSearch: '',
 		isProjectOptionsLoading: false,
 		activePopover: null,
 		isAdvancedOpen: false,
@@ -69,7 +68,6 @@ export function launcherDomainReducer(
 						remindAt: null,
 					},
 					projectOptions: action.payload.projects,
-					projectSearch: '',
 					isProjectOptionsLoading: false,
 					activePopover: null,
 					isAdvancedOpen: false,
@@ -99,7 +97,6 @@ export function launcherDomainReducer(
 					: state.draft,
 				projectOptions: shouldAdoptFreshDefaults ? action.payload.projects : state.projectOptions,
 				isProjectOptionsLoading: false,
-				projectSearch: shouldAdoptFreshDefaults ? '' : state.projectSearch,
 			}
 		}
 		case 'recentDataLoading':
@@ -142,14 +139,12 @@ export function launcherDomainReducer(
 					spaceId: action.spaceId,
 					placement: { kind: 'standalone', projectId: null },
 				},
-				projectSearch: '',
 				isProjectOptionsLoading: true,
 			}
 		case 'placementChanged':
 			return {
 				...state,
 				draft: { ...state.draft, placement: action.placement },
-				projectSearch: '',
 			}
 		case 'dateChanged':
 			return {
@@ -159,11 +154,14 @@ export function launcherDomainReducer(
 					[action.field]: action.value,
 				},
 			}
-		case 'advancedToggled':
+		case 'advancedToggled': {
+			const isAdvancedOpen = !state.isAdvancedOpen
 			return {
 				...state,
-				isAdvancedOpen: !state.isAdvancedOpen,
+				isAdvancedOpen,
+				activePopover: isAdvancedOpen ? state.activePopover : null,
 			}
+		}
 		case 'activePopoverChanged':
 			return {
 				...state,
@@ -173,12 +171,6 @@ export function launcherDomainReducer(
 			return {
 				...state,
 				activePopover: null,
-				projectSearch: '',
-			}
-		case 'projectSearchChanged':
-			return {
-				...state,
-				projectSearch: action.query,
 			}
 		case 'projectsLoadingStarted':
 			return {

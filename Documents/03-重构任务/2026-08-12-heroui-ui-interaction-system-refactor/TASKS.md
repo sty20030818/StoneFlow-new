@@ -1,10 +1,10 @@
 # HeroUI-only UI 平台、Linear 浅色设计系统与键盘交互重写 - Tasks
 
-> 当前状态：阶段 3。阶段 A–K 已完成；阶段 L 待开始。
+> 当前状态：阶段 3。阶段 A–K 与阶段 L 的 T97–T104 已完成；待 T105/U4 与 T106 收口。
 
 ## 当前阶段
 
-- 阶段 A–K 已完成；独立的 [Vitest 前端测试系统精简 TASKS](../2026-08-19-vitest-test-runtime-streamlining/TASKS.md) 已完成。MainCard + TaskBoard 整体性能重构已移入独立后续任务；Windows WebView2 不属于本任务验收范围，也不阻塞后续阶段。
+- 阶段 A–K 与阶段 L 的实现任务 T97–T104 已完成；下一步由任务发起人执行 T105/U4，再运行 T106 全量收口。独立的 [Vitest 前端测试系统精简 TASKS](../2026-08-19-vitest-test-runtime-streamlining/TASKS.md) 已完成。MainCard + TaskBoard 整体性能重构已移入独立后续任务；Windows WebView2 不属于本任务验收范围，也不阻塞后续阶段。
 - 执行任意 task 前，必须重读 [SPEC.md](./SPEC.md) 对应 AC 与 [PLAN.md](./PLAN.md) 对应方案；后续 task 默认按编号顺序依赖。
 - 任一锁定包 API、供应链访问、性能或产品合同与 PLAN 冲突时，先在本文件「与 SPEC/PLAN 的实施偏差」登记并停止相关切片，不得静默增加兼容层。
 
@@ -436,37 +436,37 @@
 
 **阶段 L：Settings、Update、About、Changelog 与 Launcher**
 
-- [ ] T97 在 `src/features/settings/components/SettingsPage.tsx`、`src/features/settings/components/settingsShared.tsx` 与 `src/features/settings/components/panels/` 完成设置内容和表单的 HeroUI hard cut，复用阶段 D 已迁移的 Settings Sidebar 容器，保留 route section、返回路径、偏好读写、错误与阶段 D/E 的 Sidebar/Detail 合同。
+- [x] T97 在 `src/features/settings/components/SettingsPage.tsx`、`src/features/settings/components/settingsShared.tsx` 与 `src/features/settings/components/panels/` 完成设置内容和表单的 HeroUI hard cut，复用阶段 D 已迁移的 Settings Sidebar 容器，保留 route section、返回路径、偏好读写、错误与阶段 D/E 的 Sidebar/Detail 合同。
   _对应验收标准：AC-1, AC-3, AC-18, AC-38, AC-39_
   _测试先行：`src/features/settings/components/SettingsPage.test.tsx`、`src/features/settings/components/SettingsSidebar.test.tsx`、`src/features/settings/api/shellDevicePreferences.test.ts`_
 
-- [ ] T98 在 `src/features/sync/components/SyncConfigDialog.tsx`、`src/features/sync/components/SyncFooterStatusItem.tsx` 与 `src/features/sync/model/syncStatusPresentation.ts` 完成同步配置、状态反馈与展示投影 HeroUI hard cut，保留凭据边界、连接、错误、重试和静态 ARIA。
+- [x] T98 在 `src/features/sync/components/SyncConfigDialog.tsx`、`src/features/sync/components/SyncFooterStatusItem.tsx` 与 `src/features/sync/model/syncStatusPresentation.ts` 完成同步配置、状态反馈与展示投影 HeroUI hard cut，保留凭据边界、连接、错误、重试和静态 ARIA。
   _对应验收标准：AC-1, AC-39, AC-41, AC-42, AC-43_
   _测试先行：新增 `src/features/sync/components/SyncConfigDialog.test.tsx`、现有 `src/features/sync/model/deriveSyncFooterView.test.ts` 与 `src/layout/ShellFooter.test.tsx`_
 
-- [ ] T99 在 `src/features/update/components/UpdateDialog.tsx`、`src/features/update/components/UpdateSettingsSection.tsx`、`src/features/update/components/UpdateSettingsSection.presentation.tsx`、`src/features/update/components/UpdateProgressRing.tsx`、`src/features/update/components/SystemStatusChip.tsx`、`src/features/update/components/UpdateFooterChip.tsx` 与 `src/features/update/components/UpdateStatusFooterItem.tsx` 完成更新 Modal/Progress/全局状态反馈 HeroUI hard cut，保留检查、下载、安装、错误、重试、pending restart 和静态 ARIA。
+- [x] T99 在 `src/features/update/components/UpdateDialog.tsx`、`src/features/update/components/UpdateSettingsSection.tsx`、`src/features/update/components/UpdateSettingsSection.presentation.tsx`、`src/features/update/components/UpdateProgressRing.tsx`、`src/features/update/components/SystemStatusChip.tsx`、`src/features/update/components/UpdateFooterChip.tsx` 与 `src/features/update/components/UpdateStatusFooterItem.tsx` 完成更新 Modal/Progress/全局状态反馈 HeroUI hard cut，保留检查、下载、安装、错误、重试、pending restart 和静态 ARIA。
   _对应验收标准：AC-1, AC-39, AC-41, AC-42, AC-43_
   _测试先行：`src/features/update/components/UpdateDialog.test.tsx`、`src/features/update/hooks/useManualUpdateCheck.test.tsx`、`src/features/update/hooks/useUpdateInstallActions.test.tsx`_
 
-- [ ] T100 在 `src/features/app-info/components/AboutDialog.tsx`、`src/features/app-info/components/AppVersionFooterItem.tsx` 与 `src/features/changelog/` 完成 About/Changelog HeroUI hard cut，保留版本、外链、Markdown、release channel、加载/错误/空态与关闭恢复。
+- [x] T100 在 `src/features/app-info/components/AboutDialog.tsx`、`src/features/app-info/components/AppVersionFooterItem.tsx` 与 `src/features/changelog/` 完成 About/Changelog HeroUI hard cut，保留版本、外链、Markdown、release channel、加载/错误/空态与关闭恢复。
   _对应验收标准：AC-1, AC-30, AC-32, AC-38, AC-39_
   _测试先行：`src/features/app-info/components/AboutDialog.test.tsx`、`src/features/changelog/ChangelogDialog.test.tsx`、`src/features/changelog/ChangelogRelease.test.tsx`_
 
-- [ ] T101 在 `src/features/launcher/LauncherPage.tsx`、`src/features/launcher/chrome/LauncherSurface.tsx`、`src/features/launcher/chrome/LauncherPanel.tsx`、`src/features/launcher/chrome/LauncherFooter.tsx` 与 `src/features/launcher/create/CreateRow.tsx` 迁移 Launcher 壳和创建行到共享 HeroUI theme/font，保留透明窗口、原生 geometry、session lifecycle 与即时显示，不写 Launcher 第一方动画。
+- [x] T101 在 `src/features/launcher/LauncherPage.tsx`、`src/features/launcher/chrome/LauncherSurface.tsx`、`src/features/launcher/chrome/LauncherPanel.tsx`、`src/features/launcher/chrome/LauncherFooter.tsx` 与 `src/features/launcher/create/CreateRow.tsx` 迁移 Launcher 壳和创建行到共享 HeroUI theme/font，保留透明窗口、原生 geometry、session lifecycle 与即时显示，不写 Launcher 第一方动画。
   _对应验收标准：AC-6, AC-10, AC-38, AC-42, AC-43_
   _测试先行：`src/features/launcher/LauncherPage.test.tsx`_
 
-- [ ] T102 在 `src/features/launcher/composer/TitleInput.tsx`、`src/features/launcher/composer/PrimaryMetaBar.tsx`、`src/features/launcher/composer/AdvancedMetaBar.tsx` 与 `src/features/launcher/composer/controls/` 完成输入、metadata 和动作 HeroUI hard cut，保留草稿、快捷键、IME、校验与提交。
+- [x] T102 在 `src/features/launcher/composer/TitleInput.tsx`、`src/features/launcher/composer/PrimaryMetaBar.tsx`、`src/features/launcher/composer/AdvancedMetaBar.tsx` 与 `src/features/launcher/composer/controls/` 完成输入、metadata 和动作 HeroUI hard cut，保留草稿、快捷键、IME、校验与提交。
   _对应验收标准：AC-1, AC-26, AC-29, AC-34, AC-39_
   _测试先行：`src/features/launcher/composer/controls/LauncherActionControls.test.tsx`、`src/features/launcher/LauncherPage.test.tsx`、`src/features/launcher/domain/launcherDomainReducer.test.ts`_
 
-- [ ] T103 在 `src/features/launcher/results/LauncherResults.tsx`、`src/features/launcher/results/SectionLabel.tsx`、`src/features/launcher/results/EmptyHint.tsx`、`src/features/launcher/results/ContinuousToast.tsx`、`src/features/launcher/results/adapters/ProjectResultRowAdapter.tsx` 与 `src/features/launcher/results/adapters/TaskResultRowAdapter.tsx` 完成结果集合、分组标题、空态与结果反馈 HeroUI hard cut，复用阶段 H collection，保留搜索、recent、真实焦点、Enter 与窗口关闭结果。
+- [x] T103 在 `src/features/launcher/results/LauncherResults.tsx`、`src/features/launcher/results/SectionLabel.tsx`、`src/features/launcher/results/EmptyHint.tsx`、`src/features/launcher/results/ContinuousToast.tsx`、`src/features/launcher/results/adapters/ProjectResultRowAdapter.tsx` 与 `src/features/launcher/results/adapters/TaskResultRowAdapter.tsx` 完成结果集合、分组标题、空态与结果反馈 HeroUI hard cut，复用阶段 H collection，保留搜索、recent、真实焦点、Enter 与窗口关闭结果。
   _对应验收标准：AC-1, AC-26, AC-29, AC-34, AC-39_
   _测试先行：`src/features/launcher/LauncherPage.test.tsx`、`src/features/launcher/model/interleaveResults.test.ts`_
 
-- [ ] T104 在 `src-tauri/crates/runtime/src/window/launcher/`、`src-tauri/crates/platform/src/launcher_window/` 与 `src-tauri/capabilities/launcher.json` 验证迁移未改变 Launcher 唤起、隐藏、焦点、几何和 warmup；只修复 UI 迁移造成的回归，不修改 Rust 业务协议。
+- [x] T104 在 `src-tauri/crates/runtime/src/window/launcher/`、`src-tauri/crates/platform/src/launcher_window/` 与 `src-tauri/capabilities/launcher.json` 验证迁移未改变 Launcher 唤起、隐藏、焦点、几何和 warmup；只修复 UI 迁移造成的回归，不修改 Rust 业务协议。
   _对应验收标准：AC-38, AC-39, AC-42, AC-43_
-  _测试先行：`src/features/launcher/session/sessionReducer.test.ts`；运行 `bun run test:rust`_
+  _测试先行：`src/features/launcher/session/sessionReducer.test.ts` 与 Launcher 定向 Rust tests；完整 `bun run test:rust` 留到 T106_
 
 - [ ] T105（任务发起人验收 U4）依据 T3 清单遍历主要路径、Settings、Sync、Update、About、Changelog、Launcher、空态、错误与危险操作，并在本文件记录“通过”或精确问题。
   - 执行者先提供 production build、固定路径、截图/录屏、动画扫描与已知差异；AI 不得代为勾选。
@@ -586,3 +586,4 @@
 - 2026-08-18：完成 T75–T82 与阶段 J 收口。Command Runtime 以单一 projection 绑定可见性、可用性、disabled reason、目标 snapshot、invocation source 与 execute；Command、ShortcutHelp、Board/Task ContextMenu、Shell 唯一 ActionBar 和任务 Timeline 直接组合 HeroUI OSS/Pro。任务行本地 Runtime、页面局部 bulk bar、第二确认文案/表面、旧 Command/bulk 壳与 `cmdk` 依赖已删除，K/L 仍有消费者的旧 Menu primitive 保留。阶段 J 专项 34 个文件共 267 项、受控全量前端 201 个文件共 1058 项、typecheck、lint、模块边界、格式、第一方动画扫描、零引用扫描、迁移清单 JSON 解析与 production build 均通过。阶段 J 建议 commit 文案：`refactor(command): 统一命令与批量操作表面`；未提交、未改动 Git 暂存区。
 - 2026-08-19：前置 Vitest 测试系统精简收口。删除阶段 C 的纯供应商 Motion probe、TaskBoard fixture 自测及重复消费者合同，将必要规则迁到唯一 Node/DOM owner；全量由 201 文件/1058 项降至 187 文件/886 项，最终三轮中位数由 90.72 秒降至 54.11 秒（-40.35%）。阶段 K 的暂停条件已解除，可按原任务编号恢复；本记录不代表阶段 K 已开始。
 - 2026-08-19：完成 T83–T96 与阶段 K 收口。Project/Lifecycle 复用阶段 H 的唯一 collection owner 与阶段 J Command projection；Task 创建/详情/autosave/链接、Search、Filter、Display Options、Metadata、Space/View 直接组合 HeroUI OSS/Pro，原生 date input 取代零必要性的自写日历壳。删除旧 Entity selection、归零的 shared row/board/detail/base/pattern 表面及实现细节测试，并修正 migration inventory 的 benchmark 测试精确路径。开发内环实测：单 owner 1 文件/2 项三轮中位数 `1.79s`，Project 功能切片 5 文件/11 项三轮中位数 `1.98s`，阶段 K 相关 35 文件/124 项三轮中位数 `10.87s`；收口全量前端 186 文件/875 项一次通过用时 `42.71s`。typecheck、lint、模块边界、格式、第一方动画扫描、JSON 解析、diff check 与 production build 均通过。阶段 K 建议 commit 文案：`refactor(features): 迁移主要业务界面到 HeroUI`；未提交、未改动 Git 暂存区。
+- 2026-08-19：完成 T97–T104。Settings/Sync、Update/About/Changelog 与独立 Launcher 直接组合 HeroUI OSS/Pro；保留同步三类 saving/running 状态、更新下载/安装/重试/pending restart、Launcher 原生 geometry/session/warmup 与双帧首焦点时序。Launcher 结果复用阶段 H collection，删除重复 result index/projectSearch owner、归零的 Launcher pattern 与手写 Update progress ring；Rust Launcher 协议零改动。Changelog 使用轻量 `react-markdown + remark-gfm + remark-breaks`，不引入 Pro Markdown 的 Shiki/Streamdown/Marked 运行时；production shared vendor 从 `11,519.76 kB` 降至 `1,109.65 kB`（`-90.4%`），gzip 从 `2,156.95 kB` 降至 `333.17 kB`（`-84.5%`）。阶段 L 聚焦前端 19 个文件共 93 项、Launcher Rust 13 项、typecheck、lint、模块边界、格式、第一方动画扫描、diff check 与 production build 均通过；全量前端与完整 Rust 按任务合同留待 T105/U4 后的 T106。阶段 L 建议 commit 文案：`refactor(app): 迁移设置更新与启动器界面`；未提交、未改动 Git 暂存区。

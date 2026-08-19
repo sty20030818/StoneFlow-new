@@ -1,16 +1,17 @@
+import { useCallback, useEffect, useRef } from 'react'
+
 import { useLauncher } from '../domain/LauncherDomainProvider'
-import type { LauncherProjectItem, LauncherResultItem, LauncherTaskItem } from '../model/types'
+import { getLauncherResultKey, type LauncherResultItem } from '../model/types'
 import { EmptyHint, SearchEmptyHint } from './EmptyHint'
 import { ProjectResultRowAdapter } from './adapters/ProjectResultRowAdapter'
 import { TaskResultRowAdapter } from './adapters/TaskResultRowAdapter'
 import { SectionLabel } from './SectionLabel'
-import { launcherResultsStackClass } from '@/shared/components/patterns/launcher'
 
 /**
  * Results：空态 5+5 轻标题；搜索统一流。
  */
 export function LauncherResults() {
-	const { actions, derived, state } = useLauncher()
+	const { derived, state } = useLauncher()
 
 	if (derived.mode === 'recent-empty') {
 		return (
@@ -30,99 +31,83 @@ export function LauncherResults() {
 
 	if (derived.mode === 'recent') {
 		return (
-			<div className={launcherResultsStackClass} data-testid='launcher-results'>
+			<div
+				aria-label='Launcher 结果'
+				className='flex flex-col gap-0.5 px-2 pb-0.5'
+				data-testid='launcher-results'
+				role='list'
+			>
 				{derived.displayTasks.length > 0 ? (
 					<div data-testid='launcher-recent-tasks-section'>
 						<SectionLabel count={derived.displayTasks.length} title='最近任务' />
-						{derived.displayTasks.map((item, index) => (
-							<TaskResultRowAdapter
-								index={index}
-								isActive={derived.activeResultIndex === index}
-								item={item}
-								key={item.id}
-								onHover={actions.focusResult}
-								onOpen={(task: LauncherTaskItem) =>
-									void actions.openResult({ kind: 'task', ...task })
-								}
-							/>
+						{derived.displayTasks.map((item) => (
+							<LauncherResultRow item={{ kind: 'task', ...item }} key={`task:${item.id}`} />
 						))}
 					</div>
 				) : null}
 				{derived.displayProjects.length > 0 ? (
 					<div className='pt-1' data-testid='launcher-recent-projects-section'>
 						<SectionLabel count={derived.displayProjects.length} title='最近项目' />
-						{derived.displayProjects.map((item, index) => {
-							const absoluteIndex = derived.displayTasks.length + index
-							return (
-								<ProjectResultRowAdapter
-									index={absoluteIndex}
-									isActive={derived.activeResultIndex === absoluteIndex}
-									item={item}
-									key={item.id}
-									onHover={actions.focusResult}
-									onOpen={(project: LauncherProjectItem) =>
-										void actions.openResult({ kind: 'project', ...project })
-									}
-								/>
-							)
-						})}
+						{derived.displayProjects.map((item) => (
+							<LauncherResultRow item={{ kind: 'project', ...item }} key={`project:${item.id}`} />
+						))}
 					</div>
 				) : null}
 			</div>
 		)
 	}
 
-	// search：统一流
 	return (
-		<div className={launcherResultsStackClass} data-testid='launcher-results'>
+		<div
+			aria-label='Launcher 结果'
+			className='flex flex-col gap-0.5 px-2 pb-0.5'
+			data-testid='launcher-results'
+			role='list'
+		>
 			<div data-testid='launcher-search-results'>
-				{derived.flatItems.map((item, index) => (
-					<SearchResultRow
-						activeIndex={derived.activeResultIndex}
-						item={item}
-						key={`${item.kind}-${item.id}`}
-						index={index}
-						onHover={actions.focusResult}
-						onOpen={actions.openResult}
-					/>
+				{derived.flatItems.map((item) => (
+					<LauncherResultRow item={item} key={getLauncherResultKey(item)} />
 				))}
 			</div>
 		</div>
 	)
 }
 
-function SearchResultRow({
-	item,
-	index,
-	activeIndex,
-	onHover,
-	onOpen,
-}: {
-	item: LauncherResultItem
-	index: number
-	activeIndex: number
-	onHover: (index: number) => void
-	onOpen: (item: LauncherResultItem) => void
-}) {
+function LauncherResultRow({ item }: { item: LauncherResultItem }) {
+	const { actions, refs, resultCollection } = useLauncher()
+	const itemKey = getLauncherResultKey(item)
+	const unregisterRef = useRef<(() => void) | null>(null)
+	const setRowRef = useCallback(
+		(element: HTMLButtonElement | null) => {
+			unregisterRef.current?.()
+			unregisterRef.current = element ? refs.resultFocusBridge.registerItem(itemKey, element) : null
+		},
+		[itemKey, refs.resultFocusBridge],
+	)
+	useEffect(() => () => unregisterRef.current?.(), [])
+
+	const sharedProps = {
+		isActive: resultCollection.focusedKey === itemKey,
+		onFocus: () => actions.focusResult(itemKey),
+		onKeyDown: actions.handleKeyDown,
+		rowRef: setRowRef,
+	}
+
 	if (item.kind === 'task') {
 		return (
 			<TaskResultRowAdapter
-				index={index}
-				isActive={activeIndex === index}
 				item={item}
-				onHover={onHover}
-				onOpen={(task) => void onOpen({ kind: 'task', ...task })}
+				onOpen={(task) => void actions.openResult({ kind: 'task', ...task })}
+				{...sharedProps}
 			/>
 		)
 	}
 
 	return (
 		<ProjectResultRowAdapter
-			index={index}
-			isActive={activeIndex === index}
 			item={item}
-			onHover={onHover}
-			onOpen={(project) => void onOpen({ kind: 'project', ...project })}
+			onOpen={(project) => void actions.openResult({ kind: 'project', ...project })}
+			{...sharedProps}
 		/>
 	)
 }

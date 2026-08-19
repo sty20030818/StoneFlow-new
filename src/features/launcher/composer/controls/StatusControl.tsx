@@ -1,20 +1,9 @@
+import { Button, Dropdown } from '@heroui/react'
 import { CheckIcon } from 'lucide-react'
 
 import { formatStatusLabel } from '../../model/launcherFormatters'
 import type { LauncherStatus } from '../../model/types'
 import { TaskStatusIndicator } from '@/features/task'
-import { Button } from '@/shared/components/base/button'
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuGroup,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from '@/shared/components/base/dropdown-menu'
-import {
-	launcherMenuContentClass,
-	launcherMenuItemClass,
-} from '@/shared/components/patterns/launcher'
 
 const STATUS_OPTIONS: LauncherStatus[] = ['todo', 'doing', 'done']
 
@@ -38,33 +27,30 @@ export function StatusControl({
 	onStatusChange,
 }: StatusControlProps) {
 	return (
-		<DropdownMenu onOpenChange={onOpenChange} open={open}>
-			<DropdownMenuTrigger asChild>
-				<Button disabled={disabled} size='sm' variant='outline'>
-					<TaskStatusIndicator status={status} />
-					{formatStatusLabel(status)}
-				</Button>
-			</DropdownMenuTrigger>
-			<DropdownMenuContent align='start' className={`w-40 ${launcherMenuContentClass}`}>
-				<DropdownMenuGroup>
+		<Dropdown isOpen={open} onOpenChange={onOpenChange}>
+			<Button aria-label='状态' isDisabled={disabled} size='sm' variant='outline'>
+				<TaskStatusIndicator status={status} />
+				{formatStatusLabel(status)}
+			</Button>
+			<Dropdown.Popover className='w-40' placement='bottom start'>
+				<Dropdown.Menu aria-label='设置状态'>
 					{STATUS_OPTIONS.map((option) => (
-						<DropdownMenuItem
-							className={launcherMenuItemClass}
+						<Dropdown.Item
+							className='gap-2 p-2 text-[12.5px]'
+							id={option}
 							key={option}
-							onSelect={() => onStatusChange(option)}
+							onAction={() => onStatusChange(option)}
+							textValue={formatStatusLabel(option)}
 						>
 							<TaskStatusIndicator status={option} />
 							<span className='min-w-0 flex-1 truncate'>{formatStatusLabel(option)}</span>
 							{status === option ? (
-								<CheckIcon
-									aria-hidden
-									className='ml-auto size-3.5 shrink-0 text-sf-icon-secondary'
-								/>
+								<CheckIcon aria-hidden className='ml-auto size-3.5 shrink-0 text-muted' />
 							) : null}
-						</DropdownMenuItem>
+						</Dropdown.Item>
 					))}
-				</DropdownMenuGroup>
-			</DropdownMenuContent>
-		</DropdownMenu>
+				</Dropdown.Menu>
+			</Dropdown.Popover>
+		</Dropdown>
 	)
 }

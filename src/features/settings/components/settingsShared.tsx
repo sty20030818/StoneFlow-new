@@ -1,13 +1,5 @@
 import type { ReactNode } from 'react'
-
-import { cn } from '@/shared/lib/utils'
-import { formFieldHintClass } from '@/shared/components/patterns/form-field'
-import {
-	settingsPanelDescriptionClass,
-	settingsPanelHeaderWrapClass,
-	settingsPanelSectionClass,
-	settingsPanelTitleClass,
-} from '@/shared/components/patterns/settings-panel'
+import { Card, Switch } from '@heroui/react'
 
 export function SettingsSection({
 	title,
@@ -19,38 +11,17 @@ export function SettingsSection({
 	children: ReactNode
 }) {
 	return (
-		<section className={settingsPanelSectionClass}>
-			<div className={settingsPanelHeaderWrapClass}>
-				<h2 className={settingsPanelTitleClass}>{title}</h2>
-				<p className={settingsPanelDescriptionClass}>{description}</p>
-			</div>
-			{children}
+		<section>
+			<Card className='gap-0'>
+				<Card.Header className='flex flex-col items-start gap-1 px-4 pt-4 pb-0'>
+					<h2 className='text-sm font-semibold text-foreground'>{title}</h2>
+					<Card.Description className='text-xs leading-5 text-muted'>
+						{description}
+					</Card.Description>
+				</Card.Header>
+				<Card.Content className='px-4 pt-4 pb-4'>{children}</Card.Content>
+			</Card>
 		</section>
-	)
-}
-
-/** 行式偏好项：左文案右控件（窄屏上下堆叠） */
-function SettingsPreferenceRow({
-	label,
-	description,
-	control,
-	htmlFor,
-}: {
-	label: string
-	description: string
-	control: ReactNode
-	htmlFor?: string
-}) {
-	return (
-		<div className='flex flex-col gap-3 border-b border-sf-border-subtle py-3 last:border-b-0 sm:flex-row sm:items-center sm:justify-between sm:gap-6'>
-			<div className='min-w-0 flex-1'>
-				<label className='text-sm font-medium text-legacy-foreground' htmlFor={htmlFor}>
-					{label}
-				</label>
-				<p className={formFieldHintClass}>{description}</p>
-			</div>
-			<div className='shrink-0 sm:self-center'>{control}</div>
-		</div>
 	)
 }
 
@@ -67,27 +38,24 @@ export function SettingCheckboxRow({
 	disabled?: boolean
 	onChange: (checked: boolean) => void
 }) {
-	const inputId = `setting-checkbox-${label.replace(/\s+/g, '-').toLowerCase()}`
-
 	return (
-		<SettingsPreferenceRow
-			description={description}
-			htmlFor={inputId}
-			label={label}
-			control={
-				<input
-					checked={checked}
-					className={cn(
-						'size-4 rounded border-sf-border-strong',
-						disabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer',
-					)}
-					disabled={disabled}
-					id={inputId}
-					onChange={(event) => onChange(event.currentTarget.checked)}
-					type='checkbox'
-				/>
-			}
-		/>
+		<Switch
+			aria-label={label}
+			className='w-full py-3'
+			isDisabled={disabled}
+			isSelected={checked}
+			onChange={onChange}
+		>
+			<Switch.Content className='flex w-full items-center gap-4'>
+				<div className='min-w-0 flex-1 text-left'>
+					<p className='text-sm font-medium text-foreground'>{label}</p>
+					<p className='mt-1 text-xs leading-5 text-muted'>{description}</p>
+				</div>
+				<Switch.Control className='shrink-0'>
+					<Switch.Thumb />
+				</Switch.Control>
+			</Switch.Content>
+		</Switch>
 	)
 }
 
@@ -101,17 +69,19 @@ export function SettingInfoRow({
 	value: ReactNode
 }) {
 	return (
-		<div className='rounded-xl border border-sf-border-subtle bg-legacy-muted/25 p-3'>
-			<p className='text-sm font-medium text-legacy-foreground'>{label}</p>
-			<div className='mt-1 text-sm text-legacy-foreground'>{value}</div>
-			<p className={`mt-1 ${formFieldHintClass}`}>{description}</p>
-		</div>
+		<Card variant='tertiary'>
+			<Card.Content className='p-3'>
+				<p className='text-sm font-medium text-foreground'>{label}</p>
+				<div className='mt-1 text-sm text-foreground'>{value}</div>
+				<p className='mt-1 text-xs leading-5 text-muted'>{description}</p>
+			</Card.Content>
+		</Card>
 	)
 }
 
 export function SettingsPreferenceGroup({ children }: { children: ReactNode }) {
 	return (
-		<div className='divide-y divide-sf-border-subtle rounded-xl border border-sf-border-subtle bg-legacy-muted/15 px-3'>
+		<div className='divide-y divide-separator rounded-xl border border-separator bg-surface-secondary px-3'>
 			{children}
 		</div>
 	)

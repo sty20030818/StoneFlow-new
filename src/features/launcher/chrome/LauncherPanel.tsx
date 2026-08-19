@@ -1,3 +1,5 @@
+import { ScrollShadow } from '@heroui/react'
+
 import { AdvancedCollapse } from '../composer/AdvancedCollapse'
 import { PrimaryMetaBar } from '../composer/PrimaryMetaBar'
 import { CreateRow } from '../create/CreateRow'
@@ -9,11 +11,6 @@ import { LauncherFooter } from './LauncherFooter'
 import { LauncherSurface } from './LauncherSurface'
 import { isPresentedSurfacePhase, readActiveSessionId } from '../session/usePresentSession'
 import { useLauncherSession } from '../session/SessionProvider'
-import { AppScrollArea } from '@/shared/components/AppScrollArea'
-import {
-	launcherChromeClass,
-	launcherResultsPaneClass,
-} from '@/shared/components/patterns/launcher'
 
 /**
  * Launcher 固定壳：Composer / Advanced / Create(条件) / Results(内滚) / Footer。
@@ -43,23 +40,23 @@ export function LauncherPanel() {
 				}
 				data-testid='launcher-panel'
 			>
-				<div className={launcherChromeClass}>
+				<div className='shrink-0 border-b border-separator bg-surface'>
 					<div className='shrink-0' data-testid='launcher-composer'>
 						<PrimaryMetaBar />
 					</div>
 				</div>
 
-				<div className='shrink-0 bg-legacy-background/96'>
+				<div className='shrink-0 bg-surface'>
 					<AdvancedCollapse />
 				</div>
 
 				{derived.hasTitle ? (
-					<div className='shrink-0 bg-legacy-background/88 px-2 pt-0.5'>
+					<div className='shrink-0 bg-surface px-2 pt-0.5'>
 						<CreateRow />
 					</div>
 				) : null}
 
-				<div className={`${launcherResultsPaneClass} flex min-h-0 flex-col`}>
+				<div className='flex min-h-0 flex-col bg-surface-secondary'>
 					{showSearchHeader ? (
 						<div className='shrink-0 px-2' data-testid='launcher-search-section'>
 							<SectionLabel count={derived.flatItems.length} title='搜索结果' />
@@ -68,19 +65,13 @@ export function LauncherPanel() {
 
 					<ContinuousToast />
 
-					<AppScrollArea
-						className='min-h-0 flex-1'
-						minThumbHeight={40}
-						thumbLengthRatio={0.58}
-						trackInsetBottom={8}
-						trackInsetTop={4}
-						viewportClassName='pt-0.5'
-						viewportProps={{
-							'data-testid': 'launcher-results-scroll',
-						}}
+					<ScrollShadow
+						className='min-h-0 flex-1 overflow-y-auto pt-0.5'
+						data-testid='launcher-results-scroll'
+						hideScrollBar
 					>
 						<LauncherResults />
-					</AppScrollArea>
+					</ScrollShadow>
 				</div>
 
 				<div className='shrink-0'>
