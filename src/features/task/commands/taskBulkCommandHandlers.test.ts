@@ -49,10 +49,13 @@ describe('registerTaskCommands', () => {
 		actions.openTaskDetail(ctx)
 
 		expect(run).toHaveBeenCalledTimes(3)
-		expect(run.mock.calls[0]?.[1]).toBe(invocation)
-		expect(run.mock.calls[0]?.[3]).toBe(TASK_BULK_ACTION_IDS.completeSelected)
-		expect(run.mock.calls[1]?.[3]).toBe(TASK_BULK_ACTION_IDS.archiveSelected)
-		expect(run.mock.calls[2]?.[3]).toBe(TASK_BULK_ACTION_IDS.deleteSelected)
+		for (const actionId of [
+			TASK_BULK_ACTION_IDS.completeSelected,
+			TASK_BULK_ACTION_IDS.archiveSelected,
+			TASK_BULK_ACTION_IDS.deleteSelected,
+		]) {
+			expect(run).toHaveBeenCalledWith(ctx, invocation, 'task', actionId, expect.any(Object))
+		}
 		expect(openPreview).toHaveBeenCalledWith('t1', 'keyboard')
 		expect(openTaskDetail).toHaveBeenCalledWith('t1')
 	})

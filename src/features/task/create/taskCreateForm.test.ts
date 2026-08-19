@@ -100,4 +100,32 @@ describe('taskCreateForm', () => {
 			placement: { kind: 'standalone' },
 		})
 	})
+
+	it('toTaskCreateInput 一次保留归属、状态、优先级和日期合同', () => {
+		const input = toTaskCreateInput({
+			title: ' 项目任务 ',
+			note: ' 说明 ',
+			priority: 3,
+			spaceId: 'space-work',
+			placement: 'project',
+			projectId: 'project-a',
+			status: 'doing',
+			dueAt: '2026-08-20',
+			plannedAt: '2026-08-21',
+			remindAt: '2026-08-19',
+			createMore: false,
+		})
+
+		expect(input).toEqual({
+			spaceId: null,
+			placement: { kind: 'project', projectId: 'project-a' },
+			title: '项目任务',
+			note: '说明',
+			status: 'doing',
+			priority: 3,
+			dueAt: '2026-08-20',
+			plannedAt: '2026-08-21',
+			remindAt: '2026-08-19',
+		})
+	})
 })

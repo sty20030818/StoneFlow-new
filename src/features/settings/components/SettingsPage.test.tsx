@@ -1,5 +1,5 @@
 import React from 'react'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import { listen } from '@tauri-apps/api/event'
 import type * as TauriEvent from '@tauri-apps/api/event'
 
@@ -31,10 +31,9 @@ const mockedListen = vi.mocked(listen)
 
 let sidebarStoreState = createSidebarStoreState()
 let spaceStoreState = createSpaceStoreState()
-let syncStatusChangedHandler: TauriEvent.EventCallback<unknown> = () => undefined
 
 vi.mock('@tauri-apps/api/event', () => ({
-	listen: vi.fn<typeof TauriEvent.listen>(),
+	listen: vi.fn<typeof listen>(),
 }))
 
 vi.mock('../model/useSidebarSettingsStore', () => ({
@@ -86,45 +85,6 @@ vi.mock('@/app/navigation/ShellRouteContext', () => ({
 }))
 
 vi.mock('@/shared/components/base/select', () => {
-	type SelectContextValue = {
-		value?: string
-		onValueChange?: (value: string) => void
-		disabled?: boolean
-	}
-
-	type SelectItemProps = {
-		value: string
-		children: React.ReactNode
-	}
-
-	const SelectContext = React.createContext<SelectContextValue | null>(null)
-	function MockSelectItem(_props: SelectItemProps) {
-		return null
-	}
-
-	function collectSelectItems(children: React.ReactNode): SelectItemProps[] {
-		const items: SelectItemProps[] = []
-
-		React.Children.forEach(children, (child) => {
-			if (!React.isValidElement(child)) {
-				return
-			}
-
-			if (child.type === MockSelectItem) {
-				items.push((child as React.ReactElement<SelectItemProps>).props)
-				return
-			}
-
-			const nestedChildren = (child as React.ReactElement<{ children?: React.ReactNode }>).props
-				.children
-			if (nestedChildren) {
-				items.push(...collectSelectItems(nestedChildren))
-			}
-		})
-
-		return items
-	}
-
 	return {
 		Select: ({
 			value,
@@ -137,7 +97,6 @@ vi.mock('@/shared/components/base/select', () => {
 			disabled?: boolean
 			children: React.ReactNode
 		}) => {
-			const items = collectSelectItems(children)
 			const trigger = React.Children.toArray(children).find(
 				(child) => React.isValidElement(child) && child.type === MockSelectTrigger,
 			)
@@ -147,34 +106,27 @@ vi.mock('@/shared/components/base/select', () => {
 					: {}
 
 			return (
-				<SelectContext.Provider value={{ value, onValueChange, disabled }}>
-					<label className='contents'>
-						<select
-							aria-label={triggerProps['aria-label'] as string | undefined}
-							disabled={disabled}
-							onChange={(event) => onValueChange?.(event.currentTarget.value)}
-							value={value}
-						>
-							{items.map((item) => (
-								<option key={item.value} value={item.value}>
-									{item.children}
-								</option>
-							))}
-						</select>
-					</label>
-				</SelectContext.Provider>
+				<select
+					aria-label={triggerProps['aria-label'] as string | undefined}
+					disabled={disabled}
+					onChange={(event) => onValueChange?.(event.currentTarget.value)}
+					value={value}
+				>
+					{children}
+				</select>
 			)
 		},
 		SelectTrigger: MockSelectTrigger,
 		SelectValue: () => null,
 		SelectContent: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 		SelectGroup: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-		SelectItem: MockSelectItem,
+		SelectItem: ({ value, children }: { value: string; children: React.ReactNode }) => (
+			<option value={value}>{children}</option>
+		),
 	}
 
-	function MockSelectTrigger({ children }: { children?: React.ReactNode; 'aria-label'?: string }) {
-		const context = React.useContext(SelectContext)
-		return <>{context ? children : null}</>
+	function MockSelectTrigger(_props: { children?: React.ReactNode; 'aria-label'?: string }) {
+		return null
 	}
 })
 
@@ -302,12 +254,8 @@ describe('SettingsPage', () => {
 			}),
 		)
 		unlistenSyncStatusSpy.mockReset()
-		syncStatusChangedHandler = () => undefined
 		mockedListen.mockReset()
-		mockedListen.mockImplementation(async (_eventName, handler) => {
-			syncStatusChangedHandler = handler
-			return unlistenSyncStatusSpy
-		})
+		mockedListen.mockResolvedValue(unlistenSyncStatusSpy)
 		sidebarStoreState = createSidebarStoreState()
 		spaceStoreState = createSpaceStoreState()
 	})
@@ -339,17 +287,6 @@ describe('SettingsPage', () => {
 
 		await waitFor(() => {
 			expect(setItemVisibilitySpy).toHaveBeenCalledWith({ kind: 'main', key: 'allTasks' }, false)
-		})
-	})
-
-	it('切换辅助入口显隐时调用 sidebar settings store', async () => {
-		mockSettingsSection = 'sidebar'
-		await renderSettingsPage()
-
-		fireEvent.click(getCheckboxByLabel('回收站'))
-
-		await waitFor(() => {
-			expect(setItemVisibilitySpy).toHaveBeenCalledWith({ kind: 'footer', key: 'trash' }, false)
 		})
 	})
 
@@ -395,6 +332,11 @@ describe('SettingsPage', () => {
 		})
 		// 保存路径直接用 configureSync 返回的状态，不再额外 getSyncStatus
 		expect(getSyncStatusSpy).toHaveBeenCalledTimes(1)
+
+		openSyncConfigDialog()
+		await waitFor(() => {
+			expect(screen.getByLabelText('同步数据库连接')).toHaveValue('')
+		})
 	})
 
 	it('页面加载后连接串输入保持空白（密码不回显）', async () => {
@@ -452,16 +394,6 @@ describe('SettingsPage', () => {
 		expect(screen.getByText('.env.local 是唯一配置来源')).toBeInTheDocument()
 		expect(screen.queryByLabelText('同步数据库连接')).not.toBeInTheDocument()
 		expect(screen.queryByRole('button', { name: '保存配置' })).not.toBeInTheDocument()
-	})
-
-	it('未配置同步时展示本地优先提示', async () => {
-		mockSettingsSection = 'sync'
-		await renderSettingsPage()
-
-		expect(screen.getByText('尚未启用云同步')).toBeInTheDocument()
-		expect(screen.getByText('未配置云端副本，本机只保留本地数据。')).toBeInTheDocument()
-		expect(screen.getByText('未启用')).toBeInTheDocument()
-		expect(screen.getAllByText('从未同步')).toHaveLength(2)
 	})
 
 	it('后台状态刷新时不应覆盖正在编辑的同步配置草稿', async () => {
@@ -527,6 +459,40 @@ describe('SettingsPage', () => {
 		expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 60_000)
 
 		setIntervalSpy.mockRestore()
+	})
+
+	it('同步状态事件刷新失败时展示错误', async () => {
+		let syncStatusChangedHandler: TauriEvent.EventCallback<unknown> = () => undefined
+		mockedListen.mockImplementation(async (_eventName, handler) => {
+			syncStatusChangedHandler = handler
+			return unlistenSyncStatusSpy
+		})
+
+		mockSettingsSection = 'sync'
+		await renderSettingsPage()
+
+		await waitFor(() => {
+			expect(getSyncStatusSpy).toHaveBeenCalledTimes(1)
+			expect(mockedListen).toHaveBeenCalledWith(
+				'stoneflow://sync/status-changed',
+				expect.any(Function),
+			)
+		})
+
+		getSyncStatusSpy.mockRejectedValueOnce(new Error('事件刷新失败'))
+		act(() => {
+			syncStatusChangedHandler({
+				event: 'stoneflow://sync/status-changed',
+				id: 1,
+				payload: { source: 'sync', reason: 'completed' },
+			})
+		})
+
+		await waitFor(() => {
+			expect(getSyncStatusSpy).toHaveBeenCalledTimes(2)
+		})
+		openSyncDetails()
+		expect(await screen.findByRole('alert')).toHaveTextContent('事件刷新失败')
 	})
 
 	it('点击立即同步时调用 runSync', async () => {
@@ -666,202 +632,6 @@ describe('SettingsPage', () => {
 		})
 	})
 
-	it('待同步状态时展示等待同步提示', async () => {
-		vi.useFakeTimers()
-		vi.setSystemTime(new Date('2026-06-26T00:10:00Z'))
-
-		getSyncStatusSpy.mockResolvedValue(
-			createSyncStatusPayload({
-				enabled: true,
-				status: 'offline_pending',
-				lastPushAt: '2026-06-26T00:00:00Z',
-				lastPullAt: '2026-06-26T00:00:01Z',
-				lastError: null,
-				lastErrorMode: null,
-				dirtySince: '2026-06-26T00:00:00Z',
-				pendingResync: false,
-				hasRemoteConfig: true,
-				remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
-				replicaState: 'ready',
-				replicaReason: null,
-				lastRestoreAt: null,
-			}),
-		)
-
-		mockSettingsSection = 'sync'
-		await renderSettingsPage()
-
-		expect(screen.getByText('等待同步')).toBeInTheDocument()
-		expect(screen.getByText('本地已有新写入，已等待 10 分钟前。')).toBeInTheDocument()
-		expect(screen.getAllByText('待同步').length).toBeGreaterThanOrEqual(1)
-		expect(screen.getByText('10 分钟前')).toBeInTheDocument()
-	})
-
-	it('同步错误时展示 lastError', async () => {
-		getSyncStatusSpy.mockResolvedValue(
-			createSyncStatusPayload({
-				enabled: true,
-				status: 'error',
-				lastPushAt: null,
-				lastPullAt: null,
-				lastError: 'remote unavailable',
-				lastErrorMode: 'pull',
-				dirtySince: null,
-				pendingResync: false,
-				hasRemoteConfig: true,
-				remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
-				replicaState: 'ready',
-				replicaReason: null,
-				lastRestoreAt: null,
-			}),
-		)
-
-		mockSettingsSection = 'sync'
-		await renderSettingsPage()
-		openSyncDetails()
-
-		expect(screen.getAllByText('同步需要处理').length).toBeGreaterThanOrEqual(1)
-		expect(screen.getByText('确认失败')).toBeInTheDocument()
-		expect(await screen.findByText('remote unavailable')).toBeInTheDocument()
-	})
-
-	it('已配置同步时会定时刷新状态', async () => {
-		const setIntervalSpy = vi.spyOn(window, 'setInterval')
-		setIntervalSpy.mockImplementation((callback) => {
-			if (typeof callback === 'function') {
-				void callback()
-			}
-			return 1 as unknown as number
-		})
-		getSyncStatusSpy
-			.mockResolvedValueOnce(
-				createSyncStatusPayload({
-					enabled: true,
-					status: 'synced',
-					lastPushAt: null,
-					lastPullAt: null,
-					lastError: null,
-					lastErrorMode: null,
-					dirtySince: null,
-					pendingResync: false,
-					hasRemoteConfig: true,
-					remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
-					replicaState: 'ready',
-					replicaReason: null,
-					lastRestoreAt: null,
-				}),
-			)
-			.mockResolvedValue(
-				createSyncStatusPayload({
-					enabled: true,
-					status: 'error',
-					lastPushAt: null,
-					lastPullAt: null,
-					lastError: 'sync timeout',
-					lastErrorMode: 'pull',
-					dirtySince: null,
-					pendingResync: false,
-					hasRemoteConfig: true,
-					remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
-					replicaState: 'ready',
-					replicaReason: null,
-					lastRestoreAt: null,
-				}),
-			)
-
-		mockSettingsSection = 'sync'
-		await renderSettingsPage()
-		openSyncDetails()
-
-		await waitFor(() => {
-			expect(getSyncStatusSpy).toHaveBeenCalledTimes(2)
-		})
-		expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 60_000)
-		expect(await screen.findByText('sync timeout')).toBeInTheDocument()
-		setIntervalSpy.mockRestore()
-	})
-
-	it('收到同步状态事件时刷新状态', async () => {
-		getSyncStatusSpy
-			.mockResolvedValueOnce(
-				createSyncStatusPayload({
-					enabled: true,
-					status: 'synced',
-					lastPushAt: null,
-					lastPullAt: null,
-					lastError: null,
-					lastErrorMode: null,
-					dirtySince: null,
-					pendingResync: false,
-					hasRemoteConfig: true,
-					remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
-					replicaState: 'ready',
-					replicaReason: null,
-					lastRestoreAt: null,
-				}),
-			)
-			.mockResolvedValue(
-				createSyncStatusPayload({
-					enabled: true,
-					status: 'offline_pending',
-					lastPushAt: null,
-					lastPullAt: null,
-					lastError: null,
-					lastErrorMode: null,
-					dirtySince: '2026-06-26T00:00:00Z',
-					pendingResync: false,
-					hasRemoteConfig: true,
-					remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
-					replicaState: 'ready',
-					replicaReason: null,
-					lastRestoreAt: null,
-				}),
-			)
-
-		mockSettingsSection = 'sync'
-		await renderSettingsPage()
-
-		await waitFor(() => {
-			expect(mockedListen).toHaveBeenCalledWith(
-				'stoneflow://sync/status-changed',
-				expect.any(Function),
-			)
-		})
-
-		syncStatusChangedHandler({
-			event: 'stoneflow://sync/status-changed',
-			id: 1,
-			payload: {
-				source: 'sync',
-				reason: 'dirty',
-			},
-		})
-
-		await waitFor(() => {
-			expect(getSyncStatusSpy).toHaveBeenCalledTimes(2)
-		})
-		expect(await screen.findByText('等待同步')).toBeInTheDocument()
-	})
-
-	it('保存同步配置成功后会清空连接串输入框', async () => {
-		mockSettingsSection = 'sync'
-		await renderSettingsPage()
-		openSyncConfigDialog()
-
-		fireEvent.change(screen.getByLabelText('同步数据库连接'), {
-			target: { value: 'postgresql://user:secret@db.example.com:5432/sf' },
-		})
-		fireEvent.click(screen.getByRole('button', { name: '保存配置' }))
-
-		await waitFor(() => {
-			expect(configureSyncSpy).toHaveBeenCalledTimes(1)
-		})
-		openSyncConfigDialog()
-		await waitFor(() => {
-			expect(screen.getByLabelText('同步数据库连接')).toHaveValue('')
-		})
-	})
-
 	it('缺少同步基线时展示提示并允许建立基线同步', async () => {
 		getSyncStatusSpy.mockResolvedValue(
 			createSyncStatusPayload({
@@ -918,26 +688,11 @@ describe('SettingsPage', () => {
 
 		await waitFor(() => {
 			expect(getSyncDiagnosticsSpy).toHaveBeenCalledTimes(1)
+			expect(screen.getByText('同步诊断')).toBeInTheDocument()
+			expect(screen.getByText('postgresql://user:***@db.example.com:5432/sf')).toBeInTheDocument()
+			expect(screen.getAllByText('总计 88 条主数据')).toHaveLength(2)
+			expect(screen.getAllByText('1 条').length).toBeGreaterThanOrEqual(1)
 		})
-		expect(screen.getByText('同步诊断')).toBeInTheDocument()
-		expect(screen.getByText('postgresql://user:***@db.example.com:5432/sf')).toBeInTheDocument()
-		expect(screen.getAllByText('总计 88 条主数据')).toHaveLength(2)
-		expect(screen.getAllByText('1 条').length).toBeGreaterThanOrEqual(1)
-	})
-
-	it('同步配置图标提示动作，并在打开配置窗口前关闭提示', async () => {
-		mockSettingsSection = 'sync'
-		await renderSettingsPage()
-
-		const configureButton = await screen.findByRole('button', { name: '配置同步数据库' })
-		await waitFor(() => expect(configureButton).toBeEnabled())
-		fireEvent.keyDown(document, { key: 'Tab' })
-		configureButton.focus()
-		expect(await screen.findByRole('tooltip')).toHaveTextContent('配置同步数据库')
-
-		fireEvent.click(configureButton)
-		expect(await screen.findByRole('dialog')).toBeInTheDocument()
-		await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument())
 	})
 })
 

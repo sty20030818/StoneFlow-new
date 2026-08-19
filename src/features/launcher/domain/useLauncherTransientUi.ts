@@ -81,9 +81,10 @@ export function useLauncherTransientUi({
 			handleEscapeRef.current()
 		}
 
-		document.addEventListener('keydown', handler)
+		// Launcher 自己定义了 Escape 的分层语义，需要在子弹层消费事件前先做路由。
+		document.addEventListener('keydown', handler, true)
 		return () => {
-			document.removeEventListener('keydown', handler)
+			document.removeEventListener('keydown', handler, true)
 			if (closeTimerRef.current !== null) {
 				window.clearTimeout(closeTimerRef.current)
 			}

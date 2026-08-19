@@ -2,6 +2,7 @@ import {
 	BulkActionRegistry,
 	BulkActionRuntime,
 	createBulkActionResult,
+	createBulkActionResultFromReport,
 	createBulkSelectionSnapshot,
 	type BulkAction,
 	type BulkActionResult,
@@ -59,6 +60,45 @@ describe('createBulkSelectionSnapshot', () => {
 			entities: [{ id: 'task-a', title: '任务 A' }],
 			source: 'bulk-bar',
 			createdAt: 2,
+		})
+	})
+})
+
+describe('createBulkActionResultFromReport', () => {
+	it.each([
+		{
+			report: { succeededIds: ['task-a', 'task-b'], failedIds: [], skippedIds: [] },
+			status: 'success',
+			shouldClearSelection: true,
+		},
+		{
+			report: { succeededIds: ['task-a'], failedIds: [], skippedIds: ['task-b'] },
+			status: 'partial',
+			shouldClearSelection: false,
+		},
+		{
+			report: { succeededIds: [], failedIds: ['task-a'], skippedIds: ['task-b'] },
+			status: 'failed',
+			shouldClearSelection: false,
+		},
+	] as const)('统一映射 adapter report 为 $status', ({ report, status, shouldClearSelection }) => {
+		expect(
+			createBulkActionResultFromReport({
+				actionId: 'task.report',
+				snapshot,
+				report: {
+					succeededIds: [...report.succeededIds],
+					failedIds: [...report.failedIds],
+					skippedIds: [...report.skippedIds],
+				},
+				successMessage: '完成',
+				clearSelectionOnSuccess: true,
+			}),
+		).toMatchObject({
+			status,
+			message: status === 'success' ? '完成' : undefined,
+			shouldClearSelection,
+			...report,
 		})
 	})
 })

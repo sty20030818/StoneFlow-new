@@ -160,19 +160,6 @@ export {
 	formatTaskStatusLabel,
 } from './presentation'
 
-/**
- * 选择算法纯函数（带状态请用 {@link useTaskSelection}）。
- */
-export {
-	type TaskSelectionFocusState,
-	moveTaskSelectionFocus,
-	selectTaskRange,
-	mergeTaskSelectionRange,
-	toggleTaskSelectionByVisibleOrder,
-	pruneTaskSelectionFocusState,
-	buildTaskSelectionSnapshot,
-} from './model/taskSelection'
-
 // ─────────────────────────────────────────────────────────────────────────────
 // API · 仅已有外消费者
 // ─────────────────────────────────────────────────────────────────────────────

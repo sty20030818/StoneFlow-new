@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { type PropsWithChildren } from 'react'
 import { beforeEach, describe, expect, it } from 'vitest'
 
@@ -23,7 +23,9 @@ describe('useTaskDisplayOptions', () => {
 		const { result } = renderWithQueryClient(() => useTaskDisplayOptions('task:all'))
 
 		await waitFor(() => expect(result.current.status).toBe('ready'))
-		await result.current.actions.setGrouping('priority')
+		await act(async () => {
+			await result.current.actions.setGrouping('priority')
+		})
 
 		await waitFor(() => expect(result.current.options.groupBy).toBe('priority'))
 		expect(localStorage.getItem('stoneflow.display-options.task:task:all')).not.toBeNull()
@@ -33,10 +35,14 @@ describe('useTaskDisplayOptions', () => {
 		const { result } = renderWithQueryClient(() => useTaskDisplayOptions('task:all'))
 
 		await waitFor(() => expect(result.current.status).toBe('ready'))
-		await result.current.actions.setGrouping('priority')
+		await act(async () => {
+			await result.current.actions.setGrouping('priority')
+		})
 		await waitFor(() => expect(result.current.options.groupBy).toBe('priority'))
 
-		await result.current.actions.resetToDefault()
+		await act(async () => {
+			await result.current.actions.resetToDefault()
+		})
 		await waitFor(() => expect(result.current.options.groupBy).toBe('status'))
 	})
 })

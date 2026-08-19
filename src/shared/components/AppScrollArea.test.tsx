@@ -1,4 +1,3 @@
-/** @vitest-environment jsdom */
 import { createRef } from 'react'
 import { render, screen } from '@testing-library/react'
 

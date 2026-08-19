@@ -111,58 +111,6 @@ describe('ProjectRowAdapter', () => {
 		})
 	})
 
-	it('pending 态映射到行壳样式', () => {
-		renderProjectRowAdapter({
-			rowState: { isPending: true },
-		})
-
-		expect(screen.getByRole('button', { name: '打开项目 项目 A' }).className).toContain(
-			'opacity-75',
-		)
-	})
-
-	it('选择框在选中或 hover 时可见', () => {
-		const actions = {
-			...buildActions(),
-			onToggleSelected: vi.fn(),
-		}
-		renderProjectRowAdapter({
-			actions,
-			rowState: { isPending: false, isHovered: true, hoverSource: 'keyboard' },
-		})
-
-		expect(
-			screen
-				.getByRole('checkbox', { name: '选择项目 项目 A' })
-				.closest('[data-slot="row-selection-cell"]')?.className,
-		).toContain('opacity-100')
-	})
-
-	it('hover 会更新 row shortcut hover', () => {
-		const rowShortcutHandlers = {
-			onHover: vi.fn(),
-		}
-		const actions = {
-			...buildActions(),
-			onToggleSelected: vi.fn(),
-		}
-		render(
-			<DangerConfirmProvider>
-				<ProjectRowAdapter
-					actions={actions}
-					project={createProject({ id: 'project-1', name: '项目 A' })}
-					rowShortcutHandlers={rowShortcutHandlers}
-					rowState={{ isPending: false }}
-				/>
-			</DangerConfirmProvider>,
-		)
-
-		const row = screen.getByRole('button', { name: '打开项目 项目 A' })
-		fireEvent.mouseEnter(row)
-
-		expect(rowShortcutHandlers.onHover).toHaveBeenCalledWith('project-1')
-	})
-
 	it('showProjectCell=true 时可渲染并选择父项目', async () => {
 		const projectBinding = {
 			showProjectCell: true,

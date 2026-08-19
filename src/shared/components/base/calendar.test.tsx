@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 
 import { Calendar } from './calendar'
 
@@ -10,7 +10,7 @@ describe('Calendar', () => {
 		expect(screen.getByRole('button', { name: '下一个月' })).toBeInTheDocument()
 
 		fireEvent.keyDown(document, { key: 'Tab' })
-		previousButton.focus()
+		act(() => previousButton.focus())
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('上一个月')
 	})
 })

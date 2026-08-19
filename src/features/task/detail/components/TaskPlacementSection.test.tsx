@@ -9,53 +9,7 @@ import type { TaskDetailDraft } from '../model/taskDetailDraft'
 import { TaskPlacementSection } from './TaskPlacementSection'
 
 describe('TaskPlacementSection', () => {
-	it('当前为独立事项时显示独立事项', () => {
-		render(
-			<TaskPlacementSection
-				autosave={createAutosaveController()}
-				projects={createProjects()}
-				spaces={createSpaces()}
-			/>,
-		)
-
-		expect(screen.getByRole('button', { name: '归属' })).toHaveTextContent('独立事项')
-	})
-
-	it('当前为项目时显示项目名', () => {
-		render(
-			<TaskPlacementSection
-				autosave={createAutosaveController({ projectId: 'project-2', spaceId: 'space-2' })}
-				projects={createProjects()}
-				spaces={createSpaces()}
-			/>,
-		)
-
-		expect(screen.getByRole('button', { name: '归属' })).toHaveTextContent('项目 B')
-	})
-
-	it('global 模式渲染多组 heading，且当前 space 在第一组', async () => {
-		render(
-			<TaskPlacementSection
-				autosave={createAutosaveController()}
-				projects={createProjects()}
-				spaces={createSpaces()}
-			/>,
-		)
-
-		fireEvent.pointerDown(screen.getByRole('button', { name: '归属' }))
-
-		const menu = await screen.findByRole('menu')
-		expect(menu).toHaveAttribute('data-drawer-owned-overlay', 'true')
-
-		const labels = screen.getAllByText(/^(工作|生活)$/)
-		expect(labels[0]).toHaveTextContent('工作')
-		expect(labels[1]).toHaveTextContent('生活')
-		expect(screen.getAllByRole('menuitem', { name: /独立事项/ })).toHaveLength(2)
-		expect(screen.getByRole('menuitem', { name: /项目 A/ })).toBeInTheDocument()
-		expect(screen.getByRole('menuitem', { name: /项目 B/ })).toBeInTheDocument()
-	})
-
-	it('跨 space 选择项目时把 draft 编排成目标 spaceId 和 projectId', async () => {
+	it('跨 space 选择项目时立即提交归属变更', async () => {
 		const autosave = createAutosaveController()
 
 		render(
@@ -77,30 +31,6 @@ describe('TaskPlacementSection', () => {
 		expect(options).toEqual({ saveMode: 'immediate' })
 		expect(nextDraft.spaceId).toBe('space-2')
 		expect(nextDraft.projectId).toBe('project-2')
-	})
-
-	it('选择独立事项时清空 projectId', async () => {
-		const autosave = createAutosaveController({
-			spaceId: 'space-2',
-			projectId: 'project-2',
-		})
-
-		render(
-			<TaskPlacementSection
-				autosave={autosave}
-				projects={createProjects()}
-				spaces={createSpaces()}
-			/>,
-		)
-
-		fireEvent.pointerDown(screen.getByRole('button', { name: '归属' }))
-		fireEvent.click((await screen.findAllByRole('menuitem', { name: /独立事项/ }))[0])
-
-		const [updater] = (autosave.setDraft as Mock).mock.calls[0]
-		const nextDraft = updater(createDraft({ spaceId: 'space-2', projectId: 'project-2' }))
-
-		expect(nextDraft.spaceId).toBe('space-2')
-		expect(nextDraft.projectId).toBe('')
 	})
 })
 

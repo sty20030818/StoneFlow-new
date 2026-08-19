@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 
 import { BASE_TASK_DISPLAY_OPTIONS } from '@/features/display-options/core'
 
@@ -32,7 +32,7 @@ describe('DisplayOptionsPanel', () => {
 
 		const trigger = screen.getByRole('button', { name: '切换为降序' })
 		fireEvent.keyDown(document, { key: 'Tab' })
-		trigger.focus()
+		act(() => trigger.focus())
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('切换为降序')
 
 		fireEvent.click(trigger)
@@ -51,7 +51,7 @@ describe('DisplayOptionsPanel', () => {
 
 		const trigger = screen.getByRole('group', { name: '切换为降序' })
 		fireEvent.keyDown(document, { key: 'Tab' })
-		trigger.focus()
+		act(() => trigger.focus())
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('切换为降序正在读取显示偏好')
 	})
 })

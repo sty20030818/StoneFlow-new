@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 
 import { BulkActionProvider } from '@/features/bulk-action'
+import { KeybindingRegistry, ShortcutRegistryProvider } from '@/features/command'
 import { DangerConfirmProvider } from '@/features/danger-confirm'
 import { createLifecycleBulkAdapter, lifecycleBulkActions } from '@/features/lifecycle'
 import { LifecycleList } from '@/features/lifecycle/components/LifecycleList'
@@ -23,6 +24,7 @@ const toastErrorSpy = vi.fn<(message: string) => void>()
 let mockScope: Scope = { type: 'all' }
 let storeState = createStoreState()
 type MockQueryStatus = 'loading' | 'ready' | 'error'
+const TEST_SHORTCUT_REGISTRY = new KeybindingRegistry([])
 
 vi.mock('@/shared/components/main-card/MainCardLayout', () => ({
 	MainCard: {
@@ -223,11 +225,13 @@ function TestBulkActionBoundary({
 	})
 
 	return (
-		<DangerConfirmProvider>
-			<BulkActionProvider actions={lifecycleBulkActions} context={{ adapter }}>
-				{children}
-			</BulkActionProvider>
-		</DangerConfirmProvider>
+		<ShortcutRegistryProvider registry={TEST_SHORTCUT_REGISTRY}>
+			<DangerConfirmProvider>
+				<BulkActionProvider actions={lifecycleBulkActions} context={{ adapter }}>
+					{children}
+				</BulkActionProvider>
+			</DangerConfirmProvider>
+		</ShortcutRegistryProvider>
 	)
 }
 

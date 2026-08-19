@@ -40,6 +40,14 @@ Rust workspace                                   SQLite（本地事实源）
 - TanStack Query 管服务端/业务数据缓存与失效；Zustand 只管跨组件 UI 状态；组件 local state 只管瞬时交互。
 - SQLite 是离线与业务读写的本地事实源。同步完成后由统一的工作区变更事件失效前端 Query。
 
+## 前端测试边界
+
+- `unit` Vitest project 在 Node 中验证领域规则、状态机、codec、payload 与 port/adapter 转换；`dom` project 只验证必须依赖 DOM 的用户行为、焦点、Overlay、表单与接线。
+- 一个独立产品风险只有一个测试 owner；页面和消费者只保留接线 smoke，不复测共享组件、下层状态机或第三方组件内部合同。
+- 日常开发优先运行直接 owner 测试或 Vitest watch；相关依赖较窄时可用 `test:related`。批次收口运行单一 project，阶段收口运行 `test:run` 全量。
+- `scripts/**/*.test.ts` 继续使用 Bun runner，由 `test:scripts` 完整发现并纳入根 `check`，不混入 `src/**` 的 Vitest projects。
+- 未被当前测试局部接管并断言的 `console.warn` / `console.error` 会使测试失败。真实 Tauri/WebView 窗口、原生快捷键和平台焦点仍由手工冒烟负责。
+
 ## 任务归属（简）
 
 - **项目任务** / **独立事项（standalone）** 二选一；`project_id IS NULL` = 独立事项。

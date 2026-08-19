@@ -57,28 +57,6 @@ describe('lifecycleBulkActions', () => {
 			actionId: LIFECYCLE_BULK_ACTION_IDS.restoreSelected,
 		})
 	})
-
-	it('部分失败或跳过时返回 partial 且不清空 selection', async () => {
-		const adapter = createAdapter({
-			restore: vi.fn<LifecycleBulkAdapter['restore']>(() =>
-				Promise.resolve({
-					requestedIds: ['entry-a', 'entry-b'],
-					succeededIds: ['entry-a'],
-					failedIds: [],
-					skippedIds: ['entry-b'],
-				}),
-			),
-		})
-
-		await expect(
-			getAction(LIFECYCLE_BULK_ACTION_IDS.restoreSelected).run(snapshot, { adapter }),
-		).resolves.toMatchObject({
-			status: 'partial',
-			shouldClearSelection: false,
-			succeededIds: ['entry-a'],
-			skippedIds: ['entry-b'],
-		})
-	})
 })
 
 function getAction(actionId: string) {

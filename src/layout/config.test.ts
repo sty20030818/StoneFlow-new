@@ -1,6 +1,4 @@
 import { getScopeLabel, getSectionLabel, getSpaceLabel } from '@/layout/config'
-import { buildScopedSettingsPath } from '@/app/navigation'
-import { resolveShellSection } from '@/app/navigation'
 
 const spaces = [
 	{
@@ -18,18 +16,6 @@ const spaces = [
 ]
 
 describe('shell config helpers', () => {
-	it('routing 按 canonical 路由解析主分区', () => {
-		expect(resolveShellSection('/all/views')).toBe('views')
-		expect(resolveShellSection('/space-personal/tasks')).toBe('tasks')
-		expect(resolveShellSection('/space-personal/standalone')).toBe('standalone')
-		expect(resolveShellSection('/space-personal/projects')).toBe('projects')
-		expect(resolveShellSection('/space-personal/archive')).toBe('archive')
-		expect(resolveShellSection('/space-personal/trash')).toBe('trash')
-		expect(resolveShellSection('/space-personal/settings')).toBe('settings')
-		expect(resolveShellSection('/space-personal/settings/sync')).toBe('settings')
-		expect(resolveShellSection('/space-personal/projects/stoneflow-v1')).toBe('projects')
-	})
-
 	it('为已知分区和空间返回标签', () => {
 		expect(getSectionLabel('standalone')).toBe('独立事项')
 		expect(getSectionLabel('tasks')).toBe('所有任务')
@@ -40,17 +26,6 @@ describe('shell config helpers', () => {
 		expect(getSpaceLabel('space-personal', spaces)).toBe('个人')
 		expect(getScopeLabel({ type: 'all' }, spaces)).toBe('所有空间')
 		expect(getScopeLabel({ type: 'space', spaceId: 'space-personal' }, spaces)).toBe('个人')
-	})
-
-	it('设置页路径跟随当前 scope（bare 与分区）', () => {
-		expect(buildScopedSettingsPath({ type: 'all' })).toBe('/all/settings')
-		expect(buildScopedSettingsPath({ type: 'space', spaceId: 'space-personal' })).toBe(
-			'/space-personal/settings',
-		)
-		expect(buildScopedSettingsPath({ type: 'all' }, null, 'general')).toBe('/all/settings/general')
-		expect(
-			buildScopedSettingsPath({ type: 'space', spaceId: 'space-personal' }, null, 'update'),
-		).toBe('/space-personal/settings/update')
 	})
 
 	it('为未知值返回兜底标签', () => {

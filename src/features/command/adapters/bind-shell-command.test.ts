@@ -4,31 +4,42 @@ import {
 	COMMAND_IDS,
 	createEmptyCommandContext,
 	type CommandContext,
+	type CommandSelectedEntity,
 } from '@/features/command/core'
+
 import type { ShellCommandActions, ShellCommandAdapter } from './shell-command-actions'
 
 const invocation = { source: 'global-shortcut' } as const
 
 describe('bindShellCommand / ShellCommandAdapter', () => {
-	it('执行 general 命令时调用 Shell action', async () => {
+	it.each([
+		[COMMAND_IDS.openSearch, 'focusSearch'],
+		[COMMAND_IDS.openCommandMenu, 'openCommandMenu'],
+		[COMMAND_IDS.openShortcutHelp, 'openShortcutHelp'],
+		[COMMAND_IDS.newQuickTask, 'openQuickTaskCreate'],
+		[COMMAND_IDS.newFullTask, 'openFullTaskCreate'],
+		[COMMAND_IDS.newStandaloneTask, 'openStandaloneTaskCreate'],
+		[COMMAND_IDS.newProject, 'openProjectCreate'],
+		[COMMAND_IDS.openTask, 'openTaskPicker'],
+		[COMMAND_IDS.openProject, 'openProjectPicker'],
+		[COMMAND_IDS.goBack, 'goBack'],
+		[COMMAND_IDS.goForward, 'goForward'],
+		[COMMAND_IDS.layoutToggleSidebar, 'toggleSidebar'],
+	] as const)('%s 调用 Shell 端口 %s', async (commandId, actionName) => {
 		const actions = createActions()
-		const runtime = createRuntime(actions)
 
-		await expect(runtime.execute(COMMAND_IDS.openSearch, invocation)).resolves.toEqual({
-			status: 'success',
-			commandId: COMMAND_IDS.openSearch,
-		})
-		await runtime.execute(COMMAND_IDS.openCommandMenu, invocation)
-		await runtime.execute(COMMAND_IDS.openShortcutHelp, invocation)
+		await createRuntime(actions).execute(commandId, invocation)
 
-		expect(actions.focusSearch).toHaveBeenCalledTimes(1)
-		expect(actions.openCommandMenu).toHaveBeenCalledTimes(1)
-		expect(actions.openShortcutHelp).toHaveBeenCalledTimes(1)
+		expect(actions[actionName]).toHaveBeenCalledOnce()
 	})
 
-	it('提交类命令走统一 submit action，并按 intent 分流', async () => {
+	it.each([
+		[COMMAND_IDS.saveOrSubmit, 'submitActiveForm'],
+		[COMMAND_IDS.submitAndContinue, 'submitAndContinue'],
+		[COMMAND_IDS.submitAndOpen, 'submitAndOpen'],
+	] as const)('提交命令 %s 分发到 %s', async (commandId, actionName) => {
 		const actions = createActions()
-		const runtime = createRuntime(actions, {
+		const context: CommandContext = {
 			...createEmptyCommandContext(),
 			submit: {
 				hasActiveTarget: true,
@@ -36,18 +47,14 @@ describe('bindShellCommand / ShellCommandAdapter', () => {
 				canSubmitContinue: true,
 				canSubmitOpen: true,
 			},
-		})
+		}
 
-		await runtime.execute(COMMAND_IDS.saveOrSubmit, invocation)
-		await runtime.execute(COMMAND_IDS.submitAndContinue, invocation)
-		await runtime.execute(COMMAND_IDS.submitAndOpen, invocation)
+		await createRuntime(actions, context).execute(commandId, invocation)
 
-		expect(actions.submitActiveForm).toHaveBeenCalledTimes(1)
-		expect(actions.submitAndContinue).toHaveBeenCalledTimes(1)
-		expect(actions.submitAndOpen).toHaveBeenCalledTimes(1)
+		expect(actions[actionName]).toHaveBeenCalledWith(context, invocation)
 	})
 
-	it('不支持的提交 intent 返回 disabled reason', async () => {
+	it('不支持的提交 intent 返回自己的 disabled reason', async () => {
 		const runtime = createRuntime(createActions(), {
 			...createEmptyCommandContext(),
 			submit: {
@@ -66,39 +73,11 @@ describe('bindShellCommand / ShellCommandAdapter', () => {
 		})
 	})
 
-	it('执行 new 命令时调用对应创建 action', async () => {
-		const actions = createActions()
-		const runtime = createRuntime(actions)
-
-		await runtime.execute(COMMAND_IDS.newQuickTask, invocation)
-		await runtime.execute(COMMAND_IDS.newFullTask, invocation)
-		await runtime.execute(COMMAND_IDS.newStandaloneTask, invocation)
-		await runtime.execute(COMMAND_IDS.newProject, invocation)
-
-		expect(actions.openQuickTaskCreate).toHaveBeenCalledTimes(1)
-		expect(actions.openFullTaskCreate).toHaveBeenCalledTimes(1)
-		expect(actions.openStandaloneTaskCreate).toHaveBeenCalledTimes(1)
-		expect(actions.openProjectCreate).toHaveBeenCalledTimes(1)
-	})
-
-	it('执行 open 任务和项目命令时打开 scoped picker', async () => {
-		const actions = createActions()
-		const runtime = createRuntime(actions)
-
-		await runtime.execute(COMMAND_IDS.openTask, invocation)
-		await runtime.execute(COMMAND_IDS.openProject, invocation)
-
-		expect(actions.openTaskPicker).toHaveBeenCalledTimes(1)
-		expect(actions.openProjectPicker).toHaveBeenCalledTimes(1)
-	})
-
 	it.each(['archive', 'trash', 'settings'] as const)('在 %s 页面禁用快速新建任务', async (page) => {
 		const actions = createActions()
 		const runtime = createRuntime(actions, {
 			...createEmptyCommandContext(),
-			route: {
-				page,
-			},
+			route: { page },
 		})
 
 		await expect(runtime.execute(COMMAND_IDS.newQuickTask, invocation)).resolves.toEqual({
@@ -107,18 +86,6 @@ describe('bindShellCommand / ShellCommandAdapter', () => {
 			reason: '当前页面不支持快速新建任务',
 		})
 		expect(actions.openQuickTaskCreate).not.toHaveBeenCalled()
-	})
-
-	it('未接入 UI 的 new.view 返回 disabled 且不产生副作用', async () => {
-		const actions = createActions()
-		const runtime = createRuntime(actions)
-
-		await expect(runtime.execute(COMMAND_IDS.newView, invocation)).resolves.toEqual({
-			status: 'disabled',
-			commandId: COMMAND_IDS.newView,
-			reason: '视图创建入口尚未接入',
-		})
-		expect(actions.openProjectCreate).not.toHaveBeenCalled()
 	})
 
 	it.each([
@@ -130,85 +97,30 @@ describe('bindShellCommand / ShellCommandAdapter', () => {
 		[COMMAND_IDS.goArchive, 'archive'],
 		[COMMAND_IDS.goTrash, 'trash'],
 		[COMMAND_IDS.openSettings, 'settings'],
-	] as const)('执行 %s 时导航到 %s', async (commandId, target) => {
+	] as const)('%s 导航到 %s', async (commandId, target) => {
 		const actions = createActions()
-		const runtime = createRuntime(actions)
 
-		await runtime.execute(commandId, invocation)
+		await createRuntime(actions).execute(commandId, invocation)
 
 		expect(actions.navigateTo).toHaveBeenCalledWith(target)
 	})
 
-	it('执行历史导航命令时调用 Shell history action', async () => {
-		const actions = createActions()
-		const runtime = createRuntime(actions)
-
-		await runtime.execute(COMMAND_IDS.goBack, invocation)
-		await runtime.execute(COMMAND_IDS.goForward, invocation)
-
-		expect(actions.goBack).toHaveBeenCalledTimes(1)
-		expect(actions.goForward).toHaveBeenCalledTimes(1)
-	})
-
-	it('执行布局命令时调用 sidebar / 任务预览切换 action', async () => {
-		const actions = createActions()
-		const runtime = createRuntime(actions, {
-			...createEmptyCommandContext(),
-			selection: {
-				type: 'task',
-				ids: ['task-a'],
-				entities: [{ id: 'task-a', type: 'task', title: '任务 A' }],
-				primaryEntity: { id: 'task-a', type: 'task', title: '任务 A' },
-				source: 'task-list',
-				hasSelection: true,
-				isSingleSelection: true,
-				isMultiSelection: false,
-			},
-		})
-
-		await runtime.execute(COMMAND_IDS.layoutToggleSidebar, invocation)
-		await runtime.execute(COMMAND_IDS.layoutTogglePreview, invocation)
-
-		expect(actions.toggleSidebar).toHaveBeenCalledTimes(1)
-		expect(actions.togglePreview).toHaveBeenCalledTimes(1)
-	})
-
-	it.each([COMMAND_IDS.goToday, COMMAND_IDS.goUpcoming, COMMAND_IDS.goRecent])(
-		'未确认真实页面的导航命令 %s 返回 disabled',
-		async (commandId) => {
-			const runtime = createRuntime(createActions())
-
-			await expect(runtime.execute(commandId, invocation)).resolves.toMatchObject({
-				status: 'disabled',
-				commandId,
-				reason: '目标页面尚未接入',
-			})
-		},
-	)
-
 	it.each([
+		[COMMAND_IDS.newView, '视图创建入口尚未接入'],
+		[COMMAND_IDS.goToday, '目标页面尚未接入'],
+		[COMMAND_IDS.goUpcoming, '目标页面尚未接入'],
+		[COMMAND_IDS.goRecent, '目标页面尚未接入'],
 		[COMMAND_IDS.openView, '视图搜索尚未接入'],
 		[COMMAND_IDS.openSpace, 'Space 搜索尚未接入'],
 		[COMMAND_IDS.openRecent, '最近访问选择尚未接入'],
-	] as const)('未接入搜索能力的 open 命令 %s 返回 disabled', async (commandId, reason) => {
-		const runtime = createRuntime(createActions())
-
-		await expect(runtime.execute(commandId, invocation)).resolves.toMatchObject({
-			status: 'disabled',
-			commandId,
-			reason,
-		})
-	})
-
-	it.each([
 		[COMMAND_IDS.projectRename, '项目命令尚未接入'],
 		[COMMAND_IDS.filterToggleCompleted, '当前页面不支持完成筛选'],
 		[COMMAND_IDS.systemOpenDataFolder, '系统命令尚未接入'],
 		[COMMAND_IDS.viewSuggestFilters, '视图建议命令尚未接入'],
-	] as const)('command-only 命令 %s 返回 disabled', async (commandId, reason) => {
-		const runtime = createRuntime(createActions())
-
-		await expect(runtime.execute(commandId, invocation)).resolves.toMatchObject({
+	] as const)('未接入命令 %s 保持 disabled', async (commandId, reason) => {
+		await expect(
+			createRuntime(createActions()).execute(commandId, invocation),
+		).resolves.toMatchObject({
 			status: 'disabled',
 			commandId,
 			reason,
@@ -216,158 +128,40 @@ describe('bindShellCommand / ShellCommandAdapter', () => {
 	})
 
 	it.each([
-		[COMMAND_IDS.taskComplete, 'completeSelectedTasks'],
-		[COMMAND_IDS.taskChangePlacement, 'openTaskPlacementPicker'],
-		[COMMAND_IDS.taskSetPriority, 'openTaskPriorityPicker'],
-		[COMMAND_IDS.taskSetStatus, 'openTaskStatusPicker'],
-		[COMMAND_IDS.taskOpenDateMenu, 'openTaskDatePicker'],
-		[COMMAND_IDS.taskArchive, 'requestArchiveSelectedTasks'],
-		[COMMAND_IDS.taskDelete, 'requestDeleteSelectedTasks'],
-	] as const)('有 task selection 时执行批量任务命令 %s', async (commandId, actionName) => {
+		[COMMAND_IDS.taskComplete, 'task', 'completeSelectedTasks'],
+		[COMMAND_IDS.taskChangePlacement, 'task', 'openTaskPlacementPicker'],
+		[COMMAND_IDS.taskSetPriority, 'task', 'openTaskPriorityPicker'],
+		[COMMAND_IDS.taskSetStatus, 'task', 'openTaskStatusPicker'],
+		[COMMAND_IDS.taskOpenDateMenu, 'task', 'openTaskDatePicker'],
+		[COMMAND_IDS.taskArchive, 'task', 'requestArchiveSelectedTasks'],
+		[COMMAND_IDS.taskDelete, 'task', 'requestDeleteSelectedTasks'],
+		[COMMAND_IDS.projectArchive, 'project', 'requestArchiveSelectedProjects'],
+		[COMMAND_IDS.projectDelete, 'project', 'requestDeleteSelectedProjects'],
+	] as const)('%s 将 %s selection 分发到 %s', async (commandId, selectionType, actionName) => {
 		const actions = createActions()
-		const context = {
-			...createEmptyCommandContext(),
-			selection: {
-				type: 'task' as const,
-				ids: ['task-a', 'task-b'],
-				entities: [
-					{ id: 'task-a', type: 'task' as const, title: '任务 A', spaceId: 'space-a' },
-					{ id: 'task-b', type: 'task' as const, title: '任务 B', spaceId: 'space-a' },
-				],
-				primaryEntity: {
-					id: 'task-a',
-					type: 'task' as const,
-					title: '任务 A',
-					spaceId: 'space-a',
-				},
-				source: 'task-list' as const,
-				hasSelection: true,
-				isSingleSelection: false,
-				isMultiSelection: true,
-			},
-		}
-		const runtime = createRuntime(actions, context)
+		const context = createSelectionContext(selectionType)
 
-		await expect(runtime.execute(commandId, invocation)).resolves.toMatchObject({
-			status: 'success',
-			commandId,
-		})
+		await createRuntime(actions, context).execute(commandId, invocation)
+
 		expect(actions[actionName]).toHaveBeenCalledWith(context, invocation)
 	})
 
 	it.each([
-		[COMMAND_IDS.projectArchive, 'requestArchiveSelectedProjects'],
-		[COMMAND_IDS.projectDelete, 'requestDeleteSelectedProjects'],
-	] as const)('有 project selection 时执行批量项目命令 %s', async (commandId, actionName) => {
-		const actions = createActions()
-		const context = {
-			...createEmptyCommandContext(),
-			selection: {
-				type: 'project' as const,
-				ids: ['project-a', 'project-b'],
-				entities: [
-					{ id: 'project-a', type: 'project' as const, title: '项目 A' },
-					{ id: 'project-b', type: 'project' as const, title: '项目 B' },
-				],
-				primaryEntity: { id: 'project-a', type: 'project' as const, title: '项目 A' },
-				source: 'project-list' as const,
-				hasSelection: true,
-				isSingleSelection: false,
-				isMultiSelection: true,
-			},
-		}
-		const runtime = createRuntime(actions, context)
+		['task', 'projects', 'requestDeleteSelectedTasks'],
+		['project', 'projects', 'requestDeleteSelectedProjects'],
+		['lifecycle', 'archive', 'requestDeleteSelectedLifecycleEntries'],
+		['lifecycle', 'trash', 'requestDeletePermanentlySelectedLifecycleEntries'],
+	] as const)(
+		'selectionDeleteByRoute 在 %s/%s 分发到 %s',
+		async (selectionType, page, actionName) => {
+			const actions = createActions()
+			const context = createSelectionContext(selectionType, page)
 
-		await expect(runtime.execute(commandId, invocation)).resolves.toMatchObject({
-			status: 'success',
-			commandId,
-		})
-		expect(actions[actionName]).toHaveBeenCalledWith(context, invocation)
-	})
+			await createRuntime(actions, context).execute(COMMAND_IDS.selectionDeleteByRoute, invocation)
 
-	it('Cmd+Backspace 分发 task selection 到任务删除', async () => {
-		const actions = createActions()
-		const context = {
-			...createEmptyCommandContext(),
-			route: { page: 'projects' as const },
-			selection: {
-				type: 'task' as const,
-				ids: ['task-a'],
-				entities: [{ id: 'task-a', type: 'task' as const, title: '任务 A' }],
-				primaryEntity: { id: 'task-a', type: 'task' as const, title: '任务 A' },
-				source: 'task-list' as const,
-				hasSelection: true,
-				isSingleSelection: true,
-				isMultiSelection: false,
-			},
-		}
-		const runtime = createRuntime(actions, context)
-
-		await expect(
-			runtime.execute(COMMAND_IDS.selectionDeleteByRoute, invocation),
-		).resolves.toMatchObject({
-			status: 'success',
-			commandId: COMMAND_IDS.selectionDeleteByRoute,
-		})
-		expect(actions.requestDeleteSelectedTasks).toHaveBeenCalledWith(context, invocation)
-	})
-
-	it('Cmd+Backspace 分发 project selection 到项目删除', async () => {
-		const actions = createActions()
-		const context = {
-			...createEmptyCommandContext(),
-			route: { page: 'projects' as const },
-			selection: {
-				type: 'project' as const,
-				ids: ['project-a'],
-				entities: [{ id: 'project-a', type: 'project' as const, title: '项目 A' }],
-				primaryEntity: { id: 'project-a', type: 'project' as const, title: '项目 A' },
-				source: 'project-list' as const,
-				hasSelection: true,
-				isSingleSelection: true,
-				isMultiSelection: false,
-			},
-		}
-		const runtime = createRuntime(actions, context)
-
-		await expect(
-			runtime.execute(COMMAND_IDS.selectionDeleteByRoute, invocation),
-		).resolves.toMatchObject({
-			status: 'success',
-			commandId: COMMAND_IDS.selectionDeleteByRoute,
-		})
-		expect(actions.requestDeleteSelectedProjects).toHaveBeenCalledWith(context, invocation)
-	})
-
-	it.each([
-		['archive', 'requestDeleteSelectedLifecycleEntries'],
-		['trash', 'requestDeletePermanentlySelectedLifecycleEntries'],
-	] as const)('Cmd+Backspace 在 %s 页分发生命周期删除动作', async (page, actionName) => {
-		const actions = createActions()
-		const context = {
-			...createEmptyCommandContext(),
-			route: { page },
-			selection: {
-				type: 'lifecycle' as const,
-				ids: ['entry-a'],
-				entities: [{ id: 'entry-a', type: 'lifecycle' as const, title: '条目 A' }],
-				primaryEntity: { id: 'entry-a', type: 'lifecycle' as const, title: '条目 A' },
-				source: 'lifecycle-list' as const,
-				hasSelection: true,
-				isSingleSelection: true,
-				isMultiSelection: false,
-			},
-		}
-		const runtime = createRuntime(actions, context)
-
-		await expect(
-			runtime.execute(COMMAND_IDS.selectionDeleteByRoute, invocation),
-		).resolves.toMatchObject({
-			status: 'success',
-			commandId: COMMAND_IDS.selectionDeleteByRoute,
-		})
-		expect(actions[actionName]).toHaveBeenCalledWith(context, invocation)
-	})
+			expect(actions[actionName]).toHaveBeenCalledWith(context, invocation)
+		},
+	)
 
 	it.each([
 		COMMAND_IDS.taskComplete,
@@ -377,21 +171,25 @@ describe('bindShellCommand / ShellCommandAdapter', () => {
 		COMMAND_IDS.taskOpenDateMenu,
 		COMMAND_IDS.taskArchive,
 		COMMAND_IDS.taskDelete,
-	])('没有 task selection 时禁用批量任务命令 %s', async (commandId) => {
-		const runtime = createRuntime(createActions())
-
-		await expect(runtime.execute(commandId, invocation)).resolves.toMatchObject({
+	])('没有 task selection 时禁用 %s', async (commandId) => {
+		await expect(
+			createRuntime(createActions()).execute(commandId, invocation),
+		).resolves.toMatchObject({
 			status: 'disabled',
 			commandId,
 			reason: '需要先选择任务',
 		})
 	})
 
-	it('没有任务上下文时禁用任务预览切换命令', async () => {
-		const runtime = createRuntime(createActions())
+	it('任务 selection 可切换预览，没有任务上下文时禁用', async () => {
+		const actions = createActions()
+		const context = createSelectionContext('task')
+
+		await createRuntime(actions, context).execute(COMMAND_IDS.layoutTogglePreview, invocation)
+		expect(actions.togglePreview).toHaveBeenCalledWith(context, invocation)
 
 		await expect(
-			runtime.execute(COMMAND_IDS.layoutTogglePreview, invocation),
+			createRuntime(createActions()).execute(COMMAND_IDS.layoutTogglePreview, invocation),
 		).resolves.toMatchObject({
 			status: 'disabled',
 			commandId: COMMAND_IDS.layoutTogglePreview,
@@ -399,27 +197,12 @@ describe('bindShellCommand / ShellCommandAdapter', () => {
 		})
 	})
 
-	it('Shell action 抛错时 Runtime 返回 failed', async () => {
-		const error = new Error('search failed')
-		const actions = createActions({
-			focusSearch: () => {
-				throw error
-			},
-		})
-		const runtime = createRuntime(actions)
-
-		await expect(runtime.execute(COMMAND_IDS.openSearch, invocation)).resolves.toEqual({
-			status: 'failed',
-			commandId: COMMAND_IDS.openSearch,
-			error,
-		})
-	})
-
 	it('缺域 handler 时对应命令禁用', async () => {
 		const { completeSelectedTasks: _omit, ...chromeOnly } = createActions()
-		const runtime = createRuntime(chromeOnly)
 
-		await expect(runtime.execute(COMMAND_IDS.taskComplete, invocation)).resolves.toMatchObject({
+		await expect(
+			createRuntime(chromeOnly).execute(COMMAND_IDS.taskComplete, invocation),
+		).resolves.toMatchObject({
 			status: 'disabled',
 			commandId: COMMAND_IDS.taskComplete,
 			reason: '该命令处理器尚未注册',
@@ -435,6 +218,41 @@ function createRuntime(
 		registry: createShellCommandRegistry(actions),
 		getContext: () => context,
 	})
+}
+
+function createSelectionContext(
+	type: 'task' | 'project' | 'lifecycle',
+	page: CommandContext['route']['page'] = 'projects',
+): CommandContext {
+	const id = `${type}-a`
+	const entity: CommandSelectedEntity = {
+		id,
+		type,
+		title: '测试对象',
+		...(type === 'task' ? { spaceId: 'space-a' } : {}),
+		...(type === 'lifecycle'
+			? {
+					lifecycleMode: page === 'trash' ? ('trash' as const) : ('archive' as const),
+					lifecycleEntityType: 'task' as const,
+				}
+			: {}),
+	}
+
+	return {
+		...createEmptyCommandContext(),
+		route: { page },
+		selection: {
+			type,
+			ids: [id],
+			entities: [entity],
+			primaryEntity: entity,
+			source:
+				type === 'task' ? 'task-list' : type === 'project' ? 'project-list' : 'lifecycle-list',
+			hasSelection: true,
+			isSingleSelection: true,
+			isMultiSelection: false,
+		},
+	}
 }
 
 function createActions(overrides: Partial<ShellCommandActions> = {}): ShellCommandActions {

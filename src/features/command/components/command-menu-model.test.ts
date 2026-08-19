@@ -1,4 +1,4 @@
-import { buildCommandMenuGroups, getCommandMenuShortcut } from './command-menu-model'
+import { buildCommandMenuGroups } from './command-menu-model'
 import {
 	CommandRegistry,
 	CommandRuntime,
@@ -62,19 +62,6 @@ describe('buildCommandMenuGroups', () => {
 		expect(group.entries.map((entry) => entry.id)).toEqual(['test.high', 'test.low'])
 	})
 
-	it('快捷键文案来自默认 keybinding registry', () => {
-		expect(
-			getCommandMenuShortcut(COMMAND_IDS.newQuickTask, shortcutRegistry)?.map(
-				(token) => token.value,
-			),
-		).toEqual(['C'])
-		expect(
-			getCommandMenuShortcut(COMMAND_IDS.newFullTask, shortcutRegistry)?.map(
-				(token) => token.value,
-			),
-		).toEqual(['N', '→', 'T'])
-	})
-
 	it('完整 V1 分类会生成菜单分组', () => {
 		const runtime = createRuntime([
 			createCommand('test.task', { category: 'task' }),
@@ -121,10 +108,22 @@ describe('buildCommandMenuGroups', () => {
 		])
 	})
 
-	it('归档页 lifecycle selection 显示恢复和删除批量命令', () => {
+	it.each([
+		{
+			page: 'archive' as const,
+			expectedIds: [COMMAND_IDS.lifecycleRestore, COMMAND_IDS.lifecycleDelete],
+		},
+		{
+			page: 'trash' as const,
+			expectedIds: [COMMAND_IDS.lifecycleRestore, COMMAND_IDS.lifecycleDeletePermanently],
+		},
+	])('$page 页只显示适用的 lifecycle 批量命令', ({ page, expectedIds }) => {
 		const runtime = createRuntime([
 			createCommand(COMMAND_IDS.lifecycleRestore, { category: 'lifecycle' }),
-			createCommand(COMMAND_IDS.lifecycleDelete, { category: 'lifecycle' }),
+			createCommand(COMMAND_IDS.lifecycleDelete, {
+				category: 'lifecycle',
+				isVisible: (ctx) => ctx.route.page === 'archive',
+			}),
 			createCommand(COMMAND_IDS.lifecycleDeletePermanently, {
 				category: 'lifecycle',
 				isVisible: (ctx) => ctx.route.page === 'trash',
@@ -133,38 +132,12 @@ describe('buildCommandMenuGroups', () => {
 
 		const groups = buildCommandMenuGroups(
 			runtime,
-			createLifecycleSelectionContext({ page: 'archive' }),
+			createLifecycleSelectionContext({ page }),
 			shortcutRegistry,
 		)
 
 		expect(groups[0]?.key).toBe('bulk')
-		expect(groups[0]?.entries.map((entry) => entry.id)).toEqual([
-			COMMAND_IDS.lifecycleRestore,
-			COMMAND_IDS.lifecycleDelete,
-		])
-	})
-
-	it('回收站 lifecycle selection 显示恢复和永久删除批量命令', () => {
-		const runtime = createRuntime([
-			createCommand(COMMAND_IDS.lifecycleRestore, { category: 'lifecycle' }),
-			createCommand(COMMAND_IDS.lifecycleDelete, {
-				category: 'lifecycle',
-				isVisible: (ctx) => ctx.route.page === 'archive',
-			}),
-			createCommand(COMMAND_IDS.lifecycleDeletePermanently, { category: 'lifecycle' }),
-		])
-
-		const groups = buildCommandMenuGroups(
-			runtime,
-			createLifecycleSelectionContext({ page: 'trash' }),
-			shortcutRegistry,
-		)
-
-		expect(groups[0]?.key).toBe('bulk')
-		expect(groups[0]?.entries.map((entry) => entry.id)).toEqual([
-			COMMAND_IDS.lifecycleRestore,
-			COMMAND_IDS.lifecycleDeletePermanently,
-		])
+		expect(groups[0]?.entries.map((entry) => entry.id)).toEqual(expectedIds)
 	})
 
 	it('project selection 显示归档和删除批量命令', () => {
@@ -188,10 +161,6 @@ describe('buildCommandMenuGroups', () => {
 		expect(
 			groups.find((group) => group.key === 'project')?.entries.map((entry) => entry.id),
 		).toEqual(['test.normalProject'])
-	})
-
-	it('未绑定命令没有快捷键文案', () => {
-		expect(getCommandMenuShortcut(COMMAND_IDS.taskComplete, shortcutRegistry)).toBeNull()
 	})
 })
 

@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { useMemo, useState } from 'react'
 
 import {
@@ -25,7 +25,7 @@ describe('SpaceEditorDialog', () => {
 		expect(screen.getByRole('combobox', { name: '颜色' })).toBeInTheDocument()
 	})
 
-	it('编辑弹窗可以稳定渲染', () => {
+	it('编辑弹窗可以稳定渲染', async () => {
 		render(
 			<SpaceEditorDialog
 				mode='edit'
@@ -48,10 +48,10 @@ describe('SpaceEditorDialog', () => {
 		)
 
 		expect(screen.getByRole('dialog', { name: '编辑 Space' })).toBeInTheDocument()
-		expect(screen.getByDisplayValue('个人')).toBeInTheDocument()
+		expect(await screen.findByDisplayValue('个人')).toBeInTheDocument()
 	})
 
-	it('在提交注册上下文中输入名称时不会触发无限更新', () => {
+	it('在提交注册上下文中输入名称时不会触发无限更新', async () => {
 		render(
 			<SubmitRegistryProvider>
 				<SpaceEditorDialog
@@ -66,8 +66,10 @@ describe('SpaceEditorDialog', () => {
 		const input = screen.getByLabelText('名称')
 		fireEvent.change(input, { target: { value: '工作' } })
 
-		expect(input).toHaveValue('工作')
-		expect(screen.getByText('工作')).toBeInTheDocument()
+		await waitFor(() => {
+			expect(input).toHaveValue('工作')
+			expect(screen.getByText('工作')).toBeInTheDocument()
+		})
 	})
 
 	it('提交注册目标更新时不会反复抖动 active target', () => {

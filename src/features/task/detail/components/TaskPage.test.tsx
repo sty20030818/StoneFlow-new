@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import type { ReactElement } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Suspense } from 'react'
@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AutosaveController } from '@/shared/autosave'
 import type { TaskDetail } from '@/shared/types'
 import { renderWithRouterContext } from '@/test/renderWithRouter'
+import { TestInteractionProviders } from '@/test/TestInteractionProviders'
 
 import type { TaskDetailDraft } from '../model/taskDetailDraft'
 import { TaskPage } from './TaskPage'
@@ -94,15 +95,23 @@ describe('TaskPage', () => {
 		getEntityActivitiesMock.mockClear()
 	})
 
-	it('展示 task page 主体和 activity empty state', async () => {
+	it('真实详情数据驱动完整页面，并读取 Activity', async () => {
+		taskDetailQueryState.data = createTaskDetail({
+			title: '真实任务标题',
+			note: '真实任务备注',
+			status: 'doing',
+			priority: 4,
+			dueAt: '2026-05-30',
+			plannedAt: '2026-05-29',
+			remindAt: '2026-05-28',
+		})
+
 		await renderTaskPage()
 
-		expect(screen.getByText('任务 A')).toBeInTheDocument()
+		expect(screen.getByText('真实任务标题')).toBeInTheDocument()
 		expect(screen.getByRole('link', { name: '独立事项' })).toBeInTheDocument()
 		expect(screen.getByText('Links for task-1')).toBeInTheDocument()
-		expect(screen.getAllByText('归属').length).toBeGreaterThan(0)
-		expect(screen.getAllByText('空间').length).toBeGreaterThan(0)
-		expect(screen.getAllByText('项目').length).toBeGreaterThan(0)
+		expect(mockAutosave.value.reset).not.toHaveBeenCalled()
 
 		await waitFor(() => {
 			expect(getEntityActivitiesMock).toHaveBeenCalledWith({
@@ -113,20 +122,6 @@ describe('TaskPage', () => {
 		})
 
 		expect(await screen.findByText('暂无 Activity')).toBeInTheDocument()
-	})
-
-	it('归属区只保留一个 placement 入口，并继续保留详情只读空间和项目', async () => {
-		await renderTaskPage()
-
-		expect(screen.getAllByRole('button', { name: '归属' })).toHaveLength(1)
-		expect(screen.queryByRole('button', { name: '空间' })).not.toBeInTheDocument()
-		expect(screen.queryByRole('button', { name: '项目' })).not.toBeInTheDocument()
-
-		fireEvent.pointerDown(screen.getByRole('button', { name: '归属' }))
-
-		expect(await screen.findByRole('menuitem', { name: /独立事项/ })).toBeInTheDocument()
-		expect(screen.getAllByText('空间').length).toBeGreaterThan(0)
-		expect(screen.getAllByText('项目').length).toBeGreaterThan(0)
 	})
 
 	it('项目任务显示项目链路，无项目任务显示独立事项链路', async () => {
@@ -146,26 +141,6 @@ describe('TaskPage', () => {
 
 		await view.rerender(renderTaskPageElement())
 		expect(screen.getByRole('link', { name: '独立事项' })).toBeInTheDocument()
-	})
-
-	it('真实详情数据直接驱动页面，不依赖 fallback draft', async () => {
-		taskDetailQueryState.data = createTaskDetail({
-			title: '真实任务标题',
-			note: '真实任务备注',
-			status: 'doing',
-			priority: 4,
-			dueAt: '2026-05-30',
-			plannedAt: '2026-05-29',
-			remindAt: '2026-05-28',
-			projectId: 'project-1',
-			projectName: '项目 A',
-		})
-
-		await renderTaskPage()
-
-		expect(await screen.findByText('真实任务标题')).toBeInTheDocument()
-		expect(screen.getByText('Links for task-1')).toBeInTheDocument()
-		expect(mockAutosave.value.reset).not.toHaveBeenCalled()
 	})
 
 	it('trash 任务显示只读状态', async () => {
@@ -204,7 +179,9 @@ function renderTaskPageElement(): ReactElement {
 }
 
 async function renderTaskPageWithRouter() {
-	return renderWithRouterContext(renderTaskPageElement())
+	return renderWithRouterContext(renderTaskPageElement(), {
+		wrap: (children) => <TestInteractionProviders>{children}</TestInteractionProviders>,
+	})
 }
 
 function createTestQueryClient() {

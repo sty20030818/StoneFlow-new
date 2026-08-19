@@ -1,5 +1,4 @@
-/** @vitest-environment jsdom */
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import {
 	DEFAULT_KEYBINDINGS,
@@ -21,18 +20,18 @@ describe('NavBackForward', () => {
 		)
 
 		const backButton = screen.getByRole('button', { name: '后退' })
-		fireEvent.pointerMove(backButton, { pointerType: 'mouse' })
-		fireEvent.pointerEnter(backButton, { pointerType: 'mouse' })
+		fireEvent.keyDown(document, { key: 'Tab' })
+		act(() => backButton.focus())
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('后退')
 		expect(screen.getByLabelText(/^按 (?:Command|Control) \+ \[$/)).toBeInTheDocument()
 
 		fireEvent.click(backButton)
 		expect(onBack).toHaveBeenCalledOnce()
 
-		fireEvent.pointerLeave(backButton, { pointerType: 'mouse' })
+		act(() => backButton.blur())
+		await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument())
 		const disabledForwardTrigger = screen.getByRole('group', { name: '前进' })
-		fireEvent.pointerMove(disabledForwardTrigger, { pointerType: 'mouse' })
-		fireEvent.pointerEnter(disabledForwardTrigger, { pointerType: 'mouse' })
+		act(() => disabledForwardTrigger.focus())
 		const disabledTooltip = await screen.findByRole('tooltip')
 		expect(disabledTooltip).toHaveTextContent('前进')
 		expect(disabledTooltip).toHaveTextContent('没有可前进的页面')

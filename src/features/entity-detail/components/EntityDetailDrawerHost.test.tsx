@@ -20,19 +20,13 @@ vi.mock('@/features/task', () => ({
 	TaskDetailContent: ({
 		onClose,
 		scrollRef,
-		showCloseButton,
 		viewModel,
 	}: {
 		onClose: () => void
 		scrollRef: React.Ref<HTMLDivElement>
-		showCloseButton?: boolean
 		viewModel: MockTaskDetailViewModel
 	}) => (
-		<div
-			ref={scrollRef}
-			data-show-close-button={showCloseButton ? 'true' : 'false'}
-			data-testid='task-detail-viewport'
-		>
+		<div ref={scrollRef} data-testid='task-detail-viewport'>
 			<input
 				aria-label='任务详情草稿'
 				onChange={(event) => viewModel.setDraftTitle(event.currentTarget.value)}
@@ -56,7 +50,7 @@ describe('EntityDetailDrawerHost', () => {
 		}: {
 			taskId: string
 		}) {
-			const [draftTitle, setDraftTitle] = useState(`草稿 ${taskId}`)
+			const [draftTitle, setDraftTitle] = useState('草稿 ' + taskId)
 			return {
 				status: 'ready',
 				autosave: { flushNow: vi.fn().mockResolvedValue(true) },
@@ -68,116 +62,62 @@ describe('EntityDetailDrawerHost', () => {
 
 	afterEach(() => vi.restoreAllMocks())
 
-	it('desktop 使用 HeroUI Resizable 构建列表与 Aside 双栏', () => {
+	it('desktop 提供可访问的详情侧栏并连接当前任务', () => {
 		renderHost({ children: <div data-testid='main-content'>任务列表</div> })
 
 		expect(screen.getByTestId('main-content')).toHaveTextContent('任务列表')
-		const aside = screen.getByRole('complementary', { name: '任务详情' })
-		expect(aside).toBeInTheDocument()
-		expect(fireEvent.contextMenu(aside)).toBe(false)
+		expect(screen.getByRole('complementary', { name: '任务详情' })).toBeInTheDocument()
 		expect(screen.getByRole('separator', { name: '调整任务详情宽度' })).toHaveAttribute(
 			'aria-orientation',
 			'vertical',
 		)
-		const panels = document.querySelectorAll<HTMLElement>('[data-slot="resizable-panel"]')
-		expect(panels).toHaveLength(2)
 		expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-		expect(document.querySelector('[data-slot="sheet-backdrop"]')).not.toBeInTheDocument()
 		expect(useTaskDetailViewModelMock).toHaveBeenCalledWith({ taskId: 'task-a', onClose })
-		expect(screen.getByTestId('task-detail-viewport')).toHaveAttribute(
-			'data-show-close-button',
-			'true',
-		)
 	})
 
-	it('compact 使用 MainCard scope 内的 HeroUI 原生卡片式 Sheet', async () => {
-		renderHost({ children: <div data-testid='main-content'>任务列表</div>, isCompact: true })
-
-		const dialog = await screen.findByRole('dialog', { name: '任务详情' })
-		const layout = document.querySelector<HTMLElement>('[data-entity-detail-layout="true"]')
-		const backdrop = document.querySelector<HTMLElement>('[data-slot="sheet-backdrop"]')
-		const content = document.querySelector<HTMLElement>('[data-slot="sheet-content"]')
-
-		expect(layout).toContainElement(backdrop)
-		expect(backdrop).toHaveClass('absolute', 'before:absolute', 'sheet__backdrop--opaque')
-		expect(content).toHaveClass(
-			'absolute',
-			'w-[min(420px,calc(100%-16px))]',
-			'h-auto',
-			'max-w-none',
-		)
-		expect(content).toHaveAttribute('data-sheet-detached')
-		expect(dialog).toHaveClass('h-full', 'overflow-hidden')
-		expect(dialog).not.toHaveClass('rounded-none')
-		expect(screen.queryByRole('button', { name: '关闭任务详情' })).not.toBeInTheDocument()
-		expect(screen.getByTestId('task-detail-viewport')).toHaveAttribute(
-			'data-show-close-button',
-			'false',
-		)
-		expect(document.querySelector('[data-entity-detail-aside="true"]')).not.toBeInTheDocument()
-		expect(document.querySelectorAll('[data-slot="resizable-panel"]')).toHaveLength(1)
-	})
-
-	it('跨断点只切换容器，并保留 viewModel 草稿、滚动位置与主集合 DOM', async () => {
-		const children = <div data-testid='main-content'>任务列表</div>
-		const view = renderHost({ children })
-		const mainContent = screen.getByTestId('main-content')
-		const desktopViewport = screen.getByTestId('task-detail-viewport')
-		desktopViewport.scrollTop = 180
-		fireEvent.change(screen.getByRole('textbox', { name: '任务详情草稿' }), {
-			target: { value: '断点切换中的草稿' },
-		})
-
-		view.rerender(createHost({ children, isCompact: true }))
-
-		await screen.findByRole('dialog', { name: '任务详情' })
-		expect(screen.getByTestId('main-content')).toBe(mainContent)
-		expect(screen.getByRole('textbox', { name: '任务详情草稿' })).toHaveValue('断点切换中的草稿')
-		expect(screen.getByTestId('task-detail-viewport')).toHaveProperty('scrollTop', 180)
-
-		view.rerender(createHost({ children, isCompact: false }))
-
-		expect(screen.getByRole('complementary', { name: '任务详情' })).toBeInTheDocument()
-		expect(screen.getByRole('textbox', { name: '任务详情草稿' })).toHaveValue('断点切换中的草稿')
-		expect(screen.getByTestId('task-detail-viewport')).toHaveProperty('scrollTop', 180)
-		expect(onClose).not.toHaveBeenCalled()
-	})
-
-	it('compact Sheet 在组件边界阻断行级字符键冒泡', async () => {
+	it('compact 提供详情 dialog，并阻断行级字符快捷键冒泡', async () => {
 		const onWindowKeyDown = vi.fn()
 		window.addEventListener('keydown', onWindowKeyDown)
 		renderHost({ isCompact: true })
 
 		const dialog = await screen.findByRole('dialog', { name: '任务详情' })
+		expect(screen.queryByRole('complementary', { name: '任务详情' })).not.toBeInTheDocument()
 		fireEvent.keyDown(dialog, { key: 'w' })
-
 		expect(onWindowKeyDown).not.toHaveBeenCalled()
+
 		window.removeEventListener('keydown', onWindowKeyDown)
 	})
 
-	it('打开和关闭详情时不重建主集合 DOM', () => {
+	it('跨断点保留草稿、滚动位置与主集合 DOM', async () => {
 		const children = <div data-testid='main-content'>任务列表</div>
 		const view = renderHost({ children })
 		const mainContent = screen.getByTestId('main-content')
+		const viewport = screen.getByTestId('task-detail-viewport')
+		viewport.scrollTop = 180
+		fireEvent.change(screen.getByRole('textbox', { name: '任务详情草稿' }), {
+			target: { value: '断点切换中的草稿' },
+		})
 
-		view.rerender(createHost({ children, open: false }))
-		expect(screen.getByTestId('main-content')).toBe(mainContent)
+		view.rerender(createHost({ children, isCompact: true }))
+		await screen.findByRole('dialog', { name: '任务详情' })
 
-		view.rerender(createHost({ children }))
 		expect(screen.getByTestId('main-content')).toBe(mainContent)
+		expect(screen.getByRole('textbox', { name: '任务详情草稿' })).toHaveValue('断点切换中的草稿')
+		expect(screen.getByTestId('task-detail-viewport')).toHaveProperty('scrollTop', 180)
+		expect(onClose).not.toHaveBeenCalled()
 	})
 
-	it('切换任务时按 taskId 恢复真实滚动 viewport', () => {
+	it('切换任务时按 taskId 恢复各自滚动位置', () => {
 		const view = renderHost()
-		const firstViewport = screen.getByTestId('task-detail-viewport')
-		firstViewport.scrollTop = 180
+		const viewport = screen.getByTestId('task-detail-viewport')
+		viewport.scrollTop = 180
 
 		view.rerender(createHost({ activeDetail: { kind: 'task', id: 'task-b' } }))
-		expect(screen.getByTestId('task-detail-viewport')).toBe(firstViewport)
-		expect(screen.getByTestId('task-detail-viewport')).toHaveProperty('scrollTop', 0)
+		expect(screen.getByTestId('task-detail-viewport')).toBe(viewport)
+		expect(viewport).toHaveProperty('scrollTop', 0)
 
 		view.rerender(createHost())
-		expect(screen.getByTestId('task-detail-viewport')).toHaveProperty('scrollTop', 180)
+		expect(viewport).toHaveProperty('scrollTop', 180)
 	})
 
 	it('关闭详情后恢复仍连接的原焦点元素', async () => {
@@ -187,8 +127,7 @@ describe('EntityDetailDrawerHost', () => {
 				{createHost({ open: false })}
 			</>,
 		)
-		const trigger = screen.getByRole('button', { name: '任务行' })
-		trigger.focus()
+		screen.getByRole('button', { name: '任务行' }).focus()
 
 		view.rerender(
 			<>
@@ -207,7 +146,7 @@ describe('EntityDetailDrawerHost', () => {
 		await waitFor(() => expect(screen.getByRole('button', { name: '任务行' })).toHaveFocus())
 	})
 
-	it('原任务行已虚拟卸载时先恢复集合根，再按 stable id 请求重挂聚焦', async () => {
+	it('原任务行已卸载时恢复集合根并请求 stable id 重挂聚焦', async () => {
 		const view = render(
 			<div data-board-root='true' tabIndex={-1}>
 				<div data-task-id='task-a'>
@@ -238,7 +177,7 @@ describe('EntityDetailDrawerHost', () => {
 		expect(focusTaskBoardTaskIdMock).toHaveBeenCalledWith('task-a')
 	})
 
-	it('关闭或无 active detail 时不渲染实体内容', () => {
+	it('无 active detail 时不渲染实体内容', () => {
 		const { container } = renderHost({ activeDetail: null })
 		expect(container).toBeEmptyDOMElement()
 	})

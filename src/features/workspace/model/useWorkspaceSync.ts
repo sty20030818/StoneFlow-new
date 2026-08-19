@@ -58,13 +58,11 @@ export function useWorkspaceSync(scope: Scope) {
 		}
 	}, [scheduleHeavyRefreshDebounced, scheduleRefreshDebounced])
 
-	useTaskChangedListener(scope, (payload) => {
-		console.info('[useWorkspaceSync] task changed via Tauri IPC', payload)
+	useTaskChangedListener(scope, () => {
 		scheduleRefresh()
 	})
 
 	useWorkspaceChangedListener((payload) => {
-		console.info('[useWorkspaceSync] workspace changed via Tauri IPC', payload)
 		if (payload.changedDomains) {
 			if (payload.changedDomains.length === 0) {
 				return
@@ -75,48 +73,39 @@ export function useWorkspaceSync(scope: Scope) {
 		void invalidateWorkspaceQueries(queryClient, { include: [...SYNC_WORKSPACE_DOMAINS] })
 	})
 
-	useEventSubscription('task:created', (event: AppEvent) => {
-		console.info('[useWorkspaceSync] task:created', event.payload)
+	useEventSubscription('task:created', () => {
 		scheduleRefresh()
 	})
 
-	useEventSubscription('task:updated', (event: AppEvent) => {
-		console.info('[useWorkspaceSync] task:updated', event.payload)
+	useEventSubscription('task:updated', () => {
 		scheduleRefresh()
 	})
 
-	useEventSubscription('task:deleted', (event: AppEvent) => {
-		console.info('[useWorkspaceSync] task:deleted', event.payload)
+	useEventSubscription('task:deleted', () => {
 		scheduleRefresh()
 	})
 
-	useEventSubscription('project:created', (event: AppEvent) => {
-		console.info('[useWorkspaceSync] project:created', event.payload)
+	useEventSubscription('project:created', () => {
 		scheduleRefresh()
 	})
 
-	useEventSubscription('project:updated', (event: AppEvent) => {
-		console.info('[useWorkspaceSync] project:updated', event.payload)
+	useEventSubscription('project:updated', () => {
 		scheduleRefresh()
 	})
 
-	useEventSubscription('project:deleted', (event: AppEvent) => {
-		console.info('[useWorkspaceSync] project:deleted', event.payload)
+	useEventSubscription('project:deleted', () => {
 		scheduleRefresh()
 	})
 
-	useEventSubscription('space:created', (event: AppEvent) => {
-		console.info('[useWorkspaceSync] space:created', event.payload)
+	useEventSubscription('space:created', () => {
 		scheduleRefresh()
 	})
 
-	useEventSubscription('space:updated', (event: AppEvent) => {
-		console.info('[useWorkspaceSync] space:updated', event.payload)
+	useEventSubscription('space:updated', () => {
 		scheduleRefresh()
 	})
 
-	useEventSubscription('space:deleted', (event: AppEvent) => {
-		console.info('[useWorkspaceSync] space:deleted', event.payload)
+	useEventSubscription('space:deleted', () => {
 		scheduleRefresh()
 	})
 
@@ -125,7 +114,6 @@ export function useWorkspaceSync(scope: Scope) {
 			return
 		}
 
-		console.info('[useWorkspaceSync] workspace:restored', event.payload)
 		scheduleRefresh(LIFECYCLE_DEBOUNCE_MS)
 	})
 
@@ -134,7 +122,6 @@ export function useWorkspaceSync(scope: Scope) {
 			return
 		}
 
-		console.info('[useWorkspaceSync] lifecycle:changed', event.payload)
 		const isHeavyOperation =
 			event.payload.operation === 'archive' ||
 			event.payload.operation === 'restore' ||

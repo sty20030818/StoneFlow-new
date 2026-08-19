@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 
 import { ShellFooterHit } from '@/shared/components/patterns/ShellFooterHit'
 import { ShellFooterStatus } from '@/shared/components/patterns/ShellFooterStatus'
@@ -14,7 +14,7 @@ describe('Shell Footer Tooltip patterns', () => {
 		const action = screen.getByRole('button', { name: '发现新版本 1.2.0' })
 		expect(action).not.toHaveAttribute('title')
 		fireEvent.keyDown(document, { key: 'Tab' })
-		action.focus()
+		act(() => action.focus())
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('发现新版本 1.2.0')
 	})
 
@@ -25,7 +25,7 @@ describe('Shell Footer Tooltip patterns', () => {
 
 		const action = screen.getByRole('button', { name: '立即同步' })
 		fireEvent.keyDown(document, { key: 'Tab' })
-		action.focus()
+		act(() => action.focus())
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('立即同步')
 
 		rerender(
@@ -38,7 +38,7 @@ describe('Shell Footer Tooltip patterns', () => {
 			'[data-slot="disabled-action-tooltip-trigger"]',
 		) as HTMLElement
 		fireEvent.keyDown(document, { key: 'Tab' })
-		disabledTrigger.focus()
+		act(() => disabledTrigger.focus())
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('立即同步同步未配置远端')
 	})
 })

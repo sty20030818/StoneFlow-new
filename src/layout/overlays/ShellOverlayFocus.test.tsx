@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useState } from 'react'
 import { Button, Modal, Popover } from '@heroui/react'
 import { ContextMenu, Sheet } from '@heroui-pro/react'
@@ -41,7 +41,7 @@ describe('Shell Overlay focus matrix', () => {
 		expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
 
 		fireEvent.keyDown(document, { key: 'Tab' })
-		trigger.focus()
+		act(() => trigger.focus())
 		fireEvent.keyDown(trigger, { key: 'Enter' })
 		fireEvent.keyUp(trigger, { key: 'Enter' })
 		await screen.findByRole('menu', { name: '应用菜单' })
@@ -57,7 +57,7 @@ describe('Shell Overlay focus matrix', () => {
 		render(<PopoverDialogProbe />)
 		const dialogTrigger = await screen.findByRole('button', { name: '打开 Dialog' })
 
-		dialogTrigger.focus()
+		act(() => dialogTrigger.focus())
 		fireEvent.click(dialogTrigger)
 		const dialog = await screen.findByRole('dialog', { name: '嵌套 Dialog' })
 		fireEvent.keyDown(dialog, { key: 'Escape' })
@@ -75,7 +75,7 @@ describe('Shell Overlay focus matrix', () => {
 		const rootMenu = await screen.findByRole('menu', { name: '根菜单' })
 		const submenuTrigger = screen.getByRole('menuitem', { name: /更多/ })
 
-		submenuTrigger.focus()
+		act(() => submenuTrigger.focus())
 		fireEvent.keyDown(submenuTrigger, { key: 'ArrowRight' })
 		const submenu = await screen.findByRole('menu', { name: /更多/ })
 		fireEvent.keyDown(submenu, { key: 'Escape' })
@@ -93,7 +93,7 @@ describe('Shell Overlay focus matrix', () => {
 		render(<SheetProbe />)
 		const trigger = screen.getByRole('button', { name: '打开 Sheet' })
 
-		trigger.focus()
+		act(() => trigger.focus())
 		fireEvent.click(trigger)
 		const dialog = await screen.findByRole('dialog', { name: '共享 Sheet' })
 		fireEvent.keyDown(dialog, { key: 'Escape' })

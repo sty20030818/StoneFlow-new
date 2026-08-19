@@ -1,6 +1,5 @@
-/** @vitest-environment jsdom */
 import { useState } from 'react'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 
 import { SubmitRegistryProvider, useSubmitRegistryActions } from '@/features/submit'
 import { renderWithInteractionProviders as render } from '@/test/TestInteractionProviders'
@@ -28,8 +27,9 @@ describe('ProjectCreateContent', () => {
 		const trigger = button.closest<HTMLElement>(
 			'[data-slot="disabled-command-action-tooltip-trigger"]',
 		)
+		expect(trigger).not.toBeNull()
 		fireEvent.keyDown(document, { key: 'Tab' })
-		trigger?.focus()
+		act(() => trigger!.focus())
 
 		const tooltip = await screen.findByRole('tooltip')
 		expect(tooltip).toHaveTextContent('创建项目')
@@ -79,17 +79,6 @@ describe('ProjectCreateContent', () => {
 		fireEvent.click(screen.getByRole('button', { name: '执行继续提交' }))
 		await waitFor(() => expect(createProjectMock).toHaveBeenCalledTimes(1))
 		expect(screen.getByText('已创建 1 个项目')).toBeInTheDocument()
-	})
-
-	it('描述输入区位于统一滚动容器内', () => {
-		renderProjectCreate()
-
-		const scrollContainer = screen
-			.getByPlaceholderText('添加项目说明…')
-			.closest('[data-scroll-container="true"]')
-
-		expect(scrollContainer).toHaveAttribute('data-scroll-container', 'true')
-		expect(scrollContainer?.className).toContain('px-5')
 	})
 })
 

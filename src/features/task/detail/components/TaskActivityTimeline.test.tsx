@@ -14,13 +14,9 @@ const activityQueryState = vi.hoisted(() => ({
 	refetch: vi.fn(),
 }))
 
-vi.mock('@/features/activity', async (importOriginal) => {
-	const actual = await importOriginal<typeof import('@/features/activity')>()
-	return {
-		...actual,
-		useEntityActivitiesQuery: () => activityQueryState,
-	}
-})
+vi.mock('@/features/activity', () => ({
+	useEntityActivitiesQuery: () => activityQueryState,
+}))
 
 vi.mock('@/features/project', () => ({
 	useProjectOptions: () => [],

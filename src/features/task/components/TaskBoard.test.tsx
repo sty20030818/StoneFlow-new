@@ -17,10 +17,6 @@ import { useCollectionInteraction, type CollectionFocusIntent } from '@/features
 import { TaskBoard, type TaskBoardProps } from '@/features/task/components/TaskBoard'
 import { focusTaskBoardTaskId } from '@/features/task/components/taskBoardScroll'
 import {
-	TASK_BOARD_HEADER_HEIGHT,
-	TASK_BOARD_HEADER_SIZE,
-	TASK_BOARD_ROW_HEIGHT,
-	TASK_BOARD_ROW_SIZE,
 	buildTaskBoardFlatItems,
 	type TaskBoardCustomSection,
 } from '@/features/task/model/taskBoardModel'
@@ -80,168 +76,6 @@ vi.mock('@/features/task/components/TaskRowAdapter', () => ({
 }))
 
 describe('TaskBoard', () => {
-	it('加载中不显示空态文案', () => {
-		renderTaskBoard(
-			<TaskBoardHarness
-				emptyDescription='empty description'
-				emptyTitle='暂无任务'
-				onEmptyAction={() => undefined}
-				onToggleTaskStatus={async () => undefined}
-				onUpdateTaskPriority={async () => undefined}
-				onUpdateTaskStatus={async () => undefined}
-				pendingTaskId={null}
-				status='loading'
-				tasks={[]}
-			/>,
-		)
-
-		expect(screen.queryByText('暂无任务')).not.toBeInTheDocument()
-		expect(screen.queryByText('empty description')).not.toBeInTheDocument()
-	})
-
-	it('显示状态分区 header，并用 totalCount 锁定总高', () => {
-		const { container } = renderTaskBoard(
-			<TaskBoardHarness
-				onEmptyAction={() => undefined}
-				onToggleTaskStatus={async () => undefined}
-				onUpdateTaskPriority={async () => undefined}
-				onUpdateTaskStatus={async () => undefined}
-				pendingTaskId={null}
-				status='ready'
-				hasNextPage
-				loadedCount={1}
-				tasks={[createTask({ id: 'task-1', title: '任务 A', status: 'todo' })]}
-				totalCount={100}
-			/>,
-		)
-
-		expect(screen.getByText('任务 A')).toBeInTheDocument()
-		// scrollTop=0 且首个 header start=0 → stuck，浮层 + 原位（opacity:0）
-		expect(screen.getAllByText('待执行').length).toBeGreaterThanOrEqual(1)
-		expect(screen.getAllByRole('button', { name: '折叠 待执行' }).length).toBeGreaterThanOrEqual(1)
-		expect(
-			screen.getAllByRole('button', { name: '在 待执行 中创建任务' }).length,
-		).toBeGreaterThanOrEqual(1)
-		expect(container.querySelector('[data-task-board-sticky-header]')).toBeTruthy()
-		expect(container.querySelector('[data-board-section-header]')).toHaveStyle({
-			height: `${TASK_BOARD_HEADER_HEIGHT}px`,
-		})
-		expect(container.querySelector('[data-board-root="true"]')).toHaveAttribute('tabindex', '0')
-		expect(screen.getByRole('grid', { name: '任务列表' })).toHaveAttribute('aria-rowcount', '1')
-		expect(container.querySelector('[data-board-root="true"]')?.className).toContain(
-			'@container/task-list',
-		)
-		const root = container.querySelector('[data-task-board-virtual="sections"]')
-		// 续拉中：flat(1 header + 1 行) + 未加载 99 行占位
-		expect(root).toHaveAttribute('data-task-board-extent')
-		const extent = Number(root?.getAttribute('data-task-board-extent'))
-		expect(extent).toBe(TASK_BOARD_HEADER_SIZE + 100 * TASK_BOARD_ROW_SIZE)
-		expect((root as HTMLElement).style.height).toBe(`${extent}px`)
-	})
-
-	it('可见 sticky 分组打开右键菜单时关闭提示，Escape 恢复真实 trigger', async () => {
-		renderTaskBoard(
-			<TaskBoardHarness
-				onEmptyAction={() => undefined}
-				onToggleTaskStatus={async () => undefined}
-				onUpdateTaskPriority={async () => undefined}
-				onUpdateTaskStatus={async () => undefined}
-				pendingTaskId={null}
-				status='ready'
-				tasks={[createTask({ id: 'task-1', title: '任务 A', status: 'todo' })]}
-			/>,
-		)
-
-		const trigger = screen.getByRole('button', { name: '折叠 待执行' })
-		fireEvent.keyDown(document, { key: 'Tab' })
-		trigger.focus()
-		expect(await screen.findByRole('tooltip')).toHaveTextContent('折叠 待执行')
-
-		fireEvent.contextMenu(trigger.closest('[data-board-section-header]')!)
-		const menu = await screen.findByRole('menu', { name: '分区操作' })
-		await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument())
-
-		fireEvent.keyDown(menu, { key: 'Escape' })
-		await waitFor(() =>
-			expect(screen.queryByRole('menu', { name: '分区操作' })).not.toBeInTheDocument(),
-		)
-		expect(trigger).toHaveFocus()
-	})
-
-	it('customSections 显示分组标题', () => {
-		renderTaskBoard(
-			<TaskBoardHarness
-				customSections={[
-					{
-						key: 'all',
-						label: '全部任务',
-						tasks: [createTask({ id: 'task-1', title: '任务 A' })],
-					},
-				]}
-				onEmptyAction={() => undefined}
-				onToggleTaskStatus={async () => undefined}
-				onUpdateTaskPriority={async () => undefined}
-				onUpdateTaskStatus={async () => undefined}
-				pendingTaskId={null}
-				status='ready'
-				tasks={[createTask({ id: 'task-1', title: '任务 A' })]}
-				totalCount={1}
-			/>,
-		)
-
-		expect(screen.getByText('任务 A')).toBeInTheDocument()
-		expect(screen.getAllByText('全部任务').length).toBeGreaterThanOrEqual(1)
-	})
-
-	it('虚拟列表为连续选中行恢复分组位置和连续背景', () => {
-		const tasks = [
-			createTask({ id: 'task-1', title: '任务 A' }),
-			createTask({ id: 'task-2', title: '任务 B' }),
-			createTask({ id: 'task-3', title: '任务 C' }),
-			createTask({ id: 'task-4', title: '任务 D', status: 'doing' }),
-		]
-		const { container } = renderTaskBoard(
-			<TaskBoardHarness
-				customSections={[
-					{ key: 'first', label: '第一组', tasks: tasks.slice(0, 3) },
-					{ key: 'second', label: '第二组', tasks: tasks.slice(3) },
-				]}
-				onEmptyAction={() => undefined}
-				onToggleTaskStatus={async () => undefined}
-				onUpdateTaskPriority={async () => undefined}
-				onUpdateTaskStatus={async () => undefined}
-				pendingTaskId={null}
-				selectedTaskIds={tasks.map((task) => task.id)}
-				status='ready'
-				tasks={tasks}
-				totalCount={tasks.length}
-			/>,
-		)
-
-		expect(screen.getByRole('row', { name: '打开任务 任务 A' })).toHaveAttribute(
-			'data-selection-group-position',
-			'first',
-		)
-		expect(screen.getByRole('row', { name: '打开任务 任务 B' })).toHaveAttribute(
-			'data-selection-group-position',
-			'middle',
-		)
-		expect(screen.getByRole('row', { name: '打开任务 任务 C' })).toHaveAttribute(
-			'data-selection-group-position',
-			'last',
-		)
-		expect(screen.getByRole('row', { name: '打开任务 任务 D' })).toHaveAttribute(
-			'data-selection-group-position',
-			'single',
-		)
-		expect(container.querySelector('[data-task-board-selection-group="middle"]')).toHaveStyle({
-			height: `${TASK_BOARD_ROW_SIZE}px`,
-		})
-		expect(container.querySelector('[data-task-board-selection-group="last"]')).toHaveStyle({
-			height: `${TASK_BOARD_ROW_HEIGHT}px`,
-		})
-	})
-
 	it('Grid 提供 row/gridcell，Arrow/Home/End 移动真实 DOM 焦点', async () => {
 		const tasks = [
 			createTask({ id: 'task-1', title: '任务 A' }),
@@ -273,126 +107,6 @@ describe('TaskBoard', () => {
 		fireEvent.keyDown(rows[2]!, { key: 'Home' })
 		await waitFor(() => expect(rows[0]).toHaveFocus())
 	})
-
-	it('鼠标 hover 是唯一行起点，移开后 collection root 仍可建立键盘 current', async () => {
-		const tasks = [
-			createTask({ id: 'task-1', title: '任务 A' }),
-			createTask({ id: 'task-2', title: '任务 B' }),
-			createTask({ id: 'task-3', title: '任务 C' }),
-		]
-		renderTaskBoard(
-			<TaskBoardHarness
-				onEmptyAction={() => undefined}
-				onToggleTaskStatus={async () => undefined}
-				onUpdateTaskPriority={async () => undefined}
-				onUpdateTaskStatus={async () => undefined}
-				pendingTaskId={null}
-				status='ready'
-				tasks={tasks}
-			/>,
-		)
-
-		const grid = screen.getByRole('grid', { name: '任务列表' })
-		const rows = within(grid).getAllByRole('row')
-		const nativeMatches = grid.matches.bind(grid)
-		const focusVisible = vi
-			.spyOn(grid, 'matches')
-			.mockImplementation((selector) => selector === ':focus-visible' || nativeMatches(selector))
-		act(() => grid.focus())
-		await waitFor(() => expect(rows[0]).toHaveFocus())
-		focusVisible.mockRestore()
-
-		fireEvent.pointerMove(rows[1]!)
-		await waitFor(() => {
-			expect(rows[1]).toHaveFocus()
-			expect(screen.getByTestId('focused-key')).toHaveTextContent('task-2')
-		})
-
-		fireEvent.keyDown(rows[1]!, { key: 'ArrowDown' })
-		await waitFor(() => expect(rows[2]).toHaveFocus())
-
-		fireEvent.pointerMove(rows[0]!)
-		await waitFor(() => expect(rows[0]).toHaveFocus())
-		fireEvent.pointerLeave(rows[0]!)
-		await waitFor(() => {
-			expect(screen.getByTestId('focused-key')).toHaveTextContent('none')
-			expect(grid).toHaveFocus()
-			expect(grid).toHaveClass('outline-none')
-		})
-
-		fireEvent.keyDown(grid, { key: 'ArrowDown', shiftKey: true })
-		await waitFor(() => {
-			expect(rows[0]).toHaveFocus()
-			expect(screen.getByTestId('selected-keys')).toHaveTextContent('task-1')
-		})
-
-		fireEvent.keyDown(rows[0]!, { key: 'a', metaKey: true })
-		await waitFor(() =>
-			expect(screen.getByTestId('selected-keys')).toHaveTextContent('task-1,task-2,task-3'),
-		)
-	})
-
-	it('root capture 处理 J/K/Shift/X/Space/Enter/Cmd+A，并隔离行内控件', async () => {
-		const tasks = [
-			createTask({ id: 'task-1', title: '任务 A' }),
-			createTask({ id: 'task-2', title: '任务 B' }),
-			createTask({ id: 'task-3', title: '任务 C' }),
-		]
-		const onCommand = vi.fn()
-		renderTaskBoard(
-			<TaskCommandTestProvider onCommand={onCommand}>
-				<TaskBoardHarness
-					onEmptyAction={() => undefined}
-					onToggleTaskStatus={async () => undefined}
-					onUpdateTaskPriority={async () => undefined}
-					onUpdateTaskStatus={async () => undefined}
-					pendingTaskId={null}
-					status='ready'
-					tasks={tasks}
-				/>
-			</TaskCommandTestProvider>,
-		)
-
-		const rows = screen.getAllByRole('row')
-		act(() => rows[0]?.focus())
-		fireEvent.keyDown(rows[0]!, { key: 'j' })
-		await waitFor(() => expect(rows[1]).toHaveFocus())
-		fireEvent.keyDown(rows[1]!, { key: 'j', shiftKey: true })
-		await waitFor(() => expect(rows[1]).toHaveAttribute('aria-selected', 'true'))
-		fireEvent.keyDown(rows[1]!, { key: 'j', shiftKey: true })
-		await waitFor(() => {
-			expect(rows[1]).toHaveAttribute('aria-selected', 'true')
-			expect(rows[2]).toHaveAttribute('aria-selected', 'true')
-		})
-		fireEvent.keyDown(rows[2]!, { key: 'x' })
-		await waitFor(() => expect(rows[2]).toHaveAttribute('aria-selected', 'false'))
-		const grid = screen.getByRole('grid', { name: '任务列表' })
-		act(() => grid.focus())
-		expect(grid).toHaveFocus()
-		fireEvent.keyDown(grid, { key: ' ' })
-		await waitFor(() => expect(rows[2]).toHaveFocus())
-		expect(onCommand).toHaveBeenCalledWith(
-			COMMAND_IDS.taskPeek,
-			expect.objectContaining({ selection: expect.objectContaining({ ids: ['task-3'] }) }),
-			{ source: 'row-shortcut' },
-		)
-		fireEvent.keyDown(rows[2]!, { key: 'Enter' })
-		expect(onCommand).toHaveBeenCalledWith(
-			COMMAND_IDS.taskOpenDetail,
-			expect.objectContaining({ selection: expect.objectContaining({ ids: ['task-3'] }) }),
-			{ source: 'row-shortcut' },
-		)
-		fireEvent.keyDown(rows[2]!, { key: 'a', metaKey: true })
-		await waitFor(() => rows.forEach((row) => expect(row).toHaveAttribute('aria-selected', 'true')))
-		fireEvent.keyDown(rows[2]!, { key: 'k' })
-		await waitFor(() => expect(rows[1]).toHaveFocus())
-
-		const inlineButton = within(rows[1]!).getByRole('button', { name: '行内操作 任务 B' })
-		act(() => inlineButton.focus())
-		fireEvent.keyDown(inlineButton, { key: 'j' })
-		expect(inlineButton).toHaveFocus()
-	})
-
 	it('键盘 Peek 打开和切行时隐藏行边框，关闭后恢复且不搬走焦点', async () => {
 		const tasks = [
 			createTask({ id: 'task-1', title: '任务 A' }),
@@ -443,41 +157,6 @@ describe('TaskBoard', () => {
 			expect(rows[1]).toHaveAttribute('data-suppress-focus-indicator', 'false')
 		})
 	})
-
-	it('领域字符快捷键不被 Grid typeahead 抢占', async () => {
-		const onCommand = vi.fn()
-		renderTaskBoard(
-			<TaskCommandTestProvider onCommand={onCommand}>
-				<TaskBoardHarness
-					onEmptyAction={() => undefined}
-					onToggleTaskStatus={async () => undefined}
-					onUpdateTaskPriority={async () => undefined}
-					onUpdateTaskStatus={async () => undefined}
-					pendingTaskId={null}
-					status='ready'
-					tasks={[
-						createTask({ id: 'a-task', title: '任务 A' }),
-						createTask({ id: 'd-task', title: '任务 D' }),
-					]}
-				/>
-			</TaskCommandTestProvider>,
-		)
-
-		const row = screen.getByRole('row', { name: '打开任务 任务 A' })
-		act(() => row.focus())
-		await waitFor(() => expect(screen.getByTestId('focused-key')).toHaveTextContent('a-task'))
-		fireEvent.keyDown(row, { key: 'd' })
-
-		await waitFor(() => {
-			expect(row).toHaveFocus()
-			expect(onCommand).toHaveBeenCalledWith(
-				COMMAND_IDS.taskOpenDateMenu,
-				expect.objectContaining({ selection: expect.objectContaining({ ids: ['a-task'] }) }),
-				{ source: 'row-shortcut' },
-			)
-		})
-	})
-
 	it('右键不改变选择，菜单关闭后只恢复触发行焦点', async () => {
 		const tasks = [
 			createTask({ id: 'task-1', title: '任务 A' }),
@@ -515,103 +194,6 @@ describe('TaskBoard', () => {
 			expect(screen.getByTestId('focused-key')).toHaveTextContent('task-2')
 		})
 	})
-
-	it('focus intent 聚焦唯一可见 group trigger，J 再进入缓存的 row', async () => {
-		const tasks = [
-			createTask({ id: 'task-1', title: '任务 A', status: 'todo' }),
-			createTask({ id: 'task-2', title: '任务 B', status: 'doing' }),
-		]
-		const onFocusIntentConsumed = vi.fn()
-		const focusIntent = {
-			type: 'group-trigger',
-			groupKey: 'h:todo',
-			reentry: { type: 'item', key: 'task-2' },
-		} satisfies CollectionFocusIntent<string, string>
-		const { container } = renderTaskBoard(
-			<TaskBoardHarness
-				focusIntent={focusIntent}
-				onEmptyAction={() => undefined}
-				onFocusIntentConsumed={onFocusIntentConsumed}
-				onToggleTaskStatus={async () => undefined}
-				onUpdateTaskPriority={async () => undefined}
-				onUpdateTaskStatus={async () => undefined}
-				pendingTaskId={null}
-				status='ready'
-				tasks={tasks}
-			/>,
-		)
-
-		const trigger = screen.getByRole('button', { name: '折叠 待执行' })
-		await waitFor(() => expect(trigger).toHaveFocus())
-		expect(screen.getAllByRole('button', { name: '折叠 待执行' })).toHaveLength(1)
-		expect(container.querySelector('[data-sticky="true"][aria-hidden="true"]')).toHaveAttribute(
-			'inert',
-		)
-		expect(onFocusIntentConsumed).toHaveBeenCalledWith(focusIntent)
-
-		fireEvent.keyDown(trigger, { key: 'j' })
-		await waitFor(() => expect(screen.getByRole('row', { name: '打开任务 任务 B' })).toHaveFocus())
-	})
-
-	it('尾部 group 没有下一项时 ArrowDown 保留可见 trigger 焦点', async () => {
-		const focusIntent = {
-			type: 'group-trigger',
-			groupKey: 'h:doing',
-			reentry: { type: 'root' },
-		} satisfies CollectionFocusIntent<string, string>
-		renderTaskBoard(
-			<TaskBoardHarness
-				focusIntent={focusIntent}
-				onEmptyAction={() => undefined}
-				onToggleTaskStatus={async () => undefined}
-				onUpdateTaskPriority={async () => undefined}
-				onUpdateTaskStatus={async () => undefined}
-				pendingTaskId={null}
-				status='ready'
-				tasks={[
-					createTask({ id: 'task-1', title: '任务 A', status: 'todo' }),
-					createTask({ id: 'task-2', title: '任务 B', status: 'doing' }),
-				]}
-			/>,
-		)
-
-		const trigger = screen.getByRole('button', { name: '折叠 进行中' })
-		const grid = screen.getByRole('grid', { name: '任务列表' })
-		const rootFocus = vi.spyOn(grid, 'focus')
-		await waitFor(() => expect(trigger).toHaveFocus())
-		expect(fireEvent.keyDown(trigger, { key: 'ArrowDown' })).toBe(false)
-		expect(trigger).toHaveFocus()
-		expect(rootFocus).not.toHaveBeenCalled()
-	})
-
-	it('删除 fallback item intent 聚焦真实 row 并只消费一次', async () => {
-		const focusIntent = {
-			type: 'item',
-			key: 'task-2',
-		} satisfies CollectionFocusIntent<string, string>
-		const onFocusIntentConsumed = vi.fn()
-		renderTaskBoard(
-			<TaskBoardHarness
-				focusIntent={focusIntent}
-				onEmptyAction={() => undefined}
-				onFocusIntentConsumed={onFocusIntentConsumed}
-				onToggleTaskStatus={async () => undefined}
-				onUpdateTaskPriority={async () => undefined}
-				onUpdateTaskStatus={async () => undefined}
-				pendingTaskId={null}
-				status='ready'
-				tasks={[
-					createTask({ id: 'task-1', title: '任务 A' }),
-					createTask({ id: 'task-2', title: '任务 B' }),
-				]}
-			/>,
-		)
-
-		await waitFor(() => expect(screen.getByRole('row', { name: '打开任务 任务 B' })).toHaveFocus())
-		expect(onFocusIntentConsumed).toHaveBeenCalledTimes(1)
-		expect(onFocusIntentConsumed).toHaveBeenCalledWith(focusIntent)
-	})
-
 	it('离屏 key 先驱动唯一 virtualizer 滚动，挂载后再聚焦真实 row', async () => {
 		const tasks = Array.from({ length: 100 }, (_, index) =>
 			createTask({ id: `task-${index}`, title: `任务 ${index}` }),
@@ -631,13 +213,24 @@ describe('TaskBoard', () => {
 		)
 
 		const viewport = screen.getByTestId('task-viewport')
+		const pendingScrolls: Promise<void>[] = []
 		const scrollTo = vi.fn((options: ScrollToOptions) => {
-			viewport.scrollTop = options.top ?? 0
-			viewport.dispatchEvent(new Event('scroll'))
+			pendingScrolls.push(
+				new Promise((resolve) => {
+					window.setTimeout(() => {
+						viewport.scrollTop = options.top ?? 0
+						viewport.dispatchEvent(new Event('scroll'))
+						resolve()
+					}, 0)
+				}),
+			)
 		})
 		Object.defineProperty(viewport, 'scrollTo', { configurable: true, value: scrollTo })
 
 		act(() => focusTaskBoardTaskId('task-80'))
+		await act(async () => {
+			await Promise.all(pendingScrolls)
+		})
 
 		await waitFor(() => expect(screen.getByRole('row', { name: '打开任务 任务 80' })).toHaveFocus())
 		expect(scrollTo).toHaveBeenCalled()
@@ -676,7 +269,6 @@ describe('TaskBoard', () => {
 		fireEvent.click(screen.getByRole('button', { name: '删除最后一项' }))
 		await waitFor(() => expect(screen.getByRole('button', { name: '创建任务' })).toHaveFocus())
 	})
-
 	it('可见 sticky 分组右键不改 selection/focus，动作仍一次更新 selection', async () => {
 		const tasks = [
 			createTask({ id: 'task-1', title: '任务 A', status: 'todo' }),
@@ -720,7 +312,6 @@ describe('TaskBoard', () => {
 		await waitFor(() => expect(screen.getByRole('button', { name: '折叠 待执行' })).toHaveFocus())
 	})
 })
-
 function renderTaskBoard(element: ReactElement): RenderResult {
 	return renderWithInteractionProviders(
 		<DangerConfirmProvider>

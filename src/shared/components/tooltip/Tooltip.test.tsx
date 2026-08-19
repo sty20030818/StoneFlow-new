@@ -27,9 +27,9 @@ describe('shared tooltip patterns', () => {
 		}
 
 		const trigger = screen.getByRole('button', { name: '延迟策略' })
-		trigger.blur()
+		act(() => trigger.blur())
 		fireEvent.keyDown(document, { key: 'Tab' })
-		trigger.focus()
+		act(() => trigger.focus())
 		expect(await screen.findByRole('tooltip')).toBeInTheDocument()
 	})
 
@@ -94,7 +94,7 @@ describe('shared tooltip patterns', () => {
 		expect(trigger).toHaveAttribute('aria-disabled', 'true')
 
 		fireEvent.keyDown(document, { key: 'Tab' })
-		trigger.focus()
+		act(() => trigger.focus())
 		const tooltip = await screen.findByRole('tooltip')
 		expect(tooltip).toHaveTextContent('删除任务X你没有删除权限')
 		expect(tooltip).not.toHaveTextContent('任务 A')

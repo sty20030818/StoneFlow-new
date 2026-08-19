@@ -10,61 +10,6 @@ import type { LifecycleEntry } from '@/shared/types'
 import { renderWithInteractionProviders as render } from '@/test/TestInteractionProviders'
 
 describe('LifecycleBoard', () => {
-	it('加载中不显示空态文案', () => {
-		render(
-			<DangerConfirmProvider>
-				<LifecycleBoard
-					emptyDescription='empty'
-					emptyTitle='归档为空'
-					mode='archive'
-					onRestore={() => undefined}
-					pendingEntryId={null}
-					sections={[]}
-					status='loading'
-				/>
-			</DangerConfirmProvider>,
-		)
-
-		expect(screen.queryByText('归档为空')).not.toBeInTheDocument()
-		expect(screen.queryByText('empty')).not.toBeInTheDocument()
-	})
-
-	it('连续选中的生命周期行透传显式 group position', () => {
-		const sections: LifecycleBoardSection[] = [
-			{
-				key: 'task',
-				label: '已归档的任务',
-				items: [
-					createEntry({ id: 'task-1', entityType: 'task', title: '任务 A' }),
-					createEntry({ id: 'task-2', entityType: 'task', title: '任务 B' }),
-					createEntry({ id: 'task-3', entityType: 'task', title: '任务 C' }),
-				],
-			},
-		]
-
-		render(
-			<DangerConfirmProvider>
-				<LifecycleBoard
-					emptyDescription='empty'
-					emptyTitle='empty'
-					mode='archive'
-					onOpenDetail={() => undefined}
-					onRestore={() => undefined}
-					pendingEntryId={null}
-					sections={sections}
-					selectedEntryIdSet={new Set(['task-2', 'task-3'])}
-				/>
-			</DangerConfirmProvider>,
-		)
-
-		expect(
-			screen.getByRole('checkbox', { name: '选择 任务 B' }).closest('[data-lifecycle-entity]'),
-		).toHaveAttribute('data-selection-group-position', 'first')
-		expect(
-			screen.getByRole('checkbox', { name: '选择 任务 C' }).closest('[data-lifecycle-entity]'),
-		).toHaveAttribute('data-selection-group-position', 'last')
-	})
-
 	it('异步加载到首批 section 后默认展开', async () => {
 		render(
 			<DangerConfirmProvider>
@@ -80,24 +25,6 @@ describe('LifecycleBoard', () => {
 		await waitFor(() => {
 			expect(screen.getByRole('button', { name: '打开 任务 A' })).toBeInTheDocument()
 		})
-	})
-
-	it('鼠标 hover 生命周期行时不显示键盘边框，移开后清除 hover', () => {
-		render(
-			<DangerConfirmProvider>
-				<LifecycleBoardHoverHarness />
-			</DangerConfirmProvider>,
-		)
-
-		const row = screen.getByRole('button', { name: '打开 任务 A' })
-
-		fireEvent.mouseEnter(row)
-		expect(row).toHaveClass('bg-surface-hover')
-		expect(row).not.toHaveClass('border-foreground/70')
-
-		fireEvent.mouseLeave(row)
-		expect(row).not.toHaveClass('bg-surface-hover')
-		expect(row).not.toHaveClass('border-foreground/70')
 	})
 
 	it('右键已选中行时菜单动作使用全部前缀', async () => {
@@ -164,30 +91,6 @@ function LifecycleBoardAsyncHarness() {
 				sections={sections}
 			/>
 		</div>
-	)
-}
-
-function LifecycleBoardHoverHarness() {
-	const [focusedEntryId, setFocusedEntryId] = useState<string | null>(null)
-
-	return (
-		<LifecycleBoard
-			emptyDescription='empty'
-			emptyTitle='empty'
-			focusedEntryId={focusedEntryId}
-			mode='archive'
-			onOpenDetail={() => undefined}
-			onRestore={() => undefined}
-			onSetFocusedEntry={setFocusedEntryId}
-			pendingEntryId={null}
-			sections={[
-				{
-					key: 'task',
-					label: '已归档的任务',
-					items: [createEntry({ id: 'task-1', entityType: 'task', title: '任务 A' })],
-				},
-			]}
-		/>
 	)
 }
 

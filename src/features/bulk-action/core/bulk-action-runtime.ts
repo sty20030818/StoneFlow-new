@@ -135,6 +135,44 @@ export function createBulkActionResult({
 	}
 }
 
+type BulkMutationReport = Pick<BulkActionResult, 'succeededIds' | 'failedIds' | 'skippedIds'>
+
+/**
+ * 将实体 adapter 报告收敛为统一结果。
+ * skipped 与 failed 都会阻止 success，且只有完整成功才允许清空选择。
+ */
+export function createBulkActionResultFromReport({
+	actionId,
+	snapshot,
+	report,
+	successMessage,
+	clearSelectionOnSuccess = false,
+}: {
+	actionId: BulkActionId
+	snapshot: BulkSelectionSnapshot
+	report: BulkMutationReport
+	successMessage?: string
+	clearSelectionOnSuccess?: boolean
+}): BulkActionResult {
+	const status =
+		report.failedIds.length === 0 && report.skippedIds.length === 0
+			? 'success'
+			: report.succeededIds.length > 0
+				? 'partial'
+				: 'failed'
+
+	return createBulkActionResult({
+		status,
+		actionId,
+		snapshot,
+		succeededIds: report.succeededIds,
+		failedIds: report.failedIds,
+		skippedIds: report.skippedIds,
+		message: status === 'success' ? successMessage : undefined,
+		shouldClearSelection: status === 'success' && clearSelectionOnSuccess,
+	})
+}
+
 export function shouldConfirmAction(action: BulkAction, snapshot: BulkSelectionSnapshot) {
 	return typeof action.requiresConfirm === 'function'
 		? action.requiresConfirm(snapshot)

@@ -1,12 +1,11 @@
 import {
 	PROJECT_BULK_ACTION_IDS,
 	createBulkActionResult,
+	createBulkActionResultFromReport,
 	type BulkAction,
-	type BulkActionId,
-	type BulkSelectionSnapshot,
 } from '@/features/bulk-action'
 
-import type { ProjectBulkAdapter, ProjectBulkMutationReport } from './project-bulk-adapter'
+import type { ProjectBulkAdapter } from './project-bulk-adapter'
 
 type ProjectBulkActionDefinition = Omit<BulkAction, 'run'>
 
@@ -44,26 +43,26 @@ export const projectBulkActions: BulkAction[] = projectBulkActionDefinitions.map
 		}
 
 		switch (definition.id) {
-			case PROJECT_BULK_ACTION_IDS.archiveSelected:
-				return toBulkActionResult(
-					definition.id,
+			case PROJECT_BULK_ACTION_IDS.archiveSelected: {
+				const report = await adapter.archiveProject(snapshot.ids)
+				return createBulkActionResultFromReport({
+					actionId: definition.id,
 					snapshot,
-					await adapter.archiveProject(snapshot.ids),
-					{
-						getMessage: (report) => `已归档 ${report.succeededIds.length} 个项目`,
-						shouldClearSelection: true,
-					},
-				)
-			case PROJECT_BULK_ACTION_IDS.deleteSelected:
-				return toBulkActionResult(
-					definition.id,
+					report,
+					successMessage: `已归档 ${report.succeededIds.length} 个项目`,
+					clearSelectionOnSuccess: true,
+				})
+			}
+			case PROJECT_BULK_ACTION_IDS.deleteSelected: {
+				const report = await adapter.deleteProject(snapshot.ids)
+				return createBulkActionResultFromReport({
+					actionId: definition.id,
 					snapshot,
-					await adapter.deleteProject(snapshot.ids),
-					{
-						getMessage: (report) => `已删除 ${report.succeededIds.length} 个项目`,
-						shouldClearSelection: true,
-					},
-				)
+					report,
+					successMessage: `已删除 ${report.succeededIds.length} 个项目`,
+					clearSelectionOnSuccess: true,
+				})
+			}
 			default:
 				return createBulkActionResult({
 					status: 'failed',
@@ -86,32 +85,4 @@ function getProjectBulkAdapter(adapter: unknown): ProjectBulkAdapter | null {
 	}
 
 	return null
-}
-
-function toBulkActionResult(
-	actionId: BulkActionId,
-	snapshot: BulkSelectionSnapshot,
-	report: ProjectBulkMutationReport,
-	options: {
-		getMessage?: (report: ProjectBulkMutationReport) => string
-		shouldClearSelection?: boolean
-	} = {},
-) {
-	const status =
-		report.failedIds.length === 0 && report.skippedIds.length === 0
-			? 'success'
-			: report.succeededIds.length > 0
-				? 'partial'
-				: 'failed'
-
-	return createBulkActionResult({
-		status,
-		actionId,
-		snapshot,
-		succeededIds: report.succeededIds,
-		failedIds: report.failedIds,
-		message: status === 'success' ? options.getMessage?.(report) : undefined,
-		skippedIds: report.skippedIds,
-		shouldClearSelection: status === 'success' ? options.shouldClearSelection : false,
-	})
 }

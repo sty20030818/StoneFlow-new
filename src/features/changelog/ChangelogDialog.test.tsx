@@ -15,7 +15,7 @@ vi.mock('./ChangelogRelease', () => ({
 }))
 
 describe('ChangelogDialog', () => {
-	it('自定义关闭动作显示提示并请求关闭', async () => {
+	it('展示 release，并将关闭动作交给上层', () => {
 		useChangelogMock.mockReturnValue({
 			isLoading: false,
 			releases: [{ version: '0.2.0' }],
@@ -24,12 +24,8 @@ describe('ChangelogDialog', () => {
 
 		render(<ChangelogDialog channel='stable' onOpenChange={onOpenChange} open />)
 
+		expect(screen.getByRole('article')).toHaveTextContent('v0.2.0')
 		const closeButton = screen.getByRole('button', { name: '关闭更新日志' })
-		closeButton.blur()
-		fireEvent.keyDown(document, { key: 'Tab' })
-		closeButton.focus()
-		expect(await screen.findByRole('tooltip')).toHaveTextContent('关闭')
-
 		fireEvent.click(closeButton)
 		expect(onOpenChange).toHaveBeenCalledWith(false)
 	})

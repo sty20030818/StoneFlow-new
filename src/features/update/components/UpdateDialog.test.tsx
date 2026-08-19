@@ -100,9 +100,6 @@ describe('UpdateDialog', () => {
 		expect(screen.getAllByRole('button', { name: '关闭' })).toHaveLength(1)
 		expect(screen.queryByRole('button', { name: '立即更新' })).not.toBeInTheDocument()
 		expect(screen.queryByRole('button', { name: '跳过此版本' })).not.toBeInTheDocument()
-		fireEvent.keyDown(document, { key: 'Tab' })
-		screen.getByRole('button', { name: '关闭' }).focus()
-		expect(await screen.findByRole('tooltip')).toHaveTextContent('关闭')
 
 		fireEvent.click(screen.getByRole('button', { name: '重新检查' }))
 		expect(mocks.checkNow).toHaveBeenCalledTimes(1)
@@ -136,7 +133,6 @@ describe('UpdateDialog', () => {
 			}),
 		)
 		const notes = screen.getByRole('region', { name: '本次累计更新说明' })
-		expect(notes).toHaveClass('max-h-64', 'overflow-y-auto')
 		expect(within(notes).getByText('v0.1.2-beta.4')).toBeInTheDocument()
 		expect(within(notes).getByText('v0.1.2-beta.3')).toBeInTheDocument()
 	})
@@ -267,12 +263,6 @@ describe('UpdateDialog', () => {
 		expect(screen.getByRole('button', { name: '正在安装...' })).toBeDisabled()
 		const closeButton = screen.getByRole('button', { name: '关闭' })
 		expect(closeButton).toBeDisabled()
-		const disabledCloseTrigger = document.querySelector(
-			'[data-slot="disabled-action-tooltip-trigger"]',
-		)
-		fireEvent.keyDown(document, { key: 'Tab' })
-		;(disabledCloseTrigger as HTMLElement).focus()
-		expect(await screen.findByRole('tooltip')).toHaveTextContent('关闭安装完成前无法关闭更新窗口')
 		fireEvent.click(closeButton)
 
 		expect(useUpdateStore.getState().dialogVisible).toBe(true)

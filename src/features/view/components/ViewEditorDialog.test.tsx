@@ -1,4 +1,3 @@
-/** @vitest-environment jsdom */
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 
 import { SubmitRegistryProvider, useSubmitRegistryContext } from '@/features/submit'

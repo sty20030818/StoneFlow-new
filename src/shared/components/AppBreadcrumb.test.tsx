@@ -1,11 +1,9 @@
-/** @vitest-environment jsdom */
-
-import { fireEvent, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { BoxIcon } from 'lucide-react'
 
 import { renderWithRouterContext } from '@/test/renderWithRouter'
-import { AppBreadcrumb, type BreadcrumbNode } from './AppBreadcrumb'
+import { AppBreadcrumb } from './AppBreadcrumb'
 
 describe('AppBreadcrumb', () => {
 	it('可点击节点渲染为 link，当前节点带 aria-current', async () => {
@@ -34,37 +32,6 @@ describe('AppBreadcrumb', () => {
 		expect(screen.getByText('项目 A').closest('[aria-current="page"]')).toHaveAttribute(
 			'aria-current',
 			'page',
-		)
-	})
-
-	it('长文本节点保持可渲染', async () => {
-		const items: BreadcrumbNode[] = [
-			{
-				key: 'views',
-				label: '视图',
-				to: '/all/views',
-				icon: BoxIcon,
-			},
-			{
-				key: 'view',
-				label: '这是一个非常非常长但应该正常显示的视图名称',
-				current: true,
-				truncate: true,
-			},
-		]
-
-		await renderWithRouterContext(<AppBreadcrumb items={items} />)
-
-		expect(screen.getByText('这是一个非常非常长但应该正常显示的视图名称')).toBeInTheDocument()
-		const overflowTrigger = document.querySelector(
-			'[data-slot="overflow-tooltip-trigger"]',
-		) as HTMLElement
-		Object.defineProperty(overflowTrigger, 'clientWidth', { configurable: true, value: 80 })
-		Object.defineProperty(overflowTrigger, 'scrollWidth', { configurable: true, value: 200 })
-		fireEvent.pointerMove(overflowTrigger, { pointerType: 'mouse' })
-		fireEvent.pointerEnter(overflowTrigger, { pointerType: 'mouse' })
-		expect(await screen.findByRole('tooltip')).toHaveTextContent(
-			'这是一个非常非常长但应该正常显示的视图名称',
 		)
 	})
 })

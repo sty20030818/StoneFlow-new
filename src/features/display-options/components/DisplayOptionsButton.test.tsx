@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { PropsWithChildren } from 'react'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import {
 	DEFAULT_KEYBINDINGS,
@@ -14,10 +14,6 @@ import { DisplayOptionsButton } from './DisplayOptionsButton'
 const TEST_SHORTCUT_REGISTRY = new KeybindingRegistry(DEFAULT_KEYBINDINGS)
 
 describe('DisplayOptionsButton', () => {
-	beforeEach(() => {
-		localStorage.clear()
-	})
-
 	it('点击后会打开 display options 面板', async () => {
 		renderWithQueryClient(<DisplayOptionsButton pageKey='task:all' />)
 
@@ -27,39 +23,12 @@ describe('DisplayOptionsButton', () => {
 		expect(screen.getByLabelText('分组')).toBeInTheDocument()
 	})
 
-	it('切换显示属性会持久化 personal override', async () => {
-		renderWithQueryClient(<DisplayOptionsButton pageKey='task:all' />)
-
-		fireEvent.click(screen.getByRole('button', { name: '显示选项' }))
-		await waitFor(() => expect(screen.queryByText('正在读取显示偏好…')).not.toBeInTheDocument())
-		fireEvent.click(await screen.findByRole('button', { name: /截止时间/ }))
-
-		await waitFor(() => {
-			expect(JSON.parse(localStorage.getItem('stoneflow.display-options.task:task:all')!)).toEqual(
-				expect.objectContaining({
-					personal: expect.objectContaining({
-						visibleProperties: ['status', 'priority', 'project'],
-					}),
-				}),
-			)
-		})
-	})
-
-	it('V1 面板不再暴露 links 显示属性', async () => {
-		renderWithQueryClient(<DisplayOptionsButton pageKey='task:all' />)
-
-		fireEvent.click(screen.getByRole('button', { name: '显示选项' }))
-
-		await screen.findByText('显示属性')
-		expect(screen.queryByRole('button', { name: /链接/ })).not.toBeInTheDocument()
-	})
-
 	it('打开显示面板时关闭 trigger Tooltip', async () => {
 		renderWithQueryClient(<DisplayOptionsButton pageKey='task:all' />)
 
 		const trigger = screen.getByRole('button', { name: '显示选项' })
 		fireEvent.keyDown(document, { key: 'Tab' })
-		trigger.focus()
+		act(() => trigger.focus())
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('显示选项')
 
 		fireEvent.click(trigger)

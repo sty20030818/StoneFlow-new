@@ -18,6 +18,7 @@ export {
 	type BulkEntityType,
 	type BulkSelectionSnapshot,
 	createBulkActionResult,
+	createBulkActionResultFromReport,
 	shouldConfirmAction,
 	createBulkSelectionSnapshot,
 	shouldClearBulkSelection,

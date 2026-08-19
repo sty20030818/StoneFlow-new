@@ -31,7 +31,9 @@ describe('useAutosaveController', () => {
 	})
 
 	afterEach(() => {
-		vi.runOnlyPendingTimers()
+		act(() => {
+			vi.runOnlyPendingTimers()
+		})
 		vi.useRealTimers()
 	})
 

@@ -115,16 +115,12 @@ vi.mock('@/features/entity-detail', () => ({
 	}),
 }))
 
-vi.mock('@/features/shell-dialogs', async (importOriginal) => {
-	const actual = await importOriginal<typeof import('@/features/shell-dialogs')>()
-	return {
-		...actual,
-		useDialogStore: (selector: (state: unknown) => unknown) =>
-			selector({
-				openTaskCreateDialog: openTaskCreateDialogSpy,
-			}),
-	}
-})
+vi.mock('@/features/shell-dialogs', () => ({
+	useDialogStore: (selector: (state: unknown) => unknown) =>
+		selector({
+			openTaskCreateDialog: openTaskCreateDialogSpy,
+		}),
+}))
 
 vi.mock('@/features/project', () => ({
 	useProjectOptions: (scope: { type: string }) => {

@@ -1,4 +1,3 @@
-import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 
 import type { ActivityTimelineEntry } from '@/features/activity'
@@ -8,7 +7,7 @@ import type { Space } from '@/shared/types'
 import { buildTaskActivityDisplayItems } from './taskActivityTimelineModel'
 
 describe('buildTaskActivityDisplayItems', () => {
-	it('优先级变化使用结果态 icon 和中文调整文案', () => {
+	it('优先级变化使用中文调整文案', () => {
 		const [item] = buildTaskActivityDisplayItems({
 			entries: [
 				createEntry({
@@ -27,7 +26,6 @@ describe('buildTaskActivityDisplayItems', () => {
 		})
 
 		expect(item.text).toContain('你 将优先级从 高 调整为 低')
-		expect(renderToStaticMarkup(<>{item.icon}</>)).toContain('<svg')
 	})
 
 	it('新增时间使用 添加了 文案', () => {

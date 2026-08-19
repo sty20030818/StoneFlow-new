@@ -1,4 +1,3 @@
-/** @vitest-environment jsdom */
 import type { CSSProperties } from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { Sidebar } from '@heroui-pro/react'
@@ -49,17 +48,13 @@ vi.mock('@/layout/ShellFooter', () => ({
 	ShellFooter: () => <footer data-testid='shell-footer' />,
 }))
 
-vi.mock('@/features/command', async (importOriginal) => {
-	const actual = await importOriginal<typeof import('@/features/command')>()
-	return {
-		...actual,
-		CommandShortcutLayer: ({ onTrigger }: { onTrigger: (id: string) => void }) => (
-			<button onClick={() => onTrigger('layout.toggleSidebar')} type='button'>
-				左方括号快捷键
-			</button>
-		),
-	}
-})
+vi.mock('@/features/command', () => ({
+	CommandShortcutLayer: ({ onTrigger }: { onTrigger: (id: string) => void }) => (
+		<button onClick={() => onTrigger('layout.toggleSidebar')} type='button'>
+			左方括号快捷键
+		</button>
+	),
+}))
 
 describe('Shell 阶段 D 结构', () => {
 	it('桌面只挂载一棵导航树，并由唯一 Sidebar.Main 提供 main landmark', () => {
@@ -68,9 +63,6 @@ describe('Shell 阶段 D 结构', () => {
 
 		expect(screen.getAllByTestId('sidebar-navigation')).toHaveLength(1)
 		expect(document.querySelectorAll('main')).toHaveLength(1)
-		expect(document.querySelector('[data-slot="shell-workspace"]')).toHaveClass(
-			'grid-cols-[auto_minmax(0,1fr)]',
-		)
 		expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 	})
 
@@ -83,29 +75,12 @@ describe('Shell 阶段 D 结构', () => {
 
 		const dialog = await screen.findByRole('dialog')
 		expect(dialog).toBeInTheDocument()
-		expect(screen.queryByRole('button', { name: '关闭导航' })).not.toBeInTheDocument()
-		expect(screen.getByRole('dialog')).toHaveClass('pt-12')
-		expect(document.querySelector('[data-shell-sidebar-sheet="true"]')).toHaveStyle({
-			'--sidebar-width': '100%',
-		})
 		expect(screen.getAllByTestId('sidebar-navigation')).toHaveLength(1)
 		expect(document.querySelector('[data-slot="shell-workspace"]')).toHaveAttribute(
 			'data-sidebar-mode',
 			'compact',
 		)
-		expect(document.querySelector('[data-slot="shell-workspace"]')).toHaveClass(
-			'grid-cols-[minmax(0,1fr)]',
-		)
-		expect(document.querySelector('[data-slot="shell-workspace"]')).not.toHaveClass(
-			'grid-cols-[auto_minmax(0,1fr)]',
-		)
 		expect(document.querySelectorAll('main')).toHaveLength(1)
-
-		const onWindowKeyDown = vi.fn()
-		window.addEventListener('keydown', onWindowKeyDown)
-		fireEvent.keyDown(dialog, { key: 'w' })
-		expect(onWindowKeyDown).not.toHaveBeenCalled()
-		window.removeEventListener('keydown', onWindowKeyDown)
 	})
 
 	it('compact 任务详情打开时阻止导航 Sheet 同时呈现', async () => {

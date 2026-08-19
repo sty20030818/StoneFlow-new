@@ -39,22 +39,6 @@ describe('createLifecycleBulkSelectionSnapshot', () => {
 			}),
 		])
 	})
-
-	it('复制 ids 和 entities，外部数组后续变化不影响快照', () => {
-		const entries = [createEntry({ id: 'entry-a', title: '条目 A' })]
-		const snapshot = createLifecycleBulkSelectionSnapshot(entries, 'bulk-bar')
-
-		entries.push(createEntry({ id: 'entry-b', title: '条目 B' }))
-		entries[0] = createEntry({ id: 'entry-c', title: '条目 C' })
-
-		expect(snapshot.ids).toEqual(['entry-a'])
-		expect(snapshot.entities).toEqual([
-			expect.objectContaining({
-				id: 'entry-a',
-				title: '条目 A',
-			}),
-		])
-	})
 })
 
 function createEntry(overrides: Partial<LifecycleEntry> = {}): LifecycleEntry {

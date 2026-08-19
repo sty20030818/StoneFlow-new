@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen } from '@testing-library/react'
 import { render } from '@testing-library/react'
 
 import { UserAppMenu } from '@/layout/header/UserAppMenu'
@@ -12,18 +12,16 @@ import {
 const TEST_SHORTCUT_REGISTRY = new KeybindingRegistry(DEFAULT_KEYBINDINGS)
 
 describe('UserAppMenu', () => {
-	it('点击头像打开应用菜单，并暴露设置与快捷键项', async () => {
+	it('应用菜单暴露稳定入口，并把动作交给 command 或上层 callback', async () => {
 		const onRunCommand = vi.fn()
 		const onOpenChangelog = vi.fn()
 		const onOpenAbout = vi.fn()
 		renderUserAppMenu(
-			<>
-				<UserAppMenu
-					onOpenAbout={onOpenAbout}
-					onOpenChangelog={onOpenChangelog}
-					onRunCommand={onRunCommand}
-				/>
-			</>,
+			<UserAppMenu
+				onOpenAbout={onOpenAbout}
+				onOpenChangelog={onOpenChangelog}
+				onRunCommand={onRunCommand}
+			/>,
 		)
 
 		fireEvent.click(screen.getByRole('button', { name: '应用菜单' }))
@@ -41,23 +39,6 @@ describe('UserAppMenu', () => {
 			'aria-disabled',
 			'true',
 		)
-	})
-
-	it('选择设置与键盘快捷键时调用对应 command', async () => {
-		const onRunCommand = vi.fn()
-		const onOpenChangelog = vi.fn()
-		const onOpenAbout = vi.fn()
-		renderUserAppMenu(
-			<>
-				<UserAppMenu
-					onOpenAbout={onOpenAbout}
-					onOpenChangelog={onOpenChangelog}
-					onRunCommand={onRunCommand}
-				/>
-			</>,
-		)
-
-		fireEvent.click(screen.getByRole('button', { name: '应用菜单' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /设置/ }))
 		expect(onRunCommand).toHaveBeenCalledWith(COMMAND_IDS.openSettings)
 
@@ -72,21 +53,6 @@ describe('UserAppMenu', () => {
 		fireEvent.click(screen.getByRole('button', { name: '应用菜单' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /关于 StoneFlow/ }))
 		expect(onOpenAbout).toHaveBeenCalledTimes(1)
-	})
-
-	it('打开应用菜单时关闭 trigger Tooltip', async () => {
-		renderUserAppMenu(
-			<UserAppMenu onOpenAbout={vi.fn()} onOpenChangelog={vi.fn()} onRunCommand={vi.fn()} />,
-		)
-
-		const trigger = screen.getByRole('button', { name: '应用菜单' })
-		fireEvent.pointerMove(trigger)
-		fireEvent.pointerEnter(trigger)
-		expect(await screen.findByRole('tooltip')).toHaveTextContent('应用菜单')
-
-		fireEvent.pointerDown(trigger)
-		expect(await screen.findByRole('menu')).toBeInTheDocument()
-		await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument())
 	})
 })
 

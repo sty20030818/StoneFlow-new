@@ -11,8 +11,6 @@ import {
 import { act, render } from '@testing-library/react'
 import type { ReactNode } from 'react'
 
-import { TestInteractionProviders } from './TestInteractionProviders'
-
 type TestRouterContext = {
 	queryClient: QueryClient
 }
@@ -29,8 +27,8 @@ type MatchedRouteOptions = BaseOptions & {
 function createTestQueryClient() {
 	return new QueryClient({
 		defaultOptions: {
-			queries: { retry: false },
-			mutations: { retry: false },
+			queries: { retry: false, gcTime: Infinity },
+			mutations: { retry: false, gcTime: Infinity },
 		},
 	})
 }
@@ -72,8 +70,7 @@ export async function renderWithRouterContext(node: ReactNode, options: BaseOpti
 			</QueryClientProvider>
 		)
 
-		const wrappedContent = options.wrap ? options.wrap(content) : content
-		return <TestInteractionProviders>{wrappedContent}</TestInteractionProviders>
+		return options.wrap ? options.wrap(content) : content
 	}
 
 	const rendered = render(renderNode(node))
@@ -124,8 +121,7 @@ export async function renderWithMatchedRoute(node: ReactNode, options: MatchedRo
 				<RouterProvider context={{ queryClient }} router={router} />
 			</QueryClientProvider>
 		)
-		const wrappedContent = options.wrap ? options.wrap(content) : content
-		return <TestInteractionProviders>{wrappedContent}</TestInteractionProviders>
+		return options.wrap ? options.wrap(content) : content
 	}
 
 	const rendered = render(renderNode())

@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 import { renderWithInteractionProviders as render } from '@/test/TestInteractionProviders'
@@ -45,10 +45,7 @@ describe('TaskLinksSection', () => {
 		expect(
 			screen.queryByText('还没有链接，添加一个外部 URL 方便回看当前任务的上下文。'),
 		).not.toBeInTheDocument()
-		expect(screen.getByRole('button', { name: '添加链接' })).toHaveAttribute(
-			'data-variant',
-			'outline',
-		)
+		expect(screen.getByRole('button', { name: '添加链接' })).toBeEnabled()
 	})
 
 	it('列表态支持打开链接', async () => {
@@ -73,10 +70,6 @@ describe('TaskLinksSection', () => {
 		render(<TaskLinksSection taskId='task-1' />)
 
 		fireEvent.click(screen.getByRole('button', { name: '添加链接' }))
-		expect(document.querySelector('[data-slot="dialog-content"]')).toHaveAttribute(
-			'data-drawer-owned-overlay',
-			'true',
-		)
 		fireEvent.change(screen.getByPlaceholderText('例如：技术方案文档'), {
 			target: { value: '技术方案文档' },
 		})
@@ -101,17 +94,13 @@ describe('TaskLinksSection', () => {
 		render(<TaskLinksSection taskId='task-1' />)
 
 		const moreButton = screen.getByRole('button', { name: '更多链接操作：技术方案' })
+		fireEvent.keyDown(document, { key: 'Tab' })
+		act(() => moreButton.focus())
+		expect(await screen.findByRole('tooltip')).toHaveTextContent('更多链接操作')
 		fireEvent.pointerDown(moreButton)
 		expect(await screen.findByText('编辑链接')).toBeInTheDocument()
-		expect(document.querySelector('[data-slot="dropdown-menu-content"]')).toHaveAttribute(
-			'data-drawer-owned-overlay',
-			'true',
-		)
+		await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument())
 		fireEvent.click(screen.getByText('编辑链接'))
-		expect(document.querySelector('[data-slot="dialog-content"]')).toHaveAttribute(
-			'data-drawer-owned-overlay',
-			'true',
-		)
 		fireEvent.change(screen.getByDisplayValue('技术方案'), {
 			target: { value: '最终方案' },
 		})

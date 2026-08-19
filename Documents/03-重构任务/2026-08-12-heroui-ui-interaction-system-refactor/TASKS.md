@@ -1,10 +1,10 @@
 # HeroUI-only UI 平台、Linear 浅色设计系统与键盘交互重写 - Tasks
 
-> 当前状态：阶段 3。阶段 A–J 已完成；下一阶段为 K。
+> 当前状态：阶段 3。阶段 A–J 已完成；独立的 [Vitest 前端测试系统精简](../2026-08-19-vitest-test-runtime-streamlining/SPEC.md) 已收口；阶段 K 可恢复，尚未开始。
 
 ## 当前阶段
 
-- 阶段 A–J 已完成；下一阶段按编号进入 K。MainCard + TaskBoard 整体性能重构已移入独立后续任务；Windows WebView2 不属于本任务验收范围，也不阻塞后续阶段。
+- 阶段 A–J 已完成；独立的 [Vitest 前端测试系统精简 TASKS](../2026-08-19-vitest-test-runtime-streamlining/TASKS.md) 已完成，阶段 K 可按原编号恢复。MainCard + TaskBoard 整体性能重构已移入独立后续任务；Windows WebView2 不属于本任务验收范围，也不阻塞后续阶段。
 - 执行任意 task 前，必须重读 [SPEC.md](./SPEC.md) 对应 AC 与 [PLAN.md](./PLAN.md) 对应方案；后续 task 默认按编号顺序依赖。
 - 任一锁定包 API、供应链访问、性能或产品合同与 PLAN 冲突时，先在本文件「与 SPEC/PLAN 的实施偏差」登记并停止相关切片，不得静默增加兼容层。
 
@@ -370,16 +370,18 @@
 
 - [x] T81 将 `src/features/task/detail/components/TaskActivityTimeline.tsx` hard cut 到 HeroUI Pro Timeline，保留 query、订阅、`taskActivityTimelineModel.tsx`、加载/错误/空态与“查看更多”，Timeline 只负责有序 chronology 视觉。
   _对应验收标准：AC-1, AC-3, AC-39_
-  _测试先行：`src/features/task/detail/components/TaskActivityTimeline.test.tsx`、`src/features/task/detail/components/taskActivityTimelineModel.test.tsx`_
+  _测试先行：`src/features/task/detail/components/TaskActivityTimeline.test.tsx`、`src/features/task/detail/components/taskActivityTimelineModel.test.ts`_
 
 - [x] T82 完成阶段 J 收口：全仓零引用后删除 `src/shared/components/base/command.tsx`、旧 bulk 壳、零消费 alert-dialog 与 `cmdk` 依赖；chronology 已原位 hard cut、无独立旧壳可删，K/L 尚有消费者的旧 Menu primitive 继续保留。运行根级门禁/build，获准提交时引用 PLAN 的阶段 J 文案。
   _对应验收标准：AC-1, AC-2, AC-3, AC-31, AC-39_
 
 **阶段 K：主要业务表面纵向迁移**
 
+> 前置的 [Vitest 前端测试系统精简](../2026-08-19-vitest-test-runtime-streamlining/SPEC.md) 已收口；本阶段可恢复，任务范围与编号不变。
+
 - [ ] T83 在 `src/features/project-overview/components/ProjectOverviewPage.tsx`、`src/features/project/components/ProjectBoard.tsx` 与 `src/features/project/components/ProjectPage.tsx` 完成项目浏览表面 HeroUI hard cut，保留分组、查询、路由、领域动作、错误与空态，不搬运旧 pattern class。
   _对应验收标准：AC-1, AC-3, AC-4, AC-38, AC-39_
-  _测试先行：`src/features/project-overview/components/ProjectOverviewPage.test.tsx`、`src/features/project/components/ProjectBoard.test.tsx`、`src/features/project/components/ProjectPage.test.tsx`_
+  _测试先行：`src/features/project/components/ProjectBoard.test.tsx`、`src/features/project/components/ProjectPage.test.tsx`_
 
 - [ ] T84 在 `src/features/project-overview/hooks/useProjectOverviewScene.ts`、`src/features/project/components/ProjectRowAdapter.tsx`、`src/features/project/components/ProjectContextMenu.tsx` 与 `src/features/project/components/ProjectCreateContent.tsx` 完成行、右键与创建表面的 HeroUI hard cut，将 scene 切到阶段 H collection 与阶段 J 的统一 command 投影。
   _对应验收标准：AC-1, AC-31, AC-34, AC-38, AC-39_
@@ -399,19 +401,19 @@
 
 - [ ] T88 在 `src/features/task/detail/components/TaskPropertiesSection.tsx`、`src/features/task/detail/components/TaskPlacementSection.tsx` 与对应测试迁移属性和归属字段到 HeroUI，保留同一 autosave/draft controller 与领域校验。
   _对应验收标准：AC-1, AC-3, AC-23, AC-39_
-  _测试先行：`src/features/task/detail/components/TaskPropertiesSection.test.tsx`、`src/features/task/detail/components/TaskPlacementSection.test.tsx`_
+  _测试先行：`src/features/task/detail/components/TaskDetailContent.test.tsx`、`src/features/task/detail/components/TaskPlacementSection.test.tsx`_
 
 - [ ] T89 在 `src/features/task/detail/components/TaskLinksSection.tsx`、`src/features/task/detail/components/TaskLinkEditorPopover.tsx` 与 `src/features/task/detail/components/TaskLinkRow.tsx` 完成链接表面 HeroUI hard cut，保留加载、创建、编辑、删除、错误和 Popover 焦点恢复。
   _对应验收标准：AC-1, AC-3, AC-23, AC-32, AC-39_
-  _测试先行：`src/features/task/detail/components/TaskLinksSection.test.tsx`、`src/features/task/detail/components/TaskLinkRow.test.tsx`_
+  _测试先行：`src/features/task/detail/components/TaskLinksSection.test.tsx`、`src/features/task/detail/model/useTaskLinksController.test.tsx`_
 
 - [ ] T90 在 `src/features/global-search/components/GlobalSearchInput.tsx` 与 `src/features/global-search/components/GlobalSearchResults.tsx` 迁移搜索表面；高层 HeroUI ListView 满足时直接使用，需要 Linear 键位时复用阶段 H adapter，不复用 TaskBoard geometry bridge。
   _对应验收标准：AC-1, AC-26, AC-29, AC-34, AC-39_
-  _测试先行：`src/features/global-search/components/GlobalSearchInput.test.tsx`、`src/features/global-search/components/GlobalSearchResults.test.tsx`_
+  _测试先行：`src/features/global-search/components/GlobalSearchInput.test.tsx`_
 
 - [ ] T91 在 `src/features/filter/components/FilterMenu.tsx`、`src/features/filter/components/FilterValueSubMenu.tsx`、`src/features/filter/components/FilterValueOption.tsx`、`src/features/filter/components/FilterBar.tsx` 与 `src/features/filter/components/PageFilterButton.tsx` 完成 Filter hard cut，保留 URL/session、嵌套菜单、disabled reason 与焦点恢复。
   _对应验收标准：AC-1, AC-3, AC-30, AC-32, AC-39_
-  _测试先行：`src/features/filter/components/FilterBar.test.tsx`、`src/features/filter/components/FilterValueOption.test.tsx`、`src/features/filter/components/PageFilterButton.test.tsx`_
+  _测试先行：`src/features/filter/components/FilterValueOption.test.tsx`、`src/features/filter/components/PageFilterButton.test.tsx`、`src/features/filter/model/useListFilterSession.test.ts`_
 
 - [ ] T92 在 `src/features/display-options/components/DisplayOptionsButton.tsx`、`src/features/display-options/components/DisplayOptionsPanel.tsx`、`src/features/display-options/components/DisplayOptionsPopover.tsx` 与 `src/features/display-options/components/PropertyToggleGrid.tsx` 完成 Display Options hard cut，保留 query/mutation、能力约束、默认值、即时应用与焦点恢复。
   _对应验收标准：AC-1, AC-3, AC-4, AC-32, AC-39_
@@ -419,7 +421,7 @@
 
 - [ ] T93 在 `src/features/metadata-fields/components/`、`src/features/metadata-fields/core/metadata-icon-tokens.tsx` 与 `src/features/metadata-fields/presentation.ts` 完成字段选择、日期、自定义日期、placement 与图标装配的 HeroUI hard cut，保留 action spec、混合值、快捷数字选择与领域写入；`react-day-picker` 留到 Launcher 日期消费者迁完后的阶段 M 零引用清理。
   _对应验收标准：AC-1, AC-2, AC-3, AC-31, AC-39_
-  _测试先行：`src/features/metadata-fields/metadata-fields.test.tsx`、`src/features/metadata-fields/components/CustomDateDialog.test.tsx`_
+  _测试先行：`src/features/metadata-fields/metadata-fields.test.tsx`、`src/features/metadata-fields/core/metadata-action-factories.test.ts`_
 
 - [ ] T94 在 `src/features/space/components/SpaceEditorDialog.tsx`、`src/features/view/components/ViewEditorDialog.tsx`、`ViewsPage.tsx` 与 `ViewActionsMenu.tsx` 迁移 Space/View 创建编辑、列表和操作菜单，保留 schema、URL、查询、保存错误、危险操作与导航。
   _对应验收标准：AC-1, AC-3, AC-34, AC-38, AC-39_
@@ -440,7 +442,7 @@
 
 - [ ] T98 在 `src/features/sync/components/SyncConfigDialog.tsx`、`src/features/sync/components/SyncFooterStatusItem.tsx` 与 `src/features/sync/model/syncStatusPresentation.ts` 完成同步配置、状态反馈与展示投影 HeroUI hard cut，保留凭据边界、连接、错误、重试和静态 ARIA。
   _对应验收标准：AC-1, AC-39, AC-41, AC-42, AC-43_
-  _测试先行：新增 `src/features/sync/components/SyncConfigDialog.test.tsx`、现有 `src/features/sync/components/SyncFooterStatusItem.test.tsx`_
+  _测试先行：新增 `src/features/sync/components/SyncConfigDialog.test.tsx`、现有 `src/features/sync/model/deriveSyncFooterView.test.ts` 与 `src/layout/ShellFooter.test.tsx`_
 
 - [ ] T99 在 `src/features/update/components/UpdateDialog.tsx`、`src/features/update/components/UpdateSettingsSection.tsx`、`src/features/update/components/UpdateSettingsSection.presentation.tsx`、`src/features/update/components/UpdateProgressRing.tsx`、`src/features/update/components/SystemStatusChip.tsx`、`src/features/update/components/UpdateFooterChip.tsx` 与 `src/features/update/components/UpdateStatusFooterItem.tsx` 完成更新 Modal/Progress/全局状态反馈 HeroUI hard cut，保留检查、下载、安装、错误、重试、pending restart 和静态 ARIA。
   _对应验收标准：AC-1, AC-39, AC-41, AC-42, AC-43_
@@ -582,3 +584,4 @@
 - 2026-08-18：继续根据 U3 截图收口 TaskBoard 行状态：将键盘细边框调浅并只交给真实行 `:focus-visible`；collection root 固定抑制 macOS WebKit 原生 outline，Space/X/Enter 从 root 执行时先把真实焦点归还 current 行；正式详情关闭时通过 stable task id 恢复已虚拟卸载的触发行；done/canceled 标题不再因 pointer hover 意外提亮。8 个聚焦文件共 78 项、全量前端 200 个文件共 1062 项、typecheck、lint、模块边界、格式、第一方动画扫描、diff check 与 production build 通过；粉色系统 outline 是否在真实 WKWebView 消失仍由 T73/U3 复验。
 - 2026-08-18：完成 T73/U3、T74 与阶段 I 收口。任务发起人在真实 Tauri 中连续验收 TaskBoard，并在密度、pointer/keyboard 唯一 current、连续选择、Peek 焦点、系统 outline、右键与中性灰焦点边框修正后确认可以收口。Task/Selection/Bulk 专项 52 个文件共 275 项、受控全量前端 200 个文件共 1062 项、typecheck、lint、模块边界、格式、第一方动画扫描、旧 Task 专属状态机零引用与 production build 均通过；默认全量并发曾使 Launcher 与延期 benchmark 用例超时，相关 2 个文件单独复跑 28/28 通过，最终以 `--maxWorkers=4` 完成全量验证。MainCard + TaskBoard 整体性能重构仍按已登记偏差留给独立后续任务，不宣称性能预算通过。阶段 I 建议 commit 文案：`refactor(task): 重建任务集合交互与虚拟焦点`；阶段 J 尚未开始。
 - 2026-08-18：完成 T75–T82 与阶段 J 收口。Command Runtime 以单一 projection 绑定可见性、可用性、disabled reason、目标 snapshot、invocation source 与 execute；Command、ShortcutHelp、Board/Task ContextMenu、Shell 唯一 ActionBar 和任务 Timeline 直接组合 HeroUI OSS/Pro。任务行本地 Runtime、页面局部 bulk bar、第二确认文案/表面、旧 Command/bulk 壳与 `cmdk` 依赖已删除，K/L 仍有消费者的旧 Menu primitive 保留。阶段 J 专项 34 个文件共 267 项、受控全量前端 201 个文件共 1058 项、typecheck、lint、模块边界、格式、第一方动画扫描、零引用扫描、迁移清单 JSON 解析与 production build 均通过。阶段 J 建议 commit 文案：`refactor(command): 统一命令与批量操作表面`；未提交、未改动 Git 暂存区。
+- 2026-08-19：前置 Vitest 测试系统精简收口。删除阶段 C 的纯供应商 Motion probe、TaskBoard fixture 自测及重复消费者合同，将必要规则迁到唯一 Node/DOM owner；全量由 201 文件/1058 项降至 187 文件/886 项，最终三轮中位数由 90.72 秒降至 54.11 秒（-40.35%）。阶段 K 的暂停条件已解除，可按原任务编号恢复；本记录不代表阶段 K 已开始。

@@ -4,12 +4,13 @@ import {
 	type BulkActionId,
 	type BulkActionPayload,
 	createBulkActionResult,
+	createBulkActionResultFromReport,
 } from '@/features/bulk-action'
 import type { TaskPlacementTarget } from '@/features/metadata-fields'
 import type { TaskStatus } from '@/shared/types'
 
 import type { TaskPriorityValue } from '../model/taskPriority'
-import type { TaskBulkAdapter, TaskBulkMutationReport } from './task-bulk-adapter'
+import type { TaskBulkAdapter } from './task-bulk-adapter'
 
 type TaskBulkActionDefinition = Omit<BulkAction, 'run'>
 
@@ -88,63 +89,82 @@ export const taskBulkActions: BulkAction[] = taskBulkActionDefinitions.map((defi
 		}
 
 		switch (definition.id) {
-			case TASK_BULK_ACTION_IDS.completeSelected:
-				return toBulkActionResult(definition.id, snapshot, await adapter.complete(snapshot), {
-					getMessage: (report) => `已更新 ${report.succeededIds.length} 个任务`,
+			case TASK_BULK_ACTION_IDS.completeSelected: {
+				const report = await adapter.complete(snapshot)
+				return createBulkActionResultFromReport({
+					actionId: definition.id,
+					snapshot,
+					report,
+					successMessage: `已更新 ${report.succeededIds.length} 个任务`,
 				})
-			case TASK_BULK_ACTION_IDS.archiveSelected:
-				return toBulkActionResult(definition.id, snapshot, await adapter.archive(snapshot.ids), {
-					getMessage: (report) => `已归档 ${report.succeededIds.length} 个任务`,
-					shouldClearSelection: true,
+			}
+			case TASK_BULK_ACTION_IDS.archiveSelected: {
+				const report = await adapter.archive(snapshot.ids)
+				return createBulkActionResultFromReport({
+					actionId: definition.id,
+					snapshot,
+					report,
+					successMessage: `已归档 ${report.succeededIds.length} 个任务`,
+					clearSelectionOnSuccess: true,
 				})
-			case TASK_BULK_ACTION_IDS.deleteSelected:
-				return toBulkActionResult(definition.id, snapshot, await adapter.delete(snapshot.ids), {
-					getMessage: (report) => `已删除 ${report.succeededIds.length} 个任务`,
-					shouldClearSelection: true,
+			}
+			case TASK_BULK_ACTION_IDS.deleteSelected: {
+				const report = await adapter.delete(snapshot.ids)
+				return createBulkActionResultFromReport({
+					actionId: definition.id,
+					snapshot,
+					report,
+					successMessage: `已删除 ${report.succeededIds.length} 个任务`,
+					clearSelectionOnSuccess: true,
 				})
+			}
 			case TASK_BULK_ACTION_IDS.setPrioritySelected: {
 				if (!isPriorityPayload(payload)) {
 					return createMissingPayloadResult(definition.id, snapshot, 'priority')
 				}
-				return toBulkActionResult(
-					definition.id,
+				const report = await adapter.updatePriority(snapshot.ids, payload.priority)
+				return createBulkActionResultFromReport({
+					actionId: definition.id,
 					snapshot,
-					await adapter.updatePriority(snapshot.ids, payload.priority),
-					{ getMessage: (report) => `已更新 ${report.succeededIds.length} 个任务` },
-				)
+					report,
+					successMessage: `已更新 ${report.succeededIds.length} 个任务`,
+				})
 			}
 			case TASK_BULK_ACTION_IDS.setStatusSelected: {
 				if (!isStatusPayload(payload)) {
 					return createMissingPayloadResult(definition.id, snapshot, 'status')
 				}
-				return toBulkActionResult(
-					definition.id,
+				const report = await adapter.updateStatus(snapshot.ids, payload.status)
+				return createBulkActionResultFromReport({
+					actionId: definition.id,
 					snapshot,
-					await adapter.updateStatus(snapshot.ids, payload.status),
-					{ getMessage: (report) => `已更新 ${report.succeededIds.length} 个任务` },
-				)
+					report,
+					successMessage: `已更新 ${report.succeededIds.length} 个任务`,
+				})
 			}
 			case TASK_BULK_ACTION_IDS.setDateSelected: {
 				if (!isDatePayload(payload)) {
 					return createMissingPayloadResult(definition.id, snapshot, 'dueAt')
 				}
-				return toBulkActionResult(
-					definition.id,
+				const report = await adapter.updateDate(snapshot.ids, payload.dueAt)
+				return createBulkActionResultFromReport({
+					actionId: definition.id,
 					snapshot,
-					await adapter.updateDate(snapshot.ids, payload.dueAt),
-					{ getMessage: (report) => `已更新 ${report.succeededIds.length} 个任务` },
-				)
+					report,
+					successMessage: `已更新 ${report.succeededIds.length} 个任务`,
+				})
 			}
 			case TASK_BULK_ACTION_IDS.setPlacementSelected: {
 				if (!isPlacementPayload(payload)) {
 					return createMissingPayloadResult(definition.id, snapshot, 'target')
 				}
-				return toBulkActionResult(
-					definition.id,
+				const report = await adapter.updatePlacement(snapshot.ids, payload.target)
+				return createBulkActionResultFromReport({
+					actionId: definition.id,
 					snapshot,
-					await adapter.updatePlacement(snapshot.ids, payload.target),
-					{ getMessage: (report) => `已整理 ${report.succeededIds.length} 个任务` },
-				)
+					report,
+					successMessage: `已整理 ${report.succeededIds.length} 个任务`,
+				})
 			}
 			default:
 				return createBulkActionResult({
@@ -172,34 +192,6 @@ function getTaskBulkAdapter(adapter: unknown): TaskBulkAdapter | null {
 	}
 
 	return null
-}
-
-function toBulkActionResult(
-	actionId: BulkActionId,
-	snapshot: Parameters<BulkAction['run']>[0],
-	report: TaskBulkMutationReport,
-	options: {
-		getMessage?: (report: TaskBulkMutationReport) => string
-		shouldClearSelection?: boolean
-	} = {},
-) {
-	const status =
-		report.failedIds.length === 0
-			? 'success'
-			: report.succeededIds.length > 0
-				? 'partial'
-				: 'failed'
-
-	return createBulkActionResult({
-		status,
-		actionId,
-		snapshot,
-		succeededIds: report.succeededIds,
-		failedIds: report.failedIds,
-		message: status === 'success' ? options.getMessage?.(report) : undefined,
-		skippedIds: report.skippedIds,
-		shouldClearSelection: status === 'success' ? options.shouldClearSelection : false,
-	})
 }
 
 function createMissingPayloadResult(

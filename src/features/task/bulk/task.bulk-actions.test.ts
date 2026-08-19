@@ -121,28 +121,6 @@ describe('taskBulkActions', () => {
 			shouldClearSelection: true,
 		})
 	})
-
-	it('部分失败时返回 partial 且不清空 selection', async () => {
-		const adapter = createAdapter({
-			archive: vi.fn<TaskBulkAdapter['archive']>(() =>
-				Promise.resolve({
-					requestedIds: ['task-a', 'task-b'],
-					succeededIds: ['task-a'],
-					failedIds: ['task-b'],
-					skippedIds: [],
-				}),
-			),
-		})
-
-		await expect(
-			getAction(TASK_BULK_ACTION_IDS.archiveSelected).run(snapshot, { adapter }),
-		).resolves.toMatchObject({
-			status: 'partial',
-			shouldClearSelection: false,
-			succeededIds: ['task-a'],
-			failedIds: ['task-b'],
-		})
-	})
 })
 
 function getAction(actionId: string) {

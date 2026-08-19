@@ -12,12 +12,12 @@ import {
 	getTaskPlacementTargetValue,
 	normalizeMetadataDateValue,
 } from '@/features/metadata-fields/contract'
-import { useGlobalSearch } from '@/features/global-search'
 import type { CustomDateDialogState } from '@/features/shell-dialogs'
 import type { CommandContext, TaskPlacementTarget } from '@/features/command/core'
 import type {
 	SearchProjectItem,
 	SearchTaskItem,
+	SearchEntitiesResult,
 	Space,
 	TaskPriority,
 	TaskStatus,
@@ -68,7 +68,7 @@ export function ScopedPickerCommandGroup({
 	onSelectTaskStatus: (status: TaskStatus) => void
 	onOpenCustomDateDialog: (state: CustomDateDialogState) => void
 	projectLinks: CommandMenuProject[]
-	result: ReturnType<typeof useGlobalSearch>['result']
+	result: SearchEntitiesResult
 	spaces: Space[]
 }) {
 	if (mode === 'task-priority-picker') {

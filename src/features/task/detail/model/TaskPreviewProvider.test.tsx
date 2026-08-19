@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import { useEffect } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -52,7 +52,7 @@ describe('TaskPreviewProvider', () => {
 		expect(screen.getByTestId('preview-title')).toHaveTextContent('none')
 	})
 
-	it('预览打开后 source 暂时为空时保留最近一次可渲染任务', () => {
+	it('预览打开后 source 暂时为空时保留最近一次可渲染任务', async () => {
 		function Harness({ tasks }: { tasks: TaskListItem[] }) {
 			const controller = useTaskPreviewControllerModel()
 			useRegisterTaskPreviewSource({
@@ -71,6 +71,7 @@ describe('TaskPreviewProvider', () => {
 				<div>
 					<div data-testid='preview-open'>{controller.previewState.open ? 'open' : 'closed'}</div>
 					<div data-testid='preview-title'>{controller.targetTask?.title ?? 'none'}</div>
+					<div data-testid='preview-links'>{controller.linkSummary ? 'ready' : 'loading'}</div>
 				</div>
 			)
 		}
@@ -81,8 +82,11 @@ describe('TaskPreviewProvider', () => {
 			</TaskPreviewProvider>,
 		)
 
-		expect(screen.getByTestId('preview-open')).toHaveTextContent('open')
-		expect(screen.getByTestId('preview-title')).toHaveTextContent('任务 A')
+		await waitFor(() => {
+			expect(screen.getByTestId('preview-open')).toHaveTextContent('open')
+			expect(screen.getByTestId('preview-title')).toHaveTextContent('任务 A')
+			expect(screen.getByTestId('preview-links')).toHaveTextContent('ready')
+		})
 
 		act(() => {
 			rerender(

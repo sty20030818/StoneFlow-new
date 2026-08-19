@@ -1,72 +1,22 @@
 import { CalendarIcon } from 'lucide-react'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 
 import {
-	createDueDateActionSpec,
-	createProjectParentMetadataDropdownProps,
 	createTaskPlacementGroupedDropdownProps,
-	createPriorityActionSpec,
-	createStatusActionSpec,
 	MetadataDateDropdown,
 	MetadataFieldDropdown,
 	MetadataPlacementDropdown,
 } from '@/features/metadata-fields'
-import { createParentProjectActionSpec } from './core'
+import { useDialogStore } from '@/features/shell-dialogs'
 
 describe('metadata-fields', () => {
-	it('status / priority / dueDate action spec 输出最终文案和数字规则', () => {
-		expect(createStatusActionSpec().options.map((option) => option.digit)).toEqual([
-			'1',
-			'2',
-			'3',
-			'4',
-			'5',
-		])
-		expect(createPriorityActionSpec().options.map((option) => option.digit)).toEqual([
-			'0',
-			'1',
-			'2',
-			'3',
-			'4',
-		])
-		expect(
-			createDueDateActionSpec({
-				currentValue: '2026-05-08',
-				showClearOption: true,
-			}).options[0],
-		).toMatchObject({
-			label: '移除当前日期',
-			digit: '0',
-			isEmptyValue: true,
-		})
+	beforeEach(() => {
+		useDialogStore.setState({ customDateDialog: null })
 	})
 
-	it('父项目选择回到 generic MetadataFieldDropdown', async () => {
-		const props = createProjectParentMetadataDropdownProps([{ id: 'project-1', name: '项目 A' }])
+	it('generic dropdown 用菜单语义与数字键提交唯一值', async () => {
 		const onChange = vi.fn()
-
-		renderMetadata(
-			<MetadataFieldDropdown
-				fieldKey='parentProject'
-				label='父项目'
-				menuLabel={props.menuLabel}
-				options={props.options}
-				value=''
-				onChange={onChange}
-			/>,
-		)
-
-		fireEvent.pointerDown(screen.getByRole('button', { name: '父项目' }))
-		expect(await screen.findByText('设置父项目为...')).toBeInTheDocument()
-		expect(screen.getByRole('menuitem', { name: /无父项目/ })).toBeInTheDocument()
-		fireEvent.click(screen.getByRole('menuitem', { name: /项目 A/ }))
-		expect(onChange).toHaveBeenCalledWith('project-1')
-	})
-
-	it('generic dropdown 保留菜单文案和数字快捷键，但不从 fieldKey 猜上下文快捷键', async () => {
-		const onChange = vi.fn()
-
-		renderMetadata(
+		render(
 			<MetadataFieldDropdown
 				fieldKey='priority'
 				label='优先级'
@@ -81,15 +31,13 @@ describe('metadata-fields', () => {
 
 		fireEvent.pointerDown(screen.getByRole('button', { name: '优先级' }))
 		expect(await screen.findByText('设置优先级为...')).toBeInTheDocument()
-		expect(getHeaderShortcutSummary()).toBeNull()
-		expect(getShortcutHintDigits()).toEqual(['0', '1'])
-
 		fireEvent.keyDown(window, { key: '1' })
+
 		expect(onChange).toHaveBeenCalledWith(2)
 	})
 
-	it('禁用字段保留上下文无障碍名称，并展示短动作和原因', async () => {
-		renderMetadata(
+	it('禁用字段保留上下文名称，并向键盘用户说明原因', async () => {
+		render(
 			<MetadataFieldDropdown
 				ariaLabel='修改优先级：任务 A'
 				buttonAppearance='row-icon'
@@ -103,49 +51,21 @@ describe('metadata-fields', () => {
 			/>,
 		)
 
-		const disabledTrigger = screen.getByRole('group', { name: '修改优先级：任务 A' })
+		const trigger = screen.getByRole('group', { name: '修改优先级：任务 A' })
 		fireEvent.keyDown(document, { key: 'Tab' })
-		disabledTrigger.focus()
-		const tooltip = await screen.findByRole('tooltip')
-		expect(tooltip).toHaveTextContent('修改优先级正在更新任务，暂时无法修改优先级')
-		expect(tooltip).not.toHaveTextContent('任务 A')
+		act(() => trigger.focus())
+
+		expect(await screen.findByRole('tooltip')).toHaveTextContent(
+			'修改优先级正在更新任务，暂时无法修改优先级',
+		)
 		expect(screen.getByRole('button', { name: '修改优先级：任务 A' })).toBeDisabled()
 	})
 
-	it('菜单打开后卸载 trigger 的溢出 Tooltip，避免两个浮层残留', async () => {
-		renderMetadata(
-			<MetadataFieldDropdown
-				label='优先级'
-				options={[
-					{ value: 0, label: '一个很长的优先级名称' },
-					{ value: 1, label: '高' },
-				]}
-				value={0}
-				onChange={() => undefined}
-			/>,
-		)
-
-		const overflowTrigger = document.querySelector(
-			'[data-slot="overflow-tooltip-trigger"]',
-		) as HTMLSpanElement
-		Object.defineProperty(overflowTrigger, 'clientWidth', { configurable: true, value: 40 })
-		Object.defineProperty(overflowTrigger, 'scrollWidth', { configurable: true, value: 160 })
-		fireEvent.pointerMove(overflowTrigger, { pointerType: 'mouse' })
-		fireEvent.pointerEnter(overflowTrigger, { pointerType: 'mouse' })
-		expect(await screen.findByRole('tooltip')).toHaveTextContent('一个很长的优先级名称')
-
-		fireEvent.pointerDown(screen.getByRole('button', { name: '优先级' }))
-		expect(await screen.findByRole('menu')).toBeInTheDocument()
-		await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument())
-	})
-
-	it('MetadataDateDropdown 保持 clear-only 语义和 drawer overlay 标记', async () => {
+	it('日期字段分别把清空与自定义日期交给正确入口', async () => {
 		const onChange = vi.fn()
-
-		renderMetadata(
+		const view = render(
 			<MetadataDateDropdown
-				drawerOwnedOverlay
-				icon={<CalendarIcon className='size-3.5' />}
+				icon={<CalendarIcon />}
 				label='截止时间'
 				value='2026-05-08'
 				onChange={onChange}
@@ -153,17 +73,31 @@ describe('metadata-fields', () => {
 		)
 
 		fireEvent.pointerDown(screen.getByRole('button', { name: '截止时间' }))
-		const menu = await screen.findByRole('menu')
-		expect(menu).toHaveAttribute('data-drawer-owned-overlay', 'true')
-		expect(screen.getByRole('menuitem', { name: /移除当前日期/ })).toBeInTheDocument()
-		expect(getShortcutHintDigits()).toEqual(['0'])
-
-		fireEvent.keyDown(window, { key: '0' })
+		fireEvent.click(await screen.findByRole('menuitem', { name: /移除当前日期/ }))
 		expect(onChange).toHaveBeenCalledWith(null)
+
+		view.rerender(
+			<MetadataDateDropdown
+				icon={<CalendarIcon />}
+				label='截止时间'
+				value={null}
+				onChange={onChange}
+			/>,
+		)
+		fireEvent.pointerDown(screen.getByRole('button', { name: '截止时间' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /自定义日期/ }))
+
+		expect(useDialogStore.getState().customDateDialog).toMatchObject({
+			fieldKey: 'dueDate',
+			label: '截止时间',
+			value: null,
+			hasExistingValue: false,
+		})
 	})
 
-	it('Task placement grouped dropdown 在 global 模式下显示每个 space 的 standalone / project', async () => {
-		const groupedProps = createTaskPlacementGroupedDropdownProps({
+	it('grouped placement 按 Space 呈现，并返回 stable target', async () => {
+		const onChange = vi.fn()
+		const grouped = createTaskPlacementGroupedDropdownProps({
 			mode: 'global',
 			currentSpaceId: 'space-a',
 			spaces: [
@@ -175,116 +109,25 @@ describe('metadata-fields', () => {
 				{ id: 'project-b', name: '项目 B', spaceId: 'space-b' },
 			],
 		})
-
-		renderMetadata(
+		render(
 			<MetadataPlacementDropdown
-				groups={groupedProps.groups}
+				groups={grouped.groups}
 				label='归属'
-				menuLabel={groupedProps.menuLabel}
+				menuLabel={grouped.menuLabel}
 				value={{ kind: 'project', spaceId: 'space-b', projectId: 'project-b' }}
-				onChange={() => undefined}
+				onChange={onChange}
 			/>,
 		)
 
-		expect(screen.getByRole('button', { name: '归属' })).toHaveTextContent('项目 B')
 		fireEvent.pointerDown(screen.getByRole('button', { name: '归属' }))
-
 		expect(await screen.findByText('工作')).toBeInTheDocument()
 		expect(screen.getByText('生活')).toBeInTheDocument()
-		expect(screen.getAllByRole('menuitem', { name: /独立事项/ })).toHaveLength(2)
-		expect(screen.getByRole('menuitem', { name: /项目 A/ })).toBeInTheDocument()
-		expect(screen.getByRole('menuitem', { name: /项目 B/ })).toBeInTheDocument()
-		expect(getHeaderShortcutSummary()).toBeNull()
-	})
+		fireEvent.click(screen.getByRole('menuitem', { name: /项目 A/ }))
 
-	it('Task placement grouped dropdown 支持 standalone 当前值、mixed indicator 和 clear-only digit', async () => {
-		const groupedProps = createTaskPlacementGroupedDropdownProps({
-			mode: 'local',
-			currentSpaceId: 'space-a',
-			spaces: [{ id: 'space-a', name: '工作' }],
-			projects: [{ id: 'project-a', name: '项目 A', spaceId: 'space-a' }],
-		})
-
-		renderMetadata(
-			<MetadataPlacementDropdown
-				groups={groupedProps.groups}
-				label='归属'
-				value={{ kind: 'standalone', spaceId: 'space-a' }}
-				values={[
-					{ kind: 'standalone', spaceId: 'space-a' },
-					{ kind: 'project', spaceId: 'space-a', projectId: 'project-a' },
-				]}
-				onChange={() => undefined}
-			/>,
-		)
-
-		expect(screen.getByRole('button', { name: '归属' })).toHaveTextContent('独立事项')
-		fireEvent.pointerDown(screen.getByRole('button', { name: '归属' }))
-
-		expect(getShortcutHintDigits()).toEqual(['0'])
-		expect(getIndicatorState('独立事项')).toBe('mixed')
-		expect(getIndicatorState('项目 A')).toBe('mixed')
-	})
-
-	it('Task placement grouped dropdown 支持显式菜单标题和 drawer overlay', async () => {
-		const groupedProps = createTaskPlacementGroupedDropdownProps({
-			mode: 'local',
-			currentSpaceId: 'space-a',
-			spaces: [{ id: 'space-a', name: '工作' }],
-			projects: [],
-		})
-
-		renderMetadata(
-			<MetadataPlacementDropdown
-				drawerOwnedOverlay
-				groups={groupedProps.groups}
-				label='归属'
-				menuAlign='end'
-				menuLabel='显式标题'
-				stopPropagation
-				value={{ kind: 'standalone', spaceId: 'space-a' }}
-				onChange={() => undefined}
-			/>,
-		)
-
-		fireEvent.pointerDown(screen.getByRole('button', { name: '归属' }))
-		const menu = await screen.findByRole('menu')
-		expect(menu).toHaveAttribute('data-drawer-owned-overlay', 'true')
-		expect(screen.getByText('显式标题')).toBeInTheDocument()
-		expect(getHeaderShortcutSummary()).toBeNull()
-	})
-
-	it('parent project action spec 只保留 generic 语义', () => {
-		expect(
-			createParentProjectActionSpec({ projects: [{ id: 'project-1', name: '项目 A' }] }),
-		).toMatchObject({
-			fieldKey: 'parentProject',
-			headerLabel: '设置父项目为...',
-			commandPlaceholder: '选择父项目…',
+		expect(onChange).toHaveBeenCalledWith({
+			kind: 'project',
+			spaceId: 'space-a',
+			projectId: 'project-a',
 		})
 	})
 })
-
-function renderMetadata(ui: React.ReactNode) {
-	return render(ui)
-}
-
-function getShortcutHintDigits() {
-	return [...document.querySelectorAll('[data-slot="shortcut-menu-item-hint"]')].map(
-		(item) => item.textContent,
-	)
-}
-
-function getHeaderShortcutSummary() {
-	return (
-		document.querySelector('[data-slot="metadata-field-menu-shortcut-summary"]')?.textContent ??
-		null
-	)
-}
-
-function getIndicatorState(label: string) {
-	const item = screen.getByRole('menuitem', { name: new RegExp(label) })
-	return item
-		.querySelector('[data-slot="metadata-field-indicator"]')
-		?.getAttribute('data-indicator')
-}

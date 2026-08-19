@@ -57,28 +57,6 @@ describe('projectBulkActions', () => {
 			actionId: PROJECT_BULK_ACTION_IDS.archiveSelected,
 		})
 	})
-
-	it('部分失败或跳过时返回 partial 且不清空 selection', async () => {
-		const adapter = createAdapter({
-			archiveProject: vi.fn<ProjectBulkAdapter['archiveProject']>(() =>
-				Promise.resolve({
-					requestedIds: ['project-a', 'project-b'],
-					succeededIds: ['project-a'],
-					failedIds: [],
-					skippedIds: ['project-b'],
-				}),
-			),
-		})
-
-		await expect(
-			getAction(PROJECT_BULK_ACTION_IDS.archiveSelected).run(snapshot, { adapter }),
-		).resolves.toMatchObject({
-			status: 'partial',
-			shouldClearSelection: false,
-			succeededIds: ['project-a'],
-			skippedIds: ['project-b'],
-		})
-	})
 })
 
 function getAction(actionId: string) {

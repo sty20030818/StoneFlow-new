@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 
 import { MainCard } from './MainCardLayout'
 
@@ -31,8 +31,8 @@ describe('MainCardLayout', () => {
 
 		const action = screen.getByRole('button', { name: '创建任务' })
 		expect(action).not.toHaveAttribute('title')
-		fireEvent.pointerMove(action, { pointerType: 'mouse' })
-		fireEvent.pointerEnter(action, { pointerType: 'mouse' })
+		fireEvent.keyDown(document, { key: 'Tab' })
+		act(() => action.focus())
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('创建任务')
 	})
 })

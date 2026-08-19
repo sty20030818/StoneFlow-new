@@ -1,6 +1,4 @@
 import '@testing-library/jest-dom/vitest'
-import { cleanup } from '@testing-library/react'
-import { afterEach, vi } from 'vitest'
 
 class ResizeObserverMock {
 	observe() {}
@@ -33,7 +31,8 @@ if (typeof window !== 'undefined' && !window.matchMedia) {
 	Object.defineProperty(window, 'matchMedia', {
 		configurable: true,
 		value: (query: string) => ({
-			matches: true,
+			// 默认不伪造任何媒体能力；依赖断点的测试必须显式安装对应查询。
+			matches: false,
 			media: query,
 			onchange: null,
 			addEventListener: () => undefined,
@@ -44,8 +43,3 @@ if (typeof window !== 'undefined' && !window.matchMedia) {
 		}),
 	})
 }
-
-afterEach(() => {
-	cleanup()
-	vi.restoreAllMocks()
-})

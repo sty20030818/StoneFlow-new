@@ -10,11 +10,9 @@ import {
 } from '@/shared/components/row'
 
 describe('RowShell', () => {
-	it('根据 active/selected/pending 状态切换表面 class', () => {
+	it('把 active、selected 与 pending 状态映射到唯一 surface', () => {
 		const { rerender } = render(<RowShell.Root data-testid='row'>row</RowShell.Root>)
-
 		const row = screen.getByTestId('row')
-		expect(row).toHaveClass('border-transparent', 'bg-transparent')
 
 		rerender(
 			<RowShell.Root active data-testid='row'>
@@ -29,161 +27,69 @@ describe('RowShell', () => {
 			</RowShell.Root>,
 		)
 		expect(row.className).toContain(ROW_SHELL_SELECTED_CLASS)
-		expect(row.className).toContain('opacity-75')
+		expect(row).toHaveClass('opacity-75')
 	})
 
-	it('interactive 行具备键盘可达性默认语义', () => {
+	it('interactive 行提供可由 roving focus 管理的按钮语义', () => {
 		render(<RowShell.Root interactive>interactive row</RowShell.Root>)
 
-		const row = screen.getByRole('button', { name: 'interactive row' })
-		expect(row).toHaveAttribute('tabindex', '-1')
+		expect(screen.getByRole('button', { name: 'interactive row' })).toHaveAttribute(
+			'tabindex',
+			'-1',
+		)
 	})
 
-	it('keyboard hover 复用 hover/selected 表面，只额外叠加边框', () => {
-		const { rerender } = render(
-			<RowShell.Root data-testid='row' hovered hoverSource='keyboard'>
-				row
-			</RowShell.Root>,
-		)
+	it.each([
+		{ hoverSource: 'keyboard' as const, expectsFocusSurface: true },
+		{ hoverSource: 'pointer' as const, expectsFocusSurface: false },
+	])(
+		'$hoverSource hover 复用 hover surface，并只为键盘来源增加焦点边界',
+		({ hoverSource, expectsFocusSurface }) => {
+			render(
+				<RowShell.Root data-testid='row' hovered hoverSource={hoverSource}>
+					row
+				</RowShell.Root>,
+			)
 
-		const row = screen.getByTestId('row')
-		expect(row.className).toContain('bg-surface-hover')
-		expect(row.className).toContain(ROW_SHELL_FOCUS_CLASS)
-
-		rerender(
-			<RowShell.Root data-testid='row' hovered hoverSource='keyboard' selected>
-				row
-			</RowShell.Root>,
-		)
-		expect(row.className).toContain('bg-accent-soft-hover')
-		expect(row.className).toContain(ROW_SHELL_FOCUS_CLASS)
-		expect(row.className).not.toContain('ring-3')
-	})
-
-	it('pointer hover 和 selected-hover 使用统一视觉协议', () => {
-		const { rerender } = render(
-			<RowShell.Root data-testid='row' hovered hoverSource='pointer'>
-				row
-			</RowShell.Root>,
-		)
-
-		expect(screen.getByTestId('row').className).toContain('bg-surface-hover')
-		expect(screen.getByTestId('row').className).not.toContain(ROW_SHELL_FOCUS_CLASS)
-
-		rerender(
-			<RowShell.Root data-testid='row' hovered hoverSource='pointer' selected>
-				row
-			</RowShell.Root>,
-		)
-		expect(screen.getByTestId('row').className).toContain('bg-accent-soft-hover')
-		expect(screen.getByTestId('row').className).not.toContain(ROW_SHELL_FOCUS_CLASS)
-	})
-
-	it('原生 focus-visible 只给键盘路径增加克制细边框', () => {
-		const { rerender } = render(
-			<RowShell.Root data-testid='row' interactive>
-				row
-			</RowShell.Root>,
-		)
-
-		const row = screen.getByTestId('row')
-		expect(row.className).toContain('hover:bg-surface-hover')
-		expect(row.className).toContain('focus-visible:border-focus-subtle')
-		expect(row.className).toContain('forced-colors:focus-visible:border-[Highlight]')
-		expect(row.className).toContain('focus-visible:bg-surface-hover')
-		expect(row.className).not.toContain('outline-2')
-
-		rerender(
-			<RowShell.Root data-testid='row' interactive selected>
-				row
-			</RowShell.Root>,
-		)
-		expect(row.className).toContain('bg-accent-soft')
-		expect(row.className).toContain('hover:bg-accent-soft-hover')
-		expect(row.className).toContain('focus-visible:bg-accent-soft-hover')
-	})
-
-	it('尾部字段只提供默认隐藏布局，响应规则由消费方声明', () => {
-		render(<RowShell.Fields data-testid='fields'>fields</RowShell.Fields>)
-		const fields = screen.getByTestId('fields')
-		expect(fields.className).toContain('hidden')
-		expect(fields.className).not.toContain('md:flex')
-	})
+			const row = screen.getByTestId('row')
+			expect(row).toHaveClass('bg-surface-hover')
+			expect(row.className.includes(ROW_SHELL_FOCUS_CLASS)).toBe(expectsFocusSurface)
+		},
+	)
 })
 
 describe('RowSelectionCell', () => {
-	it('未选中未 visible 时保持占位并隐藏，且支持 group-hover 显示', () => {
+	it('保持选择占位，并把选中变化交给上层', () => {
 		const onCheckedChange = vi.fn()
-		render(
+		const { rerender } = render(
 			<RowSelectionCell checked={false} label='选择任务 A' onCheckedChange={onCheckedChange} />,
 		)
 
-		const checkbox = screen.getByRole('checkbox', { name: '选择任务 A' })
-		const cell = checkbox.closest('[data-slot="row-selection-cell"]')
-		expect(cell?.className).toContain('opacity-0')
-		expect(cell?.className).toContain('group-has-focus-visible/row-shell:opacity-100')
-		expect(cell?.className).toContain('group-hover/row-shell:opacity-100')
-		expect(checkbox).toHaveAttribute('data-slot', 'checkbox')
+		let checkbox = screen.getByRole('checkbox', { name: '选择任务 A' })
+		expect(checkbox.closest('[data-slot="row-selection-cell"]')).toHaveClass('opacity-0')
 		expect(checkbox).toHaveAttribute('data-state', 'unchecked')
 
 		fireEvent.click(checkbox)
-		expect(onCheckedChange).toHaveBeenCalledTimes(1)
-	})
-
-	it('visible 或 checked 时显示选择框', () => {
-		const onCheckedChange = vi.fn()
-		const { rerender } = render(
-			<RowSelectionCell
-				checked={false}
-				label='选择任务 A'
-				onCheckedChange={onCheckedChange}
-				visible
-			/>,
-		)
-
-		expect(
-			screen
-				.getByRole('checkbox', { name: '选择任务 A' })
-				.closest('[data-slot="row-selection-cell"]')?.className,
-		).toContain('opacity-100')
+		expect(onCheckedChange).toHaveBeenCalledOnce()
 
 		rerender(<RowSelectionCell checked label='选择任务 A' onCheckedChange={onCheckedChange} />)
-		const checked = screen.getByRole('checkbox', { name: '选择任务 A' })
-		expect(checked.closest('[data-slot="row-selection-cell"]')?.className).toContain('opacity-100')
-		expect(checked).toHaveAttribute('data-state', 'checked')
+		checkbox = screen.getByRole('checkbox', { name: '选择任务 A' })
+		expect(checkbox.closest('[data-slot="row-selection-cell"]')).toHaveClass('opacity-100')
+		expect(checkbox).toHaveAttribute('data-state', 'checked')
 	})
 
-	it('可用和禁用选择框分离可见文案与无障碍名称，并保留快捷键', async () => {
+	it('分离可见标签与无障碍名称，并让禁用原因保持可聚焦', () => {
 		const { rerender } = render(
 			<RowSelectionCell
 				ariaLabel='选择任务 A'
 				checked={false}
 				label='选择任务'
 				onCheckedChange={() => undefined}
-				tooltipShortcut={<span aria-label='按 X'>X</span>}
 				visible
 			/>,
 		)
 
-		fireEvent.keyDown(document, { key: 'Tab' })
-		screen.getByRole('checkbox', { name: '选择任务 A' }).focus()
-		const enabledTooltip = await screen.findByRole('tooltip')
-		expect(enabledTooltip).toHaveTextContent('选择任务X')
-		expect(enabledTooltip).not.toHaveTextContent('任务 A')
-
-		rerender(
-			<RowSelectionCell
-				ariaLabel='选择任务 A'
-				checked={false}
-				disabled
-				label='选择任务'
-				onCheckedChange={() => undefined}
-				tooltipShortcut={<span aria-label='按 X'>X</span>}
-				visible
-			/>,
-		)
-
-		expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+		expect(screen.getByRole('checkbox', { name: '选择任务 A' })).toBeEnabled()
 
 		rerender(
 			<RowSelectionCell
@@ -193,40 +99,19 @@ describe('RowSelectionCell', () => {
 				disabledReason='正在更新任务，暂时无法更改选择'
 				label='选择任务'
 				onCheckedChange={() => undefined}
-				tooltipShortcut={<span aria-label='按 X'>X</span>}
 				visible
 			/>,
 		)
 
-		fireEvent.keyDown(document, { key: 'Tab' })
-		screen.getByRole('group', { name: '选择任务 A' }).focus()
-		const disabledTooltip = await screen.findByRole('tooltip')
-		expect(disabledTooltip).toHaveTextContent('选择任务X正在更新任务，暂时无法更改选择')
-		expect(disabledTooltip).not.toHaveTextContent('任务 A')
-		expect(screen.getByLabelText('按 X')).toBeInTheDocument()
+		expect(screen.getByRole('group', { name: '选择任务 A' })).toBeInTheDocument()
+		expect(screen.getByRole('checkbox', { name: '选择任务 A' })).toBeDisabled()
 	})
 })
 
 describe('RowTitleCell', () => {
-	it('完成态标题在 pointer 与 keyboard 表面下都保持弱化删除线', () => {
+	it('完成态标题保持弱化删除线', () => {
 		render(<RowTitleCell doneLike title='已完成任务' />)
 
-		const title = screen.getByText('已完成任务')
-		expect(title).toHaveClass('text-sf-text-tertiary', 'line-through')
-		expect(title).not.toHaveClass('group-hover/row-shell:text-legacy-foreground')
-	})
-
-	it('仅在标题真实截断时展示完整文本', async () => {
-		render(<RowTitleCell title='一个完整的任务标题' />)
-
-		const trigger = document.querySelector(
-			'[data-slot="overflow-tooltip-trigger"]',
-		) as HTMLSpanElement
-		Object.defineProperty(trigger, 'clientWidth', { configurable: true, value: 80 })
-		Object.defineProperty(trigger, 'scrollWidth', { configurable: true, value: 160 })
-
-		fireEvent.pointerMove(trigger, { pointerType: 'mouse' })
-		fireEvent.pointerEnter(trigger, { pointerType: 'mouse' })
-		expect(await screen.findByRole('tooltip')).toHaveTextContent('一个完整的任务标题')
+		expect(screen.getByText('已完成任务')).toHaveClass('text-sf-text-tertiary', 'line-through')
 	})
 })

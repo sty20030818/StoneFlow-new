@@ -1,12 +1,11 @@
 import {
 	LIFECYCLE_BULK_ACTION_IDS,
 	createBulkActionResult,
+	createBulkActionResultFromReport,
 	type BulkAction,
-	type BulkActionId,
-	type BulkSelectionSnapshot,
 } from '@/features/bulk-action'
 
-import type { LifecycleBulkAdapter, LifecycleBulkMutationReport } from './lifecycle-bulk-adapter'
+import type { LifecycleBulkAdapter } from './lifecycle-bulk-adapter'
 
 type LifecycleBulkActionDefinition = Omit<BulkAction, 'run'>
 
@@ -53,31 +52,36 @@ export const lifecycleBulkActions: BulkAction[] = lifecycleBulkActionDefinitions
 			}
 
 			switch (definition.id) {
-				case LIFECYCLE_BULK_ACTION_IDS.restoreSelected:
-					return toBulkActionResult(definition.id, snapshot, await adapter.restore(snapshot.ids), {
-						getMessage: (report) => `已恢复 ${report.succeededIds.length} 个条目`,
-						shouldClearSelection: true,
+				case LIFECYCLE_BULK_ACTION_IDS.restoreSelected: {
+					const report = await adapter.restore(snapshot.ids)
+					return createBulkActionResultFromReport({
+						actionId: definition.id,
+						snapshot,
+						report,
+						successMessage: `已恢复 ${report.succeededIds.length} 个条目`,
+						clearSelectionOnSuccess: true,
 					})
-				case LIFECYCLE_BULK_ACTION_IDS.deleteSelected:
-					return toBulkActionResult(
-						definition.id,
+				}
+				case LIFECYCLE_BULK_ACTION_IDS.deleteSelected: {
+					const report = await adapter.deleteLifecycle(snapshot.ids)
+					return createBulkActionResultFromReport({
+						actionId: definition.id,
 						snapshot,
-						await adapter.deleteLifecycle(snapshot.ids),
-						{
-							getMessage: (report) => `已删除 ${report.succeededIds.length} 个条目`,
-							shouldClearSelection: true,
-						},
-					)
-				case LIFECYCLE_BULK_ACTION_IDS.deletePermanentlySelected:
-					return toBulkActionResult(
-						definition.id,
+						report,
+						successMessage: `已删除 ${report.succeededIds.length} 个条目`,
+						clearSelectionOnSuccess: true,
+					})
+				}
+				case LIFECYCLE_BULK_ACTION_IDS.deletePermanentlySelected: {
+					const report = await adapter.deletePermanently(snapshot.ids)
+					return createBulkActionResultFromReport({
+						actionId: definition.id,
 						snapshot,
-						await adapter.deletePermanently(snapshot.ids),
-						{
-							getMessage: (report) => `已永久删除 ${report.succeededIds.length} 个条目`,
-							shouldClearSelection: true,
-						},
-					)
+						report,
+						successMessage: `已永久删除 ${report.succeededIds.length} 个条目`,
+						clearSelectionOnSuccess: true,
+					})
+				}
 				default:
 					return createBulkActionResult({
 						status: 'failed',
@@ -102,32 +106,4 @@ function getLifecycleBulkAdapter(adapter: unknown): LifecycleBulkAdapter | null 
 	}
 
 	return null
-}
-
-function toBulkActionResult(
-	actionId: BulkActionId,
-	snapshot: BulkSelectionSnapshot,
-	report: LifecycleBulkMutationReport,
-	options: {
-		getMessage?: (report: LifecycleBulkMutationReport) => string
-		shouldClearSelection?: boolean
-	} = {},
-) {
-	const status =
-		report.failedIds.length === 0 && report.skippedIds.length === 0
-			? 'success'
-			: report.succeededIds.length > 0
-				? 'partial'
-				: 'failed'
-
-	return createBulkActionResult({
-		status,
-		actionId,
-		snapshot,
-		succeededIds: report.succeededIds,
-		failedIds: report.failedIds,
-		message: status === 'success' ? options.getMessage?.(report) : undefined,
-		skippedIds: report.skippedIds,
-		shouldClearSelection: status === 'success' ? options.shouldClearSelection : false,
-	})
 }

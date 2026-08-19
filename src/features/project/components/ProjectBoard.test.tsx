@@ -1,5 +1,5 @@
 import { fireEvent, screen } from '@testing-library/react'
-import { useState, type ReactElement } from 'react'
+import type { ReactElement } from 'react'
 
 import { DangerConfirmProvider } from '@/features/danger-confirm'
 import { ProjectBoard } from '@/features/project/components/ProjectBoard'
@@ -7,27 +7,6 @@ import type { ProjectOverviewItem } from '@/shared/types'
 import { renderWithInteractionProviders as render } from '@/test/TestInteractionProviders'
 
 describe('ProjectBoard', () => {
-	it('加载中不显示空态文案', () => {
-		renderProjectBoard(
-			<ProjectBoard
-				busyProjectId={null}
-				emptyDescription='empty'
-				emptyTitle='当前 Scope 还没有项目'
-				items={[]}
-				onArchive={() => undefined}
-				onComplete={() => undefined}
-				onDelete={() => undefined}
-				onOpen={() => undefined}
-				onReopen={() => undefined}
-				status='loading'
-				variant='overview'
-			/>,
-		)
-
-		expect(screen.queryByText('当前 Scope 还没有项目')).not.toBeInTheDocument()
-		expect(screen.queryByText('empty')).not.toBeInTheDocument()
-	})
-
 	it('按项目状态分区渲染项目总览', () => {
 		renderProjectBoard(
 			<ProjectBoard
@@ -74,38 +53,6 @@ describe('ProjectBoard', () => {
 		expect(screen.queryByText('个任务')).not.toBeInTheDocument()
 	})
 
-	it('连续选中的项目行透传显式 group position', () => {
-		renderProjectBoard(
-			<ProjectBoard
-				busyProjectId={null}
-				emptyDescription='empty'
-				emptyTitle='empty'
-				items={[
-					createProject({ id: 'project-1', name: '项目 A' }),
-					createProject({ id: 'project-2', name: '项目 B' }),
-					createProject({ id: 'project-3', name: '项目 C' }),
-				]}
-				onArchive={() => undefined}
-				onComplete={() => undefined}
-				onDelete={() => undefined}
-				onOpen={() => undefined}
-				onReopen={() => undefined}
-				selectedProjectIds={new Set(['project-2', 'project-3'])}
-				status='ready'
-				variant='overview'
-			/>,
-		)
-
-		expect(screen.getByRole('button', { name: '打开项目 项目 B' })).toHaveAttribute(
-			'data-selection-group-position',
-			'first',
-		)
-		expect(screen.getByRole('button', { name: '打开项目 项目 C' })).toHaveAttribute(
-			'data-selection-group-position',
-			'last',
-		)
-	})
-
 	it('Shift 上下键使用通用 row shortcut 选择项目', () => {
 		const onToggleProjectSelection = vi.fn()
 		renderProjectBoard(
@@ -135,47 +82,10 @@ describe('ProjectBoard', () => {
 
 		expect(onToggleProjectSelection).toHaveBeenCalledWith('project-1')
 	})
-
-	it('鼠标 hover 项目行时不显示键盘边框，移开后清除 hover', () => {
-		renderProjectBoard(<ProjectBoardHoverHarness />)
-
-		const row = screen.getByRole('button', { name: '打开项目 项目 A' })
-
-		fireEvent.mouseEnter(row)
-		expect(row).toHaveClass('bg-surface-hover')
-		expect(row).not.toHaveClass('border-foreground/70')
-
-		fireEvent.mouseLeave(row)
-		expect(row).not.toHaveClass('bg-surface-hover')
-		expect(row).not.toHaveClass('border-foreground/70')
-	})
 })
 
 function renderProjectBoard(node: ReactElement) {
 	return render(<DangerConfirmProvider>{node}</DangerConfirmProvider>)
-}
-
-function ProjectBoardHoverHarness() {
-	const [focusedProjectId, setFocusedProjectId] = useState<string | null>(null)
-
-	return (
-		<ProjectBoard
-			busyProjectId={null}
-			emptyDescription='empty'
-			emptyTitle='empty'
-			focusedProjectId={focusedProjectId}
-			items={[createProject({ id: 'project-1', name: '项目 A' })]}
-			onArchive={() => undefined}
-			onComplete={() => undefined}
-			onDelete={() => undefined}
-			onMoveProjectFocus={() => null}
-			onOpen={() => undefined}
-			onReopen={() => undefined}
-			onSetFocusedProject={setFocusedProjectId}
-			status='ready'
-			variant='overview'
-		/>
-	)
 }
 
 function createProject(

@@ -33,22 +33,6 @@ describe('createTaskBulkSelectionSnapshotFromTasks', () => {
 			}),
 		])
 	})
-
-	it('复制 ids 和 entities，外部任务数组后续变化不影响快照', () => {
-		const tasks = [createTask({ id: 'task-a', title: '任务 A' })]
-		const snapshot = createTaskBulkSelectionSnapshotFromTasks(tasks, 'row-shortcut')
-
-		tasks.push(createTask({ id: 'task-b', title: '任务 B' }))
-		tasks[0] = createTask({ id: 'task-c', title: '任务 C' })
-
-		expect(snapshot.ids).toEqual(['task-a'])
-		expect(snapshot.entities).toEqual([
-			expect.objectContaining({
-				id: 'task-a',
-				title: '任务 A',
-			}),
-		])
-	})
 })
 
 function createTask(overrides: Partial<TaskListItem> = {}): TaskListItem {

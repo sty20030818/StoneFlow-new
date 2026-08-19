@@ -85,7 +85,9 @@ describe('useEntityDetailController', () => {
 	})
 
 	it('openPage 解析失败时停留在当前页面', async () => {
-		getTaskDetailMock.mockRejectedValue(new Error('not found'))
+		const resolutionError = new Error('not found')
+		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+		getTaskDetailMock.mockRejectedValue(resolutionError)
 		await renderController('/work/standalone?task=task-a')
 
 		fireEvent.click(screen.getByRole('button', { name: '打开任务页面' }))
@@ -93,7 +95,13 @@ describe('useEntityDetailController', () => {
 		await waitFor(() => {
 			expect(getTaskDetailMock).toHaveBeenCalledWith('task-a')
 		})
+		expect(consoleErrorSpy).toHaveBeenCalledWith(
+			'无法解析独立详情页 canonical route',
+			resolutionError,
+		)
+		expect(consoleErrorSpy).toHaveBeenCalledTimes(1)
 		expect(screen.getByTestId('location')).toHaveTextContent('/work/standalone?task=task-a')
+		consoleErrorSpy.mockRestore()
 	})
 })
 

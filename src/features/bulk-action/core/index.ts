@@ -20,6 +20,7 @@ export { BulkActionRegistry } from './bulk-action-registry'
 export {
 	BulkActionRuntime,
 	createBulkActionResult,
+	createBulkActionResultFromReport,
 	shouldConfirmAction,
 } from './bulk-action-runtime'
 export { createBulkSelectionSnapshot } from './bulk-selection-snapshot'

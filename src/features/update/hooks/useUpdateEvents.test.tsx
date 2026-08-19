@@ -116,10 +116,11 @@ describe('useUpdateEvents', () => {
 	it('首次订阅失败仍 hydrate，并在重试成功后恢复事件', async () => {
 		vi.useFakeTimers()
 		const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+		const listenerError = new Error('listener unavailable')
 		const unlisten = vi.fn<() => void>()
 		let eventCallback: TauriEvent.EventCallback<UpdateSessionSnapshot> = () => undefined
 		mockedListen
-			.mockRejectedValueOnce(new Error('listener unavailable'))
+			.mockRejectedValueOnce(listenerError)
 			.mockImplementationOnce(async (_eventName, handler) => {
 				eventCallback = handler as TauriEvent.EventCallback<UpdateSessionSnapshot>
 				return unlisten
@@ -132,6 +133,8 @@ describe('useUpdateEvents', () => {
 			await Promise.resolve()
 		})
 		expect(mockedGetUpdateSession).toHaveBeenCalledTimes(1)
+		expect(errorSpy).toHaveBeenCalledWith('Failed to setup update session listener:', listenerError)
+		expect(errorSpy).toHaveBeenCalledTimes(1)
 		expect(useUpdateStore.getState().snapshot).toMatchObject({ revision: 1, phase: 'available' })
 
 		await act(async () => {
@@ -156,9 +159,10 @@ describe('useUpdateEvents', () => {
 	it('订阅成功但首次 hydrate 失败时只重试 hydrate', async () => {
 		vi.useFakeTimers()
 		const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+		const hydrateError = new Error('hydrate unavailable')
 		mockedListen.mockResolvedValue(() => undefined)
 		mockedGetUpdateSession
-			.mockRejectedValueOnce(new Error('hydrate unavailable'))
+			.mockRejectedValueOnce(hydrateError)
 			.mockResolvedValueOnce(snapshot(3, 'ready'))
 
 		renderHook(() => useUpdateEvents())
@@ -168,6 +172,8 @@ describe('useUpdateEvents', () => {
 		})
 		expect(mockedListen).toHaveBeenCalledTimes(1)
 		expect(mockedGetUpdateSession).toHaveBeenCalledTimes(1)
+		expect(errorSpy).toHaveBeenCalledWith('Failed to hydrate update session:', hydrateError)
+		expect(errorSpy).toHaveBeenCalledTimes(1)
 
 		await act(async () => {
 			await vi.advanceTimersByTimeAsync(1000)

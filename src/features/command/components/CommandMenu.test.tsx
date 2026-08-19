@@ -1,100 +1,46 @@
-import { useEffect, useState } from 'react'
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
+import type { ShellCommandActions } from '@/features/command/adapters'
 import { createShellCommandRegistry } from '@/features/command/commands'
-import { DEFAULT_KEYBINDINGS, KeybindingRegistry } from '@/features/command/keybinding'
-import { ShortcutRegistryProvider } from '@/features/command/shortcuts'
 import {
 	CommandRuntime,
 	createEmptyCommandContext,
 	type CommandContext,
 	type TaskPlacementTarget,
 } from '@/features/command/core'
-import type { ShellCommandActions } from '@/features/command/adapters'
-
+import { DEFAULT_KEYBINDINGS, KeybindingRegistry } from '@/features/command/keybinding'
+import { ShortcutRegistryProvider } from '@/features/command/shortcuts'
+import { useDialogStore } from '@/features/shell-dialogs'
 import type { SearchEntitiesResult, SearchProjectItem, SearchTaskItem } from '@/shared/types'
+
 import { CommandMenu } from './CommandMenu'
 import type { CommandMenuMode } from './command-menu-types'
 
-const mockedSearchEntities = vi.hoisted(() =>
-	vi.fn<(input: { query: string; limitPerSection?: number }) => Promise<SearchEntitiesResult>>(),
-)
-
-function emptySearchResult(): SearchEntitiesResult {
-	return {
+const searchMock = vi.hoisted(() => ({
+	result: {
 		tasks: [],
 		projects: [],
 		completedTasks: [],
 		completedProjects: [],
-	}
-}
+	} as SearchEntitiesResult,
+}))
 
-vi.mock('@/features/global-search', async (importOriginal) => {
-	const actual = await importOriginal<typeof import('@/features/global-search')>()
-	return {
-		...actual,
-		searchEntities: mockedSearchEntities,
-		/** 命令菜单测搜索：桩掉 hook，仍走 debounce + mock searchEntities */
-		useGlobalSearch: (query: string) => {
-			const normalized = query.trim()
-			const [result, setResult] = useState(emptySearchResult)
-			const [isLoading, setIsLoading] = useState(false)
-			const [hasResolvedQuery, setHasResolvedQuery] = useState(false)
-
-			useEffect(() => {
-				if (!normalized) {
-					setResult(emptySearchResult())
-					setHasResolvedQuery(false)
-					setIsLoading(false)
-					return
-				}
-
-				setIsLoading(true)
-				const timerId = window.setTimeout(() => {
-					void mockedSearchEntities({ query: normalized, limitPerSection: 5 })
-						.then((data) => {
-							setResult(data ?? emptySearchResult())
-							setHasResolvedQuery(true)
-						})
-						.finally(() => {
-							setIsLoading(false)
-						})
-				}, 150)
-
-				return () => {
-					window.clearTimeout(timerId)
-				}
-			}, [normalized])
-
-			return {
-				result,
-				isLoading: Boolean(normalized) && isLoading,
-				errorMessage: null,
-				hasResolvedQuery,
-			}
-		},
-	}
-})
+vi.mock('@/features/global-search', () => ({
+	useGlobalSearch: (query: string) => ({
+		result: searchMock.result,
+		isLoading: false,
+		errorMessage: null,
+		hasResolvedQuery: Boolean(query.trim()),
+	}),
+}))
 
 describe('CommandMenu', () => {
 	beforeEach(() => {
-		mockedSearchEntities.mockReset()
+		searchMock.result = emptySearchResult()
+		useDialogStore.setState({ customDateDialog: null })
 	})
 
-	it('渲染 registry 静态命令和动态项目区', () => {
-		renderCommandMenu()
-
-		expect(screen.getByText('打开任务')).toBeInTheDocument()
-		expect(screen.getByText('快速新建任务')).toBeInTheDocument()
-		expect(screen.getByText('完整新建任务')).toBeInTheDocument()
-		expect(screen.getByText('前往独立事项')).toBeInTheDocument()
-		expect(screen.getByText('项目 A')).toBeInTheDocument()
-		expect(screen.getByText('创建')).toBeInTheDocument()
-		expect(screen.getByText('导航')).toBeInTheDocument()
-	})
-
-	it('由 HeroUI Command 管理对话框、输入焦点与 Escape 关闭', async () => {
+	it('提供可访问的命令对话框，并由 Escape 关闭', async () => {
 		const onOpenChange = vi.fn<(open: boolean) => void>()
 		renderCommandMenu({ onOpenChange })
 
@@ -107,41 +53,25 @@ describe('CommandMenu', () => {
 		expect(onOpenChange).toHaveBeenCalledWith(false)
 	})
 
-	it('渲染 V1 command-only 命令面', () => {
-		renderCommandMenu()
-
-		expect(screen.getByText('完成任务')).toBeInTheDocument()
-		expect(screen.getByText('重命名任务')).toBeInTheDocument()
-		expect(screen.getByText('添加筛选')).toBeInTheDocument()
-		expect(screen.getByText('显示选项')).toBeInTheDocument()
-		expect(screen.getByText('切换侧边栏')).toBeInTheDocument()
-		expect(screen.getByText('打开数据文件夹')).toBeInTheDocument()
-	})
-
-	it('普通组合键和 chord 都按拆键方式渲染', () => {
-		renderCommandMenu()
-
-		expect(screen.getAllByText('C').length).toBeGreaterThan(0)
-		expect(screen.getAllByText('N').length).toBeGreaterThan(0)
-		expect(screen.getAllByText('T').length).toBeGreaterThan(0)
-		expect(document.querySelectorAll('svg').length).toBeGreaterThan(0)
-	})
-
-	it('选择命令后执行 command id 并关闭菜单', () => {
+	it('把静态命令和动态项目交给各自的外部执行入口', () => {
 		const openQuickTaskCreate = vi.fn()
+		const onNavigateProject = vi.fn<(projectId: string) => void>()
 		const onOpenChange = vi.fn<(open: boolean) => void>()
 		renderCommandMenu({
+			onNavigateProject,
 			onOpenChange,
 			runtime: createRuntime({ ...createActions(), openQuickTaskCreate }),
 		})
 
+		fireEvent.click(screen.getByText('项目 A'))
 		fireEvent.click(screen.getByText('快速新建任务'))
 
-		expect(onOpenChange).toHaveBeenCalledWith(false)
+		expect(onNavigateProject).toHaveBeenCalledWith('project-a')
 		expect(openQuickTaskCreate).toHaveBeenCalledOnce()
+		expect(onOpenChange).toHaveBeenCalledWith(false)
 	})
 
-	it('disabled 命令不触发执行', () => {
+	it('disabled 命令只展示原因，不触发执行', () => {
 		renderCommandMenu()
 
 		fireEvent.click(screen.getByText('新建视图'))
@@ -149,124 +79,42 @@ describe('CommandMenu', () => {
 		expect(screen.getByText('视图创建入口尚未接入')).toBeInTheDocument()
 	})
 
-	it('command-only disabled 命令不触发执行', () => {
-		renderCommandMenu()
-
-		fireEvent.click(screen.getByText('完成任务'))
-
-		expect(screen.getAllByText('需要先选择任务').length).toBeGreaterThan(0)
-	})
-
-	it('有任务选择时显示 chips 和批量操作分组', () => {
-		renderCommandMenu({ context: createTaskSelectionContext() })
-
-		expect(screen.getByLabelText('当前选中对象')).toHaveTextContent('任务 A')
-		expect(screen.getByLabelText('当前选中对象')).toHaveTextContent('任务 B')
-		expect(screen.getByText('批量操作')).toBeInTheDocument()
-		expect(screen.getByText('完成任务')).toBeInTheDocument()
-		expect(screen.getByText('归档任务')).toBeInTheDocument()
-		expect(screen.getByText('删除任务')).toBeInTheDocument()
-	})
-
-	it('命令列表由 HeroUI Command 管理滚动，chips 保持独立单行摘要区', () => {
-		renderCommandMenu({ context: createTaskSelectionContext() })
-
-		const commandItem = screen.getByText('完成任务')
-		const chipsRow = screen.getByLabelText('当前选中对象')
-		const commandList = commandItem.closest('[data-slot="command-list"]')
-		const input = screen.getByPlaceholderText('输入命令 或 搜索 …')
-		const header = input.closest('[data-slot="command-header"]')
-
-		expect(commandList).toHaveAttribute('role', 'menu')
-		expect(commandList).toHaveClass('max-h-120')
-		expect(commandList?.closest('[data-scroll-container="true"]')).toBeNull()
-		expect(chipsRow).toHaveClass('overflow-hidden')
-		expect(header).toContainElement(chipsRow)
-		expect(header).toContainElement(input)
-		expect(chipsRow.compareDocumentPosition(input) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-	})
-
-	it('有项目选择时显示项目批量操作分组', () => {
-		renderCommandMenu({ context: createProjectSelectionContext() })
-
-		expect(screen.getByLabelText('当前选中对象')).toHaveTextContent('项目 A')
-		expect(screen.getByLabelText('当前选中对象')).toHaveTextContent('项目 B')
-		expect(screen.getByText('批量操作')).toBeInTheDocument()
-		expect(screen.getByText('归档项目')).toBeInTheDocument()
-		expect(screen.getByText('删除项目')).toBeInTheDocument()
-		expect(screen.queryByText('完成任务')).not.toBeInTheDocument()
-	})
-
-	it('动态项目区沿用外部导航回调', () => {
-		const onNavigateProject = vi.fn<(projectId: string) => void>()
-		renderCommandMenu({ onNavigateProject })
-
-		fireEvent.click(screen.getByText('项目 A'))
-
-		expect(onNavigateProject).toHaveBeenCalledWith('project-a')
-	})
-
-	it('task-picker mode 只渲染任务结果，选择任务后回调并关闭菜单', async () => {
+	it('task picker 只呈现任务，并在选择后回调和关闭', () => {
 		const onOpenChange = vi.fn<(open: boolean) => void>()
 		const onSelectTask = vi.fn<(task: SearchTaskItem) => void>()
-		mockedSearchEntities.mockResolvedValue(
-			createSearchResult({
-				tasks: [createTaskResult({ id: 'task-a', title: '任务 A' })],
-				projects: [createProjectResult({ id: 'project-a', name: '项目结果 A' })],
-			}),
-		)
+		searchMock.result = createSearchResult({
+			tasks: [createTaskResult({ id: 'task-a', title: '任务 A' })],
+			projects: [createProjectResult({ id: 'project-a', name: '项目结果 A' })],
+		})
 		renderCommandMenu({ mode: 'task-picker', onOpenChange, onSelectTask })
 
 		fireEvent.change(screen.getByPlaceholderText('搜索任务…'), { target: { value: 'A' } })
-		await waitFor(() => expect(mockedSearchEntities).toHaveBeenCalledTimes(1))
-		fireEvent.click(await screen.findByText('任务 A'))
+		fireEvent.click(screen.getByText('任务 A'))
 
 		expect(screen.queryByText('项目结果 A')).not.toBeInTheDocument()
-		expect(onOpenChange).toHaveBeenCalledWith(false)
 		expect(onSelectTask).toHaveBeenCalledWith(expect.objectContaining({ id: 'task-a' }))
-	})
-
-	it('project-picker mode 只渲染项目结果，选择项目后回调并关闭菜单', async () => {
-		const onOpenChange = vi.fn<(open: boolean) => void>()
-		const onSelectProject = vi.fn<(project: SearchProjectItem) => void>()
-		mockedSearchEntities.mockResolvedValue(
-			createSearchResult({
-				tasks: [createTaskResult({ id: 'task-a', title: '任务 A' })],
-				projects: [createProjectResult({ id: 'project-a', name: '项目 A' })],
-			}),
-		)
-		renderCommandMenu({ mode: 'project-picker', onOpenChange, onSelectProject })
-
-		fireEvent.change(screen.getByPlaceholderText('搜索项目…'), { target: { value: 'A' } })
-		await waitFor(() => expect(mockedSearchEntities).toHaveBeenCalledTimes(1))
-		fireEvent.click(await screen.findByText('项目 A'))
-
-		expect(screen.queryByText('任务 A')).not.toBeInTheDocument()
 		expect(onOpenChange).toHaveBeenCalledWith(false)
-		expect(onSelectProject).toHaveBeenCalledWith(expect.objectContaining({ id: 'project-a' }))
 	})
 
-	it('task-placement-picker mode 按 Space 分组渲染 placement targets，并回调选中的目标', async () => {
+	it('placement picker 按 Space 呈现目标，并返回 stable target', () => {
 		const onOpenChange = vi.fn<(open: boolean) => void>()
 		const onSelectTaskPlacement = vi.fn<(target: TaskPlacementTarget) => void>()
-		mockedSearchEntities.mockResolvedValue(
-			createSearchResult({
-				projects: [
-					createProjectResult({
-						id: 'project-a',
-						name: '项目 A',
-						spaceId: 'space-a',
-						spaceName: '工作',
-					}),
-					createProjectResult({
-						id: 'project-b',
-						name: '项目 B',
-						spaceId: 'space-b',
-						spaceName: '生活',
-					}),
-				],
-			}),
-		)
+		searchMock.result = createSearchResult({
+			projects: [
+				createProjectResult({
+					id: 'project-a',
+					name: '项目 A',
+					spaceId: 'space-a',
+					spaceName: '工作',
+				}),
+				createProjectResult({
+					id: 'project-b',
+					name: '项目 B',
+					spaceId: 'space-b',
+					spaceName: '生活',
+				}),
+			],
+		})
 		renderCommandMenu({
 			mode: 'task-placement-picker',
 			context: createTaskSelectionContext(),
@@ -275,296 +123,75 @@ describe('CommandMenu', () => {
 		})
 
 		fireEvent.change(screen.getByPlaceholderText('移动到项目或独立事项...'), {
-			target: { value: 'A' },
+			target: { value: '项目' },
 		})
-		await waitFor(() => expect(mockedSearchEntities).toHaveBeenCalledTimes(1))
-		expect(await screen.findByText('工作')).toBeInTheDocument()
+		expect(screen.getByText('工作')).toBeInTheDocument()
 		expect(screen.getByText('生活')).toBeInTheDocument()
-		expect(screen.getAllByText('独立事项')).toHaveLength(2)
-		expectCommandRowIndicator('独立事项', 'mixed', '0')
-		expectCommandRowIndicator('项目 B', 'mixed')
 		fireEvent.click(screen.getAllByText('独立事项')[0]!)
 
-		expect(onOpenChange).toHaveBeenCalledWith(false)
 		expect(onSelectTaskPlacement).toHaveBeenCalledWith({
 			kind: 'standalone',
 			spaceId: 'space-a',
 		})
-	})
-
-	it('task-placement-picker 单个当前项目显示勾', async () => {
-		const context = createTaskSelectionContext()
-		mockedSearchEntities.mockResolvedValue(
-			createSearchResult({
-				projects: [
-					createProjectResult({
-						id: 'project-b',
-						name: '项目 B',
-						spaceId: 'space-a',
-						spaceName: '工作',
-					}),
-				],
-			}),
-		)
-		renderCommandMenu({
-			mode: 'task-placement-picker',
-			context: {
-				...context,
-				selection: {
-					...context.selection,
-					entities: context.selection.entities.map((entity) => ({
-						...entity,
-						projectId: 'project-b',
-					})),
-				},
-			},
-		})
-
-		fireEvent.change(screen.getByPlaceholderText('移动到项目或独立事项...'), {
-			target: { value: 'B' },
-		})
-		await waitFor(() => expect(mockedSearchEntities).toHaveBeenCalledTimes(1))
-		expect(await screen.findByText('项目 B')).toBeInTheDocument()
-
-		expectCommandRowIndicator('项目 B', 'checked')
-	})
-
-	it('task-placement-picker 不显示已完成项目', async () => {
-		mockedSearchEntities.mockResolvedValue(
-			createSearchResult({
-				projects: [
-					createProjectResult({
-						id: 'project-a',
-						name: '项目 A',
-						spaceId: 'space-a',
-						spaceName: '工作',
-						completedAt: null,
-					}),
-				],
-				completedProjects: [
-					createProjectResult({
-						id: 'project-c',
-						name: '项目 C',
-						spaceId: 'space-a',
-						spaceName: '工作',
-						completedAt: '2026-05-15T00:00:00Z',
-					}),
-				],
-			}),
-		)
-		renderCommandMenu({
-			mode: 'task-placement-picker',
-			context: createTaskSelectionContext(),
-		})
-
-		fireEvent.change(screen.getByPlaceholderText('移动到项目或独立事项...'), {
-			target: { value: '项目' },
-		})
-		await waitFor(() => expect(mockedSearchEntities).toHaveBeenCalledTimes(1))
-
-		expect(await screen.findByText('项目 A')).toBeInTheDocument()
-		expect(screen.queryByText('项目 C')).not.toBeInTheDocument()
-	})
-
-	it('scoped mode 空态文案区分任务和项目', async () => {
-		mockedSearchEntities.mockResolvedValue(createSearchResult())
-		const { rerender } = renderCommandMenu({ mode: 'task-picker' })
-
-		fireEvent.change(screen.getByPlaceholderText('搜索任务…'), { target: { value: 'none' } })
-		await waitFor(() => expect(mockedSearchEntities).toHaveBeenCalledTimes(1))
-		expect(await screen.findByText('没有匹配的任务')).toBeInTheDocument()
-
-		rerender(
-			withCommandProviders(
-				<QueryClientProvider client={createTestQueryClient()}>
-					{createCommandMenuElement({ mode: 'project-picker' })}
-				</QueryClientProvider>,
-			),
-		)
-		fireEvent.change(screen.getByPlaceholderText('搜索项目…'), { target: { value: 'none' } })
-		await waitFor(() => expect(mockedSearchEntities).toHaveBeenCalledTimes(2))
-		expect(await screen.findByText('没有匹配的项目')).toBeInTheDocument()
-	})
-
-	it('task-priority-picker 选择优先级后回调并关闭菜单', () => {
-		const onOpenChange = vi.fn<(open: boolean) => void>()
-		const onSelectTaskPriority = vi.fn<(priority: number) => void>()
-		renderCommandMenu({ mode: 'task-priority-picker', onOpenChange, onSelectTaskPriority })
-
-		fireEvent.click(screen.getByText('高'))
-
 		expect(onOpenChange).toHaveBeenCalledWith(false)
-		expect(onSelectTaskPriority).toHaveBeenCalledWith(3)
 	})
 
-	it('task-status-picker 选择状态后回调并关闭菜单', () => {
-		const onOpenChange = vi.fn<(open: boolean) => void>()
-		const onSelectTaskStatus = vi.fn<(status: string) => void>()
-		renderCommandMenu({ mode: 'task-status-picker', onOpenChange, onSelectTaskStatus })
-
-		fireEvent.click(screen.getByText('进行中'))
-
-		expect(onOpenChange).toHaveBeenCalledWith(false)
-		expect(onSelectTaskStatus).toHaveBeenCalledWith('doing')
-	})
-
-	it('task-priority-picker 多个当前优先级显示减号，单个当前优先级显示勾且在数字前', () => {
-		expect.hasAssertions()
-		const mixedContext = createTaskSelectionContext()
-		const mixedRender = renderCommandMenu({
-			mode: 'task-priority-picker',
-			context: {
-				...mixedContext,
-				selection: {
-					...mixedContext.selection,
-					entities: mixedContext.selection.entities.map((entity, index) => ({
-						...entity,
-						priority: index === 0 ? '3' : '2',
-					})),
-				},
-			},
-		})
-
-		expectCommandRowIndicator('高', 'mixed', '2')
-		expectCommandRowIndicator('中', 'mixed', '3')
-
-		mixedRender.unmount()
-		const singleContext = createTaskSelectionContext()
-		renderCommandMenu({
-			mode: 'task-priority-picker',
-			context: {
-				...singleContext,
-				selection: {
-					...singleContext.selection,
-					entities: singleContext.selection.entities.map((entity) => ({
-						...entity,
-						priority: '3',
-					})),
-				},
-			},
-		})
-
-		expectCommandRowIndicator('高', 'checked', '2')
-	})
-
-	it('task-status-picker 多个当前状态显示减号，单个当前状态显示勾且在数字前', () => {
-		expect.hasAssertions()
-		const mixedRender = renderCommandMenu({
-			mode: 'task-status-picker',
-			context: createTaskSelectionContext(),
-		})
-
-		expectCommandRowIndicator('待执行', 'mixed', '1')
-		expectCommandRowIndicator('已完成', 'mixed', '4')
-
-		mixedRender.unmount()
-		const singleContext = createTaskSelectionContext()
-		renderCommandMenu({
-			mode: 'task-status-picker',
-			context: {
-				...singleContext,
-				selection: {
-					...singleContext.selection,
-					entities: singleContext.selection.entities.map((entity) => ({
-						...entity,
-						status: 'waiting',
-					})),
-				},
-			},
-		})
-
-		expectCommandRowIndicator('等待中', 'checked', '3')
-	})
-
-	it('task-priority-picker 按数字键时直接选择对应项，而不是进入搜索', () => {
+	it('非搜索 picker 保留数字快捷选择，不把数字写入搜索', () => {
 		const onOpenChange = vi.fn<(open: boolean) => void>()
 		const onSelectTaskPriority = vi.fn<(priority: number) => void>()
 		renderCommandMenu({ mode: 'task-priority-picker', onOpenChange, onSelectTaskPriority })
 
 		fireEvent.keyDown(screen.getByRole('menu'), { key: '0' })
 
-		expect(onOpenChange).toHaveBeenCalledWith(false)
 		expect(onSelectTaskPriority).toHaveBeenCalledWith(0)
+		expect(onOpenChange).toHaveBeenCalledWith(false)
+		expect(screen.getByPlaceholderText('选择优先级…')).toHaveValue('')
 	})
 
-	it('task-date-picker 无日期时显示四个 preset，有日期时显示移除当前日期，自定义日期不会直接提交日期值', () => {
+	it('date picker 把现有值交给自定义日期弹窗，并转发提交值', () => {
 		const onOpenChange = vi.fn<(open: boolean) => void>()
 		const onSelectTaskDate = vi.fn<(dueAt: string | null) => void>()
-		const firstRender = renderCommandMenu({
+		renderCommandMenu({
 			mode: 'task-date-picker',
+			context: createTaskSelectionContext(),
 			onOpenChange,
 			onSelectTaskDate,
 		})
 
-		expect(screen.queryByText('移除当前日期')).not.toBeInTheDocument()
-		expect(document.querySelectorAll('[data-slot="command-row-selected-indicator"]')).toHaveLength(
-			0,
-		)
-		expect(screen.getByText('明天')).toBeInTheDocument()
-		expect(screen.getByText('本周')).toBeInTheDocument()
-		expect(screen.getByText('一周后')).toBeInTheDocument()
-		fireEvent.click(screen.getByText('明天'))
-		expect(onOpenChange).toHaveBeenCalledWith(false)
-		expect(onSelectTaskDate).toHaveBeenCalledTimes(1)
-
-		firstRender.unmount()
-		const secondRender = renderCommandMenu({
-			mode: 'task-date-picker',
-			onSelectTaskDate,
-			context: createTaskSelectionContextWithDueAt(),
-		})
-		expect(screen.getByText('移除当前日期')).toBeInTheDocument()
-		fireEvent.click(screen.getByText('移除当前日期'))
-		expect(onSelectTaskDate).toHaveBeenCalledWith(null)
-
-		secondRender.unmount()
-		renderCommandMenu({ mode: 'task-date-picker', onOpenChange, onSelectTaskDate })
 		fireEvent.click(screen.getByText('自定义日期'))
+
+		const dialog = useDialogStore.getState().customDateDialog
 		expect(onOpenChange).toHaveBeenCalledWith(false)
-		expect(onSelectTaskDate).toHaveBeenCalledTimes(2)
-	})
-
-	it('task-date-picker 按数字键时不直接选择日期 preset', () => {
-		const onOpenChange = vi.fn<(open: boolean) => void>()
-		const onSelectTaskDate = vi.fn<(dueAt: string | null) => void>()
-		renderCommandMenu({ mode: 'task-date-picker', onOpenChange, onSelectTaskDate })
-
-		fireEvent.keyDown(screen.getByRole('menu'), { key: '1' })
-
-		expect(onOpenChange).not.toHaveBeenCalledWith(false)
 		expect(onSelectTaskDate).not.toHaveBeenCalled()
-		expect(screen.getByPlaceholderText('选择截止时间…')).toHaveValue('')
+		expect(dialog).toMatchObject({
+			fieldKey: 'dueDate',
+			value: '2026-05-08',
+			hasExistingValue: true,
+		})
+		if (!dialog?.onSubmit) throw new Error('自定义日期提交回调未注册')
+
+		dialog.onSubmit('2026-05-12')
+		expect(onSelectTaskDate).toHaveBeenCalledWith('2026-05-12')
 	})
 })
 
-function expectCommandRowIndicator(
-	title: string,
-	indicatorState: 'checked' | 'mixed' | 'none',
-	shortcutDigit?: string,
-	index = 0,
-) {
-	const item = getCommandItemByTitle(title, index)
-	const indicator = item.querySelector('[data-slot="command-row-selected-indicator"]')
-
-	expect(indicator).not.toBeNull()
-	expect(indicator).toHaveAttribute('data-indicator', indicatorState)
-
-	if (!shortcutDigit) {
-		return
-	}
-
-	const shortcutHint = within(item).getByText(shortcutDigit)
-	expect(indicator!.compareDocumentPosition(shortcutHint)).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
-}
-
-function getCommandItemByTitle(title: string, index = 0) {
-	const item = screen.getAllByText(title)[index]?.closest('[data-slot="command-item"]')
-	expect(item).not.toBeNull()
-	return item as HTMLElement
-}
+type RenderCommandMenuOptions = Partial<{
+	mode: CommandMenuMode
+	context: CommandContext
+	onNavigateProject: (projectId: string) => void
+	onOpenChange: (open: boolean) => void
+	onSelectTaskDate: (dueAt: string | null) => void
+	onSelectTaskPriority: (priority: number) => void
+	onSelectTaskStatus: (status: string) => void
+	onSelectProject: (project: SearchProjectItem) => void
+	onSelectTaskPlacement: (target: TaskPlacementTarget) => void
+	onSelectTask: (task: SearchTaskItem) => void
+	runtime: CommandRuntime
+}>
 
 function renderCommandMenu({
 	mode = 'default',
+	context = createEmptyCommandContext(),
 	onNavigateProject = vi.fn(),
 	onOpenChange = vi.fn(),
 	onSelectTaskDate = vi.fn(),
@@ -573,128 +200,60 @@ function renderCommandMenu({
 	onSelectProject = vi.fn(),
 	onSelectTaskPlacement = vi.fn(),
 	onSelectTask = vi.fn(),
-	context = createEmptyCommandContext(),
 	runtime = createRuntime(),
-}: Partial<{
-	mode: CommandMenuMode
-	context: CommandContext
-	onNavigateProject: (projectId: string) => void
-	onOpenChange: (open: boolean) => void
-	onSelectTaskDate: (dueAt: string | null) => void
-	onSelectTaskPriority: (priority: number) => void
-	onSelectTaskStatus: (status: string) => void
-	onSelectProject: (project: SearchProjectItem) => void
-	onSelectTaskPlacement: (target: TaskPlacementTarget) => void
-	onSelectTask: (task: SearchTaskItem) => void
-	runtime: CommandRuntime
-}> = {}) {
+}: RenderCommandMenuOptions = {}) {
 	return render(
-		withCommandProviders(
-			<QueryClientProvider client={createTestQueryClient()}>
-				{createCommandMenuElement({
-					mode,
-					onNavigateProject,
-					onOpenChange,
-					onSelectTaskDate,
-					onSelectTaskPriority,
-					onSelectTaskStatus,
-					onSelectProject,
-					onSelectTaskPlacement,
-					onSelectTask,
-					context,
-					runtime,
-				})}
-			</QueryClientProvider>,
-		),
+		<ShortcutRegistryProvider registry={TEST_SHORTCUT_REGISTRY}>
+			<CommandMenu
+				context={context}
+				description='测试'
+				mode={mode}
+				onNavigateProject={onNavigateProject}
+				onOpenChange={onOpenChange}
+				onSelectProject={onSelectProject}
+				onSelectTask={onSelectTask}
+				onSelectTaskDate={onSelectTaskDate}
+				onSelectTaskPlacement={onSelectTaskPlacement}
+				onSelectTaskPriority={onSelectTaskPriority}
+				onSelectTaskStatus={onSelectTaskStatus}
+				open
+				projects={[{ id: 'project-a', label: '项目 A', badge: '2' }]}
+				runtime={runtime}
+				spaces={TEST_SPACES}
+				title='StoneFlow Command'
+			/>
+		</ShortcutRegistryProvider>,
 	)
 }
 
-const testShortcutRegistry = new KeybindingRegistry(DEFAULT_KEYBINDINGS)
+const TEST_SHORTCUT_REGISTRY = new KeybindingRegistry(DEFAULT_KEYBINDINGS)
 
-function withCommandProviders(node: React.ReactNode) {
-	return <ShortcutRegistryProvider registry={testShortcutRegistry}>{node}</ShortcutRegistryProvider>
-}
-
-function createTestQueryClient() {
-	return new QueryClient({
-		defaultOptions: {
-			queries: { retry: false, gcTime: 0 },
-			mutations: { retry: false },
-		},
-	})
-}
-
-function createCommandMenuElement({
-	mode = 'default',
-	onNavigateProject = vi.fn(),
-	onOpenChange = vi.fn(),
-	onSelectTaskDate = vi.fn(),
-	onSelectTaskPriority = vi.fn(),
-	onSelectTaskStatus = vi.fn(),
-	onSelectProject = vi.fn(),
-	onSelectTaskPlacement = vi.fn(),
-	onSelectTask = vi.fn(),
-	context = createEmptyCommandContext(),
-	runtime = createRuntime(),
-}: Partial<{
-	mode: CommandMenuMode
-	context: CommandContext
-	onNavigateProject: (projectId: string) => void
-	onOpenChange: (open: boolean) => void
-	onSelectTaskDate: (dueAt: string | null) => void
-	onSelectTaskPriority: (priority: number) => void
-	onSelectTaskStatus: (status: string) => void
-	onSelectProject: (project: SearchProjectItem) => void
-	onSelectTaskPlacement: (target: TaskPlacementTarget) => void
-	onSelectTask: (task: SearchTaskItem) => void
-	runtime: CommandRuntime
-}> = {}) {
-	return (
-		<CommandMenu
-			context={context}
-			description='测试'
-			mode={mode}
-			onNavigateProject={onNavigateProject}
-			onOpenChange={onOpenChange}
-			onSelectTaskDate={onSelectTaskDate}
-			onSelectTaskPriority={onSelectTaskPriority}
-			onSelectTaskStatus={onSelectTaskStatus}
-			onSelectProject={onSelectProject}
-			onSelectTaskPlacement={onSelectTaskPlacement}
-			onSelectTask={onSelectTask}
-			open
-			projects={[{ id: 'project-a', label: '项目 A', badge: '2' }]}
-			runtime={runtime}
-			spaces={[
-				{
-					id: 'space-a',
-					name: '工作',
-					iconKey: 'briefcase',
-					colorKey: 'blue',
-					isDefault: true,
-					position: 1,
-					archivedAt: null,
-					deletedAt: null,
-					createdAt: '2026-05-15T00:00:00Z',
-					updatedAt: '2026-05-15T00:00:00Z',
-				},
-				{
-					id: 'space-b',
-					name: '生活',
-					iconKey: 'leaf',
-					colorKey: 'green',
-					isDefault: false,
-					position: 2,
-					archivedAt: null,
-					deletedAt: null,
-					createdAt: '2026-05-15T00:00:00Z',
-					updatedAt: '2026-05-15T00:00:00Z',
-				},
-			]}
-			title='StoneFlow Command'
-		/>
-	)
-}
+const TEST_SPACES = [
+	{
+		id: 'space-a',
+		name: '工作',
+		iconKey: 'briefcase',
+		colorKey: 'blue',
+		isDefault: true,
+		position: 1,
+		archivedAt: null,
+		deletedAt: null,
+		createdAt: '2026-05-15T00:00:00Z',
+		updatedAt: '2026-05-15T00:00:00Z',
+	},
+	{
+		id: 'space-b',
+		name: '生活',
+		iconKey: 'leaf',
+		colorKey: 'green',
+		isDefault: false,
+		position: 2,
+		archivedAt: null,
+		deletedAt: null,
+		createdAt: '2026-05-15T00:00:00Z',
+		updatedAt: '2026-05-15T00:00:00Z',
+	},
+]
 
 function createRuntime(actions = createActions()) {
 	return new CommandRuntime({
@@ -750,95 +309,39 @@ function createTaskSelectionContext(): CommandContext {
 		...createEmptyCommandContext(),
 		selection: {
 			type: 'task',
-			ids: ['task-a', 'task-b'],
+			ids: ['task-a'],
 			entities: [
 				{
 					id: 'task-a',
 					type: 'task',
 					title: '任务 A',
-					subtitle: '独立事项',
 					spaceId: 'space-a',
-					projectId: null,
+					projectId: 'project-a',
 					status: 'todo',
-				},
-				{
-					id: 'task-b',
-					type: 'task',
-					title: '任务 B',
-					subtitle: '项目 B',
-					spaceId: 'space-a',
-					projectId: 'project-b',
-					status: 'done',
+					dueAt: '2026-05-08',
 				},
 			],
 			primaryEntity: {
 				id: 'task-a',
 				type: 'task',
 				title: '任务 A',
-				subtitle: '独立事项',
 				spaceId: 'space-a',
-				projectId: null,
+				projectId: 'project-a',
 			},
 			source: 'task-list',
 			hasSelection: true,
-			isSingleSelection: false,
-			isMultiSelection: true,
+			isSingleSelection: true,
+			isMultiSelection: false,
 		},
 	}
 }
 
-function createProjectSelectionContext(): CommandContext {
-	return {
-		...createEmptyCommandContext(),
-		selection: {
-			type: 'project',
-			ids: ['project-a', 'project-b'],
-			entities: [
-				{ id: 'project-a', type: 'project', title: '项目 A', subtitle: '进行中项目' },
-				{ id: 'project-b', type: 'project', title: '项目 B', subtitle: '已完成项目' },
-			],
-			primaryEntity: { id: 'project-a', type: 'project', title: '项目 A' },
-			source: 'project-list',
-			hasSelection: true,
-			isSingleSelection: false,
-			isMultiSelection: true,
-		},
-	}
-}
-
-function createTaskSelectionContextWithDueAt(): CommandContext {
-	const context = createTaskSelectionContext()
-	return {
-		...context,
-		selection: {
-			...context.selection,
-			entities: context.selection.entities.map((entity, index) =>
-				entity.type === 'task'
-					? {
-							...entity,
-							dueAt: index === 0 ? '2026-05-20' : null,
-						}
-					: entity,
-			),
-			primaryEntity:
-				context.selection.primaryEntity && context.selection.primaryEntity.type === 'task'
-					? {
-							...context.selection.primaryEntity,
-							dueAt: '2026-05-20',
-						}
-					: context.selection.primaryEntity,
-		},
-	}
+function emptySearchResult(): SearchEntitiesResult {
+	return { tasks: [], projects: [], completedTasks: [], completedProjects: [] }
 }
 
 function createSearchResult(overrides: Partial<SearchEntitiesResult> = {}): SearchEntitiesResult {
-	return {
-		tasks: [],
-		projects: [],
-		completedTasks: [],
-		completedProjects: [],
-		...overrides,
-	}
+	return { ...emptySearchResult(), ...overrides }
 }
 
 function createTaskResult(overrides: Partial<SearchTaskItem> = {}): SearchTaskItem {
@@ -848,11 +351,11 @@ function createTaskResult(overrides: Partial<SearchTaskItem> = {}): SearchTaskIt
 		spaceName: '工作',
 		spaceSlug: 'work',
 		projectId: 'project-a',
+		projectName: '项目 A',
 		title: '任务 A',
 		note: null,
 		priority: 2,
 		status: 'todo',
-		projectName: '项目 A',
 		updatedAt: '2026-05-15T00:00:00Z',
 		completedAt: null,
 		...overrides,

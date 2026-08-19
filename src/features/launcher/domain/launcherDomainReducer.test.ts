@@ -94,15 +94,43 @@ describe('launcherDomainReducer', () => {
 		expect(state.focusTarget).toBe('create')
 	})
 
-	it('continuousCreateSucceeded 清空标题并累计计数', () => {
+	it('切换 Space 时重置为独立事项并开始加载新项目', () => {
+		let state = launcherDomainReducer(createLauncherInitialState(), openSession())
+		state = launcherDomainReducer(state, {
+			type: 'placementChanged',
+			placement: { kind: 'project', projectId: 'project-1' },
+		})
+		state = launcherDomainReducer(state, { type: 'projectSearchChanged', query: '项目 A' })
+
+		const next = launcherDomainReducer(state, { type: 'spaceChanged', spaceId: 'space-2' })
+
+		expect(next.draft.spaceId).toBe('space-2')
+		expect(next.draft.placement).toEqual({ kind: 'standalone', projectId: null })
+		expect(next.projectSearch).toBe('')
+		expect(next.isProjectOptionsLoading).toBe(true)
+	})
+
+	it('continuousCreateSucceeded 只清空标题，保留下一条的属性并累计计数', () => {
 		let state = launcherDomainReducer(createLauncherInitialState(), openSession())
 		state = launcherDomainReducer(state, { type: 'titleChanged', title: '连续' })
+		state = launcherDomainReducer(state, { type: 'priorityChanged', priority: 4 })
+		state = launcherDomainReducer(state, { type: 'statusChanged', status: 'done' })
+		state = launcherDomainReducer(state, {
+			type: 'dateChanged',
+			field: 'dueAt',
+			value: '2026-08-20',
+		})
 		state = launcherDomainReducer(state, {
 			type: 'continuousCreateSucceeded',
 			message: '已创建',
 		})
 
-		expect(state.draft.title).toBe('')
+		expect(state.draft).toMatchObject({
+			title: '',
+			priority: 4,
+			status: 'done',
+			dueAt: '2026-08-20',
+		})
 		expect(state.focusTarget).toBe('none')
 		expect(state.searchView).toBe('recent')
 		expect(state.continuousCreateCount).toBe(1)

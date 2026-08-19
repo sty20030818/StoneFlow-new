@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 
-import type { LauncherSpaceSummary } from '../../model/types'
+import type { LauncherPriority, LauncherSpaceSummary } from '../../model/types'
 
 import { PriorityControl } from './PriorityControl'
 import { SpaceControl } from './SpaceControl'
@@ -24,63 +24,55 @@ const SPACES: LauncherSpaceSummary[] = [
 ]
 
 describe('Launcher icon action controls', () => {
-	it('优先级只显示动作名，菜单打开后关闭 Tooltip', async () => {
-		renderControl(<PriorityControlHarness />)
+	it('选择优先级和 Space 时回传领域值', async () => {
+		const onPriorityChange = vi.fn()
+		const onSelectSpace = vi.fn()
+		renderControl(
+			<ControlsHarness onPriorityChange={onPriorityChange} onSelectSpace={onSelectSpace} />,
+		)
 
-		const trigger = screen.getByRole('button', { name: '优先级' })
-		fireEvent.keyDown(document, { key: 'Tab' })
-		trigger.focus()
-		const tooltip = await screen.findByRole('tooltip')
-		expect(tooltip).toHaveTextContent('设置优先级')
-		expect(tooltip.querySelector('[data-slot="kbd"]')).toBeNull()
+		fireEvent.pointerDown(screen.getByRole('button', { name: '优先级' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: '高' }))
+		expect(onPriorityChange).toHaveBeenCalledWith(3)
 
-		fireEvent.pointerDown(trigger)
-		expect(await screen.findByRole('menu')).toBeInTheDocument()
-		await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument())
+		fireEvent.pointerDown(screen.getByRole('button', { name: '空间选择' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: '工程基础' }))
+		expect(onSelectSpace).toHaveBeenCalledWith('space-2')
 	})
 
-	it('创建中通过可聚焦外壳解释优先级禁用原因', async () => {
+	it('创建中禁用优先级动作并保留可解释的可访问外壳', () => {
 		renderControl(<PriorityControlHarness disabled />)
 
-		const disabledTrigger = screen.getByRole('group', { name: '设置优先级' })
-		fireEvent.keyDown(document, { key: 'Tab' })
-		disabledTrigger.focus()
-
-		expect(await screen.findByRole('tooltip')).toHaveTextContent('正在创建，暂时无法修改优先级')
+		expect(screen.getByRole('group', { name: '设置优先级' })).toBeInTheDocument()
 		expect(screen.getByRole('button', { name: '优先级' })).toBeDisabled()
-	})
-
-	it('Space 只显示动作名，菜单打开后关闭 Tooltip', async () => {
-		renderControl(<SpaceControlHarness />)
-
-		const trigger = screen.getByRole('button', { name: '空间选择' })
-		fireEvent.keyDown(document, { key: 'Tab' })
-		trigger.focus()
-		const tooltip = await screen.findByRole('tooltip')
-		expect(tooltip).toHaveTextContent('选择空间')
-		expect(tooltip.querySelector('[data-slot="kbd"]')).toBeNull()
-
-		fireEvent.pointerDown(trigger)
-		expect(await screen.findByRole('menu')).toBeInTheDocument()
-		await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument())
 	})
 })
 
-function PriorityControlHarness({ disabled = false }: { disabled?: boolean }) {
+function PriorityControlHarness({
+	disabled = false,
+	onPriorityChange = () => undefined,
+}: {
+	disabled?: boolean
+	onPriorityChange?: (priority: LauncherPriority) => void
+}) {
 	const [open, setOpen] = useState(false)
 
 	return (
 		<PriorityControl
 			disabled={disabled}
 			onOpenChange={setOpen}
-			onPriorityChange={() => undefined}
+			onPriorityChange={onPriorityChange}
 			open={open}
 			priority={0}
 		/>
 	)
 }
 
-function SpaceControlHarness() {
+function SpaceControlHarness({
+	onSelectSpace = () => undefined,
+}: {
+	onSelectSpace?: (spaceId: string) => void
+}) {
 	const [open, setOpen] = useState(false)
 
 	return (
@@ -88,11 +80,26 @@ function SpaceControlHarness() {
 			iconOnly
 			label='产品研发'
 			onOpenChange={setOpen}
-			onSelectSpace={() => undefined}
+			onSelectSpace={onSelectSpace}
 			open={open}
 			selectedSpaceId='space-1'
 			spaces={SPACES}
 		/>
+	)
+}
+
+function ControlsHarness({
+	onPriorityChange,
+	onSelectSpace,
+}: {
+	onPriorityChange: (priority: LauncherPriority) => void
+	onSelectSpace: (spaceId: string) => void
+}) {
+	return (
+		<>
+			<PriorityControlHarness onPriorityChange={onPriorityChange} />
+			<SpaceControlHarness onSelectSpace={onSelectSpace} />
+		</>
 	)
 }
 
