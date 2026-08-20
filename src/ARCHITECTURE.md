@@ -141,6 +141,7 @@ Token、shadcn 映射、Tailwind 入口。见 [`styles/ARCHITECTURE.md`](./style
 | view | domain+scene | 视图定义 + 跑任务列表 | [view](./features/view/ARCHITECTURE.md) |
 | lifecycle | domain 编排 | 归档 / 回收站跨实体编排 | [lifecycle](./features/lifecycle/ARCHITECTURE.md) |
 | activity | domain 薄 | 活动时间线查询 | [activity](./features/activity/ARCHITECTURE.md) |
+| appearance | platform | Light 主题与本机 Accent 偏好的首帧应用 | [appearance](./features/appearance/ARCHITECTURE.md) |
 | command | platform | 命令元数据、Runtime、菜单、快捷键；handlers 在各域 register | [command](./features/command/ARCHITECTURE.md) |
 | bulk-action | platform | 批量引擎；动作/adapter 在各域 | [bulk-action](./features/bulk-action/ARCHITECTURE.md) |
 | selection | platform | 多选与 CommandSelection 总线 | [selection](./features/selection/ARCHITECTURE.md) |

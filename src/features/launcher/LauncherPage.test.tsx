@@ -22,6 +22,7 @@ import type {
 	LauncherTaskItem,
 } from './model/types'
 import { getLauncherShortcutTokens } from './model/launcherShortcutKeymap'
+import { applyAccentPreference, setAccentPreference } from '@/features/appearance'
 import { getShortcutAccessibilityLabel, inferShortcutPlatform } from '@/shared/lib/keyboardShortcut'
 
 const listenMock = vi.fn()
@@ -115,11 +116,15 @@ describe('LauncherPage', () => {
 			tasks: [createTaskResult({ id: 'task-search', title: 'Stone 搜索任务' })],
 			projects: [createProjectResult({ id: 'project-search', name: 'Stone 搜索项目' })],
 		})
+		localStorage.clear()
+		applyAccentPreference('cobalt')
 	})
 
 	afterEach(() => {
 		window.requestAnimationFrame = originalRequestAnimationFrame
 		window.cancelAnimationFrame = originalCancelAnimationFrame
+		localStorage.clear()
+		applyAccentPreference('cobalt')
 	})
 
 	it('准备会话后展示最近内容，并完成 runtime ready 与 present 握手', async () => {
@@ -132,6 +137,34 @@ describe('LauncherPage', () => {
 			expect(mockedNotifyFrontendReady).toHaveBeenCalledTimes(1)
 			expect(mockedPresentSession).toHaveBeenCalledWith({ sessionId: DEFAULT_SESSION_ID })
 		})
+	})
+
+	it('每次准备呈现前重新读取本机 Accent', async () => {
+		let preparedHandler: PreparedSessionHandler = unregisteredPreparedHandler
+		listenMock.mockImplementation(async (event, handler) => {
+			if (event === 'launcher:session-prepared') {
+				preparedHandler = handler as PreparedSessionHandler
+			}
+			return () => undefined
+		})
+		render(<LauncherPage />)
+		await waitFor(() => expect(mockedNotifyFrontendReady).toHaveBeenCalledTimes(1))
+
+		setAccentPreference('pine')
+		applyAccentPreference('cobalt')
+		await act(async () => {
+			preparedHandler({ payload: createOpenSessionResponse() })
+		})
+		expect(document.documentElement.dataset.accent).toBe('pine')
+
+		setAccentPreference('ocean')
+		applyAccentPreference('cobalt')
+		await act(async () => {
+			preparedHandler({
+				payload: createOpenSessionResponse({ sessionId: 'session-2' }),
+			})
+		})
+		expect(document.documentElement.dataset.accent).toBe('ocean')
 	})
 
 	it('搜索期间保留最近内容，完成后切换为搜索结果', async () => {

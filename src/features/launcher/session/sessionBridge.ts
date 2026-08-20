@@ -7,6 +7,7 @@ import type {
 	LauncherSessionClosePayload,
 	LauncherSessionEventPayload,
 } from './sessionTypes'
+import { applyAccentPreference } from '@/features/appearance'
 
 const LAUNCHER_SESSION_PREPARED_EVENT = 'launcher:session-prepared'
 const LAUNCHER_SESSION_PRESENTED_EVENT = 'launcher:session-presented'
@@ -33,6 +34,7 @@ export function useLauncherSessionBridge(
 				if (disposed) {
 					return
 				}
+				applyAccentPreference()
 				dispatch({ type: 'sessionPrepared', payload: event.payload })
 			},
 		)

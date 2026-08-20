@@ -20,6 +20,14 @@ function requireText(source: string, expected: string, owner: string) {
 	if (!source.includes(expected)) throw new Error(`${owner} 未同步：${expected}`)
 }
 
+function requireBefore(source: string, first: string, second: string, owner: string) {
+	const firstIndex = source.indexOf(first)
+	const secondIndex = source.indexOf(second)
+	if (firstIndex < 0 || secondIndex < 0 || firstIndex >= secondIndex) {
+		throw new Error(`${owner} 首帧顺序错误：${first} 必须早于 ${second}`)
+	}
+}
+
 function requireBackground(source: string, selector: string, color: string) {
 	const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 	const pattern = new RegExp(`${escapedSelector}\\s*\\{[^}]*background:\\s*${color}\\s*;`, 'is')
@@ -32,6 +40,7 @@ export function checkShellThemeSync(repositoryRoot = resolve(import.meta.dir, '.
 	const launcherHtml = read(repositoryRoot, 'launcher.html')
 	const mainEntry = read(repositoryRoot, 'src/main.tsx')
 	const launcherEntry = read(repositoryRoot, 'src/launcher.tsx')
+	const appearanceEntry = read(repositoryRoot, 'src/features/appearance/index.ts')
 	const rustWindow = read(repositoryRoot, 'src-tauri/crates/runtime/src/window/main.rs')
 	const contract: ShellThemeContract = {
 		main: requireMatch(themeCss, /--background:\s*(#[0-9a-f]{6})\b/i, 'theme.css --background'),
@@ -43,12 +52,25 @@ export function checkShellThemeSync(repositoryRoot = resolve(import.meta.dir, '.
 	}
 	requireText(themeCss, '[data-theme="stoneflow-light"]', 'theme.css')
 	requireText(themeCss, 'color-scheme: light', 'theme.css')
+	requireText(themeCss, '--accent-base: #6e78d5', 'theme.css default accent')
+	requireText(
+		appearanceEntry,
+		"const DEFAULT_ACCENT_PRESET: AccentPresetId = 'cobalt'",
+		'appearance',
+	)
+	requireText(
+		appearanceEntry,
+		'document.documentElement.dataset.accent = normalizedAccent',
+		'appearance',
+	)
 
 	for (const [owner, source] of [
 		['index.html', indexHtml],
 		['launcher.html', launcherHtml],
 	] as const) {
-		requireText(source, 'class="light" data-theme="stoneflow-light"', owner)
+		requireText(source, 'class="light"', owner)
+		requireText(source, 'data-accent="cobalt"', owner)
+		requireText(source, 'data-theme="stoneflow-light"', owner)
 		requireText(source, 'color-scheme: light', owner)
 	}
 
@@ -69,8 +91,8 @@ export function checkShellThemeSync(repositoryRoot = resolve(import.meta.dir, '.
 		['src/main.tsx', mainEntry],
 		['src/launcher.tsx', launcherEntry],
 	] as const) {
-		requireText(source, "document.documentElement.classList.add('light')", owner)
-		requireText(source, "document.documentElement.dataset.theme = 'stoneflow-light'", owner)
+		requireText(source, "from './features/appearance'", owner)
+		requireBefore(source, 'bootstrapAppearance()', 'createRoot(', owner)
 	}
 
 	const [red, green, blue] = contract.shell.slice(1).match(/.{2}/g) ?? []

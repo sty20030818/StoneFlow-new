@@ -38,3 +38,6 @@ Thumbs.db
 
 # ARCHITECTURE.md
 # CONVENTIONS.md
+
+# 仓库级 Agent 说明需要可被版本控制，覆盖本机全局忽略规则。
+!AGENTS.md

@@ -1,13 +1,15 @@
 import { useState } from 'react'
-import { Alert, Button, Label, ListBox, Select } from '@heroui/react'
+import { Alert, Button, Label, ListBox, Radio, RadioGroup, Select } from '@heroui/react'
 
 import { SettingsSection } from '../settingsShared'
+import { ACCENT_PRESETS, readAccentPreference, setAccentPreference } from '@/features/appearance'
 import { useSetDefaultSpaceMutation, useSpaces } from '@/features/space'
 
 /**
  * 通用设置：默认空间等跨工作区偏好。
  */
 export function SettingsGeneralPanel() {
+	const [accent, setAccent] = useState(readAccentPreference)
 	const { spaces, status: spaceStatus, error: spaceError, refetch: refetchSpaces } = useSpaces()
 	const setDefaultSpace = useSetDefaultSpaceMutation()
 	const [pending, setPending] = useState(false)
@@ -33,6 +35,32 @@ export function SettingsGeneralPanel() {
 
 	return (
 		<div className='flex w-full min-w-0 flex-col gap-4'>
+			<SettingsSection
+				description='选择界面的强调色。只影响主要操作、选中状态、链接与焦点，并保存在这台设备上。'
+				title='主题色'
+			>
+				<RadioGroup
+					aria-label='主题色'
+					className='grid gap-2 sm:grid-cols-2 lg:grid-cols-3'
+					name='appearance-accent'
+					onChange={(value) => setAccent(setAccentPreference(value))}
+					value={accent}
+					variant='secondary'
+				>
+					{ACCENT_PRESETS.map((preset) => (
+						<Radio data-accent-preview={preset.id} key={preset.id} value={preset.id}>
+							<Radio.Content>
+								<span aria-hidden className='size-3.5 shrink-0 rounded-full bg-accent-base' />
+								<span className='min-w-0 flex-1 truncate'>{preset.label}</span>
+								<Radio.Control>
+									<Radio.Indicator />
+								</Radio.Control>
+							</Radio.Content>
+						</Radio>
+					))}
+				</RadioGroup>
+			</SettingsSection>
+
 			<SettingsSection
 				description='默认空间会影响全局新建和兜底恢复时的优先落点，建议把最常用的空间放在这里。'
 				title='默认空间'

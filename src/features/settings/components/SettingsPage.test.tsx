@@ -4,6 +4,11 @@ import type * as TauriEvent from '@tauri-apps/api/event'
 
 import type { ShellSidebarSettings } from '../api/shellDevicePreferences'
 import { SettingsPage } from './SettingsPage'
+import {
+	applyAccentPreference,
+	bootstrapAppearance,
+	readAccentPreference,
+} from '@/features/appearance'
 import type { Space } from '@/shared/types'
 import { renderWithRouterContext } from '@/test/renderWithRouter'
 
@@ -211,10 +216,14 @@ describe('SettingsPage', () => {
 		mockedListen.mockResolvedValue(unlistenSyncStatusSpy)
 		sidebarStoreState = createSidebarStoreState()
 		spaceStoreState = createSpaceStoreState()
+		localStorage.clear()
+		applyAccentPreference('cobalt')
 	})
 
 	afterEach(() => {
 		vi.useRealTimers()
+		localStorage.clear()
+		applyAccentPreference('cobalt')
 	})
 
 	it('渲染侧边栏设置分区并触发初始化加载', async () => {
@@ -267,6 +276,33 @@ describe('SettingsPage', () => {
 		await waitFor(() => {
 			expect(setDefaultSpaceSpy).toHaveBeenCalledWith('space-2')
 		})
+	})
+
+	it('选择主题色后立即应用，并在重新挂载时恢复本机选择', async () => {
+		mockSettingsSection = 'general'
+		const view = await renderSettingsPage()
+		const cobalt = screen.getByRole('radio', { name: '钴蓝' })
+
+		expect(screen.getAllByRole('radio')).toHaveLength(6)
+		expect(cobalt).toBeChecked()
+
+		fireEvent.keyDown(cobalt, { key: 'ArrowDown' })
+		await waitFor(() => expect(screen.getByRole('radio', { name: '海洋蓝' })).toBeChecked())
+
+		fireEvent.click(screen.getByRole('radio', { name: '松柏' }))
+		await waitFor(() => {
+			expect(screen.getByRole('radio', { name: '松柏' })).toBeChecked()
+			expect(document.documentElement.dataset.accent).toBe('pine')
+			expect(readAccentPreference()).toBe('pine')
+		})
+
+		view.unmount()
+		applyAccentPreference('cobalt')
+		bootstrapAppearance()
+		await renderSettingsPage()
+
+		expect(screen.getByRole('radio', { name: '松柏' })).toBeChecked()
+		expect(document.documentElement.dataset.accent).toBe('pine')
 	})
 
 	it('保存同步配置时调用 configureSync 并刷新状态', async () => {

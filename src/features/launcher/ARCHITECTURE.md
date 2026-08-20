@@ -15,7 +15,7 @@ src/launcher.tsx
       → Panel                    // Composer → Advanced → Create? → Results → Footer
 ```
 
-Launcher 不经过主应用 Router 或 Shell Provider。`launcher:session-prepared` 只携带创建所必需的 Open context；最近任务和项目由 `launcher_get_recent_data` 在该事件后异步补齐，不能阻塞输入聚焦或 `present_session`。
+Launcher 不经过主应用 Router 或 Shell Provider。`launcher:session-prepared` 先从 appearance public 重读本机 Accent，再进入呈现状态；事件只携带创建所必需的 Open context。最近任务和项目由 `launcher_get_recent_data` 在该事件后异步补齐，不能阻塞输入聚焦或 `present_session`。
 
 | 层 | 负责 | 禁止 |
 |----|------|------|

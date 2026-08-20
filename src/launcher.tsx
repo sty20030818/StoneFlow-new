@@ -1,11 +1,11 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
+import { bootstrapAppearance } from './features/appearance'
 import { LauncherPage } from './features/launcher'
 import './styles/index.css'
 
-document.documentElement.classList.add('light')
-document.documentElement.dataset.theme = 'stoneflow-light'
+bootstrapAppearance()
 
 createRoot(document.getElementById('root')!).render(
 	<StrictMode>

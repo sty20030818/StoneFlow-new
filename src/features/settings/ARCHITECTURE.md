@@ -14,7 +14,7 @@
 
 页
   SettingsPage（薄壳）→ panels：General / Sidebar / Sync / Update
-  Sync / Update 只装配 sync / update public；General 默认空间走 space public
+  Sync / Update 只装配 sync / update public；General 主题色走 appearance public、默认空间走 space public
 
 偏好
   sidebarSettings（可同步可见性）+ shellDevicePreferences（本机宽/折叠等）
@@ -60,7 +60,7 @@ src/features/settings/
 |------|------|
 | layout | 主入口：store、SettingsSidebar、类型 |
 | navigation / routes | contract；routes 另挂 page |
-| sync / update / space | panels 只装配其 public |
+| appearance / sync / update / space | panels 只装配其 public |
 | layout | **禁**本域依赖 |
 
 ---

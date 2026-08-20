@@ -8,6 +8,7 @@ const srcDir = fileURLToPath(new URL('./src', import.meta.url))
 // 少量 .test.ts 仍验证浏览器 API；其余 .test.ts 可直接在 Node 中运行。
 const domTestFiles = [
 	'src/app/navigation/memoryStore.test.ts',
+	'src/features/appearance/index.test.ts',
 	'src/features/command/keybinding/keybinding.test.ts',
 	'src/features/command/shortcuts/shortcut-dispatcher.test.ts',
 	'src/features/display-options/api/displayOptions.test.ts',
