@@ -537,14 +537,26 @@
 		--switch-control-bg-checked-hover: var(--accent-hover);
 	}
 
+	[data-theme="stoneflow-light"] .switch__control {
+		border: var(--field-border-width) solid var(--field-border);
+	}
+
 	[data-theme="stoneflow-light"] .switch__thumb {
+		border: var(--field-border-width) solid var(--field-border-hover);
 		background-color: var(--surface);
 		box-shadow: var(--field-shadow);
 	}
 
 	[data-theme="stoneflow-light"]
 		.switch:is([aria-checked="true"], [data-selected="true"])
+		.switch__control {
+		border-color: var(--accent-border);
+	}
+
+	[data-theme="stoneflow-light"]
+		.switch:is([aria-checked="true"], [data-selected="true"])
 		.switch__thumb {
+		border-color: transparent;
 		background-color: var(--accent-foreground);
 		box-shadow: var(--field-shadow);
 	}

@@ -4,7 +4,7 @@ import { cn } from '@/shared/lib/utils'
 
 const ROW_SHELL_BASE_CLASS =
 	'group/row-shell flex h-11 min-w-0 items-center gap-3 rounded-lg border border-transparent bg-transparent px-3 text-left text-sm leading-5'
-const ROW_SHELL_ACTIVE_CLASS = 'border-border-secondary bg-accent-soft'
+const ROW_SHELL_ACTIVE_CLASS = 'border-accent-border bg-accent-soft'
 const ROW_SHELL_FOCUS_CLASS =
 	'-outline-offset-2 outline-2 outline-focus-subtle forced-colors:outline-[Highlight]'
 const ROW_SHELL_SELECTED_CLASS = 'border-transparent bg-accent-soft'

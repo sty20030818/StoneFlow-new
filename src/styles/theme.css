@@ -52,18 +52,18 @@
 	--field-background: var(--surface);
 	--field-foreground: var(--foreground);
 	--field-placeholder: var(--muted);
-	--field-border: #8f9093;
+	--field-border: var(--border-secondary);
 	--field-hover: #f7f7f7;
 	--field-focus: var(--surface);
 	--field-border-hover: #6f7072;
 	--field-border-focus: var(--focus);
 
-	--success: #27a644;
-	--success-foreground: var(--eclipse);
-	--success-hover: color-mix(in srgb, #27a644 90%, var(--eclipse) 10%);
+	--success: #258641;
+	--success-foreground: var(--white);
+	--success-hover: color-mix(in srgb, #258641 90%, var(--eclipse) 10%);
 	--success-soft: #ecf8ef;
 	--success-soft-foreground: #176f2b;
-	--success-soft-hover: color-mix(in srgb, #ecf8ef 80%, #27a644 20%);
+	--success-soft-hover: color-mix(in srgb, #ecf8ef 85%, #258641 15%);
 
 	--warning: #b7791f;
 	--warning-foreground: var(--eclipse);
@@ -89,7 +89,7 @@
 	--segment: var(--surface);
 	--segment-foreground: var(--foreground);
 	--border: #dbdbdb;
-	--border-secondary: #8f9093;
+	--border-secondary: #808184;
 	--border-tertiary: #d6d6d7;
 	--separator: #e5e5e6;
 	--separator-secondary: #dbdbdb;

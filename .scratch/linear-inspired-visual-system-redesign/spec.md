@@ -1,6 +1,6 @@
 # StoneFlow Linear-inspired 视觉系统重设计
 
-**Status:** ready-for-agent
+**Status:** implemented
 
 ## Problem Statement
 
@@ -195,3 +195,8 @@ Accent 偏好只保存在当前设备，选择后立即作用于主窗口，并�
 - 本任务是 Light-only 的视觉 hard cut；“未来也许增加 Dark”不是保留旧 Dark 层或双轨兼容代码的理由。
 - 视觉原型和状态矩阵是实施证据，不是新的长期 design-system package。最终长期所有者仍只有语义主题层与公共组件 recipe 层。
 - 本规格取代此前关于 StoneFlow 视觉值源、HeroUI 默认皮肤和 Dark 预留的冲突描述，但不取代既有领域模型、系统设计、界面行为或 Task Detail/TaskBoard 几何合同。
+
+## Completion record
+
+- Tickets 01–06 的代码实施、旧轨 hard cut、自动化门禁与 macOS 当前平台人工抽样已完成；最终长期 Owner 仍只有 `theme.css`、`components.css` 与真实产品 Module。
+- Ticket 06 保留的 Windows `125%`、系统 reduced-motion、物理 Launcher 全局快捷键与逐帧启动检查属于平台/用户确认，不以静态测试或本机抽样冒充通过；精确记录见 Ticket 06。
