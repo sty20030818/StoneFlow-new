@@ -48,7 +48,6 @@ export function PrimaryMetaBar() {
 				<Button
 					aria-expanded={state.isAdvancedOpen}
 					aria-label='更多参数'
-					className={state.isAdvancedOpen ? 'text-accent' : 'text-muted'}
 					isIconOnly
 					onPress={actions.toggleAdvanced}
 					size='sm'

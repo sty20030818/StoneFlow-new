@@ -43,7 +43,6 @@ export function SyncFooterStatusItem() {
 			<span className='max-w-28 truncate text-xs text-muted'>{view.label}</span>
 			<Button
 				aria-label={view.actionLabel}
-				className='size-6 min-w-6'
 				isDisabled={view.actionDisabled}
 				isIconOnly
 				onPress={() => void runNow()}
@@ -51,7 +50,7 @@ export function SyncFooterStatusItem() {
 				type='button'
 				variant='ghost'
 			>
-				<RefreshCwIcon aria-hidden className='size-3' />
+				<RefreshCwIcon aria-hidden />
 			</Button>
 		</div>
 	)

@@ -355,7 +355,7 @@ export function SettingsSyncPanel() {
 				description='所有业务仍然只读写本地数据库；这里仅配置云端 Postgres 副本，并在需要时手动或自动触发同步。'
 				title='云同步'
 			>
-				<Surface className='overflow-hidden rounded-lg border border-separator' variant='secondary'>
+				<Surface className='overflow-hidden' variant='secondary'>
 					<div className='p-4'>
 						<div className='flex flex-col gap-4 md:flex-row md:items-start md:justify-between'>
 							<div className='min-w-0'>
@@ -424,7 +424,7 @@ export function SettingsSyncPanel() {
 								>
 									{SYNC_MODE_OPTIONS.map((option) => (
 										<Radio key={option.mode} value={option.mode}>
-											<Radio.Content className='items-start'>
+											<Radio.Content>
 												<span className='min-w-0 flex-1 text-left'>
 													<span className='block text-sm font-medium text-foreground'>
 														{option.label}
@@ -433,7 +433,7 @@ export function SettingsSyncPanel() {
 														{option.description}
 													</span>
 												</span>
-												<Radio.Control className='mt-0.5 shrink-0'>
+												<Radio.Control>
 													<Radio.Indicator />
 												</Radio.Control>
 											</Radio.Content>
@@ -448,7 +448,8 @@ export function SettingsSyncPanel() {
 									<div className='flex items-center gap-2'>
 										<Input
 											aria-label='同步间隔分钟'
-											className='w-28 tabular-nums'
+											className='w-28'
+											data-numeric-field='true'
 											inputMode='numeric'
 											max={MAX_INTERVAL_MINUTES}
 											min={MIN_INTERVAL_MINUTES}
@@ -478,14 +479,14 @@ export function SettingsSyncPanel() {
 					</div>
 
 					<Disclosure isExpanded={syncDetailsOpen} onExpandedChange={setSyncDetailsOpen}>
-						<Disclosure.Heading className='border-t border-separator'>
-							<Disclosure.Trigger className='flex w-full items-center justify-between px-4 py-2.5 text-left text-sm text-muted'>
+						<Disclosure.Heading>
+							<Disclosure.Trigger>
 								<span className='font-medium'>详情与诊断</span>
-								<Disclosure.Indicator className='size-4 shrink-0' />
+								<Disclosure.Indicator />
 							</Disclosure.Trigger>
 						</Disclosure.Heading>
-						<Disclosure.Content className='border-t border-separator'>
-							<Disclosure.Body className='flex flex-col gap-4 p-4'>
+						<Disclosure.Content>
+							<Disclosure.Body>
 								<Alert
 									aria-busy={syncLoading || syncSaving || syncRunning}
 									aria-live='polite'

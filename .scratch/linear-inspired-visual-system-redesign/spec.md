@@ -16,13 +16,13 @@ StoneFlow 已经具备稳定的桌面生产力信息架构与领域行为，但�
 
 视觉基线采用既有低色度冷灰中性色、约 `8/10` 的桌面生产力密度和约 `2/10` 的克制动效。动效只保留 HeroUI OSS/Pro 已提供且与状态反馈必要相关的行为，并继续尊重 reduced motion；StoneFlow 不新建第一方动效语言。
 
-HeroUI OSS/Pro 继续负责标准组件的行为、结构、Overlay 语义、键盘交互与可访问性。StoneFlow 负责全部视觉结果：语义值由唯一主题层拥有，HeroUI OSS/Pro 的公共 BEM 与 data-state 皮肤由唯一全局组件层拥有；产品组件只保留稳定结构、业务语义与必要动态几何，feature 不再重画通用控件。
+HeroUI OSS/Pro 继续负责标准组件的行为、结构、Overlay 语义、键盘交互与可访问性。StoneFlow 负责全部视觉结果：语义值由唯一主题层拥有，HeroUI OSS/Pro 的公共 BEM 与逐组件核对的 documented ARIA/data attributes 皮肤由唯一全局组件层拥有；产品组件只保留稳定结构、业务语义与必要动态几何，feature 不再重画通用控件。
 
 浅色中性色、排版、几何、状态色、阴影与层级保持一套稳定基线。Accent 只改变被明确登记的强调语义，不改变冷灰中性色，也不重映射 Success、Warning、Danger 与 Info 的领域含义。第一版提供六个精选 Accent：钴蓝、海洋蓝、烟紫、松柏、梅紫、石墨；默认钴蓝以用户提供的公开视觉参考 `#6E78D5` 和 Hover 参考 `#5F6AC1` 为方向锚点，但这些值不被宣称为 Linear 官方 token，最终角色组合必须满足可读性与状态辨识要求。
 
 Accent 偏好只保存在当前设备，选择后立即作用于主窗口，并在 Launcher 每次呈现前恢复同一选择；两个入口在 React 挂载前应用已保存的 Accent。未知、损坏或缺失的本机值回退默认钴蓝。不增加跨设备同步、账户配置或任意取色器。
 
-视觉落地先用最少的代表性表面验证完整状态矩阵，再横切到全应用：Shell/Sidebar、MainCard/PageFrame、TaskBoard/RowShell、Command/Menu/Popover、Modal/Sheet/Detail、Settings/Form 与 Launcher。实施保留现有产品信息架构、领域行为、路由、Command Runtime、选择合同、TaskBoard 虚拟几何、详情容器合同和 Tauri 窗口生命周期。
+视觉落地先用最少的代表性表面验证完整状态矩阵，再横切到全应用：Shell/Sidebar、PageFrame、TaskBoard/RowShell、Command/Menu/Popover、Modal/Sheet/Detail、Settings/Form 与 Launcher。实施保留现有产品信息架构、领域行为、路由、Command Runtime、选择合同、TaskBoard 虚拟几何、详情容器合同和 Tauri 窗口生命周期。
 
 ## User Stories
 
@@ -38,7 +38,7 @@ Accent 偏好只保存在当前设备，选择后立即作用于主窗口，并�
 10. 作为导航用户，我希望 Sidebar 在视觉上后退于主内容，同时当前 Scope、当前入口和必要计数仍容易辨识，从而既能定位又不会让导航抢占注意力。
 11. 作为使用鼠标和键盘导航 Sidebar 的用户，我希望 Rest、Hover、Pressed、Current、Open 与 Focus-visible 状态彼此可辨，从而能够准确理解当前所在位置和下一步操作。
 12. 作为已习惯 StoneFlow Shell 行为的用户，我希望视觉重设计保留 Sidebar 的既有展开、窄栏、响应式 Sheet 与尺寸合同，从而不需要重新学习导航方式。
-13. 作为跨页面工作的用户，我希望 MainCard 与 PageFrame 中同层级的 Header、Toolbar、Filter、Display 和 Body 使用一致的高度、对齐和文字层级，从而能在不同集合页沿用同一操作心智。
+13. 作为跨页面工作的用户，我希望 PageFrame 中同层级的 Header、Toolbar、Filter、Display 和 Body 使用一致的高度、对齐和文字层级，从而能在不同集合页沿用同一操作心智。
 14. 作为使用 Filter、Display 与 View 的用户，我希望这些控制项在视觉上清楚区分当前状态、可用动作和次要操作，从而不改变它们既有的产品语义与行为。
 15. 作为 TaskBoard 用户，我希望任务行保持紧凑、稳定且便于纵向扫描，从而可以快速比较标题、状态、优先级、日期和归属。
 16. 作为任务列表用户，我希望 RowShell 的 Rest、Hover、Pressed、Selected、Open 和 Context-menu target 有统一视觉规则，从而不必根据不同页面猜测行状态。
@@ -119,21 +119,26 @@ Accent 偏好只保存在当前设备，选择后立即作用于主窗口，并�
 ### 视觉所有权与依赖方向
 
 - HeroUI OSS/Pro 继续拥有组件结构、行为、键盘交互、Focus 管理、Overlay 语义和可访问性。StoneFlow 拥有全部视觉结果；所有用户可达表面都必须经过审视，不允许继续泄漏 HeroUI 默认皮肤。
+- Main 与 Launcher 各自只导入一次 `src/styles/index.css`；普通 Feature 直接使用 HeroUI OSS/Pro Interface，不新增 `@/visual-system` Facade、Provider 或另一套运行时安装入口。既有 `appearance` Module 继续单独负责 Accent 标识、校验、持久化与根属性。
 - 语义主题层是唯一视觉值源，负责 Light 中性色、六组 Accent、固定状态色、Focus、Link、Surface、Border、Shadow 和必要的 Tailwind 语义桥接。
-- 公共组件 recipe 层是唯一 HeroUI OSS/Pro BEM、modifier 与 data-state 皮肤，负责通用控件的完整视觉状态；其中不得散落独立原始颜色。
-- 产品组件只保留稳定结构、产品语义和必要动态几何。Feature 不定义通用 Button、Menu、List、Field、Modal 或 Sheet 的私有皮肤，不复制公共 recipe。
+- 公共组件 recipe 层是唯一 HeroUI OSS/Pro BEM 与逐组件核对的 documented ARIA/data attributes 皮肤，负责通用控件的完整视觉状态；其中不得散落独立原始颜色。
+- 全局几何使用少量语义角色：Control `6px`、Surface `8px`、Overlay `12px`，pill 只用于 Chip、Avatar 和状态标记；HeroUI `size='sm'/'md'/'lg'` 分别映射为 `28px/32px/36px`，强调度只由 variant 决定。有边界的 Surface 使用 `1px` 语义边框，Row 使用分隔线和状态背景，阴影只用于浮层或拖拽 elevation。
+- 产品 Module 只保留稳定结构、产品语义和必要动态几何。Feature 不定义通用 Button、Menu、List、Field、Modal 或 Sheet 的私有皮肤，不复制公共 recipe。
+- HeroUI 原子控件、集合 Item 与 Overlay chrome slot 的 `className` 只允许外部尺寸/位置、overflow、placement 与运行时动态几何；不得覆盖内部 display/gap/padding、字体/图标 metrics 或公共皮肤。Form、RadioGroup、Surface、Resizable、ScrollShadow 与 Trigger 等结构组件可承载产品布局，但不得重写通用颜色、边框、圆角、阴影、ring 或交互状态。普通产品 wrapper 与内容子节点仍拥有自身布局和内容层级。
 - 同一语义只允许一个 token，同一公共组件状态只允许一个 recipe。迁移完成后删除旧 primitive/semantic/layout token 链、Dark 扩展、shadcn adapter、页面私有补丁和零消费者兼容层，不保留双轨真相。
-- 不创建一对一 HeroUI wrapper、TypeScript token 镜像、独立 design-system package、第二套 variant runtime、Storybook 或页面级主题。
+- 跨 Feature 共享只保留通过 deletion test 的深 Module：删除后复杂行为或产品合同会重新扩散到多个调用方。`PageFrame` 吸收 MainCard 的 Root/Header/Toolbar/Body，浅层 GhostAction 删除；`RowShell` 只吸收行根结构、状态组合、Actions 与选择组语义，Board header 与 TaskBoard 外层虚拟几何留在各自 Owner；Task Detail 的单一生产实现回到 task feature，不保留共享 Detail Module；`AppScrollArea` 隐藏 viewport/ref/OverlayScrollbar 并删除全部无生产消费者配置；`ActionTooltip` 保留其 React Aria props/ref 合并行为。
+- 整个 `shared/components/patterns`、旧 `shared/components/base`、纯 class-string `*Tokens.ts` 与只转发目录 hard cut。新增特殊产品视觉只能由真实产品 Module 输出稳定语义 DOM hook，并回到唯一公共 recipe；不公开通用 `tone`、`surface`、`radius` 参数重新制造 patterns。
+- 不创建一对一 HeroUI wrapper、TypeScript token 镜像、独立 design-system package、第二套 variant runtime、Storybook、页面级主题或只有一个实现的假想 Adapter。
 - 不引入新依赖。继续使用 HeroUI OSS/Pro、Tailwind CSS v4 与当前字体、图标和测试工具。
 
 ### 代表性表面与状态矩阵
 
-- 先完成最少的代表性表面，再横切公共规则；不得按 feature 页面逐个堆补丁。代表性表面为：Shell/Sidebar、MainCard/PageFrame、TaskBoard/RowShell、Command/Menu/Popover、Modal/Sheet/Detail、Settings/Form 与 Launcher。
+- 先完成最少的代表性表面，再横切公共规则；不得按 feature 页面逐个堆补丁。代表性表面为：Shell/Sidebar、PageFrame、TaskBoard/RowShell、Command/Menu/Popover、Modal/Sheet/Detail、Settings/Form 与 Launcher。
 - 每类交互组件至少审视 Rest、Hover、Pressed、Selected、Selected + Hover、Focus-visible、Selected + Focus-visible、Open/Expanded、Disabled、Loading、Invalid/Danger 与 Context-menu target；有拖拽能力时再覆盖 Drag/Drop target。
 - Focus-visible 只在键盘或辅助输入需要时出现；指针 Hover 不伪装成 Focus。Selected、Open 与 Focus 是三个独立维度，组合状态必须同时保留必要信号。
 - Filled 强调只给当前决策上下文中的主要动作；同级次要动作保持中性。Accent-colored text 只用于真实可交互链接或状态，不用于静态装饰标题。
 - Sidebar 后退于 Main，但当前 Scope、当前导航和必要计数保持清晰。较小图标不意味着较小命中目标。
-- MainCard/PageFrame 的 Header、Toolbar、Filter、Display 与 Body 在不同集合页共享高度、对齐、文字等级与控制位置。
+- PageFrame 的 Header、Toolbar、Filter、Display、普通 Body 与虚拟 Body 在不同集合页共享高度、对齐、文字等级、滚动与控制位置。
 - TaskBoard/RowShell 保留现有任务行、分组标题与虚拟集合几何；视觉状态不得改变测量高度、sticky、分页占位、滚动定位或 collection 合同。
 - Command/Menu/Popover 统一搜索、分组、当前项、快捷键、危险动作、Overlay 边界和触发器 Open 状态；ContextMenu 打开不得偷偷改变现有选择。
 - Modal/Sheet/Detail 统一 Header、Body、Footer、Backdrop、边界和 elevation；Task Detail 的 Aside/Sheet 只换容器，不改变 URL、草稿、自动保存或详情状态。
@@ -145,7 +150,7 @@ Accent 偏好只保存在当前设备，选择后立即作用于主窗口，并�
 - 保留现有 Shell 响应式合同、Task Detail 的 Aside/Sheet 断点、TaskBoard 容器查询与 Tauri 窗口生命周期。本任务只新增主题色选择这一项设置行为。
 - 继续遵守“不新增 StoneFlow 第一方动效”的平台决定；不引入 Motion、CSS animation 或新的 duration/easing 系统。
 - 当前 HeroUI ADR 中“HeroUI 管理标准组件视觉”的条款与本次“StoneFlow 完整拥有视觉”冲突。实施必须显式修订为“HeroUI 管理行为、结构与可访问性；StoneFlow 管理视觉”，同时保留 HeroUI 作为唯一 UI 行为平台的决定。
-- 现有界面系统与样式架构文档仍包含旧 token、shadcn adapter、Dark 扩展和旧样式所有权描述。完成 hard cut 时必须同步更新为“语义主题 → 公共组件 recipe → 产品消费者”的单向合同。
+- 界面系统与样式架构文档必须始终保持“语义主题 → 公共组件 recipe → 深产品 Module”的单向合同；完成 hard cut 后不得继续把旧 token、shadcn adapter、Dark 扩展或 patterns 描述为正式架构。
 
 ## Testing Decisions
 
@@ -153,11 +158,12 @@ Accent 偏好只保存在当前设备，选择后立即作用于主窗口，并�
 - 最高自动化 seam 复用真实 SettingsPage DOM 集成测试：用户在“通用 → 主题色”选择非默认预设后，可访问单选状态正确，根元素 Accent 立即变化，本机值被保存，重新挂载后仍恢复选择。
 - 唯一新增的低层 seam 是共享 Appearance Preference/Bootstrap DOM 单元测试：表驱动覆盖六个合法标识、缺失值、损坏 JSON、未知标识、默认回退、React 挂载前应用，以及需要的订阅或呈现前重读清理合同。Web Storage 被拒绝时的会话回退复用现有通用测试，不重复测试。
 - 扩展现有 Shell Theme Sync 静态检查，保证静态 HTML、Light 主题、Main 入口与 Launcher 入口使用同一默认 `data-accent`，并在 React 挂载前消费共享 Bootstrap 合同。不得为两个入口复制完整逻辑测试。
+- 在现有脚本门禁中加入高置信视觉所有权检查：HeroUI 原子控件、集合 Item 与 Overlay chrome slot 不得出现越权内部 metrics，所有 HeroUI root/part/slot 均不得出现通用 skin/state utility；Feature/Layout 不得导入旧 `base`、旧 token/adapter、HeroUI CSS、CVA 或 Tailwind Variants 建立平行皮肤。`patterns` 的存量消费者与零兼容 Hard Cut 由 Ticket 05 收口。检查按真实 HeroUI import 与 dot-notation part 识别，只保护所有权，不把 className 快照伪装成视觉测试。
 - Launcher 现有页面集成 seam 只增加最小断言，证明每次呈现前重新取得当前 Accent；不复制 SettingsPage 测试。
 - 现有 RowShell、TaskBoard、Command、ContextMenu、Detail、Settings 与 Launcher 行为测试继续保护键盘、Focus、Selection、Overlay、URL、虚拟化与生命周期，不把视觉重设计伪装成行为重写。
 - jsdom 不计算真实 CSS，class snapshot 也不能证明视觉质量，因此不新增 className snapshot、Storybook 或截图回归基础设施。
 - 每个 Accent 的最终语义角色都必须对实际渲染配对执行一次对比度审计：普通文字至少 `4.5:1`，大文字与关键非文本控件、选中边界和 Focus 指示至少 `3:1`。审计直接针对唯一 CSS 值源，不建立平行 token 数据。
-- 默认钴蓝在完整代表性状态矩阵上验收：Shell/Sidebar、MainCard/PageFrame、TaskBoard/RowShell、Command/Menu/Popover、Modal/Sheet/Detail、Settings/Form 与 Launcher。
+- 默认钴蓝在完整代表性状态矩阵上验收：Shell/Sidebar、PageFrame、TaskBoard/RowShell、Command/Menu/Popover、Modal/Sheet/Detail、Settings/Form 与 Launcher。
 - 其余五个 Accent 只横向抽查真正受 Accent 影响的角色：主要动作、Selected/Soft、Link、Focus，以及与固定 Info/Success/Warning/Danger 的区分；不重复完整页面验收。
 - 最小真实应用 Smoke：冷启动 Main、打开 Launcher、切换一次非默认 Accent、再次打开 Launcher、重启应用并确认两处一致；同时检查没有默认 Accent 闪烁。未执行该 Smoke 时不得宣称 Tauri 或视觉验收通过。
 - 静态与自动化门禁至少包括类型检查、Lint、模块边界、格式检查、第一方动效扫描、相关 DOM/单元测试、Shell Theme Sync 脚本测试和生产构建。没有 Rust 改动时不为本任务新增 Rust 测试。
@@ -176,6 +182,7 @@ Accent 偏好只保存在当前设备，选择后立即作用于主窗口，并�
 - 替换 HeroUI OSS/Pro、进入完全 headless 模式，或由 StoneFlow 重写标准组件的键盘、Overlay、ARIA 与 Focus 管理。
 - 引入 Motion、Framer Motion、StoneFlow 第一方动画运行时、自定义 easing/duration 系统或装饰性动画。
 - 建立一对一 HeroUI wrapper、TypeScript token 镜像、独立 design-system package、Storybook、页面私有皮肤、兼容 alias 或第二套 variant runtime。
+- 新建 `@/visual-system` Facade、设计系统 Provider、运行时 recipe registry、通用 Surface/Tone/Radius 参数或其他只有一个实现的视觉 Seam。
 - 新增与视觉系统无关的产品能力、设置项或导航入口。
 - 按 feature 页面逐个打补丁；本次只接受代表性表面验证后基于共享语义与公共组件 recipe 的横切落地。
 

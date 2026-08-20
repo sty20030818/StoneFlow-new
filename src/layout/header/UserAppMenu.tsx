@@ -51,15 +51,15 @@ export function UserAppMenu({
 			<ActionTooltip delay={0} label='应用菜单'>
 				<Button
 					aria-label='应用菜单'
-					className='relative size-7.5 shrink-0 rounded-full p-0'
+					className='relative shrink-0'
 					isIconOnly
-					size='sm'
+					size='lg'
 					type='button'
 					variant='ghost'
 				>
 					<Badge color='success' placement='bottom-right' size='sm'>
 						<Badge.Anchor>
-							<Avatar className='size-7.5'>
+							<Avatar size='sm'>
 								<Avatar.Image alt='' src='/avatar.jpg' />
 								<Avatar.Fallback>U</Avatar.Fallback>
 							</Avatar>

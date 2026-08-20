@@ -32,25 +32,26 @@ export function FilterValueSubMenu({
 
 	return (
 		<>
-			<SearchField
-				aria-label={`${formatFilterFieldLabel(field)} 筛选`}
-				className='shrink-0 border-b border-separator p-2'
-				fullWidth
-				onChange={setQuery}
-				value={query}
-				variant='secondary'
-			>
-				<SearchField.Group>
-					<SearchField.SearchIcon />
-					<SearchField.Input
-						onKeyDown={(event) => {
-							if (event.key !== 'Escape') event.stopPropagation()
-						}}
-						placeholder='筛选…'
-					/>
-					<SearchField.ClearButton aria-label='清空筛选值搜索' />
-				</SearchField.Group>
-			</SearchField>
+			<div className='shrink-0 border-b border-separator p-2'>
+				<SearchField
+					aria-label={`${formatFilterFieldLabel(field)} 筛选`}
+					fullWidth
+					onChange={setQuery}
+					value={query}
+					variant='secondary'
+				>
+					<SearchField.Group>
+						<SearchField.SearchIcon />
+						<SearchField.Input
+							onKeyDown={(event) => {
+								if (event.key !== 'Escape') event.stopPropagation()
+							}}
+							placeholder='筛选…'
+						/>
+						<SearchField.ClearButton aria-label='清空筛选值搜索' />
+					</SearchField.Group>
+				</SearchField>
+			</div>
 			<Dropdown.Menu
 				aria-label={`${formatFilterFieldLabel(field)} 筛选值`}
 				className='max-h-60 overflow-y-auto'

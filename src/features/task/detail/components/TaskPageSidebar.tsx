@@ -82,17 +82,19 @@ export function TaskPageSidebar({
 				<Card.Header>
 					<Card.Title>详情</Card.Title>
 				</Card.Header>
-				<Card.Content className='flex flex-col gap-2'>
-					<MetaRow label='空间' value={task.spaceName} />
-					<MetaRow label='项目' value={task.projectName ?? '独立事项'} />
-					<MetaRow label='创建时间' value={formatTimestamp(task.createdAt)} />
-					<MetaRow label='更新时间' value={formatTimestamp(task.updatedAt)} />
-					{task.archivedAt ? (
-						<MetaRow label='归档时间' value={formatTimestamp(task.archivedAt)} />
-					) : null}
-					{task.deletedAt ? (
-						<MetaRow label='移入回收站时间' value={formatTimestamp(task.deletedAt)} />
-					) : null}
+				<Card.Content>
+					<div className='flex flex-col gap-2'>
+						<MetaRow label='空间' value={task.spaceName} />
+						<MetaRow label='项目' value={task.projectName ?? '独立事项'} />
+						<MetaRow label='创建时间' value={formatTimestamp(task.createdAt)} />
+						<MetaRow label='更新时间' value={formatTimestamp(task.updatedAt)} />
+						{task.archivedAt ? (
+							<MetaRow label='归档时间' value={formatTimestamp(task.archivedAt)} />
+						) : null}
+						{task.deletedAt ? (
+							<MetaRow label='移入回收站时间' value={formatTimestamp(task.deletedAt)} />
+						) : null}
+					</div>
 				</Card.Content>
 			</Card>
 		</div>

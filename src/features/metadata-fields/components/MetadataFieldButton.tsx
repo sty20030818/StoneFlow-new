@@ -2,7 +2,6 @@ import { forwardRef, type ReactNode } from 'react'
 import { Button } from '@heroui/react'
 
 import { OverflowTooltip } from '@/shared/components/tooltip'
-import { cn } from '@/shared/lib/utils'
 
 type StopEvent = {
 	stopPropagation: () => void
@@ -66,7 +65,7 @@ export const MetadataFieldButton = forwardRef<HTMLButtonElement, MetadataFieldBu
 		return (
 			<Button
 				aria-label={ariaLabel}
-				className={cn('justify-start', compact ? 'max-w-45' : 'max-w-52')}
+				className={compact ? 'max-w-45' : 'max-w-52'}
 				isDisabled={disabled}
 				onClick={stopWhenRequested}
 				onKeyDown={stopWhenRequested}
@@ -76,15 +75,17 @@ export const MetadataFieldButton = forwardRef<HTMLButtonElement, MetadataFieldBu
 				type='button'
 				variant='secondary'
 			>
-				{icon}
-				{suppressOverflowTooltip ? (
-					<span className='block min-w-0 max-w-full truncate'>{label}</span>
-				) : (
-					<OverflowTooltip className='min-w-0' content={label}>
-						{label}
-					</OverflowTooltip>
-				)}
-				{trailing}
+				<span className='flex min-w-0 items-center gap-2 text-left'>
+					{icon}
+					{suppressOverflowTooltip ? (
+						<span className='block min-w-0 max-w-full truncate'>{label}</span>
+					) : (
+						<OverflowTooltip className='min-w-0' content={label}>
+							{label}
+						</OverflowTooltip>
+					)}
+					{trailing}
+				</span>
 			</Button>
 		)
 	},

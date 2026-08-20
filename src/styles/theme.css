@@ -13,8 +13,15 @@
 	--ring-offset-width: 2px;
 	--cursor-interactive: pointer;
 	--cursor-disabled: not-allowed;
-	--radius: 0.5rem;
-	--field-radius: 0.5rem;
+	--radius-control: 6px;
+	--radius-surface: 8px;
+	--radius-overlay: 12px;
+	--radius-pill: 9999px;
+	--control-height-sm: 28px;
+	--control-height-md: 32px;
+	--control-height-lg: 36px;
+	--radius: var(--radius-control);
+	--field-radius: var(--radius-control);
 
 	--background: #fcfcfd;
 	--foreground: #303032;
@@ -193,6 +200,11 @@
 }
 
 @theme inline {
+	--font-sans:
+		"InterVariable", "PingFang SC", "Microsoft YaHei UI", "Segoe UI", system-ui, sans-serif;
+	--font-mono:
+		ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
+		monospace;
 	--color-accent-base: var(--accent-base);
 	--color-accent-border: var(--accent-border);
 	--color-accent-pressed: var(--accent-pressed);

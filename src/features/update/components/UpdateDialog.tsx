@@ -193,7 +193,7 @@ export function UpdateDialog() {
 			<Modal.Container placement='center' scroll='inside' size='lg'>
 				<Modal.Dialog
 					aria-describedby={descriptionId}
-					className='max-h-[min(42rem,calc(100dvh-3rem))] gap-0 overflow-hidden p-0'
+					className='max-h-[min(42rem,calc(100dvh-3rem))] overflow-hidden'
 					render={(dialogProps) => (
 						<section
 							{...dialogProps}
@@ -203,35 +203,37 @@ export function UpdateDialog() {
 						/>
 					)}
 				>
-					<Modal.Header className='flex-row items-start gap-3 px-5 pt-5 pb-3'>
-						<div className='min-w-0 flex-1 space-y-1'>
-							<Modal.Heading>{titleText}</Modal.Heading>
-							<p className='text-sm leading-5 text-muted' id={descriptionId}>
-								{descText}
-							</p>
+					<Modal.Header>
+						<div className='flex items-start gap-3'>
+							<div className='min-w-0 flex-1 space-y-1'>
+								<Modal.Heading>{titleText}</Modal.Heading>
+								<p className='text-sm leading-5 text-muted' id={descriptionId}>
+									{descText}
+								</p>
+							</div>
+							{isInstalling ? (
+								<DisabledActionTooltip label='关闭' reason='安装完成前无法关闭更新窗口'>
+									<Button
+										aria-label='关闭'
+										isDisabled
+										isIconOnly
+										size='sm'
+										type='button'
+										variant='ghost'
+									>
+										<XIcon aria-hidden className='size-4' />
+									</Button>
+								</DisabledActionTooltip>
+							) : (
+								<ActionTooltip label='关闭'>
+									<Modal.CloseTrigger aria-label='关闭' className='static shrink-0' />
+								</ActionTooltip>
+							)}
 						</div>
-						{isInstalling ? (
-							<DisabledActionTooltip label='关闭' reason='安装完成前无法关闭更新窗口'>
-								<Button
-									aria-label='关闭'
-									isDisabled
-									isIconOnly
-									size='sm'
-									type='button'
-									variant='ghost'
-								>
-									<XIcon aria-hidden className='size-4' />
-								</Button>
-							</DisabledActionTooltip>
-						) : (
-							<ActionTooltip label='关闭'>
-								<Modal.CloseTrigger aria-label='关闭' className='static shrink-0' />
-							</ActionTooltip>
-						)}
 					</Modal.Header>
 
 					{showBody ? (
-						<Modal.Body className='gap-3 px-5 py-2'>
+						<Modal.Body>
 							{showNotes ? (
 								<ScrollShadow
 									aria-label='本次累计更新说明'

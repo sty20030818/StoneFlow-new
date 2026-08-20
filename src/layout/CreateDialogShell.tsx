@@ -61,7 +61,7 @@ export function CreateDialogShell({
 				<Modal.Dialog
 					aria-describedby={descriptionId}
 					className={cn(
-						'flex min-h-[30dvh] max-h-[70dvh] flex-col gap-0 overflow-hidden p-0',
+						'min-h-[30dvh] max-h-[70dvh] overflow-hidden',
 						fullscreen &&
 							'h-[70dvh] w-[min(72rem,calc(100vw-1.5rem))] max-w-[min(72rem,calc(100vw-1.5rem))]',
 					)}
@@ -79,7 +79,7 @@ export function CreateDialogShell({
 						{description}
 					</p>
 
-					<div className='flex shrink-0 items-center justify-between p-3'>
+					<div className='flex shrink-0 items-center justify-between'>
 						<div className='flex items-center gap-1 text-[13px]'>
 							<CreateDialogSpaceSelector
 								currentSpace={currentSpace}

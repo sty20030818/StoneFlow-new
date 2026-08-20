@@ -287,11 +287,11 @@ function FilterSaveDialog({
 	return (
 		<Modal.Backdrop isOpen={open} onOpenChange={onOpenChange}>
 			<Modal.Container placement='center'>
-				<Modal.Dialog className='max-w-sm gap-0 overflow-hidden p-0'>
-					<Modal.Header className='px-5 py-4'>
+				<Modal.Dialog className='max-w-sm overflow-hidden'>
+					<Modal.Header>
 						<Modal.Heading>保存为视图</Modal.Heading>
 					</Modal.Header>
-					<Modal.Body className='grid gap-3 px-5 py-2'>
+					<Modal.Body>
 						<div className='grid gap-1.5 text-sm'>
 							<Label htmlFor='filter-view-name'>视图名称</Label>
 							<Input
@@ -305,7 +305,7 @@ function FilterSaveDialog({
 						</div>
 						<p className='text-[12px] text-muted'>仅保存筛选条件，不包含显示选项。</p>
 					</Modal.Body>
-					<Modal.Footer className='gap-2 px-5 py-4'>
+					<Modal.Footer>
 						<Button onPress={() => onOpenChange(false)} type='button' variant='tertiary'>
 							取消
 						</Button>

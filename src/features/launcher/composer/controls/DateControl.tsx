@@ -29,46 +29,48 @@ export function DateControl({
 }: DateControlProps) {
 	return (
 		<Popover isOpen={open} onOpenChange={(nextOpen) => onOpenChange(nextOpen, popoverKey)}>
-			<Button className={value ? 'text-foreground' : 'text-muted'} size='sm' variant='outline'>
+			<Button size='sm' variant='outline'>
 				<span className='text-muted'>{icon}</span>
 				{value ? `${label.slice(0, 2)} ${formatDateLabel(value)}` : label}
 			</Button>
 			<Popover.Content className='w-72' placement='bottom start'>
-				<Popover.Dialog aria-label={`设置${label}`} className='space-y-3'>
-					<div className='flex flex-wrap gap-1'>
-						<DatePresetButton
-							field={field}
-							label='今天'
-							preset='today'
-							onDateChange={onDateChange}
+				<Popover.Dialog aria-label={`设置${label}`}>
+					<div className='flex flex-col gap-3'>
+						<div className='flex flex-wrap gap-1'>
+							<DatePresetButton
+								field={field}
+								label='今天'
+								preset='today'
+								onDateChange={onDateChange}
+							/>
+							<DatePresetButton
+								field={field}
+								label='明天'
+								preset='tomorrow'
+								onDateChange={onDateChange}
+							/>
+							<DatePresetButton
+								field={field}
+								label='本周'
+								preset='week'
+								onDateChange={onDateChange}
+							/>
+							<Button onPress={() => onDateChange(field, null)} size='sm' variant='ghost'>
+								清除
+							</Button>
+						</div>
+						<Input
+							aria-label={`${label}日期`}
+							fullWidth
+							type='date'
+							value={value ?? ''}
+							onChange={(event) => {
+								if (event.currentTarget.value) {
+									onDateChange(field, event.currentTarget.value)
+								}
+							}}
 						/>
-						<DatePresetButton
-							field={field}
-							label='明天'
-							preset='tomorrow'
-							onDateChange={onDateChange}
-						/>
-						<DatePresetButton
-							field={field}
-							label='本周'
-							preset='week'
-							onDateChange={onDateChange}
-						/>
-						<Button onPress={() => onDateChange(field, null)} size='sm' variant='ghost'>
-							清除
-						</Button>
 					</div>
-					<Input
-						aria-label={`${label}日期`}
-						fullWidth
-						type='date'
-						value={value ?? ''}
-						onChange={(event) => {
-							if (event.currentTarget.value) {
-								onDateChange(field, event.currentTarget.value)
-							}
-						}}
-					/>
 				</Popover.Dialog>
 			</Popover.Content>
 		</Popover>

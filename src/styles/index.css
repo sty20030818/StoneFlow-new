@@ -1,3 +1,5 @@
+@layer theme, base, components, utilities, stoneflow-components;
+
 @import "tailwindcss";
 @import "@heroui/styles";
 @import "@heroui-pro/react/css";

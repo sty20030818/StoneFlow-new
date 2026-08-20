@@ -190,7 +190,7 @@ export function ShellChrome({
 							style={{ '--sidebar-width': '100%' } as CSSProperties}
 						>
 							<Sheet.Dialog
-								className='h-full overflow-hidden px-0 pb-0 pt-12'
+								className='h-full overflow-hidden'
 								render={(dialogProps) => (
 									<section
 										{...dialogProps}

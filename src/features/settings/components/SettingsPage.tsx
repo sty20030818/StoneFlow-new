@@ -66,7 +66,7 @@ export function SettingsPage() {
 		<PageFrame.Root>
 			<PageFrame.Header
 				breadcrumb={
-					<Breadcrumbs aria-label='设置路径' className='text-sm font-semibold leading-5'>
+					<Breadcrumbs aria-label='设置路径'>
 						<Breadcrumbs.Item>
 							<span className='inline-flex items-center gap-1.5 text-foreground'>
 								<Settings2Icon aria-hidden className='size-4 shrink-0 text-muted' />

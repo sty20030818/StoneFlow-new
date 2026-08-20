@@ -158,7 +158,7 @@ export function ShellLayoutContent({
 
 	return (
 		<Sidebar.Provider
-			className='sf-shell-layout group/sidebar-wrapper relative flex h-full min-h-0 flex-col overflow-hidden bg-surface-secondary'
+			className='sf-shell-layout group/sidebar-wrapper relative flex h-full min-h-0 flex-col overflow-hidden'
 			collapsible='icon'
 			data-sidebar-mode={sidebar.mode}
 			navigate={(href) => {

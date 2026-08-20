@@ -1,10 +1,7 @@
 import { Button } from '@heroui/react'
-import { linkVariants } from '@heroui/styles'
 import { Link, Outlet, createFileRoute } from '@tanstack/react-router'
 
 import { RouterFeedbackPage } from '../-router-feedback'
-
-const shellFeedbackLinkStyles = linkVariants()
 
 export const Route = createFileRoute('/_shell')({
 	component: ShellRouteGroup,
@@ -27,7 +24,7 @@ function ShellRouteGroupError({ error, reset }: { error: unknown; reset: () => v
 						重试
 					</Button>
 					<Link
-						className={shellFeedbackLinkStyles.base()}
+						data-router-action='true'
 						from='/'
 						params={{ scopeKey: 'all' }}
 						to='/$scopeKey/tasks'
@@ -46,12 +43,7 @@ function ShellRouteGroupNotFound() {
 	return (
 		<RouterFeedbackPage
 			action={
-				<Link
-					className={shellFeedbackLinkStyles.base()}
-					from='/'
-					params={{ scopeKey: 'all' }}
-					to='/$scopeKey/tasks'
-				>
+				<Link data-router-action='true' from='/' params={{ scopeKey: 'all' }} to='/$scopeKey/tasks'>
 					回到全部任务
 				</Link>
 			}

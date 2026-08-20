@@ -6,7 +6,6 @@ import { PriorityIcon } from '@/features/task'
 import { TaskStatusIndicator } from '@/features/task'
 import type { LauncherTaskItem } from '../../model/types'
 import { OverflowTooltip } from '@/shared/components/tooltip'
-import { cn } from '@/shared/lib/utils'
 
 type TaskResultRowAdapterProps = {
 	item: LauncherTaskItem
@@ -30,11 +29,10 @@ export function TaskResultRowAdapter({
 	return (
 		<div role='listitem'>
 			<Button
+				aria-current={isActive ? 'true' : undefined}
 				aria-label={`打开任务 ${item.title}`}
-				className={cn(
-					'h-auto min-h-12 w-full justify-start gap-3 rounded-lg px-3 py-1.5 text-left',
-					isActive && 'bg-accent-soft text-accent-soft-foreground',
-				)}
+				className='min-h-12'
+				data-content-height='true'
 				fullWidth
 				onFocus={onFocus}
 				onHoverStart={onFocus}
@@ -44,29 +42,31 @@ export function TaskResultRowAdapter({
 				type='button'
 				variant='ghost'
 			>
-				<div className='flex min-w-0 flex-1 items-center gap-2.5'>
+				<div className='flex w-full min-w-0 items-center gap-2.5 text-left'>
+					<div className='flex min-w-0 flex-1 items-center gap-2.5'>
+						<div className='flex shrink-0 items-center gap-1.5'>
+							<TaskStatusIndicator status={item.status} />
+							<PriorityIcon priority={item.priority} size='sm' />
+						</div>
+
+						<div className='min-w-0 flex-1'>
+							<OverflowTooltip className='text-[12.5px] text-foreground' content={item.title}>
+								{item.title}
+							</OverflowTooltip>
+							<OverflowTooltip className='mt-0.5 text-[11px] text-muted' content={subtitle}>
+								{subtitle}
+							</OverflowTooltip>
+						</div>
+					</div>
+
 					<div className='flex shrink-0 items-center gap-1.5'>
-						<TaskStatusIndicator status={item.status} />
-						<PriorityIcon priority={item.priority} size='sm' />
+						<span className='flex size-7 items-center justify-center rounded-md bg-accent-soft text-accent-soft-foreground'>
+							<FolderIcon className='size-3.5' />
+						</span>
+						<span className='rounded border border-border px-1.5 py-0.5 text-[10.5px] text-muted'>
+							任务
+						</span>
 					</div>
-
-					<div className='min-w-0 flex-1'>
-						<OverflowTooltip className='text-[12.5px] text-foreground' content={item.title}>
-							{item.title}
-						</OverflowTooltip>
-						<OverflowTooltip className='mt-0.5 text-[11px] text-muted' content={subtitle}>
-							{subtitle}
-						</OverflowTooltip>
-					</div>
-				</div>
-
-				<div className='flex shrink-0 items-center gap-1.5'>
-					<span className='flex size-7 items-center justify-center rounded-md bg-accent-soft text-accent-soft-foreground'>
-						<FolderIcon className='size-3.5' />
-					</span>
-					<span className='rounded border border-border px-1.5 py-0.5 text-[10.5px] text-muted'>
-						任务
-					</span>
 				</div>
 			</Button>
 		</div>

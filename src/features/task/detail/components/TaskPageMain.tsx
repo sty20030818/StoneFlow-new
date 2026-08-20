@@ -19,10 +19,12 @@ export function TaskPageMain({ taskId, spaceId, autosave, isReadOnly }: TaskPage
 	return (
 		<div className='flex min-w-0 flex-col gap-5'>
 			<Card>
-				<Card.Content className='flex flex-col gap-4'>
-					<TaskTitleField autosave={autosave} disabled={isReadOnly} />
-					<Separator variant='tertiary' />
-					<TaskNoteField autosave={autosave} disabled={isReadOnly} />
+				<Card.Content>
+					<div className='flex flex-col gap-4'>
+						<TaskTitleField autosave={autosave} disabled={isReadOnly} />
+						<Separator variant='tertiary' />
+						<TaskNoteField autosave={autosave} disabled={isReadOnly} />
+					</div>
 				</Card.Content>
 			</Card>
 

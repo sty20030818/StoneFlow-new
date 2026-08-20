@@ -44,7 +44,8 @@ export function GlobalSearchResults({
 
 	return (
 		<div
-			className='absolute left-1/2 top-full z-40 mt-1.5 w-[max(32rem,50vw)] max-w-[calc(100vw-2rem)] -translate-x-1/2 overflow-hidden rounded-xl border border-border bg-overlay shadow-overlay'
+			className='absolute left-1/2 top-full z-40 mt-1.5 w-[max(32rem,50vw)] max-w-[calc(100vw-2rem)] -translate-x-1/2 overflow-hidden'
+			data-global-search-results='true'
 			id='global-search-results'
 		>
 			<div className='max-h-96 overflow-y-auto p-2.5' ref={rootRef}>
@@ -59,7 +60,7 @@ export function GlobalSearchResults({
 						{taskItems.length > 0 ? (
 							<section className='space-y-1'>
 								<SearchGroupHeading title='任务' />
-								<ListView aria-label='任务搜索结果' className='gap-0.5' variant='secondary'>
+								<ListView aria-label='任务搜索结果' variant='secondary'>
 									{taskItems.map(({ index, item }) => (
 										<SearchTaskResultRow
 											isActive={highlightedIndex === index}
@@ -77,7 +78,7 @@ export function GlobalSearchResults({
 						{projectItems.length > 0 ? (
 							<section className='space-y-1'>
 								<SearchGroupHeading title='项目' />
-								<ListView aria-label='项目搜索结果' className='gap-0.5' variant='secondary'>
+								<ListView aria-label='项目搜索结果' variant='secondary'>
 									{projectItems.map(({ index, item }) => (
 										<SearchProjectResultRow
 											isActive={highlightedIndex === index}
@@ -117,18 +118,16 @@ function SearchTaskResultRow({
 
 	return (
 		<ListView.Item
+			aria-current={isActive ? 'true' : undefined}
 			aria-label={`打开任务 ${task.title}`}
-			className={cn(
-				'h-11 w-full cursor-default gap-2.5 rounded-lg px-3',
-				isActive && 'bg-accent-soft text-accent-soft-foreground',
-			)}
+			className='w-full'
 			data-search-index={taskIndex}
 			id={`task:${task.id}`}
 			onAction={onSelect}
 			onHoverStart={onHighlight}
 			textValue={task.title}
 		>
-			<ListView.ItemContent className='gap-2.5'>
+			<ListView.ItemContent>
 				<EntityLabel label='任务' />
 				<span
 					aria-label={`优先级 ${formatTaskPriorityLabel(task.priority)}`}
@@ -148,7 +147,7 @@ function SearchTaskResultRow({
 					</OverflowTooltip>
 				</div>
 			</ListView.ItemContent>
-			<ListView.ItemAction className='hidden shrink-0 items-center gap-1.5 md:flex'>
+			<ListView.ItemAction className='hidden shrink-0 md:flex'>
 				<ContextPill label={placementLabel} />
 				<ContextPill label={task.spaceName} />
 			</ListView.ItemAction>
@@ -173,18 +172,16 @@ function SearchProjectResultRow({
 }: SearchProjectResultRowProps) {
 	return (
 		<ListView.Item
+			aria-current={isActive ? 'true' : undefined}
 			aria-label={`打开项目 ${project.name}`}
-			className={cn(
-				'h-11 w-full cursor-default gap-2.5 rounded-lg px-3',
-				isActive && 'bg-accent-soft text-accent-soft-foreground',
-			)}
+			className='w-full'
 			data-search-index={projectIndex}
 			id={`project:${project.id}`}
 			onAction={onSelect}
 			onHoverStart={onHighlight}
 			textValue={project.name}
 		>
-			<ListView.ItemContent className='gap-2.5'>
+			<ListView.ItemContent>
 				<EntityLabel label='项目' />
 				<span className='flex shrink-0 items-center justify-center text-muted'>
 					<FolderIcon className='size-3.5' />
@@ -198,7 +195,7 @@ function SearchProjectResultRow({
 					</OverflowTooltip>
 				</div>
 			</ListView.ItemContent>
-			<ListView.ItemAction className='hidden shrink-0 items-center gap-1.5 md:flex'>
+			<ListView.ItemAction className='hidden shrink-0 md:flex'>
 				{project.completedAt ? <ContextPill label='已完成' /> : null}
 				<ContextPill label={project.spaceName} />
 			</ListView.ItemAction>

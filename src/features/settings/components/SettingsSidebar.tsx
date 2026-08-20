@@ -39,28 +39,24 @@ export function SettingsSidebar({
 
 	return (
 		<Sidebar
-			className='h-full min-h-0 bg-transparent'
+			className='h-full min-h-0'
 			style={{ '--sidebar-width': 'inherit', display: 'flex' } as CSSProperties}
 		>
-			<Sidebar.Header className='px-3 pb-1 pt-2'>
+			<Sidebar.Header>
 				<Tooltip closeDelay={0} delay={0}>
-					<Button
-						fullWidth
-						aria-label='返回应用'
-						className='h-10 justify-start px-2'
-						onPress={handleBack}
-						variant='ghost'
-					>
-						<ChevronLeftIcon className='size-4 shrink-0' />
-						<span className='truncate text-left' data-sidebar='label'>
-							返回应用
+					<Button fullWidth aria-label='返回应用' onPress={handleBack} size='lg' variant='ghost'>
+						<span className='flex min-w-0 w-full items-center gap-2'>
+							<ChevronLeftIcon className='size-4 shrink-0' />
+							<span className='truncate text-left' data-sidebar='label'>
+								返回应用
+							</span>
 						</span>
 					</Button>
 					<Tooltip.Content placement='right'>返回应用</Tooltip.Content>
 				</Tooltip>
 			</Sidebar.Header>
 
-			<Sidebar.Content className='px-3'>
+			<Sidebar.Content>
 				{SETTINGS_NAV_GROUPS.map((group) => (
 					<Sidebar.Group key={group.key}>
 						<Sidebar.GroupLabel>{group.label}</Sidebar.GroupLabel>

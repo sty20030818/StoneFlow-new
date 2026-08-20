@@ -53,7 +53,6 @@ export function PlacementControl({
 
 						return (
 							<Dropdown.Item
-								className='gap-2 p-2 text-[12.5px]'
 								id={`${option.kind}-${option.id ?? option.spaceId}`}
 								key={`${option.kind}-${option.id ?? option.spaceId}`}
 								onAction={() =>

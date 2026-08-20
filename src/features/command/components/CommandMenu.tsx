@@ -105,7 +105,7 @@ export function CommandMenu({
 						<p className='sr-only' id={descriptionId}>
 							{description}
 						</p>
-						<Command.Header className='flex-col items-stretch p-0'>
+						<Command.Header>
 							<CommandMenuSelectionChips entities={context.selection.entities} />
 							<Command.InputGroup aria-label={getCommandMenuPlaceholder(mode)}>
 								<Command.InputGroup.Prefix>

@@ -36,7 +36,6 @@ export function StatusControl({
 				<Dropdown.Menu aria-label='设置状态'>
 					{STATUS_OPTIONS.map((option) => (
 						<Dropdown.Item
-							className='gap-2 p-2 text-[12.5px]'
 							id={option}
 							key={option}
 							onAction={() => onStatusChange(option)}

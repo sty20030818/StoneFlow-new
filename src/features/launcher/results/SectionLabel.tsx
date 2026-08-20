@@ -20,8 +20,8 @@ export function SectionLabel({
 			)}
 		>
 			<span>{title}</span>
-			<Chip className='h-5 min-w-5 px-1.5 tabular-nums' size='sm' variant='soft'>
-				<Chip.Label>{count}</Chip.Label>
+			<Chip size='sm' variant='soft'>
+				<Chip.Label className='tabular-nums'>{count}</Chip.Label>
 			</Chip>
 		</div>
 	)

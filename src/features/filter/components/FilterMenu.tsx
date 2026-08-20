@@ -61,26 +61,27 @@ export function FilterMenu({ trigger, open, onOpenChange }: FilterMenuProps) {
 				}
 			/>
 			<Dropdown.Popover className='w-60 min-w-60' offset={6} placement='bottom end'>
-				<SearchField
-					aria-label='筛选字段'
-					className='border-b border-separator p-2'
-					fullWidth
-					onChange={setQuery}
-					value={query}
-					variant='secondary'
-				>
-					<SearchField.Group>
-						<SearchField.SearchIcon />
-						<SearchField.Input
-							onKeyDown={(event) => {
-								if (event.key !== 'Escape') event.stopPropagation()
-							}}
-							placeholder='添加筛选…'
-						/>
-						<SearchField.ClearButton aria-label='清空筛选字段搜索' />
-						<CommandShortcut className='mr-2 shrink-0' commandId={COMMAND_IDS.filterAdd} />
-					</SearchField.Group>
-				</SearchField>
+				<div className='border-b border-separator p-2'>
+					<SearchField
+						aria-label='筛选字段'
+						fullWidth
+						onChange={setQuery}
+						value={query}
+						variant='secondary'
+					>
+						<SearchField.Group>
+							<SearchField.SearchIcon />
+							<SearchField.Input
+								onKeyDown={(event) => {
+									if (event.key !== 'Escape') event.stopPropagation()
+								}}
+								placeholder='添加筛选…'
+							/>
+							<SearchField.ClearButton aria-label='清空筛选字段搜索' />
+							<CommandShortcut className='mr-2 shrink-0' commandId={COMMAND_IDS.filterAdd} />
+						</SearchField.Group>
+					</SearchField>
+				</div>
 
 				<Dropdown.Menu aria-label='筛选字段'>
 					{visibleFields.map((field) => (

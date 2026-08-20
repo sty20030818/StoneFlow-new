@@ -167,11 +167,11 @@ function ProjectBoardSection({
 					</CollectionGridGroupTrigger>
 					<ProjectSectionStatusIcon sectionKey={section.key} />
 					<span className='min-w-0 truncate text-sm font-semibold'>{section.label}</span>
-					<Chip className='tabular-nums' size='sm' variant='tertiary'>
+					<Chip size='sm' variant='tertiary'>
 						{section.items.length}
 					</Chip>
 					{selectedCount > 0 ? (
-						<Chip className='tabular-nums' color='accent' size='sm' variant='soft'>
+						<Chip color='accent' size='sm' variant='soft'>
 							已选 {selectedCount}
 						</Chip>
 					) : null}
@@ -238,9 +238,9 @@ function ProjectBoardLoading() {
 		<div aria-busy='true' aria-label='正在读取项目' className='flex flex-col gap-2'>
 			{Array.from({ length: 2 }, (_, sectionIndex) => (
 				<div className='flex flex-col gap-1' key={sectionIndex}>
-					<Skeleton animationType='none' className='h-9 w-40 rounded-lg' />
+					<Skeleton animationType='none' className='h-9 w-40' />
 					{Array.from({ length: 3 }, (_, rowIndex) => (
-						<Skeleton animationType='none' className='h-11 w-full rounded-lg' key={rowIndex} />
+						<Skeleton animationType='none' className='h-11 w-full' key={rowIndex} />
 					))}
 				</div>
 			))}

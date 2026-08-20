@@ -20,7 +20,7 @@ export function TaskTitleField({ autosave, disabled = false }: TaskTitleFieldPro
 		>
 			<Input
 				aria-label='任务标题'
-				className='text-[20px] font-bold md:text-[22px]'
+				data-field-role='detail-title'
 				placeholder='任务标题'
 				variant='secondary'
 			/>

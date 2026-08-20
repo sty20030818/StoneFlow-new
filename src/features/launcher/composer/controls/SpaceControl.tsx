@@ -82,7 +82,6 @@ export function SpaceControl({
 
 						return (
 							<Dropdown.Item
-								className='gap-2 p-2 text-[12.5px]'
 								id={space.id}
 								key={space.id}
 								onAction={() => onSelectSpace(space.id)}

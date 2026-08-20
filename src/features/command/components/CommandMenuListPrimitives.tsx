@@ -52,7 +52,7 @@ function CommandMenuGroup({
 	onOpenChange: (open: boolean) => void
 }) {
 	return (
-		<Command.Group className='pt-1 first:pt-0' heading={group.heading}>
+		<Command.Group heading={group.heading}>
 			{group.entries.map((entry) => (
 				<CommandMenuItem entry={entry} key={entry.id} onOpenChange={onOpenChange} />
 			))}
@@ -108,7 +108,7 @@ export function ProjectsCommandGroup({
 	projects: CommandMenuProject[]
 }) {
 	return (
-		<Command.Group className='pt-4' heading='项目'>
+		<Command.Group heading='项目'>
 			{projects.length === 0 ? (
 				<Command.Item id='empty-projects' isDisabled textValue='当前 Space 还没有项目'>
 					<CommandRow leading={renderCommandIcon(FolderOpenIcon)} title='当前 Space 还没有项目' />

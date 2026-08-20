@@ -286,7 +286,8 @@ describe('LauncherPage', () => {
 		fireEvent.keyDown(input, { key: 'ArrowDown' })
 		await waitFor(() => expect(taskResult).toHaveFocus())
 		fireEvent.pointerEnter(createRow, { pointerType: 'mouse' })
-		await waitFor(() => expect(createRow).toHaveClass('bg-accent-soft'))
+		await waitFor(() => expect(createRow).toHaveAttribute('aria-current', 'true'))
+		expect(taskResult).not.toHaveAttribute('aria-current')
 		expect(taskResult).toHaveFocus()
 		fireEvent.keyDown(taskResult, { key: 'ArrowUp' })
 		await waitFor(() => expect(input).toHaveFocus())
@@ -295,7 +296,7 @@ describe('LauncherPage', () => {
 			createRow.focus()
 		})
 		expect(createRow).toHaveFocus()
-		await waitFor(() => expect(createRow).toHaveClass('bg-accent-soft'))
+		await waitFor(() => expect(createRow).toHaveAttribute('aria-current', 'true'))
 		fireEvent.keyDown(createRow, { key: 'Enter' })
 
 		await waitFor(() =>

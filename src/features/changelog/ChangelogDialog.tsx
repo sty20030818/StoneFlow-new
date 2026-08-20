@@ -32,7 +32,7 @@ export function ChangelogDialog({
 			<Modal.Container placement='top' scroll='inside' size='lg'>
 				<Modal.Dialog
 					aria-describedby={descriptionId}
-					className='max-h-[min(42rem,calc(100dvh-3rem))] gap-0 overflow-hidden p-0'
+					className='max-h-[min(42rem,calc(100dvh-3rem))] overflow-hidden'
 					render={(dialogProps) => (
 						<section
 							{...dialogProps}
@@ -46,17 +46,19 @@ export function ChangelogDialog({
 						<Modal.CloseTrigger aria-label='关闭更新日志' className='end-3 top-3' />
 					</ActionTooltip>
 
-					<Modal.Header className='flex-row items-center gap-2 px-5 pt-5 pr-14 pb-3'>
-						<Modal.Heading>更新日志</Modal.Heading>
-						<Chip color={channel === 'beta' ? 'warning' : 'default'} size='sm' variant='soft'>
-							{channel === 'beta' ? '测试版' : '正式版'}
-						</Chip>
-						<p className='sr-only' id={descriptionId}>
-							查看 StoneFlow 已发布版本的更新内容
-						</p>
+					<Modal.Header>
+						<div className='flex items-center gap-2'>
+							<Modal.Heading>更新日志</Modal.Heading>
+							<Chip color={channel === 'beta' ? 'warning' : 'default'} size='sm' variant='soft'>
+								{channel === 'beta' ? '测试版' : '正式版'}
+							</Chip>
+							<p className='sr-only' id={descriptionId}>
+								查看 StoneFlow 已发布版本的更新内容
+							</p>
+						</div>
 					</Modal.Header>
 
-					<Modal.Body aria-label='更新日志内容' className='px-5 py-2 pb-5' role='region'>
+					<Modal.Body aria-label='更新日志内容' role='region'>
 						{isLoading ? (
 							<div
 								aria-busy='true'

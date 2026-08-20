@@ -109,7 +109,7 @@ export function SpaceEditorDialog({
 			<Modal.Container placement='center' size='lg'>
 				<Modal.Dialog
 					aria-describedby={descriptionId}
-					className='gap-0 overflow-hidden p-0'
+					className='overflow-hidden'
 					render={(dialogProps) => (
 						<section
 							{...dialogProps}
@@ -126,14 +126,14 @@ export function SpaceEditorDialog({
 								void handleSubmit()
 							}}
 						>
-							<Modal.Header className='gap-1 px-5 pt-5 pb-3'>
+							<Modal.Header>
 								<Modal.Heading>{mode === 'create' ? '新建 Space' : '编辑 Space'}</Modal.Heading>
 								<p className='text-sm text-muted' id={descriptionId}>
 									Space 只承载顶级上下文。设置名称、图标和颜色即可。
 								</p>
 							</Modal.Header>
 
-							<Modal.Body className='gap-4 px-5 py-2'>
+							<Modal.Body>
 								<div className='flex items-center gap-3 rounded-xl border border-separator bg-surface-secondary px-4 py-3'>
 									<span
 										className={cn(

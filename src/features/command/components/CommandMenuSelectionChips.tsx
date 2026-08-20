@@ -70,9 +70,7 @@ export function CommandMenuSelectionChips({ entities }: { entities: CommandSelec
 						label={formatCommandSelectionSummaryLabel(entity)}
 					/>
 				))}
-				{hiddenCount > 0 ? (
-					<ReadonlySelectionSummaryChip label={`+${hiddenCount}`} tabular />
-				) : null}
+				{hiddenCount > 0 ? <ReadonlySelectionSummaryChip label={`+${hiddenCount}`} /> : null}
 			</div>
 			<div
 				aria-hidden='true'
@@ -92,7 +90,6 @@ export function CommandMenuSelectionChips({ entities }: { entities: CommandSelec
 						data-selection-overflow=''
 						key={`measure-hidden-${count}`}
 						label={`+${count}`}
-						tabular
 					/>
 				))}
 			</div>
@@ -102,12 +99,10 @@ export function CommandMenuSelectionChips({ entities }: { entities: CommandSelec
 
 function ReadonlySelectionSummaryChip({
 	label,
-	tabular = false,
 	className,
 	...props
 }: Omit<React.ComponentProps<'span'>, 'color'> & {
 	label: string
-	tabular?: boolean
 }) {
 	return (
 		<Chip
@@ -115,7 +110,6 @@ function ReadonlySelectionSummaryChip({
 			aria-hidden='true'
 			className={cn(
 				'pointer-events-none max-w-56 shrink-0 cursor-default overflow-hidden',
-				tabular && 'tabular-nums',
 				className,
 			)}
 			size='sm'

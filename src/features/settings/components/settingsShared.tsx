@@ -12,14 +12,12 @@ export function SettingsSection({
 }) {
 	return (
 		<section>
-			<Card className='gap-0'>
-				<Card.Header className='flex flex-col items-start gap-1 px-4 pt-4 pb-0'>
+			<Card>
+				<Card.Header>
 					<h2 className='text-sm font-semibold text-foreground'>{title}</h2>
-					<Card.Description className='text-xs leading-5 text-muted'>
-						{description}
-					</Card.Description>
+					<Card.Description>{description}</Card.Description>
 				</Card.Header>
-				<Card.Content className='px-4 pt-4 pb-4'>{children}</Card.Content>
+				<Card.Content>{children}</Card.Content>
 			</Card>
 		</section>
 	)
@@ -41,19 +39,21 @@ export function SettingCheckboxRow({
 	return (
 		<Switch
 			aria-label={label}
-			className='w-full py-3'
+			className='w-full'
 			isDisabled={disabled}
 			isSelected={checked}
 			onChange={onChange}
 		>
-			<Switch.Content className='flex w-full items-center gap-4'>
-				<div className='min-w-0 flex-1 text-left'>
-					<p className='text-sm font-medium text-foreground'>{label}</p>
-					<p className='mt-1 text-xs leading-5 text-muted'>{description}</p>
+			<Switch.Content>
+				<div className='flex w-full items-center gap-4 py-3'>
+					<div className='min-w-0 flex-1 text-left'>
+						<p className='text-sm font-medium text-foreground'>{label}</p>
+						<p className='mt-1 text-xs leading-5 text-muted'>{description}</p>
+					</div>
+					<Switch.Control>
+						<Switch.Thumb />
+					</Switch.Control>
 				</div>
-				<Switch.Control className='shrink-0'>
-					<Switch.Thumb />
-				</Switch.Control>
 			</Switch.Content>
 		</Switch>
 	)
@@ -70,7 +70,7 @@ export function SettingInfoRow({
 }) {
 	return (
 		<Card variant='tertiary'>
-			<Card.Content className='p-3'>
+			<Card.Content>
 				<p className='text-sm font-medium text-foreground'>{label}</p>
 				<div className='mt-1 text-sm text-foreground'>{value}</div>
 				<p className='mt-1 text-xs leading-5 text-muted'>{description}</p>
@@ -81,11 +81,8 @@ export function SettingInfoRow({
 
 export function SettingsPreferenceGroup({ children }: { children: ReactNode }) {
 	return (
-		<Surface
-			className='divide-y divide-separator rounded-lg border border-separator px-3'
-			variant='secondary'
-		>
-			{children}
+		<Surface variant='secondary'>
+			<div className='divide-y divide-separator px-3'>{children}</div>
 		</Surface>
 	)
 }

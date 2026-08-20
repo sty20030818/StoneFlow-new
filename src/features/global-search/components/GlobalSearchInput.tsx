@@ -183,7 +183,7 @@ export function GlobalSearchInput({ onOpenTask, onOpenProject }: GlobalSearchInp
 				variant='secondary'
 			>
 				<SearchField.Group className='w-full'>
-					<SearchField.SearchIcon className='ml-2.5 mr-0 size-3.5' />
+					<SearchField.SearchIcon />
 					<SearchField.Input
 						aria-expanded={isOpen}
 						aria-controls={shouldShowResults ? 'global-search-results' : undefined}

@@ -1,17 +1,35 @@
-# 05 — 删除旧视觉轨道并修订架构真相
+# 05 — 加深产品 Module 并删除旧视觉轨道
 
-**What to build:** 维护者只需沿着“语义主题 → 公共组件 recipe → 产品消费者”一条路径理解和修改 StoneFlow 视觉，不再面对旧 token、Dark 脚手架、适配层或冲突文档形成的双轨真相。
+**What to build:** 维护者只沿着“全局主题 → 公共 recipe → 深产品 Module”理解 StoneFlow 界面；浅转发层、class-string pattern、平行基础组件与旧 token adapter 全部 hard cut。
 
-**Blocked by:** 04 — 横切迁移 StoneFlow 产品表面
+**Blocked by:** 04 — 重建全局视觉核心并迁移代表表面
 
 **Status:** ready-for-agent
 
-- [ ] 在确认零消费者后删除旧 primitive/semantic/layout token 链、Dark 扩展、shadcn adapter、页面私有通用皮肤、兼容 alias 与零消费者样式。
-- [ ] 应用只保留一个 Light 主题，不响应系统深浅色偏好，也不保留 Dark token、`dark:` 分支或未来占位运行时。
-- [ ] 唯一语义主题拥有所有视觉值，唯一公共组件层拥有 HeroUI 公共 BEM/data-state recipe，产品组件不成为通用视觉值源。
-- [ ] 样式入口与依赖方向只保留一条可解释路径，不存在同一语义的重复 token 或同一组件状态的多个 Owner。
-- [ ] HeroUI 平台 ADR 明确改为“HeroUI OSS/Pro 管理行为、结构与可访问性；StoneFlow 管理全部视觉”，并保留 HeroUI 作为唯一 UI 行为平台的决定。
-- [ ] 界面系统与样式架构文档删除旧 token、shadcn adapter、Dark 扩展和旧视觉所有权描述，改为当前单向合同。
-- [ ] 静态扫描确认没有旧轨道消费者、无意保留的原始重复颜色、页面私有通用控件皮肤或 Dark 分支。
-- [ ] 类型检查、Lint、格式检查、模块边界、第一方动效扫描与生产构建保持通过。
+- [ ] `PageFrame` 吸收 MainCard 的 Root、Header、Toolbar 与普通/虚拟 Body；浅层 GhostAction 删除，由真实消费者直接组合 HeroUI Button 与既有 `ActionTooltip`；随后删除 `shared/components/main-card`，不保留 re-export。
+- [ ] `RowShell` 只吸收 `RowSelectionGroupPosition` 语义类型、行根结构、状态组合与 Actions；Board section header 归 Board，TaskBoard 外层选择组高度/gap/sticky/virtual 几何留在 TaskBoard，随后删除 `row-tokens.ts` 且不重新导出 class map。
+- [ ] 删除零消费者 Detail 实现；Header/Footer/PageLayout/Section 与仍有价值的 SaveStatus/滚动结构回到唯一的 task detail owner，删除 `detailTokens.ts`、shared detail barrel 与目录，不建立新的共享 Detail Module。
+- [ ] `AppScrollArea` 继续隐藏真实 viewport、ref context、OverlayScrollbar、RAF、ResizeObserver、MutationObserver 与 `data-scroll-extent` 合同，但删除 scrollbar 皮肤参数、`viewportProps` 等全部无生产消费者配置；测试只穿过缩小后的 Interface。
+- [ ] 保留 `ActionTooltip` 等能隐藏 React Aria props/ref 合并或真实产品行为的深 Module；不因清理视觉层误删它们。
+- [ ] `shell-chrome` 与 `shell-footer` 的必要窗口/轨道几何回到对应 Layout Module；删除零消费者 pattern、死组件与只验证旧 pattern 的测试。
+- [ ] 将 `RowMetaButton` 等最后真实消费者迁到 HeroUI Interface 或所属产品 Module，随后删除整个 `shared/components/base`，不建立同名 wrapper。
+- [ ] 删除整个 `shared/components/patterns`、旧 primitive/semantic/layout token 链、Dark 扩展、shadcn adapter、旧 alias 与零消费者 utility；最终 `styles/index.css` 只保留 Tailwind、HeroUI OSS/Pro、fonts、theme、components、base。
+- [ ] 删除旧浅 Module 的单元测试，用新深 Module Interface 的用户可观察行为测试取代；不测试内部 class 字符串或转发层。
+- [ ] 同步 `src/ARCHITECTURE.md`、`src/styles/ARCHITECTURE.md`、`src/shared/components/page-frame/ARCHITECTURE.md`、A3 与 ADR-0002 的最终代码事实；不得让文档宣布不存在的兼容层或仍存在的旧入口。
+- [ ] 不新增 `shared/ui`、视觉 Facade、Provider、CVA、TypeScript token、通用 Surface/Tone/Radius 参数、兼容出口或新依赖。
 
+## Must preserve
+
+- TaskBoard `44/34/2px` 测量、虚拟 total height、sticky/push layer、分页 spacer、scroll-to-task 与容器查询。
+- Sidebar 动态宽度、resize rail、三态与 `<1024px` Sheet。
+- Detail Aside/Sheet URL、草稿、自动保存、Resizable 与滚动合同。
+- Launcher 透明原生窗、跨平台半径、真实 focus、IME、Arrow/Enter/Escape 与连续创建。
+- Main/Launcher/Tauri cold-start 中性值同步；允许最小 host 重复，但必须由既有同步检查保护。
+
+## Verification
+
+- `rg`/静态门禁确认 `shared/components/patterns`、`shared/components/base`、旧 token、shadcn adapter、Dark 和兼容 alias 零消费者且目录已删除。
+- PageFrame、RowShell、Board、Detail、AppScrollArea、ActionTooltip、Shell 与 Launcher 的 Interface 行为测试通过。
+- TaskBoard model/scroll/virtualization、Sidebar resize、Detail container 与 Launcher 生命周期回归通过。
+- `bun run typecheck`、`bun run lint`、`bun run lint:boundaries`、`bun run format:check`、`bun run check:animations`、相关 DOM/脚本测试、生产构建与 `git diff --check` 通过。
+- `package.json` 与 `bun.lock` 不修改；没有暂存、commit 或 push。

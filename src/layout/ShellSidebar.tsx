@@ -260,27 +260,29 @@ export function ShellSidebarNavigation({
 						className='h-full min-h-0'
 						style={{ '--sidebar-width': 'inherit', display: 'flex' } as CSSProperties}
 					>
-						<Sidebar.Header className='px-3 pb-2 pt-2'>
+						<Sidebar.Header>
 							<Dropdown isOpen={spaceSwitcherMenuOpen} onOpenChange={setSpaceSwitcherMenuOpen}>
 								<Button
 									fullWidth
 									aria-label='切换 Space'
-									className='h-11 justify-start px-2'
 									onContextMenu={(event) => event.stopPropagation()}
+									size='lg'
 									variant='ghost'
 								>
-									{allScope ? (
-										<SpaceIconBadge visual={ALL_SPACES_VISUAL} />
-									) : activeSpaceVisual ? (
-										<SpaceIconBadge visual={activeSpaceVisual} />
-									) : null}
-									<span
-										className='min-w-0 flex-1 truncate text-left font-semibold'
-										data-sidebar='label'
-									>
-										{currentScopeLabel}
+									<span className='flex min-w-0 w-full items-center gap-2'>
+										{allScope ? (
+											<SpaceIconBadge visual={ALL_SPACES_VISUAL} />
+										) : activeSpaceVisual ? (
+											<SpaceIconBadge visual={activeSpaceVisual} />
+										) : null}
+										<span
+											className='min-w-0 flex-1 truncate text-left font-semibold'
+											data-sidebar='label'
+										>
+											{currentScopeLabel}
+										</span>
+										<ChevronsUpDownIcon className='size-4 text-muted' data-sidebar='label' />
 									</span>
-									<ChevronsUpDownIcon className='size-4 text-muted' data-sidebar='label' />
 								</Button>
 								<Dropdown.Popover className='w-64' offset={6} placement='right top'>
 									<Dropdown.Menu aria-label='切换 Space'>
@@ -404,7 +406,7 @@ export function ShellSidebarNavigation({
 							</Dropdown>
 						</Sidebar.Header>
 
-						<Sidebar.Content className='gap-4 px-3'>
+						<Sidebar.Content>
 							<Sidebar.Group>
 								<Sidebar.Menu aria-label='主要导航'>
 									{visibleNavItems.map((item) => (
@@ -432,8 +434,8 @@ export function ShellSidebarNavigation({
 									data-slot='sidebar-project-section'
 								>
 									<Sidebar.Group>
-										<div className='flex h-8 items-center justify-between px-2'>
-											<Sidebar.GroupLabel className='px-0'>项目列表</Sidebar.GroupLabel>
+										<div className='flex h-8 items-center justify-between'>
+											<Sidebar.GroupLabel>项目列表</Sidebar.GroupLabel>
 											<Tooltip closeDelay={0} delay={0}>
 												<Button
 													isIconOnly
@@ -485,7 +487,7 @@ export function ShellSidebarNavigation({
 							) : null}
 						</Sidebar.Content>
 
-						<Sidebar.Footer className='border-t border-separator px-3 py-2'>
+						<Sidebar.Footer>
 							<Sidebar.Menu aria-label='辅助导航'>
 								{footerItems.map((item) => (
 									<SidebarNavRow

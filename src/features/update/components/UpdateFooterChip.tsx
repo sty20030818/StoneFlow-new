@@ -21,14 +21,14 @@ export function UpdateFooterChip({ view, onOpen }: UpdateFooterChipProps) {
 		<ActionTooltip label={view.title}>
 			<Button
 				aria-label={view.title}
-				className='h-7 max-w-40 gap-1.5 px-2 text-xs tabular-nums'
+				className='max-w-40'
 				onPress={onOpen}
 				size='sm'
 				type='button'
 				variant={variant}
 			>
 				{view.phase === 'available' ? (
-					<DownloadIcon aria-hidden className='size-3.5' />
+					<DownloadIcon aria-hidden />
 				) : (
 					<ProgressCircle
 						aria-label={view.title}
@@ -43,7 +43,7 @@ export function UpdateFooterChip({ view, onOpen }: UpdateFooterChipProps) {
 						</ProgressCircle.Track>
 					</ProgressCircle>
 				)}
-				<span className='min-w-0 truncate'>{view.label}</span>
+				<span className='min-w-0 truncate tabular-nums'>{view.label}</span>
 			</Button>
 		</ActionTooltip>
 	)

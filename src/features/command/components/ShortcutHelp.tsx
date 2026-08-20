@@ -37,13 +37,13 @@ export function ShortcutHelp({
 			<Modal.Container placement='center' scroll='inside' size='lg'>
 				<Modal.Dialog
 					aria-describedby={descriptionId}
-					className='max-h-[min(36rem,calc(100dvh-5rem))] max-w-[min(47.5rem,calc(100vw-1.5rem))] gap-0 overflow-hidden p-0'
+					className='max-h-[min(36rem,calc(100dvh-5rem))] max-w-[min(47.5rem,calc(100vw-1.5rem))] overflow-hidden'
 				>
 					<ActionTooltip label='关闭'>
 						<Modal.CloseTrigger aria-label='关闭快捷键帮助' className='end-3 top-3 z-10' />
 					</ActionTooltip>
 
-					<Modal.Header className='gap-1 px-5 pt-4 pr-12 pb-3'>
+					<Modal.Header>
 						<Modal.Heading className='pr-8'>
 							<OverflowTooltip content={title}>{title}</OverflowTooltip>
 						</Modal.Heading>
@@ -54,7 +54,7 @@ export function ShortcutHelp({
 						</p>
 					</Modal.Header>
 
-					<Modal.Body aria-label='快捷键列表' className='m-0 px-1 pb-2' role='region'>
+					<Modal.Body aria-label='快捷键列表' role='region'>
 						{groups.map((group) => (
 							<section key={group.key} className='pt-1 first:pt-0'>
 								<h3 className='px-3 pt-1 pb-2 text-xs font-medium text-muted'>{group.heading}</h3>

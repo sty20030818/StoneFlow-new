@@ -145,7 +145,7 @@ export function ProjectCreateContent({
 								ref={titleInputRef}
 								autoFocus
 								aria-label='项目名称'
-								className='h-auto text-lg font-semibold'
+								data-field-role='create-title'
 								onBlur={nameField.onBlur}
 								placeholder='项目名称'
 								variant='secondary'
@@ -165,7 +165,7 @@ export function ProjectCreateContent({
 						>
 							<TextArea
 								aria-label='项目说明'
-								className='min-h-20 resize-none text-[13px] leading-5'
+								className='min-h-20 resize-none'
 								onBlur={descriptionField.onBlur}
 								placeholder='添加项目说明…'
 								variant='secondary'

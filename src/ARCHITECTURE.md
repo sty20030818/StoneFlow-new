@@ -1,6 +1,6 @@
 # StoneFlow 前端架构（src）
 
-> 版本：v5.2 · 2026-08-07
+> 版本：v5.3 · 2026-08-20
 > 作用：`src/` **定稿最优架构**（WHAT / WHERE）。日常改码以本文 + [`CONVENTIONS.md`](./CONVENTIONS.md) + 各模块 `ARCHITECTURE.md` 为准。
 > 不写：债表、执行进度、变更历史（这些不属于当前架构契约）。
 
@@ -116,10 +116,14 @@ src/
 
 ### 4.5 `shared/` · 共享
 
-base UI、board/row、query 跨域失效工具、types、lib、events、form…
+具有真实行为或跨 Feature 产品合同的 Module、query 跨域失效工具、types、lib、events、form…
 禁止实体业务规则、feature 专属 API。
 
-`shared/components/page-frame` 是工作区页面的纯视觉骨架，只提供 Header、Toolbar 与 Body 的组合顺序。它不持有实体数据、Board 分发或业务操作。
+目标合同中，`shared/components/page-frame` 是工作区页面的深布局 Module，统一 Header、Toolbar、普通/虚拟 Body、滚动和页级操作骨架，并吸收重复的 MainCard 转发层，但不持有实体数据、Board 分发或业务操作。Ticket 05 完成前，现有 `shared/components/main-card` 仍是待迁移实现，不得增加新消费者。
+
+`shared/components/row` 统一 Row 根结构、交互状态组合与选择组语义；Board header 属于 Board，TaskBoard 的外层选择组与虚拟几何属于 TaskBoard。`AppScrollArea` 隐藏真实 viewport、ref context 与 OverlayScrollbar。它们的 Interface 不导出视觉 class 字符串或无生产消费者的配置。Task Detail 当前只有一个生产 owner，详情布局留在 task feature，不为吸收样式 token 保留共享 Detail Module。
+
+目标合同禁止 `shared/components/patterns`、平行 `shared/components/base`、一对一 HeroUI wrapper、TypeScript token 镜像与只转发目录；当前仍存在的 `patterns/base` 只是 Ticket 05 待删除遗留，不是允许扩展的正式入口。删除一个共享 Module 后若复杂度不会重新扩散到多个调用方，该 Module 不具备足够 Depth，应删除或并回唯一 Owner。
 
 `shared/lib/keyboardShortcut` 与 `shared/components/ShortcutTokens` 只负责跨平台键帽投影和展示；Command / Launcher 各自拥有绑定、匹配与动作语义。
 
@@ -127,7 +131,7 @@ base UI、board/row、query 跨域失效工具、types、lib、events、form…
 
 ### 4.6 `styles/`
 
-Token、shadcn 映射、Tailwind 入口。见 [`styles/ARCHITECTURE.md`](./styles/ARCHITECTURE.md)。
+全局 Light 语义主题、HeroUI 公共视觉 recipe、基础行为与唯一 Tailwind/HeroUI 样式入口。页面直接使用 HeroUI，局部 `className` 只表达布局、内容层级和动态几何。见 [`styles/ARCHITECTURE.md`](./styles/ARCHITECTURE.md)。
 
 ---
 

@@ -4,7 +4,6 @@
 export const shellChromeInlineGroupClass = 'flex items-center gap-1.5'
 export const shellChromeIconSecondaryClass = 'shrink-0 text-sf-icon-secondary'
 export const shellChromeIconSubtleClass = 'shrink-0 text-sf-icon-subtle'
-export const shellChromeWindowControlClass = 'h-10 w-10'
 
 export const shellChromeAvatarClusterClass = 'ml-2 flex items-center gap-2'
 

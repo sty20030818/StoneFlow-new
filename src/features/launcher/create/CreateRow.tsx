@@ -4,7 +4,6 @@ import { useLauncher } from '../domain/LauncherDomainProvider'
 import { PriorityIcon } from '@/features/task'
 import { TaskStatusIndicator } from '@/features/task'
 import { OverflowTooltip } from '@/shared/components/tooltip'
-import { cn } from '@/shared/lib/utils'
 
 /** 钉在 Results 上方的新建动作；交互与语义由 HeroUI Button 承担。 */
 export function CreateRow() {
@@ -17,11 +16,10 @@ export function CreateRow() {
 	return (
 		<div data-testid='launcher-create-section'>
 			<Button
+				aria-current={derived.isCreateFocused ? 'true' : undefined}
 				aria-label={`创建任务 ${state.draft.title.trim()}`}
-				className={cn(
-					'h-auto min-h-14 w-full justify-start gap-2.5 rounded-lg px-3 py-2 text-left',
-					derived.isCreateFocused && 'bg-accent-soft text-accent-soft-foreground',
-				)}
+				className='min-h-14'
+				data-content-height='true'
 				fullWidth
 				onFocus={actions.focusCreate}
 				onHoverStart={actions.focusCreate}
@@ -30,7 +28,7 @@ export function CreateRow() {
 				type='button'
 				variant='ghost'
 			>
-				<div className='flex min-w-0 flex-1 items-center gap-2.5'>
+				<div className='flex w-full min-w-0 flex-1 items-center gap-2.5 text-left'>
 					<div className='flex shrink-0 items-center gap-1.5'>
 						<TaskStatusIndicator status={state.draft.status} />
 						<PriorityIcon priority={state.draft.priority} size='sm' />

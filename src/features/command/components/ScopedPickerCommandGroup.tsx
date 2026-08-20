@@ -82,7 +82,7 @@ export function ScopedPickerCommandGroup({
 			isEmptyValue: option.value === 0,
 		}))
 		return (
-			<Command.Group className='pt-2' heading={group.heading}>
+			<Command.Group heading={group.heading}>
 				<ShortcutDigitSelectLayer
 					items={shortcutItems}
 					onSelect={(item) => {
@@ -129,7 +129,7 @@ export function ScopedPickerCommandGroup({
 			disabled: false,
 		}))
 		return (
-			<Command.Group className='pt-2' heading={group.heading}>
+			<Command.Group heading={group.heading}>
 				<ShortcutDigitSelectLayer
 					items={shortcutItems}
 					onSelect={(item) => {
@@ -185,7 +185,7 @@ export function ScopedPickerCommandGroup({
 		const customDateDialogValue =
 			uniqueNonEmptyDueDates.length === 1 ? uniqueNonEmptyDueDates[0] : null
 		return (
-			<Command.Group className='pt-2' heading={group.heading}>
+			<Command.Group heading={group.heading}>
 				{options.map((option) => (
 					<Command.Item
 						id={`date:${option.key}`}
@@ -233,7 +233,7 @@ export function ScopedPickerCommandGroup({
 	if (mode === 'task-picker') {
 		const tasks = [...result.tasks, ...result.completedTasks]
 		return (
-			<Command.Group className='pt-2' heading='任务'>
+			<Command.Group heading='任务'>
 				{tasks.map((task) => (
 					<Command.Item
 						id={`task:${task.id}`}
@@ -295,7 +295,6 @@ export function ScopedPickerCommandGroup({
 				/>
 				{groups.map((group) => (
 					<Command.Group
-						className='pt-1 first:pt-0'
 						heading={group.spaceId === 'ungrouped' ? '移动到项目...' : group.heading}
 						key={group.spaceId}
 					>
@@ -332,7 +331,7 @@ export function ScopedPickerCommandGroup({
 
 	const projects = [...result.projects, ...result.completedProjects]
 	return (
-		<Command.Group className='pt-2' heading='项目'>
+		<Command.Group heading='项目'>
 			{projects.map((project) => (
 				<Command.Item
 					id={`project:${project.id}`}

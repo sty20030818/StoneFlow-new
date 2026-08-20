@@ -37,7 +37,7 @@ export function AboutDialog({ open, onOpenChange, onOpenChangelog }: AboutDialog
 			<Modal.Container placement='center' size='lg'>
 				<Modal.Dialog
 					aria-describedby={descriptionId}
-					className='gap-0 overflow-hidden p-0'
+					className='overflow-hidden'
 					render={(dialogProps) => (
 						<section
 							{...dialogProps}
@@ -51,17 +51,19 @@ export function AboutDialog({ open, onOpenChange, onOpenChangelog }: AboutDialog
 						<Modal.CloseTrigger aria-label='关闭关于 StoneFlow' className='end-3 top-3' />
 					</ActionTooltip>
 
-					<Modal.Header className='flex-row items-center gap-3 px-5 pt-5 pr-14 pb-3'>
-						<img alt='StoneFlow' className='size-12 shrink-0 rounded-xl' src='/StoneFlow.png' />
-						<div className='min-w-0'>
-							<Modal.Heading>StoneFlow</Modal.Heading>
-							<p className='mt-1 truncate text-xs text-muted' id={descriptionId}>
-								专注于日常工作的本地优先工作流。
-							</p>
+					<Modal.Header>
+						<div className='flex items-center gap-3'>
+							<img alt='StoneFlow' className='size-12 shrink-0 rounded-xl' src='/StoneFlow.png' />
+							<div className='min-w-0'>
+								<Modal.Heading>StoneFlow</Modal.Heading>
+								<p className='mt-1 truncate text-xs text-muted' id={descriptionId}>
+									专注于日常工作的本地优先工作流。
+								</p>
+							</div>
 						</div>
 					</Modal.Header>
 
-					<Modal.Body className='gap-4 px-5 py-2'>
+					<Modal.Body>
 						<div className='flex items-center justify-between gap-3'>
 							<span className='text-sm text-muted'>当前版本</span>
 							{version ? (
@@ -119,7 +121,7 @@ export function AboutDialog({ open, onOpenChange, onOpenChangelog }: AboutDialog
 									const linkButton = (
 										<Button
 											aria-label={canOpen ? link.label : `${link.label}，待配置`}
-											className='w-full justify-start'
+											className='w-full'
 											isDisabled={!canOpen}
 											key={link.key}
 											onPress={() => handleOpenLink(link.url)}
@@ -127,13 +129,15 @@ export function AboutDialog({ open, onOpenChange, onOpenChangelog }: AboutDialog
 											type='button'
 											variant='ghost'
 										>
-											{link.key === 'license' ? (
-												<InfoIcon aria-hidden className='size-3.5' />
-											) : (
-												<ExternalLinkIcon aria-hidden className='size-3.5' />
-											)}
-											<span className='truncate'>{link.label}</span>
-											{canOpen ? null : <span className='ml-auto text-xs'>待配置</span>}
+											<span className='flex min-w-0 w-full items-center gap-2 text-left'>
+												{link.key === 'license' ? (
+													<InfoIcon aria-hidden className='size-3.5' />
+												) : (
+													<ExternalLinkIcon aria-hidden className='size-3.5' />
+												)}
+												<span className='truncate'>{link.label}</span>
+												{canOpen ? null : <span className='ml-auto text-xs'>待配置</span>}
+											</span>
 										</Button>
 									)
 

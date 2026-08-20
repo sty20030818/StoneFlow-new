@@ -19,10 +19,11 @@ export function LauncherSurface({
 		<Surface
 			aria-label='StoneFlow Launcher'
 			className={cn(
-				'relative z-10 flex h-full min-h-0 w-full flex-col overflow-hidden rounded-[var(--launcher-panel-radius,8px)] border border-separator [clip-path:inset(0_round_var(--launcher-panel-radius,8px))]',
+				'relative z-10 flex h-full min-h-0 w-full flex-col overflow-hidden [clip-path:inset(0_round_var(--launcher-panel-radius,8px))]',
 				isVisible ? 'opacity-100' : 'pointer-events-none opacity-0',
 				className,
 			)}
+			data-native-window-surface='true'
 			data-testid='launcher-surface'
 			role='region'
 		>

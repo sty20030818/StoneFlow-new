@@ -35,7 +35,6 @@ export function MetadataFieldMenuItem<TValue>({
 
 	return (
 		<Dropdown.Item
-			className='gap-2 p-2'
 			id={id}
 			isDisabled={disabled}
 			onClick={(event) => {

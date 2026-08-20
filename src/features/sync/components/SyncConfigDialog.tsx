@@ -63,7 +63,7 @@ export function SyncConfigDialog({
 			<Modal.Container placement='center' size='lg'>
 				<Modal.Dialog
 					aria-describedby={descriptionId}
-					className='min-w-0 gap-0 overflow-hidden p-0'
+					className='min-w-0 overflow-hidden'
 					render={(dialogProps) => (
 						<section
 							{...dialogProps}
@@ -73,7 +73,7 @@ export function SyncConfigDialog({
 						/>
 					)}
 				>
-					<Modal.Header className='gap-1 px-5 pt-5 pb-3'>
+					<Modal.Header>
 						<Modal.Heading>{environmentManaged ? '开发同步配置' : '配置云端副本'}</Modal.Heading>
 						<p className='text-sm leading-6 text-muted' id={descriptionId}>
 							{environmentManaged
@@ -82,7 +82,7 @@ export function SyncConfigDialog({
 						</p>
 					</Modal.Header>
 
-					<Modal.Body className='flex min-w-0 flex-col gap-4 px-5 py-2'>
+					<Modal.Body>
 						{environmentManaged ? (
 							<Alert status='warning'>
 								<Alert.Indicator />
@@ -101,7 +101,8 @@ export function SyncConfigDialog({
 									{/* 连接串无空格超长：禁止 field-sizing 横向撑破弹窗，强制断行。 */}
 									<TextArea
 										autoComplete='off'
-										className='min-h-24 max-w-full resize-y overflow-x-hidden break-all font-mono text-[13px] leading-5 field-sizing-fixed'
+										className='min-h-24 max-w-full resize-y overflow-x-hidden break-all field-sizing-fixed'
+										data-code-field='true'
 										onChange={(event) => onDatabaseUrlChange(event.currentTarget.value)}
 										placeholder={
 											'postgresql://user:password@host:5432/dbname\n# 或带 sslmode：\n# postgresql://user:pass@host/db?sslmode=require'

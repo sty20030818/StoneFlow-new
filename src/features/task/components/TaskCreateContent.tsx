@@ -213,7 +213,7 @@ export function TaskCreateContent({
 								ref={titleInputRef}
 								autoFocus
 								aria-label='任务标题'
-								className='h-auto text-lg font-semibold'
+								data-field-role='create-title'
 								onBlur={titleField.onBlur}
 								placeholder='任务标题'
 								variant='secondary'
@@ -233,7 +233,7 @@ export function TaskCreateContent({
 						>
 							<TextArea
 								aria-label='任务描述'
-								className='min-h-20 resize-none text-[13px] leading-5'
+								className='min-h-20 resize-none'
 								onBlur={noteField.onBlur}
 								placeholder='添加描述...'
 								variant='secondary'

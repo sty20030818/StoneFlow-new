@@ -6,17 +6,3 @@
 	font-weight: 400 600;
 	font-display: swap;
 }
-
-@theme inline {
-	--font-sans:
-		"InterVariable", "PingFang SC", "Microsoft YaHei UI", "Segoe UI", system-ui, sans-serif;
-	--font-mono:
-		ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
-		monospace;
-}
-
-@layer base {
-	html {
-		font-optical-sizing: auto;
-	}
-}

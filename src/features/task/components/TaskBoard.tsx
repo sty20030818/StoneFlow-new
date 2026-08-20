@@ -995,11 +995,11 @@ function StatusSectionHeader({
 						{label}
 					</OverflowTooltip>
 				)}
-				<Chip className='ml-1 tabular-nums' size='sm' variant='tertiary'>
+				<Chip className='ml-1' size='sm' variant='tertiary'>
 					{count}
 				</Chip>
 				{selectedCount > 0 ? (
-					<Chip className='tabular-nums' color='accent' size='sm' variant='soft'>
+					<Chip color='accent' size='sm' variant='soft'>
 						已选 {selectedCount}
 					</Chip>
 				) : null}

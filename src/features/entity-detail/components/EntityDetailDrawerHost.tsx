@@ -205,7 +205,10 @@ function TaskEntityDetail({
 					data-entity-detail-root='true'
 					onContextMenu={(event) => event.preventDefault()}
 				>
-					<Surface className='relative flex h-full min-h-0 overflow-hidden rounded-none'>
+					<Surface
+						className='relative flex h-full min-h-0 overflow-hidden'
+						data-flush-surface='true'
+					>
 						<TaskDetailContent
 							onClose={onClose}
 							scrollRef={setViewport}

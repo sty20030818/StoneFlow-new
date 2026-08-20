@@ -43,11 +43,11 @@ export function DisplayOptionsPopover({
 				}
 			/>
 			<Popover.Content
-				className={cn('w-[min(320px,calc(100vw-24px))] p-0', className)}
+				className={cn('w-[min(320px,calc(100vw-24px))]', className)}
 				offset={8}
 				placement='bottom end'
 			>
-				<Popover.Dialog aria-label='显示选项' className='p-2'>
+				<Popover.Dialog aria-label='显示选项'>
 					<DisplayOptionsPanel
 						actions={actions}
 						error={error}

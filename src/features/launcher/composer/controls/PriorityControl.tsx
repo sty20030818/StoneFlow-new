@@ -56,7 +56,6 @@ export function PriorityControl({
 				<Dropdown.Menu aria-label='设置优先级'>
 					{TASK_PRIORITY_OPTIONS.map((option) => (
 						<Dropdown.Item
-							className='gap-2 p-2 text-[12.5px]'
 							id={String(option.value)}
 							key={option.value}
 							onAction={() => onPriorityChange(option.value)}

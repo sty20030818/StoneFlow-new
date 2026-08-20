@@ -25,11 +25,7 @@ export function MetadataFieldValue({
 	return (
 		<Chip
 			aria-label={ariaLabel}
-			className={cn(
-				'shrink-0 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-3.5',
-				compact ? 'max-w-45' : 'max-w-52',
-				className,
-			)}
+			className={cn('shrink-0', compact ? 'max-w-45' : 'max-w-52', className)}
 			size='sm'
 			variant='secondary'
 		>

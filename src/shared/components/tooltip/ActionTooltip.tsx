@@ -36,10 +36,7 @@ function ActionTooltipRoot({
 					return React.cloneElement(children, mergedProps)
 				}}
 			/>
-			<Tooltip.Content
-				className='inline-flex flex-col items-stretch gap-0.5 p-1.5'
-				placement='bottom'
-			>
+			<Tooltip.Content placement='bottom'>
 				<ActionTooltipRow label={label} shortcut={shortcut} />
 			</Tooltip.Content>
 		</Tooltip>

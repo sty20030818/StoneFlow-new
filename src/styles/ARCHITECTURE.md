@@ -1,275 +1,190 @@
-> 版本：v2
-> 作用：定义 `src/styles` 当前已经落地的样式体系边界
-> 适用范围：`/Users/stonefish/Desktop/StoneFlow/src/styles` 及所有消费这些样式的前端代码
-> 最后更新：2026-07-28
+# StoneFlow 视觉样式架构
 
----
+> 版本：v3
+> 最后更新：2026-08-20
+> 作用：定义 `src/styles` 的目标合同；迁移期旧目录只视为待删除实现，不构成正式架构。
 
-## 1. 当前真实心智
+## 1. 一句话心智
 
-StoneFlow 的样式体系当前不是“页面里随手写几个 className”，也不是“shadcn 变量就是最终真相源”。
-
-当前正式分层是：
+页面直接使用 HeroUI；`theme.css` 统一所有视觉值，`components.css` 统一所有公共控件皮肤，产品 Module 只拥有结构、业务语义和动态几何。
 
 ```txt
-primitive tokens
--> semantic tokens
--> layout tokens
--> shadcn adapter
--> Tailwind v4 entry
--> base rules / utilities
--> shared/components / layout / feature UI
+Tailwind + HeroUI OSS/Pro
+          ↓
+theme.css：全局语义值
+          ↓
+components.css：公共组件 recipe
+          ↓
+产品 Module：布局、组合、动态几何与业务行为
 ```
 
-最重要的结论：
+不存在第二套 StoneFlow Button、页面私有主题或 class-string pattern。
 
-1. StoneFlow token 才是产品视觉真相源
-2. shadcn token 是基础组件语义映射，不是产品布局真相
-3. 页面层应尽量消费语义化 token 和已有 pattern，而不是直接堆原始色值
+## 2. 外部 Interface
 
----
+Main 与 Launcher 各自只导入一次 `styles/index.css`。Feature 不直接导入 `theme.css`、`components.css`、HeroUI CSS 或任何旧 token 文件。
 
-## 2. 当前目录结构
+普通调用方直接使用 HeroUI Interface：
+
+```tsx
+<Button size='sm' variant='primary'>
+	保存
+</Button>
+```
+
+调用方不需要知道 Button 的颜色、圆角、边框、Hover、Pressed、Focus 或 Disabled 实现。全局换肤不要求修改页面 JSX。
+
+Appearance 是独立 Module：`features/appearance` 只负责 Accent 标识、合法值校验、本机持久化和根属性，不拥有颜色值或组件 recipe。
+
+## 3. 目标文件结构
 
 ```txt
 src/styles/
 ├── ARCHITECTURE.md
-├── index.css
-├── fonts.css
-├── base.css
-├── utilities.css
-├── adapters/
-│   └── shadcn.css
-└── tokens/
-   ├── primitive.css
-   ├── semantic.css
-   ├── layout.css
-   └── dark.css
+├── index.css       # 唯一导入入口
+├── fonts.css       # 只声明 @font-face 字体资产
+├── theme.css       # 唯一全局语义值源
+├── components.css  # 唯一公共组件视觉 recipe
+└── base.css        # 文档、滚动、选择与原生窗口基础行为
 ```
 
-当前 `index.css` 的真实 import 顺序是：
+`utilities.css` 的单一滚动条规则迁入既有 Owner 或改用上游能力后删除，不保留一文件一 utility 的浅层。
+
+目标 import 顺序固定为：
 
 ```txt
 tailwindcss
--> tw-animate-css
--> fonts.css
--> tokens/primitive.css
--> tokens/semantic.css
--> tokens/layout.css
--> tokens/dark.css
--> adapters/shadcn.css
--> base.css
--> utilities.css
+→ @heroui/styles
+→ @heroui-pro/react/css
+→ fonts.css
+→ theme.css
+→ components.css
+→ base.css
 ```
 
-这个顺序本身就是样式边界的一部分，不要随意打乱。
+迁移期间仍存在的 `tokens/*`、`adapters/shadcn.css` 与 `utilities.css` 不属于目标合同，消费者归零后直接删除。
 
----
+## 4. `theme.css` · 全局语义值唯一 Owner
 
-## 3. 各层职责
+`theme.css` 负责：
 
-### 3.1 `tokens/primitive.css`
+- 单一冷灰 Light 主题；
+- 六组 Accent 及其实际消费角色；
+- 固定 Success、Warning、Danger、Info；
+- Background、Surface、Field、Border、Separator、Focus、Backdrop、Shadow；
+- 字体族语义映射、禁用透明度、控件高度与语义圆角；
+- HeroUI 和必要 Tailwind 语义变量映射。
 
-primitive token 只表达原始值。
+全局几何固定为：
 
-当前真实内容包括：
+```css
+--radius-control: 6px;
+--radius-surface: 8px;
+--radius-overlay: 12px;
+--radius-pill: 9999px;
 
-1. 字体族
-2. neutral palette
-3. brand / warning / success / danger / info
-4. shadow primitives
-5. overlay primitive
-6. motion primitives
+--control-height-sm: 28px;
+--control-height-md: 32px;
+--control-height-lg: 36px;
 
-禁止在这一层出现：
-
-1. `shell`
-2. `sidebar`
-3. `task-row`
-4. `button-primary`
-
-### 3.2 `tokens/semantic.css`
-
-semantic token 表达通用视觉语义。
-
-当前真实分组包括：
-
-1. text
-2. icon
-3. surface
-4. border
-5. interactive text
-6. accent
-7. focus
-8. status
-9. overlay and shadow
-
-这一层不绑定具体产品结构。
-
-### 3.3 `tokens/layout.css`
-
-layout token 表达 StoneFlow 产品结构语义。
-
-当前真实分组包括：
-
-1. shell
-2. header / sidebar / footer
-3. main content
-4. shared control surfaces
-5. reusable list surfaces
-6. shared geometry and motion
-
-这一层已经明确包含：
-
-1. `--sf-shell-bg`
-2. `--sf-sidebar-active`
-3. `--sf-main-bg`
-4. `--sf-control-bg`
-5. `--sf-shell-sidebar-reserved-width`（运行时由 SidebarProvider 写入；默认数值见 `shared/lib/shellSidebarGeometry.ts`）
-
-因此页面或 layout 层优先消费 layout token，而不是跳回 primitive 值。
-
-### 3.4 `tokens/dark.css`
-
-`dark.css` 当前是 dark 扩展层。
-
-它的职责是为未来模式扩展预留一致落点，而不是让页面层各自补 dark 变量。
-
-### 3.5 `adapters/shadcn.css`
-
-这一层负责把 StoneFlow token 映射给 shadcn / Tailwind 语境。
+--border-width: 1px;
+```
 
 规则：
 
-1. StoneFlow token 是上游真相源
-2. shadcn token 是语义映射
-3. 页面不应反向用 shadcn token 取代产品 token
+- Control 使用 `6px`；Card、Row 分组和设置 Surface 使用 `8px`；Popover、Modal 与 Sheet 使用 `12px`。
+- pill 只用于 Chip、Avatar 和状态标记，不用于普通 Button、Toggle 或导航项。
+- 有明确边界的 Surface 使用 `1px` 语义边框；Row 使用分隔线与状态背景；阴影只表达浮层或拖拽 elevation。
+- 不创建无消费者色阶、任意主题配置、Dark 脚手架或 TypeScript token 镜像。
+- 只有需要生成 JSX utility 的语义才进入 `@theme inline`；recipe 私有值保持普通 CSS variable。
 
-### 3.6 `base.css`
+## 5. `components.css` · 公共视觉唯一 Owner
 
-`base.css` 只负责全局基础行为：
+`components.css` 通过 HeroUI OSS/Pro 公开的 BEM 与逐组件核对的 documented ARIA/data attributes 统一：
 
-1. reset
-2. 全局基线
-3. 默认 element 行为
+- variant、尺寸、padding、圆角、文字与图标密度；
+- Rest、Hover、Pressed、Selected、Open、Focus-visible；
+- Disabled、Pending、Loading、Invalid、Danger；
+- Selected + Hover、Selected + Focus 等必要组合；
+- Card、Menu、Popover、Modal、Sheet、Toast 等边界与 elevation。
 
-不负责页面专属外观。
+它不负责：
 
-### 3.7 `utilities.css`
+- 业务状态和领域分支；
+- 页面宽度、Grid 列数或响应式排列；
+- Sidebar 动态宽度、TaskBoard 虚拟测量、sticky 和分页；
+- Sheet placement、Resizable 尺寸或 Launcher 原生窗几何。
 
-`utilities.css` 只放少量跨页面 utility。
+新增公共视觉时优先使用 HeroUI 公开状态。只有真正的产品 Module 无法由 HeroUI 表达时，才由该 Module 输出稳定语义 DOM hook，并在 `components.css` 增加对应规则；禁止公开通用 `tone`、`radius`、`surface` 数据属性重新制造 patterns。
 
-不要把 feature 专属 utility 累积成第二套设计系统。
+## 6. 产品 Module 与 `className`
 
----
+普通产品 wrapper 与内容子节点可以通过 `className` 表达 flex/grid、gap、内容排版、响应式结构和 Feature 特有几何。
 
-## 4. 当前消费关系
+HeroUI 原子控件、集合 Item 与 Overlay chrome slot 只允许：
 
-当前消费链路是：
+- 外部 width、min/max、margin、position、order、grow/shrink；
+- overflow、scroll、truncate 与 portal placement；
+- Sidebar、Resizable、Sheet、Launcher 等运行时动态几何和 CSS variable。
 
-```txt
-styles/tokens
--> shared/components/base
--> shared/components/patterns
--> layout
--> feature UI
-```
+这些公共视觉 owner 不得通过局部 `className` 重写：
 
-典型事实：
+- 控件内部 display、gap、padding、字体、行高或图标尺寸；
+- 通用颜色、背景与文字语气；
+- 边框颜色、圆角、阴影和 ring；
+- Hover、Pressed、Selected、Open、Focus、Disabled 或 Invalid 皮肤；
+- Accent 分支或 HeroUI BEM class。
 
-1. `shared/components/base/*` 复用 shadcn + Tailwind 基础能力
-2. `shared/components/patterns/*` 承接 StoneFlow 的结构化视觉模式
-3. `layout` 与 feature UI 优先消费这些 pattern 和 token
+Form、RadioGroup、Surface、Resizable、ScrollShadow 与 Trigger 等结构组件可直接承载所属产品 Module 的 flex/grid、响应式结构和动态几何；它们仍不得重写公共颜色、边框、圆角、阴影或交互皮肤。若 Surface 本身承担产品布局，该结构由唯一产品 Module 固定，不把皮肤自由度重新暴露给调用方。
 
-所以如果某个视觉模式已经在 `shared/components/patterns` 存在，就不应回到页面里重新写一遍。
+合法特殊形状必须属于真实产品语义，例如 Avatar 圆形、Launcher 原生窗裁切或嵌入式 Sheet 无外侧圆角；它们写在所属产品 Module 的 Implementation 中，不复制到调用方。
 
----
+## 7. 共享 Module 深度
 
-## 5. 当前正式规则
+跨 Feature 共享必须通过 deletion test：删除后，复杂行为或产品合同会重新扩散到多个调用方，才值得保留。
 
-### 5.1 先判断归属，再写样式
+- `PageFrame` 统一页头、工具栏、普通/虚拟 Body 与滚动骨架；吸收 MainCard 的 Root/Header/Toolbar/Body，删除浅层 GhostAction。
+- `RowShell` 统一行根结构、交互状态组合、Actions 与选择组语义；Board header 归 Board，TaskBoard 外层选择组与虚拟几何归 TaskBoard，不再导出 class map。
+- Task Detail 只有一个生产 owner，其 Header/Footer/PageLayout/Section/SaveStatus 与滚动结构回到 task feature；不为吸收 `detailTokens` 保留共享 Detail Module。
+- `AppScrollArea` 隐藏真实 viewport、ref context、OverlayScrollbar 及其观察/绘制行为；删除全部无生产消费者的配置。
+- `ActionTooltip` 隐藏 React Aria trigger props/ref 合并与快捷键展示行为。
 
-写样式前先判断：
+禁止：
 
-1. 是原始值？
-2. 是通用视觉语义？
-3. 是产品结构语义？
-4. 是共享 UI pattern？
-5. 还是某个页面的一次性组合？
+- `shared/components/patterns`；
+- 平行 `shared/components/base`；
+- 一对一 HeroUI wrapper；
+- 只导出 class 字符串的 `*Tokens.ts`；
+- 只转发另一个 Module 的目录或 barrel；
+- 为唯一实现创建 port 或 Adapter。
 
-不要一上来就在页面里写原始值。
+## 8. Cold Start Adapter
 
-### 5.2 产品布局优先用 layout token
+Main HTML、Launcher HTML 与 Tauri 原生窗口在 React/CSS 接管前必须避免闪色。这些是不同 host 的真实 Adapter，允许保留最小中性值重复，但必须由静态同步检查保证与 `theme.css` 一致。
 
-Shell、sidebar、footer、main、list row 这类产品结构，优先用：
+Cold start 只包含中性结构，不复制六组 Accent recipe；两个 renderer 均在 React 挂载前调用 `bootstrapAppearance()`。
 
-1. `--sf-shell-*`
-2. `--sf-sidebar-*`
-3. `--sf-main-*`
-4. `--sf-control-*`
-5. `--sf-list-*`
+## 9. 新样式落点
 
-### 5.3 shadcn 是基础组件映射，不是产品布局真相
+按以下顺序判断：
 
-保留 `bg-background`、`text-foreground` 这类 utility 的目的，是让 base primitive 稳定工作。
+1. 是全应用视觉值：修改 `theme.css`。
+2. 是 HeroUI 公共控件及状态：修改 `components.css`。
+3. 是全局文档或原生窗口基础行为：修改 `base.css`。
+4. 是跨 Feature 的真实行为或产品合同：修改对应共享 Module。
+5. 是 Feature 特有布局、动态几何或内容层级：留在所属 Feature。
+6. 以上都不是：不新增样式。
 
-但：
+## 10. 架构不变式与验证
 
-1. 整个 shell 背景不应只靠 `--background`
-2. sidebar active 不应只靠 shadcn card token
-3. 产品级布局外观应回到 StoneFlow token
+以下情况视为回退：
 
----
+1. 页面重新拥有通用控件皮肤。
+2. 同一视觉值在多套 token 中存在。
+3. `patterns`、旧 `base`、shadcn adapter 或兼容 alias 回流。
+4. 新建视觉 wrapper、CVA 镜像、design-system package 或 Provider。
+5. HeroUI root、compound part 或 slot 使用 `rounded-*`、颜色型 `bg/text/border-*`、`shadow-*`、`ring-*`、内部 metrics 或交互状态 utility 覆盖公共 recipe。
+6. 产品动态几何被错误塞入全局主题。
+7. renderer import 顺序或 cold-start 中性值漂移。
 
-## 6. 依赖方向
-
-当前允许：
-
-```txt
-primitive -> semantic -> layout -> shadcn adapter -> base/pattern consumers
-```
-
-当前禁止：
-
-1. 页面 className 直接写大量原始十六进制色值
-2. 业务组件自己定义一套平行 token
-3. base primitive 反向知道 task/project 语义
-4. 把页面一次性样式写回 token 层
-
----
-
-## 7. 新增样式的落点规则
-
-新增样式时按这个顺序：
-
-1. 新原始值：`tokens/primitive.css`
-2. 新通用视觉语义：`tokens/semantic.css`
-3. 新产品结构语义：`tokens/layout.css`
-4. shadcn/Tailwind 映射：`adapters/shadcn.css`
-5. 全局基础行为：`base.css`
-6. 少量全局 utility：`utilities.css`
-7. 可复用结构模式：`shared/ui/patterns/*`
-8. 最后才是页面或 feature 里的局部组合
-
----
-
-## 8. 架构不变式
-
-以下情况应直接视为回退：
-
-1. 页面重新散落写原始色值
-2. `shared/ui/base` 开始承载业务语义
-3. 产品结构颜色直接绑死到 shadcn token
-4. feature 为了局部需求新增一整套私有 token 命名
-5. `styles/index.css` import 顺序被打乱，导致真相源层级失效
-
----
-
-## 9. 推荐验证
-
-文档或样式架构改动后，至少核对：
-
-1. `index.css` import 顺序未漂移
-2. token 层级仍然是 primitive -> semantic -> layout
-3. layout/UI 代码没有新增明显的原始色值回退
-4. 文档里不再残留旧仓库路径
+门禁负责检查导入顺序、旧轨道零消费者、视觉 utility 越界、主题与 cold-start 同步、类型、Lint、模块依赖、格式、第一方动效和生产构建。jsdom 与 className 快照不构成视觉验收；真实 Main/Launcher 状态矩阵必须单独走查。

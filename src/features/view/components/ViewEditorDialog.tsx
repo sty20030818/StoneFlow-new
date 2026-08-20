@@ -135,7 +135,7 @@ export function ViewEditorDialog({
 			<Modal.Container placement='center' scroll='inside' size='lg'>
 				<Modal.Dialog
 					aria-describedby={descriptionId}
-					className='max-w-3xl gap-0 overflow-hidden p-0'
+					className='max-w-3xl overflow-hidden'
 					render={(dialogProps) => (
 						<section
 							{...dialogProps}
@@ -152,14 +152,14 @@ export function ViewEditorDialog({
 								void handleSubmit()
 							}}
 						>
-							<Modal.Header className='gap-1 px-5 pt-5 pb-3'>
+							<Modal.Header>
 								<Modal.Heading>{title}</Modal.Heading>
 								<p className='max-w-140 text-sm text-muted' id={descriptionId}>
 									自定义视图只保存筛选条件（Filter）；分组与排序请在「显示」中设置。
 								</p>
 							</Modal.Header>
 
-							<Modal.Body className='grid gap-5 px-5 py-2'>
+							<Modal.Body>
 								<div className='grid gap-1.5'>
 									<Label htmlFor='view-editor-name'>名称</Label>
 									<Input
@@ -175,7 +175,6 @@ export function ViewEditorDialog({
 									<Label>状态筛选</Label>
 									<ToggleButtonGroup
 										aria-label='状态筛选'
-										className='flex flex-wrap'
 										isDetached
 										selectedKeys={statusList}
 										selectionMode='multiple'

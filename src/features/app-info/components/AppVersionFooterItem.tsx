@@ -12,13 +12,7 @@ export function AppVersionFooterItem() {
 
 	return (
 		<ActionTooltip label={label}>
-			<Chip
-				aria-label={label}
-				className='shrink-0 tabular-nums'
-				size='sm'
-				tabIndex={0}
-				variant='tertiary'
-			>
+			<Chip aria-label={label} className='shrink-0' size='sm' tabIndex={0} variant='tertiary'>
 				<Chip.Label>v{version}</Chip.Label>
 			</Chip>
 		</ActionTooltip>

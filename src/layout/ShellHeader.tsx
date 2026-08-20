@@ -1,6 +1,6 @@
 import { startTransition, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { Avatar, Button, Tooltip } from '@heroui/react'
+import { Button, Tooltip } from '@heroui/react'
 
 import { getSectionLabel, getScopeLabel, type ShellProjectLink } from '@/layout/config'
 import { openProjectDetail } from '@/app/navigation'
@@ -34,7 +34,6 @@ import type { TaskPriorityValue } from '@/features/task'
 import {
 	shellChromeAvatarClusterClass,
 	shellChromeWindowControlsRowClass,
-	shellChromeWindowControlClass,
 } from '@/shared/components/patterns/shell-chrome'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import {
@@ -277,15 +276,12 @@ export function ShellHeader({
 						>
 							<div className='flex min-w-0 flex-1 items-center gap-1' data-tauri-drag-region>
 								{!isMac && (!isWin || !isLayoutNarrow) ? (
-									<Avatar className='size-7 shrink-0 rounded-lg ring-1 ring-border'>
-										<Avatar.Image
-											alt='StoneFlow'
-											className='rounded-lg'
-											draggable={false}
-											src='/StoneFlow.png'
-										/>
-										<Avatar.Fallback className='rounded-lg'>SF</Avatar.Fallback>
-									</Avatar>
+									<img
+										alt='StoneFlow'
+										className='size-7 shrink-0 rounded-(--radius-surface) border border-border'
+										draggable={false}
+										src='/StoneFlow.png'
+									/>
 								) : null}
 
 								{/* 展开态把导航键推到 sidebar 右边界，拖拽空白只承担窗体 chrome。 */}
@@ -380,7 +376,7 @@ export function ShellHeader({
 									<Tooltip>
 										<Button
 											aria-label='最小化窗口'
-											className={shellChromeWindowControlClass}
+											data-window-control='true'
 											isIconOnly
 											onPress={() => void handleMinimize()}
 											size='sm'
@@ -393,7 +389,7 @@ export function ShellHeader({
 									<Tooltip>
 										<Button
 											aria-label={isMaximized ? '还原窗口' : '最大化窗口'}
-											className={shellChromeWindowControlClass}
+											data-window-control='true'
 											isIconOnly
 											onPress={() => void handleToggleMaximize()}
 											size='sm'
@@ -406,7 +402,8 @@ export function ShellHeader({
 									<Tooltip>
 										<Button
 											aria-label='关闭窗口'
-											className={`${shellChromeWindowControlClass} hover:bg-danger hover:text-danger-foreground`}
+											data-window-close-button='true'
+											data-window-control='true'
 											isIconOnly
 											onPress={() => void handleClose()}
 											size='sm'
