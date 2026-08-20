@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Timeline } from '@heroui-pro/react'
-import { Button } from '@heroui/react'
+import { Alert, Button, Spinner } from '@heroui/react'
 
 import { useEntityActivitiesQuery } from '@/features/activity'
 import type { ActivityTimelineEntry } from '@/features/activity'
@@ -8,7 +8,6 @@ import { useProjectOptions } from '@/features/project'
 import { useSpaces } from '@/features/space'
 import { useEventSubscription, type AppEvent } from '@/shared/events'
 import { DetailSection } from '@/shared/components/detail'
-import { StatusNotice } from '@/shared/components/StatusNotice'
 
 import { buildTaskActivityDisplayItems } from './taskActivityTimelineModel'
 
@@ -115,19 +114,35 @@ export function TaskActivityTimeline({ spaceId, taskId }: TaskActivityTimelinePr
 	return (
 		<DetailSection title='操作记录'>
 			{loadState === 'loading' ? (
-				<StatusNotice description='正在读取任务 Activity。' title='读取中' variant='neutral' />
+				<Alert aria-busy='true' aria-live='polite' role='status' status='accent'>
+					<Alert.Indicator>
+						<Spinner aria-hidden color='current' size='sm' />
+					</Alert.Indicator>
+					<Alert.Content>
+						<Alert.Title>读取中</Alert.Title>
+						<Alert.Description>正在读取任务 Activity。</Alert.Description>
+					</Alert.Content>
+				</Alert>
 			) : null}
 
 			{loadState === 'error' ? (
-				<StatusNotice description={errorMessage} title='Activity 读取失败' variant='danger' />
+				<Alert role='alert' status='danger'>
+					<Alert.Indicator />
+					<Alert.Content>
+						<Alert.Title>Activity 读取失败</Alert.Title>
+						<Alert.Description>{errorMessage}</Alert.Description>
+					</Alert.Content>
+				</Alert>
 			) : null}
 
 			{loadState === 'ready' && displayItems.length === 0 ? (
-				<StatusNotice
-					description='当前任务还没有任何 Activity 记录。'
-					title='暂无 Activity'
-					variant='neutral'
-				/>
+				<Alert status='accent'>
+					<Alert.Indicator />
+					<Alert.Content>
+						<Alert.Title>暂无 Activity</Alert.Title>
+						<Alert.Description>当前任务还没有任何 Activity 记录。</Alert.Description>
+					</Alert.Content>
+				</Alert>
 			) : null}
 
 			{loadState === 'ready' && displayItems.length > 0 ? (
@@ -154,7 +169,7 @@ export function TaskActivityTimeline({ spaceId, taskId }: TaskActivityTimelinePr
 					</Timeline>
 					{hasMoreItems ? (
 						<Button
-							className='self-start px-3 text-[12px]'
+							className='self-start'
 							size='sm'
 							variant='outline'
 							onPress={() => {

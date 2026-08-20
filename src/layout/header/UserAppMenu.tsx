@@ -1,4 +1,4 @@
-import { Avatar, Badge, Dropdown } from '@heroui/react'
+import { Avatar, Badge, Button, Dropdown } from '@heroui/react'
 
 import {
 	COMMAND_IDS,
@@ -9,11 +9,6 @@ import {
 import { useManualUpdateCheck } from '@/features/update'
 import { ShortcutTokens } from '@/shared/components/ShortcutTokens'
 import { ActionTooltip } from '@/shared/components/tooltip'
-import { cn } from '@/shared/lib/utils'
-import {
-	shellChromeNavCircleButtonClass,
-	shellChromeNavCircleButtonExpandedClass,
-} from '@/shared/components/patterns/shell-chrome'
 import { InfoIcon, HistoryIcon, KeyboardIcon, RefreshCwIcon, SettingsIcon } from 'lucide-react'
 
 function MenuCommandShortcut({ commandId }: { commandId: CommandId }) {
@@ -54,14 +49,13 @@ export function UserAppMenu({
 	return (
 		<Dropdown>
 			<ActionTooltip delay={0} label='应用菜单'>
-				<Dropdown.Trigger
+				<Button
 					aria-label='应用菜单'
-					className={cn(
-						shellChromeNavCircleButtonClass,
-						shellChromeNavCircleButtonExpandedClass,
-						'relative size-7.5 shrink-0 rounded-full p-0',
-						'focus-visible:ring-0 data-[state=open]:bg-sf-shell-hover-strong',
-					)}
+					className='relative size-7.5 shrink-0 rounded-full p-0'
+					isIconOnly
+					size='sm'
+					type='button'
+					variant='ghost'
 				>
 					<Badge color='success' placement='bottom-right' size='sm'>
 						<Badge.Anchor>
@@ -72,16 +66,16 @@ export function UserAppMenu({
 						</Badge.Anchor>
 						<Badge.Label aria-label='在线' />
 					</Badge>
-				</Dropdown.Trigger>
+				</Button>
 			</ActionTooltip>
 
 			<Dropdown.Popover className='min-w-56' offset={6} placement='bottom end'>
 				<Dropdown.Menu aria-label='应用菜单'>
 					<Dropdown.Item
+						aria-current={isSettingsActive ? 'page' : undefined}
 						id='settings'
 						onAction={() => onRunCommand(COMMAND_IDS.openSettings)}
 						textValue='设置'
-						className={isSettingsActive ? 'bg-default' : undefined}
 					>
 						<SettingsIcon />
 						<span>设置</span>

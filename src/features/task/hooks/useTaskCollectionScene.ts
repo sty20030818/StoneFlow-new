@@ -282,6 +282,7 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 	})
 	const boardProps = useMemo(
 		(): TaskBoardProps => ({
+			activeTaskId: input.activeTaskId,
 			collectionInteraction: selection.interaction,
 			createProjectId: input.createProjectId ?? null,
 			emptyActionLabel: input.empty.emptyActionLabel,
@@ -328,6 +329,7 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 			handleExpandAll,
 			handleFocusIntentConsumed,
 			handleSectionOpenChange,
+			input.activeTaskId,
 			input.createProjectId,
 			input.empty.emptyActionLabel,
 			input.empty.emptyDescription,

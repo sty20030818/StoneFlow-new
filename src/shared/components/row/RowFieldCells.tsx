@@ -1,9 +1,9 @@
 import { forwardRef } from 'react'
 import type { ComponentProps, ReactNode } from 'react'
+import { Checkbox } from '@heroui/react'
 
 import { cn } from '@/shared/lib/utils'
 import { buttonVariants } from '@/shared/components/base/button'
-import { Checkbox } from '@/shared/components/base/checkbox'
 import { ActionTooltip, DisabledActionTooltip, OverflowTooltip } from '@/shared/components/tooltip'
 import type { VariantProps } from 'class-variance-authority'
 
@@ -58,13 +58,18 @@ export function RowSelectionCell({
 	const checkbox = (
 		<Checkbox
 			aria-label={accessibleLabel}
-			checked={checked}
-			disabled={disabled}
-			onCheckedChange={() => onCheckedChange()}
+			isDisabled={disabled}
+			isSelected={checked}
+			onChange={() => onCheckedChange()}
 			onClick={stopRowEventPropagation}
-			onKeyDownCapture={stopRowEventPropagation}
 			onPointerDownCapture={stopRowEventPropagation}
-		/>
+		>
+			<Checkbox.Content>
+				<Checkbox.Control>
+					<Checkbox.Indicator />
+				</Checkbox.Control>
+			</Checkbox.Content>
+		</Checkbox>
 	)
 	const renderCell = (content: ReactNode) => (
 		<span
@@ -75,6 +80,7 @@ export function RowSelectionCell({
 					: 'opacity-0 group-hover/row-shell:opacity-100 group-has-focus-visible/row-shell:opacity-100',
 			)}
 			data-slot='row-selection-cell'
+			onKeyDownCapture={stopRowEventPropagation}
 		>
 			{content}
 		</span>

@@ -182,13 +182,13 @@ export function GlobalSearchInput({ onOpenTask, onOpenProject }: GlobalSearchInp
 				value={query}
 				variant='secondary'
 			>
-				<SearchField.Group className='h-8 w-full rounded-lg border-border bg-surface-secondary shadow-none'>
-					<SearchField.SearchIcon className='ml-2.5 mr-0 size-3.5 text-muted' />
+				<SearchField.Group className='w-full'>
+					<SearchField.SearchIcon className='ml-2.5 mr-0 size-3.5' />
 					<SearchField.Input
 						aria-expanded={isOpen}
 						aria-controls={shouldShowResults ? 'global-search-results' : undefined}
 						autoComplete='off'
-						className='h-full min-w-0 flex-1 bg-transparent px-2 py-1 text-[12.5px] text-foreground outline-none placeholder:text-muted'
+						className='min-w-0 flex-1'
 						onFocus={() => {
 							setIsFocused(true)
 						}}
@@ -200,10 +200,7 @@ export function GlobalSearchInput({ onOpenTask, onOpenProject }: GlobalSearchInp
 
 					{shouldShowClearHint ? (
 						<CommandActionTooltip commandId={COMMAND_IDS.close} label='清空并关闭搜索'>
-							<SearchField.ClearButton
-								aria-label='清空并关闭搜索'
-								className='mr-1 shrink-0 text-muted'
-							>
+							<SearchField.ClearButton aria-label='清空并关闭搜索' className='mr-1 shrink-0'>
 								<CommandShortcut commandId={COMMAND_IDS.close} />
 							</SearchField.ClearButton>
 						</CommandActionTooltip>

@@ -7,7 +7,6 @@ import {
 	ChevronsUpDownIcon,
 	ExternalLinkIcon,
 	FolderIcon,
-	OrbitIcon,
 	PlusIcon,
 	Settings2Icon,
 	Trash2Icon,
@@ -21,7 +20,7 @@ import type {
 	SidebarItemVisibilityTarget,
 	SidebarMainItemKey,
 } from '@/features/settings'
-import { getSpaceVisual, SpaceEditorDialog } from '@/features/space'
+import { ALL_SPACES_VISUAL, getSpaceVisual, SpaceEditorDialog } from '@/features/space'
 import { SHELL_FOOTER_ITEMS, SHELL_NAV_ITEMS, type ShellProjectLink } from '@/layout/config'
 import {
 	isAllScope,
@@ -105,6 +104,7 @@ export function ShellSidebarNavigation({
 		null
 	const canArchiveOrDeleteActiveSpace = Boolean(activeSpace && !activeSpace.isDefault)
 	const allScope = isAllScope(currentScope)
+	const AllSpacesIcon = ALL_SPACES_VISUAL.icon
 	const scopedProjectLinks = allScope ? [] : projects
 	const currentScopeLabel = allScope ? '所有空间' : (activeSpace?.name ?? '未选择 Space')
 	const showProjectSection = shouldShowSidebarProjectSection(
@@ -257,7 +257,7 @@ export function ShellSidebarNavigation({
 			<ContextMenu>
 				<ContextMenu.Trigger className='flex h-full min-h-0 w-full'>
 					<Sidebar
-						className='h-full min-h-0 bg-transparent'
+						className='h-full min-h-0'
 						style={{ '--sidebar-width': 'inherit', display: 'flex' } as CSSProperties}
 					>
 						<Sidebar.Header className='px-3 pb-2 pt-2'>
@@ -270,15 +270,7 @@ export function ShellSidebarNavigation({
 									variant='ghost'
 								>
 									{allScope ? (
-										<SpaceIconBadge
-											visual={{
-												label: '所有空间',
-												icon: OrbitIcon,
-												iconClassName: 'text-[#8b5cf6]',
-												iconBadgeClassName: 'bg-[#8b5cf6]',
-												swatchClassName: 'bg-[#8b5cf6]',
-											}}
-										/>
+										<SpaceIconBadge visual={ALL_SPACES_VISUAL} />
 									) : activeSpaceVisual ? (
 										<SpaceIconBadge visual={activeSpaceVisual} />
 									) : null}
@@ -299,7 +291,9 @@ export function ShellSidebarNavigation({
 											}
 											textValue='所有空间'
 										>
-											<OrbitIcon className='size-4 shrink-0 text-[#8b5cf6]' />
+											<AllSpacesIcon
+												className={cn('size-4 shrink-0', ALL_SPACES_VISUAL.iconClassName)}
+											/>
 											<span>所有空间</span>
 											{allScope ? <CheckIcon className='ml-auto size-4' /> : null}
 										</Dropdown.Item>

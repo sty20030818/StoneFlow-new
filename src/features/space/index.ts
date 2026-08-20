@@ -40,7 +40,7 @@ export { setActiveScope } from './api/spaces'
 export type { SpaceVisualDefinition } from './model/spaceVisuals'
 
 /** 空间图标色单源（侧栏 / metadata / launcher 等）。 */
-export { getSpaceVisual } from './model/spaceVisuals'
+export { ALL_SPACES_VISUAL, getSpaceVisual } from './model/spaceVisuals'
 
 // ── UI ──────────────────────────────────────────────────────────────────────
 

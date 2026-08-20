@@ -67,7 +67,7 @@ describe('RowSelectionCell', () => {
 
 		let checkbox = screen.getByRole('checkbox', { name: '选择任务 A' })
 		expect(checkbox.closest('[data-slot="row-selection-cell"]')).toHaveClass('opacity-0')
-		expect(checkbox).toHaveAttribute('data-state', 'unchecked')
+		expect(checkbox).not.toBeChecked()
 
 		fireEvent.click(checkbox)
 		expect(onCheckedChange).toHaveBeenCalledOnce()
@@ -75,7 +75,7 @@ describe('RowSelectionCell', () => {
 		rerender(<RowSelectionCell checked label='选择任务 A' onCheckedChange={onCheckedChange} />)
 		checkbox = screen.getByRole('checkbox', { name: '选择任务 A' })
 		expect(checkbox.closest('[data-slot="row-selection-cell"]')).toHaveClass('opacity-100')
-		expect(checkbox).toHaveAttribute('data-state', 'checked')
+		expect(checkbox).toBeChecked()
 	})
 
 	it('分离可见标签与无障碍名称，并让禁用原因保持可聚焦', () => {

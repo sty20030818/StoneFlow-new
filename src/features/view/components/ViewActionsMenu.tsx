@@ -1,4 +1,4 @@
-import { Dropdown } from '@heroui/react'
+import { Button, Dropdown } from '@heroui/react'
 import { EllipsisIcon, PencilIcon, PlusIcon, Trash2Icon } from 'lucide-react'
 
 import { ActionTooltip } from '@/shared/components/tooltip'
@@ -17,12 +17,9 @@ export function ViewActionsMenu({ activeView, onCreate, onEdit, onDelete }: View
 	return (
 		<Dropdown>
 			<ActionTooltip label='视图操作'>
-				<Dropdown.Trigger
-					aria-label='视图操作'
-					className='flex size-8 items-center justify-center rounded-lg border border-default text-muted hover:bg-default'
-				>
+				<Button aria-label='视图操作' isIconOnly size='sm' type='button' variant='outline'>
 					<EllipsisIcon className='size-4' />
-				</Dropdown.Trigger>
+				</Button>
 			</ActionTooltip>
 			<Dropdown.Popover placement='bottom end'>
 				<Dropdown.Menu aria-label='视图操作'>

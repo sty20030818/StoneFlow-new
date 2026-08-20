@@ -369,7 +369,7 @@ function CompactSelect({
 			value={value}
 			variant='secondary'
 		>
-			<Select.Trigger className='h-8 w-auto min-w-30 max-w-40 justify-between rounded-full bg-surface-secondary px-3 text-[13px] shadow-none'>
+			<Select.Trigger className='w-auto min-w-30 max-w-40'>
 				<Select.Value />
 				<Select.Indicator />
 			</Select.Trigger>

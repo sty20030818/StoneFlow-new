@@ -43,6 +43,7 @@ export type TaskRowAdapterProps = {
 	task: TaskListItem
 	contextTasks?: TaskListItem[]
 	rowState: {
+		isActive?: boolean
 		isSelected: boolean
 		isPending: boolean
 		isFocused: boolean
@@ -95,6 +96,7 @@ function taskRowAdapterPropsEqual(prev: TaskRowAdapterProps, next: TaskRowAdapte
 	const ps = prev.rowState
 	const ns = next.rowState
 	if (
+		ps.isActive !== ns.isActive ||
 		ps.isSelected !== ns.isSelected ||
 		ps.isPending !== ns.isPending ||
 		ps.isFocused !== ns.isFocused ||
@@ -131,7 +133,14 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 	showSpaceLabel = false,
 	actions,
 }: TaskRowAdapterProps) {
-	const { isSelected, isPending, isFocused, focusSource, suppressFocusIndicator } = rowState
+	const {
+		isActive = false,
+		isSelected,
+		isPending,
+		isFocused,
+		focusSource,
+		suppressFocusIndicator,
+	} = rowState
 	const { runtime: commandRuntime, context: commandContext } = useCommandRuntimeContext()
 	const { onClick: _reactAriaPressClick, ...ariaRowProps } = rowProps ?? {}
 	const actionTargets = useMemo(
@@ -301,6 +310,7 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 				data-shell-task-card='true'
 				data-task-id={task.id}
 				data-focus-source={isFocused ? focusSource : undefined}
+				active={isActive}
 				hovered={isFocused}
 				interactive
 				pending={isPending}

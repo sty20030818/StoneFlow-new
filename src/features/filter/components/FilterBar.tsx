@@ -141,7 +141,6 @@ function FilterChip({
 			<ActionTooltip label='删除筛选条件'>
 				<Button
 					aria-label='删除筛选条件'
-					className='size-5 min-w-5 rounded text-muted'
 					isIconOnly
 					onPress={onRemove}
 					size='sm'
@@ -166,13 +165,7 @@ function OpPicker({
 }) {
 	return (
 		<Dropdown>
-			<Button
-				aria-label='筛选运算符'
-				className='h-6 min-w-0 rounded px-1 text-muted'
-				size='sm'
-				type='button'
-				variant='ghost'
-			>
+			<Button aria-label='筛选运算符' className='min-w-0' size='sm' type='button' variant='ghost'>
 				{formatFilterOpLabel(op, multi)}
 			</Button>
 			<Dropdown.Popover className='w-28' placement='bottom start'>
@@ -221,7 +214,7 @@ function ValuesPicker({
 		<Dropdown>
 			<Button
 				aria-label={`筛选值 ${summary}`}
-				className='h-6 max-w-35 min-w-0 rounded px-1 font-medium'
+				className='max-w-35 min-w-0'
 				size='sm'
 				type='button'
 				variant='ghost'

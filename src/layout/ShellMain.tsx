@@ -1,14 +1,8 @@
 import type { MouseEvent, PropsWithChildren } from 'react'
+import { ContextMenu } from '@heroui-pro/react'
 
 import { EntityDetailDrawerHost, type EntityDetailRouteState } from '@/features/entity-detail'
 import { TaskPreview, useTaskPreviewController } from '@/features/task'
-import {
-	ContextMenu,
-	ContextMenuContent,
-	ContextMenuGroup,
-	ContextMenuItem,
-	ContextMenuTrigger,
-} from '@/shared/components/base/context-menu'
 import { FolderPlusIcon, SquarePenIcon } from 'lucide-react'
 
 type ShellMainProps = PropsWithChildren<{
@@ -82,8 +76,14 @@ export function ShellMain({
 		const target = event.target
 		if (!(target instanceof HTMLElement)) {
 			event.preventDefault()
+			event.stopPropagation()
 			return
 		}
+
+		const nestedContextMenuTrigger = target.closest<HTMLElement>(
+			'[data-slot="context-menu-trigger"]',
+		)
+		if (nestedContextMenuTrigger && event.currentTarget.contains(nestedContextMenuTrigger)) return
 
 		if (
 			target.closest(ENTITY_DETAIL_ROOT_SELECTOR) ||
@@ -92,6 +92,7 @@ export function ShellMain({
 			target.closest(INTERACTIVE_TARGET_SELECTOR)
 		) {
 			event.preventDefault()
+			event.stopPropagation()
 		}
 	}
 
@@ -105,9 +106,10 @@ export function ShellMain({
 						onClose={onCloseDrawer}
 						open={isDrawerOpen}
 					>
-						<ContextMenuTrigger asChild onContextMenu={handleGlobalContextMenu}>
+						<ContextMenu.Trigger className='flex min-h-0 min-w-0 flex-1 overflow-hidden'>
 							<div
 								className='relative flex min-h-0 min-w-0 flex-1 overflow-hidden'
+								onContextMenuCapture={handleGlobalContextMenu}
 								onPointerDownCapture={handleMainPointerDownCapture}
 							>
 								<div className='flex min-w-0 flex-1 flex-col overflow-hidden'>{children}</div>
@@ -124,20 +126,20 @@ export function ShellMain({
 									/>
 								) : null}
 							</div>
-						</ContextMenuTrigger>
+						</ContextMenu.Trigger>
 					</EntityDetailDrawerHost>
-					<ContextMenuContent className='w-40'>
-						<ContextMenuGroup>
-							<ContextMenuItem onSelect={onOpenTaskCreateDialog}>
+					<ContextMenu.Popover className='w-40'>
+						<ContextMenu.Menu aria-label='主界面操作'>
+							<ContextMenu.Item onAction={onOpenTaskCreateDialog}>
 								<SquarePenIcon />
 								新建任务
-							</ContextMenuItem>
-							<ContextMenuItem onSelect={onOpenProjectCreateDialog}>
+							</ContextMenu.Item>
+							<ContextMenu.Item onAction={onOpenProjectCreateDialog}>
 								<FolderPlusIcon />
 								新建项目
-							</ContextMenuItem>
-						</ContextMenuGroup>
-					</ContextMenuContent>
+							</ContextMenu.Item>
+						</ContextMenu.Menu>
+					</ContextMenu.Popover>
 				</ContextMenu>
 			</div>
 		</div>

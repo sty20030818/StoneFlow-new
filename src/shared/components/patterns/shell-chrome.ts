@@ -4,17 +4,7 @@
 export const shellChromeInlineGroupClass = 'flex items-center gap-1.5'
 export const shellChromeIconSecondaryClass = 'shrink-0 text-sf-icon-secondary'
 export const shellChromeIconSubtleClass = 'shrink-0 text-sf-icon-subtle'
-export const shellChromeWindowControlClass =
-	'h-10 w-10 rounded-md bg-transparent shadow-none ring-0 text-sf-shell-text-secondary hover:bg-sf-shell-hover-strong hover:text-legacy-foreground focus-visible:bg-sf-shell-hover-strong focus-visible:text-legacy-foreground focus-visible:ring-0'
-
-export const shellChromeIconActionClass =
-	'border-legacy-border bg-card text-sf-shell-text-secondary shadow-(--sf-shadow-panel) hover:bg-sf-surface-panel-subtle hover:text-legacy-foreground'
-
-export const shellChromeNavCircleButtonClass =
-	'rounded-full bg-transparent text-sf-shell-text-secondary shadow-none hover:bg-sf-shell-hover-strong hover:text-legacy-foreground focus-visible:bg-sf-shell-hover-strong focus-visible:text-legacy-foreground'
-
-export const shellChromeNavCircleButtonExpandedClass =
-	'aria-expanded:bg-sf-shell-hover-strong data-[state=open]:bg-sf-shell-hover-strong focus-visible:ring-0'
+export const shellChromeWindowControlClass = 'h-10 w-10'
 
 export const shellChromeAvatarClusterClass = 'ml-2 flex items-center gap-2'
 

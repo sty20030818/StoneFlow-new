@@ -1,20 +1,9 @@
-import type { ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
+import { ChevronRightIcon } from 'lucide-react'
+import { Breadcrumbs } from '@heroui/react'
 import { Link } from '@tanstack/react-router'
+import { Breadcrumb } from 'react-aria-components'
 
-import {
-	Breadcrumb,
-	BreadcrumbItem,
-	BreadcrumbLink,
-	BreadcrumbList,
-	BreadcrumbPage,
-	BreadcrumbSeparator,
-} from '@/shared/components/base/breadcrumb'
-import {
-	breadcrumbLeadClass,
-	breadcrumbLeadForegroundClass,
-	breadcrumbLeadIconClass,
-} from '@/shared/components/patterns/breadcrumb'
 import { OverflowTooltip } from '@/shared/components/tooltip'
 import { cn } from '@/shared/lib/utils'
 
@@ -32,64 +21,40 @@ type AppBreadcrumbProps = {
 }
 
 export function AppBreadcrumb({ items }: AppBreadcrumbProps) {
-	if (items.length === 0) {
-		return null
-	}
+	if (items.length === 0) return null
 
 	return (
-		<Breadcrumb>
-			<BreadcrumbList className='text-sm leading-5'>
-				{items.map((item, index) => {
-					const Icon = item.icon
-					const isCurrent = item.current ?? index === items.length - 1
-					const shouldTruncate = item.truncate ?? index > 0
-					const labelClassName = cn(
-						index === 0
-							? breadcrumbLeadForegroundClass
-							: `${breadcrumbLeadClass} text-sf-text-tertiary`,
-						'h-5 items-center leading-none',
-						shouldTruncate ? 'min-w-0 max-w-full' : null,
-						isCurrent ? 'font-semibold text-legacy-foreground' : null,
-					)
-
-					return (
-						<BreadcrumbNodeItem
-							icon={Icon}
-							isCurrent={isCurrent}
-							key={item.key}
-							label={item.label}
-							labelClassName={labelClassName}
-							to={item.to}
-							truncate={shouldTruncate}
-						>
-							{index > 0 ? <BreadcrumbSeparator /> : null}
-						</BreadcrumbNodeItem>
-					)
-				})}
-			</BreadcrumbList>
-		</Breadcrumb>
+		<Breadcrumbs aria-label='当前位置'>
+			{items.map((item, index) => (
+				<BreadcrumbNodeItem
+					icon={item.icon}
+					isCurrent={item.current ?? index === items.length - 1}
+					key={item.key}
+					label={item.label}
+					showSeparator={index > 0}
+					to={item.to}
+					truncate={item.truncate ?? index > 0}
+				/>
+			))}
+		</Breadcrumbs>
 	)
 }
 
-type BreadcrumbNodeItemProps = {
-	children?: ReactNode
-	icon?: LucideIcon
-	isCurrent: boolean
-	label: string
-	labelClassName: string
-	to?: string
-	truncate: boolean
-}
-
 function BreadcrumbNodeItem({
-	children,
 	icon: Icon,
 	isCurrent,
 	label,
-	labelClassName,
+	showSeparator,
 	to,
 	truncate,
-}: BreadcrumbNodeItemProps) {
+}: {
+	icon?: LucideIcon
+	isCurrent: boolean
+	label: string
+	showSeparator: boolean
+	to?: string
+	truncate: boolean
+}) {
 	const labelNode = truncate ? (
 		<OverflowTooltip className='min-w-0 flex-1' content={label}>
 			{label}
@@ -97,25 +62,36 @@ function BreadcrumbNodeItem({
 	) : (
 		label
 	)
+	const content = (
+		<>
+			{Icon ? <Icon aria-hidden className='size-4 shrink-0' /> : null}
+			{labelNode}
+		</>
+	)
+	const className = cn(
+		'breadcrumbs__link inline-flex h-5 items-center gap-1 leading-5',
+		truncate ? 'min-w-0 max-w-full' : null,
+		isCurrent ? 'font-semibold' : null,
+	)
 
 	return (
-		<>
-			{children}
-			<BreadcrumbItem className={truncate ? 'min-w-0' : undefined}>
-				{isCurrent || !to ? (
-					<BreadcrumbPage className={labelClassName}>
-						{Icon ? <Icon aria-hidden className={breadcrumbLeadIconClass} /> : null}
-						{labelNode}
-					</BreadcrumbPage>
-				) : (
-					<BreadcrumbLink asChild className={labelClassName}>
-						<Link from='/' to={to as never}>
-							{Icon ? <Icon aria-hidden className={breadcrumbLeadIconClass} /> : null}
-							{labelNode}
-						</Link>
-					</BreadcrumbLink>
-				)}
-			</BreadcrumbItem>
-		</>
+		<Breadcrumb className={cn('breadcrumbs__item', truncate ? 'min-w-0' : null)}>
+			{showSeparator ? <ChevronRightIcon aria-hidden className='breadcrumbs__separator' /> : null}
+			{isCurrent || !to ? (
+				<span
+					aria-current={isCurrent ? 'page' : undefined}
+					aria-disabled={isCurrent ? true : undefined}
+					className={className}
+					data-current={isCurrent}
+					role={isCurrent ? 'link' : undefined}
+				>
+					{content}
+				</span>
+			) : (
+				<Link className={className} from='/' to={to as never}>
+					{content}
+				</Link>
+			)}
+		</Breadcrumb>
 	)
 }

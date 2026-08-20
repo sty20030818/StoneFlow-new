@@ -1,6 +1,5 @@
 import { COMMAND_IDS, CommandTooltipRow } from '@/features/command'
 import { Button, Tooltip } from '@heroui/react'
-import { shellChromeNavCircleButtonClass } from '@/shared/components/patterns/shell-chrome'
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 
 type NavBackForwardProps = {
@@ -20,14 +19,7 @@ export function NavBackForward({
 		<>
 			{canGoBack ? (
 				<Tooltip closeDelay={0} delay={0}>
-					<Button
-						aria-label='后退'
-						className={shellChromeNavCircleButtonClass}
-						isIconOnly
-						onPress={onBack}
-						size='sm'
-						variant='ghost'
-					>
+					<Button aria-label='后退' isIconOnly onPress={onBack} size='sm' variant='ghost'>
 						<ChevronLeftIcon className='size-3.5' />
 					</Button>
 					<Tooltip.Content>
@@ -43,14 +35,7 @@ export function NavBackForward({
 						role='group'
 						tabIndex={0}
 					>
-						<Button
-							aria-label='后退'
-							className={shellChromeNavCircleButtonClass}
-							isDisabled
-							isIconOnly
-							size='sm'
-							variant='ghost'
-						>
+						<Button aria-label='后退' isDisabled isIconOnly size='sm' variant='ghost'>
 							<ChevronLeftIcon className='size-3.5' />
 						</Button>
 					</Tooltip.Trigger>
@@ -62,14 +47,7 @@ export function NavBackForward({
 			)}
 			{canGoForward ? (
 				<Tooltip closeDelay={0} delay={0}>
-					<Button
-						aria-label='前进'
-						className={shellChromeNavCircleButtonClass}
-						isIconOnly
-						onPress={onForward}
-						size='sm'
-						variant='ghost'
-					>
+					<Button aria-label='前进' isIconOnly onPress={onForward} size='sm' variant='ghost'>
 						<ChevronRightIcon className='size-3.5' />
 					</Button>
 					<Tooltip.Content>
@@ -85,14 +63,7 @@ export function NavBackForward({
 						role='group'
 						tabIndex={0}
 					>
-						<Button
-							aria-label='前进'
-							className={shellChromeNavCircleButtonClass}
-							isDisabled
-							isIconOnly
-							size='sm'
-							variant='ghost'
-						>
+						<Button aria-label='前进' isDisabled isIconOnly size='sm' variant='ghost'>
 							<ChevronRightIcon className='size-3.5' />
 						</Button>
 					</Tooltip.Trigger>

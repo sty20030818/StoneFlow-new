@@ -29,7 +29,6 @@ export function PropertyToggleGrid({ items, className }: PropertyToggleGridProps
 		>
 			{items.map((item) => (
 				<ToggleButton
-					className='h-7 rounded-full border border-border bg-transparent px-2.5 text-[12px] font-medium text-muted data-[selected=true]:border-transparent data-[selected=true]:bg-default data-[selected=true]:text-foreground'
 					isDisabled={item.disabled}
 					isSelected={item.checked}
 					key={item.key}

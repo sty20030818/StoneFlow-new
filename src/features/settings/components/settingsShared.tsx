@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Card, Switch } from '@heroui/react'
+import { Card, Surface, Switch } from '@heroui/react'
 
 export function SettingsSection({
 	title,
@@ -81,8 +81,11 @@ export function SettingInfoRow({
 
 export function SettingsPreferenceGroup({ children }: { children: ReactNode }) {
 	return (
-		<div className='divide-y divide-separator rounded-xl border border-separator bg-surface-secondary px-3'>
+		<Surface
+			className='divide-y divide-separator rounded-lg border border-separator px-3'
+			variant='secondary'
+		>
 			{children}
-		</div>
+		</Surface>
 	)
 }

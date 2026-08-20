@@ -479,6 +479,7 @@
 	[data-theme="stoneflow-light"]
 		:is(.menu-item, .list-box-item, .command__item):is(
 			[aria-checked="true"],
+			[aria-current="page"],
 			[aria-selected="true"],
 			[data-selected="true"]
 		),
@@ -489,6 +490,7 @@
 	[data-theme="stoneflow-light"]
 		:is(.menu-item, .list-box-item, .command__item):is(
 			[aria-checked="true"],
+			[aria-current="page"],
 			[aria-selected="true"],
 			[data-selected="true"]
 		):is(:active, [data-hovered="true"], [data-pressed="true"], [aria-expanded="true"]),

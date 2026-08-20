@@ -1,4 +1,4 @@
-import { Alert, Button, Skeleton } from '@heroui/react'
+import { Alert, Button, Chip, Skeleton } from '@heroui/react'
 import { ContextMenu, EmptyState } from '@heroui-pro/react'
 import { ArchiveIcon, ChevronRightIcon, TrashIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
@@ -11,6 +11,7 @@ import {
 	type GroupedCollectionInteraction,
 } from '@/features/selection'
 import { BoardSectionContextMenu } from '@/shared/components/board'
+import { ROW_SHELL_SECTION_HEADER_CLASS } from '@/shared/components/patterns/row-tokens'
 import type { LifecycleEntry, LifecycleMode } from '@/shared/types'
 
 import type { LifecycleSection, LifecycleSectionKey } from '../model/buildLifecycleSections'
@@ -134,10 +135,10 @@ function LifecycleBoardSectionBlock({
 		)
 
 	return (
-		<section className='flex flex-col gap-1 pb-1 last:pb-2' data-lifecycle-section={section.key}>
+		<section className='flex flex-col gap-0.5 pb-1 last:pb-2' data-lifecycle-section={section.key}>
 			<ContextMenu open={contextMenuOpen} onOpenChange={setContextMenuOpen}>
 				<ContextMenu.Trigger
-					className='sticky top-0 z-10 flex min-h-9 items-center gap-2 rounded-lg bg-background px-1'
+					className={`sticky top-0 z-10 ${ROW_SHELL_SECTION_HEADER_CLASS}`}
 					onDoubleClick={() => collection.setGroupOpen(section.key, !open)}
 				>
 					<CollectionGridGroupTrigger groupKey={section.key} rootState={rootState}>
@@ -157,13 +158,13 @@ function LifecycleBoardSectionBlock({
 					</CollectionGridGroupTrigger>
 					<LifecycleModeIcon mode={mode} />
 					<span className='min-w-0 truncate text-sm font-semibold'>{section.label}</span>
-					<span className='rounded-full bg-surface-secondary px-2 py-0.5 text-xs text-muted tabular-nums'>
+					<Chip className='tabular-nums' size='sm' variant='tertiary'>
 						{section.items.length}
-					</span>
+					</Chip>
 					{selectedCount > 0 ? (
-						<span className='rounded-full bg-accent-soft px-2 py-0.5 text-xs text-accent tabular-nums'>
+						<Chip className='tabular-nums' color='accent' size='sm' variant='soft'>
 							已选 {selectedCount}
-						</span>
+						</Chip>
 					) : null}
 				</ContextMenu.Trigger>
 				<BoardSectionContextMenu
@@ -179,7 +180,7 @@ function LifecycleBoardSectionBlock({
 			</ContextMenu>
 
 			{open ? (
-				<div className='flex flex-col gap-1' role='presentation'>
+				<div className='flex flex-col gap-0.5' role='presentation'>
 					{section.items.map((entry) => {
 						const isSelected = collection.interaction.selectedKeys.has(entry.id)
 						return (

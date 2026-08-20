@@ -60,7 +60,7 @@ export function FilterMenu({ trigger, open, onOpenChange }: FilterMenuProps) {
 					cloneElement(trigger, props as Record<string, unknown>)
 				}
 			/>
-			<Dropdown.Popover className='w-60 min-w-60 p-0' offset={6} placement='bottom end'>
+			<Dropdown.Popover className='w-60 min-w-60' offset={6} placement='bottom end'>
 				<SearchField
 					aria-label='筛选字段'
 					className='border-b border-separator p-2'
@@ -69,7 +69,7 @@ export function FilterMenu({ trigger, open, onOpenChange }: FilterMenuProps) {
 					value={query}
 					variant='secondary'
 				>
-					<SearchField.Group className='h-8 shadow-none'>
+					<SearchField.Group>
 						<SearchField.SearchIcon />
 						<SearchField.Input
 							onKeyDown={(event) => {
@@ -82,17 +82,17 @@ export function FilterMenu({ trigger, open, onOpenChange }: FilterMenuProps) {
 					</SearchField.Group>
 				</SearchField>
 
-				<Dropdown.Menu aria-label='筛选字段' className='p-1'>
+				<Dropdown.Menu aria-label='筛选字段'>
 					{visibleFields.map((field) => (
 						<Dropdown.SubmenuTrigger key={field}>
-							<Dropdown.Item className='gap-2' id={field} textValue={formatFilterFieldLabel(field)}>
+							<Dropdown.Item id={field} textValue={formatFilterFieldLabel(field)}>
 								<span className='flex size-4 shrink-0 items-center justify-center' aria-hidden>
 									{getFilterFieldLeading(field)}
 								</span>
 								<span className='flex-1'>{formatFilterFieldLabel(field)}</span>
 								<Dropdown.SubmenuIndicator />
 							</Dropdown.Item>
-							<Dropdown.Popover className='w-56 overflow-hidden p-0' placement='right top'>
+							<Dropdown.Popover className='w-56 overflow-hidden' placement='right top'>
 								<FilterValueSubMenu
 									field={field}
 									isChecked={(value) => isChecked(field, value)}

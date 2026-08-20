@@ -1,27 +1,14 @@
 import { memo } from 'react'
-import { Dropdown } from '@heroui/react'
+import { Button, Dropdown } from '@heroui/react'
 import { Header } from 'react-aria-components'
 
-import { getSpaceVisual } from '@/features/space'
+import { ALL_SPACES_VISUAL, getSpaceVisual } from '@/features/space'
 import type { ShellRouteHistoryEntry } from '@/app/navigation'
 import type { Space } from '@/shared/types'
 import { cn } from '@/shared/lib/utils'
 import { ActionTooltip } from '@/shared/components/tooltip'
-import {
-	shellChromeNavCircleButtonClass,
-	shellChromeNavCircleButtonExpandedClass,
-	shellChromeTruncateLabelClass,
-} from '@/shared/components/patterns/shell-chrome'
-import type { SpaceVisualDefinition } from '@/features/space'
-import { HistoryIcon, OrbitIcon } from 'lucide-react'
-
-const ALL_SPACES_VISUAL: SpaceVisualDefinition = {
-	label: '所有空间',
-	icon: OrbitIcon,
-	iconClassName: 'text-[#8b5cf6]',
-	iconBadgeClassName: 'bg-[#8b5cf6]',
-	swatchClassName: 'bg-[#8b5cf6]',
-}
+import { shellChromeTruncateLabelClass } from '@/shared/components/patterns/shell-chrome'
+import { HistoryIcon } from 'lucide-react'
 
 type HistoryDropdownProps = {
 	entries: ShellRouteHistoryEntry[]
@@ -33,12 +20,9 @@ export function HistoryDropdown({ entries, spaces, onNavigate }: HistoryDropdown
 	return (
 		<Dropdown>
 			<ActionTooltip label='打开历史记录'>
-				<Dropdown.Trigger
-					aria-label='打开历史记录'
-					className={`${shellChromeNavCircleButtonClass} ${shellChromeNavCircleButtonExpandedClass}`}
-				>
+				<Button aria-label='打开历史记录' isIconOnly size='sm' type='button' variant='ghost'>
 					<HistoryIcon className='size-3.5' />
-				</Dropdown.Trigger>
+				</Button>
 			</ActionTooltip>
 			<Dropdown.Popover className='min-w-68' placement='bottom start'>
 				<Dropdown.Menu aria-label='最近浏览'>
@@ -90,7 +74,7 @@ const HistoryEntryItem = memo(function HistoryEntryItem({
 			<EntryIcon className='size-3.5 shrink-0' />
 			<span className={shellChromeTruncateLabelClass}>{entry.label}</span>
 			{SpaceIcon && entryVisual ? (
-				<span className='ml-auto flex shrink-0 items-center gap-1 text-xs text-muted-foreground'>
+				<span className='ml-auto flex shrink-0 items-center gap-1 text-xs text-muted'>
 					<SpaceIcon className={cn('size-3', entryVisual.iconClassName)} />
 					<span className='max-w-20 truncate'>{entry.spaceName}</span>
 				</span>

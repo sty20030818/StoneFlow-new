@@ -72,7 +72,7 @@ export function PropertyOptionItem({
 		<ContextMenu.Item id={id} isDisabled={isDisabled} onAction={onAction} textValue={textValue}>
 			{icon}
 			<span className='min-w-0 flex-1 truncate'>{children}</span>
-			<span className='ml-auto flex min-w-12 items-center justify-end gap-2 text-[11px] text-muted-foreground'>
+			<span className='ml-auto flex min-w-12 items-center justify-end gap-2 text-[11px] text-muted'>
 				<PropertyOptionIndicatorIcon indicator={indicator} />
 				{shortcut ? <span className='tabular-nums'>{shortcut}</span> : null}
 				{!shortcut && trailing ? <span className='tabular-nums'>{trailing}</span> : null}
@@ -94,5 +94,5 @@ function PropertyOptionIndicatorIcon({ indicator }: { indicator: PropertyOptionI
 }
 
 export function MenuShortcut({ children }: { children: ReactNode }) {
-	return <span className='ml-auto text-[11px] text-muted-foreground'>{children}</span>
+	return <span className='ml-auto text-[11px] text-muted'>{children}</span>
 }

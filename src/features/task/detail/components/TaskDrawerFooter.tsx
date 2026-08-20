@@ -35,23 +35,11 @@ export function TaskDrawerFooter({
 				</OverflowTooltip>
 			</div>
 			<div className='flex min-w-0 shrink-0 items-center gap-2'>
-				<Button
-					className='h-7 px-2 text-xs'
-					isDisabled={isArchiveBusy}
-					onPress={onArchiveOrRestore}
-					size='sm'
-					variant='outline'
-				>
+				<Button isDisabled={isArchiveBusy} onPress={onArchiveOrRestore} size='sm' variant='outline'>
 					<ArchiveIcon className='size-3.5' />
 					{task.archivedAt ? '恢复' : '归档'}
 				</Button>
-				<Button
-					className='h-7 px-2 text-xs'
-					isDisabled={isDeleteBusy}
-					onPress={onMoveToTrash}
-					size='sm'
-					variant='danger'
-				>
+				<Button isDisabled={isDeleteBusy} onPress={onMoveToTrash} size='sm' variant='danger'>
 					<Trash2Icon className='size-3.5' />
 					移入回收站
 				</Button>

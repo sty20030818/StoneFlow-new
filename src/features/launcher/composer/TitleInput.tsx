@@ -28,7 +28,7 @@ export function TitleInput() {
 				ref={titleInputRef}
 				aria-label='Launcher 输入'
 				autoComplete='off'
-				className='h-8 border-transparent bg-transparent px-0 text-[15px] font-semibold shadow-none placeholder:text-muted focus-visible:border-transparent focus-visible:ring-0'
+				className='text-[15px] font-semibold'
 				onChange={(event) => {
 					const nextTitle = event.currentTarget.value
 					const nativeEvent = event.nativeEvent

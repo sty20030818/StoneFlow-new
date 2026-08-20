@@ -59,7 +59,7 @@ function MainCardHeader({ title, breadcrumb, action, className }: MainCardHeader
 	return (
 		<header
 			className={cn(
-				'flex h-12 items-center justify-between gap-4 border-b border-separator pl-6 pr-2',
+				'flex h-12 items-center justify-between gap-4 border-b border-separator pl-5 pr-2',
 				className,
 			)}
 		>

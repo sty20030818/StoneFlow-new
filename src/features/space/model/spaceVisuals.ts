@@ -4,6 +4,7 @@ import {
 	BriefcaseBusinessIcon,
 	GraduationCapIcon,
 	HouseIcon,
+	OrbitIcon,
 	SparklesIcon,
 	UserIcon,
 } from 'lucide-react'
@@ -25,6 +26,14 @@ type SpaceColorDefinition = {
 }
 
 export type SpaceVisualDefinition = SpaceIconDefinition & SpaceColorDefinition
+
+export const ALL_SPACES_VISUAL: SpaceVisualDefinition = {
+	label: '所有空间',
+	icon: OrbitIcon,
+	iconClassName: 'text-[#8b5cf6]',
+	iconBadgeClassName: 'bg-[#8b5cf6]',
+	swatchClassName: 'bg-[#8b5cf6]',
+}
 
 const SPACE_ICON_VISUALS: Record<string, SpaceIconDefinition> = {
 	user: {

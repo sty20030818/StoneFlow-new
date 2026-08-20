@@ -1,5 +1,5 @@
 import { forwardRef, type ReactNode } from 'react'
-import { Dropdown } from '@heroui/react'
+import { Button } from '@heroui/react'
 
 import { OverflowTooltip } from '@/shared/components/tooltip'
 import { cn } from '@/shared/lib/utils'
@@ -20,7 +20,7 @@ export type MetadataFieldButtonProps = {
 	suppressOverflowTooltip?: boolean
 }
 
-/** Dropdown 专用触发按钮，外观与事件边界由 metadata-fields 自己拥有。 */
+/** Dropdown 专用触发按钮，只拥有字段尺寸、截断与事件边界。 */
 export const MetadataFieldButton = forwardRef<HTMLButtonElement, MetadataFieldButtonProps>(
 	function MetadataFieldButton(
 		{
@@ -44,33 +44,37 @@ export const MetadataFieldButton = forwardRef<HTMLButtonElement, MetadataFieldBu
 
 		if (appearance === 'row-icon') {
 			return (
-				<Dropdown.Trigger
+				<Button
 					aria-label={ariaLabel}
-					className='flex size-5 shrink-0 items-center justify-center rounded-full border border-transparent bg-transparent p-0 text-foreground outline-none focus-visible:border-focus-subtle data-[disabled]:pointer-events-none data-[disabled]:opacity-50'
+					className='shrink-0'
+					isIconOnly
 					isDisabled={disabled}
 					onClick={stopWhenRequested}
 					onKeyDown={stopWhenRequested}
 					onPointerDown={stopWhenRequested}
 					ref={ref}
+					size='sm'
+					type='button'
+					variant='ghost'
 				>
 					{icon}
 					<span className='sr-only'>{label}</span>
-				</Dropdown.Trigger>
+				</Button>
 			)
 		}
 
 		return (
-			<Dropdown.Trigger
+			<Button
 				aria-label={ariaLabel}
-				className={cn(
-					'flex h-8 items-center gap-1 rounded-full border border-default bg-default px-2.5 text-[13px] font-medium text-foreground shadow-xs outline-none focus-visible:border-focus-subtle data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
-					compact ? 'max-w-45' : 'max-w-52',
-				)}
+				className={cn('justify-start', compact ? 'max-w-45' : 'max-w-52')}
 				isDisabled={disabled}
 				onClick={stopWhenRequested}
 				onKeyDown={stopWhenRequested}
 				onPointerDown={stopWhenRequested}
 				ref={ref}
+				size='sm'
+				type='button'
+				variant='secondary'
 			>
 				{icon}
 				{suppressOverflowTooltip ? (
@@ -81,7 +85,7 @@ export const MetadataFieldButton = forwardRef<HTMLButtonElement, MetadataFieldBu
 					</OverflowTooltip>
 				)}
 				{trailing}
-			</Dropdown.Trigger>
+			</Button>
 		)
 	},
 )

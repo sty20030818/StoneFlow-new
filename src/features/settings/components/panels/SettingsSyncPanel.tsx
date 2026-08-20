@@ -355,7 +355,7 @@ export function SettingsSyncPanel() {
 				description='所有业务仍然只读写本地数据库；这里仅配置云端 Postgres 副本，并在需要时手动或自动触发同步。'
 				title='云同步'
 			>
-				<Surface className='overflow-hidden rounded-xl border border-separator' variant='secondary'>
+				<Surface className='overflow-hidden rounded-lg border border-separator' variant='secondary'>
 					<div className='p-4'>
 						<div className='flex flex-col gap-4 md:flex-row md:items-start md:justify-between'>
 							<div className='min-w-0'>
@@ -420,14 +420,11 @@ export function SettingsSyncPanel() {
 									isDisabled={syncActionBusy}
 									onChange={(value) => void handleSyncModeChange(value as SyncPolicyMode)}
 									value={policyMode}
+									variant='secondary'
 								>
 									{SYNC_MODE_OPTIONS.map((option) => (
-										<Radio
-											className='min-w-0 rounded-xl border border-separator bg-surface px-3 py-2.5 data-[selected=true]:border-accent data-[selected=true]:bg-accent-soft'
-											key={option.mode}
-											value={option.mode}
-										>
-											<Radio.Content className='flex w-full items-start gap-3'>
+										<Radio key={option.mode} value={option.mode}>
+											<Radio.Content className='items-start'>
 												<span className='min-w-0 flex-1 text-left'>
 													<span className='block text-sm font-medium text-foreground'>
 														{option.label}

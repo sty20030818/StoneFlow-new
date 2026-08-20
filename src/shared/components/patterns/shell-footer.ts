@@ -7,7 +7,7 @@
  * - 按钮：唯一可点动作
  */
 
-export const shellFooterTrackClass = 'text-[11px] leading-none text-sf-shell-text-tertiary'
+export const shellFooterTrackClass = 'text-[11px] leading-none text-muted'
 
 /** 左侧：同步区 */
 export const shellFooterLeftTrackClass = `flex min-w-0 flex-1 items-center gap-2 ${shellFooterTrackClass}`

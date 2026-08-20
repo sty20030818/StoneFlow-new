@@ -19,10 +19,11 @@ import { useTaskContextMenuBulkActions } from './useTaskContextMenuBulkActions'
 const toastSuccessSpy = vi.fn()
 const toastErrorSpy = vi.fn()
 
-vi.mock('sonner', () => ({
+vi.mock('@heroui/react', async (importOriginal) => ({
+	...(await importOriginal<typeof import('@heroui/react')>()),
 	toast: {
 		success: (message: string) => toastSuccessSpy(message),
-		error: (message: string) => toastErrorSpy(message),
+		danger: (message: string) => toastErrorSpy(message),
 	},
 }))
 

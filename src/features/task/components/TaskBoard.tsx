@@ -9,6 +9,7 @@ import {
 	type KeyboardEvent as ReactKeyboardEvent,
 } from 'react'
 import { mergeProps, useGridList, useGridListItem } from 'react-aria'
+import { Alert, Button, Chip } from '@heroui/react'
 import { ContextMenu } from '@heroui-pro/react'
 import { defaultRangeExtractor, useVirtualizer, type Range } from '@tanstack/react-virtual'
 import { registerTaskBoardFocusTaskId, registerTaskBoardScrollToTaskId } from './taskBoardScroll'
@@ -41,6 +42,7 @@ import {
 } from '@/shared/components/board'
 import {
 	ROW_SHELL_GROUP_POSITION_CLASS,
+	ROW_SHELL_SECTION_HEADER_CLASS,
 	type RowSelectionGroupPosition,
 } from '@/shared/components/patterns/row-tokens'
 import { useDialogStore } from '@/features/shell-dialogs'
@@ -55,10 +57,7 @@ import { COMMAND_IDS, useCommandRuntimeContext, type CommandId } from '@/feature
 import { buildTaskCommandContext } from '@/features/task/commands/buildTaskCommandContext'
 import type { TaskPlacementTarget } from '@/features/metadata-fields'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
-import { Button } from '@/shared/components/base/button'
-import { Badge } from '@/shared/components/base/badge'
 import { ListTodoIcon, PlusIcon, TriangleIcon } from 'lucide-react'
-import { StatusNotice } from '@/shared/components/StatusNotice'
 import { ActionTooltip, OverflowTooltip } from '@/shared/components/tooltip'
 import { cn } from '@/shared/lib/utils'
 
@@ -70,6 +69,7 @@ export type TaskBoardProps = {
 	onFocusIntentConsumed: (intent: CollectionFocusIntent<string, string>) => void
 	status?: 'idle' | 'loading' | 'ready' | 'error'
 	createProjectId?: string | null
+	activeTaskId?: string | null
 	pendingTaskId: string | null
 	emptyTitle?: string
 	emptyDescription?: string
@@ -118,6 +118,7 @@ export function TaskBoard({
 	onFocusIntentConsumed,
 	status = 'ready',
 	createProjectId = null,
+	activeTaskId = null,
 	pendingTaskId,
 	emptyTitle,
 	emptyDescription,
@@ -486,6 +487,7 @@ export function TaskBoard({
 					onPointerLeaveTask={handlePointerLeaveTask}
 					projectBinding={projectBinding}
 					rowState={{
+						isActive: activeTaskId === task.id,
 						focusSource,
 						isFocused: focusedTaskId === task.id,
 						isPending: pendingTaskId === task.id,
@@ -500,6 +502,7 @@ export function TaskBoard({
 			)
 		},
 		[
+			activeTaskId,
 			collectionInteraction,
 			contextMenuActions,
 			focusBridge,
@@ -554,11 +557,13 @@ export function TaskBoard({
 
 	if (status === 'error') {
 		return (
-			<StatusNotice
-				description='任务数据暂时无法读取，请稍后重试。'
-				title='读取任务失败'
-				variant='danger'
-			/>
+			<Alert role='alert' status='danger'>
+				<Alert.Indicator />
+				<Alert.Content>
+					<Alert.Title>读取任务失败</Alert.Title>
+					<Alert.Description>任务数据暂时无法读取，请稍后重试。</Alert.Description>
+				</Alert.Content>
+			</Alert>
 		)
 	}
 
@@ -753,17 +758,23 @@ export function TaskBoard({
 			{isFetchingNextPage || fetchNextPageError ? (
 				<div className='pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-center'>
 					{isFetchingNextPage ? (
-						<div className='rounded-full bg-card/90 px-3 py-1 text-[12px] text-muted shadow-sm'>
+						<Chip size='sm' variant='secondary'>
 							加载更多…
-						</div>
+						</Chip>
 					) : null}
 					{fetchNextPageError ? (
-						<div className='pointer-events-auto rounded-full bg-card/90 px-3 py-1 text-[12px] text-destructive shadow-sm'>
+						<div className='pointer-events-auto flex items-center rounded-lg border border-danger bg-danger-soft px-2 py-1 text-xs text-danger-soft-foreground shadow-overlay'>
 							{fetchNextPageError}
 							{onFetchNextPage ? (
-								<button className='ml-2 underline' onClick={() => onFetchNextPage()} type='button'>
+								<Button
+									className='ml-2'
+									onPress={onFetchNextPage}
+									size='sm'
+									type='button'
+									variant='danger-soft'
+								>
 									重试
-								</button>
+								</Button>
 							) : null}
 						</div>
 					) : null}
@@ -951,18 +962,20 @@ function StatusSectionHeader({
 					label={open ? `折叠 ${label}` : `展开 ${label}`}
 					onOpenChange={(nextOpen) => setToggleTooltipOpen(nextOpen && !contextMenuOpen)}
 				>
-					<button
+					<Button
 						ref={groupTriggerRef}
 						aria-expanded={open}
 						aria-label={open ? `折叠 ${label}` : `展开 ${label}`}
-						className='inline-flex size-4 shrink-0 items-center justify-center border-none bg-transparent p-0 text-muted outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus'
 						data-collection-group-key={groupKey}
-						onClick={() => {
+						isIconOnly
+						onPress={() => {
 							setToggleTooltipOpen(false)
 							onOpenChange(!open)
 						}}
 						onBlur={() => onGroupTriggerBlur(groupKey)}
+						size='sm'
 						type='button'
+						variant='ghost'
 					>
 						<span className='inline-flex size-3 shrink-0 items-center justify-center' data-chevron>
 							<TriangleIcon
@@ -970,7 +983,7 @@ function StatusSectionHeader({
 								fill='currentColor'
 							/>
 						</span>
-					</button>
+					</Button>
 				</ActionTooltip>
 			) : null}
 			<div className='flex min-w-0 flex-1 items-center gap-2 px-1 text-xs font-semibold text-foreground'>
@@ -982,16 +995,13 @@ function StatusSectionHeader({
 						{label}
 					</OverflowTooltip>
 				)}
-				<Badge className='ml-1 border-transparent bg-transparent shadow-none' variant='secondary'>
+				<Chip className='ml-1 tabular-nums' size='sm' variant='tertiary'>
 					{count}
-				</Badge>
+				</Chip>
 				{selectedCount > 0 ? (
-					<Badge
-						className='h-5 rounded-full border-transparent bg-accent-soft px-2 text-[11px] text-foreground shadow-none'
-						variant='secondary'
-					>
+					<Chip className='tabular-nums' color='accent' size='sm' variant='soft'>
 						已选 {selectedCount}
-					</Badge>
+					</Chip>
 				) : null}
 			</div>
 			{status ? (
@@ -1002,14 +1012,12 @@ function StatusSectionHeader({
 				>
 					<Button
 						aria-label={`在 ${label} 中创建任务`}
-						className='text-muted hover:bg-surface-hover hover:text-foreground focus-visible:bg-surface-hover focus-visible:text-foreground focus-visible:ring-2 focus-visible:ring-focus aria-expanded:bg-surface-hover aria-expanded:text-foreground'
-						onClick={(event) => {
+						isIconOnly
+						onPress={() => {
 							setCreateTooltipOpen(false)
-							event.preventDefault()
-							event.stopPropagation()
 							openTaskCreateDialog({ projectId: createProjectId, status })
 						}}
-						size='icon-xs'
+						size='sm'
 						type='button'
 						variant='ghost'
 					>
@@ -1025,7 +1033,7 @@ function StatusSectionHeader({
 	if (!onOpenChange) {
 		return (
 			<div
-				className='relative z-10 flex items-center gap-2 rounded-md bg-surface-secondary pr-1 pl-3'
+				className={cn('relative z-10', ROW_SHELL_SECTION_HEADER_CLASS)}
 				data-board-section-header='true'
 				style={{ height: TASK_BOARD_HEADER_HEIGHT }}
 				onFocus={(event) => event.stopPropagation()}
@@ -1048,7 +1056,7 @@ function StatusSectionHeader({
 				open={contextMenuOpen}
 			>
 				<ContextMenu.Trigger
-					className='relative z-10 flex items-center gap-2 rounded-md bg-surface-secondary pr-1 pl-3'
+					className={cn('relative z-10', ROW_SHELL_SECTION_HEADER_CLASS)}
 					data-board-section-header='true'
 					style={{ height: TASK_BOARD_HEADER_HEIGHT }}
 					onDoubleClick={() => {

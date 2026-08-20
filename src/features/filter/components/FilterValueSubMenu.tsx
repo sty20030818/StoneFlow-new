@@ -40,7 +40,7 @@ export function FilterValueSubMenu({
 				value={query}
 				variant='secondary'
 			>
-				<SearchField.Group className='h-8 shadow-none'>
+				<SearchField.Group>
 					<SearchField.SearchIcon />
 					<SearchField.Input
 						onKeyDown={(event) => {
@@ -53,7 +53,7 @@ export function FilterValueSubMenu({
 			</SearchField>
 			<Dropdown.Menu
 				aria-label={`${formatFilterFieldLabel(field)} 筛选值`}
-				className='max-h-60 overflow-y-auto p-1'
+				className='max-h-60 overflow-y-auto'
 				selectedKeys={options
 					.filter((option) => isChecked(option.value))
 					.map((option) => option.value)}

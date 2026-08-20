@@ -13,6 +13,7 @@ import {
 import type { LifecycleEntry, LifecycleMode } from '@/shared/types'
 import { formatShortDate } from '@/shared/lib/date'
 import { cn } from '@/shared/lib/utils'
+import { RowShell } from '@/shared/components/row'
 
 import { buildLifecycleCommandSelection } from '../model/buildLifecycleCommandSelection'
 import { LifecycleContextMenu } from './LifecycleContextMenu'
@@ -112,22 +113,25 @@ export function LifecycleRowAdapter({
 			onOpenDetail={canOpenDetail ? () => actions.onOpenDetail?.(entry) : undefined}
 			targetCount={contextTargets.length}
 		>
-			<div
+			<RowShell.Root
 				{...ariaRowProps}
 				ref={rowRef}
 				aria-label={canOpenDetail ? `打开 ${entry.title}` : entry.title}
 				className={cn(
-					'group/lifecycle-row flex min-h-11 w-full items-center rounded-lg border border-transparent px-3 py-2 text-[13px] leading-5 outline-none',
+					'group/lifecycle-row w-full text-[13px] leading-5 outline-none',
 					rowState.isSelected
-						? 'bg-accent-soft hover:bg-accent-soft-hover group-data-[open=true]/lifecycle-context-menu:bg-accent-soft-hover'
-						: 'hover:bg-surface-hover group-data-[open=true]/lifecycle-context-menu:bg-surface-hover',
-					rowState.isFocused && rowState.focusSource === 'keyboard' ? 'border-focus-subtle' : null,
-					canOpenDetail ? 'cursor-pointer' : 'cursor-default',
-					isExecuting ? 'opacity-70' : null,
+						? 'group-data-[open=true]/lifecycle-context-menu:bg-accent-soft-hover'
+						: 'group-data-[open=true]/lifecycle-context-menu:bg-surface-hover',
+					canOpenDetail ? null : 'cursor-default',
 				)}
 				data-lifecycle-entity={entry.entityType}
 				data-focus-source={rowState.isFocused ? rowState.focusSource : undefined}
+				hovered={rowState.isFocused}
+				hoverSource={rowState.focusSource}
+				interactive={canOpenDetail}
+				pending={isExecuting}
 				role={ariaRowProps.role ?? 'row'}
+				selected={rowState.isSelected}
 				onClick={canOpenDetail ? () => actions.onOpenDetail?.(entry) : undefined}
 				onKeyDown={(event) => {
 					if (canOpenDetail && (event.key === 'Enter' || event.key === ' ')) {
@@ -193,7 +197,7 @@ export function LifecycleRowAdapter({
 						</span>
 					) : null}
 				</div>
-			</div>
+			</RowShell.Root>
 		</LifecycleContextMenu>
 	)
 }

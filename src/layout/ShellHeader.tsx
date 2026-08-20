@@ -33,8 +33,6 @@ import {
 import type { TaskPriorityValue } from '@/features/task'
 import {
 	shellChromeAvatarClusterClass,
-	shellChromeIconActionClass,
-	shellChromeNavCircleButtonClass,
 	shellChromeWindowControlsRowClass,
 	shellChromeWindowControlClass,
 } from '@/shared/components/patterns/shell-chrome'
@@ -225,7 +223,7 @@ export function ShellHeader({
 		<Tooltip>
 			<Button
 				aria-label={sidebarToggleOpen ? '收起侧边栏' : '展开侧边栏'}
-				className={cn('shrink-0', shellChromeNavCircleButtonClass)}
+				className='shrink-0'
 				data-slot='sidebar-trigger'
 				isIconOnly
 				onPress={() => onRunCommand(COMMAND_IDS.layoutToggleSidebar)}
@@ -279,7 +277,7 @@ export function ShellHeader({
 						>
 							<div className='flex min-w-0 flex-1 items-center gap-1' data-tauri-drag-region>
 								{!isMac && (!isWin || !isLayoutNarrow) ? (
-									<Avatar className='size-7 shrink-0 rounded-lg ring-1 ring-sf-border-strong'>
+									<Avatar className='size-7 shrink-0 rounded-lg ring-1 ring-border'>
 										<Avatar.Image
 											alt='StoneFlow'
 											className='rounded-lg'
@@ -352,7 +350,6 @@ export function ShellHeader({
 							<Tooltip>
 								<Button
 									aria-label='快速新建任务'
-									className={shellChromeIconActionClass}
 									isIconOnly
 									onPress={() => onRunCommand(COMMAND_IDS.newQuickTask)}
 									size='sm'
@@ -409,7 +406,7 @@ export function ShellHeader({
 									<Tooltip>
 										<Button
 											aria-label='关闭窗口'
-											className={`${shellChromeWindowControlClass} hover:bg-destructive hover:text-white`}
+											className={`${shellChromeWindowControlClass} hover:bg-danger hover:text-danger-foreground`}
 											isIconOnly
 											onPress={() => void handleClose()}
 											size='sm'

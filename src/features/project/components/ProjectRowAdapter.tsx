@@ -13,6 +13,7 @@ import {
 import type { ProjectOverviewItem } from '@/shared/types'
 import { formatShortDate } from '@/shared/lib/date'
 import { cn } from '@/shared/lib/utils'
+import { RowShell } from '@/shared/components/row'
 
 import { buildProjectCommandSelection } from '../model/buildProjectCommandSelection'
 import { ProjectContextMenu } from './ProjectContextMenu'
@@ -106,22 +107,25 @@ export function ProjectRowAdapter({
 			onOpenProject={() => actions.onOpenProject(project.id)}
 			projectCommand={projectContextMenuCommand}
 		>
-			<div
+			<RowShell.Root
 				{...ariaRowProps}
 				ref={rowRef}
 				aria-label={`打开项目 ${project.name}`}
 				role={ariaRowProps.role ?? 'row'}
 				className={cn(
-					'group/project-row flex min-h-11 w-full items-center rounded-lg border border-transparent px-3 py-2 text-[13px] leading-5 outline-none',
+					'group/project-row w-full text-[13px] leading-5 outline-none',
 					rowState.isSelected
-						? 'bg-accent-soft hover:bg-accent-soft-hover group-data-[open=true]/project-context-menu:bg-accent-soft-hover'
-						: 'hover:bg-surface-hover group-data-[open=true]/project-context-menu:bg-surface-hover',
-					rowState.isFocused && rowState.focusSource === 'keyboard' ? 'border-focus-subtle' : null,
-					busy ? 'opacity-70' : null,
+						? 'group-data-[open=true]/project-context-menu:bg-accent-soft-hover'
+						: 'group-data-[open=true]/project-context-menu:bg-surface-hover',
 				)}
 				data-project-id={project.id}
 				data-focus-source={rowState.isFocused ? rowState.focusSource : undefined}
+				hovered={rowState.isFocused}
+				hoverSource={rowState.focusSource}
+				interactive
 				onClick={() => actions.onOpenProject(project.id)}
+				pending={busy}
+				selected={rowState.isSelected}
 			>
 				<div {...gridCellProps} className='flex min-w-0 flex-1 items-center gap-3'>
 					<span
@@ -202,7 +206,7 @@ export function ProjectRowAdapter({
 						<span>创建 {formatShortDate(project.createdAt)}</span>
 					</div>
 				</div>
-			</div>
+			</RowShell.Root>
 		</ProjectContextMenu>
 	)
 }

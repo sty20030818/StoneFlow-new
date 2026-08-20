@@ -24,7 +24,6 @@ export function FilterValueOption({
 }: FilterValueOptionProps) {
 	return (
 		<Dropdown.Item
-			className='h-8 gap-2 px-1.5 py-0 text-[13px]'
 			id={value}
 			isDisabled={disabled}
 			onAction={onToggle}

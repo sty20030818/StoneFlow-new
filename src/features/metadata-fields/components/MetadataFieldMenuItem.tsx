@@ -55,7 +55,7 @@ export function MetadataFieldMenuItem<TValue>({
 			<span className='min-w-0 flex-1 truncate'>{label}</span>
 			<span
 				className={cn(
-					'ml-auto shrink-0 items-center text-[11px] text-muted-foreground',
+					'ml-auto shrink-0 items-center text-[11px] text-muted',
 					hasTrailing
 						? 'grid grid-cols-[0.875rem_auto_auto] gap-x-1.5'
 						: 'grid grid-cols-[0.875rem_auto] gap-x-1.5',

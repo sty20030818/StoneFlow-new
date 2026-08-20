@@ -1,17 +1,8 @@
 import type { ReactNode, Ref } from 'react'
+import { Button } from '@heroui/react'
+import { EmptyState } from '@heroui-pro/react'
 
 import { cn } from '@/shared/lib/utils'
-import { Button } from '@/shared/components/base/button'
-import {
-	Empty,
-	EmptyContent,
-	EmptyDescription,
-	EmptyHeader,
-	EmptyMedia,
-	EmptyPage,
-	EmptyTitle,
-} from '@/shared/components/base/empty'
-import { entityBoardLoadingCardClass } from '@/shared/components/patterns/entity-board'
 import {
 	ROW_SHELL_BASE_CLASS,
 	ROW_SHELL_SECTION_HEADER_CLASS,
@@ -23,9 +14,16 @@ const BOARD_GROUP_HEADER_CLASS = `sticky top-0 z-10 ${ROW_SHELL_SECTION_HEADER_C
 export function BoardLoadingState({ label, className }: { label?: ReactNode; className?: string }) {
 	if (label) {
 		return (
-			<EmptyPage aria-busy='true'>
-				<div className={cn(entityBoardLoadingCardClass, className)}>{label}</div>
-			</EmptyPage>
+			<div aria-busy='true' className='flex min-h-0 min-w-0 flex-1 items-center justify-center'>
+				<div
+					className={cn(
+						'rounded-lg border border-border bg-surface p-6 text-sm text-muted',
+						className,
+					)}
+				>
+					{label}
+				</div>
+			</div>
 		)
 	}
 
@@ -34,8 +32,8 @@ export function BoardLoadingState({ label, className }: { label?: ReactNode; cla
 			{Array.from({ length: 2 }).map((_, sectionIndex) => (
 				<div className='flex flex-col gap-0.5' key={`board-loading-section-${sectionIndex}`}>
 					<div className={BOARD_GROUP_HEADER_CLASS}>
-						<div className='size-3 rounded-sm bg-sf-surface-panel-muted' />
-						<div className='h-3 w-24 rounded-full bg-sf-surface-panel-muted' />
+						<div className='size-3 rounded-sm bg-default' />
+						<div className='h-3 w-24 rounded-full bg-default' />
 					</div>
 					<div className='flex flex-col gap-0.5'>
 						{Array.from({ length: sectionIndex === 0 ? 4 : 3 }).map((_, rowIndex) => (
@@ -43,9 +41,9 @@ export function BoardLoadingState({ label, className }: { label?: ReactNode; cla
 								className={ROW_SHELL_BASE_CLASS}
 								key={`board-loading-row-${sectionIndex}-${rowIndex}`}
 							>
-								<div className='size-4 shrink-0 rounded-full bg-sf-surface-panel-muted' />
-								<div className='h-3 min-w-0 flex-1 rounded-full bg-sf-surface-panel-muted' />
-								<div className='h-3 w-12 shrink-0 rounded-full bg-sf-surface-panel-muted' />
+								<div className='size-4 shrink-0 rounded-full bg-default' />
+								<div className='h-3 min-w-0 flex-1 rounded-full bg-default' />
+								<div className='h-3 w-12 shrink-0 rounded-full bg-default' />
 							</div>
 						))}
 					</div>
@@ -73,21 +71,21 @@ export function BoardEmptyState({
 	emptyClassName?: string
 }) {
 	return (
-		<EmptyPage>
-			<Empty className={emptyClassName}>
-				<EmptyHeader>
-					<EmptyMedia variant='icon'>{icon}</EmptyMedia>
-					<EmptyTitle>{title}</EmptyTitle>
-					{description ? <EmptyDescription>{description}</EmptyDescription> : null}
-				</EmptyHeader>
+		<div className='flex min-h-0 min-w-0 flex-1 flex-col'>
+			<EmptyState className={cn('w-full min-w-0 flex-1 justify-center', emptyClassName)} size='md'>
+				<EmptyState.Header>
+					<EmptyState.Media variant='icon'>{icon}</EmptyState.Media>
+					<EmptyState.Title>{title}</EmptyState.Title>
+					{description ? <EmptyState.Description>{description}</EmptyState.Description> : null}
+				</EmptyState.Header>
 				{onAction && actionLabel ? (
-					<EmptyContent>
-						<Button ref={actionRef} onClick={onAction} type='button'>
+					<EmptyState.Content>
+						<Button ref={actionRef} onPress={onAction} type='button' variant='primary'>
 							{actionLabel}
 						</Button>
-					</EmptyContent>
+					</EmptyState.Content>
 				) : null}
-			</Empty>
-		</EmptyPage>
+			</EmptyState>
+		</div>
 	)
 }

@@ -2,8 +2,9 @@ import { createEmptyCommandContext } from '@/features/command'
 
 import { createRunEntityBulkActionFromCommand } from './runShellCommandBulkAction'
 
-vi.mock('sonner', () => ({
-	toast: { success: vi.fn(), error: vi.fn() },
+vi.mock('@heroui/react', async (importOriginal) => ({
+	...(await importOriginal<typeof import('@heroui/react')>()),
+	toast: { success: vi.fn(), danger: vi.fn() },
 }))
 
 describe('createRunEntityBulkActionFromCommand', () => {

@@ -1,4 +1,4 @@
-import { toast } from 'sonner'
+import { toast } from '@heroui/react'
 
 import {
 	getBulkActionResultFeedback,
@@ -17,7 +17,7 @@ export function showBulkActionResultToast(
 	}
 
 	if (feedback.type === 'error') {
-		toast.error(feedback.message)
+		toast.danger(feedback.message)
 	}
 
 	return feedback

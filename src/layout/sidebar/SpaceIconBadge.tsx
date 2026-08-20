@@ -11,7 +11,7 @@ export function SpaceIconBadge({ visual }: SpaceIconBadgeProps) {
 	return (
 		<span
 			className={cn(
-				'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-white shadow-(--sf-shadow-panel)',
+				'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-white',
 				visual.iconBadgeClassName,
 			)}
 			data-sidebar-keep='true'
