@@ -249,7 +249,7 @@ export function ShellHeader({
 			<div className='relative'>
 				<header
 					className={cn(
-						'relative z-30 flex h-12 shrink-0 flex-nowrap items-center gap-3 bg-sf-shell pr-0',
+						'relative z-30 flex h-12 shrink-0 flex-nowrap items-center gap-3 bg-surface-secondary pr-0',
 						// 左条整块 <640 不渲染时，为刘海/窗口区补左侧内边，避免主带贴边
 						!isAtLeastSm && (isMac ? 'pl-24' : 'pl-3'),
 					)}
@@ -375,12 +375,7 @@ export function ShellHeader({
 								/>
 							</div>
 
-							{!isMac && (
-								<div
-									className='ml-2 h-5 w-px bg-sf-shell-text-secondary/20'
-									data-tauri-drag-region
-								/>
-							)}
+							{!isMac && <div className='ml-2 h-5 w-px bg-muted/20' data-tauri-drag-region />}
 
 							{/* macOS 使用系统原生窗体控制，避免与页面内自绘按钮重复。 */}
 							{!isMac ? (

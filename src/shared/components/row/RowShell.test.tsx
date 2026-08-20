@@ -112,6 +112,6 @@ describe('RowTitleCell', () => {
 	it('完成态标题保持弱化删除线', () => {
 		render(<RowTitleCell doneLike title='已完成任务' />)
 
-		expect(screen.getByText('已完成任务')).toHaveClass('text-sf-text-tertiary', 'line-through')
+		expect(screen.getByText('已完成任务')).toHaveClass('text-muted', 'line-through')
 	})
 })

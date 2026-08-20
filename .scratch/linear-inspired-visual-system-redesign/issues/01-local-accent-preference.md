@@ -13,7 +13,7 @@
 - [x] 本机存储不可用时沿用现有 Web Storage 合同的当前会话回退，不为视觉偏好新增第二套持久化机制。
 - [x] Main 与 Launcher 在 React 挂载前使用同一解析与应用合同；Launcher 启动及每次呈现前重新读取当前本机选择，不新增跨窗口同步通道。
 - [x] 缺失、损坏或未知的偏好值统一回退钴蓝，下一次合法选择能够自然覆盖异常值。
-- [x] 六个预设只改变登记过的 Accent 语义；暖石灰中性色以及 Info、Success、Warning、Danger 不随选择变化。
+- [x] 六个预设只改变登记过的 Accent 语义；冷灰中性色以及 Info、Success、Warning、Danger 不随选择变化。
 - [x] 默认钴蓝以 `#6E78D5` 和 Hover `#5F6AC1` 为方向锚点，但普通小字号白字按钮使用满足至少 `4.5:1` 对比度的独立 Solid/Foreground 组合。
 - [x] 真实 Settings 用户旅程覆盖选择、立即应用、本机保存与重新挂载恢复；共享偏好测试覆盖六个合法标识和全部回退情况。
 - [x] 静态入口检查证明 Main 与 Launcher 使用同一默认 Accent，并在 React 挂载前完成应用；Launcher 测试仅补充每次呈现前重新读取的最小断言。

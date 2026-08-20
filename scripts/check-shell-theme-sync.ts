@@ -41,6 +41,7 @@ export function checkShellThemeSync(repositoryRoot = resolve(import.meta.dir, '.
 	const mainEntry = read(repositoryRoot, 'src/main.tsx')
 	const launcherEntry = read(repositoryRoot, 'src/launcher.tsx')
 	const appearanceEntry = read(repositoryRoot, 'src/features/appearance/index.ts')
+	const shellSkeleton = read(repositoryRoot, 'src/layout/ShellLayoutSkeleton.tsx')
 	const rustWindow = read(repositoryRoot, 'src-tauri/crates/runtime/src/window/main.rs')
 	const contract: ShellThemeContract = {
 		main: requireMatch(themeCss, /--background:\s*(#[0-9a-f]{6})\b/i, 'theme.css --background'),
@@ -86,6 +87,9 @@ export function checkShellThemeSync(repositoryRoot = resolve(import.meta.dir, '.
 	}
 	requireBackground(indexHtml, '#sf-boot-shell .sf-boot-card', contract.main)
 	requireText(launcherHtml, 'background: transparent', 'launcher.html')
+	requireText(shellSkeleton, 'bg-surface-secondary', 'ShellLayoutSkeleton shell')
+	requireText(shellSkeleton, 'bg-background', 'ShellLayoutSkeleton main')
+	requireText(shellSkeleton, 'border-surface', 'ShellLayoutSkeleton border')
 
 	for (const [owner, source] of [
 		['src/main.tsx', mainEntry],

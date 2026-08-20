@@ -62,8 +62,8 @@ export function RowShellRoot({
 					: null,
 				interactive
 					? selected
-						? 'focus-visible:border-focus-subtle focus-visible:bg-accent-soft-hover forced-colors:focus-visible:border-[Highlight]'
-						: 'focus-visible:border-focus-subtle focus-visible:bg-surface-hover forced-colors:focus-visible:border-[Highlight]'
+						? 'focus-visible:-outline-offset-2 focus-visible:bg-accent-soft-hover focus-visible:outline-2 focus-visible:outline-focus-subtle forced-colors:focus-visible:outline-[Highlight]'
+						: 'focus-visible:-outline-offset-2 focus-visible:bg-surface-hover focus-visible:outline-2 focus-visible:outline-focus-subtle forced-colors:focus-visible:outline-[Highlight]'
 					: null,
 				focusBorderClass,
 				groupedSelected ? ROW_SHELL_GROUP_POSITION_CLASS[selectionGroupPosition] : null,
@@ -99,10 +99,7 @@ export function RowShellIcon({ children, className, ...props }: ComponentProps<'
 	return (
 		<span
 			{...props}
-			className={cn(
-				'flex size-4 shrink-0 items-center justify-center text-sf-shell-text-secondary',
-				className,
-			)}
+			className={cn('flex size-4 shrink-0 items-center justify-center text-muted', className)}
 		>
 			{children}
 		</span>

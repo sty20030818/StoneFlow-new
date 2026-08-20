@@ -14,7 +14,7 @@ import {
 
 export function ShellFooter() {
 	return (
-		<footer className='relative z-32 isolate flex h-7 shrink-0 items-center justify-between gap-4 overflow-x-clip bg-sf-shell px-3'>
+		<footer className='relative z-32 isolate flex h-7 shrink-0 items-center justify-between gap-4 overflow-x-clip bg-surface-secondary px-3'>
 			{/* 左：同步 */}
 			<div className={shellFooterLeftTrackClass}>
 				<SyncFooterStatusItem />

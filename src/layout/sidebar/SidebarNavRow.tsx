@@ -1,4 +1,4 @@
-import type { ComponentType, ReactNode } from 'react'
+import { useState, type ComponentType, type ReactNode } from 'react'
 import { useMatchRoute, useRouterState } from '@tanstack/react-router'
 import { ContextMenu, Sidebar } from '@heroui-pro/react'
 
@@ -50,6 +50,7 @@ export function SidebarNavRow({
 	contextMenuContent,
 }: SidebarNavRowProps) {
 	const isActive = useSidebarNavIsActive(to)
+	const [contextMenuOpen, setContextMenuOpen] = useState(false)
 	const content = <SidebarNavRowLayout badge={badge} icon={icon} label={label} />
 
 	return (
@@ -66,8 +67,11 @@ export function SidebarNavRow({
 			}}
 		>
 			{contextMenuContent ? (
-				<ContextMenu>
-					<ContextMenu.Trigger className='flex w-full min-w-0 items-center gap-3 group-data-[sidebar-mode=icon]/sidebar-wrapper:justify-center group-data-[sidebar-mode=icon]/sidebar-wrapper:gap-0'>
+				<ContextMenu open={contextMenuOpen} onOpenChange={setContextMenuOpen}>
+					<ContextMenu.Trigger
+						className='flex w-full min-w-0 items-center gap-3 group-data-[sidebar-mode=icon]/sidebar-wrapper:justify-center group-data-[sidebar-mode=icon]/sidebar-wrapper:gap-0'
+						data-open={contextMenuOpen || undefined}
+					>
 						{content}
 					</ContextMenu.Trigger>
 					{contextMenuContent}

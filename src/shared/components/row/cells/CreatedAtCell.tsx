@@ -17,7 +17,7 @@ export function CreatedAtCell({
 	}
 
 	return (
-		<span className={cn('shrink-0 text-xs tabular-nums text-sf-text-tertiary', className)}>
+		<span className={cn('shrink-0 text-xs tabular-nums text-muted', className)}>
 			{formatter(value)}
 		</span>
 	)

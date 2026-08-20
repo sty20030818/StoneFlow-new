@@ -4,38 +4,57 @@
 	}
 
 	[data-theme="stoneflow-light"] .button--secondary {
-		--button-bg: #ffffff;
-		--button-bg-hover: #f7f7f7;
-		--button-bg-pressed: #efeff0;
-		--button-fg: #303032;
+		--button-bg: var(--surface);
+		--button-bg-hover: var(--surface-hover);
+		--button-bg-pressed: var(--default-pressed);
+		--button-fg: var(--foreground);
 	}
 
 	[data-theme="stoneflow-light"] .button--outline {
-		--button-bg: #ffffff;
-		--button-bg-hover: #f3f3f4;
-		--button-bg-pressed: #efeff0;
-		--button-fg: #5d5d5f;
-		border-color: #dbdbdb;
+		--button-bg: var(--surface);
+		--button-bg-hover: var(--surface-hover);
+		--button-bg-pressed: var(--default-pressed);
+		--button-fg: var(--muted);
+		border-color: var(--border);
 	}
 
 	@media (hover: hover) {
 		[data-theme="stoneflow-light"] .button--outline:is(:hover, [data-hovered="true"]) {
-			border-color: #cccccc;
-			color: #303032;
+			border-color: var(--field-border);
+			color: var(--foreground);
 		}
 	}
 
 	[data-theme="stoneflow-light"]
 		.button--outline:is(:active, [data-pressed="true"], [aria-expanded="true"]) {
 		background-color: var(--button-bg-pressed);
-		border-color: #d6d6d7;
-		color: #1b1b1b;
+		border-color: var(--border-secondary);
+		color: var(--foreground);
 	}
 
 	[data-theme="stoneflow-light"] .button--sm {
 		height: 2rem;
 		min-height: 2rem;
 		border-radius: 0.5rem;
+	}
+
+	[data-theme="stoneflow-light"] .card {
+		border-radius: var(--radius);
+	}
+
+	[data-theme="stoneflow-light"] .card--default {
+		border: 1px solid var(--border);
+	}
+
+	[data-theme="stoneflow-light"]
+		:is(.popover, .dropdown__popover, .select__popover, .context-menu__popover) {
+		border: 1px solid var(--border);
+		border-radius: calc(var(--radius) * 1.5);
+	}
+
+	[data-theme="stoneflow-light"] :is(.command__dialog, .modal__dialog, .sheet__dialog) {
+		border: 1px solid var(--border);
+		border-radius: calc(var(--radius) * 1.5);
 	}
 
 	[data-theme="stoneflow-light"] .input,
@@ -169,13 +188,13 @@
 	}
 
 	[data-theme="stoneflow-light"] .sidebar {
-		background-color: #f3f3f4;
-		color: #5a5a5c;
+		background-color: var(--surface-secondary);
+		color: var(--muted);
 	}
 
 	[data-theme="stoneflow-light"] .sidebar__provider:has(.sidebar--inset) .sidebar__main {
-		background-color: #fcfcfd;
-		border-color: #ffffff;
+		background-color: var(--background);
+		border-color: var(--surface);
 		border-radius: 0.5rem;
 		box-shadow: none;
 	}
@@ -221,27 +240,46 @@
 	[data-theme="stoneflow-light"] .sidebar__menu-label,
 	[data-theme="stoneflow-light"] .sidebar__menu-icon,
 	[data-theme="stoneflow-light"] .sidebar__menu-chip {
-		color: #5a5a5c;
+		color: var(--muted);
 	}
 
 	@media (hover: hover) {
 		[data-theme="stoneflow-light"]
 			.sidebar__menu-item:is(:hover, [data-hovered="true"])
 			.sidebar__menu-item-content {
-			background-color: #ebebec;
+			background-color: var(--default-hover);
 		}
+	}
+
+	[data-theme="stoneflow-light"]
+		.sidebar__menu-item:not([data-current="true"]):has(
+			[aria-expanded="true"],
+			.context-menu__trigger[data-open="true"]
+		)
+		.sidebar__menu-item-content {
+		background-color: var(--default-hover);
 	}
 
 	[data-theme="stoneflow-light"]
 		.sidebar__menu-item[data-current="true"]
 		.sidebar__menu-item-content {
-		background-color: #e5e5e6;
+		background-color: var(--accent-soft);
+	}
+
+	[data-theme="stoneflow-light"]
+		.sidebar__menu-item[data-current="true"]:is(
+			:hover,
+			[data-hovered="true"],
+			:has([aria-expanded="true"], .context-menu__trigger[data-open="true"])
+		)
+		.sidebar__menu-item-content {
+		background-color: var(--accent-soft-hover);
 	}
 
 	[data-theme="stoneflow-light"]
 		.sidebar__menu-item[data-current="true"]
 		:is(.sidebar__menu-label, .sidebar__menu-icon, .sidebar__menu-chip) {
-		color: #1b1b1b;
+		color: var(--accent-soft-foreground);
 	}
 
 	[data-theme="stoneflow-light"] :is(.menu-item, .list-box-item) {
@@ -252,14 +290,38 @@
 	@media (hover: hover) {
 		[data-theme="stoneflow-light"]
 			:is(.menu-item, .list-box-item):is(:hover, [data-hovered="true"]) {
-			background-color: #f6f6f7;
+			background-color: var(--surface-hover);
 		}
 	}
 
 	[data-theme="stoneflow-light"]
-		:is(.menu-item, .list-box-item):is([aria-selected="true"], [data-selected="true"]),
+		:is(.menu-item, .list-box-item):is(:active, [data-pressed="true"], [aria-expanded="true"]) {
+		background-color: var(--default-pressed);
+	}
+
+	[data-theme="stoneflow-light"]
+		:is(.menu-item, .list-box-item):is(
+			[aria-checked="true"],
+			[aria-selected="true"],
+			[data-selected="true"]
+		),
 	[data-theme="stoneflow-light"] .list-view__item[data-selected="true"] {
 		background-color: var(--accent-soft);
+	}
+
+	[data-theme="stoneflow-light"]
+		:is(.menu-item, .list-box-item):is(
+			[aria-checked="true"],
+			[aria-selected="true"],
+			[data-selected="true"]
+		):is(:active, [data-hovered="true"], [data-pressed="true"], [aria-expanded="true"]),
+	[data-theme="stoneflow-light"]
+		.list-view__item[data-selected="true"]:is(
+			:active,
+			[data-hovered="true"],
+			[data-pressed="true"]
+		) {
+		background-color: var(--accent-soft-hover);
 	}
 
 	[data-theme="stoneflow-light"] .list-view__item {
@@ -270,7 +332,12 @@
 
 	@media (hover: hover) {
 		[data-theme="stoneflow-light"] .list-view__item:is(:hover, [data-hovered="true"]) {
-			background-color: #f6f6f7;
+			background-color: var(--surface-hover);
+		}
+
+		[data-theme="stoneflow-light"]
+			.list-view__item[data-selected="true"]:is(:hover, [data-hovered="true"]) {
+			background-color: var(--accent-soft-hover);
 		}
 	}
 }

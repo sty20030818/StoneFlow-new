@@ -289,13 +289,14 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 					'text-[13px] leading-5 outline-none',
 					focusSource === 'pointer' && isFocused && 'focus-visible:border-transparent',
 					suppressFocusIndicator &&
-						'border-transparent focus-visible:border-transparent forced-colors:focus-visible:border-[Highlight]',
+						'border-transparent focus-visible:border-transparent focus-visible:outline-none forced-colors:focus-visible:border-[Highlight]',
 					focusSource === 'keyboard' &&
 						!isFocused &&
 						(isSelected ? 'hover:bg-accent-soft' : 'hover:bg-transparent'),
 					isSelected
 						? 'group-data-[open=true]/task-context-menu:bg-accent-soft-hover'
 						: 'group-data-[open=true]/task-context-menu:bg-surface-hover',
+					'group-data-[open=true]/task-context-menu:shadow-[inset_2px_0_0_var(--accent-border)]',
 				)}
 				data-shell-task-card='true'
 				data-task-id={task.id}

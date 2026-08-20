@@ -9,10 +9,11 @@ export const ROW_SHELL_BASE_CLASS =
 
 export const ROW_SHELL_IDLE_CLASS = ''
 export const ROW_SHELL_ACTIVE_CLASS = 'border-border-secondary bg-accent-soft'
-export const ROW_SHELL_FOCUS_CLASS = 'border-focus-subtle forced-colors:border-[Highlight]'
+export const ROW_SHELL_FOCUS_CLASS =
+	'-outline-offset-2 outline-2 outline-focus-subtle forced-colors:outline-[Highlight]'
 export const ROW_SHELL_SELECTED_CLASS = 'border-transparent bg-accent-soft'
 export const ROW_SHELL_SECTION_HEADER_CLASS =
-	'flex h-10 items-center gap-2 rounded-md bg-sf-list-section-bg pl-3 pr-1'
+	'flex h-10 items-center gap-2 rounded-md bg-background-secondary pl-3 pr-1'
 
 /** RowShell.Actions 布局 class，内联于 row 层，不依赖 entity-board。 */
 export const ROW_SHELL_ACTIONS_CLASS = 'flex shrink-0 items-center gap-2'

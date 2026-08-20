@@ -54,25 +54,25 @@ export function ShellLayoutSkeleton({
 		<div
 			aria-busy={status !== 'ready'}
 			aria-label={statusText}
-			className='relative flex h-full min-h-0 flex-col overflow-hidden bg-sf-shell'
+			className='relative flex h-full min-h-0 flex-col overflow-hidden bg-surface-secondary'
 			data-slot='shell-layout-skeleton'
 		>
-			<div className='h-12 shrink-0 bg-sf-shell' />
+			<div className='h-12 shrink-0 bg-surface-secondary' />
 
 			<div
-				className='grid min-h-0 min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)] overflow-hidden bg-sf-shell'
+				className='grid min-h-0 min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)] overflow-hidden bg-surface-secondary'
 				data-slot='shell-layout-skeleton-body'
 			>
 				{/* 真实占位元素驱动 auto 轨道；compact 时不保留桌面几何。 */}
 				<div
-					className='w-0 shrink-0 bg-sf-shell min-[1024px]:w-(--sidebar-width)'
+					className='w-0 shrink-0 bg-surface-secondary min-[1024px]:w-(--sidebar-width)'
 					data-slot='shell-layout-skeleton-sidebar'
 					style={{ '--sidebar-width': `${reservedWidthPx}px` } as CSSProperties}
 				/>
 
-				<div className='flex min-h-0 min-w-0 overflow-hidden bg-sf-shell min-[1024px]:pr-2'>
+				<div className='flex min-h-0 min-w-0 overflow-hidden bg-surface-secondary min-[1024px]:pr-2'>
 					<div
-						className='relative flex min-h-0 min-w-0 flex-1 overflow-hidden bg-card min-[1024px]:rounded-lg min-[1024px]:border min-[1024px]:border-white'
+						className='relative flex min-h-0 min-w-0 flex-1 overflow-hidden bg-background min-[1024px]:rounded-lg min-[1024px]:border min-[1024px]:border-surface'
 						data-slot='shell-layout-skeleton-main'
 					>
 						<span className='sr-only'>{statusText}</span>
@@ -80,7 +80,7 @@ export function ShellLayoutSkeleton({
 				</div>
 			</div>
 
-			<div className='h-7 shrink-0 bg-sf-shell' />
+			<div className='h-7 shrink-0 bg-surface-secondary' />
 		</div>
 	)
 }
