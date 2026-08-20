@@ -6,7 +6,7 @@
 
 ## 背景
 
-StoneFlow 当前同时存在 Radix/shadcn primitive、`shared/components/base`、纯 class pattern、多层 `--sf-*` token 以及 feature 局部样式。标准控件、产品组合、业务行为和平台几何因此混在一起，键盘、焦点、Overlay 与选择也出现重复状态源。
+StoneFlow 曾同时存在 Radix/shadcn primitive、平行 base、纯 class pattern、多层旧 token 以及 feature 局部样式。标准控件、产品组合、业务行为和平台几何因此混在一起，键盘、焦点、Overlay 与选择也出现重复状态源。
 
 本次重构允许破坏性切换且不保留旧 UI 兼容层，需要先固定长期依赖方向、私有依赖供应链和必须由 StoneFlow 自己拥有的产品边界。
 
@@ -38,7 +38,7 @@ StoneFlow 当前同时存在 Radix/shadcn primitive、`shared/components/base`�
 
 - HeroUI Pro 当前仍为 beta，且 CollectUI `hpsetup` 是额外的第三方供应链；必须同时固定安装器与组件包版本，以隔离 frozen install、生产构建和树 SHA-256 验证已取得产物。缓存与源站都不可用时仍会阻断新环境安装，这是已接受的供应链可用性风险。
 - CollectUI Key 可用与包完整性不构成 HeroUI 官方 license、seat、entitlement 或 Updates Window 的验证，本 ADR 不作这些声明。
-- 迁移为 hard cut，不保留 Radix/shadcn 兼容层；中间切片可能破坏，每个阶段必须以无旧消费者、行为回归和构建门禁收口。
+- 迁移采用 hard cut，Radix/shadcn 兼容层、旧 token 与 class pattern 已在消费者归零后删除。
 - 集中 recipe 与 HeroUI 当前公开 BEM 及 documented ARIA/data attributes 合同存在明确实现耦合；HeroUI 升级必须重新核对代表性状态，不通过 wrapper 假装供应商已经隔离。
 - HeroUI 无法也不应取代 Tauri 平台窗口契约、虚拟列表几何或 StoneFlow 领域命令；这些例外必须保持小而明确，不得成为继续自建通用 UI 的借口。
 - 任务详情不保存呈现偏好，也不建立第二份响应式状态。`?task=` 只表达 active task：Shell controller 的单一 `isCompact` 在窗口 `>=1024px` 时让 HeroUI Pro Resizable 渲染 Aside，列表最小 `352px`，Aside 最小 `320px`、默认 `360px`、最大 `440px`；窗口 `<1024px` 时渲染 Sheet。跨断点只替换容器并保留同一 URL、详情状态与草稿，不自动关闭详情或导航完整页。Sidebar 与详情 open state 独立，窄窗两张模态 Sheet 互斥。TaskBoard 只在自身容器 `<560px` 时进入唯一一档紧凑排版；canonical 完整页只由显式入口打开。

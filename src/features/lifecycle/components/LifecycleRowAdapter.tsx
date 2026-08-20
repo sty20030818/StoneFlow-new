@@ -113,7 +113,7 @@ export function LifecycleRowAdapter({
 			onOpenDetail={canOpenDetail ? () => actions.onOpenDetail?.(entry) : undefined}
 			targetCount={contextTargets.length}
 		>
-			<RowShell.Root
+			<RowShell
 				{...ariaRowProps}
 				ref={rowRef}
 				aria-label={canOpenDetail ? `打开 ${entry.title}` : entry.title}
@@ -197,7 +197,7 @@ export function LifecycleRowAdapter({
 						</span>
 					) : null}
 				</div>
-			</RowShell.Root>
+			</RowShell>
 		</LifecycleContextMenu>
 	)
 }

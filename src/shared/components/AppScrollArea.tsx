@@ -4,12 +4,9 @@ import {
 	useContext,
 	useImperativeHandle,
 	useRef,
-	type ComponentProps,
 	type ReactNode,
 	type RefObject,
 } from 'react'
-
-import { cn } from '@/shared/lib/utils'
 
 import { OverlayScrollbar } from './OverlayScrollbar'
 
@@ -20,23 +17,8 @@ export function useScrollAreaViewport(): RefObject<HTMLDivElement | null> | null
 	return useContext(ScrollAreaViewportContext)
 }
 
-export type AppScrollAreaProps = {
-	className?: string
-	viewportClassName?: string
-	scrollbarClassName?: string
-	viewportProps?: Omit<ComponentProps<'div'>, 'children' | 'className' | 'ref'> & {
-		'data-testid'?: string
-	}
+type AppScrollAreaProps = {
 	children: ReactNode
-	scrollContainerRole?: string
-	thumbClassName?: string
-	idleThumbClassName?: string
-	hoverThumbClassName?: string
-	activeThumbClassName?: string
-	minThumbHeight?: number
-	thumbLengthRatio?: number
-	trackInsetTop?: number
-	trackInsetBottom?: number
 }
 
 /**
@@ -44,56 +26,22 @@ export type AppScrollAreaProps = {
  * 通过 ScrollAreaViewportContext 暴露 viewport ref（TaskBoard virtualizer 使用）。
  */
 export const AppScrollArea = forwardRef<HTMLDivElement, AppScrollAreaProps>(
-	(
-		{
-			className,
-			viewportClassName,
-			scrollbarClassName,
-			viewportProps,
-			children,
-			scrollContainerRole,
-			thumbClassName,
-			idleThumbClassName,
-			hoverThumbClassName,
-			activeThumbClassName,
-			minThumbHeight,
-			thumbLengthRatio,
-			trackInsetTop,
-			trackInsetBottom,
-		},
-		forwardedRef,
-	) => {
+	({ children }, forwardedRef) => {
 		const viewportRef = useRef<HTMLDivElement>(null)
 
 		useImperativeHandle(forwardedRef, () => viewportRef.current as HTMLDivElement, [])
 
 		return (
 			<ScrollAreaViewportContext.Provider value={viewportRef}>
-				<div className={cn('relative flex min-h-0 flex-col overflow-hidden', className)}>
+				<div className='relative flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden'>
 					<div
-						{...viewportProps}
-						className={cn(
-							'no-scrollbar min-h-0 max-h-full flex-1 overflow-y-auto',
-							viewportClassName,
-						)}
+						className='flex min-h-0 min-w-0 max-h-full flex-1 flex-col overflow-y-auto px-2 pb-2'
 						data-scroll-container='true'
-						data-scroll-container-role={scrollContainerRole}
 						ref={viewportRef}
 					>
 						{children}
 					</div>
-					<OverlayScrollbar
-						activeThumbClassName={activeThumbClassName}
-						className={scrollbarClassName}
-						hoverThumbClassName={hoverThumbClassName}
-						idleThumbClassName={idleThumbClassName}
-						minThumbHeight={minThumbHeight}
-						scrollRef={viewportRef}
-						thumbClassName={thumbClassName}
-						thumbLengthRatio={thumbLengthRatio}
-						trackInsetBottom={trackInsetBottom}
-						trackInsetTop={trackInsetTop}
-					/>
+					<OverlayScrollbar scrollRef={viewportRef} />
 				</div>
 			</ScrollAreaViewportContext.Provider>
 		)

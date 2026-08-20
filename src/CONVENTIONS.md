@@ -188,7 +188,7 @@ export function resolveCommandOpenTargetPath(/* ... */) {}
 | 函数、变量、字段 | `camelCase` |
 | 模块级常量对象（keys、配置表） | `camelCase`（如 `taskKeys`）或场景下 `SCREAMING_SNAKE`（真常量枚举值） |
 | 事件 / IPC command | `domain.action` 点分字符串（如 `task.create`） |
-| CSS / 设计 token | 跟 `styles/` 现网（`--sf-*` 等），不在业务里发明第二套 |
+| CSS / 设计 token | 只使用 `styles/theme.css` 的现行语义角色，不在业务里发明第二套 |
 
 布尔：`is` / `has` / `can` / `should` 前缀。
 异步：动词原形；返回 Promise 的不必强制 `Async` 后缀（TS 已表达）。

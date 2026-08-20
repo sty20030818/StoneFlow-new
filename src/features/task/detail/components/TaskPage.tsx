@@ -1,11 +1,10 @@
 import { useMemo } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 
-import { MainCard } from '@/shared/components/main-card/MainCardLayout'
 import { openSection } from '@/app/navigation'
 import type { Scope, TaskDetail } from '@/shared/types'
-import { DetailPageGrid, DetailPageMain, DetailPageSidebar } from '@/shared/components/detail'
 import { AppBreadcrumb } from '@/shared/components/AppBreadcrumb'
+import { PageFrame } from '@/shared/components/page-frame'
 import { resolveBreadcrumb } from '@/app/navigation'
 
 import { type TaskDetailViewModel, useTaskDetailViewModel } from '../model/useTaskDetailViewModel'
@@ -104,20 +103,20 @@ function TaskPageLoaded({ task, viewModel }: TaskPageLoadedProps) {
 	)
 
 	return (
-		<MainCard.Root>
-			<MainCard.Header breadcrumb={<AppBreadcrumb items={breadcrumbItems} />} />
-			<MainCard.Body>
-				<div className='flex min-h-0 flex-1 flex-col gap-3'>
-					<DetailPageGrid>
-						<DetailPageMain>
-							<TaskPageMainContent
-								autosave={viewModel.autosave}
-								isReadOnly={isReadOnly}
-								spaceId={task.spaceId}
-								taskId={task.id}
-							/>
-						</DetailPageMain>
-						<DetailPageSidebar>
+		<PageFrame.Root>
+			<PageFrame.Header breadcrumb={<AppBreadcrumb items={breadcrumbItems} />} />
+			<PageFrame.Body>
+				<div className='grid min-h-full gap-4 lg:grid-cols-[minmax(0,1fr)_280px]'>
+					<div className='min-w-0'>
+						<TaskPageMainContent
+							autosave={viewModel.autosave}
+							isReadOnly={isReadOnly}
+							spaceId={task.spaceId}
+							taskId={task.id}
+						/>
+					</div>
+					<aside className='min-w-0'>
+						<div className='flex flex-col gap-3 lg:sticky lg:top-0'>
 							<TaskPageSidebarContent
 								autosave={viewModel.autosave}
 								isReadOnly={isReadOnly}
@@ -125,10 +124,10 @@ function TaskPageLoaded({ task, viewModel }: TaskPageLoadedProps) {
 								spaces={viewModel.spaces}
 								task={task}
 							/>
-						</DetailPageSidebar>
-					</DetailPageGrid>
+						</div>
+					</aside>
 				</div>
-			</MainCard.Body>
-		</MainCard.Root>
+			</PageFrame.Body>
+		</PageFrame.Root>
 	)
 }

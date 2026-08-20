@@ -1,9 +1,10 @@
 import { PlusIcon } from 'lucide-react'
+import { Button } from '@heroui/react'
 
 import { COMMAND_IDS, CommandShortcut } from '@/features/command'
-import { MainCard } from '@/shared/components/main-card/MainCardLayout'
 import { AppBreadcrumb } from '@/shared/components/AppBreadcrumb'
 import { PageFrame } from '@/shared/components/page-frame'
+import { ActionTooltip } from '@/shared/components/tooltip'
 import { ProjectBoard } from '@/features/project'
 
 import { useProjectOverviewScene } from '../hooks/useProjectOverviewScene'
@@ -19,13 +20,21 @@ export function ProjectOverviewPage() {
 		<PageFrame.Root>
 			<PageFrame.Header
 				actions={
-					<MainCard.GhostAction
-						aria-label='创建项目'
-						onPress={scene.openProjectCreateDialog}
-						tooltipShortcut={<CommandShortcut commandId={COMMAND_IDS.newProject} />}
+					<ActionTooltip
+						label='创建项目'
+						shortcut={<CommandShortcut commandId={COMMAND_IDS.newProject} />}
 					>
-						<PlusIcon />
-					</MainCard.GhostAction>
+						<Button
+							aria-label='创建项目'
+							isIconOnly
+							onPress={scene.openProjectCreateDialog}
+							size='sm'
+							type='button'
+							variant='ghost'
+						>
+							<PlusIcon />
+						</Button>
+					</ActionTooltip>
 				}
 				breadcrumb={<AppBreadcrumb items={scene.breadcrumbItems} />}
 			/>

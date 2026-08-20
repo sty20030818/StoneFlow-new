@@ -205,6 +205,10 @@
 	--font-mono:
 		ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
 		monospace;
+	--radius-sm: var(--radius-control);
+	--radius-md: var(--radius-control);
+	--radius-lg: var(--radius-surface);
+	--radius-xl: var(--radius-overlay);
 	--color-accent-base: var(--accent-base);
 	--color-accent-border: var(--accent-border);
 	--color-accent-pressed: var(--accent-pressed);

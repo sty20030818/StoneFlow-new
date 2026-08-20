@@ -28,16 +28,11 @@ import {
 } from '@/features/metadata-fields'
 import { getSpaceVisual } from '@/features/space'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
-import {
-	CreatedAtCell,
-	RowSelectionCell,
-	RowShell,
-	RowTitleCell,
-	type RowSelectionGroupPosition,
-} from '@/shared/components/row'
+import { RowShell, type RowSelectionGroupPosition } from '@/shared/components/row'
 import { ActionTooltip } from '@/shared/components/tooltip'
 import { formatShortDate } from '@/shared/lib/date'
 import { cn } from '@/shared/lib/utils'
+import { TaskRowCreatedAtCell, TaskRowSelectionCell, TaskRowTitleCell } from './TaskRowCells'
 
 export type TaskRowAdapterProps = {
 	task: TaskListItem
@@ -290,7 +285,7 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 			status={task.status}
 			dueAt={task.dueAt}
 		>
-			<RowShell.Root
+			<RowShell
 				{...ariaRowProps}
 				ref={rowRef}
 				aria-label={`打开任务 ${task.title}`}
@@ -324,9 +319,9 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 				}
 			>
 				<div {...gridCellProps} className='flex min-w-0 flex-1 items-center gap-3'>
-					<RowShell.Left>
-						<RowShell.Leading>
-							<RowSelectionCell
+					<div className='flex min-w-0 flex-1 items-center gap-2.5'>
+						<div className='flex shrink-0 items-center gap-1'>
+							<TaskRowSelectionCell
 								ariaLabel={`选择任务：${task.title}`}
 								checked={isSelected}
 								disabled={isPending}
@@ -371,15 +366,15 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 									onChange={(status) => void actions.onUpdateTaskStatus(task, status)}
 								/>
 							) : null}
-						</RowShell.Leading>
+						</div>
 
-						<RowShell.Title>
-							<RowTitleCell doneLike={isDoneLike} title={task.title} />
-						</RowShell.Title>
-					</RowShell.Left>
+						<div className='min-w-0 flex-1'>
+							<TaskRowTitleCell doneLike={isDoneLike} title={task.title} />
+						</div>
+					</div>
 
-					<RowShell.Right>
-						<RowShell.Fields className='@min-[560px]/task-list:flex'>
+					<div className='ml-auto flex shrink-0 items-center gap-2'>
+						<div className='hidden shrink-0 items-center justify-end gap-2 @min-[560px]/task-list:flex'>
 							{showDueAt ? (
 								<MetadataDateDropdown
 									ariaLabel={`修改截止时间：${task.title}`}
@@ -441,11 +436,11 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 								/>
 							) : null}
 							{showUpdatedAt ? <UpdatedAtCell value={task.updatedAt} /> : null}
-							{showCreatedAt ? <CreatedAtCell value={task.createdAt} /> : null}
-						</RowShell.Fields>
-					</RowShell.Right>
+							{showCreatedAt ? <TaskRowCreatedAtCell value={task.createdAt} /> : null}
+						</div>
+					</div>
 				</div>
-			</RowShell.Root>
+			</RowShell>
 		</TaskContextMenu>
 	)
 }, taskRowAdapterPropsEqual)

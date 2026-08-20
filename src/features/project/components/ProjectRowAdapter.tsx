@@ -107,7 +107,7 @@ export function ProjectRowAdapter({
 			onOpenProject={() => actions.onOpenProject(project.id)}
 			projectCommand={projectContextMenuCommand}
 		>
-			<RowShell.Root
+			<RowShell
 				{...ariaRowProps}
 				ref={rowRef}
 				aria-label={`打开项目 ${project.name}`}
@@ -206,7 +206,7 @@ export function ProjectRowAdapter({
 						<span>创建 {formatShortDate(project.createdAt)}</span>
 					</div>
 				</div>
-			</RowShell.Root>
+			</RowShell>
 		</ProjectContextMenu>
 	)
 }

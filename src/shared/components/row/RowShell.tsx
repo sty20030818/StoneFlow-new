@@ -1,18 +1,24 @@
 import type { ComponentProps } from 'react'
 
 import { cn } from '@/shared/lib/utils'
-import {
-	ROW_SHELL_ACTIONS_CLASS,
-	ROW_SHELL_ACTIVE_CLASS,
-	ROW_SHELL_BASE_CLASS,
-	ROW_SHELL_GROUP_POSITION_CLASS,
-	ROW_SHELL_IDLE_CLASS,
-	ROW_SHELL_FOCUS_CLASS,
-	ROW_SHELL_SELECTED_CLASS,
-	type RowSelectionGroupPosition,
-} from '@/shared/components/patterns/row-tokens'
 
-export type RowShellRootProps = ComponentProps<'div'> & {
+const ROW_SHELL_BASE_CLASS =
+	'group/row-shell flex h-11 min-w-0 items-center gap-3 rounded-lg border border-transparent bg-transparent px-3 text-left text-sm leading-5'
+const ROW_SHELL_ACTIVE_CLASS = 'border-border-secondary bg-accent-soft'
+const ROW_SHELL_FOCUS_CLASS =
+	'-outline-offset-2 outline-2 outline-focus-subtle forced-colors:outline-[Highlight]'
+const ROW_SHELL_SELECTED_CLASS = 'border-transparent bg-accent-soft'
+
+export type RowSelectionGroupPosition = 'single' | 'first' | 'middle' | 'last'
+
+const ROW_SHELL_GROUP_POSITION_CLASS: Record<RowSelectionGroupPosition, string> = {
+	single: 'rounded-lg',
+	first: 'rounded-none rounded-t-lg',
+	middle: 'rounded-none',
+	last: 'rounded-none rounded-b-lg',
+}
+
+type RowShellProps = ComponentProps<'div'> & {
 	active?: boolean
 	selected?: boolean
 	hovered?: boolean
@@ -22,7 +28,7 @@ export type RowShellRootProps = ComponentProps<'div'> & {
 	selectionGroupPosition?: RowSelectionGroupPosition
 }
 
-export function RowShellRoot({
+export function RowShell({
 	children,
 	className,
 	active = false,
@@ -35,16 +41,15 @@ export function RowShellRoot({
 	role,
 	tabIndex,
 	...props
-}: RowShellRootProps) {
+}: RowShellProps) {
 	const groupedSelected = selected && !!selectionGroupPosition
-	const idleClass = hovered ? null : ROW_SHELL_IDLE_CLASS
 	const selectionClass = selected
 		? hovered
 			? 'border-transparent bg-accent-soft-hover'
 			: ROW_SHELL_SELECTED_CLASS
 		: hovered && !active
 			? 'bg-surface-hover'
-			: idleClass
+			: null
 	const focusBorderClass = hovered && hoverSource === 'keyboard' ? ROW_SHELL_FOCUS_CLASS : null
 
 	return (
@@ -78,73 +83,3 @@ export function RowShellRoot({
 		</div>
 	)
 }
-
-export function RowShellLeft({ children, className, ...props }: ComponentProps<'div'>) {
-	return (
-		<div {...props} className={cn('flex min-w-0 flex-1 items-center gap-2.5', className)}>
-			{children}
-		</div>
-	)
-}
-
-export function RowShellLeading({ children, className, ...props }: ComponentProps<'div'>) {
-	return (
-		<div {...props} className={cn('flex shrink-0 items-center gap-1', className)}>
-			{children}
-		</div>
-	)
-}
-
-export function RowShellIcon({ children, className, ...props }: ComponentProps<'span'>) {
-	return (
-		<span
-			{...props}
-			className={cn('flex size-4 shrink-0 items-center justify-center text-muted', className)}
-		>
-			{children}
-		</span>
-	)
-}
-
-export function RowShellTitle({ children, className, ...props }: ComponentProps<'div'>) {
-	return (
-		<div {...props} className={cn('min-w-0 flex-1', className)}>
-			{children}
-		</div>
-	)
-}
-
-export function RowShellRight({ children, className, ...props }: ComponentProps<'div'>) {
-	return (
-		<div {...props} className={cn('ml-auto flex shrink-0 items-center gap-2', className)}>
-			{children}
-		</div>
-	)
-}
-
-export function RowShellFields({ children, className, ...props }: ComponentProps<'div'>) {
-	return (
-		<div {...props} className={cn('hidden shrink-0 items-center justify-end gap-2', className)}>
-			{children}
-		</div>
-	)
-}
-
-export function RowShellActions({ children, className, ...props }: ComponentProps<'div'>) {
-	return (
-		<div {...props} className={cn(ROW_SHELL_ACTIONS_CLASS, className)}>
-			{children}
-		</div>
-	)
-}
-
-export const RowShell = Object.assign(RowShellRoot, {
-	Root: RowShellRoot,
-	Left: RowShellLeft,
-	Leading: RowShellLeading,
-	Icon: RowShellIcon,
-	Title: RowShellTitle,
-	Right: RowShellRight,
-	Fields: RowShellFields,
-	Actions: RowShellActions,
-})

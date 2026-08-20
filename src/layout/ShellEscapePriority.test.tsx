@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
+import { Modal } from '@heroui/react'
 
 import {
 	CommandShortcutLayer,
@@ -9,7 +10,6 @@ import {
 } from '@/features/command'
 import { useDialogStore } from '@/features/shell-dialogs'
 import { registerShellChromeCommands } from '@/layout/command-bridge/registerShellChromeCommands'
-import { Dialog, DialogContent, DialogTitle } from '@/shared/components/base/dialog'
 
 const shortcutRegistry = new KeybindingRegistry(DEFAULT_KEYBINDINGS)
 
@@ -20,11 +20,11 @@ describe('Shell Escape priority', () => {
 		render(
 			<ShortcutRegistryProvider registry={shortcutRegistry}>
 				<CommandShortcutLayer onTrigger={onTrigger} />
-				<Dialog defaultOpen>
-					<DialogContent aria-describedby={undefined} showCloseButton={false}>
-						<DialogTitle>最高层 Overlay</DialogTitle>
-					</DialogContent>
-				</Dialog>
+				<Modal.Backdrop isOpen>
+					<Modal.Container>
+						<Modal.Dialog aria-label='最高层 Overlay'>最高层 Overlay</Modal.Dialog>
+					</Modal.Container>
+				</Modal.Backdrop>
 			</ShortcutRegistryProvider>,
 		)
 

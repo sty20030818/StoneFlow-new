@@ -38,6 +38,7 @@ export type BoundarySource = { path: string; source: string }
 export type BoundaryRuleId =
 	| 'feature-deep-import'
 	| 'legacy-visual-import'
+	| 'legacy-visual-style'
 	| 'parallel-visual-import'
 	| 'heroui-important-style'
 	| 'heroui-state-style'
@@ -55,17 +56,17 @@ export type BoundaryViolation = {
 	token?: string
 }
 
-type ImportReference = { path: string; start: number }
+type ImportReference = { path: string; start: number; dynamic?: boolean }
 type StaticFragment = { value: string; start: number }
 
-function walkTsFiles(dir: string): string[] {
+function walkBoundaryFiles(dir: string): string[] {
 	const files: string[] = []
 	for (const name of readdirSync(dir)) {
 		const full = join(dir, name)
 		const stat = statSync(full)
 		if (stat.isDirectory()) {
-			if (name !== 'node_modules' && name !== 'dist') files.push(...walkTsFiles(full))
-		} else if (name.endsWith('.ts') || name.endsWith('.tsx')) files.push(full)
+			if (name !== 'node_modules' && name !== 'dist') files.push(...walkBoundaryFiles(full))
+		} else if (/\.(?:css|ts|tsx)$/.test(name)) files.push(full)
 	}
 	return files
 }
@@ -123,11 +124,11 @@ function scanImports(source: string): ImportReference[] {
 	let cursor = 0
 	return transpiler
 		.scan(source)
-		.imports.filter((item) => item.kind === 'import-statement')
+		.imports.filter((item) => item.kind === 'import-statement' || item.kind === 'dynamic-import')
 		.map((item) => {
 			const start = moduleLiteralStart(source, item.path, cursor)
 			cursor = start + item.path.length
-			return { path: item.path, start }
+			return { path: item.path, start, dynamic: item.kind === 'dynamic-import' }
 		})
 }
 
@@ -385,7 +386,7 @@ function scanHeroUIStyles(file: BoundarySource, bindings: ReadonlyMap<string, st
 
 function classifyVisualImport(modulePath: string): BoundaryRuleId | null {
 	if (
-		/^@\/shared\/components\/base(?:\/|$)/.test(modulePath) ||
+		/^@\/shared\/components\/(?:base|detail|main-card|patterns)(?:\/|$)/.test(modulePath) ||
 		/^@\/styles\/(?:tokens|adapters|dark)(?:\/|$)/.test(modulePath)
 	) {
 		return 'legacy-visual-import'
@@ -402,8 +403,26 @@ function classifyVisualImport(modulePath: string): BoundaryRuleId | null {
 	return null
 }
 
+function scanLegacyVisualStyles(file: BoundarySource) {
+	const violations: BoundaryViolation[] = []
+	const legacyStyle =
+		/var\(\s*--(?:sf|legacy)-[\w-]+\s*\)|--(?:sf|legacy)-[\w-]+\s*:|\bdark:[^\s'"`}]+|\b(?:bg|text|border|ring|shadow|fill|stroke)-(?:sf-[\w-]+|legacy-[\w-]+|card(?:-foreground)?|popover(?:-foreground)?|destructive(?:-foreground)?|muted-foreground|input|ring|sidebar(?:-[\w-]+)?)(?:\/[\w.]+)?/g
+	for (const match of file.source.matchAll(legacyStyle)) {
+		const start = match.index ?? 0
+		violations.push({
+			path: file.path,
+			line: lineNumber(file.source, start),
+			ruleId: 'legacy-visual-style',
+			excerpt: excerptAt(file.source, start),
+			detail: match[0],
+			token: match[0],
+		})
+	}
+	return violations
+}
+
 function scanFeatureImports(file: BoundarySource, imports: readonly ImportReference[]) {
-	const references = [...imports]
+	const references = imports.filter((item) => !item.dynamic)
 	for (const match of file.source.matchAll(/vi\.mock\(\s*['"](@\/features\/[^'"]+)['"]/g)) {
 		references.push({ path: match[1], start: match.index ?? 0 })
 	}
@@ -433,22 +452,28 @@ function scanFeatureImports(file: BoundarySource, imports: readonly ImportRefere
 export function scanFeatureBoundarySources(sources: readonly BoundarySource[]) {
 	const violations: BoundaryViolation[] = []
 	for (const file of sources) {
+		if (isProductionSource(file.path)) violations.push(...scanLegacyVisualStyles(file))
+		if (file.path.endsWith('.css')) continue
+
 		const imports = scanImports(file.source)
 		violations.push(...scanFeatureImports(file, imports))
 		if (!isProductionSource(file.path)) continue
 
-		if (/^src\/(?:features|layout|routes)\//.test(file.path)) {
-			for (const reference of imports) {
-				const ruleId = classifyVisualImport(reference.path)
-				if (!ruleId) continue
-				violations.push({
-					path: file.path,
-					line: lineNumber(file.source, reference.start),
-					ruleId,
-					excerpt: excerptAt(file.source, reference.start),
-					detail: reference.path,
-				})
-			}
+		for (const reference of imports) {
+			const ruleId = classifyVisualImport(reference.path)
+			if (
+				!ruleId ||
+				(ruleId === 'parallel-visual-import' &&
+					!/^src\/(?:features|layout|routes)\//.test(file.path))
+			)
+				continue
+			violations.push({
+				path: file.path,
+				line: lineNumber(file.source, reference.start),
+				ruleId,
+				excerpt: excerptAt(file.source, reference.start),
+				detail: reference.path,
+			})
 		}
 
 		if (file.path.endsWith('.tsx')) {
@@ -467,7 +492,7 @@ export function scanFeatureBoundarySources(sources: readonly BoundarySource[]) {
 
 export function scanFeatureBoundaries(repositoryRoot = REPOSITORY_ROOT) {
 	return scanFeatureBoundarySources(
-		walkTsFiles(join(repositoryRoot, 'src')).map((file) => ({
+		walkBoundaryFiles(join(repositoryRoot, 'src')).map((file) => ({
 			path: normalizePath(relative(repositoryRoot, file)),
 			source: readFileSync(file, 'utf8'),
 		})),

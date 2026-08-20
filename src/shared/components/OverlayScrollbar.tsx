@@ -9,17 +9,8 @@ import {
 
 import { cn } from '@/shared/lib/utils'
 
-type OverlayScrollbarProps<TElement extends HTMLElement = HTMLElement> = {
-	scrollRef: RefObject<TElement | null>
-	className?: string
-	thumbClassName?: string
-	idleThumbClassName?: string
-	hoverThumbClassName?: string
-	activeThumbClassName?: string
-	minThumbHeight?: number
-	thumbLengthRatio?: number
-	trackInsetBottom?: number
-	trackInsetTop?: number
+type OverlayScrollbarProps = {
+	scrollRef: RefObject<HTMLDivElement | null>
 }
 
 /**
@@ -30,18 +21,7 @@ type OverlayScrollbarProps<TElement extends HTMLElement = HTMLElement> = {
  * - 滚动帧只写 DOM（transform/height），不 setState，避免重渲抹掉位移
  * - 列表要「拇指恒定」，应锁内容 DOM 高度，而不是在滚动条里伪造总高
  */
-export function OverlayScrollbar<TElement extends HTMLElement = HTMLElement>({
-	scrollRef,
-	className,
-	thumbClassName,
-	idleThumbClassName = 'bg-border',
-	hoverThumbClassName = 'bg-border-secondary',
-	activeThumbClassName = 'bg-muted',
-	minThumbHeight = 24,
-	thumbLengthRatio = 1,
-	trackInsetBottom = 0,
-	trackInsetTop = 0,
-}: OverlayScrollbarProps<TElement>) {
+export function OverlayScrollbar({ scrollRef }: OverlayScrollbarProps) {
 	const [visible, setVisible] = useState(false)
 	const [isHoveringThumb, setIsHoveringThumb] = useState(false)
 	const [isDragging, setIsDragging] = useState(false)
@@ -73,9 +53,9 @@ export function OverlayScrollbar<TElement extends HTMLElement = HTMLElement>({
 			return
 		}
 
-		const trackHeight = Math.max(0, clientHeight - trackInsetTop - trackInsetBottom)
+		const trackHeight = clientHeight
 		const proportionalHeight = (clientHeight / Math.max(scrollHeight, 1)) * trackHeight
-		const height = Math.max(minThumbHeight, proportionalHeight * thumbLengthRatio)
+		const height = Math.max(24, proportionalHeight)
 		const maxThumbTop = Math.max(0, trackHeight - height)
 		const clampedScrollTop = Math.min(Math.max(scrollTop, 0), maxScrollTop)
 		const top = maxScrollTop > 0 ? (clampedScrollTop / maxScrollTop) * maxThumbTop : 0
@@ -93,7 +73,7 @@ export function OverlayScrollbar<TElement extends HTMLElement = HTMLElement>({
 			lastVisibleRef.current = true
 			setVisible(true)
 		}
-	}, [minThumbHeight, scrollRef, thumbLengthRatio, trackInsetBottom, trackInsetTop])
+	}, [scrollRef])
 
 	const scheduleApply = useCallback(() => {
 		if (rafRef.current !== 0) {
@@ -267,22 +247,15 @@ export function OverlayScrollbar<TElement extends HTMLElement = HTMLElement>({
 		<div
 			aria-hidden='true'
 			className={cn(
-				'pointer-events-none absolute right-0 z-1 w-2',
+				'pointer-events-none absolute inset-y-0 right-0 z-1 w-2',
 				!visible && 'invisible',
-				className,
 			)}
-			style={{ bottom: trackInsetBottom, top: trackInsetTop }}
 		>
 			<div
 				ref={thumbRef}
 				className={cn(
 					'pointer-events-auto absolute right-0 top-0 w-1.5 rounded-full will-change-transform',
-					isDragging
-						? activeThumbClassName
-						: isHoveringThumb
-							? hoverThumbClassName
-							: idleThumbClassName,
-					thumbClassName,
+					isDragging ? 'bg-muted' : isHoveringThumb ? 'bg-border-secondary' : 'bg-border',
 				)}
 				onPointerDown={handleThumbPointerDown}
 				onPointerEnter={() => setIsHoveringThumb(true)}

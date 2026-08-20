@@ -77,7 +77,9 @@ export function SettingsPage() {
 					</Breadcrumbs>
 				}
 			/>
-			<PageFrame.Body className='gap-4 p-2'>{renderPanel(section)}</PageFrame.Body>
+			<PageFrame.Body>
+				<div className='flex min-h-0 flex-1 flex-col p-2'>{renderPanel(section)}</div>
+			</PageFrame.Body>
 		</PageFrame.Root>
 	)
 }

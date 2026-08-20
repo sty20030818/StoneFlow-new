@@ -1,7 +1,8 @@
 import type { Ref } from 'react'
 
+import { ScrollShadow } from '@heroui/react'
+
 import type { AutosaveController } from '@/shared/autosave'
-import { DetailBody } from '@/shared/components/detail'
 import type { ProjectOption } from '@/features/project'
 import type { Space } from '@/shared/types'
 
@@ -28,7 +29,11 @@ export function TaskDrawerBody({
 	scrollRef,
 }: TaskDrawerBodyProps) {
 	return (
-		<DetailBody ref={scrollRef} viewportClassName='px-3 pt-2 pb-20'>
+		<ScrollShadow
+			className='min-h-0 flex-1 px-3 pt-2 pb-20'
+			data-scroll-container='true'
+			ref={scrollRef}
+		>
 			<div className='flex flex-col' data-task-detail-body='true'>
 				<TaskTitleField autosave={autosave} />
 				<TaskNoteField autosave={autosave} />
@@ -42,6 +47,6 @@ export function TaskDrawerBody({
 					<TaskLinksSection taskId={taskId} />
 				</div>
 			</div>
-		</DetailBody>
+		</ScrollShadow>
 	)
 }

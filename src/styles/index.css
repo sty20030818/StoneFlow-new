@@ -3,16 +3,7 @@
 @import "tailwindcss";
 @import "@heroui/styles";
 @import "@heroui-pro/react/css";
-
-/* 迁移期旧样式：只服务尚未完成 HeroUI hard cut 的现有表面。 */
-@import "./tokens/primitive.css";
-@import "./tokens/semantic.css";
-@import "./tokens/layout.css";
-@import "./tokens/dark.css";
-@import "./adapters/shadcn.css";
-
 @import "./fonts.css";
 @import "./theme.css";
 @import "./components.css";
 @import "./base.css";
-@import "./utilities.css";

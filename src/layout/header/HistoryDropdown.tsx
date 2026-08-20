@@ -7,7 +7,6 @@ import type { ShellRouteHistoryEntry } from '@/app/navigation'
 import type { Space } from '@/shared/types'
 import { cn } from '@/shared/lib/utils'
 import { ActionTooltip } from '@/shared/components/tooltip'
-import { shellChromeTruncateLabelClass } from '@/shared/components/patterns/shell-chrome'
 import { HistoryIcon } from 'lucide-react'
 
 type HistoryDropdownProps = {
@@ -72,7 +71,7 @@ const HistoryEntryItem = memo(function HistoryEntryItem({
 	return (
 		<Dropdown.Item id={entry.path} onAction={() => onSelect(entry)} textValue={entry.label}>
 			<EntryIcon className='size-3.5 shrink-0' />
-			<span className={shellChromeTruncateLabelClass}>{entry.label}</span>
+			<span className='min-w-0 truncate'>{entry.label}</span>
 			{SpaceIcon && entryVisual ? (
 				<span className='ml-auto flex shrink-0 items-center gap-1 text-xs text-muted'>
 					<SpaceIcon className={cn('size-3', entryVisual.iconClassName)} />

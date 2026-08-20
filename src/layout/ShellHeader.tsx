@@ -31,10 +31,6 @@ import {
 	type TaskPlacementTarget,
 } from '@/features/command'
 import type { TaskPriorityValue } from '@/features/task'
-import {
-	shellChromeAvatarClusterClass,
-	shellChromeWindowControlsRowClass,
-} from '@/shared/components/patterns/shell-chrome'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import {
 	MinusIcon,
@@ -359,7 +355,7 @@ export function ShellHeader({
 								</Tooltip.Content>
 							</Tooltip>
 
-							<div className={shellChromeAvatarClusterClass}>
+							<div className='ml-2 flex items-center gap-2'>
 								<UserAppMenu
 									isSettingsActive={activeSection === 'settings'}
 									onOpenAbout={onOpenAbout}
@@ -372,7 +368,7 @@ export function ShellHeader({
 
 							{/* macOS 使用系统原生窗体控制，避免与页面内自绘按钮重复。 */}
 							{!isMac ? (
-								<div className={shellChromeWindowControlsRowClass} data-tauri-drag-region>
+								<div className='flex h-full items-center gap-0.5 p-1' data-tauri-drag-region>
 									<Tooltip>
 										<Button
 											aria-label='最小化窗口'

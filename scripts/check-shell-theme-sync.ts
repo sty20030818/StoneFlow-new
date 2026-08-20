@@ -34,7 +34,25 @@ function requireBackground(source: string, selector: string, color: string) {
 	if (!pattern.test(source)) throw new Error(`${selector} 未同步首帧背景：${color}`)
 }
 
+export function requireStyleImports(source: string) {
+	const actual = [...source.matchAll(/^@import\s+["']([^"']+)["'];$/gm)].map((match) => match[1])
+	const directiveCount = source.match(/^\s*@import\b/gm)?.length ?? 0
+	const expected = [
+		'tailwindcss',
+		'@heroui/styles',
+		'@heroui-pro/react/css',
+		'./fonts.css',
+		'./theme.css',
+		'./components.css',
+		'./base.css',
+	]
+	if (directiveCount !== expected.length || actual.join('\n') !== expected.join('\n')) {
+		throw new Error(`styles/index.css 导入合同错误：${actual.join(' → ')}`)
+	}
+}
+
 export function checkShellThemeSync(repositoryRoot = resolve(import.meta.dir, '..')) {
+	const styleEntry = read(repositoryRoot, 'src/styles/index.css')
 	const themeCss = read(repositoryRoot, 'src/styles/theme.css')
 	const indexHtml = read(repositoryRoot, 'index.html')
 	const launcherHtml = read(repositoryRoot, 'launcher.html')
@@ -51,6 +69,7 @@ export function checkShellThemeSync(repositoryRoot = resolve(import.meta.dir, '.
 			'theme.css --surface-secondary',
 		),
 	}
+	requireStyleImports(styleEntry)
 	requireText(themeCss, '[data-theme="stoneflow-light"]', 'theme.css')
 	requireText(themeCss, 'color-scheme: light', 'theme.css')
 	requireText(themeCss, '--accent-base: #6e78d5', 'theme.css default accent')

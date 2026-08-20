@@ -1,44 +1,14 @@
-import type { ReactNode } from 'react'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { EMPTY_FILTER_QUERY } from '@/features/filter'
+import { renderWithInteractionProviders } from '@/test/TestInteractionProviders'
 
 import { ProjectPage } from './ProjectPage'
 
 const archive = vi.fn()
 const remove = vi.fn()
 const completeOrReopen = vi.fn()
-
-vi.mock('@/shared/components/main-card/MainCardLayout', () => ({
-	MainCard: {
-		Root: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-		Header: ({ breadcrumb, action }: { breadcrumb: ReactNode; action?: ReactNode }) => (
-			<div>
-				{breadcrumb}
-				{action}
-			</div>
-		),
-		Toolbar: ({
-			pills,
-			displayAction,
-		}: {
-			pills?: Array<{ label: string }>
-			displayAction?: ReactNode
-		}) => (
-			<div>
-				{pills?.map((pill) => (
-					<span key={pill.label}>{pill.label}</span>
-				))}
-				{displayAction}
-			</div>
-		),
-		Body: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-		GhostAction: ({ children }: { children: ReactNode }) => (
-			<button type='button'>{children}</button>
-		),
-	},
-}))
 
 vi.mock('../hooks/useProjectDetailScene', () => ({
 	useProjectDetailScene: () => ({
@@ -87,7 +57,7 @@ describe('ProjectPage', () => {
 	})
 
 	it('组合项目 Header、Task Board 与展示设置', () => {
-		render(<ProjectPage />)
+		renderWithInteractionProviders(<ProjectPage />)
 
 		expect(screen.getByText('状态分组任务 Board')).toBeInTheDocument()
 		expect(screen.getByText('显示设置')).toBeInTheDocument()

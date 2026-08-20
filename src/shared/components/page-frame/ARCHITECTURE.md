@@ -1,12 +1,13 @@
 # page-frame · 工作区页面骨架
 
-`PageFrame` 是工作区页面的纯视觉组合层。
+`PageFrame` 是工作区页面的深布局 Module。
 
 ## 职责
 
 - 固定 Header、Toolbar、可滚动 Body 的页面区域顺序；
 - 通过 compound components 让页面显式组合所需区域；
-- 复用 `MainCard` 的滚动、间距与可访问性基础。
+- 普通 Body 直接拥有 HeroUI `ScrollShadow`，虚拟 Body 通过 `AppScrollArea` 暴露唯一真实 viewport；
+- 统一页头、工具栏、间距与滚动协议，不经过转发层。
 
 ## 边界
 
@@ -25,4 +26,4 @@
 </PageFrame.Root>
 ```
 
-`Toolbar` 在没有任何内容时不渲染。可见操作必须由页面提供真实行为，不在框架内补默认按钮。
+`Header` 接受 `title` 或 `breadcrumb`；`Toolbar` 在没有任何内容时不渲染。可见操作必须由页面直接组合 HeroUI 与真实行为，框架不提供视觉 wrapper 或默认按钮。

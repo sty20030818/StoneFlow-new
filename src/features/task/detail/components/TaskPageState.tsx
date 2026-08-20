@@ -1,7 +1,7 @@
 import { Button } from '@heroui/react'
 import { EmptyState } from '@heroui-pro/react'
 
-import { MainCard } from '@/shared/components/main-card/MainCardLayout'
+import { PageFrame } from '@/shared/components/page-frame'
 
 type TaskPageStateProps = {
 	pageTitle?: string
@@ -19,9 +19,9 @@ export function TaskPageState({
 	onAction,
 }: TaskPageStateProps) {
 	return (
-		<MainCard.Root>
-			<MainCard.Header title={pageTitle} />
-			<MainCard.Body>
+		<PageFrame.Root>
+			<PageFrame.Header title={pageTitle} />
+			<PageFrame.Body>
 				<div className='flex min-h-full flex-1 items-center justify-center'>
 					<EmptyState className='w-full max-w-xl'>
 						<EmptyState.Header>
@@ -37,7 +37,7 @@ export function TaskPageState({
 						) : null}
 					</EmptyState>
 				</div>
-			</MainCard.Body>
-		</MainCard.Root>
+			</PageFrame.Body>
+		</PageFrame.Root>
 	)
 }

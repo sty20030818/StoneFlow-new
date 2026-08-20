@@ -85,17 +85,28 @@ import { oldButton } from '@/shared/components/base/button'
 import { linkVariants } from '@heroui/styles'
 import '@/styles/components.css'
 
+void import('@/styles/adapters/shadcn.css')
+
 export function VisualDebt() {
-	return <Chip className="!bg-danger [&_svg]:size-3.5 group-hover:opacity-50" />
+	return (
+		<>
+			<Chip className="!bg-danger [&_svg]:size-3.5 group-hover:opacity-50" />
+			<div className="bg-sf-shell dark:bg-card" style={{ color: 'var(--sf-text-primary)' }} />
+		</>
+	)
 }
 `,
 			},
 		])
 
 		expect(violations.map(({ ruleId }) => ruleId)).toEqual([
+			'legacy-visual-style',
+			'legacy-visual-style',
+			'legacy-visual-style',
 			'legacy-visual-import',
 			'parallel-visual-import',
 			'parallel-visual-import',
+			'legacy-visual-import',
 			'heroui-important-style',
 			'heroui-internal-metric',
 			'heroui-state-style',

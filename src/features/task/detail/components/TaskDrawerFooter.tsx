@@ -1,5 +1,4 @@
 import { Button } from '@heroui/react'
-import { DetailFooter } from '@/shared/components/detail'
 import { OverflowTooltip } from '@/shared/components/tooltip'
 import type { TaskDetail } from '@/shared/types'
 import { ArchiveIcon, Trash2Icon } from 'lucide-react'
@@ -28,7 +27,7 @@ export function TaskDrawerFooter({
 	onMoveToTrash,
 }: TaskDrawerFooterProps) {
 	return (
-		<DetailFooter className='items-center gap-2 py-2 pl-4 pr-2'>
+		<footer className='flex shrink-0 items-center justify-between gap-2 border-t border-separator py-2 pr-2 pl-4'>
 			<div className='min-w-0 flex-1 text-[11px] text-muted'>
 				<OverflowTooltip content={`更新于 ${formatUpdatedAt(task.updatedAt)}`}>
 					更新于 {formatUpdatedAt(task.updatedAt)}
@@ -44,7 +43,7 @@ export function TaskDrawerFooter({
 					移入回收站
 				</Button>
 			</div>
-		</DetailFooter>
+		</footer>
 	)
 }
 

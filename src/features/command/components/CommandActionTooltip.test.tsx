@@ -4,7 +4,6 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { COMMAND_IDS } from '@/features/command/core'
 import { KeybindingRegistry } from '@/features/command/keybinding'
 import { ShortcutRegistryProvider } from '@/features/command/shortcuts'
-import { Button } from '@/shared/components/base/button'
 
 import { CommandActionTooltip, DisabledCommandActionTooltip } from './CommandActionTooltip'
 
@@ -62,9 +61,9 @@ describe('CommandActionTooltip', () => {
 		renderTooltip(
 			registry,
 			<DisabledCommandActionTooltip commandId={COMMAND_IDS.saveOrSubmit} label='创建任务'>
-				<Button disabled type='button'>
+				<button disabled type='button'>
 					创建任务
-				</Button>
+				</button>
 			</DisabledCommandActionTooltip>,
 		)
 

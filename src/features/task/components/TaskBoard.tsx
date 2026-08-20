@@ -7,10 +7,12 @@ import {
 	useState,
 	type FocusEvent as ReactFocusEvent,
 	type KeyboardEvent as ReactKeyboardEvent,
+	type ReactNode,
+	type Ref,
 } from 'react'
 import { mergeProps, useGridList, useGridListItem } from 'react-aria'
 import { Alert, Button, Chip } from '@heroui/react'
-import { ContextMenu } from '@heroui-pro/react'
+import { ContextMenu, EmptyState } from '@heroui-pro/react'
 import { defaultRangeExtractor, useVirtualizer, type Range } from '@tanstack/react-virtual'
 import { registerTaskBoardFocusTaskId, registerTaskBoardScrollToTaskId } from './taskBoardScroll'
 import { useScrollAreaViewport } from '@/shared/components/AppScrollArea'
@@ -35,16 +37,8 @@ import {
 	type CollectionFocusIntent,
 	type CollectionInteraction,
 } from '@/features/selection'
-import {
-	BoardEmptyState,
-	BoardLoadingState,
-	BoardSectionContextMenu,
-} from '@/shared/components/board'
-import {
-	ROW_SHELL_GROUP_POSITION_CLASS,
-	ROW_SHELL_SECTION_HEADER_CLASS,
-	type RowSelectionGroupPosition,
-} from '@/shared/components/patterns/row-tokens'
+import { BoardSectionContextMenu } from '@/shared/components/board'
+import type { RowSelectionGroupPosition } from '@/shared/components/row'
 import { useDialogStore } from '@/features/shell-dialogs'
 import type { TaskDisplayPropertyKey } from '@/features/display-options'
 import { type TaskPriorityValue } from '@/features/task/model/taskPriority'
@@ -60,6 +54,13 @@ import type { TaskListItem, TaskStatus } from '@/shared/types'
 import { ListTodoIcon, PlusIcon, TriangleIcon } from 'lucide-react'
 import { ActionTooltip, OverflowTooltip } from '@/shared/components/tooltip'
 import { cn } from '@/shared/lib/utils'
+
+const TASK_BOARD_SELECTION_GROUP_POSITION_CLASS: Record<RowSelectionGroupPosition, string> = {
+	single: 'rounded-lg',
+	first: 'rounded-none rounded-t-lg',
+	middle: 'rounded-none',
+	last: 'rounded-none rounded-b-lg',
+}
 
 export type TaskBoardProps = {
 	tasks: TaskListItem[]
@@ -552,7 +553,7 @@ export function TaskBoard({
 	}, [focusTaskBoardTarget, scrollToCollectionKey])
 
 	if (status === 'idle' || status === 'loading') {
-		return <BoardLoadingState />
+		return <TaskBoardLoadingState />
 	}
 
 	if (status === 'error') {
@@ -569,7 +570,7 @@ export function TaskBoard({
 
 	if (status === 'ready' && tasks.length === 0 && emptyTitle) {
 		return (
-			<BoardEmptyState
+			<TaskBoardEmptyState
 				actionRef={emptyActionRef}
 				actionLabel={emptyActionLabel}
 				description={emptyDescription}
@@ -737,7 +738,7 @@ export function TaskBoard({
 									className={cn(
 										selectionGroupPosition && 'overflow-hidden bg-accent-soft',
 										selectionGroupPosition &&
-											ROW_SHELL_GROUP_POSITION_CLASS[selectionGroupPosition],
+											TASK_BOARD_SELECTION_GROUP_POSITION_CLASS[selectionGroupPosition],
 									)}
 									data-task-board-selection-group={selectionGroupPosition}
 									style={{
@@ -780,6 +781,68 @@ export function TaskBoard({
 					) : null}
 				</div>
 			) : null}
+		</div>
+	)
+}
+
+function TaskBoardLoadingState() {
+	return (
+		<div aria-busy='true' className='flex min-h-0 flex-1 flex-col gap-0.5'>
+			{Array.from({ length: 2 }).map((_, sectionIndex) => (
+				<div className='flex flex-col gap-0.5' key={`board-loading-section-${sectionIndex}`}>
+					<div className='sticky top-0 z-10 flex h-[34px] items-center gap-2 pl-3 pr-1'>
+						<div className='size-3 rounded-sm bg-default' />
+						<div className='h-3 w-24 rounded-full bg-default' />
+					</div>
+					<div className='flex flex-col gap-0.5'>
+						{Array.from({ length: sectionIndex === 0 ? 4 : 3 }).map((_, rowIndex) => (
+							<div
+								className='flex h-11 min-w-0 items-center gap-3 rounded-lg border border-transparent bg-transparent px-3 text-left text-sm leading-5'
+								key={`board-loading-row-${sectionIndex}-${rowIndex}`}
+							>
+								<div className='size-4 shrink-0 rounded-full bg-default' />
+								<div className='h-3 min-w-0 flex-1 rounded-full bg-default' />
+								<div className='h-3 w-12 shrink-0 rounded-full bg-default' />
+							</div>
+						))}
+					</div>
+				</div>
+			))}
+		</div>
+	)
+}
+
+function TaskBoardEmptyState({
+	icon,
+	title,
+	description,
+	actionLabel,
+	onAction,
+	actionRef,
+}: {
+	icon: ReactNode
+	title: string
+	description?: string
+	actionLabel?: string
+	onAction: () => void
+	actionRef: Ref<HTMLButtonElement>
+}) {
+	return (
+		<div className='flex min-h-0 min-w-0 flex-1 flex-col'>
+			<EmptyState className='w-full min-w-0 flex-1 justify-center' size='md'>
+				<EmptyState.Header>
+					<EmptyState.Media variant='icon'>{icon}</EmptyState.Media>
+					<EmptyState.Title>{title}</EmptyState.Title>
+					{description ? <EmptyState.Description>{description}</EmptyState.Description> : null}
+				</EmptyState.Header>
+				{actionLabel ? (
+					<EmptyState.Content>
+						<Button ref={actionRef} onPress={onAction} type='button' variant='primary'>
+							{actionLabel}
+						</Button>
+					</EmptyState.Content>
+				) : null}
+			</EmptyState>
 		</div>
 	)
 }
@@ -1033,7 +1096,7 @@ function StatusSectionHeader({
 	if (!onOpenChange) {
 		return (
 			<div
-				className={cn('relative z-10', ROW_SHELL_SECTION_HEADER_CLASS)}
+				className='relative z-10 flex items-center gap-2 pl-3 pr-1'
 				data-board-section-header='true'
 				style={{ height: TASK_BOARD_HEADER_HEIGHT }}
 				onFocus={(event) => event.stopPropagation()}
@@ -1056,7 +1119,7 @@ function StatusSectionHeader({
 				open={contextMenuOpen}
 			>
 				<ContextMenu.Trigger
-					className={cn('relative z-10', ROW_SHELL_SECTION_HEADER_CLASS)}
+					className='relative z-10 flex items-center gap-2 pl-3 pr-1'
 					data-board-section-header='true'
 					style={{ height: TASK_BOARD_HEADER_HEIGHT }}
 					onDoubleClick={() => {

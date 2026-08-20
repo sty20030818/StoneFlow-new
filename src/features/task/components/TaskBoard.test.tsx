@@ -24,7 +24,7 @@ import {
 	TASK_BOARD_STATUS_ORDER,
 	orderTasksByTaskBoardVisualOrder,
 } from '@/features/task/model/taskBoardOrder'
-import type { RowSelectionGroupPosition } from '@/shared/components/patterns/row-tokens'
+import type { RowSelectionGroupPosition } from '@/shared/components/row'
 import { AppScrollArea } from '@/shared/components/AppScrollArea'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
 import { renderWithInteractionProviders } from '@/test/TestInteractionProviders'
@@ -199,7 +199,7 @@ describe('TaskBoard', () => {
 			createTask({ id: `task-${index}`, title: `任务 ${index}` }),
 		)
 		renderTaskBoard(
-			<AppScrollArea viewportProps={{ 'data-testid': 'task-viewport' }}>
+			<AppScrollArea>
 				<TaskBoardHarness
 					onEmptyAction={() => undefined}
 					onToggleTaskStatus={async () => undefined}
@@ -212,7 +212,8 @@ describe('TaskBoard', () => {
 			</AppScrollArea>,
 		)
 
-		const viewport = screen.getByTestId('task-viewport')
+		const viewport = document.querySelector<HTMLElement>('[data-scroll-container="true"]')
+		if (!viewport) throw new Error('TaskBoard scroll viewport 未挂载')
 		const pendingScrolls: Promise<void>[] = []
 		const scrollTo = vi.fn((options: ScrollToOptions) => {
 			pendingScrolls.push(

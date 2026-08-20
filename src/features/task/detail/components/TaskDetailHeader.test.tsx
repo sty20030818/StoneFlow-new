@@ -45,7 +45,34 @@ describe('TaskDetailHeader', () => {
 		expect(openPage).not.toHaveBeenCalled()
 	})
 
-	function renderHeader(onClose?: () => void) {
+	it.each([
+		['dirty', '已编辑'],
+		['scheduled', '保存中...'],
+		['saving', '保存中...'],
+		['saved', '已保存'],
+	] as const)('自动保存状态 %s 显示用户可见反馈', (status, label) => {
+		renderHeader(undefined, { status })
+
+		expect(screen.getByText(label)).toBeInTheDocument()
+	})
+
+	it('自动保存失败时显示失败原因', () => {
+		renderHeader(undefined, { error: '网络错误', status: 'failed' })
+
+		expect(screen.getByText('保存失败')).toBeInTheDocument()
+		expect(screen.getByText('网络错误')).toBeInTheDocument()
+	})
+
+	it('空闲状态不显示保存反馈', () => {
+		renderHeader()
+
+		expect(screen.queryByText(/已编辑|保存中|已保存|保存失败/)).not.toBeInTheDocument()
+	})
+
+	function renderHeader(
+		onClose?: () => void,
+		autosaveOverrides: Partial<AutosaveController<TaskDetailDraft>> = {},
+	) {
 		return render(
 			<TaskDetailHeader
 				autosave={
@@ -54,6 +81,7 @@ describe('TaskDetailHeader', () => {
 						flushNow,
 						savedAt: null,
 						status: 'idle',
+						...autosaveOverrides,
 					} as unknown as AutosaveController<TaskDetailDraft>
 				}
 				onClose={onClose}

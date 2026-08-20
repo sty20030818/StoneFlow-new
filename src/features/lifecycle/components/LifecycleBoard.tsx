@@ -11,7 +11,6 @@ import {
 	type GroupedCollectionInteraction,
 } from '@/features/selection'
 import { BoardSectionContextMenu } from '@/shared/components/board'
-import { ROW_SHELL_SECTION_HEADER_CLASS } from '@/shared/components/patterns/row-tokens'
 import type { LifecycleEntry, LifecycleMode } from '@/shared/types'
 
 import type { LifecycleSection, LifecycleSectionKey } from '../model/buildLifecycleSections'
@@ -138,7 +137,7 @@ function LifecycleBoardSectionBlock({
 		<section className='flex flex-col gap-0.5 pb-1 last:pb-2' data-lifecycle-section={section.key}>
 			<ContextMenu open={contextMenuOpen} onOpenChange={setContextMenuOpen}>
 				<ContextMenu.Trigger
-					className={`sticky top-0 z-10 ${ROW_SHELL_SECTION_HEADER_CLASS}`}
+					className='sticky top-0 z-10 flex h-[34px] items-center gap-2 pl-3 pr-1'
 					onDoubleClick={() => collection.setGroupOpen(section.key, !open)}
 				>
 					<CollectionGridGroupTrigger groupKey={section.key} rootState={rootState}>

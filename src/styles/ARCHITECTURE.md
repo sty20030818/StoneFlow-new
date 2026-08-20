@@ -2,7 +2,7 @@
 
 > 版本：v3
 > 最后更新：2026-08-20
-> 作用：定义 `src/styles` 的目标合同；迁移期旧目录只视为待删除实现，不构成正式架构。
+> 作用：定义 `src/styles` 的现行合同。
 
 ## 1. 一句话心智
 
@@ -36,7 +36,7 @@ Main 与 Launcher 各自只导入一次 `styles/index.css`。Feature 不直接�
 
 Appearance 是独立 Module：`features/appearance` 只负责 Accent 标识、合法值校验、本机持久化和根属性，不拥有颜色值或组件 recipe。
 
-## 3. 目标文件结构
+## 3. 文件结构
 
 ```txt
 src/styles/
@@ -48,9 +48,9 @@ src/styles/
 └── base.css        # 文档、滚动、选择与原生窗口基础行为
 ```
 
-`utilities.css` 的单一滚动条规则迁入既有 Owner 或改用上游能力后删除，不保留一文件一 utility 的浅层。
+全局滚动容器的原生滚动条隐藏规则归 `base.css`，不为单条 utility 建立独立文件。
 
-目标 import 顺序固定为：
+import 顺序固定为：
 
 ```txt
 tailwindcss
@@ -61,8 +61,6 @@ tailwindcss
 → components.css
 → base.css
 ```
-
-迁移期间仍存在的 `tokens/*`、`adapters/shadcn.css` 与 `utilities.css` 不属于目标合同，消费者归零后直接删除。
 
 ## 4. `theme.css` · 全局语义值唯一 Owner
 
@@ -143,9 +141,9 @@ Form、RadioGroup、Surface、Resizable、ScrollShadow 与 Trigger 等结构组�
 
 跨 Feature 共享必须通过 deletion test：删除后，复杂行为或产品合同会重新扩散到多个调用方，才值得保留。
 
-- `PageFrame` 统一页头、工具栏、普通/虚拟 Body 与滚动骨架；吸收 MainCard 的 Root/Header/Toolbar/Body，删除浅层 GhostAction。
-- `RowShell` 统一行根结构、交互状态组合、Actions 与选择组语义；Board header 归 Board，TaskBoard 外层选择组与虚拟几何归 TaskBoard，不再导出 class map。
-- Task Detail 只有一个生产 owner，其 Header/Footer/PageLayout/Section/SaveStatus 与滚动结构回到 task feature；不为吸收 `detailTokens` 保留共享 Detail Module。
+- `PageFrame` 统一页头、工具栏、普通/虚拟 Body 与滚动骨架；页级图标操作由真实页面直接组合 HeroUI Button 与 `ActionTooltip`。
+- `RowShell` 统一行根结构、交互状态组合与选择组语义；Board header 归 Board，TaskBoard 外层选择组与虚拟几何归 TaskBoard，不再导出 class map。
+- Task Detail 只有一个生产 owner，其 Header/Footer/PageLayout/Section/SaveStatus 与滚动结构均由 task feature 持有。
 - `AppScrollArea` 隐藏真实 viewport、ref context、OverlayScrollbar 及其观察/绘制行为；删除全部无生产消费者的配置。
 - `ActionTooltip` 隐藏 React Aria trigger props/ref 合并与快捷键展示行为。
 

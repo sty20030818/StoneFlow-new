@@ -68,6 +68,32 @@ describe('TaskRowAdapter', () => {
 		expect(onCommand).not.toHaveBeenCalled()
 	})
 
+	it('选中与更新中状态保留选择占位、勾选语义和禁用原因', () => {
+		renderTaskRowAdapter({
+			rowState: {
+				isSelected: true,
+				isPending: true,
+				isFocused: false,
+				focusSource: null,
+			},
+		})
+
+		const checkbox = screen.getByRole('checkbox', { name: '选择任务：任务 A' })
+		expect(checkbox).toBeChecked()
+		expect(checkbox).toBeDisabled()
+		expect(screen.getByRole('group', { name: '选择任务：任务 A' })).toBeInTheDocument()
+	})
+
+	it('完成态仍展示标题，并按需展示创建时间', () => {
+		renderTaskRowAdapter({
+			task: buildTask({ status: 'done', title: '已完成任务' }),
+			visibleProperties: ['createdAt'],
+		})
+
+		expect(screen.getByText('已完成任务')).toBeInTheDocument()
+		expect(screen.getByText('5/6')).toBeInTheDocument()
+	})
+
 	it('只呈现调用方声明的字段，并在 All scope 露出真实 Space', () => {
 		renderTaskRowAdapter({
 			showSpaceLabel: true,

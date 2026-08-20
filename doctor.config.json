@@ -15,11 +15,7 @@
 			// 文档 / 归档 / 方案产物不是应用运行时入口
 			"Documents/**",
 			"Docs/**",
-			"**/*.md",
-			// shadcn 库存件：暂未接线，保留供后续 UI
-			"src/shared/components/base/accordion.tsx",
-			"src/shared/components/base/date-picker.tsx",
-			"src/shared/components/base/tabs.tsx"
+			"**/*.md"
 		],
 		"overrides": [
 			{

@@ -1,11 +1,12 @@
 import { PlusIcon } from 'lucide-react'
+import { Button } from '@heroui/react'
 
 import { COMMAND_IDS, CommandShortcut } from '@/features/command'
 import { DisplayOptionsButton } from '@/features/display-options'
 import { FilterBar, ListFilterUiProvider, PageFilterButton } from '@/features/filter'
-import { MainCard } from '@/shared/components/main-card/MainCardLayout'
 import { AppBreadcrumb } from '@/shared/components/AppBreadcrumb'
 import { PageFrame } from '@/shared/components/page-frame'
+import { ActionTooltip } from '@/shared/components/tooltip'
 import { TaskBoard } from '@/features/task'
 
 import { useViewsScene } from '../hooks/useViewsScene'
@@ -24,13 +25,21 @@ export function ViewsPage() {
 			<PageFrame.Root>
 				<PageFrame.Header
 					actions={
-						<MainCard.GhostAction
-							aria-label='创建任务'
-							onPress={scene.openTaskCreateDialog}
-							tooltipShortcut={<CommandShortcut commandId={COMMAND_IDS.newFullTask} />}
+						<ActionTooltip
+							label='创建任务'
+							shortcut={<CommandShortcut commandId={COMMAND_IDS.newFullTask} />}
 						>
-							<PlusIcon />
-						</MainCard.GhostAction>
+							<Button
+								aria-label='创建任务'
+								isIconOnly
+								onPress={scene.openTaskCreateDialog}
+								size='sm'
+								type='button'
+								variant='ghost'
+							>
+								<PlusIcon />
+							</Button>
+						</ActionTooltip>
 					}
 					breadcrumb={<AppBreadcrumb items={scene.breadcrumbItems} />}
 				/>

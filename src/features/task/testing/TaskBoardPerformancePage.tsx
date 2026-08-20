@@ -242,8 +242,8 @@ export function TaskBoardPerformancePage() {
 		<DangerConfirmProvider>
 			<TaskPreviewProvider>
 				<BulkActionProvider actions={EMPTY_BULK_ACTIONS}>
-					<main className='flex h-screen min-h-0 flex-col bg-legacy-background text-legacy-foreground'>
-						<header className='grid gap-3 border-b border-legacy-border px-4 py-3'>
+					<main className='flex h-screen min-h-0 flex-col bg-surface-secondary text-foreground'>
+						<header className='grid gap-3 border-b border-separator px-4 py-3'>
 							<div className='flex flex-wrap items-center gap-3'>
 								<h1 className='mr-auto text-sm font-semibold'>TaskBoard 性能基线</h1>
 								<label className='flex items-center gap-2 text-xs'>
@@ -277,12 +277,7 @@ export function TaskBoardPerformancePage() {
 
 						<div className='grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_360px]'>
 							<div className='min-h-0' ref={boardHostRef}>
-								<AppScrollArea
-									className='h-full'
-									ref={viewportRef}
-									scrollContainerRole='main-card'
-									viewportClassName='px-2 pb-2'
-								>
+								<AppScrollArea ref={viewportRef}>
 									<TaskBoard
 										collectionInteraction={collectionInteraction}
 										flatItems={flatItems}
@@ -310,7 +305,7 @@ export function TaskBoardPerformancePage() {
 
 							<textarea
 								aria-label='性能测量 JSON'
-								className='h-full resize-none border-l border-legacy-border bg-card p-3 font-mono text-xs'
+								className='h-full resize-none border-l border-separator bg-surface p-3 font-mono text-xs'
 								readOnly
 								value={JSON.stringify(report, null, 2)}
 							/>

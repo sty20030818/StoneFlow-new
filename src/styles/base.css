@@ -62,13 +62,20 @@
 
 	input,
 	textarea,
-	[contenteditable="true"],
-	.sf-selectable {
+	[contenteditable="true"] {
 		user-select: text;
 		-webkit-user-select: text;
 	}
 
 	::selection {
 		background: color-mix(in oklab, var(--accent) 18%, white);
+	}
+
+	[data-scroll-container="true"] {
+		scrollbar-width: none;
+	}
+
+	[data-scroll-container="true"]::-webkit-scrollbar {
+		display: none;
 	}
 }
