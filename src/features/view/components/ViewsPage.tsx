@@ -35,7 +35,7 @@ export function ViewsPage() {
 								onPress={scene.openTaskCreateDialog}
 								size='sm'
 								type='button'
-								variant='primary'
+								variant='ghost'
 							>
 								<PlusIcon aria-hidden='true' className='size-4' />
 							</Button>

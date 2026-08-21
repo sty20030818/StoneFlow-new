@@ -30,7 +30,7 @@ export function ProjectOverviewPage() {
 							onPress={scene.openProjectCreateDialog}
 							size='sm'
 							type='button'
-							variant='primary'
+							variant='ghost'
 						>
 							<PlusIcon aria-hidden='true' className='size-4' />
 						</Button>

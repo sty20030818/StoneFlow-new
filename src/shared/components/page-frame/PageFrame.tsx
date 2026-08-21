@@ -43,7 +43,7 @@ function PageFrameRoot({ children }: PageFrameSlotProps) {
 function PageFrameHeader({ breadcrumb, title, actions }: PageFrameHeaderProps) {
 	return (
 		<div className='shrink-0'>
-			<header className='flex h-12 items-center justify-between gap-4 px-3 sm:px-4'>
+			<header className='flex h-11 items-center justify-between gap-4 px-2'>
 				<div className='min-w-0 flex-1'>
 					{breadcrumb ?? (
 						<h1 className='truncate text-sm font-semibold leading-5 text-foreground'>{title}</h1>
@@ -71,9 +71,9 @@ function PageFrameToolbar({
 
 	return (
 		<Surface>
-			<div className='flex flex-col gap-1.5 px-2 py-1.5'>
+			<div className='flex flex-col gap-1.5 px-2 py-2'>
 				{hasActions ? (
-					<div className='flex min-h-8 items-center justify-between gap-3'>
+					<div className='flex items-center justify-between gap-3'>
 						{pills?.length ? (
 							<ToggleButtonGroup
 								aria-label='页面筛选'

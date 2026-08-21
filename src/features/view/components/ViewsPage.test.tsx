@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { vi } from 'vitest'
 
 import { ShellRouteProvider } from '@/app/navigation'
@@ -323,7 +323,11 @@ describe('ViewsPage', () => {
 		})
 
 		expect(screen.getByRole('link', { name: '视图' })).toBeInTheDocument()
-		expect(screen.getByRole('link', { name: 'Today' })).toHaveAttribute('aria-current', 'page')
+		const activeViewLink = screen.getByRole('link', { name: 'Today' })
+		expect(activeViewLink).toHaveAttribute('aria-current', 'page')
+		expect(
+			within(activeViewLink.closest('header')!).getByRole('button', { name: '创建任务' }),
+		).toHaveClass('button--ghost')
 	})
 
 	it('点击系统视图选项后切换到新的视图 id', async () => {

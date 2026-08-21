@@ -40,7 +40,7 @@ export function TaskListSceneView({ variant }: TaskListSceneViewProps) {
 								onPress={scene.openCreate}
 								size='sm'
 								type='button'
-								variant='primary'
+								variant='ghost'
 							>
 								<PlusIcon aria-hidden='true' />
 							</Button>
