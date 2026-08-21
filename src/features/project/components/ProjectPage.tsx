@@ -1,5 +1,5 @@
-import { FolderIcon } from 'lucide-react'
-import { Button } from '@heroui/react'
+import { ArchiveIcon, EllipsisIcon, FolderIcon, Trash2Icon } from 'lucide-react'
+import { Button, Dropdown } from '@heroui/react'
 import { EmptyState } from '@heroui-pro/react'
 
 import { PageFrame } from '@/shared/components/page-frame'
@@ -7,6 +7,7 @@ import { DisplayOptionsButton } from '@/features/display-options'
 import { FilterBar, ListFilterUiProvider, PageFilterButton } from '@/features/filter'
 import type { Scope } from '@/shared/types'
 import { AppBreadcrumb } from '@/shared/components/AppBreadcrumb'
+import { ActionTooltip } from '@/shared/components/tooltip'
 
 import { useProjectDetailScene } from '../hooks/useProjectDetailScene'
 import { TaskBoard } from '@/features/task'
@@ -28,31 +29,50 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 				<PageFrame.Header
 					actions={
 						scene.project ? (
-							<div className='flex items-center gap-2'>
+							<div className='flex items-center gap-1.5'>
 								<Button
 									isDisabled={scene.busyAction !== null}
 									size='sm'
-									variant='outline'
+									variant='secondary'
 									onPress={scene.completeOrReopen}
 								>
 									{scene.project.completedAt ? '重开' : '完成'}
 								</Button>
-								<Button
-									isDisabled={scene.busyAction !== null}
-									size='sm'
-									variant='outline'
-									onPress={() => void scene.archive()}
-								>
-									归档
-								</Button>
-								<Button
-									isDisabled={scene.busyAction !== null}
-									size='sm'
-									variant='outline'
-									onPress={() => void scene.remove()}
-								>
-									删除
-								</Button>
+								<Dropdown>
+									<ActionTooltip label='项目操作'>
+										<Button
+											aria-label='项目操作'
+											isDisabled={scene.busyAction !== null}
+											isIconOnly
+											size='sm'
+											type='button'
+											variant='outline'
+										>
+											<EllipsisIcon className='size-4' />
+										</Button>
+									</ActionTooltip>
+									<Dropdown.Popover placement='bottom end'>
+										<Dropdown.Menu aria-label='项目操作'>
+											<Dropdown.Item
+												id='archive-project'
+												onAction={() => void scene.archive()}
+												textValue='归档项目'
+											>
+												<ArchiveIcon />
+												归档项目
+											</Dropdown.Item>
+											<Dropdown.Item
+												id='delete-project'
+												onAction={() => void scene.remove()}
+												textValue='删除项目'
+												variant='danger'
+											>
+												<Trash2Icon />
+												删除项目
+											</Dropdown.Item>
+										</Dropdown.Menu>
+									</Dropdown.Popover>
+								</Dropdown>
 							</div>
 						) : null
 					}

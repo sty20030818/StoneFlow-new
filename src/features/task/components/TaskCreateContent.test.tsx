@@ -34,13 +34,13 @@ describe('TaskCreateContent', () => {
 		renderTaskCreate()
 
 		fireEvent.change(screen.getByPlaceholderText('任务标题'), { target: { value: '任务 A' } })
-		fireEvent.change(screen.getByPlaceholderText('添加描述...'), { target: { value: '备注 A' } })
+		fireEvent.change(screen.getByPlaceholderText('添加描述…'), { target: { value: '备注 A' } })
 		fireEvent.click(screen.getByRole('switch'))
 		fireEvent.click(screen.getByRole('button', { name: '创建任务' }))
 
 		await waitFor(() => expect(createTaskMock).toHaveBeenCalledTimes(1))
 		expect(screen.getByPlaceholderText('任务标题')).toHaveValue('')
-		expect(screen.getByPlaceholderText('添加描述...')).toHaveValue('')
+		expect(screen.getByPlaceholderText('添加描述…')).toHaveValue('')
 		expect(screen.getByText('已创建 1 条任务')).toBeInTheDocument()
 		expect(screen.getByRole('switch')).not.toBeChecked()
 		expect(openPageMock).not.toHaveBeenCalled()

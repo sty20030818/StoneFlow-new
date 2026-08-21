@@ -119,9 +119,6 @@ export function LifecycleRowAdapter({
 				aria-label={canOpenDetail ? `打开 ${entry.title}` : entry.title}
 				className={cn(
 					'group/lifecycle-row w-full text-[13px] leading-5 outline-none',
-					rowState.isSelected
-						? 'group-data-[open=true]/lifecycle-context-menu:bg-accent-soft-hover'
-						: 'group-data-[open=true]/lifecycle-context-menu:bg-surface-hover',
 					canOpenDetail ? null : 'cursor-default',
 				)}
 				data-lifecycle-entity={entry.entityType}

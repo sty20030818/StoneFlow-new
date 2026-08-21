@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 
 import { ListView } from '@heroui-pro/react'
+import { Surface } from '@heroui/react'
 
 import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
 import { cn } from '@/shared/lib/utils'
@@ -43,12 +44,13 @@ export function GlobalSearchResults({
 	}, [highlightedIndex])
 
 	return (
-		<div
+		<Surface
 			className='absolute left-1/2 top-full z-40 mt-1.5 w-[max(32rem,50vw)] max-w-[calc(100vw-2rem)] -translate-x-1/2 overflow-hidden'
 			data-global-search-results='true'
 			id='global-search-results'
+			variant='secondary'
 		>
-			<div className='max-h-96 overflow-y-auto p-2.5' ref={rootRef}>
+			<div className='max-h-96 overflow-y-auto p-2' ref={rootRef}>
 				{errorMessage && !hasResults ? (
 					<SearchPanelState label={errorMessage} tone='danger' />
 				) : !hasResults ? (
@@ -95,7 +97,7 @@ export function GlobalSearchResults({
 					</div>
 				)}
 			</div>
-		</div>
+		</Surface>
 	)
 }
 
@@ -128,7 +130,6 @@ function SearchTaskResultRow({
 			textValue={task.title}
 		>
 			<ListView.ItemContent>
-				<EntityLabel label='任务' />
 				<span
 					aria-label={`优先级 ${formatTaskPriorityLabel(task.priority)}`}
 					className='flex shrink-0 items-center justify-center text-muted'
@@ -182,7 +183,6 @@ function SearchProjectResultRow({
 			textValue={project.name}
 		>
 			<ListView.ItemContent>
-				<EntityLabel label='项目' />
 				<span className='flex shrink-0 items-center justify-center text-muted'>
 					<FolderIcon className='size-3.5' />
 				</span>
@@ -213,25 +213,17 @@ function SearchGroupHeading({ title }: { title: string }) {
 
 function SearchPanelState({ label, tone = 'muted' }: { label: string; tone?: 'muted' | 'danger' }) {
 	return (
-		<div
-			className={cn(
-				'flex items-center gap-2 rounded-lg border px-3 py-3 text-[12px]',
-				tone === 'danger'
-					? 'border-danger/30 bg-danger-soft text-danger-soft-foreground'
-					: 'border-border bg-surface-secondary text-muted',
-			)}
-		>
-			<SearchIcon className='size-3.5 shrink-0' />
-			<span>{label}</span>
-		</div>
-	)
-}
-
-function EntityLabel({ label }: { label: string }) {
-	return (
-		<span className='shrink-0 text-[10px] font-medium tracking-[0.08em] text-muted uppercase'>
-			{label}
-		</span>
+		<Surface variant='tertiary'>
+			<div
+				className={cn(
+					'flex items-center gap-2 px-3 py-2.5 text-[12px]',
+					tone === 'danger' ? 'text-danger' : 'text-muted',
+				)}
+			>
+				<SearchIcon className='size-3.5 shrink-0' />
+				<span>{label}</span>
+			</div>
+		</Surface>
 	)
 }
 

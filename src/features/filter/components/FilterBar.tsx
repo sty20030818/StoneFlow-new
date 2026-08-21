@@ -56,7 +56,7 @@ export function FilterBar({ className }: { className?: string }) {
 
 	return (
 		<div className={cn('flex flex-col gap-1.5', className)}>
-			<div className='flex flex-wrap items-center gap-1.5 rounded-lg border border-border bg-surface-secondary px-2 py-1.5'>
+			<div className='flex flex-wrap items-center gap-1 px-1 py-0.5'>
 				{effective.clauses.map((clause) => (
 					<FilterChip
 						clause={clause}
@@ -126,7 +126,7 @@ function FilterChip({
 }) {
 	const multi = clause.values.length > 1
 	return (
-		<div className='inline-flex max-w-full items-center gap-0.5 rounded-md border border-border bg-surface px-1.5 py-0.5 text-[12px]'>
+		<div className='inline-flex max-w-full items-center gap-0.5 text-[12px]'>
 			<span className='shrink-0 px-0.5 font-medium text-muted'>
 				{formatFilterFieldLabel(clause.field)}
 			</span>

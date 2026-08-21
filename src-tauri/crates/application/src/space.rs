@@ -516,7 +516,12 @@ where
             .get_in_connection(&transaction, &space_id)
             .await?
             .ok_or_else(|| ApplicationError::not_found("Space 不存在"))?;
-        if current.deleted_at.is_some() || (archive && current.archived_at.is_some()) {
+        if current.deleted_at.is_some() {
+            return Err(ApplicationError::conflict(
+                "Space 已在回收站，请先恢复或永久删除",
+            ));
+        }
+        if archive && current.archived_at.is_some() {
             return Err(ApplicationError::conflict("Space 当前不可归档或删除"));
         }
         if current.is_default {

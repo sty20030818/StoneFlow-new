@@ -1,33 +1,59 @@
+import type { ReactNode } from 'react'
+
 import {
+	createTaskPlacementGroupedDropdownProps,
 	createTaskPriorityMetadataDropdownProps,
 	createTaskStatusMetadataDropdownProps,
 	MetadataDateDropdown,
 	MetadataFieldDropdown,
+	MetadataPlacementDropdown,
+	resolveTaskPlacementTarget,
 	taskDateMetadataIcons,
+	type TaskPlacementTarget,
 } from '@/features/metadata-fields'
-import type { AutosaveController } from '@/shared/autosave'
+import type { ProjectOption } from '@/features/project'
 import { formatTaskPriorityLabel } from '@/features/task/model/taskPriority'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
+import type { AutosaveController } from '@/shared/autosave'
 
-import type { TaskDetailDraft } from '../model/taskDetailDraft'
+import { applyTaskPlacementDraftChange, type TaskDetailDraft } from '../model/taskDetailDraft'
 
 type TaskPropertiesSectionProps = {
 	autosave: AutosaveController<TaskDetailDraft>
+	spaces: Array<{ id: string; name: string }>
+	projects: ProjectOption[]
 	disabled?: boolean
 }
 
-export function TaskPropertiesSection({ autosave, disabled = false }: TaskPropertiesSectionProps) {
+const READ_ONLY_REASON = '回收站中的任务为只读'
+
+/** 任务属性的唯一编辑表面；抽屉与完整页只负责决定它出现在哪里。 */
+export function TaskPropertiesSection({
+	autosave,
+	spaces,
+	projects,
+	disabled = false,
+}: TaskPropertiesSectionProps) {
 	const statusDropdownProps = createTaskStatusMetadataDropdownProps()
 	const priorityDropdownProps = createTaskPriorityMetadataDropdownProps()
+	const placementValue: TaskPlacementTarget = resolveTaskPlacementTarget({
+		spaceId: autosave.draft.spaceId,
+		projectId: autosave.draft.projectId,
+	})
+	const placementDropdownProps = createTaskPlacementGroupedDropdownProps({
+		mode: 'global',
+		currentSpaceId: autosave.draft.spaceId,
+		spaces,
+		projects,
+	})
 
 	return (
 		<div className='flex flex-col gap-2' data-task-properties='stack'>
-			<div className='grid grid-cols-[5rem_minmax(0,1fr)] items-center gap-3'>
-				<span className='text-xs font-medium text-muted'>状态</span>
+			<TaskPropertyRow label='状态'>
 				<MetadataFieldDropdown
 					buttonLabel={formatTaskStatusLabel(autosave.draft.status)}
 					disabled={disabled}
-					disabledReason='回收站中的任务为只读'
+					disabledReason={READ_ONLY_REASON}
 					drawerOwnedOverlay
 					fieldKey='status'
 					label='状态'
@@ -40,14 +66,13 @@ export function TaskPropertiesSection({ autosave, disabled = false }: TaskProper
 						})
 					}
 				/>
-			</div>
+			</TaskPropertyRow>
 
-			<div className='grid grid-cols-[5rem_minmax(0,1fr)] items-center gap-3'>
-				<span className='text-xs font-medium text-muted'>优先级</span>
+			<TaskPropertyRow label='优先级'>
 				<MetadataFieldDropdown
 					buttonLabel={formatTaskPriorityLabel(autosave.draft.priority)}
 					disabled={disabled}
-					disabledReason='回收站中的任务为只读'
+					disabledReason={READ_ONLY_REASON}
 					drawerOwnedOverlay
 					fieldKey='priority'
 					label='优先级'
@@ -60,13 +85,12 @@ export function TaskPropertiesSection({ autosave, disabled = false }: TaskProper
 						})
 					}
 				/>
-			</div>
+			</TaskPropertyRow>
 
-			<div className='grid grid-cols-[5rem_minmax(0,1fr)] items-center gap-3'>
-				<span className='text-xs font-medium text-muted'>截止时间</span>
+			<TaskPropertyRow label='截止时间'>
 				<MetadataDateDropdown
 					disabled={disabled}
-					disabledReason='回收站中的任务为只读'
+					disabledReason={READ_ONLY_REASON}
 					drawerOwnedOverlay
 					icon={taskDateMetadataIcons.due}
 					label='截止时间'
@@ -77,13 +101,12 @@ export function TaskPropertiesSection({ autosave, disabled = false }: TaskProper
 						})
 					}
 				/>
-			</div>
+			</TaskPropertyRow>
 
-			<div className='grid grid-cols-[5rem_minmax(0,1fr)] items-center gap-3'>
-				<span className='text-xs font-medium text-muted'>计划时间</span>
+			<TaskPropertyRow label='计划时间'>
 				<MetadataDateDropdown
 					disabled={disabled}
-					disabledReason='回收站中的任务为只读'
+					disabledReason={READ_ONLY_REASON}
 					drawerOwnedOverlay
 					icon={taskDateMetadataIcons.scheduled}
 					label='计划时间'
@@ -94,13 +117,12 @@ export function TaskPropertiesSection({ autosave, disabled = false }: TaskProper
 						})
 					}
 				/>
-			</div>
+			</TaskPropertyRow>
 
-			<div className='grid grid-cols-[5rem_minmax(0,1fr)] items-center gap-3'>
-				<span className='text-xs font-medium text-muted'>提醒时间</span>
+			<TaskPropertyRow label='提醒时间'>
 				<MetadataDateDropdown
 					disabled={disabled}
-					disabledReason='回收站中的任务为只读'
+					disabledReason={READ_ONLY_REASON}
 					drawerOwnedOverlay
 					icon={taskDateMetadataIcons.reminder}
 					label='提醒时间'
@@ -111,7 +133,33 @@ export function TaskPropertiesSection({ autosave, disabled = false }: TaskProper
 						})
 					}
 				/>
-			</div>
+			</TaskPropertyRow>
+
+			<TaskPropertyRow label='归属'>
+				<MetadataPlacementDropdown
+					disabled={disabled}
+					disabledReason={READ_ONLY_REASON}
+					drawerOwnedOverlay
+					groups={placementDropdownProps.groups}
+					label='归属'
+					menuLabel={placementDropdownProps.menuLabel}
+					value={placementValue}
+					onChange={(value: TaskPlacementTarget) =>
+						autosave.setDraft((current) => applyTaskPlacementDraftChange(current, value), {
+							saveMode: 'immediate',
+						})
+					}
+				/>
+			</TaskPropertyRow>
+		</div>
+	)
+}
+
+function TaskPropertyRow({ label, children }: { label: string; children: ReactNode }) {
+	return (
+		<div className='grid grid-cols-[5rem_minmax(0,1fr)] items-center gap-3'>
+			<span className='text-xs font-medium text-muted'>{label}</span>
+			<div className='min-w-0'>{children}</div>
 		</div>
 	)
 }

@@ -31,7 +31,6 @@ import type { TaskListItem, TaskStatus } from '@/shared/types'
 import { RowShell, type RowSelectionGroupPosition } from '@/shared/components/row'
 import { ActionTooltip } from '@/shared/components/tooltip'
 import { formatShortDate } from '@/shared/lib/date'
-import { cn } from '@/shared/lib/utils'
 import { TaskRowCreatedAtCell, TaskRowSelectionCell, TaskRowTitleCell } from './TaskRowCells'
 
 export type TaskRowAdapterProps = {
@@ -289,24 +288,14 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 				{...ariaRowProps}
 				ref={rowRef}
 				aria-label={`打开任务 ${task.title}`}
-				className={cn(
-					'text-[13px] leading-5 outline-none',
-					focusSource === 'pointer' && isFocused && 'focus-visible:border-transparent',
-					suppressFocusIndicator &&
-						'border-transparent focus-visible:border-transparent focus-visible:outline-none forced-colors:focus-visible:border-[Highlight]',
-					focusSource === 'keyboard' &&
-						!isFocused &&
-						(isSelected ? 'hover:bg-accent-soft' : 'hover:bg-transparent'),
-					isSelected
-						? 'group-data-[open=true]/task-context-menu:bg-accent-soft-hover'
-						: 'group-data-[open=true]/task-context-menu:bg-surface-hover',
-					'group-data-[open=true]/task-context-menu:shadow-[inset_2px_0_0_var(--accent-border)]',
-				)}
+				className='text-[13px] leading-5'
+				data-focus-suppressed={suppressFocusIndicator || undefined}
 				data-shell-task-card='true'
 				data-task-id={task.id}
 				data-focus-source={isFocused ? focusSource : undefined}
 				active={isActive}
 				hovered={isFocused}
+				hoverSource={focusSource}
 				interactive
 				pending={isPending}
 				selected={isSelected}

@@ -27,7 +27,7 @@ export function ProjectResultRowAdapter({
 			<Button
 				aria-current={isActive ? 'true' : undefined}
 				aria-label={`打开项目 ${item.name}`}
-				className='min-h-12'
+				className='min-h-11'
 				data-content-height='true'
 				fullWidth
 				onFocus={onFocus}
@@ -40,8 +40,8 @@ export function ProjectResultRowAdapter({
 			>
 				<div className='flex w-full min-w-0 items-center gap-3 text-left'>
 					<div className='flex min-w-0 flex-1 items-center gap-3'>
-						<span className='flex size-7 shrink-0 items-center justify-center rounded-md bg-success-soft text-success-soft-foreground'>
-							<FolderIcon className='size-3.5' />
+						<span className='flex size-5 shrink-0 items-center justify-center text-muted'>
+							<FolderIcon className='size-4' />
 						</span>
 
 						<div className='min-w-0 flex-1'>
@@ -52,12 +52,6 @@ export function ProjectResultRowAdapter({
 								{item.spaceName}
 							</OverflowTooltip>
 						</div>
-					</div>
-
-					<div className='shrink-0'>
-						<span className='rounded border border-border px-1.5 py-0.5 text-[10.5px] text-muted'>
-							项目
-						</span>
 					</div>
 				</div>
 			</Button>

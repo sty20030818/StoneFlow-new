@@ -39,8 +39,9 @@ export function LifecycleContextMenu({
 			}}
 		>
 			<ContextMenu.Trigger
-				className='group/lifecycle-context-menu block w-full'
+				className='block w-full'
 				data-open={open || undefined}
+				data-row-context-menu-trigger='true'
 			>
 				{children}
 			</ContextMenu.Trigger>

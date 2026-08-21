@@ -1,6 +1,6 @@
 # settings · 设置
 
-> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-07-19
+> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-08-20
 
 ---
 
@@ -23,6 +23,8 @@
 
 **禁止** `features/settings` → `@/layout/**`。
 **禁止** navigation / 壳深路径进 api|model|components。
+
+Settings 页面与 panels 直接组合 HeroUI Form、Card 与标准控件；`settingsShared` 只负责设置分区的产品结构，不是视觉 wrapper。Sync / Update 的系统状态和动作只消费各自 public，不复制其状态机或反馈实现。
 
 ---
 

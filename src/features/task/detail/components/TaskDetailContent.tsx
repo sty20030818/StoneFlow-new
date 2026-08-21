@@ -1,6 +1,6 @@
 import type { Ref } from 'react'
 
-import { Button } from '@heroui/react'
+import { Button, Separator } from '@heroui/react'
 
 import type { TaskDetailViewModel } from '../model/useTaskDetailViewModel'
 import { TaskDrawerBody } from './TaskDrawerBody'
@@ -39,6 +39,7 @@ export function TaskDetailContent({
 				onClose={showCloseButton ? onClose : undefined}
 				taskId={viewModel.task.id}
 			/>
+			<Separator variant='tertiary' />
 			<TaskDrawerBody
 				autosave={viewModel.autosave}
 				projects={viewModel.projects}
@@ -46,6 +47,7 @@ export function TaskDetailContent({
 				spaces={viewModel.spaces}
 				taskId={viewModel.task.id}
 			/>
+			<Separator variant='tertiary' />
 			<TaskDrawerFooter
 				isArchiveBusy={viewModel.isArchiveBusy}
 				isDeleteBusy={viewModel.isDeleteBusy}

@@ -6,14 +6,14 @@ import type { AutosaveController } from '@/shared/autosave'
 import { renderWithInteractionProviders as render } from '@/test/TestInteractionProviders'
 
 import type { TaskDetailDraft } from '../model/taskDetailDraft'
-import { TaskPlacementSection } from './TaskPlacementSection'
+import { TaskPropertiesSection } from './TaskPropertiesSection'
 
-describe('TaskPlacementSection', () => {
+describe('TaskPropertiesSection', () => {
 	it('跨 space 选择项目时立即提交归属变更', async () => {
 		const autosave = createAutosaveController()
 
 		render(
-			<TaskPlacementSection
+			<TaskPropertiesSection
 				autosave={autosave}
 				projects={createProjects()}
 				spaces={createSpaces()}

@@ -68,7 +68,7 @@
 	}
 
 	::selection {
-		background: color-mix(in oklab, var(--accent) 18%, white);
+		background: color-mix(in oklab, var(--accent) 12%, white);
 	}
 
 	[data-scroll-container="true"] {

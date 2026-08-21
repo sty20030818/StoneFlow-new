@@ -1,6 +1,6 @@
 # launcher · 独立窗 Launcher
 
-> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-08-11
+> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-08-20
 
 ---
 
@@ -8,7 +8,7 @@
 
 ```txt
 src/launcher.tsx
-  → LauncherPage（薄壳：半径 CSS + 挂载）
+  → LauncherPage（薄壳：独立 renderer 挂载）
       → SessionProvider          // phase / bridge / close
       → DomainProvider           // draft / search / submit / derived
       → PresentSession           // preparing → present_session
@@ -61,7 +61,7 @@ src/features/launcher/
 | 搜索 | flat 交错流；「搜索结果」轻标题钉在滚动区外 |
 | 新建行 | 有标题时钉在 Results 上方；↑↓ 独立 focus lane |
 | 圆角 | Win **8** / Mac **16** → `--launcher-panel-radius` |
-| 复用 | HeroUI 组件 + 主站语义 token；禁止 Launcher 专属兼容 facade |
+| 复用 | HeroUI 组件 + 全局 semantic theme；禁止 Launcher 专属兼容 facade |
 | 快捷键 | Launcher 独占本地 binding / 匹配；键帽与读屏语义复用 shared |
 
 ---
@@ -100,6 +100,8 @@ booting → hidden → preparing → presenting → visible → closing
 ```
 
 平台：窗 label `launcher`，URL `launcher.html`，capabilities `launcher.json`。
+
+Launcher 原生窗口半径与透明裁切属于 platform/host geometry；组件状态与动效使用 HeroUI 上游 recipe，Launcher 不写第一方动画或第二套全局皮肤。
 
 预热失败后保留原生窗，但下一轮预热会重载其 WebView，再等待前端重新注册 listener；不保留旧轮询或第二套入口。
 

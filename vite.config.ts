@@ -68,13 +68,8 @@ export default defineConfig({
 							priority: 40,
 						},
 						{
-							name: 'vendor-radix',
-							test: /node_modules[\\/](@radix-ui|radix-ui)([\\/]|$)/,
-							priority: 30,
-						},
-						{
 							name: 'vendor-date',
-							test: /node_modules[\\/](react-day-picker|date-fns)([\\/]|$)/,
+							test: /node_modules[\\/]date-fns([\\/]|$)/,
 							priority: 25,
 						},
 						{

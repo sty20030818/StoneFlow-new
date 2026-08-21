@@ -75,6 +75,7 @@ describe('Shell 阶段 D 结构', () => {
 
 		const dialog = await screen.findByRole('dialog')
 		expect(dialog).toBeInTheDocument()
+		expect(dialog.closest('[data-shell-sidebar-sheet="true"]')).not.toBeNull()
 		expect(screen.getAllByTestId('sidebar-navigation')).toHaveLength(1)
 		expect(document.querySelector('[data-slot="shell-workspace"]')).toHaveAttribute(
 			'data-sidebar-mode',

@@ -27,18 +27,18 @@ export function TaskDrawerFooter({
 	onMoveToTrash,
 }: TaskDrawerFooterProps) {
 	return (
-		<footer className='flex shrink-0 items-center justify-between gap-2 border-t border-separator py-2 pr-2 pl-4'>
+		<footer className='flex shrink-0 items-center justify-between gap-2 px-3 py-2'>
 			<div className='min-w-0 flex-1 text-[11px] text-muted'>
 				<OverflowTooltip content={`更新于 ${formatUpdatedAt(task.updatedAt)}`}>
 					更新于 {formatUpdatedAt(task.updatedAt)}
 				</OverflowTooltip>
 			</div>
 			<div className='flex min-w-0 shrink-0 items-center gap-2'>
-				<Button isDisabled={isArchiveBusy} onPress={onArchiveOrRestore} size='sm' variant='outline'>
+				<Button isDisabled={isArchiveBusy} onPress={onArchiveOrRestore} size='sm' variant='ghost'>
 					<ArchiveIcon className='size-3.5' />
 					{task.archivedAt ? '恢复' : '归档'}
 				</Button>
-				<Button isDisabled={isDeleteBusy} onPress={onMoveToTrash} size='sm' variant='danger'>
+				<Button isDisabled={isDeleteBusy} onPress={onMoveToTrash} size='sm' variant='danger-soft'>
 					<Trash2Icon className='size-3.5' />
 					移入回收站
 				</Button>

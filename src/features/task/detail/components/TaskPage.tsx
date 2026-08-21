@@ -11,6 +11,7 @@ import { type TaskDetailViewModel, useTaskDetailViewModel } from '../model/useTa
 import { TaskPageMain as TaskPageMainContent } from './TaskPageMain'
 import { TaskPageSidebar as TaskPageSidebarContent } from './TaskPageSidebar'
 import { TaskPageState } from './TaskPageState'
+import { TaskAutosaveStatus } from './TaskAutosaveStatus'
 
 type TaskPageProps = {
 	taskId: string
@@ -104,9 +105,14 @@ function TaskPageLoaded({ task, viewModel }: TaskPageLoadedProps) {
 
 	return (
 		<PageFrame.Root>
-			<PageFrame.Header breadcrumb={<AppBreadcrumb items={breadcrumbItems} />} />
+			<PageFrame.Header
+				actions={
+					<TaskAutosaveStatus error={viewModel.autosave.error} status={viewModel.autosave.status} />
+				}
+				breadcrumb={<AppBreadcrumb items={breadcrumbItems} />}
+			/>
 			<PageFrame.Body>
-				<div className='grid min-h-full gap-4 lg:grid-cols-[minmax(0,1fr)_280px]'>
+				<div className='mx-auto grid min-h-full w-full max-w-6xl gap-3 lg:grid-cols-[minmax(0,1fr)_18rem]'>
 					<div className='min-w-0'>
 						<TaskPageMainContent
 							autosave={viewModel.autosave}

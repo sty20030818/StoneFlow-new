@@ -56,14 +56,17 @@ describe('ProjectPage', () => {
 		completeOrReopen.mockClear()
 	})
 
-	it('组合项目 Header、Task Board 与展示设置', () => {
+	it('组合项目 Header、Task Board 与收敛后的项目操作', async () => {
 		renderWithInteractionProviders(<ProjectPage />)
 
 		expect(screen.getByText('状态分组任务 Board')).toBeInTheDocument()
 		expect(screen.getByText('显示设置')).toBeInTheDocument()
 		fireEvent.click(screen.getByRole('button', { name: '完成' }))
-		fireEvent.click(screen.getByRole('button', { name: '归档' }))
-		fireEvent.click(screen.getByRole('button', { name: '删除' }))
+		const projectActions = screen.getByRole('button', { name: '项目操作' })
+		fireEvent.click(projectActions)
+		fireEvent.click(await screen.findByRole('menuitem', { name: '归档项目' }))
+		fireEvent.click(projectActions)
+		fireEvent.click(await screen.findByRole('menuitem', { name: '删除项目' }))
 		expect(completeOrReopen).toHaveBeenCalled()
 		expect(archive).toHaveBeenCalled()
 		expect(remove).toHaveBeenCalled()

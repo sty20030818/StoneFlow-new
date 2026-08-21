@@ -31,13 +31,13 @@ export function ViewsPage() {
 						>
 							<Button
 								aria-label='创建任务'
-								isIconOnly
 								onPress={scene.openTaskCreateDialog}
 								size='sm'
 								type='button'
-								variant='ghost'
+								variant='primary'
 							>
-								<PlusIcon />
+								<PlusIcon className='size-4' />
+								<span>新建任务</span>
 							</Button>
 						</ActionTooltip>
 					}

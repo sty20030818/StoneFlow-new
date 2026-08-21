@@ -27,3 +27,5 @@ CommandSelectionProvider
 - `useCollectionKeyboardAdapter`（Registry 驱动的导航、范围切换与 Escape 清空）
 
 **不在本包：** `build*CommandSelection` → 各域 public
+
+React Stately manager 是每个集合唯一的 `selectedKeys` / `focusedKey` Owner；collection interaction 只保存 Shift 手势所需的最小方向元数据，并以 stable key/ref bridge 恢复虚拟行真实焦点。Pointer hover 只是瞬时输入来源，不建立 keyboard-hover、第二份 current 或重复 selection。

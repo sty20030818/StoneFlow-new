@@ -13,7 +13,9 @@ export function PrimaryMetaBar() {
 	const advancedActionLabel = state.isAdvancedOpen ? '收起更多参数' : '展开更多参数'
 
 	return (
-		<div className='flex h-11 items-center gap-2 px-3' data-testid='launcher-primary-meta-bar'>
+		<div className='flex h-12 items-center gap-2 px-3' data-testid='launcher-primary-meta-bar'>
+			<TitleInput />
+
 			<PriorityControl
 				disabled={state.submitState === 'submitting'}
 				onOpenChange={(open) => actions.setPopover(open ? 'priority' : null)}
@@ -21,9 +23,6 @@ export function PrimaryMetaBar() {
 				open={state.activePopover === 'priority'}
 				priority={state.draft.priority}
 			/>
-
-			<TitleInput />
-
 			<PlacementControl
 				disabled={state.submitState === 'submitting'}
 				label={derived.placementLabel}

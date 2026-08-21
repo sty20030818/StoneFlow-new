@@ -350,7 +350,7 @@ export function SettingsSyncPanel() {
 	)
 
 	return (
-		<div className='flex w-full min-w-0 flex-col gap-4'>
+		<div className='flex w-full min-w-0 flex-col gap-7'>
 			<SettingsSection
 				description='所有业务仍然只读写本地数据库；这里仅配置云端 Postgres 副本，并在需要时手动或自动触发同步。'
 				title='云同步'

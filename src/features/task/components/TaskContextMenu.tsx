@@ -140,8 +140,9 @@ export function TaskContextMenu({
 			}}
 		>
 			<ContextMenu.Trigger
-				className='group/task-context-menu block w-full'
+				className='block w-full'
 				data-open={menuOpen || undefined}
+				data-row-context-menu-trigger='true'
 			>
 				{children}
 			</ContextMenu.Trigger>

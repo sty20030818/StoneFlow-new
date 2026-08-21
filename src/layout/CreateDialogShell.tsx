@@ -52,11 +52,7 @@ export function CreateDialogShell({
 	const currentSpaceLabel = currentSpace?.name ?? '选择空间'
 
 	return (
-		<Modal.Backdrop
-			isKeyboardDismissDisabled={false}
-			isOpen={open}
-			onOpenChange={(nextOpen) => !nextOpen && onClose()}
-		>
+		<Modal.Backdrop isOpen={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
 			<Modal.Container placement='center' size='lg'>
 				<Modal.Dialog
 					aria-describedby={descriptionId}
@@ -79,52 +75,54 @@ export function CreateDialogShell({
 						{description}
 					</p>
 
-					<div className='flex shrink-0 items-center justify-between'>
-						<div className='flex items-center gap-1 text-[13px]'>
-							<CreateDialogSpaceSelector
-								currentSpace={currentSpace}
-								currentSpaceLabel={currentSpaceLabel}
-								onSelectSpace={onSelectSpace}
-								selectedSpaceId={selectedSpaceId}
-								spaces={spaces}
-							/>
-							<ChevronRightIcon className='size-3.5 text-muted' />
-							<span className='font-black text-foreground'>{title}</span>
-						</div>
+					<Modal.Header>
+						<div className='flex w-full shrink-0 items-center justify-between gap-3'>
+							<div className='flex min-w-0 items-center gap-1 text-[13px]'>
+								<CreateDialogSpaceSelector
+									currentSpace={currentSpace}
+									currentSpaceLabel={currentSpaceLabel}
+									onSelectSpace={onSelectSpace}
+									selectedSpaceId={selectedSpaceId}
+									spaces={spaces}
+								/>
+								<ChevronRightIcon className='size-3.5 shrink-0 text-muted' />
+								<span className='truncate font-semibold text-foreground'>{title}</span>
+							</div>
 
-						<div className='flex items-center gap-0.5'>
-							{showFullscreenToggle ? (
-								<ActionTooltip label={fullscreen ? '退出全屏创建' : '全屏创建'}>
+							<div className='flex shrink-0 items-center gap-0.5'>
+								{showFullscreenToggle ? (
+									<ActionTooltip label={fullscreen ? '退出全屏创建' : '全屏创建'}>
+										<Button
+											aria-label={fullscreen ? '退出全屏创建' : '全屏创建'}
+											isIconOnly
+											onPress={onToggleFullscreen}
+											size='sm'
+											type='button'
+											variant='ghost'
+										>
+											{fullscreen ? (
+												<Minimize2Icon className='size-3.5' />
+											) : (
+												<Maximize2Icon className='size-3.5' />
+											)}
+										</Button>
+									</ActionTooltip>
+								) : null}
+								<ActionTooltip label='关闭创建窗口'>
 									<Button
-										aria-label={fullscreen ? '退出全屏创建' : '全屏创建'}
+										aria-label='关闭创建窗口'
 										isIconOnly
-										onPress={onToggleFullscreen}
+										onPress={onClose}
 										size='sm'
 										type='button'
 										variant='ghost'
 									>
-										{fullscreen ? (
-											<Minimize2Icon className='size-3.5' />
-										) : (
-											<Maximize2Icon className='size-3.5' />
-										)}
+										<XIcon className='size-3.5' />
 									</Button>
 								</ActionTooltip>
-							) : null}
-							<ActionTooltip label='关闭创建窗口'>
-								<Button
-									aria-label='关闭创建窗口'
-									isIconOnly
-									onPress={onClose}
-									size='sm'
-									type='button'
-									variant='ghost'
-								>
-									<XIcon className='size-3.5' />
-								</Button>
-							</ActionTooltip>
+							</div>
 						</div>
-					</div>
+					</Modal.Header>
 
 					<div className='flex min-h-0 flex-1 flex-col overflow-hidden'>{children}</div>
 				</Modal.Dialog>

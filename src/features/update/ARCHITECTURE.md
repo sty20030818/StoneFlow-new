@@ -1,6 +1,7 @@
 # update · 应用更新
 
 > 描述 `src/features/update` 当前稳定边界。更新生命周期由后端会话负责，前端模块只投影快照并提供用户操作。
+> 最后更新：2026-08-20
 
 ## 职责
 
@@ -18,6 +19,8 @@ update 不负责：
 - 更新日志的读取、解析、筛选和缓存。该职责属于 `@/features/changelog`。
 - 发布版本号、平台产物和远端指针。该职责属于 `scripts/release`。
 - 壳层弹窗编排、路由或工作区业务数据。
+
+界面直接组合 HeroUI Dialog、Button、Progress 与反馈组件；不维护旧 UI primitive、局部视觉 recipe 或第一方动画。系统状态提示只组合 update 会话投影与 sync public，不创建第三份运行状态。
 
 ## 内部分层
 

@@ -31,24 +31,26 @@ describe('ProjectRowAdapter', () => {
 		expect(actions.onToggleSelected).toHaveBeenCalledTimes(1)
 	})
 
-	it('行按钮与右键菜单分别执行 row singleton 和 context-menu command projection', async () => {
+	it('归档与删除统一通过右键菜单执行 context-menu command projection', async () => {
 		const runCommand =
 			vi.fn<
 				(ctx: ReturnType<typeof createEmptyCommandContext>, invocation: CommandInvocation) => void
 			>()
 		renderProjectRow({ runCommand })
 
-		fireEvent.click(screen.getByRole('button', { name: '归档' }))
+		const row = screen.getByRole('row', { name: '打开项目 项目 A' })
+		fireEvent.contextMenu(row)
+		fireEvent.click(await screen.findByRole('menuitem', { name: '归档项目' }))
 		await waitFor(() => {
 			expect(runCommand).toHaveBeenCalledWith(
 				expect.objectContaining({
 					selection: expect.objectContaining({ ids: ['project-1'] }),
 				}),
-				{ source: 'row' },
+				{ source: 'context-menu' },
 			)
 		})
 
-		fireEvent.contextMenu(screen.getByRole('row', { name: '打开项目 项目 A' }))
+		fireEvent.contextMenu(row)
 		fireEvent.click(await screen.findByRole('menuitem', { name: '移入回收站' }))
 
 		await waitFor(() => {

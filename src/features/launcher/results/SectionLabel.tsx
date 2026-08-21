@@ -1,5 +1,3 @@
-import { Chip } from '@heroui/react'
-
 import { cn } from '@/shared/lib/utils'
 
 /** 空态轻标题：无灰底、不可折叠、不 sticky。 */
@@ -15,14 +13,14 @@ export function SectionLabel({
 	return (
 		<div
 			className={cn(
-				'flex items-center gap-1.5 px-3 pt-2 pb-1 text-xs font-medium text-muted',
+				'flex items-center gap-2 px-2.5 pt-2.5 pb-1 text-[10.5px] font-semibold tracking-[0.06em] text-muted uppercase',
 				className,
 			)}
 		>
 			<span>{title}</span>
-			<Chip size='sm' variant='soft'>
-				<Chip.Label className='tabular-nums'>{count}</Chip.Label>
-			</Chip>
+			<span aria-label={`${count} 项`} className='tabular-nums'>
+				{count}
+			</span>
 		</div>
 	)
 }

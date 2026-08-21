@@ -34,7 +34,7 @@ export function SettingsGeneralPanel() {
 	}
 
 	return (
-		<div className='flex w-full min-w-0 flex-col gap-4'>
+		<div className='flex w-full min-w-0 flex-col gap-7'>
 			<SettingsSection
 				description='选择界面的强调色。只影响主要操作、选中状态、链接与焦点，并保存在这台设备上。'
 				title='主题色'
@@ -87,7 +87,7 @@ export function SettingsGeneralPanel() {
 						</Alert.Content>
 					</Alert>
 				) : (
-					<div className='flex flex-col gap-3 md:max-w-sm'>
+					<div className='flex flex-col gap-3 md:max-w-md'>
 						<Select
 							fullWidth
 							isDisabled={pending || spaceStatus === 'loading' || spaces.length === 0}

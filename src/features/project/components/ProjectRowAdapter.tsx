@@ -1,15 +1,9 @@
 import { Button, Checkbox } from '@heroui/react'
-import { ArchiveIcon, FolderIcon, Trash2Icon } from 'lucide-react'
-import { useCallback, useMemo, useState, type Ref } from 'react'
+import { FolderIcon } from 'lucide-react'
+import { useCallback, useMemo, type Ref } from 'react'
 import type { GridListItemAria } from 'react-aria'
 
-import {
-	COMMAND_IDS,
-	useCommandRuntimeContext,
-	type CommandContext,
-	type CommandId,
-	type CommandProjection,
-} from '@/features/command'
+import { useCommandRuntimeContext, type CommandContext, type CommandId } from '@/features/command'
 import type { ProjectOverviewItem } from '@/shared/types'
 import { formatShortDate } from '@/shared/lib/date'
 import { cn } from '@/shared/lib/utils'
@@ -51,23 +45,10 @@ export function ProjectRowAdapter({
 	actions,
 }: ProjectRowAdapterProps) {
 	const { runtime, context } = useCommandRuntimeContext()
-	const [isExecuting, setExecuting] = useState(false)
 	const { onClick: _reactAriaPressClick, ...ariaRowProps } = rowProps ?? {}
 	const contextTargets = useMemo(
 		() => (contextProjects && contextProjects.length > 0 ? contextProjects : [project]),
 		[contextProjects, project],
-	)
-	const rowCommandContext = useMemo(
-		() =>
-			buildProjectCommandContext({
-				baseContext: context,
-				projects: [project],
-				targetIds: [project.id],
-				focusedProjectId: project.id,
-				rowTargetId: project.id,
-				rowTargetSource: rowState.focusSource === 'keyboard' ? 'focus' : 'hover',
-			}),
-		[context, project, rowState.focusSource],
 	)
 	const contextMenuCommandContext = useMemo(
 		() =>
@@ -86,19 +67,7 @@ export function ProjectRowAdapter({
 		(commandId: CommandId) => runtime.project(commandId, contextMenuCommandContext),
 		[contextMenuCommandContext, runtime],
 	)
-	const archiveCommand = runtime.project(COMMAND_IDS.projectArchive, rowCommandContext)
-	const deleteCommand = runtime.project(COMMAND_IDS.projectDelete, rowCommandContext)
-	const busy = rowState.isPending || isExecuting
-
-	const executeRowCommand = useCallback(async (command: CommandProjection | null) => {
-		if (!command?.enabled) return
-		setExecuting(true)
-		try {
-			await command.execute({ source: 'row' })
-		} finally {
-			setExecuting(false)
-		}
-	}, [])
+	const busy = rowState.isPending
 
 	return (
 		<ProjectContextMenu
@@ -112,12 +81,7 @@ export function ProjectRowAdapter({
 				ref={rowRef}
 				aria-label={`打开项目 ${project.name}`}
 				role={ariaRowProps.role ?? 'row'}
-				className={cn(
-					'group/project-row w-full text-[13px] leading-5 outline-none',
-					rowState.isSelected
-						? 'group-data-[open=true]/project-context-menu:bg-accent-soft-hover'
-						: 'group-data-[open=true]/project-context-menu:bg-surface-hover',
-				)}
+				className='group/project-row w-full text-[13px] leading-5 outline-none'
 				data-project-id={project.id}
 				data-focus-source={rowState.isFocused ? rowState.focusSource : undefined}
 				hovered={rowState.isFocused}
@@ -158,7 +122,7 @@ export function ProjectRowAdapter({
 					<span className='min-w-0 flex-1 truncate font-medium'>{project.name}</span>
 
 					<div
-						className='ml-auto flex shrink-0 items-center gap-1'
+						className='ml-auto flex shrink-0 items-center opacity-0 group-focus-within/project-row:opacity-100 group-hover/project-row:opacity-100'
 						onClick={(event) => event.stopPropagation()}
 						onKeyDown={(event) => event.stopPropagation()}
 						onPointerDown={(event) => event.stopPropagation()}
@@ -175,30 +139,6 @@ export function ProjectRowAdapter({
 						>
 							{project.completedAt ? '重开' : '完成'}
 						</Button>
-						{archiveCommand?.visible ? (
-							<Button
-								aria-description={archiveCommand.disabledReason}
-								isDisabled={busy || !archiveCommand.enabled}
-								size='sm'
-								variant='ghost'
-								onPress={() => void executeRowCommand(archiveCommand)}
-							>
-								<ArchiveIcon />
-								归档
-							</Button>
-						) : null}
-						{deleteCommand?.visible ? (
-							<Button
-								aria-description={deleteCommand.disabledReason}
-								isDisabled={busy || !deleteCommand.enabled}
-								size='sm'
-								variant='ghost'
-								onPress={() => void executeRowCommand(deleteCommand)}
-							>
-								<Trash2Icon />
-								删除
-							</Button>
-						) : null}
 					</div>
 
 					<div className='hidden shrink-0 items-center gap-3 text-xs text-muted md:flex'>

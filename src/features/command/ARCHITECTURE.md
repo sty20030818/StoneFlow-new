@@ -1,6 +1,6 @@
 # command · 命令 / 快捷键 / 命令板
 
-> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-08-11
+> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-08-20
 
 ---
 
@@ -37,6 +37,8 @@ commands/ 元数据（id / title / when）
 
 跨模块 **只** `import { … } from '@/features/command'`。
 **禁止** `features/command` → `@/layout/**`。
+
+Command Menu 直接组合 HeroUI overlay、输入与集合组件；本模块不保留 `cmdk`、第二套 collection state 或视觉兼容层。Runtime 的同一 projection 同时服务 Menu、快捷键、ContextMenu 与 ActionBar。
 
 ---
 

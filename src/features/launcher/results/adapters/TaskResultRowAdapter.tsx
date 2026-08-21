@@ -1,5 +1,4 @@
 import { Button } from '@heroui/react'
-import { FolderIcon } from 'lucide-react'
 import type { KeyboardEventHandler, Ref } from 'react'
 
 import { PriorityIcon } from '@/features/task'
@@ -31,7 +30,7 @@ export function TaskResultRowAdapter({
 			<Button
 				aria-current={isActive ? 'true' : undefined}
 				aria-label={`打开任务 ${item.title}`}
-				className='min-h-12'
+				className='min-h-11'
 				data-content-height='true'
 				fullWidth
 				onFocus={onFocus}
@@ -57,15 +56,6 @@ export function TaskResultRowAdapter({
 								{subtitle}
 							</OverflowTooltip>
 						</div>
-					</div>
-
-					<div className='flex shrink-0 items-center gap-1.5'>
-						<span className='flex size-7 items-center justify-center rounded-md bg-accent-soft text-accent-soft-foreground'>
-							<FolderIcon className='size-3.5' />
-						</span>
-						<span className='rounded border border-border px-1.5 py-0.5 text-[10.5px] text-muted'>
-							任务
-						</span>
 					</div>
 				</div>
 			</Button>

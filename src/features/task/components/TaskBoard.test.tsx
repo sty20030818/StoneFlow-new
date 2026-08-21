@@ -76,6 +76,34 @@ vi.mock('@/features/task/components/TaskRowAdapter', () => ({
 }))
 
 describe('TaskBoard', () => {
+	it('连续选择组填满虚拟行间隙并只保留外侧圆角', () => {
+		const tasks = [
+			createTask({ id: 'task-1', title: '任务 A' }),
+			createTask({ id: 'task-2', title: '任务 B' }),
+		]
+		renderTaskBoard(
+			<TaskBoardHarness
+				onEmptyAction={() => undefined}
+				onToggleTaskStatus={async () => undefined}
+				onUpdateTaskPriority={async () => undefined}
+				onUpdateTaskStatus={async () => undefined}
+				pendingTaskId={null}
+				selectedTaskIds={tasks.map((task) => task.id)}
+				status='ready'
+				tasks={tasks}
+			/>,
+		)
+
+		expect(screen.getByRole('row', { name: '打开任务 任务 A' }).parentElement).toHaveClass(
+			'bg-default',
+			'rounded-t-lg',
+		)
+		expect(screen.getByRole('row', { name: '打开任务 任务 B' }).parentElement).toHaveClass(
+			'bg-default',
+			'rounded-b-lg',
+		)
+	})
+
 	it('Grid 提供 row/gridcell，Arrow/Home/End 移动真实 DOM 焦点', async () => {
 		const tasks = [
 			createTask({ id: 'task-1', title: '任务 A' }),

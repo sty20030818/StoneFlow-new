@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Card, Surface, Switch } from '@heroui/react'
+import { Surface, Switch } from '@heroui/react'
 
 export function SettingsSection({
 	title,
@@ -11,14 +11,14 @@ export function SettingsSection({
 	children: ReactNode
 }) {
 	return (
-		<section>
-			<Card>
-				<Card.Header>
-					<h2 className='text-sm font-semibold text-foreground'>{title}</h2>
-					<Card.Description>{description}</Card.Description>
-				</Card.Header>
-				<Card.Content>{children}</Card.Content>
-			</Card>
+		<section className='grid min-w-0 gap-2.5'>
+			<header className='grid gap-1 px-0.5'>
+				<h2 className='text-[13px] font-semibold tracking-[-0.01em] text-foreground'>{title}</h2>
+				<p className='max-w-3xl text-xs leading-5 text-muted'>{description}</p>
+			</header>
+			<Surface variant='secondary'>
+				<div className='min-w-0 p-4'>{children}</div>
+			</Surface>
 		</section>
 	)
 }
@@ -45,10 +45,10 @@ export function SettingCheckboxRow({
 			onChange={onChange}
 		>
 			<Switch.Content>
-				<div className='flex w-full items-center gap-4 py-3'>
+				<div className='flex w-full items-center gap-5 py-2.5'>
 					<div className='min-w-0 flex-1 text-left'>
-						<p className='text-sm font-medium text-foreground'>{label}</p>
-						<p className='mt-1 text-xs leading-5 text-muted'>{description}</p>
+						<p className='text-[13px] font-medium text-foreground'>{label}</p>
+						<p className='mt-0.5 text-xs leading-5 text-muted'>{description}</p>
 					</div>
 					<Switch.Control>
 						<Switch.Thumb />
@@ -69,20 +69,16 @@ export function SettingInfoRow({
 	value: ReactNode
 }) {
 	return (
-		<Card variant='tertiary'>
-			<Card.Content>
+		<Surface variant='tertiary'>
+			<div className='p-3'>
 				<p className='text-sm font-medium text-foreground'>{label}</p>
 				<div className='mt-1 text-sm text-foreground'>{value}</div>
 				<p className='mt-1 text-xs leading-5 text-muted'>{description}</p>
-			</Card.Content>
-		</Card>
+			</div>
+		</Surface>
 	)
 }
 
 export function SettingsPreferenceGroup({ children }: { children: ReactNode }) {
-	return (
-		<Surface variant='secondary'>
-			<div className='divide-y divide-separator px-3'>{children}</div>
-		</Surface>
-	)
+	return <div className='divide-y divide-separator'>{children}</div>
 }

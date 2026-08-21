@@ -36,13 +36,13 @@ export function TaskListSceneView({ variant }: TaskListSceneViewProps) {
 						>
 							<Button
 								aria-label='创建任务'
-								isIconOnly
 								onPress={scene.openCreate}
 								size='sm'
 								type='button'
-								variant='ghost'
+								variant='primary'
 							>
-								<PlusIcon />
+								<PlusIcon aria-hidden='true' />
+								新建任务
 							</Button>
 						</ActionTooltip>
 					}

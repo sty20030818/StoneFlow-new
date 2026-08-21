@@ -1,19 +1,19 @@
 # StoneFlow 视觉样式架构
 
-> 版本：v3
+> 版本：v4
 > 最后更新：2026-08-20
 > 作用：定义 `src/styles` 的现行合同。
 
 ## 1. 一句话心智
 
-页面直接使用 HeroUI；`theme.css` 统一所有视觉值，`components.css` 统一所有公共控件皮肤，产品 Module 只拥有结构、业务语义和动态几何。
+页面直接使用 HeroUI；HeroUI 上游 recipe 负责组件结构与完整交互状态，`theme.css` 统一语义值，`components.css` 只保存跨应用必需差异，产品 Module 拥有结构、业务语义和动态几何。
 
 ```txt
 Tailwind + HeroUI OSS/Pro
           ↓
 theme.css：全局语义值
           ↓
-components.css：公共组件 recipe
+components.css：最小公共差异 recipe
           ↓
 产品 Module：布局、组合、动态几何与业务行为
 ```
@@ -44,7 +44,7 @@ src/styles/
 ├── index.css       # 唯一导入入口
 ├── fonts.css       # 只声明 @font-face 字体资产
 ├── theme.css       # 唯一全局语义值源
-├── components.css  # 唯一公共组件视觉 recipe
+├── components.css  # 唯一且最小的公共组件差异 recipe
 └── base.css        # 文档、滚动、选择与原生窗口基础行为
 ```
 
@@ -90,21 +90,23 @@ tailwindcss
 
 规则：
 
-- Control 使用 `6px`；Card、Row 分组和设置 Surface 使用 `8px`；Popover、Modal 与 Sheet 使用 `12px`。
+- Control 使用 `6px`；Card 与 Row 分组使用 `8px`；Popover、Modal 与 Sheet 使用 `12px`。
 - pill 只用于 Chip、Avatar 和状态标记，不用于普通 Button、Toggle 或导航项。
 - 有明确边界的 Surface 使用 `1px` 语义边框；Row 使用分隔线与状态背景；阴影只表达浮层或拖拽 elevation。
 - 不创建无消费者色阶、任意主题配置、Dark 脚手架或 TypeScript token 镜像。
 - 只有需要生成 JSX utility 的语义才进入 `@theme inline`；recipe 私有值保持普通 CSS variable。
 
-## 5. `components.css` · 公共视觉唯一 Owner
+## 5. `components.css` · 公共差异唯一 Owner
 
-`components.css` 通过 HeroUI OSS/Pro 公开的 BEM 与逐组件核对的 documented ARIA/data attributes 统一：
+HeroUI OSS/Pro 的锁定版本是默认实现，负责组件结构、Hover、Pressed、Selected、Open、Focus-visible、Disabled、Pending、Invalid、Danger、动画及 `prefers-reduced-motion`。`components.css` 不复制上游状态机，只通过公开 BEM 与稳定共享 DOM hook 保存 StoneFlow 确实需要的跨应用差异：
 
-- variant、尺寸、padding、圆角、文字与图标密度；
-- Rest、Hover、Pressed、Selected、Open、Focus-visible；
-- Disabled、Pending、Loading、Invalid、Danger；
-- Selected + Hover、Selected + Focus 等必要组合；
-- Card、Menu、Popover、Modal、Sheet、Toast 等边界与 elevation。
+- 28/32/36px 工作台控件密度和紧凑集合行；
+- 次级选择的中性表面，避免 Accent 大面积铺色；
+- Card 与 Overlay 的统一轻边界；Surface 保持 HeroUI 上游的无边界语义；
+- `RowShell` 的 selected/current/focus-suppressed/context-menu-open 等稳定共享状态；键盘焦点恢复期间不得让 stale pointer hover 抢回 current 视觉。
+- 标题、代码和数字输入只通过稳定语义 hook 统一内容层级，不向 Feature 暴露可配置皮肤。
+- 原生 host 合同只保留内容高度、Windows 窗体命中区、拖拽期间关闭 Sidebar transition、compact 导航 Sheet 的系统按钮避让、路由回退链接及 Launcher 嵌入提示所需的窄 recipe。
+- `GlobalSearchResults` 与 Launcher 原生窗 Surface 是两个窄表面例外：上游无对应边界 recipe，稳定 hook 只补齐各自缺失的边界、圆角或阴影，不扩张为通用 Surface 皮肤。
 
 它不负责：
 
@@ -113,7 +115,7 @@ tailwindcss
 - Sidebar 动态宽度、TaskBoard 虚拟测量、sticky 和分页；
 - Sheet placement、Resizable 尺寸或 Launcher 原生窗几何。
 
-新增公共视觉时优先使用 HeroUI 公开状态。只有真正的产品 Module 无法由 HeroUI 表达时，才由该 Module 输出稳定语义 DOM hook，并在 `components.css` 增加对应规则；禁止公开通用 `tone`、`radius`、`surface` 数据属性重新制造 patterns。
+新增公共视觉时先证明 HeroUI token 与上游 recipe 无法表达，再增加最小覆盖。跨 Feature 的稳定共享合同无法由 HeroUI 表达时，可以输出语义 DOM hook；产品或 host 表面只有在上游完全无对应 recipe、且 hook 仍由唯一 Module 独占时才允许窄覆盖。产品几何仍留在共享组件或 Feature，禁止公开通用 `tone`、`radius`、`surface` 数据属性重新制造 patterns。
 
 ## 6. 产品 Module 与 `className`
 
@@ -167,7 +169,7 @@ Cold start 只包含中性结构，不复制六组 Accent recipe；两个 render
 按以下顺序判断：
 
 1. 是全应用视觉值：修改 `theme.css`。
-2. 是 HeroUI 公共控件及状态：修改 `components.css`。
+2. 是 HeroUI 默认无法表达的跨应用公共差异：修改 `components.css`。
 3. 是全局文档或原生窗口基础行为：修改 `base.css`。
 4. 是跨 Feature 的真实行为或产品合同：修改对应共享 Module。
 5. 是 Feature 特有布局、动态几何或内容层级：留在所属 Feature。
@@ -181,7 +183,7 @@ Cold start 只包含中性结构，不复制六组 Accent recipe；两个 render
 2. 同一视觉值在多套 token 中存在。
 3. `patterns`、旧 `base`、shadcn adapter 或兼容 alias 回流。
 4. 新建视觉 wrapper、CVA 镜像、design-system package 或 Provider。
-5. HeroUI root、compound part 或 slot 使用 `rounded-*`、颜色型 `bg/text/border-*`、`shadow-*`、`ring-*`、内部 metrics 或交互状态 utility 覆盖公共 recipe。
+5. HeroUI root、compound part 或 slot 使用 `rounded-*`、颜色型 `bg/text/border-*`、`shadow-*`、`ring-*`、内部 metrics 或交互状态 utility 绕过上游 recipe 与最小公共差异。
 6. 产品动态几何被错误塞入全局主题。
 7. renderer import 顺序或 cold-start 中性值漂移。
 

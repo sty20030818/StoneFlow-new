@@ -44,8 +44,7 @@ export function TaskActivityTimeline({ spaceId, taskId }: TaskActivityTimelinePr
 		: timeline.isLoading || timeline.isPending
 			? 'loading'
 			: 'ready'
-	const errorMessage =
-		timeline.error instanceof Error ? timeline.error.message : '读取 Activity 失败'
+	const errorMessage = timeline.error instanceof Error ? timeline.error.message : '读取操作记录失败'
 
 	useEffect(() => {
 		setShowAll(false)
@@ -121,7 +120,7 @@ export function TaskActivityTimeline({ spaceId, taskId }: TaskActivityTimelinePr
 						</Alert.Indicator>
 						<Alert.Content>
 							<Alert.Title>读取中</Alert.Title>
-							<Alert.Description>正在读取任务 Activity。</Alert.Description>
+							<Alert.Description>正在读取任务操作记录。</Alert.Description>
 						</Alert.Content>
 					</Alert>
 				) : null}
@@ -130,7 +129,7 @@ export function TaskActivityTimeline({ spaceId, taskId }: TaskActivityTimelinePr
 					<Alert role='alert' status='danger'>
 						<Alert.Indicator />
 						<Alert.Content>
-							<Alert.Title>Activity 读取失败</Alert.Title>
+							<Alert.Title>操作记录读取失败</Alert.Title>
 							<Alert.Description>{errorMessage}</Alert.Description>
 						</Alert.Content>
 					</Alert>
@@ -140,8 +139,8 @@ export function TaskActivityTimeline({ spaceId, taskId }: TaskActivityTimelinePr
 					<Alert status='accent'>
 						<Alert.Indicator />
 						<Alert.Content>
-							<Alert.Title>暂无 Activity</Alert.Title>
-							<Alert.Description>当前任务还没有任何 Activity 记录。</Alert.Description>
+							<Alert.Title>暂无操作记录</Alert.Title>
+							<Alert.Description>当前任务还没有操作记录。</Alert.Description>
 						</Alert.Content>
 					</Alert>
 				) : null}

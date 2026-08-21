@@ -24,7 +24,7 @@ describe('TaskDetailHeader', () => {
 		const onClose = vi.fn()
 		renderHeader(onClose)
 
-		fireEvent.click(screen.getByRole('button', { name: '打开' }))
+		fireEvent.click(screen.getByRole('button', { name: '在完整页面中打开任务' }))
 
 		await waitFor(() => {
 			expect(flushNow).toHaveBeenCalledOnce()
@@ -39,7 +39,7 @@ describe('TaskDetailHeader', () => {
 		flushNow.mockResolvedValue(false)
 		renderHeader()
 
-		fireEvent.click(screen.getByRole('button', { name: '打开' }))
+		fireEvent.click(screen.getByRole('button', { name: '在完整页面中打开任务' }))
 
 		await waitFor(() => expect(flushNow).toHaveBeenCalledOnce())
 		expect(openPage).not.toHaveBeenCalled()
@@ -47,8 +47,8 @@ describe('TaskDetailHeader', () => {
 
 	it.each([
 		['dirty', '已编辑'],
-		['scheduled', '保存中...'],
-		['saving', '保存中...'],
+		['scheduled', '保存中…'],
+		['saving', '保存中…'],
 		['saved', '已保存'],
 	] as const)('自动保存状态 %s 显示用户可见反馈', (status, label) => {
 		renderHeader(undefined, { status })

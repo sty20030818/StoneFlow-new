@@ -17,26 +17,19 @@ type TaskPageMainProps = {
 
 export function TaskPageMain({ taskId, spaceId, autosave, isReadOnly }: TaskPageMainProps) {
 	return (
-		<div className='flex min-w-0 flex-col gap-5'>
+		<div className='min-w-0'>
 			<Card>
 				<Card.Content>
-					<div className='flex flex-col gap-4'>
-						<TaskTitleField autosave={autosave} disabled={isReadOnly} />
+					<div className='flex flex-col gap-5'>
+						<div className='flex flex-col gap-2'>
+							<TaskTitleField autosave={autosave} disabled={isReadOnly} />
+							<TaskNoteField autosave={autosave} disabled={isReadOnly} />
+						</div>
 						<Separator variant='tertiary' />
-						<TaskNoteField autosave={autosave} disabled={isReadOnly} />
+						<TaskLinksSection taskId={taskId} />
+						<Separator variant='tertiary' />
+						<TaskActivityTimeline spaceId={spaceId} taskId={taskId} />
 					</div>
-				</Card.Content>
-			</Card>
-
-			<Card>
-				<Card.Content>
-					<TaskLinksSection taskId={taskId} />
-				</Card.Content>
-			</Card>
-
-			<Card>
-				<Card.Content>
-					<TaskActivityTimeline spaceId={spaceId} taskId={taskId} />
 				</Card.Content>
 			</Card>
 		</div>

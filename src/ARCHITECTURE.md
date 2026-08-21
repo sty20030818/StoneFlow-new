@@ -131,7 +131,7 @@ src/
 
 ### 4.6 `styles/`
 
-全局 Light 语义主题、HeroUI 公共视觉 recipe、基础行为与唯一 Tailwind/HeroUI 样式入口。页面直接使用 HeroUI，局部 `className` 只表达布局、内容层级和动态几何。见 [`styles/ARCHITECTURE.md`](./styles/ARCHITECTURE.md)。
+全局 Light 语义主题、HeroUI 上游无法表达的最小公共差异、基础行为与唯一 Tailwind/HeroUI 样式入口。页面直接使用 HeroUI 上游 recipe，局部 `className` 只表达布局、内容层级和动态几何。见 [`styles/ARCHITECTURE.md`](./styles/ARCHITECTURE.md)。
 
 ---
 

@@ -31,6 +31,33 @@ const FEATURES = [
 ] as const
 
 const STABLE_SUFFIXES = ['contract', 'page', 'presentation', 'shortcut-contribution'] as const
+const LEGACY_UI_DEPENDENCIES = new Set([
+	'class-variance-authority',
+	'cmdk',
+	'radix-ui',
+	'react-day-picker',
+	'sonner',
+])
+const LEGACY_SOURCE_PREFIXES = [
+	'src/shared/components/base/',
+	'src/shared/components/detail/',
+	'src/shared/components/main-card/',
+	'src/shared/components/patterns/',
+	'src/styles/adapters/',
+	'src/styles/dark/',
+	'src/styles/tokens/',
+] as const
+const LEGACY_SOURCE_PATHS = new Set([
+	'src/shared/lib/interaction-layer.ts',
+	'src/shared/lib/modal-guard.ts',
+])
+const TERMINAL_STYLE_PATHS = new Set([
+	'src/styles/base.css',
+	'src/styles/components.css',
+	'src/styles/fonts.css',
+	'src/styles/index.css',
+	'src/styles/theme.css',
+])
 const REPOSITORY_ROOT = join(import.meta.dir, '..')
 const transpiler = new Bun.Transpiler({ loader: 'tsx' })
 
@@ -44,6 +71,9 @@ export type BoundaryRuleId =
 	| 'heroui-state-style'
 	| 'heroui-skin-style'
 	| 'heroui-internal-metric'
+	| 'legacy-ui-dependency'
+	| 'dependency-provenance'
+	| 'legacy-visual-path'
 
 export type BoundaryViolation = {
 	path: string
@@ -58,6 +88,23 @@ export type BoundaryViolation = {
 
 type ImportReference = { path: string; start: number; dynamic?: boolean }
 type StaticFragment = { value: string; start: number }
+type DependencyManifest = {
+	dependencies?: Record<string, string>
+	devDependencies?: Record<string, string>
+	optionalDependencies?: Record<string, string>
+	peerDependencies?: Record<string, string>
+}
+type BunLockPackage = [string, string, { dependencies?: Record<string, string> }?]
+type BunLockfile = {
+	workspaces?: Record<string, DependencyManifest>
+	packages?: Record<string, BunLockPackage>
+}
+
+export type UiRepositoryContract = {
+	manifest: BoundarySource
+	lockfile: BoundarySource
+	sourcePaths: readonly string[]
+}
 
 function walkBoundaryFiles(dir: string): string[] {
 	const files: string[] = []
@@ -110,6 +157,138 @@ function excerptAt(source: string, index: number) {
 	const end = source.indexOf('\n', index)
 	const excerpt = source.slice(start, end < 0 ? source.length : end).trim()
 	return excerpt.length > 180 ? `${excerpt.slice(0, 177)}...` : excerpt
+}
+
+function directDependencies(manifest: DependencyManifest) {
+	return {
+		...manifest.dependencies,
+		...manifest.devDependencies,
+		...manifest.optionalDependencies,
+		...manifest.peerDependencies,
+	}
+}
+
+function isLegacyUiDependency(name: string) {
+	return LEGACY_UI_DEPENDENCIES.has(name) || name.startsWith('@radix-ui/')
+}
+
+function lockPackageName(entry: BunLockPackage) {
+	const identity = entry[0]
+	const versionSeparator = identity.lastIndexOf('@')
+	return versionSeparator > 0 ? identity.slice(0, versionSeparator) : identity
+}
+
+function collectLockDependencyClosure(
+	packages: Readonly<Record<string, BunLockPackage>>,
+	root: string,
+) {
+	const visited = new Set<string>()
+	const pending = packages[root] ? [root] : []
+	while (pending.length > 0) {
+		const packageKey = pending.pop()!
+		if (visited.has(packageKey)) continue
+		visited.add(packageKey)
+		for (const dependency of Object.keys(packages[packageKey]?.[2]?.dependencies ?? {})) {
+			const nestedKey = `${packageKey}/${dependency}`
+			const resolvedKey = packages[nestedKey] ? nestedKey : packages[dependency] ? dependency : null
+			if (resolvedKey && !visited.has(resolvedKey)) pending.push(resolvedKey)
+		}
+	}
+	return visited
+}
+
+function contractViolation(
+	file: BoundarySource,
+	ruleId: Extract<
+		BoundaryRuleId,
+		'legacy-ui-dependency' | 'dependency-provenance' | 'legacy-visual-path'
+	>,
+	detail: string,
+	needle = detail,
+): BoundaryViolation {
+	const index = Math.max(file.source.indexOf(JSON.stringify(needle)), 0)
+	return {
+		path: file.path,
+		line: lineNumber(file.source, index),
+		ruleId,
+		excerpt: excerptAt(file.source, index),
+		detail,
+	}
+}
+
+export function scanUiRepositoryContract({
+	manifest,
+	lockfile,
+	sourcePaths,
+}: UiRepositoryContract) {
+	const manifestJson = JSON.parse(manifest.source) as DependencyManifest
+	const lockJson = Bun.JSONC.parse(lockfile.source) as BunLockfile
+	const manifestDependencies = directDependencies(manifestJson)
+	const lockDependencies = directDependencies(lockJson.workspaces?.[''] ?? {})
+	const packages = lockJson.packages ?? {}
+	const violations: BoundaryViolation[] = []
+
+	for (const name of Object.keys(manifestDependencies).filter(isLegacyUiDependency)) {
+		violations.push(
+			contractViolation(manifest, 'legacy-ui-dependency', `${name} 是旧 UI 直依赖`, name),
+		)
+	}
+	for (const name of Object.keys(lockDependencies).filter(isLegacyUiDependency)) {
+		violations.push(
+			contractViolation(lockfile, 'legacy-ui-dependency', `${name} 仍在根 workspace 依赖中`, name),
+		)
+	}
+
+	const officialVendorPackages = new Set<string>()
+	for (const root of Object.keys(manifestDependencies).filter((name) =>
+		/^@heroui(?:-pro)?\//.test(name),
+	)) {
+		for (const packageKey of collectLockDependencyClosure(packages, root)) {
+			officialVendorPackages.add(packageKey)
+		}
+	}
+	for (const [packageKey, entry] of Object.entries(packages)) {
+		const name = lockPackageName(entry)
+		const isVendorImplementation =
+			name === 'radix-ui' || name === 'tw-animate-css' || name.startsWith('@radix-ui/')
+		if (!isVendorImplementation || officialVendorPackages.has(packageKey)) continue
+		violations.push(
+			contractViolation(
+				lockfile,
+				'dependency-provenance',
+				`${name} 不属于锁定版 HeroUI 官方依赖链`,
+				packageKey,
+			),
+		)
+	}
+
+	const normalizedPaths = new Set(sourcePaths.map(normalizePath))
+	for (const path of normalizedPaths) {
+		const legacyPath =
+			LEGACY_SOURCE_PATHS.has(path) ||
+			LEGACY_SOURCE_PREFIXES.some((prefix) => path.startsWith(prefix)) ||
+			(path.startsWith('src/styles/') && path.endsWith('.css') && !TERMINAL_STYLE_PATHS.has(path))
+		if (!legacyPath) continue
+		violations.push({
+			path,
+			line: 1,
+			ruleId: 'legacy-visual-path',
+			excerpt: path,
+			detail: '终态文件结构不得保留该路径',
+		})
+	}
+	for (const path of TERMINAL_STYLE_PATHS) {
+		if (normalizedPaths.has(path)) continue
+		violations.push({
+			path,
+			line: 1,
+			ruleId: 'legacy-visual-path',
+			excerpt: path,
+			detail: '终态五文件样式结构缺失该文件',
+		})
+	}
+
+	return violations
 }
 
 function moduleLiteralStart(source: string, modulePath: string, from = 0) {
@@ -491,12 +670,24 @@ export function scanFeatureBoundarySources(sources: readonly BoundarySource[]) {
 }
 
 export function scanFeatureBoundaries(repositoryRoot = REPOSITORY_ROOT) {
-	return scanFeatureBoundarySources(
-		walkBoundaryFiles(join(repositoryRoot, 'src')).map((file) => ({
-			path: normalizePath(relative(repositoryRoot, file)),
-			source: readFileSync(file, 'utf8'),
-		})),
-	)
+	const sources = walkBoundaryFiles(join(repositoryRoot, 'src')).map((file) => ({
+		path: normalizePath(relative(repositoryRoot, file)),
+		source: readFileSync(file, 'utf8'),
+	}))
+	return [
+		...scanFeatureBoundarySources(sources),
+		...scanUiRepositoryContract({
+			manifest: {
+				path: 'package.json',
+				source: readFileSync(join(repositoryRoot, 'package.json'), 'utf8'),
+			},
+			lockfile: {
+				path: 'bun.lock',
+				source: readFileSync(join(repositoryRoot, 'bun.lock'), 'utf8'),
+			},
+			sourcePaths: sources.map(({ path }) => path),
+		}),
+	]
 }
 
 export function formatBoundaryViolations(violations: readonly BoundaryViolation[]) {
@@ -520,7 +711,7 @@ if (import.meta.main) {
 		process.exitCode = 1
 	} else {
 		console.log(
-			`Feature boundaries OK (${FEATURES.length} features; entries: . | contract | page | presentation | shortcut-contribution; HeroUI visual ownership OK).`,
+			`Feature boundaries OK (${FEATURES.length} features; entries: . | contract | page | presentation | shortcut-contribution; HeroUI visual ownership and terminal repository contract OK).`,
 		)
 	}
 }

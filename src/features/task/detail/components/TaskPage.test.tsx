@@ -127,7 +127,7 @@ describe('TaskPage', () => {
 			})
 		})
 
-		expect(await screen.findByText('暂无 Activity')).toBeInTheDocument()
+		expect(await screen.findByText('暂无操作记录')).toBeInTheDocument()
 	})
 
 	it('项目任务显示项目链路，无项目任务显示独立事项链路', async () => {

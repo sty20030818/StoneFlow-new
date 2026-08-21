@@ -167,7 +167,7 @@ export function GlobalSearchInput({ onOpenTask, onOpenProject }: GlobalSearchInp
 
 	return (
 		<div
-			className='relative mx-auto w-full min-w-0 max-w-100'
+			className='relative mx-auto w-full min-w-0 max-w-120'
 			data-sf-search-root='true'
 			ref={rootRef}
 		>

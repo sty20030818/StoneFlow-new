@@ -1,6 +1,14 @@
 import { describe, expect, test } from 'bun:test'
 
-import { scanFeatureBoundarySources } from './check-feature-boundaries'
+import { scanFeatureBoundarySources, scanUiRepositoryContract } from './check-feature-boundaries'
+
+const TERMINAL_STYLE_PATHS = [
+	'src/styles/base.css',
+	'src/styles/components.css',
+	'src/styles/fonts.css',
+	'src/styles/index.css',
+	'src/styles/theme.css',
+]
 
 describe('feature and HeroUI boundary scanner', () => {
 	test('保留既有 feature public-surface 边界', () => {
@@ -155,6 +163,96 @@ export const Fixture = () => <Button className="rounded-lg" />
 
 		expect(violations.map(({ ruleId, tag, token }) => ({ ruleId, tag, token }))).toEqual([
 			{ ruleId: 'heroui-internal-metric', tag: 'Button', token: 'h-11' },
+		])
+	})
+
+	test('允许锁定版 HeroUI 官方传入 Radix 与 tw-animate-css', () => {
+		const violations = scanUiRepositoryContract({
+			manifest: {
+				path: 'package.json',
+				source: JSON.stringify({
+					dependencies: {
+						'@heroui/react': '3.2.4',
+						'@heroui/styles': '3.2.4',
+					},
+				}),
+			},
+			lockfile: {
+				path: 'bun.lock',
+				source: JSON.stringify({
+					workspaces: {
+						'': {
+							dependencies: {
+								'@heroui/react': '3.2.4',
+								'@heroui/styles': '3.2.4',
+							},
+						},
+					},
+					packages: {
+						'@heroui/react': [
+							'@heroui/react@3.2.4',
+							'',
+							{ dependencies: { '@radix-ui/react-avatar': '1.1.11' } },
+						],
+						'@heroui/styles': [
+							'@heroui/styles@3.2.4',
+							'',
+							{ dependencies: { 'tw-animate-css': '1.4.0' } },
+						],
+						'@radix-ui/react-avatar': [
+							'@radix-ui/react-avatar@1.1.11',
+							'',
+							{ dependencies: { '@radix-ui/react-context': '1.1.3' } },
+						],
+						'@radix-ui/react-context': ['@radix-ui/react-context@1.1.3', ''],
+						'tw-animate-css': ['tw-animate-css@1.4.0', ''],
+					},
+				}),
+			},
+			sourcePaths: TERMINAL_STYLE_PATHS,
+		})
+
+		expect(violations).toEqual([])
+	})
+
+	test('拒绝旧直依赖、非 HeroUI 来源与旧文件结构回流', () => {
+		const violations = scanUiRepositoryContract({
+			manifest: {
+				path: 'package.json',
+				source: JSON.stringify({
+					dependencies: {
+						'@radix-ui/react-avatar': '1.2.6',
+						'class-variance-authority': '0.7.1',
+						'radix-ui': '1.6.7',
+						'react-day-picker': '10.0.1',
+						sonner: '2.0.8',
+					},
+				}),
+			},
+			lockfile: {
+				path: 'bun.lock',
+				source: JSON.stringify({
+					workspaces: { '': { dependencies: { cmdk: '1.1.1' } } },
+					packages: { 'tw-animate-css': ['tw-animate-css@1.4.0', ''] },
+				}),
+			},
+			sourcePaths: [
+				...TERMINAL_STYLE_PATHS,
+				'src/shared/lib/interaction-layer.ts',
+				'src/styles/primitive.css',
+			],
+		})
+
+		expect(violations.map(({ ruleId }) => ruleId)).toEqual([
+			'legacy-ui-dependency',
+			'legacy-ui-dependency',
+			'legacy-ui-dependency',
+			'legacy-ui-dependency',
+			'legacy-ui-dependency',
+			'legacy-ui-dependency',
+			'dependency-provenance',
+			'legacy-visual-path',
+			'legacy-visual-path',
 		])
 	})
 })

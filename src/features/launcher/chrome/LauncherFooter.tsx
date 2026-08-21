@@ -13,7 +13,7 @@ export function LauncherFooter() {
 	return (
 		<div
 			className={cn(
-				'shrink-0 flex min-h-11 items-center gap-3 rounded-b-[var(--launcher-panel-radius,8px)] border-t border-separator bg-surface px-4 text-[11px] text-muted',
+				'shrink-0 flex min-h-10 items-center gap-3 rounded-b-(--launcher-panel-radius,8px) border-t border-separator bg-surface px-3 text-[11px] text-muted',
 			)}
 			data-testid='launcher-footer'
 		>
@@ -42,8 +42,12 @@ export function LauncherFooter() {
 			<div className='ml-auto flex items-center gap-3'>
 				<Hint label='选择' shortcuts={['selectPrevious', 'selectNext']} />
 				<Hint label={derived.enterLabel} shortcuts={['confirm']} />
-				{derived.hasTitle ? <Hint label='连续创建' shortcuts={['createAndContinue']} /> : null}
-				{derived.hasTitle ? <Hint label='创建并打开' shortcuts={['createAndOpen']} /> : null}
+				{derived.hasTitle ? (
+					<span className='hidden items-center gap-3 md:flex'>
+						<Hint label='连续创建' shortcuts={['createAndContinue']} />
+						<Hint label='创建并打开' shortcuts={['createAndOpen']} />
+					</span>
+				) : null}
 				<Hint label='清空 / 关闭' shortcuts={['clearOrClose']} />
 			</div>
 		</div>

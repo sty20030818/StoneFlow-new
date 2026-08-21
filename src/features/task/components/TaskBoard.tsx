@@ -11,7 +11,7 @@ import {
 	type Ref,
 } from 'react'
 import { mergeProps, useGridList, useGridListItem } from 'react-aria'
-import { Alert, Button, Chip } from '@heroui/react'
+import { Alert, Button, Chip, Skeleton } from '@heroui/react'
 import { ContextMenu, EmptyState } from '@heroui-pro/react'
 import { defaultRangeExtractor, useVirtualizer, type Range } from '@tanstack/react-virtual'
 import { registerTaskBoardFocusTaskId, registerTaskBoardScrollToTaskId } from './taskBoardScroll'
@@ -736,7 +736,7 @@ export function TaskBoard({
 							) : (
 								<div
 									className={cn(
-										selectionGroupPosition && 'overflow-hidden bg-accent-soft',
+										selectionGroupPosition && 'overflow-hidden bg-default',
 										selectionGroupPosition &&
 											TASK_BOARD_SELECTION_GROUP_POSITION_CLASS[selectionGroupPosition],
 									)}
@@ -764,20 +764,17 @@ export function TaskBoard({
 						</Chip>
 					) : null}
 					{fetchNextPageError ? (
-						<div className='pointer-events-auto flex items-center rounded-lg border border-danger bg-danger-soft px-2 py-1 text-xs text-danger-soft-foreground shadow-overlay'>
-							{fetchNextPageError}
+						<Alert className='pointer-events-auto w-auto max-w-xl' status='danger'>
+							<Alert.Indicator />
+							<Alert.Content>
+								<Alert.Title>{fetchNextPageError}</Alert.Title>
+							</Alert.Content>
 							{onFetchNextPage ? (
-								<Button
-									className='ml-2'
-									onPress={onFetchNextPage}
-									size='sm'
-									type='button'
-									variant='danger-soft'
-								>
+								<Button onPress={onFetchNextPage} size='sm' type='button' variant='danger-soft'>
 									重试
 								</Button>
 							) : null}
-						</div>
+						</Alert>
 					) : null}
 				</div>
 			) : null}
@@ -791,18 +788,18 @@ function TaskBoardLoadingState() {
 			{Array.from({ length: 2 }).map((_, sectionIndex) => (
 				<div className='flex flex-col gap-0.5' key={`board-loading-section-${sectionIndex}`}>
 					<div className='sticky top-0 z-10 flex h-[34px] items-center gap-2 pl-3 pr-1'>
-						<div className='size-3 rounded-sm bg-default' />
-						<div className='h-3 w-24 rounded-full bg-default' />
+						<Skeleton className='size-3' />
+						<Skeleton className='h-3 w-24' />
 					</div>
 					<div className='flex flex-col gap-0.5'>
 						{Array.from({ length: sectionIndex === 0 ? 4 : 3 }).map((_, rowIndex) => (
 							<div
-								className='flex h-11 min-w-0 items-center gap-3 rounded-lg border border-transparent bg-transparent px-3 text-left text-sm leading-5'
+								className='flex h-11 min-w-0 items-center gap-3 px-3'
 								key={`board-loading-row-${sectionIndex}-${rowIndex}`}
 							>
-								<div className='size-4 shrink-0 rounded-full bg-default' />
-								<div className='h-3 min-w-0 flex-1 rounded-full bg-default' />
-								<div className='h-3 w-12 shrink-0 rounded-full bg-default' />
+								<Skeleton className='size-4 shrink-0' />
+								<Skeleton className='h-3 min-w-0 flex-1' />
+								<Skeleton className='h-3 w-12 shrink-0' />
 							</div>
 						))}
 					</div>

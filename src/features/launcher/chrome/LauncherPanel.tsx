@@ -40,7 +40,7 @@ export function LauncherPanel() {
 				}
 				data-testid='launcher-panel'
 			>
-				<div className='shrink-0 border-b border-separator bg-surface'>
+				<div className='shrink-0 bg-surface'>
 					<div className='shrink-0' data-testid='launcher-composer'>
 						<PrimaryMetaBar />
 					</div>
@@ -51,7 +51,7 @@ export function LauncherPanel() {
 				</div>
 
 				{derived.hasTitle ? (
-					<div className='shrink-0 bg-surface px-2 pt-0.5'>
+					<div className='shrink-0 border-y border-separator bg-surface px-2 py-1'>
 						<CreateRow />
 					</div>
 				) : null}
@@ -66,7 +66,7 @@ export function LauncherPanel() {
 					<ContinuousToast />
 
 					<ScrollShadow
-						className='min-h-0 flex-1 overflow-y-auto pt-0.5'
+						className='min-h-0 flex-1 overflow-y-auto py-1'
 						data-testid='launcher-results-scroll'
 						hideScrollBar
 					>

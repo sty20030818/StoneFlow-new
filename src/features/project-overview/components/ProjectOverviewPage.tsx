@@ -26,13 +26,13 @@ export function ProjectOverviewPage() {
 					>
 						<Button
 							aria-label='创建项目'
-							isIconOnly
 							onPress={scene.openProjectCreateDialog}
 							size='sm'
 							type='button'
-							variant='ghost'
+							variant='primary'
 						>
-							<PlusIcon />
+							<PlusIcon className='size-4' />
+							<span>新建项目</span>
 						</Button>
 					</ActionTooltip>
 				}

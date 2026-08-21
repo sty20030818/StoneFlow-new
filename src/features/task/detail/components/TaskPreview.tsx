@@ -45,7 +45,7 @@ export function TaskPreview({
 
 	const note = detail.item?.note ?? null
 	const placementLabel = task.projectName ?? '独立事项'
-	const breadcrumbLabel = `${task.spaceName} > ${placementLabel}`
+	const breadcrumbLabel = `${task.spaceName} › ${placementLabel}`
 	const dateItems: Array<{ icon: ReactNode; label: string }> = []
 
 	if (task.dueAt) {
@@ -158,7 +158,7 @@ export function TaskPreview({
 									))}
 									{linkSummary.remainingCount > 0 ? (
 										<span className='pl-5 text-[11px] text-muted'>
-											+{linkSummary.remainingCount} more
+											另有 {linkSummary.remainingCount} 条
 										</span>
 									) : null}
 								</div>

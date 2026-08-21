@@ -162,7 +162,7 @@ export function SettingsSidebarPanel() {
 	}
 
 	return (
-		<div className='flex w-full min-w-0 flex-col gap-4'>
+		<div className='flex w-full min-w-0 flex-col gap-7'>
 			<SettingsSection
 				description='控制侧边栏主导航里哪些入口显示。至少保留一个主入口，避免侧边栏失去基本导航能力。'
 				title='主导航'

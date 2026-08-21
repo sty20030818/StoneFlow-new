@@ -1,10 +1,10 @@
 # HeroUI-only UI 平台、Linear 浅色设计系统与键盘交互重写 - Tasks
 
-> 当前状态：阶段 3。阶段 A–K 与阶段 L 的 T97–T104 已完成；待 T105/U4 与 T106 收口。
+> 当前状态：阶段 3。阶段 A–K、阶段 L 的 T97–T104，以及阶段 M 的工程/文档任务 T107–T110、T112、T114–T118 已完成；T105/U4、T106、T111、T119/U5 与 T120 尚未完成。
 
 ## 当前阶段
 
-- 阶段 A–K 与阶段 L 的实现任务 T97–T104 已完成；下一步由任务发起人执行 T105/U4，再运行 T106 全量收口。独立的 [Vitest 前端测试系统精简 TASKS](../2026-08-19-vitest-test-runtime-streamlining/TASKS.md) 已完成。MainCard + TaskBoard 整体性能重构已移入独立后续任务；Windows WebView2 不属于本任务验收范围，也不阻塞后续阶段。
+- 阶段 A–K、阶段 L 的 T97–T104，以及阶段 M 的 T107–T110、T112、T114–T118 已完成。阶段 M 工程任务先于 U4 发生的顺序偏差已如实登记，但不会代签人工 Gate；仍需任务发起人完成 T105/U4 与 T119/U5、执行 T111 macOS 设备验收，并在其后完成 T106/T120 收口。独立的 [Vitest 前端测试系统精简 TASKS](../2026-08-19-vitest-test-runtime-streamlining/TASKS.md) 已完成；MainCard + TaskBoard 整体性能重构已移入独立后续任务。T112 只确认 Windows 支持入口仍在，Windows WebView2 不属于本任务验收范围，也不阻塞后续阶段。
 - 执行任意 task 前，必须重读 [SPEC.md](./SPEC.md) 对应 AC 与 [PLAN.md](./PLAN.md) 对应方案；后续 task 默认按编号顺序依赖。
 - 任一锁定包 API、供应链访问、性能或产品合同与 PLAN 冲突时，先在本文件「与 SPEC/PLAN 的实施偏差」登记并停止相关切片，不得静默增加兼容层。
 
@@ -470,50 +470,55 @@
 
 - [ ] T105（任务发起人验收 U4）依据 T3 清单遍历主要路径、Settings、Sync、Update、About、Changelog、Launcher、空态、错误与危险操作，并在本文件记录“通过”或精确问题。
   - 执行者先提供 production build、固定路径、截图/录屏、动画扫描与已知差异；AI 不得代为勾选。
+  - 截至 2026-08-20，本文件没有任务发起人确认 U4“通过”的记录；阶段 M 的工程清理已提前发生，不构成对该人工 Gate 的替代。
   _对应验收标准：AC-38, AC-39, AC-41, AC-42, AC-43_
 
 - [ ] T106 完成阶段 L 收口：确认 U4 通过后运行根级前端门禁、`bun run test:rust` 与 production build，复核 Launcher/系统反馈无自写动画；获准提交时引用 PLAN 的阶段 L 文案。
+  - 阶段 L 已有的定向门禁只作历史证据；因 T105/U4 尚未通过，本项保持未完成，最终必须基于当时工作树重新执行完整命令。
   _对应验收标准：AC-38, AC-39, AC-41, AC-43_
 
 **阶段 M：旧系统删除、macOS 验收与文档收口**
 
-- [ ] T107 在 `scripts/check-heroui-only.ts`、`scripts/check-heroui-only.test.ts` 与 `package.json` 建立最终零引用/边界门禁，读取 `Documents/99-素材/03-验证/heroui-refactor/migration-inventory.json` 并覆盖 Radix、shadcn、cmdk、Sonner、react-day-picker、CVA、旧 import/class/token 内容、旧 `--sf-*` 与 feature 通用皮肤硬编码；本项先保证扫描器正反例测试通过，仓库级扫描在 T109 清理后必须转绿。
+- [x] T107 将最终零引用、依赖来源与 HeroUI 视觉所有权合同合并到现有 `scripts/check-feature-boundaries.ts`、`scripts/check-feature-boundaries.test.ts` 与根级 `lint:boundaries`，覆盖 Radix、shadcn、cmdk、Sonner、react-day-picker、CVA、旧 import/class/token、旧 `--sf-*`、越界 feature 通用皮肤和终态文件结构；迁移清单是一次性审计输入，运行时门禁直接扫描当前 manifest、lockfile、源码和路径，不建立平行扫描器。
   - 不按 `*Adapter*`、`*token*` 文件名判定删除；Project/Lifecycle/Task/Launcher 的产品 adapter 与 metadata 图标装配可作为终态边界。allowlist 只含 SPEC 登记的虚拟几何、拖拽尺寸、Tauri 窗口、实体数据色和 runtime progress；domain/application 不得导入 HeroUI。
   _对应验收标准：AC-1, AC-2, AC-3, AC-4, AC-5_
-  _测试先行：`scripts/check-heroui-only.test.ts`_
+  _测试先行：`scripts/check-feature-boundaries.test.ts`_
 
-- [ ] T108 严格依据 `Documents/99-素材/03-验证/heroui-refactor/migration-inventory.json` 与 T107 内容扫描结果，在 `src/shared/components/base/`、`src/shared/components/patterns/`、`src/shared/components/row/`、`src/shared/components/detail/` 与 `src/styles/` 删除零消费者旧 primitive、纯样式中间层、dark scaffold、legacy token/adapter 和无消费者实现细节测试，使 `src/styles/` 只剩 PLAN 规定的五个全局 CSS 文件及更新后的 `ARCHITECTURE.md`。
+- [x] T108 严格依据 `Documents/99-素材/03-验证/heroui-refactor/migration-inventory.json` 与 T107 内容扫描结果，在 `src/shared/components/base/`、`src/shared/components/patterns/`、`src/shared/components/row/`、`src/shared/components/detail/` 与 `src/styles/` 删除零消费者旧 primitive、纯样式中间层、dark scaffold、legacy token/adapter 和无消费者实现细节测试，使 `src/styles/` 只剩 PLAN 规定的五个全局 CSS 文件及更新后的 `ARCHITECTURE.md`。
   - 不整批删除各 feature 中已重建的产品 adapter、数据 token 或图标装配；只删除精确证明为旧皮肤且零消费的文件。
   _对应验收标准：AC-1, AC-2, AC-3, AC-5, AC-12_
 
-- [ ] T109 在 `package.json` 与 `bun.lock` 删除 T108 清场后全仓零消费者的 Radix/shadcn/cmdk/Sonner/react-day-picker/CVA 及旧动画直接依赖，并验证 CollectUI Key、私有源码和 CDN 响应正文未进入仓库、lockfile、日志或产物，同时让 HeroUI-only 仓库级扫描转绿。
+- [x] T109 在 `package.json` 与 `bun.lock` 删除 T108 清场后全仓零消费者的 Radix/shadcn/cmdk/Sonner/react-day-picker/CVA 及旧动画直接依赖，并验证 CollectUI Key、私有源码和 CDN 响应正文未进入仓库、lockfile、日志或产物，同时让 HeroUI-only 仓库级扫描转绿。
   - `tw-animate-css` 只允许锁定版 HeroUI 官方链路传入。
   _对应验收标准：AC-2, AC-40, AC-41_
 
-- [ ] T110 在全新隔离目录以进程环境注入 `HEROUI_KEY`，执行固定版 `hpsetup`、frozen install、类型检查和 production build，并核对缓存恢复或源站取得产物的树 SHA-256；在本文件登记命令、锁定版本与脱敏结果，树哈希或构建失败时登记阻塞，不改 lockfile 掩盖安装器、Key 或 peer 问题。
+- [x] T110 在全新隔离目录以进程环境注入 `HEROUI_KEY`，执行固定版 `hpsetup`、frozen install、类型检查和 production build，并核对缓存恢复或源站取得产物的树 SHA-256；在本文件登记命令、锁定版本与脱敏结果，树哈希或构建失败时登记阻塞，不改 lockfile 掩盖安装器、Key 或 peer 问题。
+  - 2026-08-20：隔离目录 `/private/tmp/stoneflow-t110.HU00Fe`；安全清理后只保留脱敏 `t110-evidence.json`，最终 SHA-256 为 `4ac33218b7a06d2413a40e0df560eee655d8468d5d2ffcb036abfaf7ea82bf7b`。`hpsetup@4.7.0 react --auto --no-cache` 使用非真实哨兵进程 Key，CDN 失败后从固定缓存恢复 `@heroui-pro/react@1.0.0-beta.8`；546 files，tree SHA-256 `4d8b86e822fc1e4f30772293c2600e85d35a16b4f98c3480db7c11c8fb22b972` 与批准值一致。随后 frozen install、typecheck、production build 均 exit 0，仓库 package/lock 哈希不变，未读取或写入真实 Key；私有 Pro 树、隔离副本与临时缓存均已删除。
+  - 本证据只证明锁定缓存的 hpsetup-first 供应链；严格探针确认 lockfile 单独 frozen install 只能得到公开 bootstrap，不宣称当前源站或真实 Key 可用。
   _对应验收标准：AC-2, AC-38, AC-40, AC-41_
 
 - [ ] T111 在 T4 登记的 macOS WKWebView 设备完成 Rust 默认 `1280×900` inner window 可得到的实际稳定 viewport、窗口 `1024px` 两侧的 Sidebar 与详情容器、列表 `560px` 容器两侧与最小窗口的视觉、键盘、焦点、VoiceOver 和 reduced-motion 验收，证据写入 `Documents/99-素材/03-验证/heroui-refactor/macos/`。
   _对应验收标准：AC-8, AC-11, AC-32, AC-44_
 
-- [ ] T112 确认 Windows WebView2 不在本任务验收范围：复核现有 Windows 构建入口、Tauri 平台分支与产品支持未因迁移被删除，同时不得为未实测的 Windows 行为新增专门兼容层；本任务不采集 Windows 证据、不以 Windows 设备为阻塞，也不得宣称 Windows 已验证。
+- [x] T112 确认 Windows WebView2 不在本任务验收范围：复核现有 Windows 构建入口、Tauri 平台分支与产品支持未因迁移被删除，同时不得为未实测的 Windows 行为新增专门兼容层；本任务不采集 Windows 证据、不以 Windows 设备为阻塞，也不得宣称 Windows 已验证。
+  - 静态证据：`scripts/release/build.ts` 保留 Windows NSIS 入口，`src-tauri/tauri.conf.json` 仍启用全平台 bundle 与 `.ico`，runtime/platform 仍保留 Windows 主窗状态与 Launcher controller 分支，产品蓝图继续声明正式桌面平台为 macOS 与 Windows；release build/artifact 定向测试 2 个文件 10 项通过。该结论只证明迁移没有删除支持入口，未构建、启动或验收 WebView2。
   _对应验收边界：SPEC「不做什么」第 11 项；本项不构成 Windows 验收证据_
 
 - T113（延期，已移出本任务）原计划在同一台 macOS WKWebView 复跑最终性能；现与 T72 一并交由独立后续任务，不阻塞 U5 或最终归档，且不得据此宣称性能预算已通过。
 
-- [ ] T114 将已落地的 HeroUI-only 技术栈、Pro 供应链与全局界面合同同步到 `Documents/01-架构/A2-系统设计.md` 与 `Documents/01-架构/A3-界面系统.md`，只描述当前事实。
+- [x] T114 将已落地的 HeroUI-only 技术栈、Pro 供应链与全局界面合同同步到 `Documents/01-架构/A2-系统设计.md` 与 `Documents/01-架构/A3-界面系统.md`，只描述当前事实。
   _对应验收标准：AC-1, AC-4, AC-7, AC-38_
 
-- [ ] T115 将五文件样式架构、HeroUI semantic theme、集中 recipe 与产品例外同步到 `src/styles/ARCHITECTURE.md` 与 `src/ARCHITECTURE.md`，删除旧 token/adapter 与 wrapper 边界陈述。
+- [x] T115 将五文件样式架构、HeroUI semantic theme、上游默认 recipe、最小公共差异与窄产品例外同步到 `src/styles/ARCHITECTURE.md` 与 `src/ARCHITECTURE.md`，删除旧 token/adapter 与 wrapper 边界陈述。
   _对应验收标准：AC-1, AC-2, AC-4, AC-7, AC-38_
 
-- [ ] T116 将单一 collection、Command 投影与 ActionBar snapshot 边界同步到 `src/features/selection/ARCHITECTURE.md`、`src/features/command/ARCHITECTURE.md` 与 `src/features/bulk-action/ARCHITECTURE.md`，删除旧 keyboard-hover、重复 selection 与 cmdk 陈述。
+- [x] T116 将单一 collection、Command 投影与 ActionBar snapshot 边界同步到 `src/features/selection/ARCHITECTURE.md`、`src/features/command/ARCHITECTURE.md` 与 `src/features/bulk-action/ARCHITECTURE.md`，删除旧 keyboard-hover、重复 selection 与 cmdk 陈述。
   _对应验收标准：AC-2, AC-31, AC-34, AC-38_
 
-- [ ] T117 将 Sidebar/Detail Shell 与 TaskBoard virtual bridge 的最终边界同步到 `src/layout/ARCHITECTURE.md`、新建的 `src/layout/DESIGN.md`、`src/features/entity-detail/ARCHITECTURE.md`、`src/features/task/ARCHITECTURE.md` 与新建的 `src/features/task/DESIGN.md`，删除旧 Radix Drawer、双焦点、窗口断点详情分流与自写动画陈述。
+- [x] T117 复核并将 Sidebar/Detail Shell 与 TaskBoard virtual bridge 的最终边界维持在 `src/layout/ARCHITECTURE.md`、`src/features/entity-detail/ARCHITECTURE.md` 与 `src/features/task/ARCHITECTURE.md` 三个现有 Owner；既有文档已完整表达单一 `1024px` Sheet/Aside 分流、`560px` 容器档、stable key/ref bridge 与状态所有权，因此不新建平行 `DESIGN.md`。
   _对应验收标准：AC-2, AC-21, AC-33, AC-34, AC-38_
 
-- [ ] T118 将偏好、系统反馈与 Launcher 最终边界同步到 `src/features/settings/ARCHITECTURE.md`、`src/features/update/ARCHITECTURE.md` 与 `src/features/launcher/ARCHITECTURE.md`，不扩大到未改变的领域或 Rust 协议。
+- [x] T118 将偏好、系统反馈与 Launcher 最终边界同步到 `src/features/settings/ARCHITECTURE.md`、`src/features/update/ARCHITECTURE.md` 与 `src/features/launcher/ARCHITECTURE.md`，不扩大到未改变的领域或 Rust 协议。
   _对应验收标准：AC-18, AC-38, AC-39, AC-41, AC-43_
 
 - [ ] T119（任务发起人验收 U5）审阅 macOS 关键截图与录屏，并在 T4 登记的 macOS 主设备完成端到端走查；必须同时通过 HeroUI-only、浅色视觉、键盘合同、第一方零动画与 reduced-motion，且不得把结论扩张为 Windows 已验证。
@@ -526,9 +531,9 @@
 
 ## 阻塞
 
-- 当前阶段没有外部设备阻塞；Windows WebView2 不属于本任务验收范围。
-- 已知与 HeroUI 重构无关的失败：根级 `bun run check` 的最后 Rust 阶段稳定失败于未改动的 `commands::spaces::tests::deleting_trashed_space_again_should_not_enqueue_another_operation` 文案断言；动画扫描、TypeScript、lint、模块边界、格式、1009 项前端测试、146 项 release 测试与 production build 均通过。该失败不阻塞已完成的阶段 D–F，但必须在 T120 最终收口前另行解决。
-- T73、T105、T119 是尚未执行的人工 Gate，不在失败前视为阻塞。
+- T111 的 macOS WKWebView 终态设备证据、T105/U4 与 T119/U5 的任务发起人验收尚未执行；这些是待完成 Gate，不得由静态检查或 AI 代签。T112 只完成 Windows 支持入口的静态保留审计，不能扩张成 Windows WebView2 已验证。
+- 阶段 M 工程工作在 T105/U4 前提前发生；T105 与依赖它的 T106 均保持未完成。阶段 L 的历史命令结果不能替代当前工作树的阶段 L 收口。
+- 已解除先前登记的 Rust Space 重复删除文案断言失败：application 层现在对已在回收站的 Space 返回明确冲突文案，2026-08-20 根级 `bun run test:rust` 全通过（application 66、domain 34、platform 1、runtime 114、storage 9 + connection 1、sync 5；sync 另有 7 项环境忽略；doc tests 全通过）。这只解除 Rust 门禁风险，不替代 T111、U5 或 T120 的其余条件。
 
 ## 与 SPEC/PLAN 的实施偏差
 
@@ -547,6 +552,9 @@
 - 2026-08-18：任务发起人确认 TaskBoard `focus-subtle` 中性灰 `1px` 行边框是显式低对比视觉例外，不宣称达到 `3:1`；forced-colors 回退系统 `Highlight`，其他必要焦点提示仍须达到 `3:1`。键盘 Peek 打开期间保留目标行真实焦点，仅在普通配色模式临时隐藏边框，关闭后恢复。
 - 2026-08-18：任务发起人明确将 MainCard + TaskBoard 虚拟列表/焦点链路的整体性能重构延期到独立后续任务；本轮 HeroUI 重构不执行 T72/T113 的量化性能采集，也不以旧性能预算阻塞 T74、U5 或 T120，且不得据此宣称性能预算已通过。T5/T6 fixture 与迁移前基线继续保留为后续重新基线的输入；阶段 I 仍以自动化正确性门禁和 T73/U3 的真实 Tauri 交互验收收口。
 - 2026-08-18：阶段 J 按 KISS 澄清三处文字合同：ShortcutHelp 原本没有搜索，T77 不新增；Board 分区折叠/展开/选择是 collection/view 结构动作，T79 直达唯一 owner 而不伪造动态 command；T82 精确负责零消费 `base/command.tsx`、`base/alert-dialog.tsx` 和 `cmdk` 的窄清理，T108/T109 仍负责剩余 base 层与依赖终态清场；迁移清单已同步该窄例外。
+- 2026-08-20：T107 未另建 `check-heroui-only` 平行扫描器，而把终态依赖、来源、路径与视觉所有权合同收敛进已有 `check-feature-boundaries`。迁移清单保留为一次性审计证据，运行时门禁直接检查当前事实；这是为避免双扫描器漂移的 KISS 调整。
+- 2026-08-20：T117 不再新建 `src/layout/DESIGN.md` 与 `src/features/task/DESIGN.md`。Sidebar/Detail Shell 与 TaskBoard virtual bridge 已分别由三个现有 `ARCHITECTURE.md` 完整持有；新增平行文档只会制造重复真源。
+- 2026-08-20：阶段 M 的工程清理先于 T105/U4 发生，属于执行顺序偏差；它不回填或代替 U4，T105/T106 继续保持未完成。
 
 ## 完成记录
 
@@ -587,3 +595,7 @@
 - 2026-08-19：前置 Vitest 测试系统精简收口。删除阶段 C 的纯供应商 Motion probe、TaskBoard fixture 自测及重复消费者合同，将必要规则迁到唯一 Node/DOM owner；全量由 201 文件/1058 项降至 187 文件/886 项，最终三轮中位数由 90.72 秒降至 54.11 秒（-40.35%）。阶段 K 的暂停条件已解除，可按原任务编号恢复；本记录不代表阶段 K 已开始。
 - 2026-08-19：完成 T83–T96 与阶段 K 收口。Project/Lifecycle 复用阶段 H 的唯一 collection owner 与阶段 J Command projection；Task 创建/详情/autosave/链接、Search、Filter、Display Options、Metadata、Space/View 直接组合 HeroUI OSS/Pro，原生 date input 取代零必要性的自写日历壳。删除旧 Entity selection、归零的 shared row/board/detail/base/pattern 表面及实现细节测试，并修正 migration inventory 的 benchmark 测试精确路径。开发内环实测：单 owner 1 文件/2 项三轮中位数 `1.79s`，Project 功能切片 5 文件/11 项三轮中位数 `1.98s`，阶段 K 相关 35 文件/124 项三轮中位数 `10.87s`；收口全量前端 186 文件/875 项一次通过用时 `42.71s`。typecheck、lint、模块边界、格式、第一方动画扫描、JSON 解析、diff check 与 production build 均通过。阶段 K 建议 commit 文案：`refactor(features): 迁移主要业务界面到 HeroUI`；未提交、未改动 Git 暂存区。
 - 2026-08-19：完成 T97–T104。Settings/Sync、Update/About/Changelog 与独立 Launcher 直接组合 HeroUI OSS/Pro；保留同步三类 saving/running 状态、更新下载/安装/重试/pending restart、Launcher 原生 geometry/session/warmup 与双帧首焦点时序。Launcher 结果复用阶段 H collection，删除重复 result index/projectSearch owner、归零的 Launcher pattern 与手写 Update progress ring；Rust Launcher 协议零改动。Changelog 使用轻量 `react-markdown + remark-gfm + remark-breaks`，不引入 Pro Markdown 的 Shiki/Streamdown/Marked 运行时；production shared vendor 从 `11,519.76 kB` 降至 `1,109.65 kB`（`-90.4%`），gzip 从 `2,156.95 kB` 降至 `333.17 kB`（`-84.5%`）。阶段 L 聚焦前端 19 个文件共 93 项、Launcher Rust 13 项、typecheck、lint、模块边界、格式、第一方动画扫描、diff check 与 production build 均通过；全量前端与完整 Rust 按任务合同留待 T105/U4 后的 T106。阶段 L 建议 commit 文案：`refactor(app): 迁移设置更新与启动器界面`；未提交、未改动 Git 暂存区。
+- 2026-08-20：完成 T107–T109。终态合同并入唯一 `check-feature-boundaries`：正反例 1 个文件 6 项与根级 `bun run lint:boundaries` 通过；扫描确认 `src/styles` 只有 `index/fonts/theme/components/base` 五个 CSS Owner，旧 base/pattern/detail、style adapter/dark/token 与 `interaction-layer.ts` 路径归零。`package.json` / `bun.lock` 已移除 CVA、cmdk、radix-ui、react-day-picker、Sonner 等零消费者直依赖；`bun pm why` 确认 `@radix-ui/react-avatar@1.1.11` 仅由 `@heroui/react@3.2.4` 传入，`tw-animate-css@1.4.0` 仅由 `@heroui/styles@3.2.4` 传入。既有脱敏供应链记录保持 `HEROUI_KEY` 值未记录、仓库匹配文件为 0，且 Git 未跟踪 `node_modules` / `dist` 私有产物。
+- 2026-08-20：完成 T110。仓库外隔离副本以非真实哨兵环境变量运行固定 `hpsetup@4.7.0`，从批准缓存恢复 HeroUI Pro `1.0.0-beta.8` 的 546 文件，树 SHA-256 精确匹配；补齐隔离复制时遗漏的 tracked `CHANGELOG.md?raw` 构建输入后，原 frozen install、typecheck、production build 命令全部通过。额外 lock-only 探针证明 frozen lock 不能替代 Pro 缓存产物，因此终态合同保持 hpsetup-first；不宣称源站或真实 Key 已验证。
+- 2026-08-20：完成 T112 的静态范围审计。Windows NSIS/MSI 发布入口、Tauri 全平台 bundle、`.ico`、主窗状态恢复/持久化与 Launcher Windows controller 分支均保留，产品蓝图仍声明 macOS/Windows 为正式桌面平台；`scripts/release/build.test.ts` 与 `scripts/release/artifacts.test.ts` 共 10 项通过。未运行 Windows 构建或 WebView2，不构成 Windows 设备验收证据。
+- 2026-08-20：完成 T114–T118 的现有文档 Owner 收口。A2/A3 记录锁定 HeroUI 栈、CollectUI 安装边界与 upstream-default-first 合同；根/styles 文档记录五文件样式 Owner、最小公共差异及窄产品例外；selection/command/bulk-action 固化单一集合、同一 Command projection 与执行时 snapshot；layout/entity-detail/task 复核现状无漂移且不新建平行 DESIGN；settings/update/launcher 同步偏好、系统反馈、独立 renderer 与第一方零动画边界。T105/U4、T106、T111、T119/U5 与 T120 均未因此完成，也未归档或更新索引。

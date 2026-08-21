@@ -182,7 +182,13 @@ export function TaskCreateContent({
 	})
 
 	const submitButton = (
-		<Button isDisabled={!canSubmit} isPending={isSubmitting} size='sm' type='submit'>
+		<Button
+			isDisabled={!canSubmit}
+			isPending={isSubmitting}
+			size='sm'
+			type='submit'
+			variant='primary'
+		>
 			{submitState === 'submitting' ? '创建中…' : '创建任务'}
 		</Button>
 	)
@@ -235,7 +241,7 @@ export function TaskCreateContent({
 								aria-label='任务描述'
 								className='min-h-20 resize-none'
 								onBlur={noteField.onBlur}
-								placeholder='添加描述...'
+								placeholder='添加描述…'
 								variant='secondary'
 							/>
 							<FieldError>{noteFieldState.error?.message}</FieldError>
@@ -298,15 +304,14 @@ export function TaskCreateContent({
 					</CreateModalContent.Metadata>
 
 					<CreateModalContent.Footer>
-						<span aria-hidden />
+						<p
+							aria-live='polite'
+							className='min-w-0 flex-1 truncate text-[11px] font-medium tabular-nums text-muted'
+						>
+							{createdCount > 0 ? `已创建 ${createdCount} 条任务` : '\u00A0'}
+						</p>
 
-						<div className='flex items-center gap-3'>
-							<p
-								aria-live='polite'
-								className='min-w-30 text-right text-[11px] font-medium tabular-nums text-muted'
-							>
-								{createdCount > 0 ? `已创建 ${createdCount} 条任务` : '\u00A0'}
-							</p>
+						<div className='flex shrink-0 items-center gap-3'>
 							<Switch
 								isDisabled={isSubmitting}
 								isSelected={createMoreField.value}

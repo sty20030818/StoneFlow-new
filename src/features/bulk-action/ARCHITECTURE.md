@@ -1,7 +1,7 @@
 # bulk-action · 批量操作引擎
 
 > 作用：描述 **当前已落地** 的 `src/features/bulk-action` 边界  
-> 最后更新：2026-07-17
+> 最后更新：2026-08-20
 
 ---
 
@@ -22,6 +22,8 @@ ActionBar / Command / ContextMenu / 行快捷键
 | **bulk-action** | 契约、Registry/Runtime、Provider、确认编排、result 语义、唯一 ActionBar |
 | **task / project / lifecycle** | 本域 `bulk/`：动作定义 + adapter |
 | **layout** | `ShellBulkActionBoundary` compose 各域 public，`ShellLayoutContent` 挂载唯一 ActionBar |
+
+Selection 只提供只读上下文；每次执行时由调用方复制不可变 `BulkSelectionSnapshot`，确认与异步 mutation 均消费该次快照。ActionBar 是壳层唯一 viewport-fixed 表面，不在页面、命令或 ContextMenu 内建立第二份 bulk 状态。
 
 ---
 
