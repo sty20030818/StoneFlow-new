@@ -2,7 +2,7 @@
 
 > 作用：描述 `src/layout` 的稳定职责与本轮定稿装配边界
 > 总览：`src/ARCHITECTURE.md`
-> 最后更新：2026-08-16
+> 最后更新：2026-08-21
 
 ---
 
@@ -54,6 +54,8 @@ src/layout/
 **设置模式侧栏** 在 `features/settings`（`SettingsSidebar` + `SETTINGS_NAV_GROUPS`），壳只挂载。
 
 **分区 / spaceId 真相：** 直接读 `shellRoute` + `scope`（`ShellRouteLayout`），**无**可写 nav store 镜像。
+
+**壳层几何：** `ShellChrome` 是 Header、Sidebar、Main region 与 Footer 的唯一 Frame owner。Frame 为桌面 Main region 提供尾侧 `8px` gutter；`Sidebar.Main` 只提供唯一 `<main>` landmark 与 HeroUI inset surface，并清零上游默认外边距。compact Main region 不保留 gutter。Header、开屏骨架和 `index.html` 静态首帧必须同步同一高度合同。
 
 **任务详情装配：** `ShellMain` 挂载唯一 `EntityDetailDrawerHost`，列表打开动作只产生共享 `?task=` 意图。Shell controller 只派生一份 `isCompact`：`<1024px` 使用 HeroUI Sheet，`>=1024px` 在 Main surface 内使用 HeroUI Pro Resizable Aside。跨断点只替换容器，保留同一 URL、active task、草稿与滚动上下文，不关闭详情、不导航、不进入完整页。Aside 几何为列表最小 `352px`、Aside 最小 `320px` / 默认 `360px` / 最大 `440px`；layout 只负责容器装配与窄窗两张 Sheet 互斥，不拥有任务 query、草稿或 mutation。canonical 完整页只由用户显式动作打开。
 

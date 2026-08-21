@@ -90,8 +90,9 @@ tailwindcss
 
 规则：
 
-- Control 使用 `6px`；Card 与 Row 分组使用 `8px`；Popover、Modal 与 Sheet 使用 `12px`。
-- pill 只用于 Chip、Avatar 和状态标记，不用于普通 Button、Toggle 或导航项。
+- Input、Menu 与其他普通 Control 使用 `6px`；Button 与 Toggle 使用 pill；Card 与 Row 分组使用 `8px`；Popover、Modal 与 Sheet 使用 `12px`。
+- pill 用于 Button、Toggle、Chip、Avatar 和状态标记；导航行本身不使用 pill。
+- 附着式 ButtonGroup 与 ToggleButtonGroup 的首、中、尾几何继续由 HeroUI 上游负责。
 - 有明确边界的 Surface 使用 `1px` 语义边框；Row 使用分隔线与状态背景；阴影只表达浮层或拖拽 elevation。
 - 不创建无消费者色阶、任意主题配置、Dark 脚手架或 TypeScript token 镜像。
 - 只有需要生成 JSX utility 的语义才进入 `@theme inline`；recipe 私有值保持普通 CSS variable。

@@ -1,4 +1,11 @@
-import { ArchiveIcon, EllipsisIcon, FolderIcon, Trash2Icon } from 'lucide-react'
+import {
+	ArchiveIcon,
+	CircleCheckIcon,
+	EllipsisIcon,
+	FolderIcon,
+	RotateCcwIcon,
+	Trash2Icon,
+} from 'lucide-react'
 import { Button, Dropdown } from '@heroui/react'
 import { EmptyState } from '@heroui-pro/react'
 
@@ -30,14 +37,23 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 					actions={
 						scene.project ? (
 							<div className='flex items-center gap-1.5'>
-								<Button
-									isDisabled={scene.busyAction !== null}
-									size='sm'
-									variant='secondary'
-									onPress={scene.completeOrReopen}
-								>
-									{scene.project.completedAt ? '重开' : '完成'}
-								</Button>
+								<ActionTooltip label={scene.project.completedAt ? '重开项目' : '完成项目'}>
+									<Button
+										aria-label={scene.project.completedAt ? '重开项目' : '完成项目'}
+										isDisabled={scene.busyAction !== null}
+										isIconOnly
+										size='sm'
+										type='button'
+										variant='secondary'
+										onPress={scene.completeOrReopen}
+									>
+										{scene.project.completedAt ? (
+											<RotateCcwIcon aria-hidden='true' className='size-4' />
+										) : (
+											<CircleCheckIcon aria-hidden='true' className='size-4' />
+										)}
+									</Button>
+								</ActionTooltip>
 								<Dropdown>
 									<ActionTooltip label='项目操作'>
 										<Button
@@ -48,7 +64,7 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 											type='button'
 											variant='outline'
 										>
-											<EllipsisIcon className='size-4' />
+											<EllipsisIcon aria-hidden='true' className='size-4' />
 										</Button>
 									</ActionTooltip>
 									<Dropdown.Popover placement='bottom end'>

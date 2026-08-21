@@ -160,19 +160,24 @@ export function ShellChrome({
 					</div>
 				)}
 
-				<Sidebar.Main className='min-h-0 overflow-hidden'>
-					<ShellMain
-						activeDetail={command.activeDetail}
-						isCompact={sidebar.isCompact}
-						isDrawerOpen={command.isDrawerOpen}
-						onCloseDrawer={command.closeEntityDrawer}
-						onOpenProjectCreateDialog={() => createDialog.openProjectCreateDialog()}
-						onOpenTaskCreateDialog={handleOpenTaskCreate}
-						showPreview
-					>
-						{children}
-					</ShellMain>
-				</Sidebar.Main>
+				<div
+					className={`flex min-h-0 min-w-0 overflow-hidden ${sidebar.isCompact ? '' : 'pe-2'}`}
+					data-slot='shell-main-region'
+				>
+					<Sidebar.Main className='min-h-0 overflow-hidden' style={{ margin: 0 }}>
+						<ShellMain
+							activeDetail={command.activeDetail}
+							isCompact={sidebar.isCompact}
+							isDrawerOpen={command.isDrawerOpen}
+							onCloseDrawer={command.closeEntityDrawer}
+							onOpenProjectCreateDialog={() => createDialog.openProjectCreateDialog()}
+							onOpenTaskCreateDialog={handleOpenTaskCreate}
+							showPreview
+						>
+							{children}
+						</ShellMain>
+					</Sidebar.Main>
+				</div>
 			</div>
 			{sidebar.isCompact ? (
 				<Sheet

@@ -63,6 +63,10 @@ describe('Shell 阶段 D 结构', () => {
 
 		expect(screen.getAllByTestId('sidebar-navigation')).toHaveLength(1)
 		expect(document.querySelectorAll('main')).toHaveLength(1)
+		const main = screen.getByRole('main')
+		expect(main).toHaveStyle('margin: 0')
+		expect(main.parentElement).toHaveAttribute('data-slot', 'shell-main-region')
+		expect(main.parentElement).toHaveClass('pe-2')
 		expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 	})
 
@@ -82,6 +86,10 @@ describe('Shell 阶段 D 结构', () => {
 			'compact',
 		)
 		expect(document.querySelectorAll('main')).toHaveLength(1)
+		const main = document.querySelector('main')
+		expect(main).toHaveStyle('margin: 0')
+		expect(main?.parentElement).toHaveAttribute('data-slot', 'shell-main-region')
+		expect(main?.parentElement).not.toHaveClass('pe-2')
 	})
 
 	it('compact 任务详情打开时阻止导航 Sheet 同时呈现', async () => {

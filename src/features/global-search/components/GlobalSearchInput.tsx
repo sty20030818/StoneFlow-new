@@ -166,11 +166,7 @@ export function GlobalSearchInput({ onOpenTask, onOpenProject }: GlobalSearchInp
 	}
 
 	return (
-		<div
-			className='relative mx-auto w-full min-w-0 max-w-120'
-			data-sf-search-root='true'
-			ref={rootRef}
-		>
+		<div className='relative w-full min-w-0' data-sf-search-root='true' ref={rootRef}>
 			<SearchField
 				aria-label='全局搜索'
 				fullWidth

@@ -17,6 +17,7 @@ describe('ShellLayoutSkeleton', () => {
 
 		expect(document.getElementById('sf-boot-shell')).not.toBeInTheDocument()
 		expect(root).toHaveAttribute('aria-busy', 'true')
+		expect(root?.firstElementChild).toHaveClass('h-11')
 		expect(sidebar).toHaveStyle({ '--sidebar-width': '330px' })
 	})
 

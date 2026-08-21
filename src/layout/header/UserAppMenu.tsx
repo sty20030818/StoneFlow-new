@@ -1,4 +1,4 @@
-import { Avatar, Badge, Button, Dropdown } from '@heroui/react'
+import { Avatar, Button, Dropdown } from '@heroui/react'
 
 import {
 	COMMAND_IDS,
@@ -53,19 +53,14 @@ export function UserAppMenu({
 					aria-label='应用菜单'
 					className='relative shrink-0'
 					isIconOnly
-					size='lg'
+					size='sm'
 					type='button'
 					variant='ghost'
 				>
-					<Badge color='success' placement='bottom-right' size='sm'>
-						<Badge.Anchor>
-							<Avatar size='sm'>
-								<Avatar.Image alt='' src='/avatar.jpg' />
-								<Avatar.Fallback>U</Avatar.Fallback>
-							</Avatar>
-						</Badge.Anchor>
-						<Badge.Label aria-label='在线' />
-					</Badge>
+					<Avatar size='sm'>
+						<Avatar.Image alt='' src='/avatar.jpg' />
+						<Avatar.Fallback>U</Avatar.Fallback>
+					</Avatar>
 				</Button>
 			</ActionTooltip>
 

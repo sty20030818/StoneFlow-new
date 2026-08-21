@@ -24,7 +24,11 @@ describe('UserAppMenu', () => {
 			/>,
 		)
 
-		fireEvent.click(screen.getByRole('button', { name: '应用菜单' }))
+		const trigger = screen.getByRole('button', { name: '应用菜单' })
+		expect(trigger).toHaveClass('button--sm')
+		expect(trigger.querySelector('.avatar')).toHaveClass('avatar--sm')
+
+		fireEvent.click(trigger)
 
 		expect(await screen.findByRole('menuitem', { name: /设置/ })).toBeInTheDocument()
 		expect(screen.getByRole('menuitem', { name: /键盘快捷键/ })).toBeInTheDocument()

@@ -7,10 +7,23 @@
 		height: var(--control-height-md);
 		min-height: var(--control-height-md);
 		gap: 0.375rem;
-		border-radius: var(--radius-control);
+		border-radius: var(--radius-pill);
 		padding-inline: 0.625rem;
 		font-size: 0.8125rem;
 		line-height: 1.25rem;
+	}
+
+	/* Tooltip.Trigger 与按钮复合时不能覆盖按钮的 flex 对齐语义。 */
+	[data-theme="stoneflow-light"] :is(.button, .toggle-button).tooltip__trigger {
+		display: inline-flex;
+	}
+
+	[data-theme="stoneflow-light"]
+		:is(
+			.button-group .button,
+			.toggle-button-group:not(.toggle-button-group--detached) .toggle-button
+		) {
+		border-radius: revert-layer;
 	}
 
 	[data-theme="stoneflow-light"] .button[data-content-height="true"] {
@@ -61,6 +74,16 @@
 		width: var(--control-height-lg);
 	}
 
+	/* Avatar 保持身份图像的正圆语义；小头像与紧凑图标按钮共享 28px 基线。 */
+	[data-theme="stoneflow-light"] .avatar {
+		border-radius: var(--radius-pill);
+	}
+
+	[data-theme="stoneflow-light"] .avatar--sm {
+		block-size: var(--control-height-sm);
+		inline-size: var(--control-height-sm);
+	}
+
 	/* 次级操作与选择默认保持中性；六组 Accent 只在主操作和小面积标记中出现。 */
 	[data-theme="stoneflow-light"] .button--secondary {
 		--button-fg: var(--foreground);
@@ -85,6 +108,12 @@
 	[data-theme="stoneflow-light"] :is(.input, .select__trigger, .search-field__group) {
 		min-height: var(--control-height-md);
 		border-radius: var(--radius-control);
+	}
+
+	/* Header 的填充型搜索靠表面层级区分；仅交互焦点保留可访问性焦点环。 */
+	[data-theme="stoneflow-light"] [data-sf-search-root="true"] .search-field__group {
+		--field-border: transparent;
+		--field-border-hover: transparent;
 	}
 
 	[data-theme="stoneflow-light"]

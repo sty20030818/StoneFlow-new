@@ -26,8 +26,9 @@ type ShellLayoutSkeletonProps = {
  * 几何合同（与真壳 HeroUI Sidebar + Inset 一致）：
  * - `auto + minmax(0, 1fr)` 由 Sidebar 占位元素的实际宽度驱动，不维护第二份 grid 列宽。
  * - 桌面用真实 width / 折叠态 48px icon rail；小于 1024px 时侧栏占位为零。
- * - 桌面 Inset 主面仅保留右侧 8px gutter；窄窗口去掉 gutter、边框和圆角。
- * - 顶 Header `h-12` / 底 Footer `h-7`。
+ * - 桌面 Frame 的 Main region 仅保留尾侧 8px gutter；Inset surface 不拥有外边距。
+ * - 窄窗口去掉 gutter、边框和圆角。
+ * - 顶 Header `h-11` / 底 Footer `h-7`。
  *
  * 同步契约：`index.html` `#sf-boot-shell` 是同结构的静态首帧遮罩（仅默认 256、无用户宽）。
  * 改布局/色值时必须两边一起改；Launcher（`data-sf-boot=launcher`）不画 HTML 骨架。
@@ -57,7 +58,7 @@ export function ShellLayoutSkeleton({
 			className='relative flex h-full min-h-0 flex-col overflow-hidden bg-surface-secondary'
 			data-slot='shell-layout-skeleton'
 		>
-			<div className='h-12 shrink-0 bg-surface-secondary' />
+			<div className='h-11 shrink-0 bg-surface-secondary' />
 
 			<div
 				className='grid min-h-0 min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)] overflow-hidden bg-surface-secondary'

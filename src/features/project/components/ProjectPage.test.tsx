@@ -61,7 +61,7 @@ describe('ProjectPage', () => {
 
 		expect(screen.getByText('状态分组任务 Board')).toBeInTheDocument()
 		expect(screen.getByText('显示设置')).toBeInTheDocument()
-		fireEvent.click(screen.getByRole('button', { name: '完成' }))
+		fireEvent.click(screen.getByRole('button', { name: '完成项目' }))
 		const projectActions = screen.getByRole('button', { name: '项目操作' })
 		fireEvent.click(projectActions)
 		fireEvent.click(await screen.findByRole('menuitem', { name: '归档项目' }))

@@ -242,7 +242,7 @@ export function ShellHeader({
 			<div className='relative'>
 				<header
 					className={cn(
-						'relative z-30 flex h-12 shrink-0 flex-nowrap items-center gap-3 bg-surface-secondary pr-0',
+						'relative z-30 flex h-11 shrink-0 flex-nowrap items-center gap-3 bg-surface-secondary pr-0',
 						// 左条整块 <640 不渲染时，为刘海/窗口区补左侧内边，避免主带贴边
 						!isAtLeastSm && (isMac ? 'pl-24' : 'pl-3'),
 					)}
@@ -326,7 +326,7 @@ export function ShellHeader({
 								}
 							}}
 						>
-							<div className='min-w-0 w-full' data-tauri-drag-region>
+							<div className='mx-auto w-full min-w-0 max-w-120' data-tauri-drag-region>
 								<GlobalSearchInput
 									onOpenProject={handleOpenProjectFromSearch}
 									onOpenTask={handleOpenTaskFromSearch}
@@ -334,7 +334,7 @@ export function ShellHeader({
 							</div>
 						</div>
 						<div
-							className={`flex h-full shrink-0 items-center ${isMac ? 'gap-2 pl-1.5 pr-3' : 'gap-0 pl-0 pr-0'}`}
+							className={`flex h-full shrink-0 items-center gap-2 ${isMac ? 'pl-1.5 pr-2' : 'pl-0 pr-0'}`}
 							data-slot='shell-header-right'
 							data-tauri-drag-region
 						>
@@ -346,7 +346,7 @@ export function ShellHeader({
 									onPress={() => onRunCommand(COMMAND_IDS.newQuickTask)}
 									size='sm'
 									type='button'
-									variant='outline'
+									variant='ghost'
 								>
 									<SquarePenIcon className='size-3.5' />
 								</Button>
@@ -355,20 +355,18 @@ export function ShellHeader({
 								</Tooltip.Content>
 							</Tooltip>
 
-							<div className='ml-2 flex items-center gap-2'>
-								<UserAppMenu
-									isSettingsActive={activeSection === 'settings'}
-									onOpenAbout={onOpenAbout}
-									onOpenChangelog={onOpenChangelog}
-									onRunCommand={onRunCommand}
-								/>
-							</div>
+							<UserAppMenu
+								isSettingsActive={activeSection === 'settings'}
+								onOpenAbout={onOpenAbout}
+								onOpenChangelog={onOpenChangelog}
+								onRunCommand={onRunCommand}
+							/>
 
-							{!isMac && <div className='ml-2 h-5 w-px bg-muted/20' data-tauri-drag-region />}
+							{!isMac && <div className='h-5 w-px bg-muted/20' data-tauri-drag-region />}
 
 							{/* macOS 使用系统原生窗体控制，避免与页面内自绘按钮重复。 */}
 							{!isMac ? (
-								<div className='flex h-full items-center gap-0.5 p-1' data-tauri-drag-region>
+								<div className='flex h-full items-center gap-0.5' data-tauri-drag-region>
 									<Tooltip>
 										<Button
 											aria-label='最小化窗口'
