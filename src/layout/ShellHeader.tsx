@@ -346,7 +346,7 @@ export function ShellHeader({
 									onPress={() => onRunCommand(COMMAND_IDS.newQuickTask)}
 									size='sm'
 									type='button'
-									variant='ghost'
+									variant='outline'
 								>
 									<SquarePenIcon className='size-3.5' />
 								</Button>

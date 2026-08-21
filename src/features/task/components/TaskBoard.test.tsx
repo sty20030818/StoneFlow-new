@@ -76,6 +76,27 @@ vi.mock('@/features/task/components/TaskRowAdapter', () => ({
 }))
 
 describe('TaskBoard', () => {
+	it('状态分组标题保持次级表面与圆角', () => {
+		const { container } = renderTaskBoard(
+			<TaskBoardHarness
+				onEmptyAction={() => undefined}
+				onToggleTaskStatus={async () => undefined}
+				onUpdateTaskPriority={async () => undefined}
+				onUpdateTaskStatus={async () => undefined}
+				pendingTaskId={null}
+				status='ready'
+				tasks={[createTask({ id: 'task-1', title: '任务 A', status: 'todo' })]}
+			/>,
+		)
+
+		const sectionHeaders = container.querySelectorAll('[data-board-section-header="true"]')
+		expect(sectionHeaders.length).toBeGreaterThan(0)
+		for (const sectionHeader of sectionHeaders) {
+			expect(sectionHeader).toHaveClass('rounded-md', 'bg-surface-secondary')
+			expect(sectionHeader).toHaveStyle({ height: '36px' })
+		}
+	})
+
 	it('连续选择组填满虚拟行间隙并只保留外侧圆角', () => {
 		const tasks = [
 			createTask({ id: 'task-1', title: '任务 A' }),

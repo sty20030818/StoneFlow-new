@@ -105,6 +105,7 @@ HeroUI OSS/Pro 的锁定版本是默认实现，负责组件结构、Hover、Pre
 - 次级选择的中性表面，避免 Accent 大面积铺色；
 - Card 与 Overlay 的统一轻边界；Surface 保持 HeroUI 上游的无边界语义；
 - `RowShell` 的 selected/current/focus-suppressed/context-menu-open 等稳定共享状态；键盘焦点恢复期间不得让 stale pointer hover 抢回 current 视觉。
+- `Input`、`Textarea` 与 `SearchField` 的 primary / secondary 静止态和 focus 态统一使用白色 field surface；secondary 只降低阴影，hover 使用共享 field-hover。
 - 标题、代码和数字输入只通过稳定语义 hook 统一内容层级，不向 Feature 暴露可配置皮肤。
 - 原生 host 合同只保留内容高度、Windows 窗体命中区、拖拽期间关闭 Sidebar transition、compact 导航 Sheet 的系统按钮避让、路由回退链接及 Launcher 嵌入提示所需的窄 recipe。
 - `GlobalSearchResults` 与 Launcher 原生窗 Surface 是两个窄表面例外：上游无对应边界 recipe，稳定 hook 只补齐各自缺失的边界、圆角或阴影，不扩张为通用 Surface 皮肤。

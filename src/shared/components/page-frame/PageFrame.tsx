@@ -68,7 +68,7 @@ function PageFrameToolbar({
 	}
 
 	return (
-		<Surface variant='secondary'>
+		<Surface>
 			<div className='flex flex-col gap-1.5 px-2 py-1.5'>
 				{hasActions ? (
 					<div className='flex min-h-8 items-center justify-between gap-3'>
@@ -85,7 +85,7 @@ function PageFrameToolbar({
 										onPress={pill.onPress}
 										size='sm'
 										type='button'
-										variant={pill.active ? 'secondary' : 'ghost'}
+										variant='outline'
 									>
 										{pill.label}
 									</Button>
@@ -100,7 +100,7 @@ function PageFrameToolbar({
 						) : null}
 					</div>
 				) : null}
-				{filterBar ? <div className='min-w-0'>{filterBar}</div> : null}
+				{filterBar ? <div className='min-w-0 empty:hidden'>{filterBar}</div> : null}
 			</div>
 		</Surface>
 	)

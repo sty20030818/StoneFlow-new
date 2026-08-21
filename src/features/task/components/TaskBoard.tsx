@@ -62,6 +62,9 @@ const TASK_BOARD_SELECTION_GROUP_POSITION_CLASS: Record<RowSelectionGroupPositio
 	last: 'rounded-none rounded-b-lg',
 }
 
+const TASK_BOARD_SECTION_HEADER_CLASS =
+	'relative z-10 flex items-center gap-2 rounded-md bg-surface-secondary pl-3 pr-1'
+
 export type TaskBoardProps = {
 	tasks: TaskListItem[]
 	flatItems: readonly TaskBoardFlatItem[]
@@ -787,7 +790,10 @@ function TaskBoardLoadingState() {
 		<div aria-busy='true' className='flex min-h-0 flex-1 flex-col gap-0.5'>
 			{Array.from({ length: 2 }).map((_, sectionIndex) => (
 				<div className='flex flex-col gap-0.5' key={`board-loading-section-${sectionIndex}`}>
-					<div className='sticky top-0 z-10 flex h-[34px] items-center gap-2 pl-3 pr-1'>
+					<div
+						className='sticky top-0 z-10 flex items-center gap-2 pl-3 pr-1'
+						style={{ height: TASK_BOARD_HEADER_HEIGHT }}
+					>
 						<Skeleton className='size-3' />
 						<Skeleton className='h-3 w-24' />
 					</div>
@@ -1093,7 +1099,7 @@ function StatusSectionHeader({
 	if (!onOpenChange) {
 		return (
 			<div
-				className='relative z-10 flex items-center gap-2 pl-3 pr-1'
+				className={TASK_BOARD_SECTION_HEADER_CLASS}
 				data-board-section-header='true'
 				style={{ height: TASK_BOARD_HEADER_HEIGHT }}
 				onFocus={(event) => event.stopPropagation()}
@@ -1116,7 +1122,7 @@ function StatusSectionHeader({
 				open={contextMenuOpen}
 			>
 				<ContextMenu.Trigger
-					className='relative z-10 flex items-center gap-2 pl-3 pr-1'
+					className={TASK_BOARD_SECTION_HEADER_CLASS}
 					data-board-section-header='true'
 					style={{ height: TASK_BOARD_HEADER_HEIGHT }}
 					onDoubleClick={() => {

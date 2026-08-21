@@ -41,7 +41,7 @@ function task(
 describe('taskBoardModel', () => {
 	it('几何锁定批准的 TaskBoard 密度', () => {
 		expect(TASK_BOARD_ROW_HEIGHT).toBe(44)
-		expect(TASK_BOARD_HEADER_HEIGHT).toBe(34)
+		expect(TASK_BOARD_HEADER_HEIGHT).toBe(36)
 	})
 
 	it('flatItems：展开分区含 header+行；折叠去掉行', () => {

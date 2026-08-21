@@ -89,6 +89,14 @@
 		--button-fg: var(--foreground);
 	}
 
+	/* 描边 Toggle 保留固定边框；选中后只将填充与边框切到同一个中性色。 */
+	[data-theme="stoneflow-light"] .button--outline[aria-pressed="true"] {
+		--button-bg: var(--default-pressed);
+		--button-bg-hover: var(--default-pressed);
+		--button-bg-pressed: var(--default-pressed);
+		border-color: var(--default-pressed);
+	}
+
 	[data-theme="stoneflow-light"] .toggle-button {
 		--toggle-button-bg-selected: var(--default-pressed);
 		--toggle-button-bg-selected-hover: color-mix(
@@ -110,10 +118,29 @@
 		border-radius: var(--radius-control);
 	}
 
-	/* Header 的填充型搜索靠表面层级区分；仅交互焦点保留可访问性焦点环。 */
+	/* 文本字段统一使用白色 field surface；secondary 只降低阴影，不改成灰底。 */
+	[data-theme="stoneflow-light"] .input--secondary {
+		--input-bg: var(--field-background);
+		--input-bg-hover: var(--field-hover);
+		--input-bg-focus: var(--field-focus);
+	}
+
+	[data-theme="stoneflow-light"] .textarea--secondary {
+		--textarea-bg: var(--field-background);
+		--textarea-bg-hover: var(--field-hover);
+		--textarea-bg-focus: var(--field-focus);
+	}
+
+	[data-theme="stoneflow-light"] .search-field--secondary .search-field__group {
+		--search-field-group-bg: var(--field-background);
+		--search-field-group-bg-hover: var(--field-hover);
+		--search-field-group-bg-focus: var(--field-focus);
+	}
+
+	/* Header 搜索保留轻边界；避免全局字段的高对比描边，也不引入浮层式阴影。 */
 	[data-theme="stoneflow-light"] [data-sf-search-root="true"] .search-field__group {
-		--field-border: transparent;
-		--field-border-hover: transparent;
+		--field-border: var(--border);
+		--field-border-hover: var(--border-tertiary);
 	}
 
 	[data-theme="stoneflow-light"]
