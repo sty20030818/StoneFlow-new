@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-import { Button, ScrollShadow, Separator, Surface } from '@heroui/react'
+import { ScrollShadow, Separator, Surface, ToggleButton, ToggleButtonGroup } from '@heroui/react'
 
 import { AppScrollArea } from '@/shared/components/AppScrollArea'
 
@@ -63,6 +63,8 @@ function PageFrameToolbar({
 	filterBar,
 }: PageFrameToolbarProps) {
 	const hasActions = Boolean(pills?.length || filterAction || displayAction)
+	const activePillIndex = pills?.findIndex((pill) => pill.active) ?? -1
+	const selectedPillIndex = activePillIndex >= 0 ? activePillIndex : 0
 	if (!hasActions && !filterBar) {
 		return null
 	}
@@ -73,24 +75,27 @@ function PageFrameToolbar({
 				{hasActions ? (
 					<div className='flex min-h-8 items-center justify-between gap-3'>
 						{pills?.length ? (
-							<div
+							<ToggleButtonGroup
 								aria-label='页面筛选'
-								className='flex min-w-0 flex-wrap items-center gap-1'
-								role='group'
+								className='min-w-0 flex-wrap'
+								disallowEmptySelection
+								isDetached
+								selectedKeys={[selectedPillIndex]}
+								selectionMode='single'
+								size='sm'
 							>
-								{pills.map((pill) => (
-									<Button
-										aria-pressed={!!pill.active}
+								{pills.map((pill, index) => (
+									<ToggleButton
+										data-page-toolbar-option='true'
+										id={index}
 										key={pill.label}
 										onPress={pill.onPress}
-										size='sm'
-										type='button'
-										variant='outline'
+										variant='ghost'
 									>
 										{pill.label}
-									</Button>
+									</ToggleButton>
 								))}
-							</div>
+							</ToggleButtonGroup>
 						) : null}
 						{filterAction || displayAction ? (
 							<div className='flex shrink-0 items-center gap-1'>

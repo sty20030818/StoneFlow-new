@@ -326,10 +326,10 @@ describe('ViewsPage', () => {
 		expect(screen.getByRole('link', { name: 'Today' })).toHaveAttribute('aria-current', 'page')
 	})
 
-	it('点击系统视图 tab 后切换到新的视图 id', async () => {
+	it('点击系统视图选项后切换到新的视图 id', async () => {
 		await renderViewsPage('/all/views/today')
 
-		fireEvent.click(screen.getByRole('button', { name: 'Upcoming' }))
+		fireEvent.click(screen.getByRole('radio', { name: 'Upcoming' }))
 
 		await waitFor(() => {
 			expect(runTaskViewSpy).toHaveBeenLastCalledWith({

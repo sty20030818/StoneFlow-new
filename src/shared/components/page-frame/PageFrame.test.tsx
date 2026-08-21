@@ -14,7 +14,10 @@ describe('PageFrame', () => {
 			<PageFrame.Root>
 				<PageFrame.Header actions={<button type='button'>页级操作</button>} title='页面标题' />
 				<PageFrame.Toolbar
-					pills={[{ label: '进行中', active: true, onPress }, { label: '待执行' }]}
+					pills={[
+						{ label: '进行中', active: true },
+						{ label: '待执行', onPress },
+					]}
 				/>
 				<PageFrame.Body>页面主体</PageFrame.Body>
 			</PageFrame.Root>,
@@ -22,18 +25,20 @@ describe('PageFrame', () => {
 
 		expect(screen.getByRole('heading', { name: '页面标题' })).toBeInTheDocument()
 		expect(screen.getByRole('button', { name: '页级操作' })).toBeInTheDocument()
-		const pill = screen.getByRole('button', { name: '进行中' })
-		const inactivePill = screen.getByRole('button', { name: '待执行' })
-		const toolbarGroup = screen.getByRole('group', { name: '页面筛选' })
+		const pill = screen.getByRole('radio', { name: '进行中' })
+		const inactivePill = screen.getByRole('radio', { name: '待执行' })
+		const toolbarGroup = screen.getByRole('radiogroup', { name: '页面筛选' })
 		expect(toolbarGroup).toContainElement(pill)
-		expect(pill).toHaveClass('button--outline')
-		expect(inactivePill).toHaveClass('button--outline')
+		expect(pill).toHaveClass('toggle-button--ghost')
+		expect(inactivePill).toHaveClass('toggle-button--ghost')
+		expect(pill).toHaveAttribute('data-page-toolbar-option', 'true')
+		expect(pill).toHaveAttribute('data-selected', 'true')
 		expect(toolbarGroup.closest('.surface')).toHaveClass('surface--default')
 		expect(toolbarGroup.closest('.surface')).not.toHaveClass('surface--secondary')
-		expect(pill).toHaveAttribute('aria-pressed', 'true')
-		expect(inactivePill).toHaveAttribute('aria-pressed', 'false')
+		expect(pill).toHaveAttribute('aria-checked', 'true')
+		expect(inactivePill).toHaveAttribute('aria-checked', 'false')
 		expect(pill).not.toHaveAttribute('aria-current')
-		fireEvent.click(pill)
+		fireEvent.click(inactivePill)
 		expect(onPress).toHaveBeenCalledOnce()
 		expect(screen.getByText('页面主体').closest('[data-scroll-container="true"]')).not.toBeNull()
 	})
@@ -51,14 +56,10 @@ describe('PageFrame', () => {
 	})
 
 	it('空筛选条不占用工具条纵向间隔', () => {
-		render(
-			<PageFrame.Toolbar
-				filterBar={<EmptyFilterBar />}
-				pills={[{ label: '所有任务', active: true }]}
-			/>,
-		)
+		render(<PageFrame.Toolbar filterBar={<EmptyFilterBar />} pills={[{ label: '所有任务' }]} />)
 
-		const toolbarGroup = screen.getByRole('group', { name: '页面筛选' })
+		const toolbarGroup = screen.getByRole('radiogroup', { name: '页面筛选' })
+		expect(screen.getByRole('radio', { name: '所有任务' })).toHaveAttribute('data-selected', 'true')
 		const toolbarLayout = toolbarGroup.parentElement?.parentElement
 		const emptyFilterBarSlot = toolbarLayout?.lastElementChild
 		expect(emptyFilterBarSlot).toBeEmptyDOMElement()

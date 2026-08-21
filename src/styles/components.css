@@ -89,14 +89,6 @@
 		--button-fg: var(--foreground);
 	}
 
-	/* 描边 Toggle 保留固定边框；选中后只将填充与边框切到同一个中性色。 */
-	[data-theme="stoneflow-light"] .button--outline[aria-pressed="true"] {
-		--button-bg: var(--default-pressed);
-		--button-bg-hover: var(--default-pressed);
-		--button-bg-pressed: var(--default-pressed);
-		border-color: var(--default-pressed);
-	}
-
 	[data-theme="stoneflow-light"] .toggle-button {
 		--toggle-button-bg-selected: var(--default-pressed);
 		--toggle-button-bg-selected-hover: color-mix(
@@ -110,6 +102,26 @@
 			var(--foreground)
 		);
 		--toggle-button-fg-selected: var(--foreground);
+	}
+
+	/* Linear 式 Outline 单选：Hover 轻反馈，选中后边框融入填充。 */
+	[data-theme="stoneflow-light"] .toggle-button[data-page-toolbar-option="true"] {
+		--toggle-button-bg-hover: color-mix(in srgb, var(--default) 60%, transparent);
+		--toggle-button-bg-selected: var(--default);
+		--toggle-button-bg-selected-hover: var(--default);
+		--toggle-button-bg-selected-pressed: var(--default);
+		border: var(--border-width) solid var(--border);
+	}
+
+	/* Outline 始终保留 1px，以低对比边界营造发丝感。 */
+	[data-theme="stoneflow-light"]
+		:is(.button--outline, .toggle-button[data-page-toolbar-option="true"]) {
+		border-color: color-mix(in srgb, var(--border) 75%, transparent);
+	}
+
+	[data-theme="stoneflow-light"]
+		.toggle-button[data-page-toolbar-option="true"][data-selected="true"] {
+		border-color: var(--toggle-button-bg-selected);
 	}
 
 	/* 表单只统一工作台密度；交互与校验状态继续使用 HeroUI 原生 recipe。 */
