@@ -1,6 +1,6 @@
 # task · 任务域
 
-> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-08-16
+> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-08-22
 
 ---
 
@@ -74,9 +74,11 @@ src/features/task/
 | 批量 | `taskBulkActions` · `createTaskBulkAdapter` |
 | 命令 | `registerTaskCommands`（行快捷键投影后进入壳层唯一 Runtime） |
 | 详情 | `TaskPage` · `TaskDetailContent` · `TaskPreview` · Preview Provider/controller |
-| 列表编排 | `useTaskListController` · `useTaskSelection` · `useTaskListData` / Query |
+| 列表编排 | `useTaskListController` · `useTaskSelection` · `useTaskQueryData` / Query |
 | 展示 | `PriorityIcon` · `TaskStatusIndicator` · 标签 formatters |
-| IO | `getTaskDetail` · `createTask` · `deleteTask` · `restoreTask` 等（仅已有外消费者） |
+| IO | `runTaskQuery` · `countTaskQuery` · `getTaskDetail` · `createTask` · `deleteTask` · `restoreTask` 等（仅已有外消费者） |
+
+任务窗口只在首屏返回 `totalCount`，续页仅取 items；侧栏 badge 使用同一查询定义的 count-only 入口，不拉取任务窗口或 lookup。
 
 新增导出前确认已有外消费者；禁止预防性撑大 public。导出须符合 CONVENTIONS TSDoc L1。
 

@@ -17,7 +17,9 @@ vi.mock('../hooks/useProjectDetailScene', () => ({
 		breadcrumbItems: [],
 		taskCollection: { boardProps: { tasks: [], status: 'ready' } },
 		displayPageKey: 'task:project-detail',
-		toolbarPills: [{ label: '所有任务' }],
+		toolbarPills: [{ key: 'incomplete', label: '未完成' }],
+		selectedToolbarKey: 'incomplete',
+		selectToolbar: vi.fn(),
 		filterUiValue: {
 			session: {
 				base: EMPTY_FILTER_QUERY,

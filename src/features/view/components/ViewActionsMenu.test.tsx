@@ -6,39 +6,28 @@ import { ViewActionsMenu } from './ViewActionsMenu'
 const customView: View = {
 	id: 'view-1',
 	name: '重点任务',
-	kind: 'custom',
-	systemKey: null,
 	scope: { type: 'all' },
+	context: { kind: 'all' },
+	baseViewKey: 'active',
 	filters: { clauses: [] },
 	position: 100,
 	createdAt: '2026-08-19T00:00:00Z',
 	updatedAt: '2026-08-19T00:00:00Z',
 }
 
-it('视图菜单通过 HeroUI action 调用唯一领域入口', async () => {
-	const onCreate = vi.fn()
+it('视图菜单只在调用方需要时提供创建入口', async () => {
 	const onEdit = vi.fn()
 	const onDelete = vi.fn()
 
-	render(
-		<ViewActionsMenu
-			activeView={customView}
-			onCreate={onCreate}
-			onDelete={onDelete}
-			onEdit={onEdit}
-		/>,
-	)
+	render(<ViewActionsMenu activeView={customView} onDelete={onDelete} onEdit={onEdit} />)
 
 	const trigger = screen.getByRole('button', { name: '视图操作' })
 	fireEvent.click(trigger)
-	fireEvent.click(await screen.findByRole('menuitem', { name: '新建自定义视图' }))
-	expect(onCreate).toHaveBeenCalledOnce()
-
-	fireEvent.click(trigger)
-	fireEvent.click(await screen.findByRole('menuitem', { name: '编辑当前视图' }))
+	expect(screen.queryByRole('menuitem', { name: '新建保存视图' })).not.toBeInTheDocument()
+	fireEvent.click(await screen.findByRole('menuitem', { name: '编辑保存视图' }))
 	expect(onEdit).toHaveBeenCalledWith(customView)
 
 	fireEvent.click(trigger)
-	fireEvent.click(await screen.findByRole('menuitem', { name: '删除当前视图' }))
+	fireEvent.click(await screen.findByRole('menuitem', { name: '删除保存视图' }))
 	expect(onDelete).toHaveBeenCalledWith(customView)
 })

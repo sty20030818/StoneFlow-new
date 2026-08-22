@@ -1,7 +1,7 @@
 # display-options · 任务列表显示选项
 
 > 作用：描述 **当前已落地** 的 `src/features/display-options` 边界  
-> 最后更新：2026-08-04
+> 最后更新：2026-08-22
 
 ---
 
@@ -9,16 +9,17 @@
 
 **负责：**
 
-- 任务列表**呈现**：分组、子分组、排序、方向、完成项排序、**是否显示已完成**、空分组、字段可见性
+- 任务列表**呈现**：分组、子分组、排序、方向、完成项排序、空分组、字段可见性
 - 页面级偏好键（`TaskDisplayPageKey`）与默认值 / 归一化
 - 偏好读写（workspace default + personal override，renderer localStorage）
-- `applyTaskDisplayOptionsToTasks`（含 `showCompleted === false` 时隐藏 done/canceled）
+- `applyTaskDisplayOptionsToTasks`（只对上游已选中的任务排序与分组）
 - 工具条「显示」入口（`DisplayOptionsButton`）与面板（方向内嵌、设为默认 / 恢复默认）
 - 面板表面固定为紧凑的左标签、右控件行；属性使用 pill，底栏只保留重置与设为默认
 
 **不负责：**
 
 - 筛选公式 / FilterQuery / Save View（→ `@/features/filter` / `view`）
+- 任务集合成员资格（未完成、今天、已完成等由 Default / Saved View 查询决定）
 - 任务数据获取与 mutation（→ `@/features/task`）
 - 页面路由与场景编排
 
@@ -55,7 +56,7 @@ src/features/display-options/
 
 - **不得** `import` `@/layout/**`
 - **不得** 外模块深路径 import
-- **不得** 承担 Filter 剔除语义的主真源（`showCompleted` 仅呈现/辅助 list 下推）
+- **不得** 根据任务状态增删列表成员；成员资格属于 Default / Saved View 与 Filter
 - 不把 View CRUD、筛选 clause 写入本域
 
 ---

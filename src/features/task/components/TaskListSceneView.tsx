@@ -1,12 +1,10 @@
 import { PlusIcon } from 'lucide-react'
 import { Button } from '@heroui/react'
 
-import { PageFrame } from '@/shared/components/page-frame'
 import { ActionTooltip } from '@/shared/components/tooltip'
-import { DisplayOptionsButton } from '@/features/display-options'
-import { FilterBar, ListFilterUiProvider, PageFilterButton } from '@/features/filter'
 import { COMMAND_IDS, CommandShortcut } from '@/features/command'
 import { useTaskListScene, type TaskListSceneVariant } from '@/features/task/hooks/useTaskListScene'
+import { TaskWorkspace } from '@/features/task-workspace'
 import { TaskBoard } from './TaskBoard'
 import { AppBreadcrumb } from '@/shared/components/AppBreadcrumb'
 
@@ -26,38 +24,32 @@ export function TaskListSceneView({ variant }: TaskListSceneViewProps) {
 	const scene = useTaskListScene(variant)
 
 	return (
-		<ListFilterUiProvider value={scene.filterUiValue}>
-			<PageFrame.Root>
-				<PageFrame.Header
-					actions={
-						<ActionTooltip
-							label='创建任务'
-							shortcut={<CommandShortcut commandId={COMMAND_IDS.newFullTask} />}
-						>
-							<Button
-								aria-label='创建任务'
-								isIconOnly
-								onPress={scene.openCreate}
-								size='sm'
-								type='button'
-								variant='ghost'
-							>
-								<PlusIcon aria-hidden='true' />
-							</Button>
-						</ActionTooltip>
-					}
-					breadcrumb={<AppBreadcrumb items={scene.breadcrumbItems} />}
-				/>
-				<PageFrame.Toolbar
-					displayAction={<DisplayOptionsButton pageKey={scene.displayPageKey} />}
-					filterAction={<PageFilterButton />}
-					filterBar={<FilterBar />}
-					pills={scene.toolbarPills}
-				/>
-				<PageFrame.VirtualizedBody>
-					<TaskBoard {...scene.taskCollection.boardProps} />
-				</PageFrame.VirtualizedBody>
-			</PageFrame.Root>
-		</ListFilterUiProvider>
+		<TaskWorkspace
+			breadcrumb={<AppBreadcrumb items={scene.breadcrumbItems} />}
+			displayPageKey={scene.displayPageKey}
+			filterUiValue={scene.filterUiValue}
+			headerActions={
+				<ActionTooltip
+					label='创建任务'
+					shortcut={<CommandShortcut commandId={COMMAND_IDS.newFullTask} />}
+				>
+					<Button
+						aria-label='创建任务'
+						isIconOnly
+						onPress={scene.openCreate}
+						size='sm'
+						type='button'
+						variant='outline'
+					>
+						<PlusIcon aria-hidden='true' />
+					</Button>
+				</ActionTooltip>
+			}
+			onViewChange={scene.selectToolbar}
+			selectedViewKey={scene.selectedToolbarKey}
+			views={scene.toolbarPills}
+		>
+			<TaskBoard {...scene.taskCollection.boardProps} />
+		</TaskWorkspace>
 	)
 }

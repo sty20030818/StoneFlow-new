@@ -7,11 +7,11 @@
 import { invoke } from '@tauri-apps/api/core'
 
 import type {
+	CountTaskQueryInput,
 	CreateTaskInput,
-	ListTasksInput,
-	ListTasksPage,
+	RunTaskQueryInput,
+	RunTaskQueryResult,
 	TaskDetail,
-	TaskListViewKey,
 	TaskUpdatePlacementInput,
 	UpdateTaskInput,
 } from '@/shared/types'
@@ -41,35 +41,42 @@ function toScopePayload(scope: Scope): TaskScopePayload {
 	return scope.type === 'all' ? { type: 'all' } : { type: 'space', spaceId: scope.spaceId }
 }
 
-export async function listTasks(input: ListTasksInput): Promise<ListTasksPage> {
-	const page = await invoke<{
-		items: ListTasksPage['items']
-		nextCursor?: string | null
-		totalCount?: number
-	}>('list_tasks', {
+export async function runTaskQuery(input: RunTaskQueryInput): Promise<RunTaskQueryResult> {
+	const page = await invoke<RunTaskQueryResult>('run_task_query', {
 		input: {
 			scope: toScopePayload(input.scope),
-			viewKey: input.viewKey,
-			placement: {
-				kind: input.placement.kind,
-				projectId: input.placement.kind === 'project' ? input.placement.projectId : null,
-			},
-			statuses: input.statuses ?? null,
-			priorities: input.priorities?.length ? input.priorities : null,
-			dateFilter: input.dateFilter ?? null,
-			limit: input.limit ?? null,
+			context: input.context,
+			baseViewKey: input.baseViewKey,
+			filters: input.filters,
 			cursor: input.cursor ?? null,
 		},
 	})
-	// totalCount 为契约必填；缺省视为实现错误，不回退 items.length（会随续拉假增长拇指）
-	if (typeof page.totalCount !== 'number') {
-		throw new Error('list_tasks 响应缺少 totalCount')
+	if (input.cursor == null && typeof page.totalCount !== 'number') {
+		throw new Error('run_task_query 响应缺少 totalCount')
+	}
+	if (page.totalCount != null && typeof page.totalCount !== 'number') {
+		throw new Error('run_task_query 响应包含无效 totalCount')
 	}
 	return {
 		items: page.items,
 		nextCursor: page.nextCursor ?? null,
-		totalCount: page.totalCount,
+		totalCount: page.totalCount ?? null,
 	}
+}
+
+export async function countTaskQuery(input: CountTaskQueryInput): Promise<number> {
+	const result = await invoke<{ totalCount?: unknown }>('count_task_query', {
+		input: {
+			scope: toScopePayload(input.scope),
+			context: input.context,
+			baseViewKey: input.baseViewKey,
+			filters: input.filters,
+		},
+	})
+	if (typeof result.totalCount !== 'number') {
+		throw new Error('count_task_query 响应缺少 totalCount')
+	}
+	return result.totalCount
 }
 
 export async function getTaskDetail(taskId: string) {
@@ -142,8 +149,4 @@ export async function deleteTask(taskId: string) {
 	return invoke<TaskDetail>('delete_task', {
 		input: { taskId },
 	})
-}
-
-export function getDefaultTaskViewKey(): TaskListViewKey {
-	return 'active'
 }

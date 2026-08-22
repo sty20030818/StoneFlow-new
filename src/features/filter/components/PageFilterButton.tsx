@@ -9,8 +9,6 @@ import { ListFilterIcon } from 'lucide-react'
 import { COMMAND_IDS, CommandActionTooltip } from '@/features/command'
 
 import { subscribeFilterUiEvent } from '../model/filterUiEvents'
-import { useListFilterUi } from '../model/ListFilterUiContext'
-import { usePageFilterContext } from '../model/PageFilterProvider'
 import { FilterMenu } from './FilterMenu'
 
 type PageFilterButtonProps = {
@@ -18,8 +16,6 @@ type PageFilterButtonProps = {
 }
 
 export function PageFilterButton({ className }: PageFilterButtonProps) {
-	const { session } = useListFilterUi()
-	const pageFilter = usePageFilterContext()
 	const [menuOpen, setMenuOpen] = useState(false)
 	const [tooltipOpen, setTooltipOpen] = useState(false)
 
@@ -28,14 +24,9 @@ export function PageFilterButton({ className }: PageFilterButtonProps) {
 			if (event.type === 'open-menu') {
 				setTooltipOpen(false)
 				setMenuOpen(true)
-				return
-			}
-			if (event.type === 'clear-all') {
-				session.clearTemp()
-				pageFilter.actions.clearAll()
 			}
 		})
-	}, [pageFilter.actions, session])
+	}, [])
 
 	const label = '筛选'
 

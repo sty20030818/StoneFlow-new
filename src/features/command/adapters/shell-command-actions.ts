@@ -76,7 +76,6 @@ export type ShellDomainCommandActions = {
 	togglePreview: (ctx: CommandContext) => void | Promise<void>
 	/** 打开锚定 FilterMenu */
 	openFilterMenu: (ctx: CommandContext) => void
-	toggleCompletedFilter: (ctx: CommandContext) => void
 	clearAllFilters: (ctx: CommandContext) => void
 	/** 打开锚定 Display 面板 */
 	openDisplayOptions: (ctx: CommandContext) => void

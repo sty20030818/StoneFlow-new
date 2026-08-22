@@ -1,25 +1,81 @@
 //! FilterQuery 持久化形状：与前端 `FilterQuery` 对齐。
-//! 旧 `TaskViewFiltersValue` 仅作执行期 eval / 一次性迁移输入。
+//! 旧扁平筛选 DTO 只在本存储解码边界私有转换一次。
 
-use crate::view::{
-    DateFilter, DateFilterMode, PriorityFilter, ProjectFilter, ProjectFilterMode,
-    TaskViewFiltersValue,
-};
 use crate::ApplicationError;
 use serde::{Deserialize, Serialize};
 use stoneflow_domain::WorkStatus;
 
 const PROJECT_NONE: &str = "__none__";
 
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct LegacyTaskViewFilters {
+    #[serde(default)]
+    status: Vec<WorkStatus>,
+    priority: Option<LegacyPriorityFilter>,
+    project: Option<LegacyProjectFilter>,
+    due: Option<LegacyDateFilter>,
+    planned: Option<LegacyDateFilter>,
+    created: Option<LegacyDateFilter>,
+    updated: Option<LegacyDateFilter>,
+    completed: Option<LegacyDateFilter>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct LegacyPriorityFilter {
+    eq: Option<i32>,
+    gte: Option<i32>,
+    lte: Option<i32>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct LegacyProjectFilter {
+    mode: LegacyProjectFilterMode,
+    #[serde(default)]
+    ids: Vec<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "lowercase")]
+enum LegacyProjectFilterMode {
+    Any,
+    None,
+    Specific,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct LegacyDateFilter {
+    mode: LegacyDateFilterMode,
+    #[serde(rename = "from")]
+    _from: Option<String>,
+    #[serde(rename = "to")]
+    _to: Option<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum LegacyDateFilterMode {
+    Today,
+    Overdue,
+    Future,
+    Past,
+    Between,
+    None,
+    NotNone,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct FilterQueryValue {
     #[serde(default)]
     pub clauses: Vec<FilterClauseValue>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct FilterClauseValue {
     #[serde(default)]
     pub id: String,
@@ -29,7 +85,7 @@ pub struct FilterClauseValue {
     pub values: Vec<String>,
 }
 
-/// 解析 filters_json：新 clause 形状，或旧扁平 TaskViewFilters → clause（无长期双路径分支在调用方）。
+/// 解析 filters_json：新 clause 形状，或旧扁平筛选 → clause（无长期双路径分支在调用方）。
 pub fn parse_filters_json(json: &str) -> Result<FilterQueryValue, ApplicationError> {
     let trimmed = json.trim();
     if trimmed.is_empty() || trimmed == "null" {
@@ -47,12 +103,19 @@ pub fn parse_filters_json(json: &str) -> Result<FilterQueryValue, ApplicationErr
     }
 
     // 旧扁平形状
-    let legacy: TaskViewFiltersValue = serde_json::from_value(value)
+    let legacy: LegacyTaskViewFilters = serde_json::from_value(value)
         .map_err(|_| ApplicationError::validation("View filters 定义无效"))?;
-    Ok(legacy_to_filter_query(legacy))
+    legacy_to_filter_query(legacy)
 }
 
-pub fn legacy_to_filter_query(legacy: TaskViewFiltersValue) -> FilterQueryValue {
+fn legacy_to_filter_query(
+    legacy: LegacyTaskViewFilters,
+) -> Result<FilterQueryValue, ApplicationError> {
+    if legacy.created.is_some() || legacy.updated.is_some() || legacy.completed.is_some() {
+        return Err(ApplicationError::validation(
+            "旧 Saved View 含当前模型无法无损表达的日期字段，请重新创建",
+        ));
+    }
     let mut clauses = Vec::new();
 
     if !legacy.status.is_empty() {
@@ -70,6 +133,12 @@ pub fn legacy_to_filter_query(legacy: TaskViewFiltersValue) -> FilterQueryValue 
 
     if let Some(priority) = legacy.priority {
         if let Some(eq) = priority.eq {
+            if priority.gte.is_some_and(|gte| eq < gte) || priority.lte.is_some_and(|lte| eq > lte)
+            {
+                return Err(ApplicationError::validation(
+                    "旧 Saved View 的优先级条件无法无损迁移，请重新创建",
+                ));
+            }
             clauses.push(FilterClauseValue {
                 id: "migrated-priority".to_owned(),
                 field: "priority".to_owned(),
@@ -85,26 +154,29 @@ pub fn legacy_to_filter_query(legacy: TaskViewFiltersValue) -> FilterQueryValue 
                     values.push(p.to_string());
                 }
             }
-            if !values.is_empty() {
-                clauses.push(FilterClauseValue {
-                    id: "migrated-priority".to_owned(),
-                    field: "priority".to_owned(),
-                    op: "is".to_owned(),
-                    values,
-                });
+            if values.is_empty() {
+                return Err(ApplicationError::validation(
+                    "旧 Saved View 的优先级条件无法无损迁移，请重新创建",
+                ));
             }
+            clauses.push(FilterClauseValue {
+                id: "migrated-priority".to_owned(),
+                field: "priority".to_owned(),
+                op: "is".to_owned(),
+                values,
+            });
         }
     }
 
     if let Some(project) = legacy.project {
         match project.mode {
-            ProjectFilterMode::None => clauses.push(FilterClauseValue {
+            LegacyProjectFilterMode::None => clauses.push(FilterClauseValue {
                 id: "migrated-project".to_owned(),
                 field: "project".to_owned(),
                 op: "is".to_owned(),
                 values: vec![PROJECT_NONE.to_owned()],
             }),
-            ProjectFilterMode::Specific if !project.ids.is_empty() => {
+            LegacyProjectFilterMode::Specific if !project.ids.is_empty() => {
                 clauses.push(FilterClauseValue {
                     id: "migrated-project".to_owned(),
                     field: "project".to_owned(),
@@ -112,12 +184,17 @@ pub fn legacy_to_filter_query(legacy: TaskViewFiltersValue) -> FilterQueryValue 
                     values: project.ids,
                 })
             }
+            LegacyProjectFilterMode::Specific => {
+                return Err(ApplicationError::validation(
+                    "旧 Saved View 的项目条件无法无损迁移，请重新创建",
+                ));
+            }
             _ => {}
         }
     }
 
     if let Some(due) = legacy.due {
-        if let Some(mode) = date_mode_to_value(due.mode) {
+        if let Some(mode) = date_mode_to_value(due.mode)? {
             clauses.push(FilterClauseValue {
                 id: "migrated-due".to_owned(),
                 field: "due".to_owned(),
@@ -128,7 +205,7 @@ pub fn legacy_to_filter_query(legacy: TaskViewFiltersValue) -> FilterQueryValue 
     }
 
     if let Some(planned) = legacy.planned {
-        if let Some(mode) = date_mode_to_value(planned.mode) {
+        if let Some(mode) = date_mode_to_value(planned.mode)? {
             clauses.push(FilterClauseValue {
                 id: "migrated-planned".to_owned(),
                 field: "planned".to_owned(),
@@ -138,131 +215,7 @@ pub fn legacy_to_filter_query(legacy: TaskViewFiltersValue) -> FilterQueryValue 
         }
     }
 
-    FilterQueryValue { clauses }
-}
-
-/// clause → 执行期 eval（复用既有 matches / SQL 候选字段）。
-pub fn filter_query_to_eval(query: &FilterQueryValue) -> TaskViewFiltersValue {
-    let mut eval = TaskViewFiltersValue::default();
-
-    for clause in &query.clauses {
-        match clause.field.as_str() {
-            "status" => {
-                let selected = clause
-                    .values
-                    .iter()
-                    .filter_map(|v| parse_status(v))
-                    .collect::<Vec<_>>();
-                if selected.is_empty() {
-                    continue;
-                }
-                eval.status = if clause.op == "is_not" {
-                    all_statuses()
-                        .into_iter()
-                        .filter(|s| !selected.contains(s))
-                        .collect()
-                } else {
-                    selected
-                };
-            }
-            "priority" => {
-                let selected: Vec<i32> = clause
-                    .values
-                    .iter()
-                    .filter_map(|v| v.parse::<i32>().ok())
-                    .filter(|p| (0..=4).contains(p))
-                    .collect();
-                if selected.is_empty() {
-                    continue;
-                }
-                if clause.op == "is_not" {
-                    // eval 仅 eq/gte/lte；多值 is_not 用内存时 matches 只支持 eq——
-                    // 降级：不设 priority 字段，完整 is_not 多值依赖后续 clause 原生 match。
-                    // 单值 is_not：无法用 eq 表达，跳过（列表侧已用补集白名单）。
-                    if selected.len() == 1 {
-                        // 无法用 PriorityFilter 表达 is_not；留给 matches 扩展前先忽略
-                        continue;
-                    }
-                    continue;
-                }
-                if selected.len() == 1 {
-                    eval.priority = Some(PriorityFilter {
-                        eq: Some(selected[0]),
-                        gte: None,
-                        lte: None,
-                    });
-                } else {
-                    // 多值 is：取 max 作 eq 近似不够；用 gte/min lte/max 会误包含中间值。
-                    // 执行期 matches 将改为同时看 FilterQuery；此处设 eq 为第一个以便 SQL 不筛错过多，
-                    // 真实多值在 filter_query_matches 中收紧。
-                    eval.priority = Some(PriorityFilter {
-                        eq: None,
-                        gte: selected.iter().copied().min(),
-                        lte: selected.iter().copied().max(),
-                    });
-                }
-            }
-            "project" => {
-                if clause.op != "is" {
-                    continue;
-                }
-                if clause.values.iter().any(|v| v == PROJECT_NONE) {
-                    eval.project = Some(ProjectFilter {
-                        mode: ProjectFilterMode::None,
-                        ids: vec![],
-                    });
-                } else if !clause.values.is_empty() {
-                    eval.project = Some(ProjectFilter {
-                        mode: ProjectFilterMode::Specific,
-                        ids: clause.values.clone(),
-                    });
-                }
-            }
-            "due" => {
-                if clause.op == "is" {
-                    if let Some(mode) = value_to_date_mode(clause.values.first().map(String::as_str))
-                    {
-                        eval.due = Some(DateFilter {
-                            mode,
-                            from: None,
-                            to: None,
-                        });
-                    }
-                }
-            }
-            "planned" => {
-                if clause.op == "is" {
-                    if let Some(mode) = value_to_date_mode(clause.values.first().map(String::as_str))
-                    {
-                        eval.planned = Some(DateFilter {
-                            mode,
-                            from: None,
-                            to: None,
-                        });
-                    }
-                }
-            }
-            _ => {}
-        }
-    }
-
-    eval
-}
-
-/// 覆盖合并：override 中出现的 field 整段替换 base 同 field clauses。
-pub fn merge_filter_queries(base: FilterQueryValue, overrides: FilterQueryValue) -> FilterQueryValue {
-    if overrides.clauses.is_empty() {
-        return base;
-    }
-    let override_fields: std::collections::HashSet<&str> =
-        overrides.clauses.iter().map(|c| c.field.as_str()).collect();
-    let mut clauses: Vec<FilterClauseValue> = base
-        .clauses
-        .into_iter()
-        .filter(|c| !override_fields.contains(c.field.as_str()))
-        .collect();
-    clauses.extend(overrides.clauses);
-    FilterQueryValue { clauses }
+    Ok(FilterQueryValue { clauses })
 }
 
 pub fn validate_filter_query(query: &FilterQueryValue) -> Result<(), ApplicationError> {
@@ -285,39 +238,47 @@ pub fn validate_filter_query(query: &FilterQueryValue) -> Result<(), Application
         if clause.values.is_empty() {
             return Err(ApplicationError::validation("筛选条件 values 不能为空"));
         }
-    }
-    if query.clauses.iter().any(|c| {
-        c.field == "project"
-            && c.op == "is"
-            && !c.values.iter().any(|v| v == PROJECT_NONE)
-            && c.values.is_empty()
-    }) {
-        return Err(ApplicationError::validation(
-            "指定项目筛选必须提供 project ID",
-        ));
+        let values_are_valid = match clause.field.as_str() {
+            "status" => clause
+                .values
+                .iter()
+                .all(|value| parse_status(value).is_some()),
+            "priority" => clause.values.iter().all(|value| {
+                value
+                    .parse::<i32>()
+                    .is_ok_and(|priority| (0..=4).contains(&priority))
+            }),
+            "project" => clause.values.iter().all(|value| !value.trim().is_empty()),
+            "due" | "planned" => clause.values.iter().all(|value| {
+                matches!(
+                    value.as_str(),
+                    "today" | "tomorrow" | "thisWeek" | "future" | "overdue" | "hasDate" | "noDate"
+                )
+            }),
+            _ => false,
+        };
+        if !values_are_valid {
+            return Err(ApplicationError::validation(format!(
+                "筛选字段 {} 包含无效值",
+                clause.field
+            )));
+        }
     }
     Ok(())
 }
 
-fn date_mode_to_value(mode: DateFilterMode) -> Option<&'static str> {
+fn date_mode_to_value(
+    mode: LegacyDateFilterMode,
+) -> Result<Option<&'static str>, ApplicationError> {
     match mode {
-        DateFilterMode::Today => Some("today"),
-        DateFilterMode::Overdue | DateFilterMode::Past => Some("overdue"),
-        DateFilterMode::Future => Some("tomorrow"), // 近似；旧 future 无 1:1
-        DateFilterMode::NotNone => Some("hasDate"),
-        DateFilterMode::None => Some("noDate"),
-        DateFilterMode::Between => None,
-    }
-}
-
-fn value_to_date_mode(value: Option<&str>) -> Option<DateFilterMode> {
-    match value? {
-        "today" => Some(DateFilterMode::Today),
-        "overdue" => Some(DateFilterMode::Overdue),
-        "hasDate" => Some(DateFilterMode::NotNone),
-        "noDate" => Some(DateFilterMode::None),
-        "tomorrow" | "thisWeek" => Some(DateFilterMode::Future),
-        _ => None,
+        LegacyDateFilterMode::Today => Ok(Some("today")),
+        LegacyDateFilterMode::Overdue | LegacyDateFilterMode::Past => Ok(Some("overdue")),
+        LegacyDateFilterMode::Future => Ok(Some("future")),
+        LegacyDateFilterMode::NotNone => Ok(Some("hasDate")),
+        LegacyDateFilterMode::None => Ok(Some("noDate")),
+        LegacyDateFilterMode::Between => Err(ApplicationError::validation(
+            "旧 Saved View 含当前模型无法无损表达的日期条件，请重新创建",
+        )),
     }
 }
 
@@ -342,16 +303,6 @@ fn parse_status(value: &str) -> Option<WorkStatus> {
     }
 }
 
-fn all_statuses() -> Vec<WorkStatus> {
-    vec![
-        WorkStatus::Todo,
-        WorkStatus::Doing,
-        WorkStatus::Waiting,
-        WorkStatus::Done,
-        WorkStatus::Canceled,
-    ]
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -370,16 +321,24 @@ mod tests {
         let q = parse_filters_json(json).unwrap();
         assert_eq!(q.clauses.len(), 1);
         assert_eq!(q.clauses[0].values, vec!["todo", "doing"]);
-        let eval = filter_query_to_eval(&q);
-        assert_eq!(eval.status.len(), 2);
     }
 
     #[test]
-    fn merge_replaces_field() {
-        let base = parse_filters_json(r#"{"clauses":[{"id":"a","field":"status","op":"is","values":["todo"]}]}"#).unwrap();
-        let over = parse_filters_json(r#"{"clauses":[{"id":"b","field":"status","op":"is","values":["done"]}]}"#).unwrap();
-        let merged = merge_filter_queries(base, over);
-        assert_eq!(merged.clauses.len(), 1);
-        assert_eq!(merged.clauses[0].values, vec!["done"]);
+    fn legacy_future_should_keep_its_full_range() {
+        let q = parse_filters_json(r#"{"due":{"mode":"future","from":null,"to":null}}"#).unwrap();
+
+        assert_eq!(q.clauses[0].values, vec!["future"]);
+    }
+
+    #[test]
+    fn unsupported_legacy_filters_should_fail_instead_of_changing_semantics() {
+        for json in [
+            r#"{"planned":{"mode":"between","from":null,"to":null}}"#,
+            r#"{"created":{"mode":"today","from":null,"to":null}}"#,
+            r#"{"project":{"mode":"specific","ids":[]}}"#,
+            r#"{"priority":{"eq":1,"gte":3,"lte":null}}"#,
+        ] {
+            assert!(parse_filters_json(json).is_err(), "{json}");
+        }
     }
 }

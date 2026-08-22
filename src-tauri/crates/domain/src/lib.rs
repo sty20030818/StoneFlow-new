@@ -46,7 +46,7 @@ pub use update::{
     should_auto_check_with_interval, UpdateChannel, UpdateCheckMode, UpdateSettings,
     ALLOWED_CHECK_INTERVAL_SECS, AUTO_CHECK_INTERVAL_SECS, STARTUP_CHECK_DELAY_SECS,
 };
-pub use view::{ViewEntityKind, ViewKind};
+pub use view::ViewEntityKind;
 pub use work::{
     parse_optional_utc_rfc3339, transition_status, WorkPriority, WorkState, WorkStatus,
 };

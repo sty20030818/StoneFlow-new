@@ -197,24 +197,6 @@ export function DisplayOptionsPanel({
 
 			<Separator />
 
-			{/* 完成可见性 */}
-			<div className='flex flex-col gap-0.5 px-1 py-2'>
-				<DisplayOptionRow label='已完成'>
-					<CompactSelect
-						ariaLabel='已完成可见性'
-						disabled={isPending}
-						onValueChange={(value) => void actions.applyPartial({ showCompleted: value === 'all' })}
-						options={[
-							{ value: 'all', label: '全部' },
-							{ value: 'hide', label: '隐藏' },
-						]}
-						value={options.showCompleted ? 'all' : 'hide'}
-					/>
-				</DisplayOptionRow>
-			</div>
-
-			<Separator />
-
 			{/* 列表选项 */}
 			<div className='flex flex-col gap-0.5 px-1 py-2'>
 				<p className='px-1 pb-1 text-[12px] font-medium text-muted'>列表选项</p>

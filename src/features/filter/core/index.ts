@@ -1,13 +1,7 @@
 /**
- * filter 领域核：类型、normalize、URL codec、查询适配。
+ * filter 领域核：类型、normalize、URL codec。
  * 无 React / 无 Tauri。
  */
-
-export {
-	adaptFilterQueryToListTasks,
-	adaptFilterQueryToViewFilters,
-	type ListTasksFilterPatch,
-} from './adapt'
 export {
 	createFilterClause,
 	createFilterClauseId,
@@ -34,6 +28,4 @@ export {
 	decodeFilterQueryFromSearchParam,
 	encodeFilterQueryToSearchParam,
 	FILTER_SEARCH_PARAM_KEY,
-	mergeFilterQueryIntoSearch,
-	readFilterQueryFromSearch,
 } from './url-codec'

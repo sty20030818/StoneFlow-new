@@ -19,7 +19,11 @@ export function LifecycleList({ mode }: LifecycleListProps) {
 	return (
 		<PageFrame.Root>
 			<PageFrame.Header breadcrumb={<AppBreadcrumb items={scene.breadcrumbItems} />} />
-			<PageFrame.Toolbar pills={scene.toolbarPills} />
+			<PageFrame.Toolbar
+				onSelectionChange={scene.selectToolbar}
+				pills={scene.toolbarPills}
+				selectedKey={scene.selectedToolbarKey}
+			/>
 			<PageFrame.Body>
 				<LifecycleBoard {...scene.lifecycleBoardProps} />
 			</PageFrame.Body>

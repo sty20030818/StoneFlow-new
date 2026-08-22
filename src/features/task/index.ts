@@ -123,7 +123,7 @@ export { useTaskSelection } from './hooks/useTaskSelection'
 /**
  * 列表数据 facade（Query → items + status）。
  */
-export { useTaskListData } from './hooks/useTaskData'
+export { useTaskQueryCount, useTaskQueryData } from './hooks/useTaskData'
 
 /**
  * 任务集合的共享筛选、展示、选择、预览、批量与 Board 编排。
@@ -132,11 +132,6 @@ export {
 	useTaskCollectionScene,
 	type TaskCollectionSceneInput,
 } from './hooks/useTaskCollectionScene'
-
-/**
- * 列表 Query（与 list 页同 key，供 nav badges 复用）。
- */
-export { useTaskListQuery } from './hooks/task.queries'
 
 /**
  * 详情 loader / ensureQueryData 用的 queryOptions。

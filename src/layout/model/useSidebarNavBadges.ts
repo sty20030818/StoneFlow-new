@@ -1,34 +1,31 @@
-import { useMemo } from 'react'
-
-import type { Scope } from '@/shared/types'
-import { useTaskListQuery } from '@/features/task'
+import { useTaskQueryCount } from '@/features/task'
+import { EMPTY_FILTER_QUERY, type Scope } from '@/shared/types'
 
 /**
  * 侧栏主导航 / 独立事项 badge 数量。
  */
 export function useSidebarNavBadges(currentScope: Scope) {
-	const allTasks = useTaskListQuery({
+	const allTasks = useTaskQueryCount({
 		scope: currentScope,
-		viewKey: 'all',
-		placement: { kind: 'all' },
+		context: { kind: 'all' },
+		baseViewKey: 'all',
+		filters: EMPTY_FILTER_QUERY,
 	})
 
-	const standaloneTasks = useTaskListQuery({
+	const standaloneTasks = useTaskQueryCount({
 		scope: currentScope,
-		viewKey: 'all',
-		placement: { kind: 'standalone' },
+		context: { kind: 'standalone' },
+		baseViewKey: 'all',
+		filters: EMPTY_FILTER_QUERY,
 		// 独立事项仅 Space 上下文有意义；all scope 下仍查询但侧栏不展示项目列表
 	})
 
-	return useMemo(() => {
-		const next: Record<string, string | undefined> = {}
-		// 分页后 badge 为「当前窗口可见数」近似；精确 count 后续可单独接口
-		const allCount = allTasks.data?.items.length ?? 0
-		const standaloneCount = standaloneTasks.data?.items.length ?? 0
+	const next: Record<string, string | undefined> = {}
+	const allCount = allTasks ?? 0
+	const standaloneCount = standaloneTasks ?? 0
 
-		if (allCount > 0) next.tasks = String(allCount)
-		if (standaloneCount > 0) next.standalone = String(standaloneCount)
+	if (allCount > 0) next.tasks = String(allCount)
+	if (standaloneCount > 0) next.standalone = String(standaloneCount)
 
-		return next
-	}, [allTasks.data, standaloneTasks.data])
+	return next
 }

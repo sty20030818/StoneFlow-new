@@ -114,11 +114,7 @@ export function useLifecycleScene(mode: LifecycleMode) {
 			key: 'task' as const,
 			label: `任务 ${scopeItems.filter((entry) => entry.entityType === 'task').length}`,
 		},
-	].map((pill) => ({
-		label: pill.label,
-		active: entityFilter === pill.key,
-		onPress: () => setEntityFilter(pill.key),
-	}))
+	]
 
 	function handleOpenDetail(entry: LifecycleEntry) {
 		if (entry.entityType === 'task') {
@@ -159,5 +155,7 @@ export function useLifecycleScene(mode: LifecycleMode) {
 		lifecycleBoardProps,
 		breadcrumbItems,
 		toolbarPills,
+		selectedToolbarKey: entityFilter,
+		selectToolbar: (key: string) => setEntityFilter(key as LifecycleEntityFilter),
 	}
 }

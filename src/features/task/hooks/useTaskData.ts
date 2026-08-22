@@ -1,14 +1,19 @@
 import { useMemo } from 'react'
 
-import type { ListTasksInput, TaskListItem } from '@/shared/types'
+import type { CountTaskQueryInput, RunTaskQueryInput, TaskListItem } from '@/shared/types'
 import type { QueryLoadStatus } from '@/shared/query/queryStatus'
 
-import { flattenTaskListPages, useTaskDetailQuery, useTaskListInfiniteQuery } from './task.queries'
+import {
+	flattenTaskListPages,
+	useTaskCountQuery,
+	useTaskDetailQuery,
+	useTaskQueryInfiniteQuery,
+} from './task.queries'
 
 const EMPTY_TASK_LIST_ITEMS: TaskListItem[] = []
 
-export function useTaskListData(input: ListTasksInput) {
-	const query = useTaskListInfiniteQuery(input)
+export function useTaskQueryData(input: RunTaskQueryInput) {
+	const query = useTaskQueryInfiniteQuery(input)
 	const items = useMemo(
 		() => flattenTaskListPages(query.data?.pages) ?? EMPTY_TASK_LIST_ITEMS,
 		[query.data?.pages],
@@ -44,6 +49,10 @@ export function useTaskListData(input: ListTasksInput) {
 				: '加载更多失败'
 			: null,
 	}
+}
+
+export function useTaskQueryCount(input: CountTaskQueryInput) {
+	return useTaskCountQuery(input).data
 }
 
 export function useTaskDetailData(taskId: string | null | undefined) {

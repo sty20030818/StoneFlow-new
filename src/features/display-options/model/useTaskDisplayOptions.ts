@@ -103,7 +103,6 @@ export function useTaskDisplayOptions(pageKey: TaskDisplayPageKey): UseTaskDispl
 			orderBy: options.orderBy,
 			orderDirection: options.orderDirection,
 			completedOrder: options.completedOrder,
-			showCompleted: options.showCompleted,
 			showEmptyGroups: options.showEmptyGroups,
 			visibleProperties: [...options.visibleProperties],
 		}

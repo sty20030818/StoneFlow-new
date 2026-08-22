@@ -5,16 +5,11 @@ export type {
 	CreateTaskLinkInput,
 	DeleteTaskLinkInput,
 	ListTaskLinksInput,
-	ListTasksDateFilter,
-	ListTasksInput,
-	ListTasksPage,
 	TaskStatus,
 	Task,
 	TaskDetail,
 	TaskLink,
 	TaskListItem,
-	TaskListPlacementInput,
-	TaskListViewKey,
 	TaskPlacement,
 	TaskCreatePlacementInput,
 	TaskUpdatePlacementInput,
@@ -32,16 +27,16 @@ export type {
 } from './lifecycle'
 export type { SearchEntitiesResult, SearchTaskItem, SearchProjectItem } from './search'
 export type {
+	CountTaskQueryInput,
 	CreateViewInput,
-	RunProjectViewResult,
+	RunTaskQueryInput,
+	RunTaskQueryResult,
 	RunTaskViewInput,
 	RunTaskViewResult,
-	SystemViewKey,
-	TaskViewFilters,
+	TaskViewBaseKey,
+	TaskViewContext,
 	UpdateViewInput,
 	View,
-	ViewKind,
-	ViewTaskGroup,
 } from './view'
 export type {
 	FilterClause,

@@ -90,7 +90,6 @@ export function resolveTaskDisplayOptions({
 		orderBy,
 		orderDirection,
 		completedOrder,
-		showCompleted: merged.showCompleted ?? defaults.showCompleted,
 		showEmptyGroups: capabilities.supportsShowEmptyGroups
 			? (merged.showEmptyGroups ?? defaults.showEmptyGroups)
 			: defaults.showEmptyGroups,
@@ -147,10 +146,6 @@ export function normalizeTaskDisplayPreference(
 
 	if (isTaskDisplayCompletedOrder(preference.completedOrder)) {
 		normalized.completedOrder = preference.completedOrder
-	}
-
-	if (typeof preference.showCompleted === 'boolean') {
-		normalized.showCompleted = preference.showCompleted
 	}
 
 	if (typeof preference.showEmptyGroups === 'boolean') {

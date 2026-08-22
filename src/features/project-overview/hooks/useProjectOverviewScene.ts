@@ -30,7 +30,7 @@ export function useProjectOverviewScene() {
 	const scope = resolveShellRouteScope(shellRoute)
 	const spaceId = shellRoute.spaceId
 	const openProjectCreateDialog = useDialogStore((state) => state.openProjectCreateDialog)
-	const [viewKey, setViewKey] = useState<ProjectOverviewViewKey>('all_projects')
+	const [viewKey, setViewKey] = useState<ProjectOverviewViewKey>('active_projects')
 	const [busyProjectId, setBusyProjectId] = useState<string | null>(null)
 	const breadcrumbItems = useMemo(() => resolveBreadcrumb({ route: shellRoute }), [shellRoute])
 	const overview = useProjectOverviewData(scope, viewKey)
@@ -114,17 +114,17 @@ export function useProjectOverviewScene() {
 	}
 
 	const toolbarPills = [
-		{
-			active: viewKey === 'all_projects',
-			label: '所有项目',
-			onPress: () => setViewKey('all_projects'),
-		},
+		{ key: 'active_projects', label: '进行中' },
+		{ key: 'completed_projects', label: '已完成' },
+		{ key: 'all_projects', label: '全部' },
 	]
 
 	return {
 		breadcrumbItems,
 		projectBoardProps,
 		toolbarPills,
+		selectedToolbarKey: viewKey,
+		selectToolbar: (key: string) => setViewKey(key as ProjectOverviewViewKey),
 		openProjectCreateDialog: () => openProjectCreateDialog(),
 	}
 }

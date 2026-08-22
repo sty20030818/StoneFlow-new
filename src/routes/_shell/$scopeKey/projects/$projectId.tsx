@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { parseListFilterSearch } from '@/features/filter'
+import { parseTaskWorkspaceSearch } from '@/features/task-workspace'
 
 import {
 	loadProjectDetail,
@@ -9,7 +9,7 @@ import {
 } from '../../-workspace-project-detail'
 
 export const Route = createFileRoute('/_shell/$scopeKey/projects/$projectId')({
-	validateSearch: parseListFilterSearch,
+	validateSearch: parseTaskWorkspaceSearch,
 	loader: async ({ context, params }) =>
 		loadProjectDetail({
 			queryClient: context.queryClient,

@@ -274,8 +274,8 @@ components → hooks → api → model
 ```ts
 export const taskKeys = {
 	all: ['tasks'] as const,
-	lists: () => [...taskKeys.all, 'list'] as const,
-	list: (input: ListTasksInput) => [...taskKeys.lists(), input] as const,
+	queries: () => [...taskKeys.all, 'query'] as const,
+	query: (input: RunTaskQueryInput) => [...taskKeys.queries(), input] as const,
 	details: () => [...taskKeys.all, 'detail'] as const,
 	detail: (taskId: string) => [...taskKeys.details(), taskId] as const,
 }

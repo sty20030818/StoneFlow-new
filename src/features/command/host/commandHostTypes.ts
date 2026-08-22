@@ -29,7 +29,6 @@ export type CommandHostContext = {
 	pageFilter: {
 		actions: {
 			openFilterMenu: () => void
-			toggleCompleted: () => void
 			clearAll: () => void
 		}
 	}

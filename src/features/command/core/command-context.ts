@@ -48,10 +48,7 @@ export function createEmptyCommandContext(): CommandContext {
 		space: {},
 		project: {},
 		view: {
-			hasActiveFilters: false,
-			showCompleted: true,
 			filterCapabilities: {
-				supportsToggleCompleted: false,
 				supportsClearAll: false,
 			},
 		},

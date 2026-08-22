@@ -5,17 +5,16 @@
 import { invoke } from '@tauri-apps/api/core'
 
 import { normalizeFilterQuery } from '@/features/filter'
-import type { Scope } from '@/shared/types'
+import { EMPTY_FILTER_QUERY, type Scope } from '@/shared/types'
 import type {
 	CreateViewInput,
 	FilterQuery,
 	RunTaskViewInput,
 	RunTaskViewResult,
-	SystemViewKey,
+	TaskViewContext,
 	UpdateViewInput,
 	View,
 } from '@/shared/types'
-import { EMPTY_FILTER_QUERY } from '@/shared/types'
 
 type ScopePayload =
 	| {
@@ -34,47 +33,37 @@ function toFiltersPayload(filters: FilterQuery) {
 	return normalizeFilterQuery(filters)
 }
 
-export async function listViews() {
-	const custom = await invoke<Array<Record<string, unknown>>>('list_views', { input: {} })
-	return [...SYSTEM_VIEWS, ...custom.map(toCustomView)]
-}
-
-/**
- * 列出自定义 View 的 raw 行（含可能残留的 sort/group），仅 migrate 使用。
- */
-export async function listCustomViewRawRecords(): Promise<Array<Record<string, unknown>>> {
-	return invoke<Array<Record<string, unknown>>>('list_views', { input: {} })
+export async function listViews(scope: Scope) {
+	const records = await invoke<Array<Record<string, unknown>>>('list_views', {
+		input: { scope: toScopePayload(scope) },
+	})
+	return records.map(toView)
 }
 
 export async function runTaskView(input: RunTaskViewInput): Promise<RunTaskViewResult> {
-	const key =
-		SYSTEM_VIEWS.find((view) => view.id === input.viewId)?.systemKey ?? input.viewKey ?? null
 	const result = await invoke<{
-		view: Record<string, unknown> | null
+		view: Record<string, unknown>
 		items: Array<Record<string, unknown>>
-		groups: RunTaskViewResult['groups']
-		totalCount?: number
+		totalCount?: number | null
 		nextCursor?: string | null
 	}>('run_task_view', {
 		input: {
 			scope: toScopePayload(input.scope),
-			viewId: key ? null : (input.viewId ?? null),
-			viewKey: key,
+			viewId: input.viewId,
 			filters: input.filters ? toFiltersPayload(input.filters) : undefined,
-			limit: input.limit ?? null,
 			cursor: input.cursor ?? null,
 		},
 	})
-	if (typeof result.totalCount !== 'number') {
+	if (input.cursor == null && typeof result.totalCount !== 'number') {
 		throw new Error('run_task_view 响应缺少 totalCount')
 	}
+	if (result.totalCount != null && typeof result.totalCount !== 'number') {
+		throw new Error('run_task_view 响应包含无效 totalCount')
+	}
 	return {
-		view: result.view
-			? toCustomView(result.view)
-			: SYSTEM_VIEWS.find((view) => view.systemKey === key)!,
+		view: toView(result.view),
 		items: result.items.map(toTaskListItem),
-		groups: result.groups,
-		totalCount: result.totalCount,
+		totalCount: result.totalCount ?? null,
 		nextCursor: result.nextCursor ?? null,
 	}
 }
@@ -84,10 +73,12 @@ export async function createView(input: CreateViewInput) {
 		input: {
 			name: input.name,
 			scope: toScopePayload(input.scope),
+			context: input.context,
+			baseViewKey: input.baseViewKey,
 			filters: toFiltersPayload(input.filters),
 		},
 	})
-	return toCustomView(result)
+	return toView(result)
 }
 
 export async function updateView(input: UpdateViewInput) {
@@ -96,54 +87,68 @@ export async function updateView(input: UpdateViewInput) {
 			viewId: input.viewId,
 			name: input.name,
 			scope: input.scope ? toScopePayload(input.scope) : undefined,
+			context: input.context,
+			baseViewKey: input.baseViewKey,
 			filters: input.filters ? toFiltersPayload(input.filters) : undefined,
 		},
 	})
-	return toCustomView(result)
+	return toView(result)
 }
 
 export async function deleteView(viewId: string) {
 	return invoke<void>('delete_view', { viewId })
 }
 
-const SYSTEM_VIEWS: View[] = [
-	['all', '全部任务'],
-	['active', '待处理'],
-	['today', '今天'],
-	['upcoming', '即将到期'],
-	['overdue', '已逾期'],
-].map(([key, name], position) => ({
-	id: key,
-	systemKey: key as SystemViewKey,
-	name,
-	kind: 'system' as const,
-	scope: { type: 'all' as const },
-	filters: EMPTY_FILTER_QUERY,
-	position,
-	createdAt: '',
-	updatedAt: '',
-}))
-
-/** DTO → 产品 View（不带 sort/group） */
-function toCustomView(value: Record<string, unknown>): View {
+/** DTO → Saved View。 */
+function toView(value: Record<string, unknown>): View {
 	return {
 		id: String(value.id),
 		name: String(value.name),
-		kind: 'custom',
-		systemKey: null,
 		scope: toScope(value.scope),
+		context: toContext(value.context),
+		baseViewKey: toBaseViewKey(value.baseViewKey),
 		filters: normalizeFilterQuery((value.filters as FilterQuery) ?? EMPTY_FILTER_QUERY),
 		position: Number(value.position),
 		createdAt: String(value.createdAt ?? ''),
 		updatedAt: String(value.updatedAt ?? ''),
+		definitionError:
+			typeof value.definitionError === 'string' && value.definitionError.length > 0
+				? value.definitionError
+				: null,
 	}
+}
+
+function toContext(value: unknown): TaskViewContext {
+	const context = value as { kind?: unknown; projectId?: unknown } | null
+	if (context?.kind === 'all') return { kind: 'all' }
+	if (context?.kind === 'standalone') return { kind: 'standalone' }
+	if (
+		context?.kind === 'project' &&
+		typeof context.projectId === 'string' &&
+		context.projectId.length > 0
+	) {
+		return { kind: 'project', projectId: context.projectId }
+	}
+	throw new Error('View 响应包含无效 context')
 }
 
 function toScope(value: unknown): Scope {
 	const scope = value as { type?: unknown; spaceId?: unknown } | null
-	return scope?.type === 'space' && typeof scope.spaceId === 'string'
-		? { type: 'space', spaceId: scope.spaceId }
-		: { type: 'all' }
+	if (scope?.type === 'all') return { type: 'all' }
+	if (scope?.type === 'space' && typeof scope.spaceId === 'string' && scope.spaceId.length > 0) {
+		return { type: 'space', spaceId: scope.spaceId }
+	}
+	throw new Error('View 响应包含无效 scope')
+}
+
+function toBaseViewKey(value: unknown): View['baseViewKey'] {
+	if (
+		typeof value === 'string' &&
+		['all', 'active', 'completed', 'today', 'upcoming'].includes(value)
+	) {
+		return value as View['baseViewKey']
+	}
+	throw new Error('View 响应包含无效 baseViewKey')
 }
 
 function toTaskListItem(value: Record<string, unknown>): RunTaskViewResult['items'][number] {
@@ -164,7 +169,7 @@ function toTaskListItem(value: Record<string, unknown>): RunTaskViewResult['item
 		completedAt: value.completedAt as string | null,
 		createdAt: String(value.createdAt),
 		updatedAt: String(value.updatedAt),
-		canceledAt: null,
-		archivedAt: null,
+		canceledAt: value.canceledAt as string | null,
+		archivedAt: value.archivedAt as string | null,
 	}
 }

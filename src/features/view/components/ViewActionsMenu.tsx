@@ -1,19 +1,16 @@
 import { Button, Dropdown } from '@heroui/react'
-import { EllipsisIcon, PencilIcon, PlusIcon, Trash2Icon } from 'lucide-react'
+import { EllipsisIcon, PencilIcon, Trash2Icon } from 'lucide-react'
 
 import { ActionTooltip } from '@/shared/components/tooltip'
 import type { View } from '@/shared/types'
 
 type ViewActionsMenuProps = {
-	activeView: View | null
-	onCreate: () => void
-	onEdit: (view: View) => void
+	activeView: View
+	onEdit?: (view: View) => void
 	onDelete: (view: View) => void
 }
 
-export function ViewActionsMenu({ activeView, onCreate, onEdit, onDelete }: ViewActionsMenuProps) {
-	const canMutateActiveView = activeView?.kind === 'custom'
-
+export function ViewActionsMenu({ activeView, onEdit, onDelete }: ViewActionsMenuProps) {
 	return (
 		<Dropdown>
 			<ActionTooltip label='视图操作'>
@@ -23,31 +20,25 @@ export function ViewActionsMenu({ activeView, onCreate, onEdit, onDelete }: View
 			</ActionTooltip>
 			<Dropdown.Popover placement='bottom end'>
 				<Dropdown.Menu aria-label='视图操作'>
-					<Dropdown.Item id='create-view' onAction={onCreate} textValue='新建自定义视图'>
-						<PlusIcon />
-						新建自定义视图
-					</Dropdown.Item>
-					{canMutateActiveView ? (
+					{onEdit ? (
 						<Dropdown.Item
 							id='edit-view'
 							onAction={() => onEdit(activeView)}
-							textValue='编辑当前视图'
+							textValue='编辑保存视图'
 						>
 							<PencilIcon />
-							编辑当前视图
+							编辑保存视图
 						</Dropdown.Item>
 					) : null}
-					{canMutateActiveView ? (
-						<Dropdown.Item
-							id='delete-view'
-							onAction={() => onDelete(activeView)}
-							textValue='删除当前视图'
-							variant='danger'
-						>
-							<Trash2Icon />
-							删除当前视图
-						</Dropdown.Item>
-					) : null}
+					<Dropdown.Item
+						id='delete-view'
+						onAction={() => onDelete(activeView)}
+						textValue='删除保存视图'
+						variant='danger'
+					>
+						<Trash2Icon />
+						删除保存视图
+					</Dropdown.Item>
 				</Dropdown.Menu>
 			</Dropdown.Popover>
 		</Dropdown>

@@ -1,4 +1,4 @@
-//! 自定义 View 生命周期与系统 Task 查询。
+//! Saved View 生命周期与 Task 查询。
 
 #![allow(async_fn_in_trait)]
 
@@ -6,23 +6,34 @@ use crate::{
     operation::{
         changed_outbox_fields, OutboxEnqueueRecord, OutboxOpKind, OutboxPayload, SyncEntityKind,
     },
+    task::executor::{decode_task_query_cursor, encode_task_query_cursor},
     view::{
-        executor::{local_date, matches, sort},
-        filter_query::{
-            filter_query_to_eval, merge_filter_queries, parse_filters_json, validate_filter_query,
-            FilterQueryValue,
-        },
-        CreateViewPersistenceRecord, TaskGroupBy, TaskScopeInput, TaskScopeKind, UpdateViewPatch,
-        ViewListQuery, ViewProjectLookupRecord, ViewRecord, ViewSortRule, ViewSpaceLookupRecord,
-        ViewTaskQuery, ViewTaskRecord,
+        filter_query::{parse_filters_json, validate_filter_query, FilterQueryValue},
+        CreateViewPersistenceRecord, TaskScopeInput, TaskScopeKind, TaskViewBaseKey,
+        TaskViewContext, UpdateViewPatch, ViewDateBoundaries, ViewProjectLookupRecord, ViewRecord,
+        ViewSpaceLookupRecord, ViewTaskPage, ViewTaskQuery,
     },
     ApplicationError,
 };
-use chrono::{Duration, Local};
+use chrono::{Datelike, Duration, Local, NaiveDate, TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
 use std::collections::{HashMap, HashSet};
-use stoneflow_domain::{create_id, normalize_required_text, now_utc, ViewEntityKind, WorkStatus};
+use stoneflow_domain::{
+    create_id, normalize_required_text, now_utc, validate_project_id, ViewEntityKind, WorkStatus,
+};
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct StoredTaskViewDefinition {
+    base_view_key: TaskViewBaseKey,
+    context: TaskViewContext,
+    filters: FilterQueryValue,
+}
+
+const DEFAULT_TASK_QUERY_PAGE_SIZE: u32 = 150;
+const EMPTY_SORT_JSON: &str = "[]";
+const NO_GROUP_JSON: &str = "\"none\"";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -30,15 +41,15 @@ pub struct ViewDto {
     pub id: String,
     pub name: String,
     pub scope: TaskScopeInput,
-    /// 筛选真源：FilterQuery（clause 列表）
+    pub context: TaskViewContext,
+    pub base_view_key: TaskViewBaseKey,
+    /// 用户保存的筛选条件；运行时可被 URL Filter Draft 完整替换。
     pub filters: FilterQueryValue,
-    /// 仅迁移读出；产品路径不写入、呈现真源 → display-options
-    pub sort: Vec<ViewSortRule>,
-    /// 仅迁移读出；呈现分组以 display 为准
-    pub group_by: TaskGroupBy,
     pub position: i64,
     pub created_at: String,
     pub updated_at: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub definition_error: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -46,7 +57,8 @@ pub struct ViewDto {
 pub struct CreateViewInput {
     pub name: String,
     pub scope: TaskScopeInput,
-    #[serde(default)]
+    pub context: TaskViewContext,
+    pub base_view_key: TaskViewBaseKey,
     pub filters: FilterQueryValue,
 }
 
@@ -56,37 +68,48 @@ pub struct UpdateViewInput {
     pub view_id: String,
     pub name: Option<String>,
     pub scope: Option<TaskScopeInput>,
+    pub context: Option<TaskViewContext>,
+    pub base_view_key: Option<TaskViewBaseKey>,
     pub filters: Option<FilterQueryValue>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct ListViewsInput {}
+pub struct ListViewsInput {
+    pub scope: TaskScopeInput,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct RunTaskViewInput {
     pub scope: TaskScopeInput,
-    pub view_id: Option<String>,
-    pub view_key: Option<SystemViewKey>,
-    /// 临时覆盖 filters（clause）；与 URL `f` 对齐
+    pub view_id: String,
+    /// URL draft；存在时完整替换 View filters（包括显式空查询）。
     pub filters: Option<FilterQueryValue>,
-    /// 页大小；省略用默认（与 list_tasks 同量级）。
-    #[serde(default)]
-    pub limit: Option<u32>,
-    /// 上一页最后一条 task id（简单 keyset：排序后的 id 游标）。
+    /// opaque keyset cursor（与统一查询的 position + id 排序一致）。
     #[serde(default)]
     pub cursor: Option<String>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum SystemViewKey {
-    All,
-    Active,
-    Today,
-    Upcoming,
-    Overdue,
+/// Default View 与 Saved View 共用的 Task 查询契约。
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct RunTaskQueryInput {
+    pub scope: TaskScopeInput,
+    pub context: TaskViewContext,
+    pub base_view_key: TaskViewBaseKey,
+    pub filters: FilterQueryValue,
+    #[serde(default)]
+    pub cursor: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct CountTaskQueryInput {
+    pub scope: TaskScopeInput,
+    pub context: TaskViewContext,
+    pub base_view_key: TaskViewBaseKey,
+    pub filters: FilterQueryValue,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -106,27 +129,37 @@ pub struct TaskViewItemDto {
     pub due_at: Option<String>,
     pub remind_at: Option<String>,
     pub completed_at: Option<String>,
+    pub canceled_at: Option<String>,
+    pub archived_at: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct TaskViewGroupDto {
-    pub key: String,
-    pub task_ids: Vec<String>,
+pub struct RunTaskViewOutput {
+    pub view: ViewDto,
+    pub items: Vec<TaskViewItemDto>,
+    /// 过滤+排序后的总数（窗口前）。
+    /// 首屏为精确总数；续页为 null，避免重复 COUNT。
+    pub total_count: Option<u64>,
+    /// 下一页 opaque keyset cursor；无更多则为 null。
+    pub next_cursor: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct RunTaskViewOutput {
-    pub view: Option<ViewDto>,
+pub struct RunTaskQueryOutput {
     pub items: Vec<TaskViewItemDto>,
-    pub groups: Vec<TaskViewGroupDto>,
-    /// 过滤+排序后的总数（窗口前）。
-    pub total_count: u64,
-    /// 下一页游标（本页最后一条 id）；无更多则为 null。
+    /// 首屏为精确总数；续页为 null，避免重复 COUNT。
+    pub total_count: Option<u64>,
     pub next_cursor: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CountTaskQueryOutput {
+    pub total_count: u64,
 }
 
 pub trait ViewPersistence: Send + Sync {
@@ -134,12 +167,8 @@ pub trait ViewPersistence: Send + Sync {
     async fn begin(&self) -> Result<Self::Connection, ApplicationError>;
     async fn commit(&self, connection: Self::Connection) -> Result<(), ApplicationError>;
     async fn get(&self, view_id: &str) -> Result<Option<ViewRecord>, ApplicationError>;
-    async fn list(&self, query: ViewListQuery) -> Result<Vec<ViewRecord>, ApplicationError>;
-    async fn next_position(
-        &self,
-        connection: &Self::Connection,
-        entity_kind: ViewEntityKind,
-    ) -> Result<i64, ApplicationError>;
+    async fn list(&self) -> Result<Vec<ViewRecord>, ApplicationError>;
+    async fn next_position(&self, connection: &Self::Connection) -> Result<i64, ApplicationError>;
     async fn create(
         &self,
         connection: &Self::Connection,
@@ -163,10 +192,8 @@ pub trait ViewPersistence: Send + Sync {
     ) -> Result<(), ApplicationError>;
 }
 pub trait ViewTaskReader: Send + Sync {
-    async fn list_candidates(
-        &self,
-        query: ViewTaskQuery,
-    ) -> Result<Vec<ViewTaskRecord>, ApplicationError>;
+    async fn run_query(&self, query: ViewTaskQuery) -> Result<ViewTaskPage, ApplicationError>;
+    async fn count_query(&self, query: ViewTaskQuery) -> Result<u64, ApplicationError>;
 }
 pub trait ViewLookupReader: Send + Sync {
     async fn list_spaces_by_ids(
@@ -198,18 +225,29 @@ where
             lookup_reader,
         }
     }
-    pub async fn list_views(&self, _: ListViewsInput) -> Result<Vec<ViewDto>, ApplicationError> {
-        self.persistence
-            .list(ViewListQuery {
-                entity_kind: ViewEntityKind::Task,
-            })
-            .await?
-            .into_iter()
-            .map(decode_view)
-            .collect()
+    pub async fn list_views(
+        &self,
+        input: ListViewsInput,
+    ) -> Result<Vec<ViewDto>, ApplicationError> {
+        validate_scope(&input.scope)?;
+        let records = self.persistence.list().await?;
+        let mut views = Vec::new();
+        for record in records {
+            let scope: TaskScopeInput = from_json(&record.scope_json)?;
+            validate_scope(&scope)?;
+            if scope == input.scope {
+                views.push(decode_view_for_list(record, scope)?);
+            }
+        }
+        Ok(views)
     }
     pub async fn create_view(&self, input: CreateViewInput) -> Result<ViewDto, ApplicationError> {
-        validate_definition(&input.scope, &input.filters)?;
+        validate_definition(&input.scope, &input.context, &input.filters)?;
+        let definition = StoredTaskViewDefinition {
+            base_view_key: input.base_view_key,
+            context: input.context,
+            filters: input.filters,
+        };
         let now = now_utc().to_rfc3339();
         let connection = self.persistence.begin().await?;
         let record = self
@@ -221,13 +259,10 @@ where
                     name: normalize_required_text(&input.name, "name")?,
                     entity_kind: ViewEntityKind::Task,
                     scope_json: to_json(&input.scope)?,
-                    filters_json: to_json(&input.filters)?,
-                    sort_json: to_json(&Vec::<ViewSortRule>::new())?,
-                    group_by_json: Some(to_json(&TaskGroupBy::None)?),
-                    position: self
-                        .persistence
-                        .next_position(&connection, ViewEntityKind::Task)
-                        .await?,
+                    filters_json: to_json(&definition)?,
+                    sort_json: EMPTY_SORT_JSON.to_owned(),
+                    group_by_json: Some(NO_GROUP_JSON.to_owned()),
+                    position: self.persistence.next_position(&connection).await?,
                     created_at: now.clone(),
                     updated_at: now.clone(),
                 },
@@ -255,11 +290,15 @@ where
             .ok_or_else(|| ApplicationError::not_found("View 不存在"))?;
         let current_dto = decode_view(current.clone())?;
         let scope = input.scope.unwrap_or(current_dto.scope);
-        let filters = input.filters.unwrap_or(current_dto.filters);
-        validate_definition(&scope, &filters)?;
+        let definition = StoredTaskViewDefinition {
+            base_view_key: input.base_view_key.unwrap_or(current_dto.base_view_key),
+            context: input.context.unwrap_or(current_dto.context),
+            filters: input.filters.unwrap_or(current_dto.filters),
+        };
+        validate_definition(&scope, &definition.context, &definition.filters)?;
         let now = now_utc().to_rfc3339();
         let connection = self.persistence.begin().await?;
-        // 写回时清空 sort/group 列；filters 用 clause 形状
+        // sort/group 已退出产品契约；旧列只写空值，Saved View 定义统一进 filters_json。
         let record = self
             .persistence
             .update(
@@ -272,9 +311,9 @@ where
                         .map(|v| normalize_required_text(v, "name"))
                         .transpose()?,
                     scope_json: Some(to_json(&scope)?),
-                    filters_json: Some(to_json(&filters)?),
-                    sort_json: Some(to_json(&Vec::<ViewSortRule>::new())?),
-                    group_by_json: Some(Some(to_json(&TaskGroupBy::None)?)),
+                    filters_json: Some(to_json(&definition)?),
+                    sort_json: Some(EMPTY_SORT_JSON.to_owned()),
+                    group_by_json: Some(Some(NO_GROUP_JSON.to_owned())),
                     position: None,
                     updated_at: Some(now.clone()),
                 },
@@ -324,85 +363,65 @@ where
         &self,
         input: RunTaskViewInput,
     ) -> Result<RunTaskViewOutput, ApplicationError> {
-        let search_filters = input.filters;
-        // sort：系统 View 用内置默认；自定义 View 空 sort，呈现由客户端 display-options 负责
-        let (scope, mut filter_query, sort_rules, group_by, view, system_key) =
-            match (input.view_id, input.view_key) {
-                (Some(id), None) => {
-                    let dto = decode_view(
-                        self.persistence
-                            .get(&id)
-                            .await?
-                            .ok_or_else(|| ApplicationError::not_found("View 不存在"))?,
-                    )?;
-                    (
-                        dto.scope.clone(),
-                        dto.filters.clone(),
-                        Vec::<ViewSortRule>::new(),
-                        TaskGroupBy::None,
-                        Some(dto),
-                        None,
-                    )
-                }
-                (None, Some(key)) => {
-                    let (filters, sort) = system_definition(key);
-                    (
-                        input.scope,
-                        filters,
-                        sort,
-                        TaskGroupBy::None,
-                        None,
-                        Some(key),
-                    )
-                }
-                _ => {
-                    return Err(ApplicationError::validation(
-                        "必须指定一个系统 View 或自定义 View",
-                    ))
-                }
-            };
-        if let Some(override_filters) = search_filters {
-            filter_query = merge_filter_queries(filter_query, override_filters);
+        validate_scope(&input.scope)?;
+        let view = decode_view(
+            self.persistence
+                .get(&input.view_id)
+                .await?
+                .ok_or_else(|| ApplicationError::not_found("View 不存在"))?,
+        )?;
+        if view.scope != input.scope {
+            return Err(ApplicationError::validation("View 不属于当前 Scope"));
         }
-        validate_definition(&scope, &filter_query)?;
-        let today = Local::now().date_naive();
-        let eval = filter_query_to_eval(&filter_query);
-        // 查询策略：
-        // 1) SQL 候选：status / project / due（可下推字段）
-        // 2) 内存收口：priority、planned 等 eval 余量 + system_matches（本地日语义）
-        // 3) 内存 sort 后切片窗口（≤2k）；全量 SQL keyset 非本路径目标
-        let mut tasks = self
-            .task_reader
-            .list_candidates(ViewTaskQuery {
-                scope: scope.clone(),
-                statuses: eval.status.clone(),
-                project: eval.project.clone(),
-                due: eval.due.clone(),
+
+        let filter_query = input.filters.unwrap_or_else(|| view.filters.clone());
+        let result = self
+            .run_task_query(RunTaskQueryInput {
+                scope: view.scope.clone(),
+                context: view.context.clone(),
+                base_view_key: view.base_view_key,
+                filters: filter_query,
+                cursor: input.cursor,
             })
             .await?;
-        tasks.retain(|task| {
-            matches(task, &eval, today) && system_matches(task, system_key, today)
-        });
-        sort(&mut tasks, &sort_rules);
-        // 窗口：滤排后切片；total_count 为切片前总数（与 list 契约同形）
-        let total_count = tasks.len() as u64;
-        let limit = input
-            .limit
-            .unwrap_or(DEFAULT_VIEW_PAGE_SIZE)
-            .clamp(1, 500) as usize;
-        let start = match input.cursor.as_deref() {
-            Some(cursor_id) => tasks
-                .iter()
-                .position(|task| task.id == cursor_id)
-                .map(|index| index + 1)
-                .unwrap_or(0),
-            None => 0,
-        };
-        let end = (start + limit).min(tasks.len());
-        let has_more = end < tasks.len();
-        let page_tasks = &tasks[start..end];
+        Ok(RunTaskViewOutput {
+            view,
+            items: result.items,
+            total_count: result.total_count,
+            next_cursor: result.next_cursor,
+        })
+    }
+
+    /// 执行 Task 查询。Default View 直接调用；Saved View 加载定义后委托到这里。
+    pub async fn run_task_query(
+        &self,
+        input: RunTaskQueryInput,
+    ) -> Result<RunTaskQueryOutput, ApplicationError> {
+        validate_definition(&input.scope, &input.context, &input.filters)?;
+        let limit = DEFAULT_TASK_QUERY_PAGE_SIZE;
+        let page = self
+            .task_reader
+            .run_query(ViewTaskQuery {
+                scope: input.scope,
+                context: input.context,
+                base_view_key: input.base_view_key,
+                filters: input.filters,
+                dates: build_date_boundaries(stoneflow_domain::today_local_date())?,
+                limit: limit.saturating_add(1),
+                cursor: input
+                    .cursor
+                    .as_deref()
+                    .map(decode_task_query_cursor)
+                    .transpose()?,
+            })
+            .await?;
+        let mut page_tasks = page.items;
+        let has_more = page_tasks.len() as u32 > limit;
+        page_tasks.truncate(limit as usize);
         let next_cursor = if has_more {
-            page_tasks.last().map(|task| task.id.clone())
+            page_tasks
+                .last()
+                .map(|task| encode_task_query_cursor(task.position, &task.id))
         } else {
             None
         };
@@ -457,128 +476,79 @@ where
                     due_at: task.due_at.clone(),
                     remind_at: task.remind_at.clone(),
                     completed_at: task.completed_at.clone(),
+                    canceled_at: matches!(task.status, WorkStatus::Canceled)
+                        .then(|| task.status_changed_at.clone()),
+                    archived_at: task.archived_at.clone(),
                     created_at: task.created_at.clone(),
                     updated_at: task.updated_at.clone(),
                 })
             })
             .collect::<Result<Vec<_>, ApplicationError>>()?;
-        // groups 按全量过滤结果算（分组键完整）；task_ids 仅含本页会出现在 items 中的
-        let groups = group(page_tasks, group_by);
-        Ok(RunTaskViewOutput {
-            view,
+        Ok(RunTaskQueryOutput {
             items,
-            groups,
-            total_count,
+            total_count: page.total_count,
             next_cursor,
         })
     }
+
+    /// Sidebar 等只读数量消费者复用同一 SQL predicate，不加载 Task 窗口与 lookup。
+    pub async fn count_task_query(
+        &self,
+        input: CountTaskQueryInput,
+    ) -> Result<CountTaskQueryOutput, ApplicationError> {
+        validate_definition(&input.scope, &input.context, &input.filters)?;
+        let total_count = self
+            .task_reader
+            .count_query(ViewTaskQuery {
+                scope: input.scope,
+                context: input.context,
+                base_view_key: input.base_view_key,
+                filters: input.filters,
+                dates: build_date_boundaries(stoneflow_domain::today_local_date())?,
+                limit: 1,
+                cursor: None,
+            })
+            .await?;
+        Ok(CountTaskQueryOutput { total_count })
+    }
 }
 
-/// 与 list_tasks 默认页大小对齐。
-const DEFAULT_VIEW_PAGE_SIZE: u32 = 150;
-
-fn system_definition(key: SystemViewKey) -> (FilterQueryValue, Vec<ViewSortRule>) {
-    let active_values = vec![
-        "todo".to_owned(),
-        "doing".to_owned(),
-        "waiting".to_owned(),
-    ];
-    let mut clauses = Vec::new();
-    match key {
-        SystemViewKey::All => {}
-        SystemViewKey::Active
-        | SystemViewKey::Today
-        | SystemViewKey::Upcoming
-        | SystemViewKey::Overdue => {
-            // 日期细规则仍由 system_matches 收口；此处只收活跃状态
-            clauses.push(crate::view::filter_query::FilterClauseValue {
-                id: format!("system-{}", key_as_str(key)),
-                field: "status".to_owned(),
-                op: "is".to_owned(),
-                values: active_values,
-            });
-        }
-    }
-    (
-        FilterQueryValue { clauses },
-        vec![ViewSortRule {
-            field: crate::view::TaskSortField::DueAt,
-            direction: crate::view::SortDirection::Asc,
-        }],
-    )
+fn build_date_boundaries(today: NaiveDate) -> Result<ViewDateBoundaries, ApplicationError> {
+    let days_until_next_week = i64::from(7 - today.weekday().num_days_from_monday());
+    Ok(ViewDateBoundaries {
+        today_start: local_day_start(today)?,
+        tomorrow_start: local_day_start(today + Duration::days(1))?,
+        day_after_tomorrow_start: local_day_start(today + Duration::days(2))?,
+        next_week_start: local_day_start(today + Duration::days(days_until_next_week))?,
+    })
 }
 
-fn key_as_str(key: SystemViewKey) -> &'static str {
-    match key {
-        SystemViewKey::All => "all",
-        SystemViewKey::Active => "active",
-        SystemViewKey::Today => "today",
-        SystemViewKey::Upcoming => "upcoming",
-        SystemViewKey::Overdue => "overdue",
-    }
+fn local_day_start(date: NaiveDate) -> Result<String, ApplicationError> {
+    let local = Local
+        .from_local_datetime(
+            &date
+                .and_hms_opt(0, 0, 0)
+                .ok_or_else(|| ApplicationError::internal("无法构造本地日期边界"))?,
+        )
+        .earliest()
+        .ok_or_else(|| ApplicationError::internal("无法解析本地日期边界"))?;
+    Ok(local.with_timezone(&Utc).to_rfc3339())
 }
-fn system_matches(
-    task: &ViewTaskRecord,
-    key: Option<SystemViewKey>,
-    today: chrono::NaiveDate,
-) -> bool {
-    match key {
-        None | Some(SystemViewKey::All) | Some(SystemViewKey::Active) => true,
-        Some(SystemViewKey::Today) => [task.planned_at.as_deref(), task.due_at.as_deref()]
-            .into_iter()
-            .flatten()
-            .any(|value| local_date(value) == Some(today)),
-        Some(SystemViewKey::Upcoming) => task
-            .due_at
-            .as_deref()
-            .and_then(local_date)
-            .is_some_and(|date| date >= today && date <= today + Duration::days(7)),
-        Some(SystemViewKey::Overdue) => task
-            .due_at
-            .as_deref()
-            .and_then(local_date)
-            .is_some_and(|date| date < today),
-    }
-}
-fn group(tasks: &[ViewTaskRecord], group_by: TaskGroupBy) -> Vec<TaskViewGroupDto> {
-    let mut groups = Vec::<TaskViewGroupDto>::new();
-    for task in tasks {
-        let key = match group_by {
-            TaskGroupBy::None => "all".to_owned(),
-            TaskGroupBy::Status => task.status.as_str().to_owned(),
-            TaskGroupBy::Priority => task.priority.to_string(),
-            TaskGroupBy::Project => task
-                .project_id
-                .clone()
-                .unwrap_or_else(|| "standalone".to_owned()),
-            TaskGroupBy::Due => task
-                .due_at
-                .as_deref()
-                .and_then(local_date)
-                .map(|date| date.to_string())
-                .unwrap_or_else(|| "none".to_owned()),
-            TaskGroupBy::Planned => task
-                .planned_at
-                .as_deref()
-                .and_then(local_date)
-                .map(|date| date.to_string())
-                .unwrap_or_else(|| "none".to_owned()),
-        };
-        if let Some(group) = groups.iter_mut().find(|group| group.key == key) {
-            group.task_ids.push(task.id.clone());
-        } else {
-            groups.push(TaskViewGroupDto {
-                key,
-                task_ids: vec![task.id.clone()],
-            });
-        }
-    }
-    groups
-}
+
 fn validate_definition(
     scope: &TaskScopeInput,
+    context: &TaskViewContext,
     filters: &FilterQueryValue,
 ) -> Result<(), ApplicationError> {
+    validate_scope(scope)?;
+    if let TaskViewContext::Project { project_id } = context {
+        validate_project_id(project_id)?;
+    }
+    validate_filter_query(filters)?;
+    Ok(())
+}
+
+fn validate_scope(scope: &TaskScopeInput) -> Result<(), ApplicationError> {
     if matches!(scope.kind, TaskScopeKind::Space)
         && scope.space_id.as_deref().is_none_or(str::is_empty)
     {
@@ -589,35 +559,84 @@ fn validate_definition(
             "全部 Space 范围不能提供 spaceId",
         ));
     }
-    validate_filter_query(filters)?;
     Ok(())
 }
+
 fn decode_view(record: ViewRecord) -> Result<ViewDto, ApplicationError> {
     if record.entity_kind != ViewEntityKind::Task {
         return Err(ApplicationError::validation("仅支持 Task View"));
     }
-    // filters：clause 或旧扁平 → 统一 FilterQueryValue
-    let filters = parse_filters_json(&record.filters_json)?;
-    // sort/group：仍可读出旧行，供前端一次性迁入 display；新产品写入为空
-    let sort = from_json(&record.sort_json).unwrap_or_default();
-    let group_by = record
-        .group_by_json
-        .as_deref()
-        .map(from_json)
-        .transpose()?
-        .unwrap_or(TaskGroupBy::None);
+    let scope = from_json(&record.scope_json)?;
+    let definition = decode_stored_definition(&record.filters_json)?;
+    validate_definition(&scope, &definition.context, &definition.filters)?;
     Ok(ViewDto {
         id: record.id,
         name: record.name,
-        scope: from_json(&record.scope_json)?,
-        filters,
-        sort,
-        group_by,
+        scope,
+        context: definition.context,
+        base_view_key: definition.base_view_key,
+        filters: definition.filters,
         position: record.position,
         created_at: record.created_at,
         updated_at: record.updated_at,
+        definition_error: None,
     })
 }
+
+/// Library 必须隔离单行旧定义错误，让用户仍可删除并重建该 Saved View。
+fn decode_view_for_list(
+    record: ViewRecord,
+    scope: TaskScopeInput,
+) -> Result<ViewDto, ApplicationError> {
+    if record.entity_kind != ViewEntityKind::Task {
+        return Err(ApplicationError::validation("仅支持 Task View"));
+    }
+    match decode_view(record.clone()) {
+        Ok(view) => Ok(view),
+        Err(error) => Ok(ViewDto {
+            id: record.id,
+            name: record.name,
+            scope,
+            context: TaskViewContext::All,
+            base_view_key: TaskViewBaseKey::All,
+            filters: FilterQueryValue::default(),
+            position: record.position,
+            created_at: record.created_at,
+            updated_at: record.updated_at,
+            definition_error: Some(error.to_string()),
+        }),
+    }
+}
+
+fn decode_stored_definition(value: &str) -> Result<StoredTaskViewDefinition, ApplicationError> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() || trimmed == "null" {
+        return Ok(StoredTaskViewDefinition {
+            base_view_key: TaskViewBaseKey::All,
+            context: TaskViewContext::All,
+            filters: FilterQueryValue::default(),
+        });
+    }
+    let json: Value = serde_json::from_str(trimmed)
+        .map_err(|_| ApplicationError::validation("View filters 定义无效"))?;
+    let is_definition = json.as_object().is_some_and(|object| {
+        object.contains_key("baseViewKey")
+            || object.contains_key("context")
+            || object.contains_key("filters")
+    });
+    if is_definition {
+        return serde_json::from_value(json)
+            .map_err(|_| ApplicationError::validation("Saved View 定义无效"));
+    }
+
+    // 唯一兼容边界：旧 filters_json 仍按原筛选形状读取，随后进入新定义。
+    Ok(StoredTaskViewDefinition {
+        base_view_key: TaskViewBaseKey::All,
+        context: TaskViewContext::All,
+        filters: parse_filters_json(value)?,
+    })
+}
+
 fn to_json<T: Serialize>(value: &T) -> Result<String, ApplicationError> {
     serde_json::to_string(value)
         .map_err(|error| ApplicationError::validation(format!("View 定义序列化失败: {error}")))
@@ -694,7 +713,6 @@ fn view_fields(record: &ViewRecord) -> Result<Map<String, Value>, ApplicationErr
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::{NaiveDate, TimeZone, Utc};
     use serde_json::json;
 
     #[test]
@@ -703,6 +721,8 @@ mod tests {
             "name": "Legacy",
             "description": "旧字段",
             "scope": { "type": "all" },
+            "context": { "kind": "all" },
+            "baseViewKey": "all",
             "filters": { "clauses": [] }
         });
         assert!(serde_json::from_value::<CreateViewInput>(with_description).is_err());
@@ -710,6 +730,8 @@ mod tests {
         let with_sort = json!({
             "name": "NoSort",
             "scope": { "type": "all" },
+            "context": { "kind": "all" },
+            "baseViewKey": "all",
             "filters": { "clauses": [] },
             "sort": []
         });
@@ -717,42 +739,63 @@ mod tests {
     }
 
     #[test]
-    fn today_system_view_should_match_planned_at() {
-        let today = Local::now().date_naive();
-        let task = task_with_dates("planned", Some(today), None);
+    fn stored_definition_should_round_trip() {
+        let definition = StoredTaskViewDefinition {
+            base_view_key: TaskViewBaseKey::Today,
+            context: TaskViewContext::Standalone,
+            filters: FilterQueryValue::default(),
+        };
 
-        assert!(system_matches(&task, Some(SystemViewKey::Today), today));
+        let decoded = decode_stored_definition(&to_json(&definition).unwrap()).unwrap();
+
+        assert_eq!(decoded, definition);
     }
 
-    fn task_with_dates(
-        id: &str,
-        planned_date: Option<NaiveDate>,
-        due_date: Option<NaiveDate>,
-    ) -> ViewTaskRecord {
-        ViewTaskRecord {
-            id: id.to_owned(),
-            space_id: "space".to_owned(),
-            project_id: None,
-            title: id.to_owned(),
-            note: None,
-            status: WorkStatus::Todo,
-            status_changed_at: "2026-07-23T00:00:00Z".to_owned(),
-            priority: 0,
-            planned_at: planned_date.map(local_date_to_rfc3339),
-            due_at: due_date.map(local_date_to_rfc3339),
-            remind_at: None,
-            position: 1,
-            completed_at: None,
-            created_at: "2026-07-23T00:00:00Z".to_owned(),
-            updated_at: "2026-07-23T00:00:00Z".to_owned(),
-        }
+    #[test]
+    fn legacy_filters_should_decode_only_at_storage_boundary() {
+        let decoded = decode_stored_definition(
+            r#"{"clauses":[{"id":"1","field":"status","op":"is","values":["todo"]}]}"#,
+        )
+        .unwrap();
+
+        assert_eq!(
+            (decoded.base_view_key, decoded.context),
+            (TaskViewBaseKey::All, TaskViewContext::All)
+        );
     }
 
-    fn local_date_to_rfc3339(date: NaiveDate) -> String {
-        let local = Local
-            .from_local_datetime(&date.and_hms_opt(12, 0, 0).expect("valid local noon"))
-            .single()
-            .expect("local noon should be unambiguous");
-        local.with_timezone(&Utc).to_rfc3339()
+    #[test]
+    fn malformed_new_definition_should_not_fall_back_to_legacy_filters() {
+        let missing_context = r#"{"baseViewKey":"all","filters":{"clauses":[]}}"#;
+
+        assert!(decode_stored_definition(missing_context).is_err());
+    }
+
+    #[test]
+    fn invalid_legacy_definition_should_remain_listable_for_cleanup() {
+        let scope = TaskScopeInput {
+            kind: TaskScopeKind::All,
+            space_id: None,
+        };
+        let view = decode_view_for_list(
+            ViewRecord {
+                id: "legacy".to_owned(),
+                name: "旧视图".to_owned(),
+                entity_kind: ViewEntityKind::Task,
+                scope_json: to_json(&scope).unwrap(),
+                filters_json: r#"{"due":{"mode":"between","from":null,"to":null}}"#.to_owned(),
+                sort_json: "[]".to_owned(),
+                group_by_json: None,
+                position: 1,
+                generation: 1,
+                created_at: "2026-08-22T00:00:00Z".to_owned(),
+                updated_at: "2026-08-22T00:00:00Z".to_owned(),
+            },
+            scope,
+        )
+        .unwrap();
+
+        assert_eq!(view.id, "legacy");
+        assert!(view.definition_error.is_some());
     }
 }

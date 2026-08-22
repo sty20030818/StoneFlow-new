@@ -1,8 +1,8 @@
-//! Task 用例编排：CRUD、列表与 Activity 记录。
+//! Task 用例编排：CRUD 与 Activity 记录。
 
 #![allow(async_fn_in_trait)]
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{json, Map, Value};
@@ -22,125 +22,14 @@ use crate::{
         OutboxOpKind, OutboxPayload, SyncEntityKind,
     },
     task::{
-        executor::{
-            apply_view_preset, build_update_summary, parse_view_key,
-            repository_lifecycle_for_preset, select_update_action, status_key,
-        },
+        executor::{build_update_summary, select_update_action, status_key},
         types::{
-            CreatePlacement, CreateTaskPersistenceRecord, TaskListDateFilter, TaskListQuery,
-            TaskPlacementQuery, TaskProjectRecord, TaskRecord, TaskScope, TaskSpaceRecord,
-            UpdateTaskPatch,
+            CreatePlacement, CreateTaskPersistenceRecord, TaskProjectRecord, TaskRecord,
+            TaskSpaceRecord, UpdateTaskPatch,
         },
     },
     ApplicationError,
 };
-
-/// 前端 Scope 在 Task 命令边界的序列化形状。
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TaskScopeInput {
-    #[serde(rename = "type")]
-    pub kind: TaskScopeKind,
-    pub space_id: Option<String>,
-}
-
-/// Scope 类型。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum TaskScopeKind {
-    All,
-    Space,
-}
-
-/// 默认列表页大小（首屏 + 续拉窗口）。
-pub const DEFAULT_TASK_LIST_PAGE_SIZE: u32 = 150;
-
-/// 列表日期筛选输入（与 page filter 对齐）。
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ListTasksDateFilterInput {
-    /// hasDate | noDate | range
-    pub mode: String,
-    #[serde(default)]
-    pub from: Option<String>,
-    #[serde(default)]
-    pub to: Option<String>,
-}
-
-/// Task 列表查询输入。
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ListTasksInput {
-    pub scope: TaskScopeInput,
-    pub view_key: String,
-    pub placement: ListTasksPlacementInput,
-    /// 可选 status 白名单；省略或空 = 不限。
-    #[serde(default)]
-    pub statuses: Option<Vec<WorkStatus>>,
-    /// 可选 priority 白名单；省略或空 = 不限。
-    #[serde(default)]
-    pub priorities: Option<Vec<i32>>,
-    /// 可选日期筛选。
-    #[serde(default)]
-    pub date_filter: Option<ListTasksDateFilterInput>,
-    /// 页大小；省略用默认。
-    #[serde(default)]
-    pub limit: Option<u32>,
-    /// opaque keyset cursor（上一页最后一条的 cursor）。
-    #[serde(default)]
-    pub cursor: Option<String>,
-}
-
-/// 分页列表输出。
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ListTasksPageDto {
-    pub items: Vec<TaskListItemDto>,
-    pub next_cursor: Option<String>,
-    /// 当前过滤条件下的任务总数；首屏即可定死滚动条总高。
-    pub total_count: u64,
-}
-
-/// Task 列表 placement 查询输入。
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ListTasksPlacementInput {
-    #[serde(rename = "kind")]
-    pub kind: ListTasksPlacementKind,
-    pub project_id: Option<String>,
-}
-
-/// Task 列表 placement 类型（未分配 Project = Standalone）。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum ListTasksPlacementKind {
-    All,
-    Project,
-    Standalone,
-}
-
-/// Task 列表单条记录。
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TaskListItemDto {
-    pub id: String,
-    pub space_id: String,
-    pub space_name: String,
-    pub space_slug: String,
-    pub project_id: Option<String>,
-    pub project_name: Option<String>,
-    pub title: String,
-    pub status: WorkStatus,
-    pub status_changed_at: String,
-    pub priority: i32,
-    pub planned_at: Option<String>,
-    pub due_at: Option<String>,
-    pub remind_at: Option<String>,
-    pub completed_at: Option<String>,
-    pub archived_at: Option<String>,
-    pub created_at: String,
-    pub updated_at: String,
-}
 
 /// Task 详情载荷。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -273,9 +162,6 @@ pub trait TaskPersistence: Send + Sync {
     async fn begin(&self) -> Result<Self::Connection, ApplicationError>;
     async fn commit(&self, connection: Self::Connection) -> Result<(), ApplicationError>;
     async fn get(&self, task_id: &str) -> Result<Option<TaskRecord>, ApplicationError>;
-    async fn list(&self, query: TaskListQuery) -> Result<Vec<TaskRecord>, ApplicationError>;
-    /// 与 list 相同过滤条件的任务总数（忽略 cursor/limit）。
-    async fn count(&self, query: TaskListQuery) -> Result<u64, ApplicationError>;
     async fn next_position(
         &self,
         connection: &Self::Connection,
@@ -331,19 +217,11 @@ pub trait TaskPersistence: Send + Sync {
 /// Task 编排所需的 Space 读取边界。
 pub trait TaskSpaceReader: Send + Sync {
     async fn get(&self, space_id: &str) -> Result<Option<TaskSpaceRecord>, ApplicationError>;
-    async fn list_by_ids(
-        &self,
-        space_ids: &[String],
-    ) -> Result<Vec<TaskSpaceRecord>, ApplicationError>;
 }
 
 /// Task 编排所需的 Project 读取边界。
 pub trait TaskProjectReader: Send + Sync {
     async fn get(&self, project_id: &str) -> Result<Option<TaskProjectRecord>, ApplicationError>;
-    async fn list_by_ids(
-        &self,
-        project_ids: &[String],
-    ) -> Result<Vec<TaskProjectRecord>, ApplicationError>;
 }
 
 /// Task 用例编排（不含 archive / restore / delete）。
@@ -380,79 +258,6 @@ where
             space_reader,
             project_reader,
         }
-    }
-
-    /// 列出 Task 列表（keyset 分页）。
-    pub async fn list_tasks(
-        &self,
-        input: ListTasksInput,
-    ) -> Result<ListTasksPageDto, ApplicationError> {
-        let scope = normalize_scope(&input.scope)?;
-        let view_preset = parse_view_key(&input.view_key)?;
-        let placement = normalize_list_placement(&input.placement)?;
-        let statuses = input
-            .statuses
-            .as_ref()
-            .filter(|items| !items.is_empty())
-            .cloned();
-        let limit = input
-            .limit
-            .unwrap_or(DEFAULT_TASK_LIST_PAGE_SIZE)
-            .clamp(1, 500);
-        let cursor = input
-            .cursor
-            .as_deref()
-            .map(decode_task_list_cursor)
-            .transpose()?;
-        let priorities = input
-            .priorities
-            .as_ref()
-            .filter(|items| !items.is_empty())
-            .cloned();
-        let date_filter = normalize_list_date_filter(input.date_filter.as_ref())?;
-        let list_query = TaskListQuery {
-            space_id: scope.space_id.clone(),
-            placement: placement.clone(),
-            lifecycle: repository_lifecycle_for_preset(view_preset),
-            statuses: statuses.clone(),
-            priorities: priorities.clone(),
-            date_filter: date_filter.clone(),
-            // 多取 1 条用于判断是否还有下一页；lifecycle 二次滤后可能不足，见下
-            limit: Some(limit.saturating_add(1)),
-            cursor,
-        };
-        // 总数与 list 同过滤、无分页；首屏即可锁定滚动条拇指高度
-        let total_count = self
-            .persistence
-            .count(TaskListQuery {
-                space_id: scope.space_id,
-                placement,
-                lifecycle: repository_lifecycle_for_preset(view_preset),
-                statuses,
-                priorities,
-                date_filter,
-                limit: None,
-                cursor: None,
-            })
-            .await?;
-        let mut tasks = self.persistence.list(list_query).await?;
-        tasks = apply_view_preset(tasks, view_preset);
-
-        let next_cursor = if tasks.len() as u32 > limit {
-            let last = &tasks[limit as usize - 1];
-            let cursor = encode_task_list_cursor(last.position, &last.id);
-            tasks.truncate(limit as usize);
-            Some(cursor)
-        } else {
-            None
-        };
-
-        let items = self.build_task_list(tasks).await?;
-        Ok(ListTasksPageDto {
-            items,
-            next_cursor,
-            total_count,
-        })
     }
 
     /// 读取 Task 详情。
@@ -1207,49 +1012,6 @@ where
         self.build_task_detail(updated).await
     }
 
-    async fn build_task_list(
-        &self,
-        tasks: Vec<TaskRecord>,
-    ) -> Result<Vec<TaskListItemDto>, ApplicationError> {
-        let space_map = self.load_space_map(&tasks).await?;
-        let project_map = self.load_project_map(&tasks).await?;
-
-        Ok(tasks
-            .into_iter()
-            .map(|item| {
-                let (space_name, space_slug) = space_map
-                    .get(&item.space_id)
-                    .map(|space| (space.name.clone(), normalize_slug(&space.name)))
-                    .unwrap_or_else(|| (item.space_id.clone(), "unknown".to_owned()));
-                let project_name = item
-                    .project_id
-                    .as_ref()
-                    .and_then(|project_id| project_map.get(project_id))
-                    .map(|project| project.name.clone());
-
-                TaskListItemDto {
-                    id: item.id,
-                    space_id: item.space_id,
-                    space_name,
-                    space_slug,
-                    project_id: item.project_id,
-                    project_name,
-                    title: item.title,
-                    status: item.status,
-                    status_changed_at: item.status_changed_at,
-                    priority: item.priority,
-                    due_at: item.due_at,
-                    planned_at: item.planned_at,
-                    remind_at: item.remind_at,
-                    completed_at: item.completed_at,
-                    archived_at: item.archived_at,
-                    created_at: item.created_at,
-                    updated_at: item.updated_at,
-                }
-            })
-            .collect())
-    }
-
     async fn build_task_detail(&self, item: TaskRecord) -> Result<TaskDetailDto, ApplicationError> {
         let space = self
             .space_reader
@@ -1319,42 +1081,6 @@ where
         }
 
         Ok(project)
-    }
-
-    async fn load_space_map(
-        &self,
-        tasks: &[TaskRecord],
-    ) -> Result<HashMap<String, TaskSpaceRecord>, ApplicationError> {
-        let space_ids = tasks
-            .iter()
-            .map(|item| item.space_id.clone())
-            .collect::<HashSet<_>>()
-            .into_iter()
-            .collect::<Vec<_>>();
-        let spaces = self.space_reader.list_by_ids(&space_ids).await?;
-
-        Ok(spaces
-            .into_iter()
-            .map(|item| (item.id.clone(), item))
-            .collect::<HashMap<_, _>>())
-    }
-
-    async fn load_project_map(
-        &self,
-        tasks: &[TaskRecord],
-    ) -> Result<HashMap<String, TaskProjectRecord>, ApplicationError> {
-        let project_ids = tasks
-            .iter()
-            .filter_map(|item| item.project_id.clone())
-            .collect::<HashSet<_>>()
-            .into_iter()
-            .collect::<Vec<_>>();
-        let projects = self.project_reader.list_by_ids(&project_ids).await?;
-
-        Ok(projects
-            .into_iter()
-            .map(|item| (item.id.clone(), item))
-            .collect::<HashMap<_, _>>())
     }
 
     async fn enqueue_task_operation(
@@ -1486,58 +1212,6 @@ where
     }
 }
 
-fn normalize_scope(input: &TaskScopeInput) -> Result<TaskScope, ApplicationError> {
-    match input.kind {
-        TaskScopeKind::All => Ok(TaskScope { space_id: None }),
-        TaskScopeKind::Space => {
-            let space_id = input
-                .space_id
-                .as_deref()
-                .ok_or_else(|| ApplicationError::validation("type=space 时必须提供 spaceId"))?;
-            Ok(TaskScope {
-                space_id: Some(validate_space_id(space_id)?),
-            })
-        }
-    }
-}
-
-fn normalize_list_placement(
-    input: &ListTasksPlacementInput,
-) -> Result<TaskPlacementQuery, ApplicationError> {
-    match input.kind {
-        ListTasksPlacementKind::All => Ok(TaskPlacementQuery::All),
-        ListTasksPlacementKind::Standalone => Ok(TaskPlacementQuery::Standalone),
-        ListTasksPlacementKind::Project => {
-            let project_id = input
-                .project_id
-                .as_deref()
-                .ok_or_else(|| ApplicationError::validation("kind=project 时必须提供 projectId"))?;
-            Ok(TaskPlacementQuery::Project(validate_project_id(
-                project_id,
-            )?))
-        }
-    }
-}
-
-fn normalize_list_date_filter(
-    input: Option<&ListTasksDateFilterInput>,
-) -> Result<Option<TaskListDateFilter>, ApplicationError> {
-    let Some(input) = input else {
-        return Ok(None);
-    };
-    match input.mode.as_str() {
-        "hasDate" => Ok(Some(TaskListDateFilter::HasDate)),
-        "noDate" => Ok(Some(TaskListDateFilter::NoDate)),
-        "range" => Ok(Some(TaskListDateFilter::Range {
-            from: input.from.clone(),
-            to: input.to.clone(),
-        })),
-        other => Err(ApplicationError::validation(format!(
-            "未知 dateFilter.mode: {other}"
-        ))),
-    }
-}
-
 fn normalize_create_placement(
     input: &CreateTaskPlacementInput,
 ) -> Result<CreatePlacement, ApplicationError> {
@@ -1580,26 +1254,6 @@ fn normalize_timestamp(
 
 fn normalize_optional_long_text(value: Option<String>) -> Option<String> {
     value.filter(|text| !text.trim().is_empty())
-}
-
-fn encode_task_list_cursor(position: i64, id: &str) -> String {
-    format!("{position}\u{1f}{id}")
-}
-
-fn decode_task_list_cursor(raw: &str) -> Result<crate::task::TaskListCursor, ApplicationError> {
-    let (position_raw, id) = raw.split_once('\u{1f}').ok_or_else(|| {
-        ApplicationError::validation("列表 cursor 无效")
-    })?;
-    let position = position_raw
-        .parse::<i64>()
-        .map_err(|_| ApplicationError::validation("列表 cursor 无效"))?;
-    if id.is_empty() {
-        return Err(ApplicationError::validation("列表 cursor 无效"));
-    }
-    Ok(crate::task::TaskListCursor {
-        position,
-        id: id.to_owned(),
-    })
 }
 
 fn normalize_optional_long_text_option(value: Option<String>) -> Option<String> {

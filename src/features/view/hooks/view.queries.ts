@@ -1,17 +1,14 @@
 import { infiniteQueryOptions, useInfiniteQuery, useQuery } from '@tanstack/react-query'
 
 import { listViews, runTaskView } from '../api/views'
-import type { RunTaskViewInput, RunTaskViewResult, TaskListItem, View } from '@/shared/types'
+import type { RunTaskViewInput, RunTaskViewResult, Scope, TaskListItem } from '@/shared/types'
 
 import { viewKeys } from './view.keys'
 
-const EMPTY_VIEWS: View[] = []
-
-export function useViewsQuery() {
+export function useViewsQuery(scope: Scope) {
 	return useQuery({
-		queryKey: viewKeys.list(),
-		queryFn: listViews,
-		placeholderData: EMPTY_VIEWS,
+		queryKey: viewKeys.list(scope),
+		queryFn: () => listViews(scope),
 	})
 }
 
@@ -20,7 +17,6 @@ export function taskViewRunInfiniteQueryOptions(input: RunTaskViewInput) {
 	const keyInput: RunTaskViewInput = {
 		scope: input.scope,
 		viewId: input.viewId,
-		viewKey: input.viewKey,
 		...(input.filters ? { filters: input.filters } : {}),
 	}
 	return infiniteQueryOptions({
@@ -40,7 +36,7 @@ export function useTaskViewRunInfiniteQuery(input: RunTaskViewInput | null) {
 		...taskViewRunInfiniteQueryOptions(
 			input ?? {
 				scope: { type: 'all' },
-				viewKey: 'all',
+				viewId: '',
 			},
 		),
 		enabled: Boolean(input),

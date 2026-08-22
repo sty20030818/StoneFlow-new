@@ -4,8 +4,8 @@ use sea_orm::{DatabaseConnection, DatabaseTransaction, TransactionTrait};
 use stoneflow_application::{
     operation::OutboxEnqueueRecord,
     view::{
-        CreateViewPersistenceRecord, UpdateViewPatch, ViewListQuery, ViewLookupReader,
-        ViewPersistence, ViewProjectLookupRecord, ViewRecord, ViewService, ViewSpaceLookupRecord,
+        CreateViewPersistenceRecord, UpdateViewPatch, ViewLookupReader, ViewPersistence,
+        ViewProjectLookupRecord, ViewRecord, ViewService, ViewSpaceLookupRecord, ViewTaskPage,
         ViewTaskReader, ViewTaskRecord,
     },
     ApplicationError,
@@ -57,18 +57,14 @@ impl ViewPersistence for ViewPersistenceAdapter {
             .map(|view| view.map(map_view))
             .map_err(from_display)
     }
-    async fn list(&self, _: ViewListQuery) -> Result<Vec<ViewRecord>, ApplicationError> {
+    async fn list(&self) -> Result<Vec<ViewRecord>, ApplicationError> {
         self.views
             .list()
             .await
             .map(|views| views.into_iter().map(map_view).collect())
             .map_err(from_display)
     }
-    async fn next_position(
-        &self,
-        connection: &Self::Connection,
-        _: stoneflow_domain::ViewEntityKind,
-    ) -> Result<i64, ApplicationError> {
+    async fn next_position(&self, connection: &Self::Connection) -> Result<i64, ApplicationError> {
         self.views
             .next_position(connection)
             .await
@@ -145,11 +141,22 @@ impl ViewPersistence for ViewPersistenceAdapter {
     }
 }
 impl ViewTaskReader for ViewPersistenceAdapter {
-    async fn list_candidates(
+    async fn run_query(
         &self,
         query: stoneflow_application::view::ViewTaskQuery,
-    ) -> Result<Vec<ViewTaskRecord>, ApplicationError> {
-        self.tasks
+    ) -> Result<ViewTaskPage, ApplicationError> {
+        let total_count = if query.cursor.is_none() {
+            Some(
+                self.tasks
+                    .count_for_view(&query)
+                    .await
+                    .map_err(from_display)?,
+            )
+        } else {
+            None
+        };
+        let items = self
+            .tasks
             .list_for_view(&query)
             .await
             .map(|tasks| {
@@ -160,7 +167,6 @@ impl ViewTaskReader for ViewPersistenceAdapter {
                         space_id: task.space_id,
                         project_id: task.project_id,
                         title: task.title,
-                        note: task.note,
                         status: work_status_to_domain(task.status),
                         status_changed_at: task.status_changed_at,
                         priority: task.priority,
@@ -169,11 +175,23 @@ impl ViewTaskReader for ViewPersistenceAdapter {
                         remind_at: task.remind_at,
                         position: task.position,
                         completed_at: task.completed_at,
+                        archived_at: task.archived_at,
                         created_at: task.created_at,
                         updated_at: task.updated_at,
                     })
                     .collect()
             })
+            .map_err(from_display)?;
+        Ok(ViewTaskPage { items, total_count })
+    }
+
+    async fn count_query(
+        &self,
+        query: stoneflow_application::view::ViewTaskQuery,
+    ) -> Result<u64, ApplicationError> {
+        self.tasks
+            .count_for_view(&query)
+            .await
             .map_err(from_display)
     }
 }
@@ -213,5 +231,71 @@ impl ViewLookupReader for ViewPersistenceAdapter {
                     .collect()
             })
             .map_err(from_display)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use stoneflow_application::{
+        task::TaskQueryCursor,
+        view::{
+            FilterQueryValue, TaskScopeInput, TaskScopeKind, TaskViewBaseKey, TaskViewContext,
+            ViewDateBoundaries, ViewTaskQuery,
+        },
+    };
+    use stoneflow_test_support::TestDatabase;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn task_query_counts_only_the_first_page_and_supports_count_only() {
+        let database = TestDatabase::bootstrap_in_memory()
+            .await
+            .expect("test database should bootstrap");
+        let connection = database.connection().clone();
+        let adapter = ViewPersistenceAdapter {
+            views: ViewRepository::new(connection.clone()),
+            tasks: TaskRepository::new(connection.clone()),
+            spaces: SpaceRepository::new(connection.clone()),
+            projects: ProjectRepository::new(connection.clone()),
+            outbox: OutboxRepository::new(connection),
+        };
+        let query = ViewTaskQuery {
+            scope: TaskScopeInput {
+                kind: TaskScopeKind::All,
+                space_id: None,
+            },
+            context: TaskViewContext::All,
+            base_view_key: TaskViewBaseKey::All,
+            filters: FilterQueryValue::default(),
+            dates: ViewDateBoundaries {
+                today_start: "2026-08-22T00:00:00+08:00".to_owned(),
+                tomorrow_start: "2026-08-23T00:00:00+08:00".to_owned(),
+                day_after_tomorrow_start: "2026-08-24T00:00:00+08:00".to_owned(),
+                next_week_start: "2026-08-24T00:00:00+08:00".to_owned(),
+            },
+            limit: 1,
+            cursor: None,
+        };
+
+        assert_eq!(
+            adapter.run_query(query.clone()).await.unwrap().total_count,
+            Some(0)
+        );
+        assert_eq!(adapter.count_query(query.clone()).await.unwrap(), 0);
+        assert_eq!(
+            adapter
+                .run_query(ViewTaskQuery {
+                    cursor: Some(TaskQueryCursor {
+                        position: 0,
+                        id: "cursor".to_owned(),
+                    }),
+                    ..query
+                })
+                .await
+                .unwrap()
+                .total_count,
+            None
+        );
     }
 }

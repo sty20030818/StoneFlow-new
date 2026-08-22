@@ -128,22 +128,12 @@ export function bindShellCommand(command: Command, adapter: ShellCommandAdapter)
 			return withDomainHandler(command, adapter.openFilterMenu, () =>
 				bindOpenFilterMenuCommand(command, adapter),
 			)
-		case COMMAND_IDS.filterToggleCompleted:
-			return withDomainHandler(command, adapter.toggleCompletedFilter, (run) => ({
-				...command,
-				isEnabled: (ctx) => ctx.view.filterCapabilities.supportsToggleCompleted,
-				getDisabledReason: (ctx) =>
-					ctx.view.filterCapabilities.supportsToggleCompleted
-						? undefined
-						: '当前页面不支持完成筛选',
-				run,
-			}))
 		case COMMAND_IDS.filterClearAll:
 			return withDomainHandler(command, adapter.clearAllFilters, (run) => ({
 				...command,
 				isEnabled: (ctx) => ctx.view.filterCapabilities.supportsClearAll,
 				getDisabledReason: (ctx) =>
-					ctx.view.filterCapabilities.supportsClearAll ? undefined : '当前页面没有可清除的筛选',
+					ctx.view.filterCapabilities.supportsClearAll ? undefined : '当前视图没有临时筛选',
 				run,
 			}))
 		case COMMAND_IDS.displayOpenOptions:

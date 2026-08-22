@@ -526,6 +526,8 @@
   _对应验收标准：AC-1, AC-11, AC-41, AC-44_
 
 - [ ] T120 完成阶段 M 收口：在 U5 通过后逐条核对 Definition of Done 与全部当前有效验收标准（不含明确延期的 AC-37），在本文件完成记录留下证据；运行根级 `bun run typecheck`、`bun run lint`、`bun run lint:boundaries`、`bun run format:check`、`bun run test:run`、`bun run build`、`bun run test:rust` 与两项 UI 扫描，再归档并更新 `Documents/_INDEX.md`。
+  - 2026-08-22：独立任务 [Task View Workspace Hard Cut](../../../.scratch/task-view-workspace-hard-cut/spec.md) 已完成静态实现与自动化验证：Default View / Saved View / Filter Draft 术语、每页默认矩阵、Saved View `scope + context + baseViewKey + filters`、条件式 FilterBar 与唯一 Task Workspace 已落地；真实 Tauri smoke 仍待任务发起人验收。该破坏性查询重构不回填 T107–T118 历史，也不代替 T111、U5 或本 T120 的门禁。
+  - 2026-08-22：上述硬切进一步完成 SQL 精确筛选与 keyset 分页、首屏计数/续页免 COUNT、侧栏 count-only、无效旧 Saved View 行隔离；当前工作树已通过 typecheck、lint（仅既有 warning）、边界/动画/格式扫描、前端 881 项、脚本 157 项、Rust 233 项（外部数据库 7 项按配置忽略）、production build 与 Clippy `-D warnings`。这是 U5 前的工程证据，不代签 T111/T119，也不将 T120 勾选为完成。
   - 未解决事项先转成独立后续任务，再将目录移至 `Documents/98-归档/02-已完成重构/2026-08-12-heroui-ui-interaction-system-refactor/` 并冻结 SPEC/PLAN/TASKS；获准提交时引用 PLAN 的阶段 M 文案，不自动提交。
   _对应验收标准：AC-1, AC-2, AC-38, AC-40, AC-41_
 

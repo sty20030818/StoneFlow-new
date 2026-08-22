@@ -114,7 +114,6 @@ describe('bindShellCommand / ShellCommandAdapter', () => {
 		[COMMAND_IDS.openSpace, 'Space 搜索尚未接入'],
 		[COMMAND_IDS.openRecent, '最近访问选择尚未接入'],
 		[COMMAND_IDS.projectRename, '项目命令尚未接入'],
-		[COMMAND_IDS.filterToggleCompleted, '当前页面不支持完成筛选'],
 		[COMMAND_IDS.systemOpenDataFolder, '系统命令尚未接入'],
 		[COMMAND_IDS.viewSuggestFilters, '视图建议命令尚未接入'],
 	] as const)('未接入命令 %s 保持 disabled', async (commandId, reason) => {
@@ -289,7 +288,6 @@ function createActions(overrides: Partial<ShellCommandActions> = {}): ShellComma
 		toggleSidebar: vi.fn(),
 		togglePreview: vi.fn(),
 		openFilterMenu: vi.fn(),
-		toggleCompletedFilter: vi.fn(),
 		clearAllFilters: vi.fn(),
 		openDisplayOptions: vi.fn(),
 		goBack: vi.fn(),

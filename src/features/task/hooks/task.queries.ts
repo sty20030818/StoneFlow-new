@@ -9,40 +9,27 @@ import {
 	queryOptions,
 	useInfiniteQuery,
 	useQuery,
-	useSuspenseQuery,
 } from '@tanstack/react-query'
 
-import { getDefaultTaskViewKey, getTaskDetail, listTasks } from '@/features/task/api/tasks'
+import { countTaskQuery, getTaskDetail, runTaskQuery } from '@/features/task/api/tasks'
 import { listTaskLinks } from '@/features/task/api/taskLinks'
-import type { ListTasksInput, TaskListItem } from '@/shared/types'
+import type { CountTaskQueryInput, RunTaskQueryInput, TaskListItem } from '@/shared/types'
 
 import { taskKeys } from './task.keys'
 
-function normalizeListTasksInput(input: ListTasksInput): ListTasksInput {
-	return {
-		...input,
-		viewKey: input.viewKey ?? getDefaultTaskViewKey(),
+/** Default View 查询：key 不含 cursor/limit，分页参数只走 pageParam。 */
+function taskQueryInfiniteQueryOptions(input: RunTaskQueryInput) {
+	const keyInput: RunTaskQueryInput = {
+		scope: input.scope,
+		context: input.context,
+		baseViewKey: input.baseViewKey,
+		filters: input.filters,
 	}
-}
-
-/** 列表 infinite query：key 不含 cursor，cursor 走 pageParam */
-export function taskListInfiniteQueryOptions(input: ListTasksInput) {
-	const base = normalizeListTasksInput(input)
-	// key 用稳定字段，去掉 cursor/limit 避免每页新 key；下推筛选必须进 key
-	const keyInput: ListTasksInput = {
-		scope: base.scope,
-		viewKey: base.viewKey,
-		placement: base.placement,
-		...(base.statuses ? { statuses: base.statuses } : {}),
-		...(base.priorities?.length ? { priorities: base.priorities } : {}),
-		...(base.dateFilter ? { dateFilter: base.dateFilter } : {}),
-	}
-
 	return infiniteQueryOptions({
-		queryKey: taskKeys.list(keyInput),
+		queryKey: taskKeys.query(keyInput),
 		queryFn: ({ pageParam }) =>
-			listTasks({
-				...base,
+			runTaskQuery({
+				...keyInput,
 				cursor: pageParam ?? null,
 			}),
 		initialPageParam: null as string | null,
@@ -50,30 +37,15 @@ export function taskListInfiniteQueryOptions(input: ListTasksInput) {
 	})
 }
 
-/**
- * 列表查询配置（单页；优先用 infinite）。
- */
-export function taskListQueryOptions(input: ListTasksInput) {
-	const normalizedInput = normalizeListTasksInput(input)
+export function useTaskQueryInfiniteQuery(input: RunTaskQueryInput) {
+	return useInfiniteQuery(taskQueryInfiniteQueryOptions(input))
+}
 
-	return queryOptions({
-		queryKey: [
-			...taskKeys.list(normalizedInput),
-			'page',
-			normalizedInput.cursor ?? 'head',
-		] as const,
-		queryFn: () => listTasks(normalizedInput),
+export function useTaskCountQuery(input: CountTaskQueryInput) {
+	return useQuery({
+		queryKey: taskKeys.count(input),
+		queryFn: () => countTaskQuery(input),
 	})
-}
-
-/** 订阅无限列表 */
-export function useTaskListInfiniteQuery(input: ListTasksInput) {
-	return useInfiniteQuery(taskListInfiniteQueryOptions(input))
-}
-
-/** 订阅任务列表（单页）；优先使用 {@link useTaskListInfiniteQuery}。 */
-export function useTaskListQuery(input: ListTasksInput) {
-	return useQuery(taskListQueryOptions(input))
 }
 
 /** 详情查询配置（route loader `ensureQueryData` 与页内 query 共用）。 */
@@ -93,12 +65,8 @@ export function useTaskDetailQuery(taskId: string | null | undefined) {
 }
 
 /** Suspense 详情；调用方须保证 taskId 有效。 */
-export function useSuspenseTaskDetailQuery(taskId: string) {
-	return useSuspenseQuery(taskDetailQueryOptions(taskId))
-}
-
 /** 任务链接列表查询配置。 */
-export function taskLinksQueryOptions(taskId: string) {
+function taskLinksQueryOptions(taskId: string) {
 	return queryOptions({
 		queryKey: taskKeys.links(taskId),
 		queryFn: () => listTaskLinks({ taskId }),

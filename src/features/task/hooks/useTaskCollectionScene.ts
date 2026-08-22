@@ -52,8 +52,6 @@ export type TaskCollectionSceneInput = {
 	displayPageKey: TaskDisplayPageKey
 	/** scene 已订阅的 display；避免 collection 再 hook 一次 */
 	display: UseTaskDisplayOptionsResult
-	projects?: ProjectOption[]
-	supportsProject: boolean
 	fallbackSubtitle: string | ((task: TaskListItem) => string)
 	activeTaskId: string | null
 	onCreateTask: () => void

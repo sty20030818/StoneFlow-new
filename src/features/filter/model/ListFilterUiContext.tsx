@@ -13,8 +13,9 @@ export type FilterProjectOption = {
 
 export type ListFilterUiValue = {
 	session: ListFilterSession
+	/** 省略表示当前查询 context 已固定归属，不提供 Project 筛选。 */
 	projects?: FilterProjectOption[]
-	/** 是否可覆盖当前自定义 View */
+	/** 是否可覆盖当前 Saved View */
 	canOverwriteView?: boolean
 	/** Save：create 需 name；overwrite 可无 name */
 	onSave?: (input: { mode: 'create' | 'overwrite'; name?: string }) => Promise<void>

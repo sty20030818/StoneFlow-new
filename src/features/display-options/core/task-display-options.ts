@@ -50,8 +50,6 @@ export type TaskDisplayOptions = {
 	orderBy: TaskDisplayOrderBy
 	orderDirection: TaskDisplayOrderDirection
 	completedOrder: TaskDisplayCompletedOrder
-	/** 是否显示已完成/已取消任务（对齐 Linear Completed issues；非 Filter chip） */
-	showCompleted: boolean
 	showEmptyGroups: boolean
 	visibleProperties: TaskDisplayPropertyKey[]
 }
@@ -72,7 +70,6 @@ export const taskDisplayOptionsSchema = z.object({
 	orderBy: taskDisplayOrderBySchema,
 	orderDirection: taskDisplayOrderDirectionSchema,
 	completedOrder: taskDisplayCompletedOrderSchema,
-	showCompleted: z.boolean(),
 	showEmptyGroups: z.boolean(),
 	visibleProperties: z.array(taskDisplayPropertyKeySchema),
 })

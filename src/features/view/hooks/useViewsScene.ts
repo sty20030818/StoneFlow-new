@@ -1,28 +1,32 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
 
 import {
+	openProjectDetail,
+	openSection,
 	openView,
 	resolveBreadcrumb,
 	resolveShellRouteScope,
 	useCurrentShellRoute,
 } from '@/app/navigation'
-import { useDialogStore } from '@/features/shell-dialogs'
 import { createTaskDisplayViewPageKey, useTaskDisplayOptions } from '@/features/display-options'
-import {
-	adaptFilterQueryToViewFilters,
-	useListFilterSession,
-	useRegisterFilterCommandAdapter,
-} from '@/features/filter'
+import { useListFilterSession, useRegisterFilterCommandAdapter } from '@/features/filter'
 import { useEntityDetailController } from '@/features/entity-detail'
-import { useProjectOptions } from '@/features/project'
+import { projectDetailQueryOptions, useProjectOptions } from '@/features/project'
+import { useDialogStore } from '@/features/shell-dialogs'
 import { useSpaces } from '@/features/space'
 import { useTaskCollectionScene } from '@/features/task'
+import { getDefaultTaskViews } from '@/features/task-workspace'
 import { useTaskChangedListener } from '@/shared/events'
-import { EMPTY_FILTER_QUERY } from '@/shared/types'
-import type { View } from '@/shared/types'
+import {
+	EMPTY_FILTER_QUERY,
+	type CreateViewInput,
+	type Scope,
+	type TaskViewContext,
+	type View,
+} from '@/shared/types'
 
-import { migrateViewPresentationToDisplay } from '../model/migrateViewPresentationToDisplay'
 import {
 	useCreateViewMutation,
 	useDeleteViewMutation,
@@ -30,158 +34,197 @@ import {
 } from './view.mutations'
 import { flattenTaskViewPages, useTaskViewRunInfiniteQuery, useViewsQuery } from './view.queries'
 
-const EMPTY_TASK_VIEWS: View[] = []
-let viewPresentationMigrationStarted = false
+const EMPTY_VIEWS: View[] = []
 
-/**
- * Views 页唯一 wiring：视图轨 / run / 任务板 / 编辑器。
- * 任务写路径只组合 task public；不 import layout。
- */
-export function useViewsScene() {
+export function resolveSavedViewWorkspaceContext(
+	context: TaskViewContext | undefined,
+	scope: Scope,
+) {
+	if (context?.kind === 'standalone') {
+		return {
+			createDraft: { placement: 'standalone' as const },
+			createProjectId: null,
+			supportsProject: false,
+			showSpaceLabel: scope.type === 'all',
+		}
+	}
+	if (context?.kind === 'project') {
+		return {
+			createDraft: { projectId: context.projectId },
+			createProjectId: context.projectId,
+			supportsProject: false,
+			showSpaceLabel: scope.type === 'all',
+		}
+	}
+	return {
+		createDraft: { status: 'todo' as const },
+		createProjectId: null,
+		supportsProject: context?.kind === 'all',
+		showSpaceLabel: scope.type === 'all',
+	}
+}
+
+function useSavedViewEditor(scope: ReturnType<typeof resolveShellRouteScope>) {
+	const createView = useCreateViewMutation()
+	const updateView = useUpdateViewMutation()
+	const [open, setOpen] = useState(false)
+	const [view, setView] = useState<View | null>(null)
+	const [isSubmitting, setIsSubmitting] = useState(false)
+	const projects = useProjectOptions(scope)
+
+	return {
+		open,
+		view,
+		projects,
+		isSubmitting,
+		openCreate: () => {
+			setView(null)
+			setOpen(true)
+		},
+		openEdit: (nextView: View) => {
+			setView(nextView)
+			setOpen(true)
+		},
+		onClose: () => {
+			setOpen(false)
+			setView(null)
+		},
+		onCreate: async (input: Omit<CreateViewInput, 'scope'>) => {
+			setIsSubmitting(true)
+			try {
+				await createView.mutateAsync({ ...input, scope } satisfies CreateViewInput)
+			} finally {
+				setIsSubmitting(false)
+			}
+		},
+		onUpdate: async (input: Parameters<typeof updateView.mutateAsync>[0]) => {
+			setIsSubmitting(true)
+			try {
+				await updateView.mutateAsync(input)
+			} finally {
+				setIsSubmitting(false)
+			}
+		},
+	}
+}
+
+export function useSavedViewLibraryScene() {
 	const shellRoute = useCurrentShellRoute()
 	const scope = resolveShellRouteScope(shellRoute)
 	const spaceId = shellRoute.spaceId
 	const navigate = useNavigate({ from: '/' })
-	const { viewId: routeViewId } = useParams({ strict: false }) as { viewId?: string }
-	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
-	const entityDetailController = useEntityDetailController()
-	const activeDetail = entityDetailController.activeDetail
-	const taskViewsQuery = useViewsQuery()
-	const taskViews = taskViewsQuery.data ?? EMPTY_TASK_VIEWS
+	const viewsQuery = useViewsQuery(scope)
+	const deleteView = useDeleteViewMutation()
+	const editor = useSavedViewEditor(scope)
+	const [search, setSearch] = useState('')
+	const views = viewsQuery.data ?? EMPTY_VIEWS
+	const normalizedSearch = search.trim().toLocaleLowerCase('zh-CN')
+	const visibleViews = normalizedSearch
+		? views.filter((view) => view.name.toLocaleLowerCase('zh-CN').includes(normalizedSearch))
+		: views
 
-	// 一次性数据清洗：raw 行 sort/group → display（自包含，不污染产品 View）
-	useEffect(() => {
-		if (viewPresentationMigrationStarted || !taskViewsQuery.isSuccess) {
-			return
-		}
-		viewPresentationMigrationStarted = true
-		void migrateViewPresentationToDisplay().catch(() => {
-			viewPresentationMigrationStarted = false
-		})
-	}, [taskViewsQuery.isSuccess])
+	return {
+		breadcrumbItems: resolveBreadcrumb({ route: shellRoute }),
+		views: visibleViews,
+		status: viewsQuery.isError
+			? 'error'
+			: viewsQuery.isLoading || viewsQuery.isPending
+				? 'loading'
+				: 'ready',
+		search,
+		setSearch,
+		editor,
+		openView: (view: View) =>
+			void navigate({ to: openView(scope, view.id, spaceId) as never, search: {} as never }),
+		deleteView: async (view: View) => {
+			await deleteView.mutateAsync(view.id)
+		},
+	}
+}
 
-	const createTaskView = useCreateViewMutation()
-	const updateTaskView = useUpdateViewMutation()
-	const deleteTaskView = useDeleteViewMutation()
+export function useSavedViewWorkspaceScene() {
+	const shellRoute = useCurrentShellRoute()
+	const scope = resolveShellRouteScope(shellRoute)
+	const spaceId = shellRoute.spaceId
+	const navigate = useNavigate({ from: '/' })
+	const { viewId = '' } = useParams({ strict: false }) as { viewId?: string }
+	const viewsQuery = useViewsQuery(scope)
+	const views = viewsQuery.data ?? EMPTY_VIEWS
+	const activeView = views.find((view) => view.id === viewId) ?? null
+	const runnableView = activeView?.definitionError ? null : activeView
+	const projectId = runnableView?.context.kind === 'project' ? runnableView.context.projectId : ''
+	const projectQuery = useQuery({
+		...projectDetailQueryOptions(projectId),
+		enabled: projectId.length > 0,
+	})
+	const defaultViews = runnableView
+		? getDefaultTaskViews({
+				context: runnableView.context,
+				projectCompleted: Boolean(projectQuery.data?.completedAt),
+			})
+		: { options: [], defaultKey: 'incomplete' as const }
+	const displayPageKey = createTaskDisplayViewPageKey(activeView?.id ?? 'missing')
+	const display = useTaskDisplayOptions(displayPageKey)
+	const viewDefinitionPending = viewsQuery.isLoading || viewsQuery.isPending
+	const filterSession = useListFilterSession({
+		base: viewDefinitionPending ? null : (runnableView?.filters ?? EMPTY_FILTER_QUERY),
+	})
 	const projectOptions = useProjectOptions(scope)
 	const { spaces } = useSpaces()
-	const [editorOpen, setEditorOpen] = useState(false)
-	const [editingView, setEditingView] = useState<View | null>(null)
-	const [isSavingView, setIsSavingView] = useState(false)
+	const activeDetail = useEntityDetailController().activeDetail
+	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
+	const createView = useCreateViewMutation()
+	const updateView = useUpdateViewMutation()
+	const deleteView = useDeleteViewMutation()
+	const editor = useSavedViewEditor(scope)
+	const workspaceContext = resolveSavedViewWorkspaceContext(runnableView?.context, scope)
+	const openCreateTask = () => openTaskCreateDialog(workspaceContext.createDraft)
+	useRegisterFilterCommandAdapter({ session: filterSession })
 
-	const visibleViews = taskViews
-	const activeView = useMemo(() => {
-		if (!routeViewId) {
-			return visibleViews[0] ?? null
-		}
-
-		return taskViews.find((view) => view.id === routeViewId) ?? visibleViews[0] ?? null
-	}, [routeViewId, taskViews, visibleViews])
-
-	const displayPageKey = useMemo(
-		() => createTaskDisplayViewPageKey(activeView?.id ?? 'empty-state'),
-		[activeView?.id],
+	const taskRunQuery = useTaskViewRunInfiniteQuery(
+		runnableView
+			? {
+					scope,
+					viewId: runnableView.id,
+					...(filterSession.dirty ? { filters: filterSession.temp } : {}),
+				}
+			: null,
 	)
-
-	// base = View 定义；temp = URL `f`
-	const viewFilterBase =
-		activeView?.kind === 'custom' ? (activeView.filters ?? EMPTY_FILTER_QUERY) : EMPTY_FILTER_QUERY
-	const filterSession = useListFilterSession({ base: viewFilterBase })
-	const display = useTaskDisplayOptions(displayPageKey)
-
-	useRegisterFilterCommandAdapter({
-		session: filterSession,
-		showCompleted: display.options.showCompleted,
-		onToggleCompleted: () => {
-			void display.actions.applyPartial({
-				showCompleted: !display.options.showCompleted,
-			})
-		},
-	})
-
-	// 仅 dirty 时用 temp 覆盖 View.filters；sort/group 只走 Display 客户端呈现
-	const taskRunInput = activeView
-		? {
-				scope,
-				viewId: activeView.kind === 'custom' ? activeView.id : null,
-				viewKey: activeView.systemKey,
-				...(filterSession.dirty
-					? { filters: adaptFilterQueryToViewFilters(filterSession.temp) }
-					: {}),
-			}
-		: null
-	const taskRunQuery = useTaskViewRunInfiniteQuery(taskRunInput)
-	const viewItems = useMemo(
+	const items = useMemo(
 		() => flattenTaskViewPages(taskRunQuery.data?.pages),
 		[taskRunQuery.data?.pages],
 	)
-	const viewTotalCount = taskRunQuery.data?.pages[0]?.totalCount ?? 0
 	const boardStatus =
-		taskViewsQuery.isLoading ||
-		taskViewsQuery.isPending ||
-		(activeView && (taskRunQuery.isLoading || taskRunQuery.isPending))
+		viewsQuery.isLoading || viewsQuery.isPending || (runnableView && taskRunQuery.isPending)
 			? 'loading'
-			: activeView
-				? taskRunQuery.isError
-					? 'error'
-					: 'ready'
+			: runnableView && taskRunQuery.isError
+				? 'error'
 				: 'ready'
-	const visibleTasks = viewItems
-	const breadcrumbItems = useMemo(
-		() =>
-			resolveBreadcrumb({
-				route: shellRoute,
-				viewName: activeView?.name ?? null,
-			}),
-		[activeView?.name, shellRoute],
-	)
-	useEffect(() => {
-		if (
-			taskViewsQuery.isLoading ||
-			taskViewsQuery.isPending ||
-			visibleViews.length === 0 ||
-			!activeView
-		) {
-			return
-		}
-
-		const nextViewValue = activeView.id
-		if (routeViewId === nextViewValue) {
-			return
-		}
-
-		void navigate({ to: openView(scope, nextViewValue, spaceId) as never, replace: true })
-	}, [
-		activeView,
-		navigate,
-		routeViewId,
-		scope,
-		spaceId,
-		taskViewsQuery.isLoading,
-		taskViewsQuery.isPending,
-		visibleViews.length,
-	])
-
 	useTaskChangedListener(scope, () => {
 		void taskRunQuery.refetch()
 	})
 	const taskCollection = useTaskCollectionScene({
-		source: { items: visibleTasks, status: boardStatus },
+		source: { items, status: boardStatus },
 		displayPageKey,
 		display,
-		supportsProject: false,
-		fallbackSubtitle: activeView?.name ?? '当前视图',
+		fallbackSubtitle:
+			runnableView?.context.kind === 'standalone'
+				? '独立事项'
+				: runnableView?.context.kind === 'project'
+					? (projectQuery.data?.name ?? runnableView.name)
+					: scope.type === 'all'
+						? (task) => {
+								const spaceLabel = task.spaceName ?? '未命名空间'
+								return task.projectName ? `${spaceLabel} · ${task.projectName}` : spaceLabel
+							}
+						: (task) => task.projectName ?? '独立事项',
 		activeTaskId: activeDetail?.kind === 'task' ? activeDetail.id : null,
-		onCreateTask: () => {
-			if (activeView) {
-				openTaskCreateDialog({ status: 'todo' })
-				return
-			}
-			openCreateEditor()
-		},
+		onCreateTask: openCreateTask,
 		projectOptions,
 		spaces,
-		showProjectCellOptions: false,
+		showProjectCellOptions: workspaceContext.supportsProject,
+		showSpaceLabel: workspaceContext.showSpaceLabel,
+		createProjectId: workspaceContext.createProjectId,
 		hasNextPage: Boolean(taskRunQuery.hasNextPage),
 		isFetchingNextPage: taskRunQuery.isFetchingNextPage,
 		fetchNextPage: () => {
@@ -194,131 +237,100 @@ export function useViewsScene() {
 				? taskRunQuery.error.message
 				: '加载更多失败'
 			: null,
-		totalCount: viewTotalCount,
-		loadedCount: visibleTasks.length,
+		totalCount:
+			typeof taskRunQuery.data?.pages[0]?.totalCount === 'number'
+				? taskRunQuery.data.pages[0].totalCount
+				: undefined,
+		loadedCount: items.length,
 		empty: {
-			emptyActionLabel: activeView ? '创建任务' : '创建视图',
-			emptyDescription: activeView
-				? `视图「${activeView.name}」下还没有符合条件的任务。点「创建任务」新增一项，或者调整一下视图条件再看看。`
-				: '这里会显示你整理好的任务视图，现在还没准备好。点「创建视图」先建一个，后面筛选、回看和聚焦都会更顺手。',
-			emptyTitle: activeView ? '当前没有任务' : '当前还没有视图',
+			emptyActionLabel: '创建任务',
+			emptyDescription: runnableView
+				? `视图「${runnableView.name}」下没有符合条件的任务。`
+				: '这个保存视图不存在，或不属于当前范围。',
+			emptyTitle: runnableView ? '当前没有任务' : '找不到保存视图',
 		},
 	})
 
-	function navigateToView(view: View) {
-		void navigate({ to: openView(scope, view.id, spaceId) as never })
-	}
-
-	function openCreateEditor() {
-		setEditingView(null)
-		setEditorOpen(true)
-	}
-
-	function openEditEditor(view: View) {
-		if (view.kind !== 'custom') {
-			return
-		}
-		setEditingView(view)
-		setEditorOpen(true)
-	}
-
-	function closeEditor() {
-		setEditorOpen(false)
-		setEditingView(null)
-	}
-
-	async function handleCreateView(input: Parameters<typeof createTaskView.mutateAsync>[0]) {
-		setIsSavingView(true)
-		try {
-			const created = await createTaskView.mutateAsync({ ...input, scope })
-			void navigate({ to: openView(scope, created.id, spaceId) as never })
-		} finally {
-			setIsSavingView(false)
-		}
-	}
-
-	async function handleUpdateView(input: Parameters<typeof updateTaskView.mutateAsync>[0]) {
-		setIsSavingView(true)
-		try {
-			await updateTaskView.mutateAsync(input)
-		} finally {
-			setIsSavingView(false)
-		}
-	}
-
-	async function handleDeleteView(view: View) {
-		if (view.kind !== 'custom') {
-			return
-		}
-		await deleteTaskView.mutateAsync(view.id)
-		if (activeView?.id === view.id) {
-			const fallbackView = visibleViews.find((item) => item.id !== view.id)
-			if (fallbackView) {
-				navigateToView(fallbackView)
+	const filterUiValue = {
+		session: filterSession,
+		...(runnableView?.context.kind === 'all'
+			? { projects: projectOptions.map((project) => ({ id: project.id, name: project.name })) }
+			: {}),
+		canOverwriteView: Boolean(runnableView),
+		onSave: async (input: { mode: 'create' | 'overwrite'; name?: string }) => {
+			if (!runnableView) return
+			if (input.mode === 'overwrite') {
+				await updateView.mutateAsync({
+					viewId: runnableView.id,
+					filters: filterSession.effective,
+				})
+				filterSession.clearTemp()
+				return
 			}
-		}
+			if (!input.name?.trim()) return
+			const created = await createView.mutateAsync({
+				name: input.name.trim(),
+				scope,
+				context: runnableView.context,
+				baseViewKey: runnableView.baseViewKey,
+				filters: filterSession.effective,
+			})
+			filterSession.clearTemp()
+			void navigate({ to: openView(scope, created.id, spaceId) as never, search: {} as never })
+		},
 	}
 
-	const filterUiValue = useMemo(
-		() => ({
-			session: filterSession,
-			projects: projectOptions.map((project) => ({ id: project.id, name: project.name })),
-			canOverwriteView: activeView?.kind === 'custom',
-			onSave: async (input: { mode: 'create' | 'overwrite'; name?: string }) => {
-				if (input.mode === 'overwrite' && activeView?.kind === 'custom') {
-					await updateTaskView.mutateAsync({
-						viewId: activeView.id,
-						filters: filterSession.effective,
-					})
-					filterSession.clearTemp()
-					return
-				}
-				if (input.mode === 'create' && input.name?.trim()) {
-					const created = await createTaskView.mutateAsync({
-						name: input.name.trim(),
-						scope,
-						filters: filterSession.effective,
-					})
-					filterSession.clearTemp()
-					void navigate({ to: openView(scope, created.id, spaceId) as never })
-				}
-			},
-		}),
-		[
-			activeView,
-			createTaskView,
-			filterSession,
-			navigate,
-			projectOptions,
-			scope,
-			spaceId,
-			updateTaskView,
-		],
-	)
+	function selectToolbar(key: string) {
+		if (!runnableView || key === `saved:${runnableView.id}`) return
+		const target = defaultViews.options.find((option) => option.key === key)
+		if (!target) return
+		const to =
+			runnableView.context.kind === 'standalone'
+				? openSection(scope, 'standalone', spaceId)
+				: runnableView.context.kind === 'project'
+					? openProjectDetail(runnableView.context.projectId, {
+							scope,
+							fallbackSpaceId: spaceId,
+						})
+					: openSection(scope, 'tasks', spaceId)
+		void navigate({
+			to: to as never,
+			search: (target.key === defaultViews.defaultKey ? {} : { v: target.key }) as never,
+		})
+	}
 
 	return {
 		activeView,
-		taskViews,
-		visibleViews,
-		breadcrumbItems,
-		taskCollection,
+		viewStatus:
+			viewsQuery.isLoading || viewsQuery.isPending
+				? 'loading'
+				: viewsQuery.isError
+					? 'error'
+					: activeView?.definitionError
+						? 'invalid-definition'
+						: activeView
+							? 'ready'
+							: 'not-found',
+		breadcrumbItems: resolveBreadcrumb({ route: shellRoute, viewName: activeView?.name ?? null }),
 		displayPageKey,
 		filterUiValue,
-		openTaskCreateDialog: () => openTaskCreateDialog({ status: 'todo' }),
-		navigateToView,
-		openCreateEditor,
-		openEditEditor,
-		editor: {
-			open: editorOpen,
-			view: editingView,
-			isSubmitting: isSavingView,
-			projects: projectOptions,
-			onClose: closeEditor,
-			onCreate: handleCreateView,
-			onUpdate: handleUpdateView,
-		},
-		actions: {
-			onDelete: (view: View) => void handleDeleteView(view),
+		taskCollection,
+		toolbarPills: runnableView
+			? [
+					{ key: `saved:${runnableView.id}`, label: runnableView.name },
+					...defaultViews.options.map(({ key, label }) => ({ key, label })),
+				]
+			: [],
+		selectedToolbarKey: runnableView ? `saved:${runnableView.id}` : '',
+		selectToolbar,
+		openTaskCreateDialog: openCreateTask,
+		openLibrary: () =>
+			void navigate({ to: openView(scope, null, spaceId) as never, search: {} as never }),
+		editor,
+		deleteActiveView: async () => {
+			if (!activeView) return
+			await deleteView.mutateAsync(activeView.id)
+			void navigate({ to: openView(scope, null, spaceId) as never, search: {} as never })
 		},
 	}
 }

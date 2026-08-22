@@ -33,10 +33,10 @@ export function FilterBar({ className }: { className?: string }) {
 	const [filterMenuOpen, setFilterMenuOpen] = useState(false)
 	const [filterTooltipOpen, setFilterTooltipOpen] = useState(false)
 
-	const { effective, dirty, isEmpty, clearTemp, replaceEffective } = session
+	const { effective, dirty, clearTemp, replaceEffective } = session
 
-	// 干净空：不渲染；干净非空（View 定义）渲染 chip 且无 Clear；dirty 显示 Clear
-	if (isEmpty && !dirty) {
+	// Default / Saved View 是基线，不在工具条重复展示；只呈现真实 Filter Draft。
+	if (!dirty) {
 		return null
 	}
 
@@ -90,10 +90,10 @@ export function FilterBar({ className }: { className?: string }) {
 				<div className='ml-auto flex items-center gap-1.5'>
 					{dirty ? (
 						<Button onPress={() => clearTemp()} size='sm' type='button' variant='ghost'>
-							清除
+							恢复
 						</Button>
 					) : null}
-					{!isEmpty && onSave ? (
+					{onSave ? (
 						<Button onPress={() => setSaveOpen(true)} size='sm' type='button' variant='outline'>
 							保存
 						</Button>

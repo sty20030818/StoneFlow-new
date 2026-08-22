@@ -83,69 +83,11 @@ pub struct TaskProjectRecord {
     pub deleted_at: Option<String>,
 }
 
-/// Task 列表的生命周期过滤。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum TaskLifecycleView {
-    #[default]
-    Active,
-    Completed,
-    Canceled,
-    Archived,
-    All,
-}
-
-/// Task 列表 placement 查询（未分配 Project = Standalone）。
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub enum TaskPlacementQuery {
-    #[default]
-    All,
-    Project(String),
-    Standalone,
-}
-
-/// 列表 keyset 游标（与 ORDER BY position, id 一致）。
+/// Task 查询 keyset 游标（与 ORDER BY position, id 一致）。
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TaskListCursor {
+pub struct TaskQueryCursor {
     pub position: i64,
     pub id: String,
-}
-
-/// 列表日期筛选（与前端 page filter 对齐；有效日期 = COALESCE(due, planned, remind)）。
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TaskListDateFilter {
-    /// 任一日期字段非空
-    HasDate,
-    /// 全部日期字段为空
-    NoDate,
-    /// 有效日期落在 [from, to]（RFC3339，闭区间语义由调用方定边界）
-    Range {
-        from: Option<String>,
-        to: Option<String>,
-    },
-}
-
-/// Task 列表查询条件。
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct TaskListQuery {
-    pub space_id: Option<String>,
-    pub placement: TaskPlacementQuery,
-    pub lifecycle: TaskLifecycleView,
-    /// 可选 status 白名单；`None` 或空表示不限 status（仍受 lifecycle 约束）。
-    pub statuses: Option<Vec<stoneflow_domain::WorkStatus>>,
-    /// 可选 priority 白名单；`None` 或空 = 不限。
-    pub priorities: Option<Vec<i32>>,
-    /// 可选日期筛选。
-    pub date_filter: Option<TaskListDateFilter>,
-    /// 页大小；`None` 表示不限制（兼容旧全量路径，新主路径应始终带 limit）。
-    pub limit: Option<u32>,
-    /// keyset 游标；`None` 表示第一页。
-    pub cursor: Option<TaskListCursor>,
-}
-
-/// 列表 Scope 内部表示。
-#[derive(Debug, Clone)]
-pub(crate) struct TaskScope {
-    pub space_id: Option<String>,
 }
 
 /// 创建时的归属（无 All；list 用 {@link TaskPlacementQuery}）。
@@ -153,14 +95,4 @@ pub(crate) struct TaskScope {
 pub(crate) enum CreatePlacement {
     Project(String),
     Standalone,
-}
-
-/// 内置 viewKey 预设。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum TaskViewPreset {
-    Lifecycle(TaskLifecycleView),
-    Today,
-    Focus,
-    Upcoming,
-    Overdue,
 }

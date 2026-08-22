@@ -7,8 +7,8 @@ use crate::app::error::AppError;
 use crate::app::state::AppState;
 use crate::sync;
 use stoneflow_application::task::{
-    BulkUpdateTasksDto, BulkUpdateTasksInput, CreateTaskInput, ListTasksInput, ListTasksPageDto,
-    TaskDetailDto, TaskIdInput, UpdateTaskInput,
+    BulkUpdateTasksDto, BulkUpdateTasksInput, CreateTaskInput, TaskDetailDto, TaskIdInput,
+    UpdateTaskInput,
 };
 use stoneflow_application::task_link::{
     CreateTaskLinkInput, DeleteTaskLinkInput, ListTaskLinksInput, TaskLinkDto, UpdateTaskLinkInput,
@@ -23,14 +23,6 @@ struct TaskChangedPayload {
     task_id: String,
     source: String,
     space_fallback: bool,
-}
-
-#[tauri::command]
-pub async fn list_tasks(
-    input: ListTasksInput,
-    state: State<'_, AppState>,
-) -> Result<ListTasksPageDto, AppError> {
-    state.tasks.list_tasks(input).await.map_err(AppError::from)
 }
 
 #[tauri::command]
@@ -267,10 +259,8 @@ mod tests {
     use stoneflow_application::project::CreateProjectInput;
     use stoneflow_application::space::CreateSpaceInput;
     use stoneflow_application::task::{
-        BulkUpdateTasksInput, CreateTaskInput, CreateTaskPlacementInput, ListTasksInput,
-        ListTasksPlacementInput, ListTasksPlacementKind, TaskDetailDto, TaskIdInput,
-        TaskScopeInput, TaskScopeKind, TaskWritePlacementKind, UpdateTaskInput,
-        UpdateTaskPlacementInput,
+        BulkUpdateTasksInput, CreateTaskInput, CreateTaskPlacementInput, TaskDetailDto,
+        TaskIdInput, TaskWritePlacementKind, UpdateTaskInput, UpdateTaskPlacementInput,
     };
     use stoneflow_application::task_link::CreateTaskLinkInput;
     use stoneflow_storage::{
@@ -695,78 +685,6 @@ mod tests {
         assert_eq!(task.status, WorkStatus::Doing);
         assert_eq!(task.priority, 3);
         assert!(task.planned_at.is_some() && task.due_at.is_some() && task.remind_at.is_some());
-    }
-
-    #[tokio::test]
-    async fn all_space_task_query_should_keep_task_fields() {
-        let database = TestDatabase::bootstrap_in_memory()
-            .await
-            .expect("test database should bootstrap");
-        let default_task = create_task(&database, "默认空间任务").await;
-        let second_space = build_space_service(database.connection().clone())
-            .create_space(CreateSpaceInput {
-                name: "第二空间".to_owned(),
-                icon_key: "folder".to_owned(),
-                color_key: "blue".to_owned(),
-            })
-            .await
-            .expect("second space should create");
-        let second_task = build_task_service(database.connection().clone())
-            .create_task(CreateTaskInput {
-                space_id: Some(second_space.id),
-                placement: CreateTaskPlacementInput {
-                    kind: TaskWritePlacementKind::Standalone,
-                    project_id: None,
-                },
-                title: "第二空间任务".to_owned(),
-                note: Some("保留字段".to_owned()),
-                status: Some(WorkStatus::Doing),
-                priority: Some(2),
-                due_at: Some("2026-07-23T09:00:00Z".to_owned()),
-                planned_at: None,
-                remind_at: None,
-            })
-            .await
-            .expect("second task should create");
-
-        let tasks = build_task_service(database.connection().clone())
-            .list_tasks(ListTasksInput {
-                scope: TaskScopeInput {
-                    kind: TaskScopeKind::All,
-                    space_id: None,
-                },
-                view_key: "all".to_owned(),
-                placement: ListTasksPlacementInput {
-                    kind: ListTasksPlacementKind::All,
-                    project_id: None,
-                },
-                statuses: None,
-                priorities: None,
-                date_filter: None,
-                limit: None,
-                cursor: None,
-            })
-            .await
-            .expect("all-space query should succeed");
-
-        assert_eq!(tasks.items.len(), 2);
-        assert!(tasks.items.iter().any(|task| task.id == default_task.id));
-        let listed_second_task = tasks
-            .items
-            .iter()
-            .find(|task| task.id == second_task.id)
-            .expect("second task should be returned");
-        // 列表投影不含 note；标题/优先级/日期仍应完整
-        assert_eq!(listed_second_task.title, "第二空间任务");
-        assert_eq!(listed_second_task.priority, 2);
-        assert!(listed_second_task.due_at.is_some());
-        let detail = build_task_service(database.connection().clone())
-            .get_task_detail(TaskIdInput {
-                task_id: second_task.id.clone(),
-            })
-            .await
-            .expect("detail should load note");
-        assert_eq!(detail.note.as_deref(), Some("保留字段"));
     }
 
     #[tokio::test]

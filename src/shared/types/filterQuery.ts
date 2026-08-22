@@ -15,6 +15,7 @@ export const FILTER_DATE_VALUE_VALUES = [
 	'today',
 	'tomorrow',
 	'thisWeek',
+	'future',
 	'overdue',
 	'hasDate',
 	'noDate',

@@ -29,7 +29,6 @@ describe('resolveTaskDisplayOptions', () => {
 			orderBy: 'smart',
 			orderDirection: 'desc',
 			completedOrder: 'recency',
-			showCompleted: false,
 			showEmptyGroups: false,
 			visibleProperties: ['status', 'priority', 'project', 'dueAt'],
 		})
@@ -55,7 +54,6 @@ describe('resolveTaskDisplayOptions', () => {
 			orderBy: 'priority',
 			orderDirection: 'asc',
 			completedOrder: 'recency',
-			showCompleted: true,
 			showEmptyGroups: true,
 			visibleProperties: ['status', 'updatedAt'],
 		})

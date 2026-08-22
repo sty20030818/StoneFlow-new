@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 import { PageFrame } from './PageFrame'
@@ -9,15 +9,15 @@ function EmptyFilterBar() {
 
 describe('PageFrame', () => {
 	it('统一页头、工具条操作和普通滚动主体', () => {
-		const onPress = vi.fn()
 		render(
 			<PageFrame.Root>
 				<PageFrame.Header actions={<button type='button'>页级操作</button>} title='页面标题' />
 				<PageFrame.Toolbar
 					pills={[
-						{ label: '进行中', active: true },
-						{ label: '待执行', onPress },
+						{ key: 'doing', label: '进行中' },
+						{ key: 'todo', label: '待执行' },
 					]}
+					selectedKey='doing'
 				/>
 				<PageFrame.Body>页面主体</PageFrame.Body>
 			</PageFrame.Root>,
@@ -41,9 +41,87 @@ describe('PageFrame', () => {
 		expect(pill).toHaveAttribute('aria-checked', 'true')
 		expect(inactivePill).toHaveAttribute('aria-checked', 'false')
 		expect(pill).not.toHaveAttribute('aria-current')
-		fireEvent.click(inactivePill)
-		expect(onPress).toHaveBeenCalledOnce()
 		expect(screen.getByText('页面主体').closest('[data-scroll-container="true"]')).not.toBeNull()
+	})
+
+	it('外部 canonical 选择延迟回写时仍立即反馈新选项', async () => {
+		let finishNavigation: (() => void) | undefined
+		const onSelectionChange = vi.fn(
+			() =>
+				new Promise<void>((resolve) => {
+					finishNavigation = resolve
+				}),
+		)
+		const pills = [
+			{ key: 'doing', label: '进行中' },
+			{ key: 'todo', label: '待执行' },
+			{ key: 'waiting', label: '等待中' },
+		]
+		const { rerender } = render(
+			<PageFrame.Toolbar onSelectionChange={onSelectionChange} pills={pills} selectedKey='doing' />,
+		)
+
+		const doing = screen.getByRole('radio', { name: '进行中' })
+		const todo = screen.getByRole('radio', { name: '待执行' })
+		act(() => todo.focus())
+		fireEvent.click(todo)
+
+		expect(onSelectionChange).toHaveBeenCalledOnce()
+		expect(onSelectionChange).toHaveBeenCalledWith('todo')
+		expect(todo).toHaveAttribute('data-selected', 'true')
+		expect(todo).toHaveFocus()
+		expect(doing).toHaveAttribute('aria-checked', 'false')
+
+		rerender(
+			<PageFrame.Toolbar
+				onSelectionChange={onSelectionChange}
+				pills={pills}
+				selectedKey='waiting'
+			/>,
+		)
+		expect(screen.getByRole('radio', { name: '等待中' })).toHaveAttribute('data-selected', 'true')
+		expect(screen.getByRole('radio', { name: '待执行' })).toHaveAttribute('aria-checked', 'false')
+		expect(todo).toHaveFocus()
+
+		rerender(
+			<PageFrame.Toolbar onSelectionChange={onSelectionChange} pills={pills} selectedKey='doing' />,
+		)
+		expect(screen.getByRole('radio', { name: '进行中' })).toHaveAttribute('data-selected', 'true')
+		expect(screen.getByRole('radio', { name: '待执行' })).toHaveAttribute('aria-checked', 'false')
+		await act(async () => {
+			finishNavigation?.()
+			await Promise.resolve()
+		})
+	})
+
+	it('选择导航未回写 canonical 时回退且不丢焦点', async () => {
+		let finishNavigation: (() => void) | undefined
+		const onSelectionChange = vi.fn(
+			() =>
+				new Promise<void>((resolve) => {
+					finishNavigation = resolve
+				}),
+		)
+		const pills = [
+			{ key: 'doing', label: '进行中' },
+			{ key: 'todo', label: '待执行' },
+		]
+		render(
+			<PageFrame.Toolbar onSelectionChange={onSelectionChange} pills={pills} selectedKey='doing' />,
+		)
+
+		const doing = screen.getByRole('radio', { name: '进行中' })
+		const todo = screen.getByRole('radio', { name: '待执行' })
+		act(() => todo.focus())
+		fireEvent.click(todo)
+		expect(todo).toHaveAttribute('data-selected', 'true')
+
+		await act(async () => {
+			finishNavigation?.()
+			await Promise.resolve()
+		})
+		await waitFor(() => expect(doing).toHaveAttribute('data-selected', 'true'))
+		expect(todo).toHaveFocus()
 	})
 
 	it('虚拟列表主体只提供一个真实滚动 viewport', () => {
@@ -59,7 +137,13 @@ describe('PageFrame', () => {
 	})
 
 	it('空筛选条不占用工具条纵向间隔', () => {
-		render(<PageFrame.Toolbar filterBar={<EmptyFilterBar />} pills={[{ label: '所有任务' }]} />)
+		render(
+			<PageFrame.Toolbar
+				filterBar={<EmptyFilterBar />}
+				pills={[{ key: 'all', label: '所有任务' }]}
+				selectedKey='all'
+			/>,
+		)
 
 		const toolbarGroup = screen.getByRole('radiogroup', { name: '页面筛选' })
 		expect(screen.getByRole('radio', { name: '所有任务' })).toHaveAttribute('data-selected', 'true')

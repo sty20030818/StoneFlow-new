@@ -1,71 +1,31 @@
-//! Task 内置 viewKey 预设：过滤、排序与 Activity 动作推断。
+//! Task 查询 cursor 与 Activity 动作推断。
 
-use std::cmp::Ordering;
-
-use chrono::NaiveDate;
-use stoneflow_domain::{parse_calendar_date, today_local_date, WorkStatus};
+use stoneflow_domain::WorkStatus;
 
 use crate::{
     activity::{ActivityAction, ActivityChangeInput},
-    task::types::{TaskLifecycleView, TaskRecord, TaskViewPreset},
+    task::types::{TaskQueryCursor, TaskRecord},
     ApplicationError,
 };
 
-pub(crate) fn parse_view_key(view_key: &str) -> Result<TaskViewPreset, ApplicationError> {
-    match view_key.trim().to_ascii_lowercase().as_str() {
-        "active" => Ok(TaskViewPreset::Lifecycle(TaskLifecycleView::Active)),
-        "completed" => Ok(TaskViewPreset::Lifecycle(TaskLifecycleView::Completed)),
-        "canceled" => Ok(TaskViewPreset::Lifecycle(TaskLifecycleView::Canceled)),
-        "archived" => Ok(TaskViewPreset::Lifecycle(TaskLifecycleView::Archived)),
-        "all" => Ok(TaskViewPreset::Lifecycle(TaskLifecycleView::All)),
-        "today" => Ok(TaskViewPreset::Today),
-        "focus" => Ok(TaskViewPreset::Focus),
-        "upcoming" => Ok(TaskViewPreset::Upcoming),
-        "overdue" => Ok(TaskViewPreset::Overdue),
-        _ => Err(ApplicationError::validation("未知 Task viewKey")),
-    }
+pub(crate) fn encode_task_query_cursor(position: i64, id: &str) -> String {
+    format!("{position}\u{1f}{id}")
 }
 
-pub(crate) fn repository_lifecycle_for_preset(view_preset: TaskViewPreset) -> TaskLifecycleView {
-    match view_preset {
-        TaskViewPreset::Lifecycle(lifecycle) => lifecycle,
-        TaskViewPreset::Today
-        | TaskViewPreset::Focus
-        | TaskViewPreset::Upcoming
-        | TaskViewPreset::Overdue => TaskLifecycleView::Active,
+pub(crate) fn decode_task_query_cursor(raw: &str) -> Result<TaskQueryCursor, ApplicationError> {
+    let (position_raw, id) = raw
+        .split_once('\u{1f}')
+        .ok_or_else(|| ApplicationError::validation("列表 cursor 无效"))?;
+    let position = position_raw
+        .parse::<i64>()
+        .map_err(|_| ApplicationError::validation("列表 cursor 无效"))?;
+    if id.is_empty() {
+        return Err(ApplicationError::validation("列表 cursor 无效"));
     }
-}
-
-pub(crate) fn apply_view_preset(
-    mut tasks: Vec<TaskRecord>,
-    view_preset: TaskViewPreset,
-) -> Vec<TaskRecord> {
-    match view_preset {
-        TaskViewPreset::Lifecycle(_) => tasks,
-        TaskViewPreset::Today => {
-            let today = today_local_date();
-            tasks.retain(|task| matches_today(task, today));
-            tasks.sort_by(|left, right| compare_today_tasks(left, right, today));
-            tasks
-        }
-        TaskViewPreset::Focus => {
-            tasks.retain(matches_focus);
-            tasks.sort_by(compare_focus_tasks);
-            tasks
-        }
-        TaskViewPreset::Upcoming => {
-            let today = today_local_date();
-            tasks.retain(|task| matches_upcoming(task, today));
-            tasks.sort_by(|left, right| compare_upcoming_tasks(left, right, today));
-            tasks
-        }
-        TaskViewPreset::Overdue => {
-            let today = today_local_date();
-            tasks.retain(|task| matches_overdue(task, today));
-            tasks.sort_by(compare_overdue_tasks);
-            tasks
-        }
-    }
+    Ok(TaskQueryCursor {
+        position,
+        id: id.to_owned(),
+    })
 }
 
 pub(crate) fn status_key(status: WorkStatus) -> &'static str {
@@ -138,108 +98,18 @@ pub(crate) fn build_update_summary(action: ActivityAction, title: &str) -> Strin
     }
 }
 
-fn matches_focus(task: &TaskRecord) -> bool {
-    matches!(task.status, WorkStatus::Todo | WorkStatus::Doing) && task.priority >= 3
-}
+#[cfg(test)]
+mod tests {
+    use super::{decode_task_query_cursor, encode_task_query_cursor};
 
-fn matches_today(task: &TaskRecord, today: NaiveDate) -> bool {
-    let due_date = due_date(task);
-    let planned_date = planned_date(task);
-    planned_date == Some(today)
-        || due_date == Some(today)
-        || due_date.is_some_and(|value| value < today)
-}
+    #[test]
+    fn task_query_cursor_codec_rejects_invalid_input_and_round_trips() {
+        assert!(decode_task_query_cursor("invalid").is_err());
+        assert!(decode_task_query_cursor("100\u{1f}").is_err());
 
-fn matches_upcoming(task: &TaskRecord, today: NaiveDate) -> bool {
-    due_date(task).is_some_and(|value| value > today)
-        || planned_date(task).is_some_and(|value| value > today)
-}
-
-fn matches_overdue(task: &TaskRecord, today: NaiveDate) -> bool {
-    due_date(task).is_some_and(|value| value < today)
-}
-
-fn compare_today_tasks(left: &TaskRecord, right: &TaskRecord, today: NaiveDate) -> Ordering {
-    compare_ordering_chain([
-        today_bucket(left, today).cmp(&today_bucket(right, today)),
-        right.priority.cmp(&left.priority),
-        left.position.cmp(&right.position),
-        right.updated_at.cmp(&left.updated_at),
-    ])
-}
-
-fn compare_focus_tasks(left: &TaskRecord, right: &TaskRecord) -> Ordering {
-    compare_ordering_chain([
-        right.priority.cmp(&left.priority),
-        compare_option_date_asc(due_date(left), due_date(right)),
-        compare_option_date_asc(planned_date(left), planned_date(right)),
-        left.position.cmp(&right.position),
-        right.updated_at.cmp(&left.updated_at),
-    ])
-}
-
-fn compare_upcoming_tasks(left: &TaskRecord, right: &TaskRecord, today: NaiveDate) -> Ordering {
-    compare_ordering_chain([
-        compare_option_date_asc(
-            next_upcoming_date(left, today),
-            next_upcoming_date(right, today),
-        ),
-        right.priority.cmp(&left.priority),
-        left.position.cmp(&right.position),
-        right.updated_at.cmp(&left.updated_at),
-    ])
-}
-
-fn compare_overdue_tasks(left: &TaskRecord, right: &TaskRecord) -> Ordering {
-    compare_ordering_chain([
-        compare_option_date_asc(due_date(left), due_date(right)),
-        right.priority.cmp(&left.priority),
-        left.position.cmp(&right.position),
-        right.updated_at.cmp(&left.updated_at),
-    ])
-}
-
-fn today_bucket(task: &TaskRecord, today: NaiveDate) -> u8 {
-    if due_date(task).is_some_and(|value| value < today) {
-        return 0;
+        let encoded = encode_task_query_cursor(100, "task-1");
+        let decoded = decode_task_query_cursor(&encoded).expect("valid cursor");
+        assert_eq!(decoded.position, 100);
+        assert_eq!(decoded.id, "task-1");
     }
-    if due_date(task) == Some(today) {
-        return 1;
-    }
-    if planned_date(task) == Some(today) {
-        return 2;
-    }
-    3
-}
-
-fn next_upcoming_date(task: &TaskRecord, today: NaiveDate) -> Option<NaiveDate> {
-    [planned_date(task), due_date(task)]
-        .into_iter()
-        .flatten()
-        .filter(|date| *date > today)
-        .min()
-}
-
-fn due_date(task: &TaskRecord) -> Option<NaiveDate> {
-    task.due_at.as_deref().and_then(parse_calendar_date)
-}
-
-fn planned_date(task: &TaskRecord) -> Option<NaiveDate> {
-    task.planned_at.as_deref().and_then(parse_calendar_date)
-}
-
-fn compare_option_date_asc(left: Option<NaiveDate>, right: Option<NaiveDate>) -> Ordering {
-    match (left, right) {
-        (Some(left), Some(right)) => left.cmp(&right),
-        (Some(_), None) => Ordering::Less,
-        (None, Some(_)) => Ordering::Greater,
-        (None, None) => Ordering::Equal,
-    }
-}
-
-fn compare_ordering_chain<const N: usize>(orderings: [Ordering; N]) -> Ordering {
-    orderings
-        .into_iter()
-        .find(|ordering| *ordering != Ordering::Equal)
-        .unwrap_or(Ordering::Equal)
 }

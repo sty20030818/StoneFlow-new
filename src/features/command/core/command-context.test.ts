@@ -24,8 +24,6 @@ describe('CommandContext', () => {
 			isMultiSelection: false,
 		})
 		expect(context.ui.isContextMenuOpen).toBe(false)
-		expect(context.view.showCompleted).toBe(true)
-		expect(context.view.hasActiveFilters).toBe(false)
 		expect(context.view.filterCapabilities.supportsClearAll).toBe(false)
 		expect(context.submit.hasActiveTarget).toBe(false)
 	})

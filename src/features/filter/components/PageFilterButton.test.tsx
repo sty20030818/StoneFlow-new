@@ -77,6 +77,14 @@ describe('filter entry points', () => {
 		)
 	})
 
+	it('公式条恢复动作只删除临时 Draft', () => {
+		const value = renderFilterEntry(<FilterBar />)
+
+		fireEvent.click(screen.getByRole('button', { name: '恢复' }))
+
+		expect(value.session.clearTemp).toHaveBeenCalledOnce()
+	})
+
 	it('字段菜单以嵌套子菜单选择值并保持根菜单打开', async () => {
 		const value = renderFilterEntry(<PageFilterButton />)
 

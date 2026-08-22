@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 
 import { ScrollShadow, Separator, Surface, ToggleButton, ToggleButtonGroup } from '@heroui/react'
 
@@ -11,13 +11,14 @@ type PageFrameHeaderProps = {
 }
 
 type PageFrameToolbarPill = {
+	key: string
 	label: string
-	active?: boolean
-	onPress?: () => void
 }
 
 type PageFrameToolbarProps = {
 	pills?: PageFrameToolbarPill[]
+	selectedKey?: string
+	onSelectionChange?: (key: string) => void | Promise<unknown>
 	filterAction?: ReactNode
 	displayAction?: ReactNode
 	/** 工具条下方筛选公式条（FilterBar） */
@@ -58,13 +59,14 @@ function PageFrameHeader({ breadcrumb, title, actions }: PageFrameHeaderProps) {
 
 function PageFrameToolbar({
 	pills,
+	selectedKey,
+	onSelectionChange,
 	filterAction,
 	displayAction,
 	filterBar,
 }: PageFrameToolbarProps) {
 	const hasActions = Boolean(pills?.length || filterAction || displayAction)
-	const activePillIndex = pills?.findIndex((pill) => pill.active) ?? -1
-	const selectedPillIndex = activePillIndex >= 0 ? activePillIndex : 0
+	const canonicalSelectedKey = selectedKey ?? pills?.[0]?.key ?? null
 	if (!hasActions && !filterBar) {
 		return null
 	}
@@ -75,27 +77,11 @@ function PageFrameToolbar({
 				{hasActions ? (
 					<div className='flex items-center justify-between gap-3'>
 						{pills?.length ? (
-							<ToggleButtonGroup
-								aria-label='页面筛选'
-								className='min-w-0 flex-wrap'
-								disallowEmptySelection
-								isDetached
-								selectedKeys={[selectedPillIndex]}
-								selectionMode='single'
-								size='sm'
-							>
-								{pills.map((pill, index) => (
-									<ToggleButton
-										data-page-toolbar-option='true'
-										id={index}
-										key={pill.label}
-										onPress={pill.onPress}
-										variant='ghost'
-									>
-										{pill.label}
-									</ToggleButton>
-								))}
-							</ToggleButtonGroup>
+							<PageFrameToolbarChoices
+								onSelectionChange={onSelectionChange}
+								pills={pills}
+								selectedKey={canonicalSelectedKey}
+							/>
 						) : null}
 						{filterAction || displayAction ? (
 							<div className='flex shrink-0 items-center gap-1'>
@@ -108,6 +94,54 @@ function PageFrameToolbar({
 				{filterBar ? <div className='min-w-0 empty:hidden'>{filterBar}</div> : null}
 			</div>
 		</Surface>
+	)
+}
+
+function PageFrameToolbarChoices({
+	pills,
+	selectedKey,
+	onSelectionChange,
+}: {
+	pills: PageFrameToolbarPill[]
+	selectedKey: string | null
+	onSelectionChange?: (key: string) => void | Promise<unknown>
+}) {
+	const [pendingSelection, setPendingSelection] = useState<{
+		canonicalKey: string | null
+		key: string
+	} | null>(null)
+	if (pendingSelection && pendingSelection.canonicalKey !== selectedKey) {
+		setPendingSelection(null)
+	}
+	const optimisticKey =
+		pendingSelection?.canonicalKey === selectedKey ? pendingSelection.key : selectedKey
+
+	return (
+		<ToggleButtonGroup
+			aria-label='页面筛选'
+			className='min-w-0 flex-wrap'
+			disallowEmptySelection
+			isDetached
+			onSelectionChange={(keys) => {
+				const nextKey = keys.values().next().value
+				if (typeof nextKey !== 'string' || nextKey === optimisticKey) return
+				const pending = { canonicalKey: selectedKey, key: nextKey }
+				setPendingSelection(pending)
+				const finish = () => {
+					setPendingSelection((current) => (current === pending ? null : current))
+				}
+				void Promise.resolve(onSelectionChange?.(nextKey)).then(finish, finish)
+			}}
+			selectedKeys={optimisticKey ? [optimisticKey] : []}
+			selectionMode='single'
+			size='sm'
+		>
+			{pills.map((pill) => (
+				<ToggleButton data-page-toolbar-option='true' id={pill.key} key={pill.key} variant='ghost'>
+					{pill.label}
+				</ToggleButton>
+			))}
+		</ToggleButtonGroup>
 	)
 }
 

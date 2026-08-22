@@ -1,12 +1,8 @@
 //! Task 的 SQLite 持久化，不承载业务规则。
 
 use sea_orm::{
-    sea_query::Expr, ActiveModelTrait, ActiveValue::Set, ColumnTrait, Condition, ConnectionTrait,
-    DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder, QuerySelect,
-    Select,
-};
-use stoneflow_application::view::{
-    DateFilterMode, ProjectFilterMode, TaskScopeKind, ViewTaskQuery,
+    ActiveModelTrait, ActiveValue::Set, ColumnTrait, ConnectionTrait, DatabaseConnection,
+    EntityTrait, QueryFilter, QueryOrder,
 };
 use stoneflow_domain::WorkStatus;
 use stoneflow_domain::POSITION_STEP;
@@ -17,6 +13,8 @@ use crate::{
     },
     error::StorageError,
 };
+
+mod view_query;
 
 #[derive(Debug, Clone)]
 pub struct CreateTaskRecord {
@@ -95,146 +93,25 @@ impl TaskRepository {
         include_archived: bool,
         status: Option<WorkStatus>,
     ) -> Result<Vec<task::Model>, StorageError> {
-        let statuses = status.map(|value| vec![value]);
-        self.list_visible_with_statuses(
-            space_id,
-            project_id,
-            include_archived,
-            statuses.as_deref(),
-        )
-        .await
-    }
-
-    /// 可见任务列表；`statuses` 为白名单（SQL `IN`），`None` 不限 status。
-    ///
-    /// 排序固定为 `(position ASC, id ASC)`，与 keyset cursor 一致。
-    pub async fn list_visible_with_statuses(
-        &self,
-        space_id: Option<&str>,
-        project_id: Option<Option<&str>>,
-        include_archived: bool,
-        statuses: Option<&[WorkStatus]>,
-    ) -> Result<Vec<task::Model>, StorageError> {
-        self.list_visible_page(
-            space_id,
-            project_id,
-            include_archived,
-            statuses,
-            None,
-            None,
-            None,
-            None,
-        )
-        .await
-    }
-
-    /// 分页可见任务；`limit` 存在时多取逻辑由调用方决定。
-    pub async fn list_visible_page(
-        &self,
-        space_id: Option<&str>,
-        project_id: Option<Option<&str>>,
-        include_archived: bool,
-        statuses: Option<&[WorkStatus]>,
-        priorities: Option<&[i32]>,
-        date_filter: Option<&stoneflow_application::task::TaskListDateFilter>,
-        cursor: Option<(i64, &str)>,
-        limit: Option<u64>,
-    ) -> Result<Vec<task::Model>, StorageError> {
         let mut query = Task::find().filter(task::Column::DeletedAt.is_null());
-        query = apply_visible_filters(
-            query,
-            space_id,
-            project_id,
-            include_archived,
-            statuses,
-            priorities,
-            date_filter,
-        );
-        if let Some((position, id)) = cursor {
-            // (position > c) OR (position = c AND id > c.id)
-            query = query.filter(
-                Condition::any()
-                    .add(task::Column::Position.gt(position))
-                    .add(
-                        Condition::all()
-                            .add(task::Column::Position.eq(position))
-                            .add(task::Column::Id.gt(id)),
-                    ),
-            );
+        if !include_archived {
+            query = query.filter(task::Column::ArchivedAt.is_null());
         }
-        query = query
-            .order_by_asc(task::Column::Position)
-            .order_by_asc(task::Column::Id);
-        if let Some(limit) = limit {
-            query = query.limit(limit);
+        if let Some(space_id) = space_id {
+            query = query.filter(task::Column::SpaceId.eq(space_id));
         }
-        query.all(&self.db).await.map_err(Into::into)
-    }
-
-    /// 与 list_visible_page 相同过滤条件下的总数（无 cursor / limit），供首屏定死滚动条总高。
-    pub async fn count_visible(
-        &self,
-        space_id: Option<&str>,
-        project_id: Option<Option<&str>>,
-        include_archived: bool,
-        statuses: Option<&[WorkStatus]>,
-        priorities: Option<&[i32]>,
-        date_filter: Option<&stoneflow_application::task::TaskListDateFilter>,
-    ) -> Result<u64, StorageError> {
-        let mut query = Task::find().filter(task::Column::DeletedAt.is_null());
-        query = apply_visible_filters(
-            query,
-            space_id,
-            project_id,
-            include_archived,
-            statuses,
-            priorities,
-            date_filter,
-        );
-        query.count(&self.db).await.map_err(Into::into)
-    }
-
-    /// View 候选集的数据库过滤。排序与本地时区日期语义仍由 application 决定。
-    pub async fn list_for_view(
-        &self,
-        definition: &ViewTaskQuery,
-    ) -> Result<Vec<task::Model>, StorageError> {
-        let mut query = Task::find()
-            .filter(task::Column::ArchivedAt.is_null())
-            .filter(task::Column::DeletedAt.is_null());
-        if matches!(definition.scope.kind, TaskScopeKind::Space) {
-            query = query.filter(
-                task::Column::SpaceId.eq(definition.scope.space_id.as_deref().unwrap_or_default()),
-            );
-        }
-        if !definition.statuses.is_empty() {
-            query = query.filter(
-                task::Column::Status
-                    .is_in(definition.statuses.iter().copied().map(to_storage_status)),
-            );
-        }
-        if let Some(project) = &definition.project {
-            query = match project.mode {
-                ProjectFilterMode::Any => query,
-                ProjectFilterMode::None => query.filter(task::Column::ProjectId.is_null()),
-                ProjectFilterMode::Specific => {
-                    query.filter(task::Column::ProjectId.is_in(project.ids.iter().cloned()))
-                }
+        if let Some(project_id) = project_id {
+            query = match project_id {
+                Some(project_id) => query.filter(task::Column::ProjectId.eq(project_id)),
+                None => query.filter(task::Column::ProjectId.is_null()),
             };
         }
-        if let Some(due) = &definition.due {
-            if matches!(due.mode, DateFilterMode::Between) {
-                if let Some(from) = due.from.as_deref() {
-                    query = query.filter(task::Column::DueAt.gte(from));
-                }
-                if let Some(to) = due.to.as_deref() {
-                    query = query.filter(task::Column::DueAt.lte(to));
-                }
-            }
+        if let Some(status) = status {
+            query = query.filter(task::Column::Status.eq(to_storage_status(status)));
         }
         query
-            .order_by_asc(task::Column::DueAt)
             .order_by_asc(task::Column::Position)
+            .order_by_asc(task::Column::Id)
             .all(&self.db)
             .await
             .map_err(Into::into)
@@ -470,74 +347,4 @@ fn to_storage_status(status: WorkStatus) -> StorageWorkStatus {
         WorkStatus::Done => StorageWorkStatus::Done,
         WorkStatus::Canceled => StorageWorkStatus::Canceled,
     }
-}
-
-/// 列表可见过滤：space / placement / archive / status / priority / 有效日期。
-/// 有效日期与前端 `resolveTaskDateValue` 对齐：COALESCE(due_at, planned_at, remind_at)。
-fn apply_visible_filters(
-    mut query: Select<Task>,
-    space_id: Option<&str>,
-    project_id: Option<Option<&str>>,
-    include_archived: bool,
-    statuses: Option<&[WorkStatus]>,
-    priorities: Option<&[i32]>,
-    date_filter: Option<&stoneflow_application::task::TaskListDateFilter>,
-) -> Select<Task> {
-    if !include_archived {
-        query = query.filter(task::Column::ArchivedAt.is_null());
-    }
-    if let Some(space_id) = space_id {
-        query = query.filter(task::Column::SpaceId.eq(space_id));
-    }
-    if let Some(project_id) = project_id {
-        query = match project_id {
-            Some(project_id) => query.filter(task::Column::ProjectId.eq(project_id)),
-            None => query.filter(task::Column::ProjectId.is_null()),
-        };
-    }
-    if let Some(statuses) = statuses.filter(|items| !items.is_empty()) {
-        query = query.filter(
-            task::Column::Status.is_in(statuses.iter().copied().map(to_storage_status)),
-        );
-    }
-    if let Some(priorities) = priorities.filter(|items| !items.is_empty()) {
-        query = query.filter(task::Column::Priority.is_in(priorities.iter().copied()));
-    }
-    if let Some(date_filter) = date_filter {
-        use stoneflow_application::task::TaskListDateFilter;
-        // 有效日期非空 / 全空 / 区间
-        let has_any = Condition::any()
-            .add(task::Column::DueAt.is_not_null())
-            .add(task::Column::PlannedAt.is_not_null())
-            .add(task::Column::RemindAt.is_not_null());
-        let has_none = Condition::all()
-            .add(task::Column::DueAt.is_null())
-            .add(task::Column::PlannedAt.is_null())
-            .add(task::Column::RemindAt.is_null());
-        match date_filter {
-            TaskListDateFilter::HasDate => {
-                query = query.filter(has_any);
-            }
-            TaskListDateFilter::NoDate => {
-                query = query.filter(has_none);
-            }
-            TaskListDateFilter::Range { from, to } => {
-                // 必须有有效日期，再按 COALESCE 边界过滤
-                query = query.filter(has_any);
-                if let Some(from) = from.as_deref() {
-                    query = query.filter(Expr::cust_with_values(
-                        "COALESCE(due_at, planned_at, remind_at) >= ?",
-                        [from],
-                    ));
-                }
-                if let Some(to) = to.as_deref() {
-                    query = query.filter(Expr::cust_with_values(
-                        "COALESCE(due_at, planned_at, remind_at) <= ?",
-                        [to],
-                    ));
-                }
-            }
-        }
-    }
-    query
 }

@@ -25,7 +25,9 @@ export function FilterMenu({ trigger, open, onOpenChange }: FilterMenuProps) {
 	const { session, projects } = useListFilterUi()
 	const [query, setQuery] = useState('')
 	const normalizedQuery = query.trim().toLowerCase()
-	const visibleFields = FILTER_MENU_FIELDS.filter((field) =>
+	const visibleFields = FILTER_MENU_FIELDS.filter(
+		(field) => projects || field !== 'project',
+	).filter((field) =>
 		normalizedQuery.length === 0
 			? true
 			: formatFilterFieldLabel(field).toLowerCase().includes(normalizedQuery),

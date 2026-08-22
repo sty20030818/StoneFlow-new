@@ -115,11 +115,9 @@ export function useShellCommandHostContext({
 	)
 	const commandView = useMemo(
 		() => ({
-			hasActiveFilters: pageFilter.state.hasActiveFilters,
-			showCompleted: pageFilter.state.showCompleted,
 			filterCapabilities: pageFilter.capabilities,
 		}),
-		[pageFilter.capabilities, pageFilter.state.hasActiveFilters, pageFilter.state.showCompleted],
+		[pageFilter.capabilities],
 	)
 
 	const commandContext = useCommandContext({

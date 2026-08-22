@@ -48,7 +48,9 @@ describe('useCommandContext', () => {
 					isContextMenuOpen: true,
 				},
 				view: {
-					showCompleted: true,
+					filterCapabilities: {
+						supportsClearAll: true,
+					},
 				},
 			}),
 		)
@@ -76,11 +78,8 @@ describe('useCommandContext', () => {
 			isDropdownOpen: false,
 		})
 		expect(result.current.view).toEqual({
-			hasActiveFilters: false,
-			showCompleted: true,
 			filterCapabilities: {
-				supportsToggleCompleted: false,
-				supportsClearAll: false,
+				supportsClearAll: true,
 			},
 		})
 	})

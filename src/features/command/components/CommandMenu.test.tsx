@@ -296,7 +296,6 @@ function createActions(): ShellCommandActions {
 		toggleSidebar: vi.fn(),
 		togglePreview: vi.fn(),
 		openFilterMenu: vi.fn(),
-		toggleCompletedFilter: vi.fn(),
 		clearAllFilters: vi.fn(),
 		openDisplayOptions: vi.fn(),
 		goBack: vi.fn(),

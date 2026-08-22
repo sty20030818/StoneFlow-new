@@ -6,7 +6,8 @@ use crate::app::error::AppError;
 use crate::app::state::AppState;
 use crate::sync;
 use stoneflow_application::view::{
-    CreateViewInput, ListViewsInput, RunTaskViewInput, RunTaskViewOutput, UpdateViewInput, ViewDto,
+    CountTaskQueryInput, CountTaskQueryOutput, CreateViewInput, ListViewsInput, RunTaskQueryInput,
+    RunTaskQueryOutput, RunTaskViewInput, RunTaskViewOutput, UpdateViewInput, ViewDto,
 };
 
 #[tauri::command]
@@ -25,6 +26,30 @@ pub async fn run_task_view(
     state
         .views
         .run_task_view(input)
+        .await
+        .map_err(AppError::from)
+}
+
+#[tauri::command]
+pub async fn run_task_query(
+    input: RunTaskQueryInput,
+    state: State<'_, AppState>,
+) -> Result<RunTaskQueryOutput, AppError> {
+    state
+        .views
+        .run_task_query(input)
+        .await
+        .map_err(AppError::from)
+}
+
+#[tauri::command]
+pub async fn count_task_query(
+    input: CountTaskQueryInput,
+    state: State<'_, AppState>,
+) -> Result<CountTaskQueryOutput, AppError> {
+    state
+        .views
+        .count_task_query(input)
         .await
         .map_err(AppError::from)
 }

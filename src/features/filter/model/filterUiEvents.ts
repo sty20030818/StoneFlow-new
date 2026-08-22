@@ -3,7 +3,7 @@
  * ListFilterUi 订阅；无订阅时事件被忽略。
  */
 
-export type FilterUiEvent = { type: 'open-menu' } | { type: 'clear-all' }
+export type FilterUiEvent = { type: 'open-menu' }
 
 type Listener = (event: FilterUiEvent) => void
 

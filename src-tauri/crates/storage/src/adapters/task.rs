@@ -8,15 +8,15 @@ use stoneflow_application::{
     },
     operation::{OutboxEnqueueRecord, SyncEntityKind, TombstoneRecord},
     task::{
-        CreateTaskPersistenceRecord, TaskLifecycleView, TaskPersistence, TaskProjectReader,
-        TaskProjectRecord, TaskRecord, TaskService, TaskSpaceReader, TaskSpaceRecord,
+        CreateTaskPersistenceRecord, TaskPersistence, TaskProjectReader, TaskProjectRecord,
+        TaskRecord, TaskService, TaskSpaceReader, TaskSpaceRecord,
         UpdateTaskPatch as AppUpdateTaskPatch,
     },
     ApplicationError,
 };
 
 use crate::adapters::error::{from_db, from_storage};
-use crate::entities::{common::WorkStatus as StorageWorkStatus, task};
+use crate::entities::task;
 use crate::mappers::work_status_to_domain;
 use crate::repositories::{
     ActivityRepository, CreateTaskRecord, OutboxRepository, ProjectRepository, SpaceRepository,
@@ -84,105 +84,6 @@ impl TaskPersistence for TaskPersistenceAdapter {
             .get(task_id)
             .await
             .map(|row| row.map(map_task))
-            .map_err(from_storage)
-    }
-    async fn list(
-        &self,
-        query: stoneflow_application::task::TaskListQuery,
-    ) -> Result<Vec<TaskRecord>, ApplicationError> {
-        let placement = match query.placement {
-            stoneflow_application::task::TaskPlacementQuery::All => None,
-            stoneflow_application::task::TaskPlacementQuery::Project(ref id) => {
-                Some(Some(id.as_str()))
-            }
-            stoneflow_application::task::TaskPlacementQuery::Standalone => Some(None),
-        };
-        let include_archived = matches!(query.lifecycle, TaskLifecycleView::Archived);
-        let status_filter = query.statuses.as_ref().filter(|items| !items.is_empty());
-        let priority_filter = query.priorities.as_ref().filter(|items| !items.is_empty());
-        let cursor = query
-            .cursor
-            .as_ref()
-            .map(|c| (c.position, c.id.as_str()));
-        let limit = query.limit.map(u64::from);
-        let mut rows = self
-            .tasks
-            .list_visible_page(
-                query.space_id.as_deref(),
-                placement,
-                include_archived,
-                status_filter.map(|items| items.as_slice()),
-                priority_filter.map(|items| items.as_slice()),
-                query.date_filter.as_ref(),
-                cursor,
-                limit,
-            )
-            .await
-            .map_err(from_storage)?;
-        rows.retain(|row| match query.lifecycle {
-            TaskLifecycleView::Active => {
-                !matches!(
-                    row.status,
-                    StorageWorkStatus::Done | StorageWorkStatus::Canceled
-                ) && row.archived_at.is_none()
-            }
-            TaskLifecycleView::Completed => {
-                matches!(row.status, StorageWorkStatus::Done) && row.archived_at.is_none()
-            }
-            TaskLifecycleView::Canceled => {
-                matches!(row.status, StorageWorkStatus::Canceled) && row.archived_at.is_none()
-            }
-            TaskLifecycleView::Archived => row.archived_at.is_some(),
-            TaskLifecycleView::All => row.archived_at.is_none(),
-        });
-        Ok(rows.into_iter().map(map_task).collect())
-    }
-    async fn count(
-        &self,
-        query: stoneflow_application::task::TaskListQuery,
-    ) -> Result<u64, ApplicationError> {
-        let placement = match query.placement {
-            stoneflow_application::task::TaskPlacementQuery::All => None,
-            stoneflow_application::task::TaskPlacementQuery::Project(ref id) => {
-                Some(Some(id.as_str()))
-            }
-            stoneflow_application::task::TaskPlacementQuery::Standalone => Some(None),
-        };
-        let include_archived = matches!(query.lifecycle, TaskLifecycleView::Archived);
-        // lifecycle 的 status 约束并入 SQL，使 totalCount 与列表语义一致
-        let mut statuses = query.statuses.clone().unwrap_or_default();
-        match query.lifecycle {
-            TaskLifecycleView::Active if statuses.is_empty() => {
-                statuses = vec![
-                    stoneflow_domain::WorkStatus::Todo,
-                    stoneflow_domain::WorkStatus::Doing,
-                    stoneflow_domain::WorkStatus::Waiting,
-                ];
-            }
-            TaskLifecycleView::Completed if statuses.is_empty() => {
-                statuses = vec![stoneflow_domain::WorkStatus::Done];
-            }
-            TaskLifecycleView::Canceled if statuses.is_empty() => {
-                statuses = vec![stoneflow_domain::WorkStatus::Canceled];
-            }
-            _ => {}
-        }
-        let status_filter = if statuses.is_empty() {
-            None
-        } else {
-            Some(statuses.as_slice())
-        };
-        let priority_filter = query.priorities.as_ref().filter(|items| !items.is_empty());
-        self.tasks
-            .count_visible(
-                query.space_id.as_deref(),
-                placement,
-                include_archived,
-                status_filter,
-                priority_filter.map(|items| items.as_slice()),
-                query.date_filter.as_ref(),
-            )
-            .await
             .map_err(from_storage)
     }
     async fn next_position(
@@ -350,22 +251,6 @@ impl TaskSpaceReader for TaskPersistenceAdapter {
             })
             .map_err(from_storage)
     }
-    async fn list_by_ids(&self, ids: &[String]) -> Result<Vec<TaskSpaceRecord>, ApplicationError> {
-        self.spaces
-            .list_by_ids(ids)
-            .await
-            .map(|rows| {
-                rows.into_iter()
-                    .map(|space| TaskSpaceRecord {
-                        id: space.id,
-                        name: space.name,
-                        archived_at: space.archived_at,
-                        deleted_at: space.deleted_at,
-                    })
-                    .collect()
-            })
-            .map_err(from_storage)
-    }
 }
 impl TaskProjectReader for TaskPersistenceAdapter {
     async fn get(&self, project_id: &str) -> Result<Option<TaskProjectRecord>, ApplicationError> {
@@ -380,26 +265,6 @@ impl TaskProjectReader for TaskPersistenceAdapter {
                     archived_at: project.archived_at,
                     deleted_at: project.deleted_at,
                 })
-            })
-            .map_err(from_storage)
-    }
-    async fn list_by_ids(
-        &self,
-        ids: &[String],
-    ) -> Result<Vec<TaskProjectRecord>, ApplicationError> {
-        self.projects
-            .list_by_ids(ids)
-            .await
-            .map(|rows| {
-                rows.into_iter()
-                    .map(|project| TaskProjectRecord {
-                        id: project.id,
-                        name: project.name,
-                        space_id: project.space_id,
-                        archived_at: project.archived_at,
-                        deleted_at: project.deleted_at,
-                    })
-                    .collect()
             })
             .map_err(from_storage)
     }

@@ -1,4 +1,4 @@
 export * from './view.keys'
 export * from './view.mutations'
 export * from './view.queries'
-export { useViewsScene } from './useViewsScene'
+export { useSavedViewLibraryScene, useSavedViewWorkspaceScene } from './useViewsScene'

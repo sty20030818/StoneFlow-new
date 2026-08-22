@@ -12,21 +12,15 @@ import {
 } from '@/app/navigation'
 import { useDangerConfirm } from '@/features/danger-confirm'
 import { useTaskDisplayOptions, type TaskDisplayPageKey } from '@/features/display-options'
-import {
-	adaptFilterQueryToListTasks,
-	filterQueryToCommandProjection,
-	removeFilterField,
-	setFilterFieldClause,
-	useListFilterSession,
-	useRegisterFilterCommandAdapter,
-} from '@/features/filter'
+import { useListFilterSession, useRegisterFilterCommandAdapter } from '@/features/filter'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useDialogStore } from '@/features/shell-dialogs'
 import { useSpaces } from '@/features/space'
-import { formatTaskStatusLabel, useTaskCollectionScene, useTaskListData } from '@/features/task'
-import { createView } from '@/features/view'
+import { useTaskCollectionScene, useTaskQueryData } from '@/features/task'
+import { getDefaultTaskViews, useDefaultTaskViewSelection } from '@/features/task-workspace'
+import { useCreateViewMutation } from '@/features/view'
 import { EMPTY_FILTER_QUERY } from '@/shared/types'
-import type { Scope, TaskStatus } from '@/shared/types'
+import type { Scope, TaskViewContext } from '@/shared/types'
 
 import {
 	useArchiveProjectMutation,
@@ -36,15 +30,6 @@ import {
 } from './project.mutations'
 import { useSuspenseProjectDetailQuery } from './project.queries'
 import { useProjectOptions } from './useProjectData'
-
-const PROJECT_TASK_FILTERS: Array<'all' | TaskStatus> = [
-	'all',
-	'doing',
-	'todo',
-	'waiting',
-	'done',
-	'canceled',
-]
 
 const PROJECT_DETAIL_DISPLAY_PAGE_KEY: TaskDisplayPageKey = 'task:project-detail'
 
@@ -69,42 +54,31 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 	const reopenProject = useReopenProjectMutation()
 	const archiveProject = useArchiveProjectMutation()
 	const deleteProject = useDeleteProjectMutation()
+	const createSavedView = useCreateViewMutation()
 	const [busyAction, setBusyAction] = useState<string | null>(null)
+	const context = useMemo<TaskViewContext>(() => ({ kind: 'project', projectId }), [projectId])
+	const defaultViews = useMemo(
+		() => getDefaultTaskViews({ context, projectCompleted: Boolean(project?.completedAt) }),
+		[context, project?.completedAt],
+	)
+	const viewSelection = useDefaultTaskViewSelection(defaultViews)
 
 	const display = useTaskDisplayOptions(PROJECT_DETAIL_DISPLAY_PAGE_KEY)
 	const filterSession = useListFilterSession({ base: EMPTY_FILTER_QUERY })
 
-	useRegisterFilterCommandAdapter({
-		session: filterSession,
-		showCompleted: display.options.showCompleted,
-		onToggleCompleted: () => {
-			void display.actions.applyPartial({
-				showCompleted: !display.options.showCompleted,
-			})
-		},
-	})
+	useRegisterFilterCommandAdapter({ session: filterSession })
 
-	const listInput = useMemo(() => {
-		const patch = adaptFilterQueryToListTasks(filterSession.effective)
-		let statuses = patch.statuses
-		if (!statuses && !display.options.showCompleted) {
-			statuses = ['todo', 'doing', 'waiting']
-		}
-		return {
+	const queryInput = useMemo(
+		() => ({
 			scope,
-			viewKey: 'all' as const,
-			placement: { kind: 'project' as const, projectId },
-			...(statuses ? { statuses } : {}),
-			...(patch.priorities && patch.priorities.length > 0 ? { priorities: patch.priorities } : {}),
-			...(patch.dateFilter ? { dateFilter: patch.dateFilter } : {}),
-		}
-	}, [display.options.showCompleted, filterSession.effective, projectId, scope])
-
-	const taskList = useTaskListData(listInput)
-	const visibleTasks = useMemo(
-		() => taskList.items.filter((task) => task.archivedAt === null),
-		[taskList.items],
+			context,
+			baseViewKey: viewSelection.selected.baseViewKey,
+			filters: filterSession.effective,
+		}),
+		[context, filterSession.effective, scope, viewSelection.selected.baseViewKey],
 	)
+
+	const taskList = useTaskQueryData(queryInput)
 	const projectMoveOptions = useMemo(
 		() =>
 			project
@@ -115,12 +89,11 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 	const activeTaskId = activeDetail?.kind === 'task' ? activeDetail.id : null
 	const taskCollection = useTaskCollectionScene({
 		source: {
-			items: project ? visibleTasks : [],
+			items: project ? taskList.items : [],
 			status: project ? taskList.status : 'ready',
 		},
 		displayPageKey: PROJECT_DETAIL_DISPLAY_PAGE_KEY,
 		display,
-		supportsProject: false,
 		fallbackSubtitle: project?.name ?? '当前项目',
 		activeTaskId,
 		onCreateTask: () => openTaskCreateDialog({ projectId }),
@@ -144,28 +117,6 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 			: {},
 	})
 
-	const statusProjection = useMemo(
-		() => filterQueryToCommandProjection(filterSession.effective),
-		[filterSession.effective],
-	)
-
-	const toolbarPills = PROJECT_TASK_FILTERS.map((filter) => ({
-		label: filter === 'all' ? '所有任务' : formatTaskStatusLabel(filter),
-		active:
-			filter === 'all'
-				? statusProjection.statusValues.length === 0
-				: statusProjection.statusValues.length === 1 && statusProjection.statusValues[0] === filter,
-		onPress: () => {
-			if (filter === 'all') {
-				filterSession.replaceEffective(removeFilterField(filterSession.effective, 'status'))
-				return
-			}
-			filterSession.replaceEffective(
-				setFilterFieldClause(filterSession.effective, 'status', 'is', [filter]),
-			)
-		},
-	}))
-
 	const breadcrumbItems = useMemo(
 		() =>
 			resolveBreadcrumb({
@@ -179,24 +130,20 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 		[project, projectId, shellRoute],
 	)
 
-	const filterUiValue = useMemo(
-		() => ({
-			session: filterSession,
-			projects: projectOptions.map((option) => ({ id: option.id, name: option.name })),
-			onSave: async (input: { mode: 'create' | 'overwrite'; name?: string }) => {
-				if (input.mode !== 'create' || !input.name?.trim()) {
-					return
-				}
-				await createView({
-					name: input.name.trim(),
-					scope,
-					filters: filterSession.effective,
-				})
-				filterSession.clearTemp()
-			},
-		}),
-		[filterSession, projectOptions, scope],
-	)
+	const filterUiValue = {
+		session: filterSession,
+		onSave: async (input: { mode: 'create' | 'overwrite'; name?: string }) => {
+			if (input.mode !== 'create' || !input.name?.trim()) return
+			await createSavedView.mutateAsync({
+				name: input.name.trim(),
+				scope,
+				context,
+				baseViewKey: viewSelection.selected.baseViewKey,
+				filters: filterSession.effective,
+			})
+			filterSession.clearTemp()
+		},
+	}
 
 	function goToProjectsOverview() {
 		void navigate({ to: openSection(scope, 'projects', spaceId) as never })
@@ -217,7 +164,9 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 		breadcrumbItems,
 		taskCollection,
 		displayPageKey: PROJECT_DETAIL_DISPLAY_PAGE_KEY,
-		toolbarPills,
+		toolbarPills: defaultViews.options,
+		selectedToolbarKey: viewSelection.selectedKey,
+		selectToolbar: viewSelection.select,
 		filterUiValue,
 		goToProjectsOverview,
 		completeOrReopen: () => {

@@ -7,8 +7,6 @@
 
 // ── 领域核 ────────────────────────────────────────────────
 export {
-	adaptFilterQueryToListTasks,
-	adaptFilterQueryToViewFilters,
 	createFilterClause,
 	createFilterClauseId,
 	decodeFilterQueryFromSearchParam,
@@ -22,9 +20,7 @@ export {
 	filterQueriesEqual,
 	isFilterDateValue,
 	isFilterQueryEmpty,
-	mergeFilterQueryIntoSearch,
 	normalizeFilterQuery,
-	readFilterQueryFromSearch,
 	removeFilterField,
 	setFilterFieldClause,
 	type FilterClause,
@@ -32,7 +28,6 @@ export {
 	type FilterField,
 	type FilterOp,
 	type FilterQuery,
-	type ListTasksFilterPatch,
 } from './core'
 
 // ── 命令宿主注册槽（投影，非 Filter 真源） ────────────────
@@ -42,23 +37,16 @@ export {
 	useRegisterPageFilterController,
 } from './model/PageFilterProvider'
 
-export type {
-	PageFilterCapabilities,
-	PageFilterController,
-	PageFilterState,
-} from './model/PageFilterProvider'
+export type { PageFilterCapabilities, PageFilterController } from './model/PageFilterProvider'
 
 export { registerFilterCommands } from './commands/registerFilterCommands'
 
-export {
-	filterQueryToCommandProjection,
-	useRegisterFilterCommandAdapter,
-} from './model/useRegisterFilterCommandAdapter'
+export { useRegisterFilterCommandAdapter } from './model/useRegisterFilterCommandAdapter'
 
 // ── UI ────────────────────────────────────────────────────
 export { PageFilterButton } from './components/PageFilterButton'
 export { FilterBar } from './components/FilterBar'
-export { ListFilterUiProvider } from './model/ListFilterUiContext'
+export { ListFilterUiProvider, type ListFilterUiValue } from './model/ListFilterUiContext'
 
 export {
 	parseListFilterSearch,

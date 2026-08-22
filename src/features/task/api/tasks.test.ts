@@ -2,11 +2,12 @@ import { invoke } from '@tauri-apps/api/core'
 
 import {
 	archiveTask,
+	countTaskQuery,
 	createTask,
 	deleteTask,
 	getTaskDetail,
-	listTasks,
 	restoreTask,
+	runTaskQuery,
 	updateTask,
 } from '@/features/task/api/tasks'
 
@@ -21,88 +22,76 @@ describe('tasks api', () => {
 		mockedInvoke.mockReset()
 	})
 
-	it('读取列表时发送 scope、viewKey 和 placement，并解析分页', async () => {
+	it('通用查询完整保留 due、planned、多项目与 is_not', async () => {
 		mockedInvoke.mockResolvedValue({ items: [], nextCursor: null, totalCount: 0 })
+		const filters = {
+			clauses: [
+				{ id: 'due', field: 'due' as const, op: 'is' as const, values: ['today'] },
+				{
+					id: 'planned',
+					field: 'planned' as const,
+					op: 'is' as const,
+					values: ['tomorrow'],
+				},
+				{
+					id: 'project',
+					field: 'project' as const,
+					op: 'is_not' as const,
+					values: ['project-1', 'project-2'],
+				},
+			],
+		}
 
-		const page = await listTasks({
+		await runTaskQuery({
 			scope: { type: 'space', spaceId: 'space-1' },
-			viewKey: 'completed',
-			placement: {
-				kind: 'project',
-				projectId: 'project-1',
-			},
+			context: { kind: 'all' },
+			baseViewKey: 'active',
+			filters,
 		})
 
-		expect(page).toEqual({ items: [], nextCursor: null, totalCount: 0 })
-		expect(mockedInvoke).toHaveBeenCalledWith('list_tasks', {
+		expect(mockedInvoke).toHaveBeenCalledWith('run_task_query', {
 			input: {
-				scope: {
-					type: 'space',
-					spaceId: 'space-1',
-				},
-				viewKey: 'completed',
-				placement: {
-					kind: 'project',
-					projectId: 'project-1',
-				},
-				statuses: null,
-				priorities: null,
-				dateFilter: null,
-				limit: null,
+				scope: { type: 'space', spaceId: 'space-1' },
+				context: { kind: 'all' },
+				baseViewKey: 'active',
+				filters,
 				cursor: null,
 			},
 		})
 	})
 
-	it('所有空间列表发送 scope=all 且与单 Space 共用 viewKey 语义', async () => {
-		mockedInvoke.mockResolvedValue({ items: [], nextCursor: 'c1', totalCount: 42 })
+	it('侧栏数量走 count-only 查询，不加载任务窗口', async () => {
+		mockedInvoke.mockResolvedValue({ totalCount: 42 })
+		const input = {
+			scope: { type: 'space' as const, spaceId: 'space-1' },
+			context: { kind: 'standalone' as const },
+			baseViewKey: 'all' as const,
+			filters: { clauses: [] },
+		}
 
-		const page = await listTasks({
-			scope: { type: 'all' },
-			viewKey: 'all',
-			placement: { kind: 'all' },
-		})
-
-		expect(page.nextCursor).toBe('c1')
-		expect(page.totalCount).toBe(42)
-		expect(mockedInvoke).toHaveBeenCalledWith('list_tasks', {
+		await expect(countTaskQuery(input)).resolves.toBe(42)
+		expect(mockedInvoke).toHaveBeenCalledWith('count_task_query', {
 			input: {
-				scope: { type: 'all' },
-				viewKey: 'all',
-				placement: { kind: 'all', projectId: null },
-				statuses: null,
-				priorities: null,
-				dateFilter: null,
-				limit: null,
-				cursor: null,
+				scope: { type: 'space', spaceId: 'space-1' },
+				context: { kind: 'standalone' },
+				baseViewKey: 'all',
+				filters: { clauses: [] },
 			},
 		})
 	})
 
-	it('列表可下推 statuses 与 cursor', async () => {
-		mockedInvoke.mockResolvedValue({ items: [], nextCursor: null, totalCount: 0 })
+	it('续页允许省略 totalCount', async () => {
+		mockedInvoke.mockResolvedValue({ items: [], nextCursor: null, totalCount: null })
 
-		await listTasks({
-			scope: { type: 'all' },
-			viewKey: 'all',
-			placement: { kind: 'all' },
-			statuses: ['todo', 'doing', 'waiting'],
-			cursor: '0\u001ftask-1',
-			limit: 100,
-		})
-
-		expect(mockedInvoke).toHaveBeenCalledWith('list_tasks', {
-			input: {
+		await expect(
+			runTaskQuery({
 				scope: { type: 'all' },
-				viewKey: 'all',
-				placement: { kind: 'all', projectId: null },
-				statuses: ['todo', 'doing', 'waiting'],
-				priorities: null,
-				dateFilter: null,
-				limit: 100,
-				cursor: '0\u001ftask-1',
-			},
-		})
+				context: { kind: 'all' },
+				baseViewKey: 'all',
+				filters: { clauses: [] },
+				cursor: '1000\u001ftask-1',
+			}),
+		).resolves.toMatchObject({ totalCount: null })
 	})
 
 	it('创建、更新和详情读取保持 camelCase 输入', async () => {

@@ -14,11 +14,12 @@ import { FormProvider, useController } from 'react-hook-form'
 import type { ProjectOption } from '@/features/project'
 import { useZodForm } from '@/shared/form'
 import { useSubmitTargetFromForm } from '@/features/submit'
-import type { CreateViewInput, TaskStatus, UpdateViewInput, View } from '@/shared/types'
+import type { TaskStatus, UpdateViewInput, View } from '@/shared/types'
 import {
 	buildViewEditorDefaultValues,
+	type CreateViewDraft,
 	type PriorityMode,
-	toCreateViewInput,
+	toCreateViewDraft,
 	toUpdateViewInput,
 	viewEditorSchema,
 } from './ViewEditorDialog.form'
@@ -37,7 +38,7 @@ type ViewEditorDialogProps = {
 	projects: ProjectOption[]
 	isSubmitting: boolean
 	onClose: () => void
-	onCreate: (input: CreateViewInput) => Promise<void>
+	onCreate: (input: CreateViewDraft) => Promise<void>
 	onUpdate: (input: UpdateViewInput) => Promise<void>
 }
 
@@ -85,8 +86,8 @@ export function ViewEditorDialog({
 		form.reset(buildViewEditorDefaultValues(view))
 	}, [form, open, view])
 
-	const submitLabel = view ? '保存视图' : '创建视图'
-	const title = view ? '编辑视图' : '新建自定义视图'
+	const submitLabel = view ? '保存视图' : '创建保存视图'
+	const title = view ? '编辑保存视图' : '新建保存视图'
 	const activeProjectOptions = useMemo(
 		() => projects.slice().sort((left, right) => left.name.localeCompare(right.name, 'zh-CN')),
 		[projects],
@@ -100,7 +101,8 @@ export function ViewEditorDialog({
 	const plannedMode = plannedModeField.value
 	const descriptionId = useId()
 	const hasSpecificProject = projectMode !== 'specific' || specificProjectId !== 'none'
-	const canSubmit = nameField.value.trim().length > 0 && statusList.length > 0 && hasSpecificProject
+	const canSubmit =
+		nameField.value.trim().length > 0 && (view ? true : statusList.length > 0 && hasSpecificProject)
 
 	const handleSubmit = useCallback(async () => {
 		const isValid = await form.trigger()
@@ -113,7 +115,7 @@ export function ViewEditorDialog({
 		if (view) {
 			await onUpdate(toUpdateViewInput(values, view.id))
 		} else {
-			await onCreate(toCreateViewInput(values))
+			await onCreate(toCreateViewDraft(values))
 		}
 
 		onClose()
@@ -121,7 +123,7 @@ export function ViewEditorDialog({
 
 	useSubmitTargetFromForm({
 		id: open ? (view ? `view-editor:${view.id}` : 'view-editor:create') : null,
-		title: view ? '保存视图' : '创建视图',
+		title: view ? '保存视图' : '创建保存视图',
 		priority: 100,
 		context: { source: 'view-editor' as const },
 		form,
@@ -155,7 +157,9 @@ export function ViewEditorDialog({
 							<Modal.Header>
 								<Modal.Heading>{title}</Modal.Heading>
 								<p className='max-w-140 text-sm text-muted' id={descriptionId}>
-									自定义视图只保存筛选条件（Filter）；分组与排序请在「显示」中设置。
+									{view
+										? '这里仅修改名称；查询条件请在保存视图详情中修改并覆盖。'
+										: '保存视图固定查询边界与筛选；分组和排序仍由「显示」独立管理。'}
 								</p>
 							</Modal.Header>
 
@@ -171,88 +175,92 @@ export function ViewEditorDialog({
 									/>
 								</div>
 
-								<section className='grid gap-2'>
-									<Label>状态筛选</Label>
-									<ToggleButtonGroup
-										aria-label='状态筛选'
-										isDetached
-										selectedKeys={statusList}
-										selectionMode='multiple'
-										onSelectionChange={(keys) =>
-											statusListField.onChange(Array.from(keys, String) as TaskStatus[])
-										}
-									>
-										{STATUS_OPTIONS.map((status) => (
-											<ToggleButton id={status.key} key={status.key} variant='ghost'>
-												{status.label}
-											</ToggleButton>
-										))}
-									</ToggleButtonGroup>
-								</section>
+								{view ? null : (
+									<section className='grid gap-2'>
+										<Label>状态筛选</Label>
+										<ToggleButtonGroup
+											aria-label='状态筛选'
+											isDetached
+											selectedKeys={statusList}
+											selectionMode='multiple'
+											onSelectionChange={(keys) =>
+												statusListField.onChange(Array.from(keys, String) as TaskStatus[])
+											}
+										>
+											{STATUS_OPTIONS.map((status) => (
+												<ToggleButton id={status.key} key={status.key} variant='ghost'>
+													{status.label}
+												</ToggleButton>
+											))}
+										</ToggleButtonGroup>
+									</section>
+								)}
 
-								<section className='grid gap-3 md:grid-cols-2'>
-									<DialogSelect
-										label='优先级'
-										onValueChange={(value) => priorityModeField.onChange(value as PriorityMode)}
-										options={[
-											{ value: 'any', label: '不限' },
-											{ value: 'p4', label: '仅 P4' },
-											{ value: 'p3+', label: 'P3 及以上' },
-											{ value: 'p2+', label: 'P2 及以上' },
-											{ value: 'p1+', label: 'P1 及以上' },
-										]}
-										value={priorityMode}
-									/>
-									<DialogSelect
-										label='项目归属'
-										onValueChange={(value) =>
-											projectModeField.onChange(value as 'any' | 'none' | 'specific')
-										}
-										options={[
-											{ value: 'any', label: '不限' },
-											{ value: 'none', label: '仅独立事项' },
-											{ value: 'specific', label: '指定项目' },
-										]}
-										value={projectMode}
-									/>
-									<DialogSelect
-										disabled={projectMode !== 'specific'}
-										label='指定项目'
-										onValueChange={specificProjectIdField.onChange}
-										options={[
-											{ value: 'none', label: '请选择项目' },
-											...activeProjectOptions.map((project) => ({
-												value: project.id,
-												label: project.name,
-											})),
-										]}
-										value={specificProjectId}
-									/>
-									<DialogSelect
-										label='截止时间'
-										onValueChange={dueModeField.onChange}
-										options={[
-											{ value: 'none', label: '不限' },
-											{ value: 'today', label: '今天' },
-											{ value: 'overdue', label: '已逾期' },
-											{ value: 'future', label: '未来' },
-											{ value: 'hasDate', label: '有日期' },
-										]}
-										value={dueMode}
-									/>
-									<DialogSelect
-										label='计划时间'
-										onValueChange={plannedModeField.onChange}
-										options={[
-											{ value: 'none', label: '不限' },
-											{ value: 'today', label: '今天' },
-											{ value: 'future', label: '未来' },
-											{ value: 'overdue', label: '已逾期' },
-											{ value: 'hasDate', label: '有日期' },
-										]}
-										value={plannedMode}
-									/>
-								</section>
+								{view ? null : (
+									<section className='grid gap-3 md:grid-cols-2'>
+										<DialogSelect
+											label='优先级'
+											onValueChange={(value) => priorityModeField.onChange(value as PriorityMode)}
+											options={[
+												{ value: 'any', label: '不限' },
+												{ value: 'p4', label: '仅 P4' },
+												{ value: 'p3+', label: 'P3 及以上' },
+												{ value: 'p2+', label: 'P2 及以上' },
+												{ value: 'p1+', label: 'P1 及以上' },
+											]}
+											value={priorityMode}
+										/>
+										<DialogSelect
+											label='查询范围'
+											onValueChange={(value) =>
+												projectModeField.onChange(value as 'any' | 'none' | 'specific')
+											}
+											options={[
+												{ value: 'any', label: '全部任务' },
+												{ value: 'none', label: '仅独立事项' },
+												{ value: 'specific', label: '指定项目' },
+											]}
+											value={projectMode}
+										/>
+										<DialogSelect
+											disabled={projectMode !== 'specific'}
+											label='指定项目'
+											onValueChange={specificProjectIdField.onChange}
+											options={[
+												{ value: 'none', label: '请选择项目' },
+												...activeProjectOptions.map((project) => ({
+													value: project.id,
+													label: project.name,
+												})),
+											]}
+											value={specificProjectId}
+										/>
+										<DialogSelect
+											label='截止时间'
+											onValueChange={dueModeField.onChange}
+											options={[
+												{ value: 'none', label: '不限' },
+												{ value: 'today', label: '今天' },
+												{ value: 'overdue', label: '已逾期' },
+												{ value: 'future', label: '未来' },
+												{ value: 'hasDate', label: '有日期' },
+											]}
+											value={dueMode}
+										/>
+										<DialogSelect
+											label='计划时间'
+											onValueChange={plannedModeField.onChange}
+											options={[
+												{ value: 'none', label: '不限' },
+												{ value: 'today', label: '今天' },
+												{ value: 'future', label: '未来' },
+												{ value: 'overdue', label: '已逾期' },
+												{ value: 'hasDate', label: '有日期' },
+											]}
+											value={plannedMode}
+										/>
+									</section>
+								)}
 							</Modal.Body>
 
 							<Modal.Footer>

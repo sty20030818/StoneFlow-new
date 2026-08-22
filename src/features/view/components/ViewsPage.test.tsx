@@ -1,413 +1,211 @@
+import { fireEvent, render, screen } from '@testing-library/react'
 import type { ReactNode } from 'react'
-import { fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { vi } from 'vitest'
 
-import { ShellRouteProvider } from '@/app/navigation'
-import { parseShellRoute } from '@/app/navigation'
-import {
-	DEFAULT_KEYBINDINGS,
-	KeybindingRegistry,
-	ShortcutRegistryProvider,
-} from '@/features/command'
-import { renderWithMatchedRoute } from '@/test/renderWithRouter'
-import { ViewsPage } from '@/features/view/components/ViewsPage'
+import type { View } from '@/shared/types'
 
-const loadTaskViewsSpy = vi.fn<() => Promise<void>>()
-const runTaskViewSpy =
-	vi.fn<
-		(input: {
-			scope: { type: string }
-			viewId: string | null
-			viewKey: string | null
-		}) => Promise<void>
-	>()
-const refreshTaskRunSpy = vi.fn<() => Promise<void>>()
-const loadSidebarSpy = vi.fn<(scope: { type: string }) => Promise<void>>()
-const openTaskDetailSpy = vi.fn<(taskId: string) => void>()
-const openTaskCreateDialogSpy = vi.fn<(draft?: unknown) => void>()
+import { SavedViewPage } from './SavedViewPage'
+import { ViewsPage } from './ViewsPage'
 
-const mockViews = [
-	{
-		id: 'today',
-		name: 'Today',
-		kind: 'system' as const,
-		systemKey: 'today' as const,
-		scope: { type: 'all' as const },
-		filters: { clauses: [] },
-		position: 100,
-		createdAt: '2026-05-03T10:00:00Z',
-		updatedAt: '2026-05-03T10:00:00Z',
-	},
-	{
-		id: 'upcoming',
-		name: 'Upcoming',
-		kind: 'system' as const,
-		systemKey: 'upcoming' as const,
-		scope: { type: 'all' as const },
-		filters: { clauses: [] },
-		position: 200,
-		createdAt: '2026-05-03T10:00:00Z',
-		updatedAt: '2026-05-03T10:00:00Z',
-	},
-]
-
-const mockTaskRunState = {
-	item: {
-		view: mockViews[0],
-		items: [
-			{
-				id: 'task-1',
-				spaceId: 'space-1',
-				spaceName: '工作',
-				spaceSlug: 'work',
-				projectId: 'project-1',
-				projectName: '阶段 8',
-				title: '系统视图任务',
-				note: null,
-				status: 'todo' as const,
-				statusChangedAt: '2026-05-03T10:00:00Z',
-				priority: 4,
-				dueAt: '2026-05-03',
-				plannedAt: null,
-				remindAt: null,
-				completedAt: null,
-				canceledAt: null,
-				archivedAt: null,
-				createdAt: '2026-05-03T10:00:00Z',
-				updatedAt: '2026-05-03T10:00:00Z',
-			},
-		],
-		groups: [],
-	},
-	status: 'ready' as const,
-	error: null,
-	input: {
-		scope: { type: 'all' as const },
-		viewId: null,
-		viewKey: 'today',
-	},
-}
-
-type MockTaskRunState =
-	| typeof mockTaskRunState
-	| {
-			item: null
-			status: 'loading' | 'ready' | 'error'
-			error: string | null
-			input: null
-	  }
-
-const mockViewQueryState: {
-	taskViews: typeof mockViews
-	taskRun: MockTaskRunState
-} = {
-	taskViews: mockViews,
-	taskRun: mockTaskRunState,
-}
-
-vi.mock('@/features/entity-detail', () => ({
-	useEntityDetailController: () => ({
-		activeDetail: null,
-		isOpen: false,
-		openTaskDetail: openTaskDetailSpy,
-		closeDrawer: vi.fn(),
-		openPage: vi.fn(),
-	}),
+const { useLibrarySceneMock, useWorkspaceSceneMock, workspacePropsSpy } = vi.hoisted(() => ({
+	useLibrarySceneMock: vi.fn(),
+	useWorkspaceSceneMock: vi.fn(),
+	workspacePropsSpy: vi.fn(),
 }))
 
-vi.mock('@/features/shell-dialogs', () => ({
-	useDialogStore: (selector: (state: unknown) => unknown) =>
-		selector({
-			openTaskCreateDialog: openTaskCreateDialogSpy,
-		}),
+vi.mock('../hooks/useViewsScene', () => ({
+	useSavedViewLibraryScene: useLibrarySceneMock,
+	useSavedViewWorkspaceScene: useWorkspaceSceneMock,
 }))
 
-vi.mock('@/features/project', () => ({
-	useProjectOptions: (scope: { type: string }) => {
-		loadSidebarSpy(scope)
-		return [{ id: 'project-1', name: '阶段 8', spaceId: 'space-1' }]
+vi.mock('@/features/command', () => ({
+	COMMAND_IDS: { newFullTask: 'task.new' },
+	CommandShortcut: () => null,
+}))
+
+vi.mock('@/features/task', () => ({
+	TaskBoard: ({ tasks }: { tasks: Array<{ title: string }> }) => (
+		<div>{tasks.map((task) => task.title).join(',')}</div>
+	),
+}))
+
+vi.mock('@/features/task-workspace', () => ({
+	TaskWorkspace: (props: {
+		headerActions: ReactNode
+		children: ReactNode
+		onViewChange: (key: string) => void
+	}) => {
+		workspacePropsSpy(props)
+		return (
+			<section aria-label='任务工作区'>
+				{props.headerActions}
+				<button onClick={() => props.onViewChange('today')} type='button'>
+					切换到今天
+				</button>
+				{props.children}
+			</section>
+		)
 	},
 }))
 
-vi.mock('@/features/space', () => ({
-	useSpaces: () => ({
-		spaces: [{ id: 'space-1', name: '工作' }],
-		status: 'ready',
-		error: null,
-		refetch: vi.fn(),
-	}),
+vi.mock('@/shared/components/AppBreadcrumb', () => ({
+	AppBreadcrumb: ({ items }: { items: Array<{ label: string }> }) => (
+		<nav>{items.map((item) => item.label).join(' / ')}</nav>
+	),
 }))
 
-vi.mock('@/features/view/hooks/view.queries', () => ({
-	useViewsQuery: () => {
-		loadTaskViewsSpy()
-		return {
-			data: mockViewQueryState.taskViews,
-			isError: false,
-			isLoading: false,
-			isPending: false,
-			error: null,
-			refetch: loadTaskViewsSpy,
-		}
-	},
-	useTaskViewRunInfiniteQuery: (
-		input: { scope: { type: string }; viewId: string | null; viewKey: string | null } | null,
-	) => {
-		if (input) {
-			runTaskViewSpy(input)
-		}
-		const item = mockViewQueryState.taskRun.item as
-			| { items?: unknown[]; totalCount?: number; nextCursor?: string | null }
-			| null
-			| undefined
-		const pages = item
-			? [
-					{
-						...item,
-						items: item.items ?? [],
-						totalCount: item.totalCount ?? item.items?.length ?? 0,
-						nextCursor: item.nextCursor ?? null,
-					},
-				]
-			: undefined
-
-		return {
-			data: pages ? { pages, pageParams: [null] } : undefined,
-			isError: mockViewQueryState.taskRun.status === 'error',
-			isLoading: mockViewQueryState.taskRun.status === 'loading',
-			isPending: mockViewQueryState.taskRun.status === 'loading',
-			error: mockViewQueryState.taskRun.error,
-			refetch: refreshTaskRunSpy,
-			hasNextPage: false,
-			isFetchingNextPage: false,
-			fetchNextPage: vi.fn(),
-			isFetchNextPageError: false,
-		}
-	},
-	flattenTaskViewPages: (pages: Array<{ items: unknown[] }> | undefined) =>
-		pages?.flatMap((page) => page.items) ?? [],
-}))
-
-vi.mock('@/features/view/hooks/view.mutations', () => ({
-	useCreateViewMutation: () => ({
-		mutateAsync: vi.fn(),
-	}),
-	useUpdateViewMutation: () => ({
-		mutateAsync: vi.fn(),
-	}),
-	useDeleteViewMutation: () => ({
-		mutateAsync: vi.fn(),
-	}),
-	useToggleViewVisibleMutation: () => ({
-		mutateAsync: vi.fn(),
-	}),
-	useReorderViewsMutation: () => ({
-		mutateAsync: vi.fn(),
-	}),
-}))
-vi.mock('@/shared/events', () => ({
-	useTaskChangedListener:
-		vi.fn<(scope: unknown, onTaskChanged: (payload: unknown) => void) => void>(),
-}))
-
-vi.mock('@/features/task', async () => {
-	const { buildTaskCommandSelection } =
-		await import('@/features/task/model/buildTaskCommandSelection')
-	return {
-		buildTaskCommandSelection,
-		useTaskCollectionScene: (input: {
-			source: { items: Array<{ id: string; title: string; projectName?: string | null }> }
-			fallbackSubtitle: string
-			onCreateTask: () => void
-			empty: {
-				emptyActionLabel?: string
-				emptyDescription?: string
-				emptyTitle?: string
-			}
-		}) => {
-			return {
-				boardProps: {
-					emptyActionLabel: input.empty.emptyActionLabel,
-					emptyDescription: input.empty.emptyDescription,
-					emptyTitle: input.empty.emptyTitle ?? '',
-					onEmptyAction: input.onCreateTask,
-					tasks: input.source.items,
-				},
-			}
-		},
-		useTaskListController: () => ({
-			pendingTaskId: null,
-			updateTaskPriority: vi.fn<(task: unknown, priority: unknown) => Promise<void>>(),
-			updateTaskStatus: vi.fn<(task: unknown, status: unknown) => Promise<void>>(),
-			toggleTaskStatus: vi.fn<(task: unknown) => Promise<void>>(),
-			archiveListTask: vi.fn<(task: unknown) => Promise<void>>(),
-			deleteListTask: vi.fn<(task: unknown) => Promise<void>>(),
-		}),
-		useTaskSelection: () => ({
-			selectedTaskIdSet: new Set(['task-1']),
-			selectionSnapshot: {
-				type: 'task',
-				ids: ['task-1'],
-				idSet: new Set(['task-1']),
-				count: 1,
-				hasSelection: true,
-				isSingleSelection: true,
-				isMultiSelection: false,
-			},
-			selectedCount: 1,
-			toggleTaskSelection: vi.fn<(taskId: string) => void>(),
-			clearTaskSelection: vi.fn<() => void>(),
-			focusedTaskId: null,
-			setFocusedTaskId: vi.fn(),
-			moveFocus: vi.fn(),
-			selectTaskIds: vi.fn(),
-		}),
-		useRegisterTaskPreviewSource: vi.fn(),
-		useTaskPreviewController: () => ({
-			closePreview: vi.fn(),
-			openPreview: vi.fn(),
-		}),
-		TaskBoard: ({
-			emptyActionLabel,
-			emptyDescription,
-			emptyTitle,
-			onEmptyAction,
-			tasks,
-		}: {
-			emptyActionLabel?: string
-			emptyDescription?: string
-			emptyTitle: string
-			onEmptyAction?: () => void
-			tasks: Array<{ title: string }>
-		}) => (
-			<div>
-				<div>{emptyTitle}</div>
-				{emptyDescription ? <div>{emptyDescription}</div> : null}
-				{emptyActionLabel && onEmptyAction ? (
-					<button onClick={onEmptyAction} type='button'>
-						{emptyActionLabel}
-					</button>
-				) : null}
-				<div>{tasks.map((task) => task.title).join(',')}</div>
-			</div>
+vi.mock('@/shared/components/page-frame', () => ({
+	PageFrame: {
+		Root: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+		Header: ({ breadcrumb, actions }: { breadcrumb?: ReactNode; actions?: ReactNode }) => (
+			<header>
+				{breadcrumb}
+				{actions}
+			</header>
 		),
-		formatTaskStatusLabel: (status: string) => status,
-	}
-})
-
-vi.mock('@/features/view/components/ViewEditorDialog', () => ({
-	ViewEditorDialog: ({ open }: { open: boolean }) => (open ? <div>创建视图弹窗</div> : null),
+		Body: ({ children }: { children: ReactNode }) => <main>{children}</main>,
+	},
 }))
 
-describe('ViewsPage', () => {
+vi.mock('./ViewEditorDialog', () => ({
+	ViewEditorDialog: ({ open }: { open: boolean }) => (open ? <div>视图编辑器</div> : null),
+}))
+
+const savedView: View = {
+	id: 'view-1',
+	name: '重点任务',
+	scope: { type: 'all' },
+	context: { kind: 'all' },
+	baseViewKey: 'active',
+	filters: { clauses: [] },
+	position: 100,
+	createdAt: '2026-08-19T00:00:00Z',
+	updatedAt: '2026-08-19T00:00:00Z',
+}
+
+const editor = {
+	open: false,
+	view: null,
+	projects: [],
+	isSubmitting: false,
+	openCreate: vi.fn(),
+	openEdit: vi.fn(),
+	onClose: vi.fn(),
+	onCreate: vi.fn(async () => undefined),
+	onUpdate: vi.fn(async () => undefined),
+}
+
+describe('Saved View pages', () => {
 	beforeEach(() => {
-		loadTaskViewsSpy.mockReset()
-		runTaskViewSpy.mockReset()
-		loadSidebarSpy.mockReset()
-		openTaskCreateDialogSpy.mockReset()
-		mockViewQueryState.taskViews = mockViews
-		mockViewQueryState.taskRun = mockTaskRunState
-	})
-
-	it('根据 canonical view route 解析真实 viewId，并触发视图执行', async () => {
-		await renderViewsPage('/all/views/today')
-
-		await waitFor(() => {
-			expect(loadTaskViewsSpy).toHaveBeenCalled()
-			expect(loadSidebarSpy).toHaveBeenCalledWith({ type: 'all' })
-			expect(runTaskViewSpy).toHaveBeenCalledWith({
-				scope: { type: 'all' },
-				viewId: null,
-				viewKey: 'today',
-			})
-		})
-
-		expect(screen.getByRole('link', { name: '视图' })).toBeInTheDocument()
-		const activeViewLink = screen.getByRole('link', { name: 'Today' })
-		expect(activeViewLink).toHaveAttribute('aria-current', 'page')
-		expect(
-			within(activeViewLink.closest('header')!).getByRole('button', { name: '创建任务' }),
-		).toHaveClass('button--ghost')
-	})
-
-	it('点击系统视图选项后切换到新的视图 id', async () => {
-		await renderViewsPage('/all/views/today')
-
-		fireEvent.click(screen.getByRole('radio', { name: 'Upcoming' }))
-
-		await waitFor(() => {
-			expect(runTaskViewSpy).toHaveBeenLastCalledWith({
-				scope: { type: 'all' },
-				viewId: null,
-				viewKey: 'upcoming',
-			})
-		})
-	})
-
-	it('有视图但没有任务时展示更完整的空态文案', async () => {
-		mockViewQueryState.taskRun = {
-			...mockTaskRunState,
-			item: {
-				...mockTaskRunState.item,
-				items: [],
-			},
-		}
-
-		await renderViewsPage('/all/views/today')
-
-		expect(screen.getByText('当前没有任务')).toBeInTheDocument()
-		expect(
-			screen.getByText(
-				'视图「Today」下还没有符合条件的任务。点「创建任务」新增一项，或者调整一下视图条件再看看。',
-			),
-		).toBeInTheDocument()
-	})
-
-	it('没有可用视图时空态 CTA 打开创建视图弹窗', async () => {
-		mockViewQueryState.taskViews = []
-		mockViewQueryState.taskRun = {
-			item: null,
+		vi.clearAllMocks()
+		useLibrarySceneMock.mockReturnValue({
+			breadcrumbItems: [{ key: 'views', label: '保存视图', current: true }],
+			views: [savedView],
 			status: 'ready',
-			error: null,
-			input: null,
+			search: '',
+			setSearch: vi.fn(),
+			editor,
+			openView: vi.fn(),
+			deleteView: vi.fn(async () => undefined),
+		})
+		useWorkspaceSceneMock.mockReturnValue(buildWorkspaceScene())
+	})
+
+	it('根页只管理保存视图的搜索、打开与创建', () => {
+		const scene = useLibrarySceneMock()
+		useLibrarySceneMock.mockReturnValue(scene)
+		render(<ViewsPage />)
+
+		fireEvent.change(screen.getByRole('textbox', { name: '搜索保存视图' }), {
+			target: { value: '重点' },
+		})
+		expect(scene.setSearch).toHaveBeenCalledWith('重点')
+
+		fireEvent.click(screen.getByRole('button', { name: /重点任务/ }))
+		expect(scene.openView).toHaveBeenCalledWith(savedView)
+
+		fireEvent.click(screen.getByRole('button', { name: '新建保存视图' }))
+		expect(editor.openCreate).toHaveBeenCalledOnce()
+		expect(screen.queryByText('系统视图')).not.toBeInTheDocument()
+	})
+
+	it('详情页把保存视图交给唯一 TaskWorkspace，并保留任务与视图操作', async () => {
+		const scene = useWorkspaceSceneMock()
+		useWorkspaceSceneMock.mockReturnValue(scene)
+		render(<SavedViewPage />)
+
+		expect(screen.getByRole('region', { name: '任务工作区' })).toBeInTheDocument()
+		expect(screen.getByText('写阶段总结')).toBeInTheDocument()
+		expect(workspacePropsSpy).toHaveBeenCalledWith(
+			expect.objectContaining({
+				selectedViewKey: 'saved:view-1',
+				views: scene.toolbarPills,
+			}),
+		)
+
+		fireEvent.click(screen.getByRole('button', { name: '切换到今天' }))
+		expect(scene.selectToolbar).toHaveBeenCalledWith('today')
+		fireEvent.click(screen.getByRole('button', { name: '创建任务' }))
+		expect(scene.openTaskCreateDialog).toHaveBeenCalledOnce()
+
+		fireEvent.click(screen.getByRole('button', { name: '视图操作' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: '删除保存视图' }))
+		expect(scene.deleteActiveView).toHaveBeenCalledOnce()
+	})
+
+	it('详情缺失时返回保存视图库', () => {
+		const scene = { ...buildWorkspaceScene(), activeView: null, viewStatus: 'not-found' }
+		useWorkspaceSceneMock.mockReturnValue(scene)
+		render(<SavedViewPage />)
+
+		expect(screen.getByText('找不到保存视图')).toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: '返回保存视图' }))
+		expect(scene.openLibrary).toHaveBeenCalledOnce()
+	})
+
+	it('旧定义损坏时保留 Library 删除入口但禁止编辑', async () => {
+		const invalidView = { ...savedView, definitionError: '无法无损升级' }
+		const scene = { ...useLibrarySceneMock(), views: [invalidView] }
+		useLibrarySceneMock.mockReturnValue(scene)
+		render(<ViewsPage />)
+
+		expect(screen.getByText('需要重建')).toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: '视图操作' }))
+		expect(screen.queryByRole('menuitem', { name: '编辑保存视图' })).not.toBeInTheDocument()
+		fireEvent.click(await screen.findByRole('menuitem', { name: '删除保存视图' }))
+		expect(scene.deleteView).toHaveBeenCalledWith(invalidView)
+	})
+
+	it('旧定义损坏的详情页不执行任务工作区', () => {
+		const scene = {
+			...buildWorkspaceScene(),
+			activeView: { ...savedView, definitionError: '无法无损升级' },
+			viewStatus: 'invalid-definition',
 		}
+		useWorkspaceSceneMock.mockReturnValue(scene)
+		render(<SavedViewPage />)
 
-		await renderViewsPage('/all/views/today')
-
-		expect(screen.getByText('当前还没有视图')).toBeInTheDocument()
-		expect(
-			screen.getByText(
-				'这里会显示你整理好的任务视图，现在还没准备好。点「创建视图」先建一个，后面筛选、回看和聚焦都会更顺手。',
-			),
-		).toBeInTheDocument()
-
-		fireEvent.click(screen.getByRole('button', { name: '创建视图' }))
-		expect(screen.getByText('创建视图弹窗')).toBeInTheDocument()
+		expect(screen.getByText('保存视图需要重建')).toBeInTheDocument()
+		expect(screen.queryByRole('region', { name: '任务工作区' })).not.toBeInTheDocument()
 	})
 })
 
-function renderViewsPage(
-	initialEntry: string,
-	options: {
-		node?: ReactNode
-		wrap?: (children: ReactNode) => ReactNode
-	} = {},
-) {
-	return renderWithMatchedRoute(options.node ?? <ViewsPage />, {
-		initialEntry,
-		path: '/all/views/$viewId',
-		wrap: (children) => {
-			const content = (
-				<ShortcutRegistryProvider registry={testShortcutRegistry}>
-					<ShellRouteProvider shellRoute={parseShellRoute(initialEntry)}>
-						{children}
-					</ShellRouteProvider>
-				</ShortcutRegistryProvider>
-			)
-
-			return options.wrap ? options.wrap(content) : content
-		},
-	})
+function buildWorkspaceScene() {
+	return {
+		activeView: savedView,
+		viewStatus: 'ready',
+		breadcrumbItems: [{ key: 'view-1', label: savedView.name, current: true }],
+		displayPageKey: 'view:view-1',
+		filterUiValue: {},
+		taskCollection: { boardProps: { tasks: [{ title: '写阶段总结' }] } },
+		toolbarPills: [
+			{ key: 'saved:view-1', label: savedView.name },
+			{ key: 'today', label: '今天' },
+		],
+		selectedToolbarKey: 'saved:view-1',
+		selectToolbar: vi.fn(),
+		openTaskCreateDialog: vi.fn(),
+		openLibrary: vi.fn(),
+		editor,
+		deleteActiveView: vi.fn(async () => undefined),
+	}
 }
-
-const testShortcutRegistry = new KeybindingRegistry(DEFAULT_KEYBINDINGS)

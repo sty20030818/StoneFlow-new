@@ -3,22 +3,22 @@
  * search 键名：`f`（紧凑 base64url JSON）。
  */
 
-import { isFilterQueryEmpty, normalizeFilterQuery } from './normalize'
-import { EMPTY_FILTER_QUERY, type FilterQuery } from './types'
+import { normalizeFilterQuery } from './normalize'
+import type { FilterQuery } from './types'
 
 /** 列表路由 search 中临时筛选的参数名 */
 export const FILTER_SEARCH_PARAM_KEY = 'f' as const
 
 /**
- * 编码为 search 参数值；空查询返回 null（调用方应删除该 key）。
+ * 编码为 search 参数值。null 表示无 draft；空查询也是有效的完整 draft。
  */
 export function encodeFilterQueryToSearchParam(
 	query: FilterQuery | null | undefined,
 ): string | null {
-	const normalized = normalizeFilterQuery(query)
-	if (isFilterQueryEmpty(normalized)) {
+	if (query == null) {
 		return null
 	}
+	const normalized = normalizeFilterQuery(query)
 	// 序列化时不依赖 id 稳定性：用 field/op/values 即可 round-trip 语义
 	const payload = {
 		v: 1 as const,
@@ -33,76 +33,55 @@ export function encodeFilterQueryToSearchParam(
 }
 
 /**
- * 解码 search 参数；非法 / 空 → empty（安全降级）。
+ * 解码 search 参数；缺失 / 非法 → null（无 draft）。
  */
-export function decodeFilterQueryFromSearchParam(value: string | null | undefined): FilterQuery {
+export function decodeFilterQueryFromSearchParam(
+	value: string | null | undefined,
+): FilterQuery | null {
 	if (value == null || value === '') {
-		return EMPTY_FILTER_QUERY
+		return null
 	}
 	try {
 		const json = fromBase64Url(value)
 		const parsed: unknown = JSON.parse(json)
-		return normalizeFilterQuery(payloadToQuery(parsed))
+		const query = payloadToQuery(parsed)
+		return query ? normalizeFilterQuery(query) : null
 	} catch {
-		return EMPTY_FILTER_QUERY
+		return null
 	}
 }
 
-/**
- * 将 FilterQuery 写入 search 对象副本：有条件设 `f`，无条件删除 `f`。
- */
-export function mergeFilterQueryIntoSearch(
-	search: Record<string, unknown>,
-	query: FilterQuery | null | undefined,
-): Record<string, unknown> {
-	const next = { ...search }
-	const encoded = encodeFilterQueryToSearchParam(query)
-	if (encoded == null) {
-		delete next[FILTER_SEARCH_PARAM_KEY]
-	} else {
-		next[FILTER_SEARCH_PARAM_KEY] = encoded
-	}
-	return next
-}
-
-/**
- * 从 search 对象读取临时 FilterQuery。
- */
-export function readFilterQueryFromSearch(
-	search: Record<string, unknown> | null | undefined,
-): FilterQuery {
-	if (!search) {
-		return EMPTY_FILTER_QUERY
-	}
-	const raw = search[FILTER_SEARCH_PARAM_KEY]
-	if (typeof raw !== 'string') {
-		return EMPTY_FILTER_QUERY
-	}
-	return decodeFilterQueryFromSearchParam(raw)
-}
-
-function payloadToQuery(parsed: unknown): FilterQuery {
+function payloadToQuery(parsed: unknown): FilterQuery | null {
 	if (!parsed || typeof parsed !== 'object') {
-		return EMPTY_FILTER_QUERY
+		return null
 	}
 	const record = parsed as { v?: unknown; c?: unknown }
 	if (record.v !== 1 || !Array.isArray(record.c)) {
-		return EMPTY_FILTER_QUERY
+		return null
 	}
-	return {
-		clauses: record.c.map((item) => {
-			if (!item || typeof item !== 'object') {
-				return { id: '', field: 'status', op: 'is', values: [] }
-			}
-			const row = item as { i?: unknown; f?: unknown; o?: unknown; v?: unknown }
-			return {
-				id: typeof row.i === 'string' ? row.i : '',
-				field: row.f as FilterQuery['clauses'][number]['field'],
-				op: row.o as FilterQuery['clauses'][number]['op'],
-				values: Array.isArray(row.v) ? (row.v as string[]) : [],
-			}
-		}),
+	const clauses: FilterQuery['clauses'] = []
+	for (const item of record.c) {
+		if (!item || typeof item !== 'object') return null
+		const row = item as { i?: unknown; f?: unknown; o?: unknown; v?: unknown }
+		if (!Array.isArray(row.v) || !row.v.every((value) => typeof value === 'string')) return null
+		const normalized = normalizeFilterQuery({
+			clauses: [
+				{
+					id: typeof row.i === 'string' ? row.i : '',
+					field: row.f as FilterQuery['clauses'][number]['field'],
+					op: row.o as FilterQuery['clauses'][number]['op'],
+					values: row.v,
+				},
+			],
+		})
+		if (normalized.clauses.length !== 1) return null
+		const normalizedValues = new Set(normalized.clauses[0]!.values)
+		if (row.v.length === 0 || !row.v.every((value) => normalizedValues.has(value.trim()))) {
+			return null
+		}
+		clauses.push(normalized.clauses[0]!)
 	}
+	return normalizeFilterQuery({ clauses })
 }
 
 function toBase64Url(text: string): string {

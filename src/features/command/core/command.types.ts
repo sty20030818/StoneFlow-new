@@ -53,7 +53,6 @@ export const COMMAND_IDS = {
 	projectArchive: 'project.archive',
 	projectDelete: 'project.delete',
 	filterAdd: 'filter.add',
-	filterToggleCompleted: 'filter.toggleCompleted',
 	filterClearAll: 'filter.clearAll',
 	displayOpenOptions: 'display.openOptions',
 	layoutToggleSidebar: 'layout.toggleSidebar',
@@ -167,11 +166,7 @@ export type CommandProjectContext = {
 
 /** 列表页筛选/显示投影（命令启用态用）；公式真源在 FilterQuery */
 export type CommandViewContext = {
-	currentViewId?: string
-	hasActiveFilters: boolean
-	showCompleted: boolean
 	filterCapabilities: {
-		supportsToggleCompleted: boolean
 		supportsClearAll: boolean
 	}
 }

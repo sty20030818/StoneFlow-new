@@ -7,6 +7,7 @@ const DATE_LABELS: Record<FilterDateValue, string> = {
 	today: '今天',
 	tomorrow: '明天',
 	thisWeek: '本周',
+	future: '未来',
 	overdue: '已逾期',
 	hasDate: '有日期',
 	noDate: '无日期',
