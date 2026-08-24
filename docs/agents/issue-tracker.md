@@ -5,6 +5,7 @@ StoneFlow 不使用外部 Issue Tracker。规格与实施 tickets 只保存为�
 ## 约定
 
 - 每项工作使用 `.scratch/<feature-slug>/`。
+- 已完成工作包整体移动到 `.scratch/archive/<feature-slug>/` 并冻结；`archive` 不是 feature slug，活跃任务扫描必须跳过该目录，新问题另建工作包。
 - `to-spec` 写入 `.scratch/<feature-slug>/spec.md`。
 - `to-tickets` 为每个垂直切片创建独立文件：`.scratch/<feature-slug>/issues/<NN>-<slug>.md`。
 - “发布”仅表示创建或更新这些本地文件。

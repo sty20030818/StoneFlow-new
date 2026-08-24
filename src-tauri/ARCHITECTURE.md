@@ -3,7 +3,7 @@
 > 版本：v9.2
 > 作用：定义 `src-tauri/` 当前已经落地的 Rust + Tauri v2 正式边界
 > 适用范围：`/Users/stonefish/Desktop/StoneFlow/src-tauri`
-> 最后更新：2026-08-07
+> 最后更新：2026-08-24
 
 ---
 
@@ -14,7 +14,7 @@ StoneFlow 当前是一个单 binary 的 Tauri 桌面应用：
 1. 只有一个生产 binary：`stoneflow`
 2. 主窗口和 Launcher 浮窗由同一个 Tauri Core 管理
 3. 业务规则在 `domain` / `application`
-4. 持久化在 `storage`（含 entities 与 migration）
+4. 持久化在 `storage`（含 entities 与单一 baseline migration）
 5. 同步在同进程 `sync` library
 6. Tauri 壳层、IPC、窗口、shortcut、tray 在 `runtime` / `platform`
 
@@ -71,7 +71,7 @@ src-tauri/
 
 根包 `stoneflow` 本身只负责桌面入口与 Tauri 绑定。
 
-已移除：独立 schema/migration crate、`sync-worker` sidecar、`runtime/services` 过渡层。
+已移除：独立 schema / migration workspace crate、`sync-worker` sidecar、`runtime/services` 过渡层。仓库中若仍有旧空目录，不代表正式 crate；workspace 以 `Cargo.toml` 的 members 为准。
 
 `runtime` 仅作 composition / transport；业务用例经 `AppState` 调用 `application`，ports 由 `storage::adapters` 实现。本地 schema 为**单一 baseline 迁移**，不支持旧库在线升级。
 
@@ -138,9 +138,9 @@ src-tauri/
 3. SQLite
 4. 任何 I/O
 
-### 3.4 `usecase`
+### 3.4 `application`
 
-`usecase` 是业务编排层。
+`application` 是业务编排层。
 
 它负责：
 
@@ -174,19 +174,19 @@ src-tauri/
 2. Tauri state；
 3. 前端 DTO 序列化。
 
-### 3.6 `schema` 与 `migration`
+### 3.6 `storage::entities` 与 `storage::migration`
 
-`schema` 只放 SeaORM entity / relation / 表结构映射。
+`storage::entities` 只放 SeaORM entity / relation / 表结构映射。
 
-`migration` 只放版本化 schema 变更。
+`storage::migration` 只维护当前数据库的单一 baseline migration；不承担旧库在线升级。
 
 二者都不应该承载产品业务语义。
 
-### 3.7 `test-support` 与 `integration-tests`
+### 3.7 `test-support` 与集成测试
 
 `test-support` 是共享测试基础设施。
 
-`integration-tests` 是全链路集成测试 host。
+后端集成测试当前位于 `runtime/src/integration_tests`，只在测试构建中启用；不存在独立 `integration-tests` workspace crate。
 
 不要再把这两者混成一个“泛 testing crate”。
 
@@ -201,36 +201,33 @@ root package
   -> runtime
 
 runtime
-  -> platform, usecase, storage, domain, schema
+  -> platform, application, storage, sync, domain
 
 platform
   -> tauri, os-specific bindings
 
-usecase
+application
   -> domain
 
 storage
-  -> domain, usecase, schema, migration, sea-orm
+  -> application, domain, sea-orm, sea-orm-migration
 
-migration
-  -> schema, sea-orm-migration
-
-schema
-  -> sea-orm
+sync
+  -> sqlx
 
 test-support
-  -> domain, usecase, storage, migration
+  -> storage
 
-integration-tests
-  -> runtime-facing integration chain + test-support
+release-verifier
+  -> minisign-verify
 ```
 
 明确禁止：
 
-1. `domain` 依赖 `usecase` / `storage` / `runtime` / `tauri`
-2. `usecase` 依赖 `storage` 具体实现
+1. `domain` 依赖 `application` / `storage` / `runtime` / `tauri`
+2. `application` 依赖 `storage` 具体实现
 3. `storage` 依赖 `runtime`
-4. `schema` 反向依赖业务层
+4. `storage::entities` 反向依赖业务层
 5. 生产代码依赖 `test-support`
 
 ---
@@ -253,7 +250,6 @@ crates/runtime/src/
 ├─ app/
 │  ├─ error.rs
 │  └─ state.rs
-├─ services/
 ├─ update/
 │  ├─ adapter.rs
 │  ├─ events.rs
@@ -261,12 +257,14 @@ crates/runtime/src/
 │  └─ settings_store.rs
 ├─ commands/
 │  ├─ activity.rs
+│  ├─ app_lifecycle.rs
 │  ├─ changelog.rs
 │  ├─ lifecycle.rs
 │  ├─ projects.rs
 │  ├─ search.rs
 │  ├─ settings.rs
 │  ├─ spaces.rs
+│  ├─ sync.rs
 │  ├─ tasks.rs
 │  ├─ update.rs
 │  ├─ views.rs
@@ -276,13 +274,15 @@ crates/runtime/src/
 │     ├─ window.rs
 │     ├─ error.rs
 │     └─ mod.rs
+├─ sync/
+├─ integration_tests/
 └─ window/
    ├─ main.rs
    └─ launcher/
       ├─ runtime.rs
       ├─ session.rs
       ├─ controller.rs
-	   ├─ warmup.rs
+      ├─ warmup.rs
       ├─ callbacks.rs
       └─ mod.rs
 ```
@@ -329,9 +329,9 @@ Launcher 当前不是一个“前端小弹窗”，而是一条跨 Tauri / runti
 frontend features/launcher/api
 -> invoke("launcher_*")
 -> runtime::commands::launcher::domain
--> services::LauncherService
--> usecase::launcher
--> storage repositories
+-> AppState.launcher / AppState.launcher_context
+-> application::launcher / application::launcher_context
+-> storage adapters / repositories
 ```
 
 ### 6.3 当前事件事实
@@ -354,9 +354,9 @@ frontend features/launcher/api
 frontend feature api
 -> invoke("create_task" / "update_project" / ...)
 -> runtime::commands::*
--> runtime::services::*
--> usecase
--> storage repository
+-> AppState 中的 application service
+-> application port
+-> storage adapter / repository
 -> SQLite
 ```
 
@@ -441,9 +441,9 @@ pub fn run() {
 当前测试分布：
 
 1. `domain`：纯规则单测
-2. `usecase`：编排与 mock port 单测
+2. `application`：编排与 mock port 单测
 3. `storage`：repository / bootstrap 测试
-4. `integration-tests`：真实全链路集成
+4. `runtime/src/integration_tests`：后端全链路集成
 5. 前端：`src/**/*.test.ts(x)` 验证 IPC facade、交互与回归
 
 推荐验证命令：
@@ -466,8 +466,8 @@ cargo fmt --manifest-path src-tauri/Cargo.toml
 以下情况应直接视为后端架构回退：
 
 1. 在 Tauri command 内直接写业务规则
-2. 在 `schema` 上表达产品默认值决策
-3. `domain` / `usecase` 依赖 Tauri
+2. 在 `storage::entities` 上表达产品默认值决策
+3. `domain` / `application` 依赖 Tauri
 4. 生产代码依赖 `test-support`
 5. 把 Launcher 再揉回“一个文件处理全部窗口行为”
 6. 让前端绕过 feature api，按命令名散落调用后端
@@ -482,13 +482,13 @@ cargo fmt --manifest-path src-tauri/Cargo.toml
 1. 是纯业务规则吗？
    放 `domain`
 2. 是业务编排或 port 吗？
-   放 `usecase`
+   放 `application`
 3. 是数据库实现、repository、mapper 吗？
    放 `storage`
 4. 是 entity / relation 吗？
-   放 `schema`
+   放 `storage::entities`
 5. 是 schema 版本变更吗？
-   放 `migration`
+   当前不新增增量迁移；修改 `storage::migration` 的 baseline，并同步评估数据重建边界
 6. 是 Tauri command、窗口、state、shortcut、event、service adapter 吗？
    放 `runtime`
 7. 是 OS-specific 窗口能力吗？

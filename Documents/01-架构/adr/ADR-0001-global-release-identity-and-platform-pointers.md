@@ -46,6 +46,6 @@ StoneFlow 允许 macOS 与 Windows 在不同时间发布。同一渠道仍需要
 
 ## 关联文档
 
-- [任务 SPEC](../../03-重构任务/2026-08-05-update-release-changelog-integrity-refactor/SPEC.md)
-- [任务 PLAN](../../03-重构任务/2026-08-05-update-release-changelog-integrity-refactor/PLAN.md)
+- [任务 SPEC](../../98-归档/02-已完成重构/2026-08-05-update-release-changelog-integrity-refactor/SPEC.md)
+- [任务 PLAN](../../98-归档/02-已完成重构/2026-08-05-update-release-changelog-integrity-refactor/PLAN.md)
 - [系统设计](../A2-系统设计.md)

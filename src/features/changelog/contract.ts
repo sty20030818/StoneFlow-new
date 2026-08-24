@@ -1,10 +1,36 @@
-/** Changelog 唯一语法契约：纯解析、校验、版本比较与区间选择。 */
+/**
+ * changelog 纯契约面（`@/features/changelog/contract`）。
+ *
+ * 负责唯一 Markdown 语法的解析校验、受支持版本比较与渠道区间选择。
+ * 可由前端和发布脚本复用；不依赖 React、Tauri，也不负责网络、缓存或更新生命周期。
+ */
 
+/**
+ * Changelog 唯一允许的中文分类及展示顺序。
+ *
+ * Markdown 分类标题必须与其中一项完全一致，不保留英文别名。
+ */
 export const CHANGELOG_CATEGORIES = ['新增', '变更', '弃用', '移除', '修复', '安全'] as const
 
+/**
+ * 规范 Changelog 分类标识。
+ *
+ * 取值由 {@link CHANGELOG_CATEGORIES} 单一派生，供解析后的分类内容使用。
+ */
 export type ChangelogCategory = (typeof CHANGELOG_CATEGORIES)[number]
+
+/**
+ * 更新日志查询渠道。
+ *
+ * `stable` 只纳入正式版本；`beta` 可同时纳入 Beta 与正式版本。
+ */
 export type ChangelogChannel = 'stable' | 'beta'
 
+/**
+ * 已验证的单个发布条目。
+ *
+ * `sections` 至少包含一个非空规范分类；已撤回条目保留于历史，但不得进入更新区间或发布目标。
+ */
 export interface ChangelogRelease {
 	readonly version: string
 	readonly date: string
@@ -12,17 +38,32 @@ export interface ChangelogRelease {
 	readonly sections: ReadonlyMap<ChangelogCategory, string>
 }
 
+/**
+ * 已通过语法与顺序校验的完整 Changelog 文档。
+ *
+ * `unreleased` 可以为空；`releases` 按受支持的 SemVer 从新到旧严格排列。
+ */
 export interface ChangelogDocument {
 	readonly unreleased: ReadonlyMap<ChangelogCategory, string>
 	readonly releases: readonly ChangelogRelease[]
 }
 
+/**
+ * 更新对话框使用的 Changelog 版本区间查询。
+ *
+ * 范围固定为 `(currentVersion, targetVersion]`，目标版本的 Stable/Beta 类型必须与渠道一致。
+ */
 export interface ChangelogRangeQuery {
 	readonly currentVersion: string
 	readonly targetVersion: string
 	readonly channel: ChangelogChannel
 }
 
+/**
+ * Changelog 语法或查询契约违规错误。
+ *
+ * 消息固定标注 `CHANGELOG.md`；能够定位源文本时，`line` 是从 1 开始的行号。
+ */
 export class ChangelogContractError extends Error {
 	readonly line?: number
 
@@ -79,6 +120,13 @@ function compareParsedVersions(left: ParsedVersion, right: ParsedVersion) {
 	return left.beta > right.beta ? 1 : left.beta < right.beta ? -1 : 0
 }
 
+/**
+ * 比较两个受支持的 Changelog 版本。
+ *
+ * 只接受正式版与 `-beta.N`，数字部分使用任意精度整数；同一基础版本的正式版高于 Beta。
+ *
+ * @throws {@link ChangelogContractError} 任一版本不符合受支持格式时抛出。
+ */
 export function compareChangelogVersions(left: string, right: string) {
 	const parsedLeft = parseVersion(left)
 	const parsedRight = parseVersion(right)
@@ -198,6 +246,13 @@ function parseFooter(lines: readonly SourceLine[], start: number) {
 	}
 }
 
+/**
+ * 解析并校验仓库唯一的 `CHANGELOG.md` Markdown 契约。
+ *
+ * 会规范化 BOM 与换行符，代码围栏内的标题不参与结构解析；比较链接只校验而不进入结果模型。
+ *
+ * @throws {@link ChangelogContractError} 文档结构、版本、日期、分类或比较链接不合法时抛出。
+ */
 export function parseChangelogDocument(source: string): ChangelogDocument {
 	const lines = annotateLines(source)
 	const unreleasedIndex = lines.findIndex((line) => line.structural && line.text.startsWith('## '))
@@ -249,6 +304,13 @@ export function parseChangelogDocument(source: string): ChangelogDocument {
 	return { unreleased: unreleasedResult.sections, releases }
 }
 
+/**
+ * 从已验证文档中取得可发布的目标版本。
+ *
+ * 目标必须符合受支持格式、存在于发布历史且未标记为已撤回。
+ *
+ * @throws {@link ChangelogContractError} 目标版本无效、不存在或已撤回时抛出。
+ */
 export function getPublishableRelease(document: ChangelogDocument, targetVersion: string) {
 	if (!parseVersion(targetVersion)) fail(`发布目标版本无效：${targetVersion}`)
 	const release = document.releases.find((item) => item.version === targetVersion)
@@ -257,6 +319,14 @@ export function getPublishableRelease(document: ChangelogDocument, targetVersion
 	return release
 }
 
+/**
+ * 选择更新对话框需要展示的版本区间。
+ *
+ * 采用 `(currentVersion, targetVersion]`，始终排除已撤回条目；Stable 只含正式版，Beta 可含两类版本。
+ * 当前版本不低于目标版本时返回空数组。
+ *
+ * @throws {@link ChangelogContractError} 查询版本无效或目标版本与渠道不一致时抛出。
+ */
 export function selectChangelogRange(document: ChangelogDocument, query: ChangelogRangeQuery) {
 	const current = parseVersion(query.currentVersion)
 	const target = parseVersion(query.targetVersion)
@@ -276,6 +346,11 @@ export function selectChangelogRange(document: ChangelogDocument, query: Changel
 	})
 }
 
+/**
+ * 按渠道选择完整发布历史。
+ *
+ * 历史保留已撤回条目；Stable 排除 Beta，Beta 同时包含正式版与 Beta。
+ */
 export function selectChangelogHistory(document: ChangelogDocument, channel: ChangelogChannel) {
 	return document.releases.filter(
 		(release) => channel === 'beta' || parseVersion(release.version)?.beta === null,

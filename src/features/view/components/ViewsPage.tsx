@@ -114,15 +114,19 @@ function SavedViewLibraryContent({ scene }: { scene: LibraryScene }) {
 					key={view.id}
 					role='listitem'
 				>
-					<button
-						className='flex min-w-0 flex-1 items-center gap-3 rounded-large px-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-focus'
-						onClick={() => scene.openView(view)}
+					<Button
+						className='min-w-0 flex-1'
+						onPress={() => scene.openView(view)}
+						size='sm'
 						type='button'
+						variant='ghost'
 					>
-						<BookmarkIcon aria-hidden='true' className='size-4 shrink-0 text-muted' />
-						<span className='min-w-0 flex-1 truncate font-medium'>{view.name}</span>
-						<span className='shrink-0 text-xs text-muted'>{describeView(view)}</span>
-					</button>
+						<span className='flex min-w-0 flex-1 items-center gap-3 text-left'>
+							<BookmarkIcon aria-hidden='true' className='size-4 shrink-0 text-muted' />
+							<span className='min-w-0 flex-1 truncate font-medium'>{view.name}</span>
+							<span className='shrink-0 text-xs text-muted'>{describeView(view)}</span>
+						</span>
+					</Button>
 					<ViewActionsMenu
 						activeView={view}
 						onDelete={(target) => void scene.deleteView(target)}

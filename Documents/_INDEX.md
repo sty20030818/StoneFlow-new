@@ -39,8 +39,6 @@
 ## 当前活跃任务
 
 - [任务集合查询与虚拟列表性能重构](./02-开发任务/2026-07-31-task-collection-query-virtualization/SPEC.md)（[PLAN](./02-开发任务/2026-07-31-task-collection-query-virtualization/PLAN.md) · [TASKS](./02-开发任务/2026-07-31-task-collection-query-virtualization/TASKS.md)）— 待手工验收
-- [Vitest 前端测试系统精简](./03-重构任务/2026-08-19-vitest-test-runtime-streamlining/SPEC.md)（[PLAN](./03-重构任务/2026-08-19-vitest-test-runtime-streamlining/PLAN.md) · [TASKS](./03-重构任务/2026-08-19-vitest-test-runtime-streamlining/TASKS.md)）— 实施完成，待任务发起人确认后归档
-- [HeroUI-only UI 平台、Linear 浅色设计系统与键盘交互重写](./03-重构任务/2026-08-12-heroui-ui-interaction-system-refactor/SPEC.md)（[PLAN](./03-重构任务/2026-08-12-heroui-ui-interaction-system-refactor/PLAN.md) · [TASKS](./03-重构任务/2026-08-12-heroui-ui-interaction-system-refactor/TASKS.md)）— 阶段 A–J 已完成，阶段 K 可恢复
 
 ## 模块文档规则
 

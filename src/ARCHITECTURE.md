@@ -1,6 +1,6 @@
 # StoneFlow 前端架构（src）
 
-> 版本：v5.3 · 2026-08-20
+> 版本：v5.3 · 2026-08-24
 > 作用：`src/` **定稿最优架构**（WHAT / WHERE）。日常改码以本文 + [`CONVENTIONS.md`](./CONVENTIONS.md) + 各模块 `ARCHITECTURE.md` 为准。
 > 不写：债表、执行进度、变更历史（这些不属于当前架构契约）。
 
@@ -162,6 +162,7 @@ src/
 | changelog | content | 发布历史的读取、解析与展示 | [changelog](./features/changelog/README.md) |
 | settings | scene | 设置三入口 | [settings](./features/settings/ARCHITECTURE.md) |
 | project-overview | scene | 项目概览薄页 | [project-overview](./features/project-overview/ARCHITECTURE.md) |
+| task-workspace | scene | 任务结果页组合、默认视图矩阵与 URL 选择契约 | [task-workspace](./features/task-workspace/ARCHITECTURE.md) |
 | shell-dialogs | platform | 壳级对话框 / 命令菜单 UI 态 | [shell-dialogs](./features/shell-dialogs/ARCHITECTURE.md) |
 | launcher | window | 独立窗：搜 + 建；创建内核复用 task | [launcher](./features/launcher/ARCHITECTURE.md) |
 

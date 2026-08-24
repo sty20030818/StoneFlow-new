@@ -58,8 +58,8 @@ StoneFlow 曾同时存在 Radix/shadcn primitive、平行 base、纯 class patte
 
 ## 关联文档
 
-- [任务 SPEC](../../03-重构任务/2026-08-12-heroui-ui-interaction-system-refactor/SPEC.md)
-- [任务 PLAN](../../03-重构任务/2026-08-12-heroui-ui-interaction-system-refactor/PLAN.md)
-- [任务 TASKS](../../03-重构任务/2026-08-12-heroui-ui-interaction-system-refactor/TASKS.md)
+- [任务 SPEC](../../98-归档/02-已完成重构/2026-08-12-heroui-ui-interaction-system-refactor/SPEC.md)
+- [任务 PLAN](../../98-归档/02-已完成重构/2026-08-12-heroui-ui-interaction-system-refactor/PLAN.md)
+- [任务 TASKS](../../98-归档/02-已完成重构/2026-08-12-heroui-ui-interaction-system-refactor/TASKS.md)
 - [系统设计](../A2-系统设计.md)
 - [界面系统](../A3-界面系统.md)

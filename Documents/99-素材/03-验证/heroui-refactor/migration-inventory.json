@@ -2,7 +2,7 @@
 	"schemaVersion": 1,
 	"generatedAt": "2026-08-13",
 	"source": {
-		"tasks": "Documents/03-重构任务/2026-08-12-heroui-ui-interaction-system-refactor/TASKS.md",
+		"tasks": "Documents/98-归档/02-已完成重构/2026-08-12-heroui-ui-interaction-system-refactor/TASKS.md",
 		"taskRange": "T1-T120",
 		"entryEvidence": [
 			"src/routeTree.gen.ts",
