@@ -13,7 +13,7 @@ export function PrimaryMetaBar() {
 	const advancedActionLabel = state.isAdvancedOpen ? '收起更多参数' : '展开更多参数'
 
 	return (
-		<div className='flex h-12 items-center gap-2 px-3' data-testid='launcher-primary-meta-bar'>
+		<div className='flex h-11 items-center gap-2 px-2' data-testid='launcher-primary-meta-bar'>
 			<TitleInput />
 
 			<PriorityControl

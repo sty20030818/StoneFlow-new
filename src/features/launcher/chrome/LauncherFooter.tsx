@@ -13,7 +13,7 @@ export function LauncherFooter() {
 	return (
 		<div
 			className={cn(
-				'shrink-0 flex min-h-10 items-center gap-3 rounded-b-(--launcher-panel-radius,8px) border-t border-separator bg-surface px-3 text-[11px] text-muted',
+				'shrink-0 flex min-h-11 items-center gap-3 rounded-b-(--launcher-panel-radius,8px) border-t border-separator bg-surface px-2 text-[11px] text-muted',
 			)}
 			data-testid='launcher-footer'
 		>

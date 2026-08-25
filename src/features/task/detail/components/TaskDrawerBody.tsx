@@ -36,7 +36,10 @@ export function TaskDrawerBody({
 				</div>
 				<Separator variant='tertiary' />
 				<section aria-labelledby={`task-properties-${taskId}`} className='flex flex-col gap-2.5'>
-					<h3 className='text-xs font-semibold text-foreground' id={`task-properties-${taskId}`}>
+					<h3
+						className='text-[11px] font-medium tracking-[0.06em] text-muted uppercase'
+						id={`task-properties-${taskId}`}
+					>
 						属性
 					</h3>
 					<TaskPropertiesSection autosave={autosave} projects={projects} spaces={spaces} />

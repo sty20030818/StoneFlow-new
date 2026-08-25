@@ -26,7 +26,7 @@ export function TaskDetailHeader(props: TaskDetailHeaderProps) {
 	return (
 		<header className='flex h-12 shrink-0 items-center justify-between gap-2 px-3'>
 			<div className='min-w-0 flex flex-1 items-center gap-2'>
-				<h2 className='shrink-0 text-sm font-semibold text-foreground'>任务详情</h2>
+				<h2 className='shrink-0 text-xs font-medium text-muted'>任务详情</h2>
 				<TaskAutosaveStatus error={autosave.error} status={autosave.status} />
 			</div>
 			<div className='flex shrink-0 items-center gap-1'>

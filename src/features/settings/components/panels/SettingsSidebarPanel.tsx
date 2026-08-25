@@ -8,7 +8,12 @@ import {
 	useSidebarSettingsStore,
 } from '../../model/useSidebarSettingsStore'
 import type { SidebarMainItemKey } from '../../api/sidebarSettings'
-import { SettingCheckboxRow, SettingsPreferenceGroup, SettingsSection } from '../settingsShared'
+import {
+	SettingCheckboxRow,
+	SettingsPreferenceGroup,
+	SettingsSection,
+	SettingsStack,
+} from '../settingsShared'
 
 const MAIN_ITEM_OPTIONS: Array<{
 	key: SidebarMainItemKey
@@ -162,7 +167,7 @@ export function SettingsSidebarPanel() {
 	}
 
 	return (
-		<div className='flex w-full min-w-0 flex-col gap-7'>
+		<SettingsStack>
 			<SettingsSection
 				description='控制侧边栏主导航里哪些入口显示。至少保留一个主入口，避免侧边栏失去基本导航能力。'
 				title='主导航'
@@ -268,6 +273,6 @@ export function SettingsSidebarPanel() {
 					</Alert>
 				) : null}
 			</SettingsSection>
-		</div>
+		</SettingsStack>
 	)
 }

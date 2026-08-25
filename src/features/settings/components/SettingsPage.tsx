@@ -12,7 +12,7 @@ import {
 import { SettingsGeneralPanel } from './panels/SettingsGeneralPanel'
 import { SettingsSidebarPanel } from './panels/SettingsSidebarPanel'
 import { SettingsSyncPanel } from './panels/SettingsSyncPanel'
-import { SettingsSection } from './settingsShared'
+import { SettingsSection, SettingsStack } from './settingsShared'
 import { UpdateSettingsSection } from '@/features/update'
 import { PageFrame } from '@/shared/components/page-frame'
 
@@ -30,14 +30,14 @@ function renderPanel(section: SettingsSectionKey) {
 			return <SettingsSyncPanel />
 		case 'update':
 			return (
-				<div className='flex w-full min-w-0 flex-col gap-7'>
+				<SettingsStack>
 					<SettingsSection
 						description='控制 StoneFlow 如何检查和安装更新。更新包从 release.sty20030818.space 的 Cloudflare R2 分发。'
 						title='应用更新'
 					>
 						<UpdateSettingsSection />
 					</SettingsSection>
-				</div>
+				</SettingsStack>
 			)
 		default: {
 			const _exhaustive: never = section
@@ -78,7 +78,7 @@ export function SettingsPage() {
 				}
 			/>
 			<PageFrame.Body>
-				<div className='mx-auto flex w-full max-w-5xl min-w-0 flex-1 flex-col px-4 py-5 sm:px-6 lg:px-8'>
+				<div className='mx-auto flex w-full max-w-5xl min-w-0 flex-1 flex-col'>
 					{renderPanel(section)}
 				</div>
 			</PageFrame.Body>

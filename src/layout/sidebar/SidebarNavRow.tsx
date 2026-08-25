@@ -14,7 +14,7 @@ function SidebarNavRowLayout({ icon: Icon, label, badge }: SidebarNavRowLayoutPr
 	return (
 		<>
 			<Sidebar.MenuIcon>
-				<Icon className='size-4' />
+				<Icon className='size-3.5' />
 			</Sidebar.MenuIcon>
 			<Sidebar.MenuLabel>{label}</Sidebar.MenuLabel>
 			{badge ? <Sidebar.MenuChip>{badge}</Sidebar.MenuChip> : null}

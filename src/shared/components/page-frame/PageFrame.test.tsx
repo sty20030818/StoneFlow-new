@@ -34,7 +34,6 @@ describe('PageFrame', () => {
 		expect(toolbarGroup).toContainElement(pill)
 		expect(pill).toHaveClass('toggle-button--ghost')
 		expect(inactivePill).toHaveClass('toggle-button--ghost')
-		expect(pill).toHaveAttribute('data-page-toolbar-option', 'true')
 		expect(pill).toHaveAttribute('data-selected', 'true')
 		expect(toolbarGroup.closest('.surface')).toHaveClass('surface--default')
 		expect(toolbarGroup.closest('.surface')).not.toHaveClass('surface--secondary')

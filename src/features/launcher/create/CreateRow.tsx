@@ -19,7 +19,7 @@ export function CreateRow() {
 			<Button
 				aria-current={derived.isCreateFocused ? 'true' : undefined}
 				aria-label={`创建任务 ${state.draft.title.trim()}`}
-				className='min-h-12'
+				className='min-h-11'
 				data-content-height='true'
 				fullWidth
 				onFocus={actions.focusCreate}

@@ -56,7 +56,7 @@ export function LauncherPanel() {
 					</div>
 				) : null}
 
-				<div className='flex min-h-0 flex-col bg-surface-secondary'>
+				<div className='flex min-h-0 flex-col bg-surface'>
 					{showSearchHeader ? (
 						<div className='shrink-0 px-2' data-testid='launcher-search-section'>
 							<SectionLabel count={derived.flatItems.length} title='搜索结果' />

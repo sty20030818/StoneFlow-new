@@ -11,7 +11,7 @@ export function AdvancedMetaBar() {
 
 	return (
 		<div
-			className='flex h-10 flex-nowrap items-center gap-1.5 overflow-x-auto border-t border-separator px-3'
+			className='flex h-11 flex-nowrap items-center gap-2 overflow-x-auto border-t border-separator px-2'
 			data-testid='launcher-advanced-meta-bar'
 		>
 			<StatusControl

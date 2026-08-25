@@ -17,7 +17,10 @@ export function TaskLinksSection({ taskId }: TaskLinksSectionProps) {
 	return (
 		<section aria-labelledby={`task-links-${taskId}`} className='flex flex-col gap-3'>
 			<div className='flex items-center justify-between gap-3'>
-				<h3 className='text-sm font-semibold text-foreground' id={`task-links-${taskId}`}>
+				<h3
+					className='text-[11px] font-medium tracking-[0.06em] text-muted uppercase'
+					id={`task-links-${taskId}`}
+				>
 					链接
 				</h3>
 				<TaskLinkEditorPopover

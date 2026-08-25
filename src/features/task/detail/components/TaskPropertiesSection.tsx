@@ -158,7 +158,7 @@ export function TaskPropertiesSection({
 function TaskPropertyRow({ label, children }: { label: string; children: ReactNode }) {
 	return (
 		<div className='grid grid-cols-[5rem_minmax(0,1fr)] items-center gap-3'>
-			<span className='text-xs font-medium text-muted'>{label}</span>
+			<span className='text-[11px] font-medium text-muted'>{label}</span>
 			<div className='min-w-0'>{children}</div>
 		</div>
 	)

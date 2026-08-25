@@ -28,7 +28,7 @@ import {
 	type SyncStatusPayload,
 } from '@/features/sync'
 import { normalizeTauriError } from '@/shared/lib/normalize-tauri-error'
-import { SettingInfoRow, SettingsSection } from '../settingsShared'
+import { SettingInfoRow, SettingsSection, SettingsStack } from '../settingsShared'
 import { ActionTooltip, DisabledActionTooltip } from '@/shared/components/tooltip'
 
 import {
@@ -350,7 +350,7 @@ export function SettingsSyncPanel() {
 	)
 
 	return (
-		<div className='flex w-full min-w-0 flex-col gap-7'>
+		<SettingsStack>
 			<SettingsSection
 				description='所有业务仍然只读写本地数据库；这里仅配置云端 Postgres 副本，并在需要时手动或自动触发同步。'
 				title='云同步'
@@ -618,6 +618,6 @@ export function SettingsSyncPanel() {
 					saving={syncSaving}
 				/>
 			</SettingsSection>
-		</div>
+		</SettingsStack>
 	)
 }

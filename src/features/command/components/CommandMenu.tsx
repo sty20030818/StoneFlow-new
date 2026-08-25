@@ -105,16 +105,18 @@ export function CommandMenu({
 						<p className='sr-only' id={descriptionId}>
 							{description}
 						</p>
-						<Command.Header>
-							<CommandMenuSelectionChips entities={context.selection.entities} />
-							<Command.InputGroup aria-label={getCommandMenuPlaceholder(mode)}>
-								<Command.InputGroup.Prefix>
-									<SearchIcon aria-hidden />
-								</Command.InputGroup.Prefix>
-								<Command.InputGroup.Input placeholder={getCommandMenuPlaceholder(mode)} />
-								<Command.InputGroup.ClearButton aria-label='清空搜索' />
-							</Command.InputGroup>
-						</Command.Header>
+						{context.selection.entities.length > 0 ? (
+							<Command.Header>
+								<CommandMenuSelectionChips entities={context.selection.entities} />
+							</Command.Header>
+						) : null}
+						<Command.InputGroup aria-label={getCommandMenuPlaceholder(mode)}>
+							<Command.InputGroup.Prefix>
+								<SearchIcon aria-hidden />
+							</Command.InputGroup.Prefix>
+							<Command.InputGroup.Input placeholder={getCommandMenuPlaceholder(mode)} />
+							<Command.InputGroup.ClearButton aria-label='清空搜索' />
+						</Command.InputGroup>
 						<CommandScrollableList emptyText={getCommandMenuEmptyText(mode, query)}>
 							{isScopedMode ? (
 								<ScopedPickerCommandGroup

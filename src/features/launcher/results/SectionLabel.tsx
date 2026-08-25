@@ -13,7 +13,7 @@ export function SectionLabel({
 	return (
 		<div
 			className={cn(
-				'flex items-center gap-2 px-2.5 pt-2.5 pb-1 text-[10.5px] font-semibold tracking-[0.06em] text-muted uppercase',
+				'flex items-center gap-1.5 px-2 pt-2 pb-1 text-xs font-medium text-muted',
 				className,
 			)}
 		>

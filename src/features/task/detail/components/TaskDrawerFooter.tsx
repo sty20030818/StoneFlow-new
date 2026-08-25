@@ -34,7 +34,7 @@ export function TaskDrawerFooter({
 				</OverflowTooltip>
 			</div>
 			<div className='flex min-w-0 shrink-0 items-center gap-2'>
-				<Button isDisabled={isArchiveBusy} onPress={onArchiveOrRestore} size='sm' variant='ghost'>
+				<Button isDisabled={isArchiveBusy} onPress={onArchiveOrRestore} size='sm' variant='outline'>
 					<ArchiveIcon className='size-3.5' />
 					{task.archivedAt ? '恢复' : '归档'}
 				</Button>

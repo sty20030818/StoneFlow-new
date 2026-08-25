@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Alert, Button, Label, ListBox, Radio, RadioGroup, Select } from '@heroui/react'
 
-import { SettingsSection } from '../settingsShared'
+import { SettingsSection, SettingsStack } from '../settingsShared'
 import { ACCENT_PRESETS, readAccentPreference, setAccentPreference } from '@/features/appearance'
 import { useSetDefaultSpaceMutation, useSpaces } from '@/features/space'
 
@@ -34,7 +34,7 @@ export function SettingsGeneralPanel() {
 	}
 
 	return (
-		<div className='flex w-full min-w-0 flex-col gap-7'>
+		<SettingsStack>
 			<SettingsSection
 				description='选择界面的强调色。只影响主要操作、选中状态、链接与焦点，并保存在这台设备上。'
 				title='主题色'
@@ -126,6 +126,6 @@ export function SettingsGeneralPanel() {
 					</Alert>
 				) : null}
 			</SettingsSection>
-		</div>
+		</SettingsStack>
 	)
 }

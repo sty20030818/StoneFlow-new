@@ -1,5 +1,9 @@
 import type { ReactNode } from 'react'
-import { Surface, Switch } from '@heroui/react'
+import { Card, Surface, Switch } from '@heroui/react'
+
+export function SettingsStack({ children }: { children: ReactNode }) {
+	return <div className='flex w-full min-w-0 flex-col gap-3'>{children}</div>
+}
 
 export function SettingsSection({
 	title,
@@ -11,14 +15,18 @@ export function SettingsSection({
 	children: ReactNode
 }) {
 	return (
-		<section className='grid min-w-0 gap-2.5'>
-			<header className='grid gap-1 px-0.5'>
-				<h2 className='text-[13px] font-semibold tracking-[-0.01em] text-foreground'>{title}</h2>
-				<p className='max-w-3xl text-xs leading-5 text-muted'>{description}</p>
-			</header>
-			<Surface variant='secondary'>
-				<div className='min-w-0 p-4'>{children}</div>
-			</Surface>
+		<section className='min-w-0'>
+			<Card>
+				<Card.Header>
+					<div className='grid gap-1'>
+						<Card.Title className='font-semibold tracking-[-0.01em]'>{title}</Card.Title>
+						<Card.Description className='max-w-3xl text-xs'>{description}</Card.Description>
+					</div>
+				</Card.Header>
+				<Card.Content>
+					<div className='min-w-0'>{children}</div>
+				</Card.Content>
+			</Card>
 		</section>
 	)
 }

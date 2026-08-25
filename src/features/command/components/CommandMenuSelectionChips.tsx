@@ -61,7 +61,7 @@ export function CommandMenuSelectionChips({ entities }: { entities: CommandSelec
 		<>
 			<div
 				aria-label='当前选中对象'
-				className='flex items-center gap-1.5 overflow-hidden px-2 pt-2'
+				className='flex w-full items-center gap-1.5 overflow-hidden'
 				ref={containerRef}
 			>
 				{visibleEntities.map((entity) => (

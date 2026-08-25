@@ -323,6 +323,9 @@ describe('SettingsPage', () => {
 		// 保存路径直接用 configureSync 返回的状态，不再额外 getSyncStatus
 		expect(getSyncStatusSpy).toHaveBeenCalledTimes(1)
 
+		await waitFor(() => {
+			expect(screen.getByRole('button', { name: '配置同步数据库' })).toBeInTheDocument()
+		})
 		openSyncConfigDialog()
 		await waitFor(() => {
 			expect(screen.getByLabelText('同步数据库连接')).toHaveValue('')

@@ -52,6 +52,33 @@
 		padding-inline: 0.5rem;
 	}
 
+	/* 14px 是高密度界面的默认图标上限；已有 12px glyph 不会被反向放大。 */
+	[data-theme="stoneflow-light"] .lucide:not(.size-5) {
+		max-inline-size: var(--icon-size);
+		max-block-size: var(--icon-size);
+	}
+
+	[data-theme="stoneflow-light"]
+		:is(.lucide.size-5, .empty-state__header > .lucide, .empty-state__media .lucide) {
+		max-inline-size: var(--icon-size-emphasis);
+		max-block-size: var(--icon-size-emphasis);
+	}
+
+	[data-theme="stoneflow-light"]
+		.button
+		svg:not([data-slot="spinner"] svg, [data-slot="link-icon"] svg),
+	[data-theme="stoneflow-light"] .toggle-button svg {
+		max-inline-size: var(--icon-size);
+		max-block-size: var(--icon-size);
+	}
+
+	/* 键盘焦点统一为贴住控件的 1px keyline；鼠标 focus 不触发此状态。 */
+	[data-theme="stoneflow-light"] :where(:focus-visible, [data-focus-visible="true"]) {
+		--tw-ring-shadow: 0 0 #0000;
+		box-shadow: inset 0 0 0 1px var(--focus);
+		outline: none;
+	}
+
 	[data-theme="stoneflow-light"] :is(.button--lg, .toggle-button--lg) {
 		height: var(--control-height-lg);
 		min-height: var(--control-height-lg);
@@ -84,75 +111,10 @@
 		inline-size: var(--control-height-sm);
 	}
 
-	/* 次级操作与选择默认保持中性；六组 Accent 只在主操作和小面积标记中出现。 */
-	[data-theme="stoneflow-light"] .button--secondary {
-		--button-fg: var(--foreground);
-	}
-
-	[data-theme="stoneflow-light"] .toggle-button {
-		--toggle-button-bg-selected: var(--default-pressed);
-		--toggle-button-bg-selected-hover: color-mix(
-			in srgb,
-			var(--default-pressed) 86%,
-			var(--foreground)
-		);
-		--toggle-button-bg-selected-pressed: color-mix(
-			in srgb,
-			var(--default-pressed) 80%,
-			var(--foreground)
-		);
-		--toggle-button-fg-selected: var(--foreground);
-	}
-
-	/* Linear 式 Outline 单选：Hover 轻反馈，选中后边框融入填充。 */
-	[data-theme="stoneflow-light"] .toggle-button[data-page-toolbar-option="true"] {
-		--toggle-button-bg-hover: color-mix(in srgb, var(--default) 60%, transparent);
-		--toggle-button-bg-selected: var(--default);
-		--toggle-button-bg-selected-hover: var(--default);
-		--toggle-button-bg-selected-pressed: var(--default);
-		border: var(--border-width) solid var(--border);
-	}
-
-	/* Outline 始终保留 1px，以低对比边界营造发丝感。 */
-	[data-theme="stoneflow-light"]
-		:is(.button--outline, .toggle-button[data-page-toolbar-option="true"]) {
-		border-color: color-mix(in srgb, var(--border) 75%, transparent);
-	}
-
-	[data-theme="stoneflow-light"]
-		.toggle-button[data-page-toolbar-option="true"][data-selected="true"] {
-		border-color: var(--toggle-button-bg-selected);
-	}
-
 	/* 表单只统一工作台密度；交互与校验状态继续使用 HeroUI 原生 recipe。 */
 	[data-theme="stoneflow-light"] :is(.input, .select__trigger, .search-field__group) {
 		min-height: var(--control-height-md);
 		border-radius: var(--radius-control);
-	}
-
-	/* 文本字段统一使用白色 field surface；secondary 只降低阴影，不改成灰底。 */
-	[data-theme="stoneflow-light"] .input--secondary {
-		--input-bg: var(--field-background);
-		--input-bg-hover: var(--field-hover);
-		--input-bg-focus: var(--field-focus);
-	}
-
-	[data-theme="stoneflow-light"] .textarea--secondary {
-		--textarea-bg: var(--field-background);
-		--textarea-bg-hover: var(--field-hover);
-		--textarea-bg-focus: var(--field-focus);
-	}
-
-	[data-theme="stoneflow-light"] .search-field--secondary .search-field__group {
-		--search-field-group-bg: var(--field-background);
-		--search-field-group-bg-hover: var(--field-hover);
-		--search-field-group-bg-focus: var(--field-focus);
-	}
-
-	/* Header 搜索保留轻边界；避免全局字段的高对比描边，也不引入浮层式阴影。 */
-	[data-theme="stoneflow-light"] [data-sf-search-root="true"] .search-field__group {
-		--field-border: var(--border);
-		--field-border-hover: var(--border-tertiary);
 	}
 
 	[data-theme="stoneflow-light"]
@@ -163,6 +125,29 @@
 
 	[data-theme="stoneflow-light"] :is(.input, .select__trigger) {
 		padding-block: 0.3125rem;
+	}
+
+	/* HeroUI 字段保留键盘 focus-visible；鼠标点入只显示文本光标，不重复绘制焦点边。 */
+	[data-theme="stoneflow-light"]
+		:is(.input, .textarea):is(:focus, [data-focused="true"]):not(:focus-visible):not(
+			[data-focus-visible="true"]
+		) {
+		border-color: var(--field-border);
+		box-shadow: var(--field-shadow);
+	}
+
+	[data-theme="stoneflow-light"]
+		:is(.search-field__group, .input-group):focus-within:not(
+			:has(:focus-visible, [data-focus-visible="true"])
+		) {
+		border-color: var(--field-border);
+		box-shadow: var(--field-shadow);
+	}
+
+	[data-theme="stoneflow-light"]
+		:is(.search-field__group, .input-group):has(:focus-visible, [data-focus-visible="true"]) {
+		border-color: var(--focus-subtle);
+		box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--focus-subtle) 28%, transparent);
 	}
 
 	[data-theme="stoneflow-light"] .textarea {
@@ -182,10 +167,38 @@
 	}
 
 	[data-theme="stoneflow-light"] .input[data-field-role="detail-title"] {
-		height: var(--control-height-lg);
-		min-height: var(--control-height-lg);
+		height: 2.75rem;
+		min-height: 2.75rem;
 		font-size: 1.25rem;
 		font-weight: 700;
+	}
+
+	/* 详情正文是连续编辑工作面，不把标题和备注画成两张表单卡。 */
+	[data-theme="stoneflow-light"]
+		:is(.input[data-field-role="detail-title"], .textarea[data-field-role="detail-note"]) {
+		border-color: transparent;
+		background: transparent;
+		box-shadow: none;
+		padding-inline: 0;
+	}
+
+	[data-theme="stoneflow-light"]
+		:is(.input[data-field-role="detail-title"], .textarea[data-field-role="detail-note"]):is(
+			:hover,
+			[data-hovered="true"],
+			:focus,
+			[data-focused="true"]
+		) {
+		background: transparent;
+	}
+
+	[data-theme="stoneflow-light"]
+		:is(.input[data-field-role="detail-title"], .textarea[data-field-role="detail-note"]):is(
+			:focus-visible,
+			[data-focus-visible="true"]
+		) {
+		border-color: var(--focus-subtle);
+		box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--focus-subtle) 28%, transparent);
 	}
 
 	@media (min-width: 48rem) {
@@ -202,12 +215,10 @@
 		font-family: var(--font-mono);
 	}
 
-	/* 小型集合行采用 32px 基线；颜色、危险项和 disabled 仍由上游负责。 */
-	[data-theme="stoneflow-light"] :is(.menu-item, .list-box-item, .command__item) {
-		min-height: var(--control-height-md);
-		gap: 0.5rem;
-		border-radius: var(--radius-control);
-		padding: 0.25rem 0.5rem;
+	/* 集合行的几何交还 HeroUI；StoneFlow 只统一紧凑图标。 */
+	[data-theme="stoneflow-light"] :is(.menu-item, .list-box-item, .command__item) > svg {
+		max-inline-size: var(--icon-size);
+		max-block-size: var(--icon-size);
 	}
 
 	[data-theme="stoneflow-light"] .sidebar {
@@ -229,6 +240,44 @@
 		padding-block: 0.25rem;
 	}
 
+	[data-theme="stoneflow-light"] .sidebar__menu-label {
+		font-size: 0.8125rem;
+		line-height: 1.25rem;
+	}
+
+	[data-theme="stoneflow-light"] .sidebar__group-label {
+		font-size: 0.6875rem;
+		line-height: 1rem;
+	}
+
+	[data-theme="stoneflow-light"] .sidebar__menu-icon svg {
+		max-inline-size: var(--icon-size);
+		max-block-size: var(--icon-size);
+	}
+
+	@media (hover: hover) {
+		[data-theme="stoneflow-light"] .sidebar__menu-item:hover .sidebar__menu-item-content,
+		[data-theme="stoneflow-light"]
+			.sidebar__menu-item[data-hovered="true"]
+			.sidebar__menu-item-content {
+			background: var(--surface-hover);
+		}
+	}
+
+	[data-theme="stoneflow-light"]
+		.sidebar__menu-item[data-current="true"]
+		.sidebar__menu-item-content {
+		background: var(--default);
+	}
+
+	@media (hover: hover) {
+		[data-theme="stoneflow-light"]
+			.sidebar__menu-item[data-current="true"]:hover
+			.sidebar__menu-item-content {
+			background: var(--default-hover);
+		}
+	}
+
 	[data-theme="stoneflow-light"] .list-view--primary {
 		border-radius: var(--radius-surface);
 		background: var(--surface-secondary);
@@ -238,18 +287,6 @@
 		min-height: 2.25rem;
 		gap: 0.5rem;
 		padding: 0.5rem 0.625rem;
-	}
-
-	[data-theme="stoneflow-light"] .list-view--secondary .list-view__item[data-selected="true"] {
-		background: var(--default);
-	}
-
-	@media (hover: hover) {
-		[data-theme="stoneflow-light"]
-			.list-view--secondary
-			.list-view__item[data-selected="true"]:is(:hover, [data-hovered="true"]) {
-			background: var(--default-hover);
-		}
 	}
 
 	/* 轻量边框提供原生桌面层级；圆角与阴影由主题 token 驱动上游 recipe。 */
@@ -283,6 +320,14 @@
 		border-radius: var(--launcher-panel-radius, var(--radius-surface));
 	}
 
+	/* Launcher 的逻辑 current 使用 Accent soft；普通 hover 继续交给 HeroUI Button。 */
+	[data-theme="stoneflow-light"] [data-native-window-surface="true"] .button[aria-current="true"] {
+		--button-bg: var(--accent-soft);
+		--button-bg-hover: var(--accent-soft-hover);
+		--button-bg-pressed: var(--accent-soft-hover);
+		--button-fg: var(--foreground);
+	}
+
 	[data-theme="stoneflow-light"] [data-shell-sidebar-sheet="true"] .sheet__dialog {
 		padding-top: 3rem;
 	}
@@ -299,11 +344,6 @@
 		[data-theme="stoneflow-light"] [data-router-action="true"]:hover {
 			text-decoration: underline;
 		}
-	}
-
-	[data-theme="stoneflow-light"] [data-router-action="true"]:focus-visible {
-		outline: 2px solid var(--focus);
-		outline-offset: 2px;
 	}
 
 	[data-theme="stoneflow-light"] .alert[data-embedded-alert="true"] {
@@ -342,23 +382,38 @@
 		border-radius: 0 0 var(--radius-surface) var(--radius-surface);
 	}
 
-	[data-theme="stoneflow-light"] [data-row-shell][data-active="true"] {
-		border-color: var(--accent-border);
-		background: var(--accent-soft);
-	}
-
-	[data-theme="stoneflow-light"] [data-row-shell][data-selected="true"]:not([data-active="true"]) {
+	[data-theme="stoneflow-light"] [data-row-shell][data-active="true"]:not([data-selected="true"]) {
 		background: var(--default);
 	}
 
-	[data-theme="stoneflow-light"] [data-row-shell][data-hovered="true"]:not([data-active="true"]) {
-		background: var(--default-hover);
+	[data-theme="stoneflow-light"] [data-row-shell][data-selected="true"] {
+		background: var(--accent-soft);
+	}
+
+	[data-theme="stoneflow-light"]
+		[data-row-shell][data-hovered="true"]:not([data-active="true"], [data-selected="true"]) {
+		background: var(--surface-hover);
 	}
 
 	@media (hover: hover) {
 		[data-theme="stoneflow-light"]
-			[data-row-shell][data-interactive="true"]:not([data-active="true"]):hover {
+			[data-row-shell][data-interactive="true"]:not(
+				[data-active="true"],
+				[data-selected="true"]
+			):hover {
+			background: var(--surface-hover);
+		}
+
+		[data-theme="stoneflow-light"]
+			[data-row-shell][data-interactive="true"][data-active="true"]:not(
+				[data-selected="true"]
+			):hover {
 			background: var(--default-hover);
+		}
+
+		[data-theme="stoneflow-light"]
+			[data-row-shell][data-interactive="true"][data-selected="true"]:hover {
+			background: var(--accent-soft-hover);
 		}
 
 		/* 键盘移动焦点后，不让停留的鼠标继续伪造另一条 hover。 */
@@ -373,21 +428,30 @@
 
 		[data-theme="stoneflow-light"]
 			[data-row-shell][data-interactive="true"][data-hover-source="keyboard"][data-selected="true"]:not(
-				[data-active="true"],
 				[data-hovered="true"]
 			):hover {
-			background: var(--default);
+			background: var(--accent-soft);
 		}
+	}
+
+	[data-theme="stoneflow-light"]
+		[data-row-shell][data-interactive="true"]:is(:active, [data-pressed="true"]):not(
+			[data-selected="true"]
+		) {
+		background: var(--default-hover);
 	}
 
 	[data-theme="stoneflow-light"] [data-row-shell][data-focus-source="keyboard"],
 	[data-theme="stoneflow-light"] [data-row-shell][data-interactive="true"]:focus-visible {
-		outline: 2px solid var(--focus-subtle);
-		outline-offset: -2px;
+		border-color: var(--focus-subtle);
+		box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--focus-subtle) 28%, transparent);
+		outline: none;
 	}
 
 	/* 键盘 Peek 打开时焦点留在集合，但主窗口不重复绘制焦点环。 */
 	[data-theme="stoneflow-light"] [data-row-shell][data-focus-suppressed="true"]:focus-visible {
+		border-color: transparent;
+		box-shadow: none;
 		outline: none;
 	}
 
@@ -400,25 +464,30 @@
 		cursor: progress;
 	}
 
-	/* 三类实体行共享同一个 ContextMenu 打开态：中性表面 + 小面积 Accent 定位线。 */
+	/* ContextMenu 打开属于指针态，只保留中性表面，不伪装成键盘焦点。 */
 	[data-theme="stoneflow-light"]
 		[data-row-context-menu-trigger][data-open="true"]
 		> [data-row-shell] {
-		border-color: var(--border);
-		background: var(--default-hover);
-		box-shadow: inset 2px 0 0 var(--accent-border);
+		background: var(--default);
 	}
 
 	[data-theme="stoneflow-light"]
 		[data-row-context-menu-trigger][data-open="true"]
 		> [data-row-shell][data-selected="true"] {
-		background: var(--default-pressed);
+		background: var(--accent-soft-hover);
 	}
 
 	@media (forced-colors: active) {
+		[data-theme="stoneflow-light"] :where(:focus-visible, [data-focus-visible="true"]) {
+			box-shadow: none;
+			outline: 1px solid Highlight;
+			outline-offset: -1px;
+		}
+
 		[data-theme="stoneflow-light"] [data-row-shell][data-focus-source="keyboard"],
 		[data-theme="stoneflow-light"] [data-row-shell][data-interactive="true"]:focus-visible {
-			outline-color: Highlight;
+			border-color: Highlight;
+			box-shadow: inset 0 0 0 1px Highlight;
 		}
 
 		[data-theme="stoneflow-light"] [data-row-shell][data-focus-suppressed="true"]:focus-visible {

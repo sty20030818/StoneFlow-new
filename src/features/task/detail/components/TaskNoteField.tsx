@@ -20,7 +20,8 @@ export function TaskNoteField({ autosave, disabled = false }: TaskNoteFieldProps
 		>
 			<TextArea
 				aria-label='任务备注'
-				className='min-h-32 resize-none'
+				className='min-h-40 resize-none'
+				data-field-role='detail-note'
 				placeholder='添加备注…'
 				variant='secondary'
 			/>
