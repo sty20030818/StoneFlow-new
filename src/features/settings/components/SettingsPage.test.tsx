@@ -27,7 +27,7 @@ const updateSyncPolicySpy =
 	vi.fn<
 		(input: {
 			mode: 'interval' | 'on_write' | 'manual'
-			intervalMinutes: 5 | 15 | 30
+			intervalMinutes: number
 		}) => Promise<unknown>
 	>()
 const unlistenSyncStatusSpy = vi.fn<() => void>()
@@ -70,7 +70,7 @@ vi.mock('@/features/sync', async (importOriginal) => {
 		runSync: () => runSyncSpy(),
 		updateSyncPolicy: (input: {
 			mode: 'interval' | 'on_write' | 'manual'
-			intervalMinutes: 5 | 15 | 30
+			intervalMinutes: number
 		}) => updateSyncPolicySpy(input),
 	}
 })
@@ -570,52 +570,100 @@ describe('SettingsPage', () => {
 		})
 	})
 
-	it('定时模式下修改间隔分钟并提交', async () => {
-		getSyncStatusSpy.mockResolvedValue(
-			createSyncStatusPayload({
-				enabled: true,
-				status: 'synced',
-				lastPushAt: null,
-				lastPullAt: null,
-				lastError: null,
-				lastErrorMode: null,
-				dirtySince: null,
-				pendingResync: false,
-				hasRemoteConfig: true,
-				remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
-				replicaState: 'ready',
-				replicaReason: null,
-				lastRestoreAt: null,
-				policyMode: 'interval',
-				policyIntervalMinutes: 15,
-			}),
-		)
-		updateSyncPolicySpy.mockResolvedValue(
-			createSyncStatusPayload({
-				enabled: true,
-				status: 'synced',
-				lastPushAt: null,
-				lastPullAt: null,
-				lastError: null,
-				lastErrorMode: null,
-				dirtySince: null,
-				pendingResync: false,
-				hasRemoteConfig: true,
-				remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
-				replicaState: 'ready',
-				replicaReason: null,
-				lastRestoreAt: null,
-				policyMode: 'interval',
-				policyIntervalMinutes: 7,
-			}),
-		)
+	it('同步间隔在字段内部输入和步进时只更新草稿，离开整个字段后保存', async () => {
+		const initialStatus = createReadyIntervalSyncStatus()
+		getSyncStatusSpy.mockResolvedValue(initialStatus)
+		updateSyncPolicySpy.mockResolvedValue({ ...initialStatus, policyIntervalMinutes: 9 })
 
 		mockSettingsSection = 'sync'
 		await renderSettingsPage()
 
-		const input = screen.getByLabelText('同步间隔分钟')
+		const input = screen.getByRole('textbox', { name: '同步间隔（分钟）' })
+		await waitFor(() => expect(input).not.toBeDisabled())
+		const incrementButton = screen.getByRole('button', { name: /增加同步间隔/ })
+		const outsideButton = screen.getByRole('button', { name: '配置同步数据库' })
+		fireEvent.focus(input)
 		fireEvent.change(input, { target: { value: '7' } })
-		fireEvent.blur(input)
+		fireEvent.blur(input, { relatedTarget: incrementButton })
+		fireEvent.focus(incrementButton)
+
+		expect(updateSyncPolicySpy).not.toHaveBeenCalled()
+
+		fireEvent.click(incrementButton)
+		await waitFor(() => expect(input).toHaveValue('8'))
+		expect(updateSyncPolicySpy).not.toHaveBeenCalled()
+
+		fireEvent.blur(incrementButton, { relatedTarget: outsideButton })
+		fireEvent.focus(outsideButton)
+
+		await waitFor(() => {
+			expect(updateSyncPolicySpy).toHaveBeenCalledTimes(1)
+			expect(updateSyncPolicySpy).toHaveBeenCalledWith({
+				mode: 'interval',
+				intervalMinutes: 8,
+			})
+			expect(input).toHaveValue('9')
+		})
+	})
+
+	it('同步间隔按 Enter 保存一次，随后失焦不会重复保存', async () => {
+		const initialStatus = createReadyIntervalSyncStatus()
+		getSyncStatusSpy.mockResolvedValue(initialStatus)
+		updateSyncPolicySpy.mockResolvedValue({ ...initialStatus, policyIntervalMinutes: 1440 })
+
+		mockSettingsSection = 'sync'
+		await renderSettingsPage()
+
+		const input = screen.getByRole('textbox', { name: '同步间隔（分钟）' })
+		await waitFor(() => expect(input).not.toBeDisabled())
+		fireEvent.change(input, { target: { value: '1500' } })
+		fireEvent.keyDown(input, { key: 'Enter' })
+		fireEvent.keyUp(input, { key: 'Enter' })
+
+		await waitFor(() => {
+			expect(updateSyncPolicySpy).toHaveBeenCalledTimes(1)
+			expect(updateSyncPolicySpy).toHaveBeenCalledWith({
+				mode: 'interval',
+				intervalMinutes: 1440,
+			})
+		})
+
+		fireEvent.blur(input, {
+			relatedTarget: screen.getByRole('button', { name: '配置同步数据库' }),
+		})
+
+		await waitFor(() => expect(updateSyncPolicySpy).toHaveBeenCalledTimes(1))
+	})
+
+	it('同步间隔未变化时离开字段不保存', async () => {
+		mockSettingsSection = 'sync'
+		await renderSettingsPage()
+
+		const input = screen.getByRole('textbox', { name: '同步间隔（分钟）' })
+		await waitFor(() => expect(input).not.toBeDisabled())
+		fireEvent.focus(input)
+		fireEvent.blur(input, {
+			relatedTarget: screen.getByRole('button', { name: '配置同步数据库' }),
+		})
+
+		expect(updateSyncPolicySpy).not.toHaveBeenCalled()
+	})
+
+	it('同步间隔保存失败时恢复后台值并保留错误反馈', async () => {
+		const initialStatus = createReadyIntervalSyncStatus()
+		getSyncStatusSpy.mockResolvedValue(initialStatus)
+		updateSyncPolicySpy.mockRejectedValueOnce(new Error('策略写入失败'))
+
+		mockSettingsSection = 'sync'
+		await renderSettingsPage()
+
+		const input = screen.getByRole('textbox', { name: '同步间隔（分钟）' })
+		await waitFor(() => expect(input).not.toBeDisabled())
+		fireEvent.focus(input)
+		fireEvent.change(input, { target: { value: '7' } })
+		fireEvent.blur(input, {
+			relatedTarget: screen.getByRole('button', { name: '配置同步数据库' }),
+		})
 
 		await waitFor(() => {
 			expect(updateSyncPolicySpy).toHaveBeenCalledWith({
@@ -623,6 +671,13 @@ describe('SettingsPage', () => {
 				intervalMinutes: 7,
 			})
 		})
+		await waitFor(() => {
+			expect(getSyncStatusSpy).toHaveBeenCalledTimes(2)
+			expect(input).toHaveValue('15')
+		})
+
+		openSyncDetails()
+		expect(await screen.findByRole('alert')).toHaveTextContent('策略写入失败')
 	})
 
 	it('缺少同步基线时展示提示并允许建立基线同步', async () => {
@@ -710,6 +765,26 @@ function createSyncStatusPayload(overrides: Record<string, unknown>) {
 		nextSyncAt: null,
 		...overrides,
 	}
+}
+
+function createReadyIntervalSyncStatus(intervalMinutes = 15) {
+	return createSyncStatusPayload({
+		enabled: true,
+		status: 'synced',
+		lastPushAt: null,
+		lastPullAt: null,
+		lastError: null,
+		lastErrorMode: null,
+		dirtySince: null,
+		pendingResync: false,
+		hasRemoteConfig: true,
+		remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
+		replicaState: 'ready',
+		replicaReason: null,
+		lastRestoreAt: null,
+		policyMode: 'interval',
+		policyIntervalMinutes: intervalMinutes,
+	})
 }
 
 function getCheckboxByLabel(label: string) {

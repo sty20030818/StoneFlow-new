@@ -8,8 +8,6 @@ import {
 	type RefObject,
 } from 'react'
 
-import { OverlayScrollbar } from './OverlayScrollbar'
-
 /** 真实滚动 viewport ref；虚拟列表 / sticky 通过此 context 获取，禁止 querySelector */
 const ScrollAreaViewportContext = createContext<RefObject<HTMLDivElement | null> | null>(null)
 
@@ -22,7 +20,7 @@ type AppScrollAreaProps = {
 }
 
 /**
- * AppScrollArea：统一滚动容器 + OverlayScrollbar。
+ * AppScrollArea：虚拟内容的唯一真实滚动 viewport。
  * 通过 ScrollAreaViewportContext 暴露 viewport ref（TaskBoard virtualizer 使用）。
  */
 export const AppScrollArea = forwardRef<HTMLDivElement, AppScrollAreaProps>(
@@ -35,13 +33,12 @@ export const AppScrollArea = forwardRef<HTMLDivElement, AppScrollAreaProps>(
 			<ScrollAreaViewportContext.Provider value={viewportRef}>
 				<div className='relative flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden'>
 					<div
-						className='flex min-h-0 min-w-0 max-h-full flex-1 flex-col overflow-y-auto px-2 pb-2'
+						className='scrollbar flex min-h-0 min-w-0 max-h-full flex-1 flex-col overflow-y-auto px-2 pb-2'
 						data-scroll-container='true'
 						ref={viewportRef}
 					>
 						{children}
 					</div>
-					<OverlayScrollbar scrollRef={viewportRef} />
 				</div>
 			</ScrollAreaViewportContext.Provider>
 		)

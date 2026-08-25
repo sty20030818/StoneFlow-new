@@ -148,7 +148,7 @@ Form、RadioGroup、Surface、Resizable、ScrollShadow 与 Trigger 等结构组�
 - `PageFrame` 统一页头、工具栏、普通/虚拟 Body 与滚动骨架；页级图标操作由真实页面直接组合 HeroUI Button 与 `ActionTooltip`。
 - `RowShell` 统一行根结构、交互状态组合与选择组语义；Board header 归 Board，TaskBoard 外层选择组与虚拟几何归 TaskBoard，不再导出 class map。
 - Task Detail 只有一个生产 owner，其 Header/Footer/PageLayout/Section/SaveStatus 与滚动结构均由 task feature 持有。
-- `AppScrollArea` 隐藏真实 viewport、ref context、OverlayScrollbar 及其观察/绘制行为；删除全部无生产消费者的配置。
+- `AppScrollArea` 只封装真实 viewport 与 ref context；滚动由浏览器执行，外观直接复用 HeroUI Styles 的 `scrollbar` utility。
 - `ActionTooltip` 隐藏 React Aria trigger props/ref 合并与快捷键展示行为。
 
 禁止：

@@ -1,15 +1,15 @@
 import {
 	Alert,
 	Button,
+	Description,
 	Disclosure,
-	Input,
 	Label,
+	NumberField,
 	Radio,
 	RadioGroup,
 	Surface,
-	TextField,
 } from '@heroui/react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { listen } from '@tauri-apps/api/event'
 import { SettingsIcon } from 'lucide-react'
 
@@ -72,13 +72,6 @@ const SYNC_MODE_OPTIONS: Array<{
 	},
 ]
 
-function clampIntervalMinutes(value: number): number {
-	if (!Number.isFinite(value)) {
-		return DEFAULT_INTERVAL_MINUTES
-	}
-	return Math.min(MAX_INTERVAL_MINUTES, Math.max(MIN_INTERVAL_MINUTES, Math.round(value)))
-}
-
 /**
  * 云同步设置 panel。
  */
@@ -95,8 +88,17 @@ export function SettingsSyncPanel() {
 	const [databaseUrl, setDatabaseUrl] = useState('')
 	const [syncConfigDialogOpen, setSyncConfigDialogOpen] = useState(false)
 	const [syncDetailsOpen, setSyncDetailsOpen] = useState(false)
-	/** 定时模式下的分钟草稿，失焦/回车时提交 */
-	const [intervalMinutesDraft, setIntervalMinutesDraft] = useState(String(DEFAULT_INTERVAL_MINUTES))
+	const [intervalMinutesDraft, setIntervalMinutesDraftState] = useState(DEFAULT_INTERVAL_MINUTES)
+	const intervalMinutesDraftRef = useRef(DEFAULT_INTERVAL_MINUTES)
+	const syncPolicySavingRef = useRef(false)
+
+	function setIntervalMinutesDraft(value: number) {
+		if (!Number.isFinite(value)) {
+			return
+		}
+		intervalMinutesDraftRef.current = value
+		setIntervalMinutesDraftState(value)
+	}
 
 	useEffect(() => {
 		void refreshSyncStatus({ syncUrlDraft: true })
@@ -150,9 +152,7 @@ export function SettingsSyncPanel() {
 		try {
 			const payload = await getSyncStatus()
 			setSyncStatus(payload)
-			if (payload.policyMode === 'interval') {
-				setIntervalMinutesDraft(String(payload.policyIntervalMinutes))
-			}
+			setIntervalMinutesDraft(payload.policyIntervalMinutes)
 			if (!payload.hasRemoteConfig) {
 				setSyncDiagnostics(null)
 				setSyncDiagnosticsMessage(null)
@@ -238,21 +238,24 @@ export function SettingsSyncPanel() {
 	}
 
 	async function persistSyncPolicy(mode: SyncPolicyMode, intervalMinutes: number) {
+		if (syncPolicySavingRef.current) {
+			return
+		}
+		syncPolicySavingRef.current = true
 		setSyncPolicySaving(true)
 		setSyncStatusMessage(null)
 		try {
 			const payload = await updateSyncPolicy({
 				mode,
-				intervalMinutes: clampIntervalMinutes(intervalMinutes),
+				intervalMinutes,
 			})
 			setSyncStatus(payload)
-			if (payload.policyMode === 'interval') {
-				setIntervalMinutesDraft(String(payload.policyIntervalMinutes))
-			}
+			setIntervalMinutesDraft(payload.policyIntervalMinutes)
 		} catch (error) {
 			setSyncStatusMessage(normalizeTauriError(error, '同步频率保存失败'))
-			await refreshSyncStatus({ syncUrlDraft: false })
+			await refreshSyncStatus({ silent: true, syncUrlDraft: false })
 		} finally {
+			syncPolicySavingRef.current = false
 			setSyncPolicySaving(false)
 		}
 	}
@@ -261,15 +264,11 @@ export function SettingsSyncPanel() {
 		if (syncStatus?.policyMode === mode) {
 			return
 		}
-		const minutes = clampIntervalMinutes(
-			Number(intervalMinutesDraft) || syncStatus?.policyIntervalMinutes || DEFAULT_INTERVAL_MINUTES,
-		)
-		await persistSyncPolicy(mode, minutes)
+		await persistSyncPolicy(mode, intervalMinutesDraftRef.current)
 	}
 
 	async function handleIntervalMinutesCommit() {
-		const minutes = clampIntervalMinutes(Number(intervalMinutesDraft))
-		setIntervalMinutesDraft(String(minutes))
+		const minutes = intervalMinutesDraftRef.current
 		if (syncStatus?.policyMode === 'interval' && syncStatus.policyIntervalMinutes === minutes) {
 			return
 		}
@@ -443,35 +442,49 @@ export function SettingsSyncPanel() {
 							</div>
 
 							{policyMode === 'interval' ? (
-								<TextField className='max-w-xs' isDisabled={syncActionBusy}>
-									<Label>同步间隔（分钟）</Label>
-									<div className='flex items-center gap-2'>
-										<Input
-											aria-label='同步间隔分钟'
-											className='w-28'
-											data-numeric-field='true'
-											inputMode='numeric'
-											max={MAX_INTERVAL_MINUTES}
-											min={MIN_INTERVAL_MINUTES}
-											onBlur={() => void handleIntervalMinutesCommit()}
-											onChange={(event) => setIntervalMinutesDraft(event.currentTarget.value)}
-											onKeyDown={(event) => {
-												if (event.key === 'Enter') {
-													event.preventDefault()
-													void handleIntervalMinutesCommit()
-												}
-											}}
-											step={1}
-											type='number'
-											value={intervalMinutesDraft}
-										/>
-										<span className='text-sm text-muted'>分钟</span>
-									</div>
-									<p className='mt-1 text-xs leading-5 text-muted'>
-										可填 {MIN_INTERVAL_MINUTES}–{MAX_INTERVAL_MINUTES}
-										（1 天）；精确到 1 分钟。
-									</p>
-								</TextField>
+								<div
+									className='max-w-xs'
+									onBlur={(event) => {
+										if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+											void handleIntervalMinutesCommit()
+										}
+									}}
+								>
+									<NumberField
+										isDisabled={syncActionBusy}
+										maxValue={MAX_INTERVAL_MINUTES}
+										minValue={MIN_INTERVAL_MINUTES}
+										onChange={setIntervalMinutesDraft}
+										onKeyDown={(event) => {
+											if (event.key === 'Enter') {
+												event.preventDefault()
+											}
+										}}
+										onKeyUp={(event) => {
+											if (event.key === 'Enter') {
+												event.preventDefault()
+												void handleIntervalMinutesCommit()
+											}
+										}}
+										step={1}
+										value={intervalMinutesDraft}
+										variant='secondary'
+									>
+										<Label>同步间隔（分钟）</Label>
+										<div className='flex items-center gap-2'>
+											<NumberField.Group className='w-40'>
+												<NumberField.DecrementButton aria-label='减少同步间隔' />
+												<NumberField.Input />
+												<NumberField.IncrementButton aria-label='增加同步间隔' />
+											</NumberField.Group>
+											<span className='text-sm text-muted'>分钟</span>
+										</div>
+										<Description>
+											可填 {MIN_INTERVAL_MINUTES}–{MAX_INTERVAL_MINUTES}
+											（1 天）；精确到 1 分钟。
+										</Description>
+									</NumberField>
+								</div>
 							) : null}
 
 							<p className='text-xs leading-5 text-muted'>{formatSyncPolicySummary(syncStatus)}</p>

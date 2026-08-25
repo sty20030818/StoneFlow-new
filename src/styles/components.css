@@ -207,10 +207,6 @@
 		}
 	}
 
-	[data-theme="stoneflow-light"] .input[data-numeric-field="true"] {
-		font-variant-numeric: tabular-nums;
-	}
-
 	[data-theme="stoneflow-light"] .textarea[data-code-field="true"] {
 		font-family: var(--font-mono);
 	}

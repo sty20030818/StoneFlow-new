@@ -1,10 +1,6 @@
 import { createRef } from 'react'
 import { fireEvent, render, screen } from '@testing-library/react'
 
-vi.mock('./OverlayScrollbar', () => ({
-	OverlayScrollbar: () => <div aria-hidden='true' data-testid='overlay-scrollbar' />,
-}))
-
 import { AppScrollArea, useScrollAreaViewport } from './AppScrollArea'
 
 describe('AppScrollArea', () => {
@@ -32,6 +28,6 @@ describe('AppScrollArea', () => {
 		fireEvent.click(screen.getByRole('button', { name: '读取 viewport' }))
 		expect(readContextViewport).toHaveBeenCalledWith(viewport)
 		expect(ref.current?.dataset.scrollContainer).toBe('true')
-		expect(screen.getByTestId('overlay-scrollbar')).toBeInTheDocument()
+		expect(ref.current).toHaveClass('scrollbar', 'overflow-y-auto')
 	})
 })

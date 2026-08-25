@@ -1,11 +1,22 @@
-import { Alert, Button, Input, Label, ListBox, Modal, Select } from '@heroui/react'
+import {
+	Alert,
+	Button,
+	ColorSwatchPicker,
+	Input,
+	Label,
+	ListBox,
+	Modal,
+	Select,
+} from '@heroui/react'
 import { useCallback, useEffect, useEffectEvent, useId, useState } from 'react'
 import { FormProvider, useController } from 'react-hook-form'
 
 import {
 	getSpaceColorOption,
+	getSpaceColorKeyByValue,
 	getSpaceIconOption,
 	getSpaceVisual,
+	isSpaceColorKey,
 	SPACE_COLOR_OPTIONS,
 	SPACE_ICON_OPTIONS,
 } from '../model/spaceVisuals'
@@ -99,7 +110,7 @@ export function SpaceEditorDialog({
 		canSubmit:
 			nameField.value.trim().length > 0 &&
 			iconKeyField.value.trim().length > 0 &&
-			colorKeyField.value.trim().length > 0,
+			isSpaceColorKey(colorKeyField.value),
 		isSubmitting: submitting,
 		submit: handleSubmit,
 	})
@@ -204,49 +215,29 @@ export function SpaceEditorDialog({
 										</Select.Popover>
 									</Select>
 
-									<Select
-										isDisabled={submitting}
-										onChange={(key) => typeof key === 'string' && colorKeyField.onChange(key)}
-										value={colorKey}
-									>
+									<div className='grid content-start gap-1.5'>
 										<Label>颜色</Label>
-										<Select.Trigger>
-											<Select.Value>
-												<div className='flex min-w-0 items-center gap-2'>
-													<span
-														className={cn(
-															'size-3 shrink-0 rounded-full border border-separator',
-															selectedColorOption.swatchClassName,
-														)}
-													/>
-													<span className='truncate'>{selectedColorOption.label}</span>
-												</div>
-											</Select.Value>
-											<Select.Indicator />
-										</Select.Trigger>
-										<Select.Popover>
-											<ListBox>
-												{SPACE_COLOR_OPTIONS.map((option) => (
-													<ListBox.Item
-														id={option.value}
-														key={option.value}
-														textValue={option.label}
-													>
-														<div className='flex items-center gap-2'>
-															<span
-																className={cn(
-																	'size-3 shrink-0 rounded-full border border-separator',
-																	option.swatchClassName,
-																)}
-															/>
-															<span>{option.label}</span>
-														</div>
-														<ListBox.ItemIndicator />
-													</ListBox.Item>
-												))}
-											</ListBox>
-										</Select.Popover>
-									</Select>
+										<ColorSwatchPicker
+											aria-label='颜色'
+											onChange={(value) => {
+												const nextColorKey = getSpaceColorKeyByValue(value.toString('hex'))
+												if (nextColorKey) colorKeyField.onChange(nextColorKey)
+											}}
+											value={selectedColorOption.colorValue}
+										>
+											{SPACE_COLOR_OPTIONS.map((option) => (
+												<ColorSwatchPicker.Item
+													aria-label={option.label}
+													color={option.colorValue}
+													isDisabled={submitting}
+													key={option.value}
+												>
+													<ColorSwatchPicker.Swatch />
+													<ColorSwatchPicker.Indicator />
+												</ColorSwatchPicker.Item>
+											))}
+										</ColorSwatchPicker>
+									</div>
 								</div>
 
 								{error ? (
@@ -269,7 +260,7 @@ export function SpaceEditorDialog({
 										submitting ||
 										nameField.value.trim().length === 0 ||
 										iconKeyField.value.trim().length === 0 ||
-										colorKeyField.value.trim().length === 0
+										!isSpaceColorKey(colorKeyField.value)
 									}
 									type='submit'
 								>

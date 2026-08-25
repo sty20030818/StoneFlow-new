@@ -70,12 +70,4 @@
 	::selection {
 		background: color-mix(in oklab, var(--accent) 12%, white);
 	}
-
-	[data-scroll-container="true"] {
-		scrollbar-width: none;
-	}
-
-	[data-scroll-container="true"]::-webkit-scrollbar {
-		display: none;
-	}
 }

@@ -658,7 +658,6 @@ export function TaskBoard({
 				className='relative w-full'
 				data-task-board-extent={contentHeightPx}
 				data-task-board-virtual='sections'
-				data-scroll-extent={contentHeightPx}
 				style={{ height: contentHeightPx, minHeight: contentHeightPx }}
 			>
 				{(virtualItems.length > 0

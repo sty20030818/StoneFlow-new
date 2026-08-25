@@ -121,7 +121,7 @@ src/
 
 `shared/components/page-frame` 是工作区页面的深布局 Module，统一 Header、Toolbar、普通/虚拟 Body、滚动和页级操作骨架，但不持有实体数据、Board 分发或业务操作。
 
-`shared/components/row` 统一 Row 根结构、交互状态组合与选择组语义；Board header 属于 Board，TaskBoard 的外层选择组与虚拟几何属于 TaskBoard。`AppScrollArea` 隐藏真实 viewport、ref context 与 OverlayScrollbar。它们的 Interface 不导出视觉 class 字符串或无生产消费者的配置。Task Detail 当前只有一个生产 owner，详情布局留在 task feature，不为吸收样式 token 保留共享 Detail Module。
+`shared/components/row` 统一 Row 根结构、交互状态组合与选择组语义；Board header 属于 Board，TaskBoard 的外层选择组与虚拟几何属于 TaskBoard。`AppScrollArea` 只封装真实 viewport 及其 ref context；浏览器负责滚动行为，HeroUI Styles 的 `scrollbar` utility 负责外观。它的 Interface 不导出视觉 class 字符串或无生产消费者的配置。Task Detail 当前只有一个生产 owner，详情布局留在 task feature，不为吸收样式 token 保留共享 Detail Module。
 
 禁止 `shared/components/patterns`、平行 `shared/components/base`、一对一 HeroUI wrapper、TypeScript token 镜像与只转发目录。删除一个共享 Module 后若复杂度不会重新扩散到多个调用方，该 Module 不具备足够 Depth，应删除或并回唯一 Owner。
 
