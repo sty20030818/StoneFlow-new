@@ -1,8 +1,6 @@
 import { create } from 'zustand'
 
-import type { CommandSelectionContext } from '@/features/command'
-import type { CustomDateFieldKey } from '@/features/metadata-fields'
-import type { CommandMenuMode } from '@/features/command'
+import type { CommandMenuMode, CommandSelectionContext } from '@/features/command'
 import type { TaskPlacement, TaskStatus } from '@/shared/types'
 
 // ----- 类型 -----
@@ -17,7 +15,6 @@ export type CreateDialogPresentation = 'default' | 'fullscreen'
 type CreateDialogType = 'task' | 'project' | null
 
 export type CustomDateDialogState = {
-	fieldKey: CustomDateFieldKey
 	label: string
 	value: string | null
 	hasExistingValue: boolean

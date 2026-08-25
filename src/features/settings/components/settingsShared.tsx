@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
-import { Card, Surface, Switch } from '@heroui/react'
+import { Card, Surface } from '@heroui/react'
+import { CellSwitch } from '@heroui-pro/react'
 
 export function SettingsStack({ children }: { children: ReactNode }) {
 	return <div className='flex w-full min-w-0 flex-col gap-3'>{children}</div>
@@ -31,39 +32,37 @@ export function SettingsSection({
 	)
 }
 
-export function SettingCheckboxRow({
+export function SettingsToggleRow({
 	label,
 	description,
-	checked,
-	disabled,
+	isSelected,
+	isDisabled,
 	onChange,
 }: {
 	label: string
 	description: string
-	checked: boolean
-	disabled?: boolean
-	onChange: (checked: boolean) => void
+	isSelected: boolean
+	isDisabled?: boolean
+	onChange: (isSelected: boolean) => void
 }) {
 	return (
-		<Switch
+		<CellSwitch
 			aria-label={label}
 			className='w-full'
-			isDisabled={disabled}
-			isSelected={checked}
+			isDisabled={isDisabled}
+			isSelected={isSelected}
 			onChange={onChange}
 		>
-			<Switch.Content>
-				<div className='flex w-full items-center gap-5 py-2.5'>
-					<div className='min-w-0 flex-1 text-left'>
-						<p className='text-[13px] font-medium text-foreground'>{label}</p>
-						<p className='mt-0.5 text-xs leading-5 text-muted'>{description}</p>
-					</div>
-					<Switch.Control>
-						<Switch.Thumb />
-					</Switch.Control>
-				</div>
-			</Switch.Content>
-		</Switch>
+			<CellSwitch.Trigger className='h-auto min-h-11 py-2.5'>
+				<CellSwitch.Label className='whitespace-normal'>
+					<span className='block text-[13px] font-medium text-foreground'>{label}</span>
+					<span className='mt-0.5 block text-xs font-normal leading-5 text-muted'>
+						{description}
+					</span>
+				</CellSwitch.Label>
+				<CellSwitch.Control />
+			</CellSwitch.Trigger>
+		</CellSwitch>
 	)
 }
 

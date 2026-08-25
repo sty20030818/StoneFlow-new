@@ -1,6 +1,13 @@
 import { useState, type ReactNode } from 'react'
 
-import { ScrollShadow, Separator, Surface, ToggleButton, ToggleButtonGroup } from '@heroui/react'
+import {
+	ScrollShadow,
+	Separator,
+	Surface,
+	ToggleButton,
+	ToggleButtonGroup,
+	Toolbar,
+} from '@heroui/react'
 
 import { AppScrollArea } from '@/shared/components/AppScrollArea'
 
@@ -66,7 +73,8 @@ function PageFrameToolbar({
 	filterBar,
 }: PageFrameToolbarProps) {
 	const hasActions = Boolean(pills?.length || filterAction || displayAction)
-	const canonicalSelectedKey = selectedKey ?? pills?.[0]?.key ?? null
+	const canonicalSelectedKey =
+		pills?.find((pill) => pill.key === selectedKey)?.key ?? pills?.[0]?.key ?? null
 	if (!hasActions && !filterBar) {
 		return null
 	}
@@ -75,7 +83,11 @@ function PageFrameToolbar({
 		<Surface>
 			<div className='flex flex-col gap-2 px-2 py-2'>
 				{hasActions ? (
-					<div className='flex items-center justify-between gap-3'>
+					<Toolbar
+						aria-label='页面工具栏'
+						className='flex w-full min-w-0 items-center gap-2'
+						orientation='horizontal'
+					>
 						{pills?.length ? (
 							<PageFrameToolbarChoices
 								onSelectionChange={onSelectionChange}
@@ -83,13 +95,9 @@ function PageFrameToolbar({
 								selectedKey={canonicalSelectedKey}
 							/>
 						) : null}
-						{filterAction || displayAction ? (
-							<div className='flex shrink-0 items-center gap-2'>
-								{filterAction}
-								{displayAction}
-							</div>
-						) : null}
-					</div>
+						{filterAction}
+						{displayAction}
+					</Toolbar>
 				) : null}
 				{filterBar ? <div className='min-w-0 empty:hidden'>{filterBar}</div> : null}
 			</div>
@@ -119,7 +127,7 @@ function PageFrameToolbarChoices({
 	return (
 		<ToggleButtonGroup
 			aria-label='页面筛选'
-			className='min-w-0 flex-wrap'
+			className='mr-auto min-w-0 flex-wrap'
 			disallowEmptySelection
 			isDetached
 			onSelectionChange={(keys) => {

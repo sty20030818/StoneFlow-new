@@ -1,6 +1,6 @@
 # settings · 设置
 
-> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-08-20
+> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-08-25
 
 ---
 
@@ -24,7 +24,7 @@
 **禁止** `features/settings` → `@/layout/**`。
 **禁止** navigation / 壳深路径进 api|model|components。
 
-Settings 页面与 panels 直接组合 HeroUI Form、Card 与标准控件；`settingsShared` 只负责设置分区的产品结构，不是视觉 wrapper。Sync / Update 的系统状态和动作只消费各自 public，不复制其状态机或反馈实现。
+Settings 页面与 panels 直接组合 HeroUI Form、Card 与标准控件；`settingsShared` 只负责设置分区的产品结构，不是视觉 wrapper。八个 Sidebar 开关通过 `SettingsToggleRow` 复用同一产品接口，内部直接组合 Pro `CellSwitch`；默认 Space 只有一个消费者，在 General panel 内直接组合 Pro `CellSelect`。同步间隔使用 OSS `NumberField`。这些组合保持受控，由现有 mutation 与 canonical 返回值拥有业务真相，不复制 HeroUI 状态机或保留 OSS fallback。Sync / Update 的系统状态和动作只消费各自 public，不复制其状态机或反馈实现。
 
 ---
 

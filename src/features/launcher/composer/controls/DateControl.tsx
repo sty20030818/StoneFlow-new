@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
-import { Button, Input, Popover } from '@heroui/react'
+import { Button, Calendar, Popover } from '@heroui/react'
 
+import { toCalendarDate, toDateOnlyString } from '@/shared/lib/dateOnly'
 import { formatDateLabel, getLauncherDatePreset } from '../../model/launcherFormatters'
 import type { LauncherPopoverKey } from '../../model/types'
 
@@ -27,6 +28,8 @@ export function DateControl({
 	onOpenChange,
 	onDateChange,
 }: DateControlProps) {
+	const calendarDate = toCalendarDate(value)
+
 	return (
 		<Popover isOpen={open} onOpenChange={(nextOpen) => onOpenChange(nextOpen, popoverKey)}>
 			<Button size='sm' variant='outline'>
@@ -59,17 +62,23 @@ export function DateControl({
 								清除
 							</Button>
 						</div>
-						<Input
+						<Calendar
 							aria-label={`${label}日期`}
-							fullWidth
-							type='date'
-							value={value ?? ''}
-							onChange={(event) => {
-								if (event.currentTarget.value) {
-									onDateChange(field, event.currentTarget.value)
-								}
-							}}
-						/>
+							value={calendarDate}
+							onChange={(nextDate) => onDateChange(field, toDateOnlyString(nextDate))}
+						>
+							<Calendar.Header>
+								<Calendar.NavButton slot='previous' />
+								<Calendar.Heading />
+								<Calendar.NavButton slot='next' />
+							</Calendar.Header>
+							<Calendar.Grid>
+								<Calendar.GridHeader>
+									{(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
+								</Calendar.GridHeader>
+								<Calendar.GridBody>{(date) => <Calendar.Cell date={date} />}</Calendar.GridBody>
+							</Calendar.Grid>
+						</Calendar>
 					</div>
 				</Popover.Dialog>
 			</Popover.Content>

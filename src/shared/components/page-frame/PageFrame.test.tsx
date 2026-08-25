@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { Button } from '@heroui/react'
 import { describe, expect, it } from 'vitest'
 
 import { PageFrame } from './PageFrame'
@@ -28,19 +29,82 @@ describe('PageFrame', () => {
 		expect(pageAction.closest('header')).toHaveClass('h-11', 'px-2')
 		const pill = screen.getByRole('radio', { name: '进行中' })
 		const inactivePill = screen.getByRole('radio', { name: '待执行' })
+		const toolbar = screen.getByRole('toolbar', { name: '页面工具栏' })
 		const toolbarGroup = screen.getByRole('radiogroup', { name: '页面筛选' })
-		expect(toolbarGroup.parentElement?.parentElement).toHaveClass('px-2', 'py-2')
-		expect(toolbarGroup.parentElement).not.toHaveClass('min-h-8')
+		expect(toolbar.parentElement).toHaveClass('px-2', 'py-2')
+		expect(toolbar).toHaveAttribute('aria-orientation', 'horizontal')
+		expect(toolbar).toContainElement(toolbarGroup)
 		expect(toolbarGroup).toContainElement(pill)
-		expect(pill).toHaveClass('toggle-button--ghost')
-		expect(inactivePill).toHaveClass('toggle-button--ghost')
 		expect(pill).toHaveAttribute('data-selected', 'true')
-		expect(toolbarGroup.closest('.surface')).toHaveClass('surface--default')
-		expect(toolbarGroup.closest('.surface')).not.toHaveClass('surface--secondary')
 		expect(pill).toHaveAttribute('aria-checked', 'true')
 		expect(inactivePill).toHaveAttribute('aria-checked', 'false')
 		expect(pill).not.toHaveAttribute('aria-current')
 		expect(screen.getByText('页面主体').closest('[data-scroll-container="true"]')).not.toBeNull()
+	})
+
+	it('水平工具条用方向键贯通默认视图、筛选和显示操作，并保留标准激活键', async () => {
+		const onSelectionChange = vi.fn()
+		const onFilter = vi.fn()
+		const onDisplay = vi.fn()
+		render(
+			<PageFrame.Toolbar
+				displayAction={<Button onPress={onDisplay}>显示</Button>}
+				filterAction={<Button onPress={onFilter}>筛选</Button>}
+				onSelectionChange={onSelectionChange}
+				pills={[
+					{ key: 'doing', label: '进行中' },
+					{ key: 'todo', label: '待执行' },
+				]}
+				selectedKey='doing'
+			/>,
+		)
+
+		const doing = screen.getByRole('radio', { name: '进行中' })
+		const todo = screen.getByRole('radio', { name: '待执行' })
+		const filter = screen.getByRole('button', { name: '筛选' })
+		const display = screen.getByRole('button', { name: '显示' })
+
+		act(() => doing.focus())
+		fireEvent.keyDown(doing, { key: 'ArrowRight' })
+		expect(todo).toHaveFocus()
+		expect(doing).toHaveAttribute('aria-checked', 'true')
+
+		await act(async () => {
+			fireEvent.keyDown(todo, { key: 'Enter' })
+			fireEvent.keyUp(todo, { key: 'Enter' })
+			await Promise.resolve()
+		})
+		expect(onSelectionChange).toHaveBeenCalledWith('todo')
+
+		fireEvent.keyDown(todo, { key: 'ArrowRight' })
+		expect(filter).toHaveFocus()
+		fireEvent.keyDown(filter, { key: 'Enter' })
+		fireEvent.keyUp(filter, { key: 'Enter' })
+		expect(onFilter).toHaveBeenCalledOnce()
+
+		fireEvent.keyDown(filter, { key: 'ArrowRight' })
+		expect(display).toHaveFocus()
+		fireEvent.keyDown(display, { key: ' ' })
+		fireEvent.keyUp(display, { key: ' ' })
+		expect(onDisplay).toHaveBeenCalledOnce()
+
+		fireEvent.keyDown(display, { key: 'ArrowLeft' })
+		expect(filter).toHaveFocus()
+	})
+
+	it('默认视图始终保持一个受控选项，非法 canonical key 回退到首项', () => {
+		const pills = [
+			{ key: 'doing', label: '进行中' },
+			{ key: 'todo', label: '待执行' },
+		]
+		const { rerender } = render(<PageFrame.Toolbar pills={pills} selectedKey='doing' />)
+
+		fireEvent.click(screen.getByRole('radio', { name: '进行中' }))
+		expect(screen.getAllByRole('radio', { checked: true })).toHaveLength(1)
+
+		rerender(<PageFrame.Toolbar pills={pills} selectedKey='missing' />)
+		expect(screen.getByRole('radio', { name: '进行中' })).toHaveAttribute('aria-checked', 'true')
+		expect(screen.getAllByRole('radio', { checked: true })).toHaveLength(1)
 	})
 
 	it('外部 canonical 选择延迟回写时仍立即反馈新选项', async () => {
@@ -135,8 +199,8 @@ describe('PageFrame', () => {
 		expect(screen.getByText('虚拟列表')).toBeInTheDocument()
 	})
 
-	it('空筛选条不占用工具条纵向间隔', () => {
-		render(
+	it('FilterBar 始终位于 Toolbar 外，空 Draft 不占用纵向间隔', () => {
+		const { rerender } = render(
 			<PageFrame.Toolbar
 				filterBar={<EmptyFilterBar />}
 				pills={[{ key: 'all', label: '所有任务' }]}
@@ -144,11 +208,25 @@ describe('PageFrame', () => {
 			/>,
 		)
 
+		const toolbar = screen.getByRole('toolbar', { name: '页面工具栏' })
 		const toolbarGroup = screen.getByRole('radiogroup', { name: '页面筛选' })
 		expect(screen.getByRole('radio', { name: '所有任务' })).toHaveAttribute('data-selected', 'true')
-		const toolbarLayout = toolbarGroup.parentElement?.parentElement
+		const toolbarLayout = toolbar.parentElement
 		const emptyFilterBarSlot = toolbarLayout?.lastElementChild
 		expect(emptyFilterBarSlot).toBeEmptyDOMElement()
 		expect(emptyFilterBarSlot).toHaveClass('empty:hidden')
+
+		rerender(
+			<PageFrame.Toolbar
+				filterBar={<div data-testid='filter-bar'>筛选公式</div>}
+				pills={[{ key: 'all', label: '所有任务' }]}
+				selectedKey='all'
+			/>,
+		)
+		const filterBar = screen.getByTestId('filter-bar')
+		expect(screen.getByRole('toolbar', { name: '页面工具栏' })).not.toContainElement(filterBar)
+		expect(toolbarGroup.compareDocumentPosition(filterBar) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+			Node.DOCUMENT_POSITION_FOLLOWING,
+		)
 	})
 })

@@ -1,6 +1,6 @@
 # launcher · 独立窗 Launcher
 
-> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-08-20
+> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-08-25
 
 ---
 
@@ -63,6 +63,7 @@ src/features/launcher/
 | 圆角 | Win **8** / Mac **16** → `--launcher-panel-radius` |
 | 复用 | HeroUI 组件 + 全局 semantic theme；禁止 Launcher 专属兼容 facade |
 | 快捷键 | Launcher 独占本地 binding / 匹配；键帽与读屏语义复用 shared |
+| 日期 | 既有日期 Popover 保留预设与清除；自定义值用 HeroUI `Calendar` 选择，离开视图边界后仍是 `YYYY-MM-DD` |
 
 ---
 

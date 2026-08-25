@@ -127,6 +127,8 @@ src/
 
 `shared/lib/keyboardShortcut` 与 `shared/components/ShortcutTokens` 只负责跨平台键帽投影和展示；Command / Launcher 各自拥有绑定、匹配与动作语义。
 
+`shared/lib/dateOnly` 是两个真实日期视图消费者共用的唯一 adapter，只在 `CalendarDate` 与本地日历字符串 `YYYY-MM-DD` 之间转换，不经过 JavaScript `Date`、UTC 或时区。调用方必须在视图边界立即转换；`CalendarDate` 不得进入 Feature contract、reducer、Query/Tauri DTO 或持久化接口。
+
 任务集合页面由 task 域的 `useTaskCollectionScene` 统一任务 Board、展示、选择、预览与批量操作接线；全部任务、独立事项、视图与项目详情只提供数据源和页面专属动作。项目总览与生命周期页面复用 `PageFrame`，各自在所属 Feature 内维护实体 Board 和业务编排。
 
 ### 4.6 `styles/`

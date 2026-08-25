@@ -14,7 +14,7 @@ import { renderWithRouterContext } from '@/test/renderWithRouter'
 
 const loadSidebarSettingsSpy = vi.fn<() => Promise<void>>()
 const setItemVisibilitySpy =
-	vi.fn<(target: { kind: 'main'; key: string }, visible: boolean) => Promise<void>>()
+	vi.fn<(target: { kind: 'main' | 'footer'; key: string }, visible: boolean) => Promise<void>>()
 const setProjectSectionConfigSpy =
 	vi.fn<(config: ShellSidebarSettings['projectSection']) => Promise<void>>()
 const loadSpacesSpy = vi.fn<() => Promise<void>>()
@@ -105,7 +105,11 @@ describe('SettingsPage', () => {
 			if (!nextDefaultSpace) {
 				throw new Error('space not found')
 			}
-			return nextDefaultSpace
+			spaceStoreState.spaces = spaceStoreState.spaces.map((space) => ({
+				...space,
+				isDefault: space.id === spaceId,
+			}))
+			return spaceStoreState.spaces.find((space) => space.id === spaceId)!
 		})
 		getSyncStatusSpy.mockReset()
 		getSyncStatusSpy.mockResolvedValue(
@@ -241,41 +245,227 @@ describe('SettingsPage', () => {
 		expect(screen.queryByText('设置功能建设中')).not.toBeInTheDocument()
 	})
 
-	it('切换主入口显隐时调用 sidebar settings store', async () => {
-		mockSettingsSection = 'sidebar'
-		await renderSettingsPage()
+	it.each([
+		{
+			label: '所有任务',
+			description: '统一查看当前范围内的全部任务。',
+			target: { kind: 'main' as const, key: 'allTasks' },
+		},
+		{
+			label: '视图',
+			description: '保留视图入口，方便按条件聚焦任务。',
+			target: { kind: 'main' as const, key: 'views' },
+		},
+		{
+			label: '项目总览',
+			description: '保留项目入口，方便集中查看和管理项目。',
+			target: { kind: 'main' as const, key: 'projectOverview' },
+		},
+		{
+			label: '归档',
+			description: '显示归档入口，方便集中查看暂时收起的内容。',
+			target: { kind: 'footer' as const, key: 'archive' },
+		},
+		{
+			label: '回收站',
+			description: '显示回收站入口，方便恢复或彻底删除内容。',
+			target: { kind: 'footer' as const, key: 'trash' },
+		},
+	])(
+		'CellSwitch 的公开 label 覆盖 $label 整行，并提交对应显隐 mutation',
+		async ({ label, description, target }) => {
+			mockSettingsSection = 'sidebar'
+			await renderSettingsPage()
 
-		fireEvent.click(getCheckboxByLabel('所有任务'))
+			const toggle = getToggleByLabel(label)
+			const row = getToggleRowByLabel(label)
+			expect(row.tagName).toBe('LABEL')
+			expect(row).toContainElement(toggle)
+			expect(row).toContainElement(screen.getByText(description))
+			// jsdom 不会替 label 合成对隐藏 switch input 的浏览器激活；结构断言证明整行是 label，
+			// mutation 继续从公开 switch 交互触发，真实整行点击留给 WebView smoke。
+			fireEvent.click(toggle)
 
-		await waitFor(() => {
-			expect(setItemVisibilitySpy).toHaveBeenCalledWith({ kind: 'main', key: 'allTasks' }, false)
-		})
-	})
-
-	it('修改 projects section 配置时调用更新方法', async () => {
-		mockSettingsSection = 'sidebar'
-		await renderSettingsPage()
-
-		fireEvent.click(getCheckboxByLabel('显示已完成项目'))
-
-		await waitFor(() => {
-			expect(setProjectSectionConfigSpy).toHaveBeenCalledWith({
-				...sidebarStoreState.settings!.projectSection,
-				showCompleted: false,
+			await waitFor(() => {
+				expect(setItemVisibilitySpy).toHaveBeenCalledTimes(1)
+				expect(setItemVisibilitySpy).toHaveBeenCalledWith(target, false)
 			})
+		},
+	)
+
+	it.each([
+		{
+			label: '显示项目分区',
+			description: '决定侧边栏中是否展示项目分区。',
+			field: 'visible' as const,
+		},
+		{
+			label: '显示已完成项目',
+			description: '控制项目分区里是否包含已完成项目。',
+			field: 'showCompleted' as const,
+		},
+		{
+			label: '显示数量',
+			description: '控制项目列表是否显示任务数量徽标。',
+			field: 'showCounts' as const,
+		},
+	])(
+		'$label 会把对应字段 patch 到 project-section mutation',
+		async ({ label, description, field }) => {
+			mockSettingsSection = 'sidebar'
+			await renderSettingsPage()
+
+			const toggle = getToggleByLabel(label)
+			const row = getToggleRowByLabel(label)
+			expect(row.tagName).toBe('LABEL')
+			expect(row).toContainElement(toggle)
+			expect(row).toContainElement(screen.getByText(description))
+			fireEvent.click(toggle)
+
+			await waitFor(() => {
+				expect(setProjectSectionConfigSpy).toHaveBeenCalledTimes(1)
+				expect(setProjectSectionConfigSpy).toHaveBeenCalledWith({
+					...sidebarStoreState.settings!.projectSection,
+					[field]: false,
+				})
+			})
+		},
+	)
+
+	it('CellSwitch 暴露公开且可聚焦的 switch 语义', async () => {
+		mockSettingsSection = 'sidebar'
+		await renderSettingsPage()
+
+		const toggle = getToggleByLabel('显示已完成项目')
+		act(() => toggle.focus())
+
+		expect(toggle).toHaveFocus()
+		expect(toggle).toHaveAttribute('tabindex', '0')
+		// Space 激活依赖浏览器为原生 switch 合成 click；jsdom 不可靠模拟，留给 WebView smoke。
+	})
+
+	it('最后一个主入口保持原生 disabled，公开交互不能绕过约束', async () => {
+		sidebarStoreState.settings!.mainItems.views.visible = false
+		sidebarStoreState.settings!.mainItems.projectOverview.visible = false
+		mockSettingsSection = 'sidebar'
+		await renderSettingsPage()
+
+		const toggle = getToggleByLabel('所有任务')
+		expect(toggle).toBeDisabled()
+
+		fireEvent.click(toggle)
+		expect(setItemVisibilitySpy).not.toHaveBeenCalled()
+	})
+
+	it('CellSwitch mutation pending 时禁用同组开关，完成后恢复', async () => {
+		const deferred = createDeferred<void>()
+		setItemVisibilitySpy.mockReturnValueOnce(deferred.promise)
+		mockSettingsSection = 'sidebar'
+		await renderSettingsPage()
+
+		fireEvent.click(getToggleByLabel('所有任务'))
+
+		await waitFor(() => {
+			expect(setItemVisibilitySpy).toHaveBeenCalledTimes(1)
+			for (const label of ['所有任务', '视图', '项目总览']) {
+				expect(getToggleByLabel(label)).toBeDisabled()
+			}
+		})
+
+		expect(setItemVisibilitySpy).toHaveBeenCalledTimes(1)
+
+		act(() => deferred.resolve(undefined))
+		await waitFor(() => {
+			for (const label of ['所有任务', '视图', '项目总览']) {
+				expect(getToggleByLabel(label)).toBeEnabled()
+			}
 		})
 	})
 
-	it('切换默认 Space 时调用 setDefaultSpace', async () => {
+	it('CellSwitch mutation 失败时保留 canonical 值并展示分组错误', async () => {
+		setItemVisibilitySpy.mockRejectedValueOnce(new Error('主导航写入失败'))
+		mockSettingsSection = 'sidebar'
+		await renderSettingsPage()
+
+		const toggle = getToggleByLabel('所有任务')
+		fireEvent.click(toggle)
+
+		await waitFor(() => {
+			expect(screen.getByRole('alert')).toHaveTextContent('主导航写入失败')
+			expect(toggle).toBeChecked()
+			expect(toggle).toBeEnabled()
+		})
+	})
+
+	it('默认 Space 展示 canonical 当前值，选择当前项不重复提交，选择新项才提交', async () => {
 		mockSettingsSection = 'general'
 		await renderSettingsPage()
 
-		fireEvent.click(screen.getByRole('button', { name: /默认空间/ }))
+		const trigger = getDefaultSpaceTrigger()
+		expect(trigger).toHaveTextContent('工作')
+
+		fireEvent.click(trigger)
+		fireEvent.click(await screen.findByRole('option', { name: '工作' }))
+		expect(setDefaultSpaceSpy).not.toHaveBeenCalled()
+
+		fireEvent.click(trigger)
 		fireEvent.click(await screen.findByRole('option', { name: '生活' }))
 
 		await waitFor(() => {
+			expect(setDefaultSpaceSpy).toHaveBeenCalledTimes(1)
 			expect(setDefaultSpaceSpy).toHaveBeenCalledWith('space-2')
+			expect(trigger).toHaveTextContent('生活')
+			expect(screen.getByText('当前默认项：生活')).toBeInTheDocument()
 		})
+	})
+
+	it('默认 Space 提交期间禁用选择并拦截重复操作', async () => {
+		const deferred = createDeferred<Space>()
+		setDefaultSpaceSpy.mockReturnValueOnce(deferred.promise)
+		mockSettingsSection = 'general'
+		await renderSettingsPage()
+
+		const trigger = getDefaultSpaceTrigger()
+		fireEvent.click(trigger)
+		fireEvent.click(await screen.findByRole('option', { name: '生活' }))
+
+		await waitFor(() => {
+			expect(setDefaultSpaceSpy).toHaveBeenCalledTimes(1)
+			expect(trigger).toBeDisabled()
+			expect(trigger.closest('[aria-busy]')).toHaveAttribute('aria-busy', 'true')
+		})
+
+		fireEvent.click(trigger)
+		expect(setDefaultSpaceSpy).toHaveBeenCalledTimes(1)
+
+		act(() => deferred.resolve(spaceStoreState.spaces[1]!))
+		await waitFor(() => expect(trigger).toBeEnabled())
+	})
+
+	it('默认 Space 提交失败时保留 canonical 当前值与错误反馈', async () => {
+		setDefaultSpaceSpy.mockRejectedValueOnce(new Error('默认空间写入失败'))
+		mockSettingsSection = 'general'
+		await renderSettingsPage()
+
+		const trigger = getDefaultSpaceTrigger()
+		fireEvent.click(trigger)
+		fireEvent.click(await screen.findByRole('option', { name: '生活' }))
+
+		await waitFor(() => {
+			expect(screen.getByRole('alert')).toHaveTextContent('默认空间写入失败')
+			expect(trigger).toHaveTextContent('工作')
+			expect(trigger).toBeEnabled()
+		})
+	})
+
+	it('没有可用 Space 时保留禁用的 CellSelect 与空状态反馈', async () => {
+		spaceStoreState.spaces = []
+		mockSettingsSection = 'general'
+		await renderSettingsPage()
+
+		expect(getDefaultSpaceTrigger()).toBeDisabled()
+		expect(screen.getByText('当前没有可用空间')).toBeInTheDocument()
+		expect(setDefaultSpaceSpy).not.toHaveBeenCalled()
 	})
 
 	it('选择主题色后立即应用，并在重新挂载时恢复本机选择', async () => {
@@ -330,6 +520,76 @@ describe('SettingsPage', () => {
 		await waitFor(() => {
 			expect(screen.getByLabelText('同步数据库连接')).toHaveValue('')
 		})
+	})
+
+	it('离开设置页后取消同步配置的延迟刷新', async () => {
+		const delayedRefreshes = new Map<number, () => void>()
+		let nextTimerId = 10_000
+		const nativeSetTimeout = window.setTimeout.bind(window)
+		const nativeClearTimeout = window.clearTimeout.bind(window)
+		const setTimeoutSpy = vi
+			.spyOn(window, 'setTimeout')
+			.mockImplementation((handler, timeout, ...args) => {
+				if ((timeout === 2500 || timeout === 8000) && typeof handler === 'function') {
+					const timerId = nextTimerId++
+					delayedRefreshes.set(timerId, () => handler(...args))
+					return timerId
+				}
+				return nativeSetTimeout(handler, timeout, ...args)
+			})
+		const clearTimeoutSpy = vi.spyOn(window, 'clearTimeout').mockImplementation((timerId) => {
+			if (typeof timerId === 'number' && delayedRefreshes.delete(timerId)) return
+			nativeClearTimeout(timerId)
+		})
+
+		try {
+			mockSettingsSection = 'sync'
+			const view = await renderSettingsPage()
+			openSyncConfigDialog()
+			fireEvent.change(screen.getByLabelText('同步数据库连接'), {
+				target: { value: 'postgresql://user:secret@db.example.com:5432/sf' },
+			})
+			fireEvent.click(screen.getByRole('button', { name: '保存配置' }))
+
+			await waitFor(() => expect(delayedRefreshes.size).toBe(2))
+			view.unmount()
+			getSyncStatusSpy.mockClear()
+			act(() => delayedRefreshes.forEach((refresh) => refresh()))
+
+			expect(getSyncStatusSpy).not.toHaveBeenCalled()
+		} finally {
+			clearTimeoutSpy.mockRestore()
+			setTimeoutSpy.mockRestore()
+		}
+	})
+
+	it('同步配置仍在保存时离开设置页不会再排定延迟刷新', async () => {
+		const deferred = createDeferred<unknown>()
+		configureSyncSpy.mockReturnValueOnce(deferred.promise)
+		const setTimeoutSpy = vi.spyOn(window, 'setTimeout')
+
+		try {
+			mockSettingsSection = 'sync'
+			const view = await renderSettingsPage()
+			openSyncConfigDialog()
+			fireEvent.change(screen.getByLabelText('同步数据库连接'), {
+				target: { value: 'postgresql://user:secret@db.example.com:5432/sf' },
+			})
+			fireEvent.click(screen.getByRole('button', { name: '保存配置' }))
+			await waitFor(() => expect(configureSyncSpy).toHaveBeenCalledTimes(1))
+
+			view.unmount()
+			setTimeoutSpy.mockClear()
+			await act(async () => {
+				deferred.resolve(createReadyIntervalSyncStatus())
+				await deferred.promise
+			})
+
+			expect(setTimeoutSpy).not.toHaveBeenCalledWith(expect.any(Function), 2500)
+			expect(setTimeoutSpy).not.toHaveBeenCalledWith(expect.any(Function), 8000)
+		} finally {
+			setTimeoutSpy.mockRestore()
+		}
 	})
 
 	it('页面加载后连接串输入保持空白（密码不回显）', async () => {
@@ -787,8 +1047,20 @@ function createReadyIntervalSyncStatus(intervalMinutes = 15) {
 	})
 }
 
-function getCheckboxByLabel(label: string) {
+function getToggleByLabel(label: string) {
 	return screen.getByRole('switch', { name: label })
+}
+
+function getToggleRowByLabel(label: string) {
+	const row = getToggleByLabel(label).closest('label')
+	if (!(row instanceof HTMLElement)) {
+		throw new Error(`未找到「${label}」对应的公开 label`)
+	}
+	return row
+}
+
+function getDefaultSpaceTrigger() {
+	return screen.getByRole('button', { name: /默认空间/ })
 }
 
 function createSidebarStoreState() {
@@ -858,5 +1130,19 @@ function createSpace(overrides: Partial<Space> & Pick<Space, 'id' | 'name' | 'is
 		deletedAt: overrides.deletedAt ?? null,
 		createdAt: overrides.createdAt ?? '2026-05-03T10:00:00Z',
 		updatedAt: overrides.updatedAt ?? '2026-05-03T10:00:00Z',
+	}
+}
+
+function createDeferred<T>() {
+	let resolve: ((value: T) => void) | undefined
+	const promise = new Promise<T>((nextResolve) => {
+		resolve = nextResolve
+	})
+
+	return {
+		promise,
+		resolve(value: T) {
+			resolve?.(value)
+		},
 	}
 }

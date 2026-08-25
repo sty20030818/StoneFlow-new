@@ -1,7 +1,7 @@
 # StoneFlow 视觉样式架构
 
 > 版本：v4
-> 最后更新：2026-08-20
+> 最后更新：2026-08-25
 > 作用：定义 `src/styles` 的现行合同。
 
 ## 1. 一句话心智
@@ -45,10 +45,10 @@ src/styles/
 ├── fonts.css       # 只声明 @font-face 字体资产
 ├── theme.css       # 唯一全局语义值源
 ├── components.css  # 唯一且最小的公共组件差异 recipe
-└── base.css        # 文档、滚动、选择与原生窗口基础行为
+└── base.css        # 文档、选择、原生窗口与浏览器基础行为
 ```
 
-全局滚动容器的原生滚动条隐藏规则归 `base.css`，不为单条 utility 建立独立文件。
+浏览器拥有滚动行为与原生 scrollbar；真实 viewport 直接使用 HeroUI Styles 的 `scrollbar` utility。`base.css` 不隐藏或重绘全局 scrollbar，只有产品明确批准的极窄区域可以在调用方显式隐藏。
 
 import 顺序固定为：
 
@@ -101,6 +101,8 @@ tailwindcss
 
 HeroUI OSS/Pro 的锁定版本是默认实现，负责组件结构、Hover、Pressed、Selected、Open、Focus-visible、Disabled、Pending、Invalid、Danger、动画及 `prefers-reduced-motion`。`components.css` 不复制上游状态机，只通过公开 BEM 与稳定共享 DOM hook 保存 StoneFlow 确实需要的跨应用差异：
 
+- `NumberField`、`ColorSwatchPicker`、`CellSwitch`、`CellSelect`、`Calendar` 与 `Toolbar` 直接使用上游结构和状态 recipe，不为这些迁移增加局部或全局控件皮肤；
+
 - 28/32/36px 工作台控件密度和紧凑集合行；
 - 次级选择的中性表面，避免 Accent 大面积铺色；
 - Card 与 Overlay 的统一轻边界；Surface 保持 HeroUI 上游的无边界语义；
@@ -137,7 +139,7 @@ HeroUI 原子控件、集合 Item 与 Overlay chrome slot 只允许：
 - Hover、Pressed、Selected、Open、Focus、Disabled 或 Invalid 皮肤；
 - Accent 分支或 HeroUI BEM class。
 
-Form、RadioGroup、Surface、Resizable、ScrollShadow 与 Trigger 等结构组件可直接承载所属产品 Module 的 flex/grid、响应式结构和动态几何；它们仍不得重写公共颜色、边框、圆角、阴影或交互皮肤。若 Surface 本身承担产品布局，该结构由唯一产品 Module 固定，不把皮肤自由度重新暴露给调用方。
+Form、RadioGroup、Toolbar、Surface、Resizable、ScrollShadow 与 Trigger 等结构组件可直接承载所属产品 Module 的 flex/grid、响应式结构和动态几何；它们仍不得重写公共颜色、边框、圆角、阴影或交互皮肤。若 Surface 本身承担产品布局，该结构由唯一产品 Module 固定，不把皮肤自由度重新暴露给调用方。
 
 合法特殊形状必须属于真实产品语义，例如 Avatar 圆形、Launcher 原生窗裁切或嵌入式 Sheet 无外侧圆角；它们写在所属产品 Module 的 Implementation 中，不复制到调用方。
 
@@ -146,10 +148,12 @@ Form、RadioGroup、Surface、Resizable、ScrollShadow 与 Trigger 等结构组�
 跨 Feature 共享必须通过 deletion test：删除后，复杂行为或产品合同会重新扩散到多个调用方，才值得保留。
 
 - `PageFrame` 统一页头、工具栏、普通/虚拟 Body 与滚动骨架；页级图标操作由真实页面直接组合 HeroUI Button 与 `ActionTooltip`。
+- `PageFrame.Toolbar` 直接组合 HeroUI `Toolbar`，只保留产品槽位、外部布局与 FilterBar 的区域顺序，不重写工具条焦点模型。
 - `RowShell` 统一行根结构、交互状态组合与选择组语义；Board header 归 Board，TaskBoard 外层选择组与虚拟几何归 TaskBoard，不再导出 class map。
 - Task Detail 只有一个生产 owner，其 Header/Footer/PageLayout/Section/SaveStatus 与滚动结构均由 task feature 持有。
 - `AppScrollArea` 只封装真实 viewport 与 ref context；滚动由浏览器执行，外观直接复用 HeroUI Styles 的 `scrollbar` utility。
 - `ActionTooltip` 隐藏 React Aria trigger props/ref 合并与快捷键展示行为。
+- `SettingsToggleRow` 是 settings 内八个真实消费者共享的产品组合，直接使用 Pro `CellSwitch`；默认 Space 的 Pro `CellSelect` 只有一个消费者，保持内联组合。
 
 禁止：
 

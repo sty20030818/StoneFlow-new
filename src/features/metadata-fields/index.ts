@@ -14,7 +14,6 @@ export type {
 	MetadataActionSpec,
 	TaskPlacementGroup,
 	TaskPlacementTarget,
-	CustomDateFieldKey,
 	MetadataDropdownMappedProps,
 } from './core'
 

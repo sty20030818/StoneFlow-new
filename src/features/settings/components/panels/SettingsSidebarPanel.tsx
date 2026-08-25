@@ -9,10 +9,10 @@ import {
 } from '../../model/useSidebarSettingsStore'
 import type { SidebarMainItemKey } from '../../api/sidebarSettings'
 import {
-	SettingCheckboxRow,
 	SettingsPreferenceGroup,
 	SettingsSection,
 	SettingsStack,
+	SettingsToggleRow,
 } from '../settingsShared'
 
 const MAIN_ITEM_OPTIONS: Array<{
@@ -177,10 +177,10 @@ export function SettingsSidebarPanel() {
 						const checked = sidebarSettings.mainItems[item.key].visible
 						const disabled = pendingSections.mainItems || (checked && visibleMainItemCount === 1)
 						return (
-							<SettingCheckboxRow
-								checked={checked}
+							<SettingsToggleRow
 								description={item.description}
-								disabled={disabled}
+								isDisabled={disabled}
+								isSelected={checked}
 								key={item.key}
 								label={item.label}
 								onChange={(nextChecked) => handleMainItemVisibilityChange(item.key, nextChecked)}
@@ -204,23 +204,23 @@ export function SettingsSidebarPanel() {
 				title='辅助入口'
 			>
 				<SettingsPreferenceGroup>
-					<SettingCheckboxRow
-						checked={sidebarSettings.footerItems.archive.visible}
+					<SettingsToggleRow
 						description='显示归档入口，方便集中查看暂时收起的内容。'
-						disabled={
+						isDisabled={
 							pendingSections.footerItems ||
 							(sidebarSettings.footerItems.archive.visible && visibleFooterItemCount === 1)
 						}
+						isSelected={sidebarSettings.footerItems.archive.visible}
 						label='归档'
 						onChange={(nextChecked) => handleFooterItemVisibilityChange('archive', nextChecked)}
 					/>
-					<SettingCheckboxRow
-						checked={sidebarSettings.footerItems.trash.visible}
+					<SettingsToggleRow
 						description='显示回收站入口，方便恢复或彻底删除内容。'
-						disabled={
+						isDisabled={
 							pendingSections.footerItems ||
 							(sidebarSettings.footerItems.trash.visible && visibleFooterItemCount === 1)
 						}
+						isSelected={sidebarSettings.footerItems.trash.visible}
 						label='回收站'
 						onChange={(nextChecked) => handleFooterItemVisibilityChange('trash', nextChecked)}
 					/>
@@ -241,24 +241,24 @@ export function SettingsSidebarPanel() {
 				title='项目分区'
 			>
 				<SettingsPreferenceGroup>
-					<SettingCheckboxRow
-						checked={sidebarSettings.projectSection.visible}
+					<SettingsToggleRow
 						description='决定侧边栏中是否展示项目分区。'
-						disabled={pendingSections.projectSection}
+						isDisabled={pendingSections.projectSection}
+						isSelected={sidebarSettings.projectSection.visible}
 						label='显示项目分区'
 						onChange={(nextChecked) => handleProjectSectionChange('visible', nextChecked)}
 					/>
-					<SettingCheckboxRow
-						checked={sidebarSettings.projectSection.showCompleted}
+					<SettingsToggleRow
 						description='控制项目分区里是否包含已完成项目。'
-						disabled={pendingSections.projectSection}
+						isDisabled={pendingSections.projectSection}
+						isSelected={sidebarSettings.projectSection.showCompleted}
 						label='显示已完成项目'
 						onChange={(nextChecked) => handleProjectSectionChange('showCompleted', nextChecked)}
 					/>
-					<SettingCheckboxRow
-						checked={sidebarSettings.projectSection.showCounts}
+					<SettingsToggleRow
 						description='控制项目列表是否显示任务数量徽标。'
-						disabled={pendingSections.projectSection}
+						isDisabled={pendingSections.projectSection}
+						isSelected={sidebarSettings.projectSection.showCounts}
 						label='显示数量'
 						onChange={(nextChecked) => handleProjectSectionChange('showCounts', nextChecked)}
 					/>

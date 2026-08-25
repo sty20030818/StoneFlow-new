@@ -100,7 +100,6 @@ export function MetadataDateDropdown({
 			value={selectedDateOptionKey}
 			onSelectCustomOption={() => {
 				openCustomDateDialog({
-					fieldKey: getMetadataDateFieldKey(label),
 					label,
 					value: normalizedValue,
 					hasExistingValue: Boolean(normalizedValue),

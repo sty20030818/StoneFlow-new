@@ -1,9 +1,11 @@
 # HeroUI 原生能力 P0-P2 硬切
 
-**Status:** ready-for-agent  
-**Triage:** ready-for-agent  
+**Status:** completed; archived; manual acceptance transferred  
+**Triage:** completed  
 **日期:** 2026-08-25  
 **采用基线:** HeroUI OSS 3.2.4、HeroUI Styles 3.2.4、HeroUI Pro 1.0.0-beta.8
+
+2026-08-25，七个切片的代码、删除项、架构文档与自动化门禁均已完成；尚未执行的真实 Tauri、WebView 与 Windows 设备验收已移入 [统一产品验收](../../unified-product-acceptance/spec.md)，不记为已经通过。
 
 ## Problem Statement
 
@@ -123,7 +125,7 @@ StoneFlow 已经完成从 shadcn/Radix 到 HeroUI OSS/Pro 的主体迁移，但�
 
 ### 5. P1-A：Settings CellSwitch
 
-- 用当前锁定版 HeroUI Pro CellSwitch 替换设置页六个自组 Switch 行。
+- 用当前锁定版 HeroUI Pro CellSwitch 替换设置页八个自组 Switch 行。
 - 保留一个 SettingsToggleRow 产品 Module，因为它有多个真实消费者并统一承载 label、description、selected、disabled 与业务 onChange Interface。
 - SettingsToggleRow 内部直接使用 CellSwitch compound anatomy，不暴露 CellSwitch slot，不复制 Switch thumb、Focus、hover、selected 或 disabled CSS。
 - 整行点击、键盘切换、读屏名称和 disabled 行为由 CellSwitch 接管。
@@ -170,14 +172,14 @@ StoneFlow 已经完成从 shadcn/Radix 到 HeroUI OSS/Pro 的主体迁移，但�
 - 删除由本轮产生的未使用 import、类型、CSS hook、测试 mock、re-export、注释和架构描述。
 - 更新系统设计、界面系统、前端架构和样式架构中关于自绘 scrollbar、原生日期输入及设置控件所有权的陈述。
 - 不为达到净删除数字而删除领域或回归测试。成功标准是删除重复所有权和状态机，而不是单纯追求 LOC。
-- 七个切片各自使用中文 Conventional Commit；不把全部实现压成一个不可审阅的大提交。
+- 实际交付遵照任务发起人的后续指令分为 P0 与剩余 P1/P2 两个可审阅批次；每批使用中文 Conventional Commit。
 
 ## Delivery Order
 
 1. **P0-A 原生滚动系统**：先删除最大、最独立的第二状态机，并建立跨平台 smoke 基线。
 2. **P0-B NumberField**：收口同步设置中的字符串数字状态。
 3. **P0-C ColorSwatchPicker**：建立 Space colorKey/color adapter 并替换有限色板。
-4. **P1-A CellSwitch**：迁移六个设置 toggle row，保留深的产品组合。
+4. **P1-A CellSwitch**：迁移八个设置 toggle row，保留深的产品组合。
 5. **P1-B Calendar + Date view adapter**：先建立共享日期 adapter，再分别迁移 Launcher 与全局 Modal。
 6. **P1-C Toolbar**：在控件本身稳定后收口 PageFrame 键盘导航。
 7. **P2 CellSelect**：最后迁移低收益但已批准的默认 Space setting cell。
@@ -218,7 +220,7 @@ StoneFlow 已经完成从 shadcn/Radix 到 HeroUI OSS/Pro 的主体迁移，但�
 
 ### CellSwitch 与 CellSelect
 
-- 六个 Sidebar 设置项通过 SettingsToggleRow 使用 CellSwitch，整行可点击且可键盘切换。
+- 八个 Sidebar 设置项通过 SettingsToggleRow 使用 CellSwitch，整行可点击且可键盘切换。
 - 默认 Space 使用 CellSelect，选项、成功、失败、pending 和 disabled 行为保持正确。
 - 不存在 Pro fallback、旧 Switch/Select 双轨或局部状态皮肤。
 
@@ -255,7 +257,7 @@ StoneFlow 已经完成从 shadcn/Radix 到 HeroUI OSS/Pro 的主体迁移，但�
 
 2. **SettingsPage**
    - NumberField 的输入、步进、focus-exit、Enter、无变化、失败回滚。
-   - CellSwitch 的整行点击、键盘、disabled 与六个业务 mutation。
+   - CellSwitch 的公开 switch mutation、label 行结构、disabled、pending、失败反馈与八个设置项映射；真实整行点击和键盘激活由 Tauri smoke 验证。
    - CellSelect 的当前值、选择、pending、失败回滚和空列表。
 
 3. **SpaceEditorDialog**
@@ -341,14 +343,21 @@ StoneFlow 已经完成从 shadcn/Radix 到 HeroUI OSS/Pro 的主体迁移，但�
 - 其他切片可能因 HeroUI compound anatomy、日期 adapter 和行为测试增加代码。评价标准是重复状态机与供应商责任是否删除，不承诺整个工作包必然净减固定 LOC。
 - 任何零消费者兼容代码在对应切片删除；不为达到数字删除仍有价值的产品组合或回归测试。
 
+### 实施与自动化记录
+
+- P0 已完成原生 scrollbar、NumberField 与 ColorSwatchPicker hard cut；P1/P2 已完成八个 CellSwitch、两处 Calendar、PageFrame Toolbar 与默认 Space CellSelect hard cut。
+- 日期边界只保留严格 `YYYY-MM-DD` ↔ `CalendarDate` 适配；原生日期输入、重复 parser、默认 Space 旧 Select、设置旧 Switch 行与日期弹窗零消费者 `fieldKey` 已删除。
+- `bun install --frozen-lockfile` 无变更；focused suites 86/86、全量 Vitest 187 files / 923 tests、脚本测试 17 files / 157 tests、类型、边界、动画、格式与生产构建均通过。Lint 仅保留仓库既有 React Compiler warnings。
+- 未启动开发服务或 Tauri，未运行真实 macOS/Windows 验收；未改 Rust，因此未新增或运行 Rust 测试。
+
 ### Source of Truth
 
 - [HeroUI UI/UX 还原与组件复用研究](./research.md)
-- [领域模型](../../Documents/01-架构/A1-领域模型.md)
-- [系统设计](../../Documents/01-架构/A2-系统设计.md)
-- [界面系统](../../Documents/01-架构/A3-界面系统.md)
-- [ADR-0002：以 HeroUI OSS/Pro 作为唯一 UI 平台](../../Documents/01-架构/adr/ADR-0002-heroui-ui-platform.md)
-- [统一产品验收](../unified-product-acceptance/spec.md)
+- [领域模型](../../../Documents/01-架构/A1-领域模型.md)
+- [系统设计](../../../Documents/01-架构/A2-系统设计.md)
+- [界面系统](../../../Documents/01-架构/A3-界面系统.md)
+- [ADR-0002：以 HeroUI OSS/Pro 作为唯一 UI 平台](../../../Documents/01-架构/adr/ADR-0002-heroui-ui-platform.md)
+- [统一产品验收](../../unified-product-acceptance/spec.md)
 - [HeroUI Scrollbar 官方文档](https://heroui.com/en/docs/react/getting-started/styling#scrollbars)
 - [HeroUI NumberField 官方文档](https://heroui.com/en/docs/react/components/number-field)
 - [HeroUI ColorSwatchPicker 官方文档](https://heroui.com/en/docs/react/components/color-swatch-picker)

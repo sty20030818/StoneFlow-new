@@ -118,7 +118,6 @@ export function ShellOverlays({
 			) : null}
 			{customDateDialog ? (
 				<CustomDateDialog
-					fieldKey={customDateDialog.fieldKey}
 					hasExistingValue={customDateDialog.hasExistingValue}
 					label={customDateDialog.label}
 					open

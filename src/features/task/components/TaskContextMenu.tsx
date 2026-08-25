@@ -261,7 +261,6 @@ export function TaskContextMenu({
 															}
 															if (option.action === 'openCustomDateDialog') {
 																openCustomDateDialog({
-																	fieldKey: 'dueDate',
 																	label: '截止时间',
 																	value: customDateDialogValue,
 																	hasExistingValue: uniqueNonEmptyDueDates.length > 0,

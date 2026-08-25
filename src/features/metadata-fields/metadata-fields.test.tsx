@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { CalendarIcon } from 'lucide-react'
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 
 import {
 	CustomDateDialog,
@@ -89,34 +90,72 @@ describe('metadata-fields', () => {
 		fireEvent.click(await screen.findByRole('menuitem', { name: /自定义日期/ }))
 
 		expect(useDialogStore.getState().customDateDialog).toMatchObject({
-			fieldKey: 'dueDate',
 			label: '截止时间',
 			value: null,
 			hasExistingValue: false,
 		})
 	})
 
-	it('自定义日期用原生日期输入提交 canonical 日期值', () => {
+	it('自定义日期日历只修改弹窗草稿，保存时提交 date-only 领域值', () => {
 		const onOpenChange = vi.fn()
 		const onSubmit = vi.fn()
 
 		render(
 			<CustomDateDialog
-				fieldKey='dueDate'
-				hasExistingValue={false}
+				hasExistingValue
 				label='截止时间'
 				onOpenChange={onOpenChange}
 				onSubmit={onSubmit}
 				open
-				value={null}
+				value='2026-05-10'
 			/>,
 		)
 
-		fireEvent.change(screen.getByLabelText('截止时间'), { target: { value: '2026-05-10' } })
+		fireEvent.click(within(screen.getByRole('grid')).getByText('20'))
+		expect(onSubmit).not.toHaveBeenCalled()
 		fireEvent.click(screen.getByRole('button', { name: '保存截止时间' }))
 
-		expect(onSubmit).toHaveBeenCalledWith('2026-05-10')
+		expect(onSubmit).toHaveBeenCalledWith('2026-05-20')
 		expect(onOpenChange).toHaveBeenCalledWith(false)
+	})
+
+	it('取消与 Escape 丢弃日历草稿，重开恢复已保存日期', async () => {
+		const onSubmit = vi.fn()
+		render(<CustomDateDialogHarness onSubmit={onSubmit} />)
+
+		fireEvent.click(screen.getByRole('button', { name: '打开日期弹窗' }))
+		fireEvent.click(within(screen.getByRole('grid')).getByText('20'))
+		fireEvent.click(screen.getByRole('button', { name: '取消' }))
+		await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+
+		fireEvent.click(screen.getByRole('button', { name: '打开日期弹窗' }))
+		expect(
+			within(screen.getByRole('grid')).getByRole('gridcell', { name: '10', selected: true }),
+		).toBeInTheDocument()
+		fireEvent.click(within(screen.getByRole('grid')).getByText('20'))
+		fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+		await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+
+		fireEvent.click(screen.getByRole('button', { name: '打开日期弹窗' }))
+		expect(
+			within(screen.getByRole('grid')).getByRole('gridcell', { name: '10', selected: true }),
+		).toBeInTheDocument()
+		expect(onSubmit).not.toHaveBeenCalled()
+	})
+
+	it('移除自定义日期提交 null，并在重开后保持空草稿', async () => {
+		const onSubmit = vi.fn()
+		render(<CustomDateDialogHarness onSubmit={onSubmit} />)
+
+		fireEvent.click(screen.getByRole('button', { name: '打开日期弹窗' }))
+		fireEvent.click(screen.getByRole('button', { name: '移除截止时间' }))
+
+		expect(onSubmit).toHaveBeenCalledWith(null)
+		await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+
+		fireEvent.click(screen.getByRole('button', { name: '打开日期弹窗' }))
+		expect(screen.getByRole('button', { name: '保存截止时间' })).toBeDisabled()
+		expect(screen.queryByRole('button', { name: '移除截止时间' })).not.toBeInTheDocument()
 	})
 
 	it('grouped placement 按 Space 呈现，并返回 stable target', async () => {
@@ -155,3 +194,27 @@ describe('metadata-fields', () => {
 		})
 	})
 })
+
+function CustomDateDialogHarness({ onSubmit }: { onSubmit: (value: string | null) => void }) {
+	const [open, setOpen] = useState(false)
+	const [value, setValue] = useState<string | null>('2026-05-10')
+
+	return (
+		<>
+			<button type='button' onClick={() => setOpen(true)}>
+				打开日期弹窗
+			</button>
+			<CustomDateDialog
+				hasExistingValue={value !== null}
+				label='截止时间'
+				onOpenChange={setOpen}
+				onSubmit={(nextValue) => {
+					setValue(nextValue)
+					onSubmit(nextValue)
+				}}
+				open={open}
+				value={value}
+			/>
+		</>
+	)
+}

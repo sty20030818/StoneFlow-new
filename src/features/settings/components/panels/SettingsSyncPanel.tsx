@@ -90,6 +90,8 @@ export function SettingsSyncPanel() {
 	const [syncDetailsOpen, setSyncDetailsOpen] = useState(false)
 	const [intervalMinutesDraft, setIntervalMinutesDraftState] = useState(DEFAULT_INTERVAL_MINUTES)
 	const intervalMinutesDraftRef = useRef(DEFAULT_INTERVAL_MINUTES)
+	const delayedRefreshTimersRef = useRef<number[]>([])
+	const mountedRef = useRef(true)
 	const syncPolicySavingRef = useRef(false)
 
 	function setIntervalMinutesDraft(value: number) {
@@ -102,6 +104,17 @@ export function SettingsSyncPanel() {
 
 	useEffect(() => {
 		void refreshSyncStatus({ syncUrlDraft: true })
+	}, [])
+
+	useEffect(() => {
+		mountedRef.current = true
+		return () => {
+			mountedRef.current = false
+			for (const timer of delayedRefreshTimersRef.current) {
+				window.clearTimeout(timer)
+			}
+			delayedRefreshTimersRef.current = []
+		}
 	}, [])
 
 	useEffect(() => {
@@ -199,26 +212,33 @@ export function SettingsSyncPanel() {
 		setSyncDiagnosticsMessage(null)
 		try {
 			const payload = await configureSync(input)
+			if (!mountedRef.current) {
+				return
+			}
 			setSyncStatus(payload)
 			setDatabaseUrl('')
 			setSyncStatusMessage(
 				'配置已保存。正在后台连接云端并同步；完成后请点「刷新诊断」查看远端工作集。',
 			)
 			// 后台同步结束后静默刷新状态/诊断（给一点时间让 worker 启动）
-			window.setTimeout(() => {
-				void refreshSyncStatus({ silent: true, syncUrlDraft: false })
-				void refreshSyncDiagnostics({ silent: true })
-			}, 2500)
-			window.setTimeout(() => {
-				void refreshSyncStatus({ silent: true, syncUrlDraft: false })
-				void refreshSyncDiagnostics({ silent: true })
-			}, 8000)
+			for (const delay of [2500, 8000]) {
+				delayedRefreshTimersRef.current.push(
+					window.setTimeout(() => {
+						void refreshSyncStatus({ silent: true, syncUrlDraft: false })
+						void refreshSyncDiagnostics({ silent: true })
+					}, delay),
+				)
+			}
 		} catch (error) {
 			const message = normalizeTauriError(error, '同步配置保存失败')
-			setSyncStatusMessage(message)
+			if (mountedRef.current) {
+				setSyncStatusMessage(message)
+			}
 			throw error
 		} finally {
-			setSyncSaving(false)
+			if (mountedRef.current) {
+				setSyncSaving(false)
+			}
 		}
 	}
 

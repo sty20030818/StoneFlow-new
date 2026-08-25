@@ -35,6 +35,7 @@
 		"@heroui/react": "3.2.4",
 		"@heroui/styles": "3.2.4",
 		"@hookform/resolvers": "^5.9.1",
+		"@internationalized/date": "3.12.3",
 		"@react-aria/utils": "3.34.1",
 		"@tanstack/react-query": "^5.102.3",
 		"@tanstack/react-router": "^1.170.32",

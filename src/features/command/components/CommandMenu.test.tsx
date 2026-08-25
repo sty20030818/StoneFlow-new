@@ -164,7 +164,6 @@ describe('CommandMenu', () => {
 		expect(onOpenChange).toHaveBeenCalledWith(false)
 		expect(onSelectTaskDate).not.toHaveBeenCalled()
 		expect(dialog).toMatchObject({
-			fieldKey: 'dueDate',
 			value: '2026-05-08',
 			hasExistingValue: true,
 		})

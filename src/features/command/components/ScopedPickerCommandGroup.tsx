@@ -198,7 +198,6 @@ export function ScopedPickerCommandGroup({
 							if (option.action === 'openCustomDateDialog') {
 								onOpenChange(false)
 								onOpenCustomDateDialog({
-									fieldKey: 'dueDate',
 									label: '截止时间',
 									value: customDateDialogValue,
 									hasExistingValue: uniqueNonEmptyDueDates.length > 0,

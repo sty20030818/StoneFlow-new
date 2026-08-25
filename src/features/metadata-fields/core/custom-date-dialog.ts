@@ -1,48 +1,5 @@
 export type CustomDateFieldKey = 'dueDate' | 'scheduledDate' | 'reminderDate'
 
-function normalizeCustomDateInputValue(value: string) {
-	return value.trim().replaceAll('-', '/')
-}
-
-export function parseCustomDateInputValue(value: string) {
-	const normalized = normalizeCustomDateInputValue(value)
-	if (!normalized) {
-		return null
-	}
-
-	const match = normalized.match(/^(\d{4})\/(\d{2})\/(\d{2})$/)
-	if (!match) {
-		return null
-	}
-
-	const [, yearText, monthText, dayText] = match
-	const year = Number(yearText)
-	const month = Number(monthText)
-	const day = Number(dayText)
-	if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) {
-		return null
-	}
-
-	const date = new Date(year, month - 1, day)
-	if (
-		Number.isNaN(date.getTime()) ||
-		date.getFullYear() !== year ||
-		date.getMonth() !== month - 1 ||
-		date.getDate() !== day
-	) {
-		return null
-	}
-
-	return date
-}
-
-export function formatCustomDateStorageValue(date: Date) {
-	const year = date.getFullYear()
-	const month = String(date.getMonth() + 1).padStart(2, '0')
-	const day = String(date.getDate()).padStart(2, '0')
-	return `${year}-${month}-${day}`
-}
-
 export function getCustomDateDialogTitle(label: string) {
 	return `编辑${label}`
 }

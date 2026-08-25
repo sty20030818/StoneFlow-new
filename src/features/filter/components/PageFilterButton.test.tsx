@@ -85,6 +85,16 @@ describe('filter entry points', () => {
 		expect(value.session.clearTemp).toHaveBeenCalledOnce()
 	})
 
+	it('没有临时 Draft 时不渲染公式条', () => {
+		const value = createFilterUiValue()
+		value.session.dirty = false
+
+		renderFilterEntry(<FilterBar />, value)
+
+		expect(screen.queryByRole('button', { name: '恢复' })).not.toBeInTheDocument()
+		expect(screen.queryByRole('button', { name: '添加筛选' })).not.toBeInTheDocument()
+	})
+
 	it('字段菜单以嵌套子菜单选择值并保持根菜单打开', async () => {
 		const value = renderFilterEntry(<PageFilterButton />)
 

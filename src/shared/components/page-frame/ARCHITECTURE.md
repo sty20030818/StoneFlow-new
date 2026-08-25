@@ -4,7 +4,7 @@
 
 ## 职责
 
-- 固定 Header、Toolbar、可滚动 Body 的页面区域顺序；
+- 固定 Header、HeroUI Toolbar、Toolbar 外 FilterBar、可滚动 Body 的页面区域顺序；
 - 通过 compound components 让页面显式组合所需区域；
 - 普通 Body 直接拥有 HeroUI `ScrollShadow`，虚拟 Body 通过 `AppScrollArea` 暴露唯一真实 viewport；
 - 统一页头、工具栏、间距与滚动协议，不经过转发层。
@@ -26,4 +26,4 @@
 </PageFrame.Root>
 ```
 
-`Header` 接受 `title` 或 `breadcrumb`；`Toolbar` 在没有任何内容时不渲染。可见操作必须由页面直接组合 HeroUI 与真实行为，框架不提供视觉 wrapper 或默认按钮。
+`Header` 接受 `title` 或 `breadcrumb`；`Toolbar` 在没有任何内容时不渲染。Default View、Filter 与 Display 进入同一个有名称的水平 HeroUI `Toolbar`，由上游负责标准方向键导航；Default View 的受控单选真相仍属于调用方。`filterBar` 保持在工具条外。可见操作必须由页面直接组合 HeroUI 与真实行为，框架不提供视觉 wrapper 或默认按钮。

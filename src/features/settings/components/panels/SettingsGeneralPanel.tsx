@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { Alert, Button, Label, ListBox, Radio, RadioGroup, Select } from '@heroui/react'
+import { useRef, useState } from 'react'
+import { Alert, Button, ListBox, Radio, RadioGroup } from '@heroui/react'
+import { CellSelect } from '@heroui-pro/react'
 
 import { SettingsSection, SettingsStack } from '../settingsShared'
 import { ACCENT_PRESETS, readAccentPreference, setAccentPreference } from '@/features/appearance'
@@ -14,13 +15,16 @@ export function SettingsGeneralPanel() {
 	const setDefaultSpace = useSetDefaultSpaceMutation()
 	const [pending, setPending] = useState(false)
 	const [error, setError] = useState<string | null>(null)
-	const defaultSpaceId = spaces.find((space) => space.isDefault)?.id ?? ''
+	const pendingRef = useRef(false)
+	const defaultSpace = spaces.find((space) => space.isDefault)
+	const defaultSpaceId = defaultSpace?.id ?? ''
 
 	function handleDefaultSpaceChange(nextSpaceId: string) {
-		if (!nextSpaceId || nextSpaceId === defaultSpaceId) {
+		if (pendingRef.current || !nextSpaceId || nextSpaceId === defaultSpaceId) {
 			return
 		}
 
+		pendingRef.current = true
 		setPending(true)
 		setError(null)
 		void setDefaultSpace
@@ -29,6 +33,7 @@ export function SettingsGeneralPanel() {
 				setError(err instanceof Error ? err.message : '设置更新失败')
 			})
 			.finally(() => {
+				pendingRef.current = false
 				setPending(false)
 			})
 	}
@@ -76,30 +81,21 @@ export function SettingsGeneralPanel() {
 							重试
 						</Button>
 					</Alert>
-				) : spaces.length === 0 && spaceStatus === 'ready' ? (
-					<Alert>
-						<Alert.Indicator />
-						<Alert.Content>
-							<Alert.Title>当前没有可用空间</Alert.Title>
-							<Alert.Description>
-								当前还没有可用空间，所以暂时不能设置默认项。等空间准备好之后，再回来这里调整就可以了。
-							</Alert.Description>
-						</Alert.Content>
-					</Alert>
 				) : (
-					<div className='flex flex-col gap-3 md:max-w-md'>
-						<Select
+					<div aria-busy={pending} className='flex flex-col gap-3 md:max-w-md'>
+						<CellSelect
+							aria-label='默认空间'
 							fullWidth
 							isDisabled={pending || spaceStatus === 'loading' || spaces.length === 0}
 							onChange={(key) => typeof key === 'string' && handleDefaultSpaceChange(key)}
 							value={defaultSpaceId}
 						>
-							<Label>选择默认空间</Label>
-							<Select.Trigger aria-label='默认空间'>
-								<Select.Value />
-								<Select.Indicator />
-							</Select.Trigger>
-							<Select.Popover>
+							<CellSelect.Trigger>
+								<CellSelect.Label>选择默认空间</CellSelect.Label>
+								<CellSelect.Value />
+								<CellSelect.Indicator />
+							</CellSelect.Trigger>
+							<CellSelect.Popover>
 								<ListBox>
 									{spaces.map((space) => (
 										<ListBox.Item id={space.id} key={space.id} textValue={space.name}>
@@ -108,12 +104,23 @@ export function SettingsGeneralPanel() {
 										</ListBox.Item>
 									))}
 								</ListBox>
-							</Select.Popover>
-						</Select>
-						<p className='text-xs leading-5 text-muted'>
-							当前默认项：
-							{spaces.find((space) => space.id === defaultSpaceId)?.name ?? '未设置'}
-						</p>
+							</CellSelect.Popover>
+						</CellSelect>
+						{spaces.length === 0 && spaceStatus === 'ready' ? (
+							<Alert>
+								<Alert.Indicator />
+								<Alert.Content>
+									<Alert.Title>当前没有可用空间</Alert.Title>
+									<Alert.Description>
+										当前还没有可用空间，所以暂时不能设置默认项。等空间准备好之后，再回来这里调整就可以了。
+									</Alert.Description>
+								</Alert.Content>
+							</Alert>
+						) : (
+							<p className='text-xs leading-5 text-muted'>
+								当前默认项：{defaultSpace?.name ?? '未设置'}
+							</p>
+						)}
 					</div>
 				)}
 				{error ? (
