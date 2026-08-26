@@ -119,7 +119,50 @@ describe('UiLabApp', () => {
 		expect(heroUIView).toHaveFocus()
 		expect(heroUIView).toHaveAttribute('aria-pressed', 'true')
 		expect(within(preview).getByRole('heading', { name: 'HeroUI Button' })).toBeInTheDocument()
-		expect(within(preview).getByRole('button', { name: '验证组件' })).toBeInTheDocument()
+		expect(within(preview).getByRole('button', { name: '主要动作' })).toBeInTheDocument()
 		expect(within(preview).queryByRole('button', { name: '新建任务' })).not.toBeInTheDocument()
+
+		for (const categoryName of ['已采用', '替换候选', '探索中']) {
+			expect(screen.getByRole('button', { name: categoryName })).toBeInTheDocument()
+		}
+		for (const sampleName of [
+			'HeroUI Button',
+			'HeroUI Input',
+			'HeroUI Select',
+			'HeroUI Breadcrumbs',
+			'HeroUI Tooltip',
+			'HeroUI Modal',
+			'HeroUI EmptyState',
+			'HeroUI ListView',
+		]) {
+			expect(screen.getByRole('button', { name: sampleName })).toBeInTheDocument()
+		}
+
+		fireEvent.click(screen.getByRole('button', { name: 'HeroUI Modal' }))
+		fireEvent.click(within(preview).getByRole('button', { name: '打开 Modal' }))
+		expect(screen.getByRole('dialog', { name: '确认审查范围' })).toBeInTheDocument()
+
+		fireEvent.click(screen.getByRole('button', { hidden: true, name: '替换候选' }))
+		expect(screen.queryByRole('dialog', { name: '确认审查范围' })).not.toBeInTheDocument()
+		expect(within(preview).getByRole('heading', { name: 'HeroUI SearchField' })).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: 'HeroUI DatePicker' })).toBeInTheDocument()
+
+		const candidateSearch = within(preview).getByRole('searchbox', {
+			name: '搜索任务与项目',
+		})
+		fireEvent.change(candidateSearch, { target: { value: '日期' } })
+		expect(within(preview).getByText('当前查询：日期')).toBeInTheDocument()
+
+		fireEvent.change(search, { target: { value: 'DatePicker' } })
+		fireEvent.click(screen.getByRole('button', { name: 'HeroUI DatePicker' }))
+		expect(within(preview).getByRole('heading', { name: 'HeroUI DatePicker' })).toBeInTheDocument()
+		expect(
+			within(preview).queryByRole('searchbox', { name: '搜索任务与项目' }),
+		).not.toBeInTheDocument()
+
+		fireEvent.click(screen.getByRole('button', { name: '探索中' }))
+		expect(
+			within(preview).getByText('首期不放探索项；只有带明确产品假设的独立 ticket 才能加入。'),
+		).toBeInTheDocument()
 	})
 })

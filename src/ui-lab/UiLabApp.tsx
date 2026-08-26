@@ -30,6 +30,11 @@ export function UiLabApp() {
 	const selectedSample =
 		visibleSamples.find((sample) => sample.id === selectedId) ?? visibleSamples[0] ?? null
 	const ActivePreview = selectedSample?.Preview
+	const emptyMessage = normalizedQuery
+		? '没有匹配的样例'
+		: viewId === 'heroui' && category === '探索中'
+			? '首期不放探索项；只有带明确产品假设的独立 ticket 才能加入。'
+			: '这个分类还没有样例'
 
 	function selectView(nextViewId: UiLabViewId) {
 		const nextView = UI_LAB_VIEWS.find((item) => item.id === nextViewId)!
@@ -211,9 +216,7 @@ export function UiLabApp() {
 						{ActivePreview && selectedSample ? (
 							<ActivePreview key={selectedSample.id} />
 						) : (
-							<p className='text-sm text-muted'>
-								{normalizedQuery ? '没有匹配的样例' : '这个分类还没有样例'}
-							</p>
+							<p className='text-sm text-muted'>{emptyMessage}</p>
 						)}
 					</section>
 				</main>
