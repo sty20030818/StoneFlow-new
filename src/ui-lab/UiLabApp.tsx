@@ -2,7 +2,28 @@ import { useState } from 'react'
 
 import { Button, SearchField } from '@heroui/react'
 
-import { UI_LAB_SAMPLES, UI_LAB_VIEWS, type UiLabSample, type UiLabViewId } from './uiLabCatalog'
+import {
+	UI_LAB_SAMPLES,
+	UI_LAB_VIEWS,
+	type UiLabCoverage,
+	type UiLabSample,
+	type UiLabViewId,
+} from './uiLabCatalog'
+
+type CoverageFilter = 'all' | 'missing' | 'pending-owner' | 'real-app-only'
+
+const COVERAGE_FILTERS: readonly { id: CoverageFilter; label: string }[] = [
+	{ id: 'all', label: '全部' },
+	{ id: 'missing', label: '缺失样例' },
+	{ id: 'pending-owner', label: '待归属' },
+	{ id: 'real-app-only', label: '仅真实应用' },
+]
+
+const COVERAGE_LABELS: Record<UiLabCoverage, string> = {
+	rendered: 'Lab 已渲染',
+	missing: '缺失样例',
+	'real-app-only': '仅真实应用',
+}
 
 function samplesInView(view: UiLabViewId) {
 	return UI_LAB_SAMPLES.filter((sample) => sample.view === view)
@@ -16,25 +37,40 @@ export function UiLabApp() {
 	const [viewId, setViewId] = useState<UiLabViewId>('stoneflow')
 	const [category, setCategory] = useState('Actions')
 	const [query, setQuery] = useState('')
+	const [coverageFilter, setCoverageFilter] = useState<CoverageFilter>('all')
 	const [selectedId, setSelectedId] = useState('stoneflow-button')
 
 	const view = UI_LAB_VIEWS.find((item) => item.id === viewId)!
 	const normalizedQuery = query.trim().toLocaleLowerCase()
-	const visibleSamples = samplesInView(viewId).filter((sample) => {
-		if (normalizedQuery.length === 0) return sample.category === category
-		return [sample.name, sample.description, ...sample.keywords]
-			.join(' ')
-			.toLocaleLowerCase()
-			.includes(normalizedQuery)
-	})
+	const visibleSamples = samplesInView(viewId)
+		.filter((sample) => {
+			if (normalizedQuery.length === 0) return sample.category === category
+			return [sample.name, sample.description, ...sample.keywords]
+				.join(' ')
+				.toLocaleLowerCase()
+				.includes(normalizedQuery)
+		})
+		.filter((sample) => {
+			if (coverageFilter === 'missing') return sample.coverage === 'missing'
+			if (coverageFilter === 'pending-owner') return sample.owner === '待归属'
+			if (coverageFilter === 'real-app-only') return sample.coverage === 'real-app-only'
+			return true
+		})
 	const selectedSample =
 		visibleSamples.find((sample) => sample.id === selectedId) ?? visibleSamples[0] ?? null
-	const ActivePreview = selectedSample?.Preview
-	const emptyMessage = normalizedQuery
-		? '没有匹配的样例'
-		: viewId === 'heroui' && category === '探索中'
+	let emptyMessage =
+		viewId === 'heroui' && category === '探索中'
 			? '首期不放探索项；只有带明确产品假设的独立 ticket 才能加入。'
 			: '这个分类还没有样例'
+	if (normalizedQuery) {
+		emptyMessage = coverageFilter === 'all' ? '没有匹配的样例' : '没有同时匹配搜索与覆盖筛选的条目'
+	} else if (coverageFilter === 'missing') {
+		emptyMessage = '当前分类没有缺失样例'
+	} else if (coverageFilter === 'pending-owner') {
+		emptyMessage = '当前分类没有待归属样例'
+	} else if (coverageFilter === 'real-app-only') {
+		emptyMessage = '当前分类没有仅真实应用验证项'
+	}
 
 	function selectView(nextViewId: UiLabViewId) {
 		const nextView = UI_LAB_VIEWS.find((item) => item.id === nextViewId)!
@@ -42,18 +78,25 @@ export function UiLabApp() {
 		setViewId(nextViewId)
 		setCategory(nextView.defaultCategory)
 		setQuery('')
+		setCoverageFilter('all')
 		setSelectedId(nextSample?.id ?? '')
 	}
 
 	function selectCategory(nextCategory: string) {
 		setCategory(nextCategory)
 		setQuery('')
+		setCoverageFilter('all')
 		setSelectedId(firstSample(viewId, nextCategory)?.id ?? '')
 	}
 
 	function selectSample(sample: UiLabSample) {
 		setCategory(sample.category)
 		setSelectedId(sample.id)
+	}
+
+	function selectCoverageFilter(nextFilter: CoverageFilter) {
+		setCoverageFilter(nextFilter)
+		setSelectedId('')
 	}
 
 	return (
@@ -115,6 +158,25 @@ export function UiLabApp() {
 							<SearchField.ClearButton aria-label='清空搜索' />
 						</SearchField.Group>
 					</SearchField>
+
+					<section aria-labelledby='ui-lab-coverage-heading' className='mt-4'>
+						<h2 className='mb-2 text-xs font-medium text-muted' id='ui-lab-coverage-heading'>
+							覆盖
+						</h2>
+						<div className='flex flex-wrap gap-1'>
+							{COVERAGE_FILTERS.map((item) => (
+								<Button
+									aria-pressed={item.id === coverageFilter}
+									key={item.id}
+									onPress={() => selectCoverageFilter(item.id)}
+									type='button'
+									variant={item.id === coverageFilter ? 'secondary' : 'ghost'}
+								>
+									{item.label}
+								</Button>
+							))}
+						</div>
+					</section>
 
 					<section aria-labelledby='ui-lab-category-heading' className='mt-4'>
 						<h2 className='mb-2 text-xs font-medium text-muted' id='ui-lab-category-heading'>
@@ -188,7 +250,7 @@ export function UiLabApp() {
 								</p>
 							</header>
 
-							<dl className='grid grid-cols-2 gap-x-6 gap-y-3 border-b border-separator p-4 text-sm xl:grid-cols-4'>
+							<dl className='grid grid-cols-2 gap-x-6 gap-y-3 border-b border-separator p-4 text-sm xl:grid-cols-3'>
 								<div>
 									<dt className='text-xs text-muted'>主要 owner</dt>
 									<dd className='mt-1'>{selectedSample.owner}</dd>
@@ -205,6 +267,14 @@ export function UiLabApp() {
 									<dt className='text-xs text-muted'>所属视图</dt>
 									<dd className='mt-1'>{view.label}</dd>
 								</div>
+								<div>
+									<dt className='text-xs text-muted'>来源</dt>
+									<dd className='mt-1 break-words'>{selectedSample.source}</dd>
+								</div>
+								<div>
+									<dt className='text-xs text-muted'>覆盖状态</dt>
+									<dd className='mt-1'>{COVERAGE_LABELS[selectedSample.coverage]}</dd>
+								</div>
 							</dl>
 						</>
 					) : null}
@@ -213,8 +283,13 @@ export function UiLabApp() {
 						aria-label='当前样例预览'
 						className='flex min-h-48 flex-1 items-center justify-center p-6 sm:min-h-64'
 					>
-						{ActivePreview && selectedSample ? (
-							<ActivePreview key={selectedSample.id} />
+						{selectedSample?.coverage === 'rendered' ? (
+							<selectedSample.Preview key={selectedSample.id} />
+						) : selectedSample ? (
+							<div className='max-w-2xl rounded-lg border border-dashed border-border p-4 text-sm leading-6'>
+								<p className='font-medium'>未在 UI Lab 渲染</p>
+								<p className='mt-1 text-muted'>{selectedSample.reason}</p>
+							</div>
 						) : (
 							<p className='text-sm text-muted'>{emptyMessage}</p>
 						)}

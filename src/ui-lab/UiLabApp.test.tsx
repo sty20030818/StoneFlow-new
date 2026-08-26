@@ -11,6 +11,19 @@ describe('UiLabApp', () => {
 			'aria-pressed',
 			'true',
 		)
+		for (const categoryName of [
+			'Foundations',
+			'Actions',
+			'Fields',
+			'Navigation',
+			'Collections',
+			'Feedback',
+			'Overlays',
+			'Product Scenes',
+		]) {
+			expect(screen.getByRole('button', { name: categoryName })).toBeInTheDocument()
+		}
+		expect(screen.getByRole('button', { name: '全部' })).toHaveAttribute('aria-pressed', 'true')
 		expect(within(preview).getByRole('heading', { name: 'StoneFlow Button' })).toBeInTheDocument()
 		fireEvent.click(within(preview).getByRole('button', { name: '新建任务' }))
 		expect(within(preview).getByText('已触发 1 次')).toBeInTheDocument()
@@ -90,6 +103,13 @@ describe('UiLabApp', () => {
 			expect(screen.getByRole('button', { name: sampleName })).toBeInTheDocument()
 		}
 		expect(within(preview).getByRole('list', { name: '当前位置' })).toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: 'Settings Navigation' }))
+		expect(screen.getByText('src/features/settings/index.ts')).toBeInTheDocument()
+		expect(
+			within(preview).getByText(
+				/SettingsSidebar 依赖真实 TanStack Router、当前 Scope、返回路径与持久化分区状态/,
+			),
+		).toBeInTheDocument()
 
 		fireEvent.click(screen.getByRole('button', { name: 'Sidebar' }))
 		const compactSidebar = within(preview).getByRole('treegrid', {
@@ -258,6 +278,39 @@ describe('UiLabApp', () => {
 		fireEvent.click(groupHeader)
 		expect(groupHeader).toHaveAttribute('aria-expanded', 'true')
 		expect(groupContent).not.toHaveAttribute('hidden')
+		expect(document.querySelectorAll('[data-ui-lab-preview-root]')).toHaveLength(1)
+
+		fireEvent.change(search, { target: { value: 'Main / Launcher' } })
+		const nativeWindowEntry = screen.getByRole('button', {
+			name: 'Main / Launcher 原生窗口验收',
+		})
+		fireEvent.click(nativeWindowEntry)
+		expect(within(preview).queryByRole('heading', { name: 'Task Board' })).not.toBeInTheDocument()
+		expect(document.querySelectorAll('[data-ui-lab-preview-root]')).toHaveLength(0)
+
+		const realAppOnlyFilter = screen.getByRole('button', { name: '仅真实应用' })
+		fireEvent.click(realAppOnlyFilter)
+		expect(realAppOnlyFilter).toHaveAttribute('aria-pressed', 'true')
+		expect(
+			screen.getByRole('heading', { name: 'Main / Launcher 原生窗口验收' }),
+		).toBeInTheDocument()
+		expect(
+			screen.getByText('src/main.tsx；src/launcher.tsx；src-tauri/tauri.conf.json'),
+		).toBeInTheDocument()
+		expect(
+			within(preview).getByText(
+				/Portal 归属、WebView 激活、窗口断点、缩放与跨窗口一致性依赖真实 Tauri/,
+			),
+		).toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: '清空搜索' }))
+
+		fireEvent.click(screen.getByRole('button', { name: '缺失样例' }))
+		expect(within(preview).getByText('当前分类没有缺失样例')).toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: '待归属' }))
+		expect(within(preview).getByText('当前分类没有待归属样例')).toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: 'Actions' }))
+		expect(screen.getByRole('button', { name: '全部' })).toHaveAttribute('aria-pressed', 'true')
+		expect(within(preview).getByRole('heading', { name: 'StoneFlow Button' })).toBeInTheDocument()
 
 		const heroUIView = screen.getByRole('button', { name: 'HeroUI' })
 		act(() => heroUIView.focus())

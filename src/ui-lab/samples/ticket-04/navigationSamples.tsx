@@ -341,25 +341,6 @@ function CommandPreview() {
 	)
 }
 
-function SettingsNavigationBoundaryPreview() {
-	return (
-		<div className='w-full max-w-2xl rounded-lg border border-surface bg-surface-secondary p-5'>
-			<p className='text-xs font-medium text-muted'>仅真实应用验证</p>
-			<h3 className='mt-1 text-base font-semibold'>Settings Navigation</h3>
-			<p className='mt-2 text-sm leading-6 text-muted'>
-				公开 SettingsSidebar 仍依赖 TanStack Router、当前
-				Scope、返回路径与持久化的分区状态。为避免复制设置导航 JSX 或伪造第二套状态，本 Lab
-				只登记边界。
-			</p>
-			<ol className='mt-4 list-decimal space-y-2 pl-5 text-sm'>
-				<li>在 Main 打开“设置”，确认当前分区与返回应用入口。</li>
-				<li>用 Tab 进入导航，再用方向键移动并按 Enter 切换分区。</li>
-				<li>检查 Current、Hover 与 Keyboard Focus Visible。</li>
-			</ol>
-		</div>
-	)
-}
-
 function ShellViewport({ narrow }: { narrow: boolean }) {
 	const [selectedId, setSelectedId] = useState('project')
 	const label = narrow ? '窄容器 320px' : '常规宽度'
@@ -412,8 +393,9 @@ export const TICKET_04_SAMPLES = [
 		description:
 			'用真实 AppBreadcrumb 审查 shared 组件定义的祖先链接、当前项与 aria-current，不在 Lab 修饰结果。',
 		keywords: ['breadcrumb', 'breadcrumbs', '面包屑', '链接', 'current'],
-		owner:
-			'shared/AppBreadcrumb（祖先链接、当前项与 aria-current）+ HeroUI OSS（根结构/样式）+ 全局主题（视觉）',
+		owner: '共享 AppBreadcrumb',
+		source: 'src/shared/components/AppBreadcrumb.tsx',
+		coverage: 'rendered',
 		states: 'Rest、Hover、Keyboard Focus Visible、Current、长中文',
 		verification: 'Lab 可验证；真实路由跳转仍在 Main 验证',
 		Preview: BreadcrumbPreview,
@@ -425,7 +407,9 @@ export const TICKET_04_SAMPLES = [
 		category: 'Navigation',
 		description: '以相同内容并排观察 StoneFlow 32px 与 HeroUI Pro 上游 36px 密度基线。',
 		keywords: ['sidebar', '侧边栏', '32px', '36px', 'density', '密度'],
-		owner: 'HeroUI Pro（结构/交互）+ 全局主题（32px 产品密度）',
+		owner: 'HeroUI Pro',
+		source: '@heroui-pro/react@1.0.0-beta.8；src/styles/theme.css',
+		coverage: 'rendered',
 		states: 'Rest、Hover、Pressed、Current、Keyboard Focus Visible、Disabled、长中文',
 		verification: 'Lab 可验证；此处不修改产品密度规则',
 		Preview: SidebarDensityPreview,
@@ -437,7 +421,9 @@ export const TICKET_04_SAMPLES = [
 		category: 'Navigation',
 		description: '检查真实 TabList 的选择态、禁用态、面板关联与方向键路径。',
 		keywords: ['tabs', 'tab', '标签页', '选中', '方向键'],
-		owner: 'HeroUI OSS（结构/交互）+ 全局主题（视觉）',
+		owner: 'HeroUI OSS',
+		source: '@heroui/react@3.2.4；src/styles/theme.css',
+		coverage: 'rendered',
 		states: 'Rest、Hover、Selected、Keyboard Focus Visible、Disabled',
 		verification: 'Lab 可验证',
 		Preview: TabsPreview,
@@ -449,7 +435,9 @@ export const TICKET_04_SAMPLES = [
 		category: 'Navigation',
 		description: '检查真实分页的当前页、首尾禁用与键盘逐项导航。',
 		keywords: ['pagination', '分页', '上一页', '下一页', 'current'],
-		owner: 'HeroUI OSS（结构/交互）+ 全局主题（视觉）',
+		owner: 'HeroUI OSS',
+		source: '@heroui/react@3.2.4；src/styles/theme.css',
+		coverage: 'rendered',
 		states: 'Rest、Hover、Pressed、Current、Keyboard Focus Visible、Disabled',
 		verification: 'Lab 可验证',
 		Preview: PaginationPreview,
@@ -461,7 +449,9 @@ export const TICKET_04_SAMPLES = [
 		category: 'Navigation',
 		description: '用最小无业务命令集检查 HeroUI Pro Command 的筛选、焦点移动、禁用与退出路径。',
 		keywords: ['command', '命令', '命令面板', 'keyboard', '导航'],
-		owner: 'HeroUI Pro（结构/交互）；产品命令模型仅真实应用验证',
+		owner: 'HeroUI Pro',
+		source: '@heroui-pro/react@1.0.0-beta.8',
+		coverage: 'rendered',
 		states: 'Closed、Open、Focused、Pressed、Disabled、Escape、Focus Restore',
 		verification: 'Lab 可验证上游组件；产品命令执行仅真实应用验证',
 		Preview: CommandPreview,
@@ -473,10 +463,13 @@ export const TICKET_04_SAMPLES = [
 		category: 'Navigation',
 		description: '登记 SettingsSidebar 的真实上下文边界与可复现的 Main 验证路径。',
 		keywords: ['settings', 'navigation', '设置', '设置导航', 'sidebar'],
-		owner: 'features/settings 公共 Module + HeroUI Pro Sidebar',
+		owner: 'Settings feature',
+		source: 'src/features/settings/index.ts',
+		coverage: 'real-app-only',
 		states: 'Current、Hover、Keyboard Focus Visible',
 		verification: '仅真实应用验证',
-		Preview: SettingsNavigationBoundaryPreview,
+		reason:
+			'SettingsSidebar 依赖真实 TanStack Router、当前 Scope、返回路径与持久化分区状态；必须在 Main 中验证，UI Lab 不复制导航 JSX 或伪造第二套状态。',
 	},
 	{
 		id: 'stoneflow-shell-sidebar-scene',
@@ -485,7 +478,9 @@ export const TICKET_04_SAMPLES = [
 		category: 'Product Scenes',
 		description: '在无业务依赖的最小 Shell 中检查常规、320px 窄容器与长中文层级。',
 		keywords: ['shell', 'sidebar', '产品场景', '窄容器', '320px', '长中文'],
-		owner: 'UI Lab 最小组合；HeroUI Pro Sidebar；真实 Shell 仅 Main 验证',
+		owner: 'UI Lab fixture',
+		source: 'src/ui-lab/samples/ticket-04/navigationSamples.tsx；@heroui-pro/react@1.0.0-beta.8',
+		coverage: 'rendered',
 		states: 'Current、Hover、Keyboard Focus Visible、Disabled、长中文、窄容器',
 		verification: 'Lab 可验证组合；窗口、路由、Store 与 Tauri 仅真实应用验证',
 		Preview: ShellSidebarPreview,

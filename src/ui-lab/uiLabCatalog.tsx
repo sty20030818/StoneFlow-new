@@ -9,8 +9,9 @@ import { TICKET_07_SAMPLES } from './samples/ticket-07/overlaySamples'
 import { TICKET_08_SAMPLES } from './samples/ticket-08/herouiCandidateSamples'
 
 export type UiLabViewId = 'stoneflow' | 'heroui'
+export type UiLabCoverage = 'rendered' | 'missing' | 'real-app-only'
 
-export type UiLabSample = {
+type UiLabSampleBase = {
 	id: string
 	name: string
 	view: UiLabViewId
@@ -18,10 +19,18 @@ export type UiLabSample = {
 	description: string
 	keywords: readonly string[]
 	owner: string
+	source: string
 	states: string
 	verification: string
-	Preview: ComponentType
 }
+
+export type UiLabSample =
+	| (UiLabSampleBase & { coverage: 'rendered'; Preview: ComponentType; reason?: never })
+	| (UiLabSampleBase & {
+			coverage: 'missing' | 'real-app-only'
+			reason: string
+			Preview?: never
+	  })
 
 export const UI_LAB_VIEWS = [
 	{
@@ -57,4 +66,19 @@ export const UI_LAB_SAMPLES: readonly UiLabSample[] = [
 	...TICKET_06_SAMPLES,
 	...TICKET_07_SAMPLES,
 	...TICKET_08_SAMPLES,
+	{
+		id: 'stoneflow-main-launcher-real-app',
+		name: 'Main / Launcher 原生窗口验收',
+		view: 'stoneflow',
+		category: 'Product Scenes',
+		description: '统一登记无法由浏览器 Lab 代签的桌面窗口行为，不复制 Main 或 Launcher 运行时。',
+		keywords: ['main', 'launcher', 'portal', 'webview', '窗口', '缩放', '跨窗口'],
+		owner: 'Desktop shell',
+		source: 'src/main.tsx；src/launcher.tsx；src-tauri/tauri.conf.json',
+		coverage: 'real-app-only',
+		states: 'Portal、WebView 激活、窗口断点、缩放、跨窗口一致性',
+		verification: '统一产品验收；UI Lab 不代签',
+		reason:
+			'Portal 归属、WebView 激活、窗口断点、缩放与跨窗口一致性依赖真实 Tauri Main / Launcher 窗口，不能在浏览器 UI Lab 中可靠复现。',
+	},
 ]
