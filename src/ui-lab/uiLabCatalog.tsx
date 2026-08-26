@@ -3,6 +3,7 @@ import type { ComponentType } from 'react'
 import { TICKET_02_SAMPLES } from './samples/ticket-02/ticket02Samples'
 import { TICKET_03_SAMPLES } from './samples/ticket-03/fieldsAndSettingsSamples'
 import { TICKET_04_SAMPLES } from './samples/ticket-04/navigationSamples'
+import { TICKET_05_SAMPLES } from './samples/ticket-05/collectionsAndTaskSamples'
 import { TICKET_06_SAMPLES } from './samples/ticket-06/feedbackLauncherSamples'
 import { TICKET_07_SAMPLES } from './samples/ticket-07/overlaySamples'
 import { TICKET_08_SAMPLES } from './samples/ticket-08/herouiCandidateSamples'
@@ -52,6 +53,7 @@ export const UI_LAB_SAMPLES: readonly UiLabSample[] = [
 	...TICKET_02_SAMPLES,
 	...TICKET_03_SAMPLES,
 	...TICKET_04_SAMPLES,
+	...TICKET_05_SAMPLES,
 	...TICKET_06_SAMPLES,
 	...TICKET_07_SAMPLES,
 	...TICKET_08_SAMPLES,

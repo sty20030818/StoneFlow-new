@@ -208,6 +208,57 @@ describe('UiLabApp', () => {
 		expect(launcherErrorControl).toHaveFocus()
 		expect(within(preview).getByText(/原生窗口激活、全局快捷键/)).toBeInTheDocument()
 
+		fireEvent.click(screen.getByRole('button', { name: 'Collections' }))
+		for (const sampleName of [
+			'RowShell',
+			'Menu',
+			'ListBox',
+			'ListView',
+			'Table',
+			'Tag',
+			'Chip',
+			'Badge',
+			'Avatar',
+			'Task Row',
+			'Group Header',
+			'Task Board',
+		]) {
+			expect(screen.getByRole('button', { name: sampleName })).toBeInTheDocument()
+		}
+		expect(within(preview).getByRole('heading', { name: 'RowShell' })).toBeInTheDocument()
+		fireEvent.click(within(preview).getByRole('button', { name: '普通事项' }))
+		expect(within(preview).getByRole('status')).toHaveTextContent('当前行：普通事项')
+		expect(within(preview).getByRole('button', { name: '普通事项' })).toHaveAttribute(
+			'aria-pressed',
+			'true',
+		)
+		fireEvent.click(within(preview).getByRole('button', { name: '更多操作：含尾部操作' }))
+		expect(within(preview).getByRole('status')).toHaveTextContent('已触发：含尾部操作')
+
+		fireEvent.change(search, { target: { value: 'Task Board' } })
+		fireEvent.click(screen.getByRole('button', { name: 'Task Board' }))
+		expect(within(preview).getByRole('heading', { name: 'Task Board' })).toBeInTheDocument()
+		const wideBoard = within(preview).getByRole('region', {
+			name: '宽容器 · 560px 及以上',
+		})
+		expect(wideBoard).toBeInTheDocument()
+		expect(within(preview).getByRole('region', { name: '紧凑容器 · 520px' })).toBeInTheDocument()
+		expect(within(preview).queryByRole('heading', { name: 'RowShell' })).not.toBeInTheDocument()
+		const groupHeader = within(wideBoard).getByRole('button', { name: /进行中.*已展开/ })
+		const groupContent = document.getElementById(groupHeader.getAttribute('aria-controls')!)
+		expect(groupContent).not.toHaveAttribute('hidden')
+		fireEvent.click(groupHeader)
+		expect(groupHeader).toHaveAttribute('aria-expanded', 'false')
+		expect(groupContent).toHaveAttribute('hidden')
+		expect(
+			within(wideBoard).queryByRole('button', {
+				name: '切换状态：审查当前组件的键盘焦点与尾部动作',
+			}),
+		).not.toBeInTheDocument()
+		fireEvent.click(groupHeader)
+		expect(groupHeader).toHaveAttribute('aria-expanded', 'true')
+		expect(groupContent).not.toHaveAttribute('hidden')
+
 		const heroUIView = screen.getByRole('button', { name: 'HeroUI' })
 		act(() => heroUIView.focus())
 		fireEvent.keyDown(heroUIView, { key: 'Enter' })
