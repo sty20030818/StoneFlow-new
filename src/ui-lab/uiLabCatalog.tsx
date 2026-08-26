@@ -4,6 +4,7 @@ import { Button } from '@heroui/react'
 
 import { TICKET_02_SAMPLES } from './samples/ticket-02/ticket02Samples'
 import { TICKET_03_SAMPLES } from './samples/ticket-03/fieldsAndSettingsSamples'
+import { TICKET_04_SAMPLES } from './samples/ticket-04/navigationSamples'
 
 export type UiLabViewId = 'stoneflow' | 'heroui'
 
@@ -76,4 +77,5 @@ export const UI_LAB_SAMPLES: readonly UiLabSample[] = [
 		Preview: HeroUIButtonPreview,
 	},
 	...TICKET_03_SAMPLES,
+	...TICKET_04_SAMPLES,
 ]

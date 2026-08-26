@@ -78,6 +78,40 @@ describe('UiLabApp', () => {
 			vi.useRealTimers()
 		}
 
+		fireEvent.click(screen.getByRole('button', { name: 'Navigation' }))
+		for (const sampleName of [
+			'Breadcrumb',
+			'Sidebar',
+			'Tabs',
+			'Pagination',
+			'Command',
+			'Settings Navigation',
+		]) {
+			expect(screen.getByRole('button', { name: sampleName })).toBeInTheDocument()
+		}
+		expect(within(preview).getByRole('list', { name: '当前位置' })).toBeInTheDocument()
+
+		fireEvent.click(screen.getByRole('button', { name: 'Sidebar' }))
+		const compactSidebar = within(preview).getByRole('treegrid', {
+			name: 'StoneFlow 32px 侧边栏',
+		})
+		fireEvent.click(within(compactSidebar).getByRole('row', { name: '收件箱' }))
+		expect(within(preview).getByText('当前项：收件箱')).toBeInTheDocument()
+
+		fireEvent.change(search, { target: { value: 'Tabs' } })
+		fireEvent.click(screen.getByRole('button', { name: 'Tabs' }))
+		const overviewTab = within(preview).getByRole('tab', { name: '概览' })
+		expect(overviewTab).toHaveAttribute('aria-selected', 'true')
+		expect(within(preview).queryByRole('list', { name: '当前位置' })).not.toBeInTheDocument()
+
+		fireEvent.change(search, { target: { value: 'Pagination' } })
+		fireEvent.click(screen.getByRole('button', { name: 'Pagination' }))
+		const nextPage = within(preview).getByRole('button', { name: '下一页' })
+		fireEvent.click(nextPage)
+		expect(within(preview).getByText('当前选择第 3 页')).toBeInTheDocument()
+		expect(nextPage).toBeDisabled()
+		expect(within(preview).queryByRole('tab', { name: '概览' })).not.toBeInTheDocument()
+
 		const heroUIView = screen.getByRole('button', { name: 'HeroUI' })
 		act(() => heroUIView.focus())
 		fireEvent.keyDown(heroUIView, { key: 'Enter' })
