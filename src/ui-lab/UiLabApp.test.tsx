@@ -1,9 +1,9 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 
 import { UiLabApp } from './UiLabApp'
 
 describe('UiLabApp', () => {
-	it('通过同一工作台完成双视图、分类、搜索、单预览与键盘路径', () => {
+	it('通过同一工作台完成双视图、分类、搜索、单预览与键盘路径', async () => {
 		render(<UiLabApp />)
 
 		const preview = screen.getByRole('region', { name: '当前样例预览' })
@@ -140,6 +140,73 @@ describe('UiLabApp', () => {
 		fireEvent.click(screen.getByRole('button', { name: 'Task Detail 焦点' }))
 		expect(within(preview).getByRole('heading', { name: 'Task Detail 焦点' })).toBeInTheDocument()
 		expect(within(preview).queryByRole('heading', { name: 'Sheet' })).not.toBeInTheDocument()
+
+		fireEvent.click(screen.getByRole('button', { name: 'Feedback' }))
+		for (const sampleName of [
+			'Empty / Error / Retry',
+			'Skeleton / Spinner / Progress',
+			'Alert / Toast',
+			'Disabled / Invalid / Danger / Save',
+		]) {
+			expect(screen.getByRole('button', { name: sampleName })).toBeInTheDocument()
+		}
+		expect(within(preview).getByRole('heading', { name: '这里还没有任务' })).toBeInTheDocument()
+		const emptyRecoveryStatus = within(preview).getByRole('status')
+		const emptyStateControl = within(preview).getByRole('button', { name: '显示空状态' })
+		fireEvent.click(within(preview).getByRole('button', { name: '创建演示任务' }))
+		expect(emptyRecoveryStatus).toHaveTextContent('恢复完成')
+		expect(emptyStateControl).toHaveFocus()
+		fireEvent.click(emptyStateControl)
+		fireEvent.click(within(preview).getByRole('button', { name: '模拟加载失败' }))
+		expect(within(preview).getByRole('alert')).toHaveTextContent('任务列表加载失败')
+		fireEvent.click(within(preview).getByRole('button', { name: '重试' }))
+		expect(within(preview).getByText('已在本地恢复')).toBeInTheDocument()
+		expect(emptyRecoveryStatus).toHaveTextContent('恢复完成')
+		expect(emptyStateControl).toHaveFocus()
+
+		fireEvent.click(screen.getByRole('button', { name: 'Skeleton / Spinner / Progress' }))
+		expect(within(preview).getAllByRole('progressbar')).toHaveLength(2)
+		expect(within(preview).getByText('48%')).toBeInTheDocument()
+		fireEvent.click(within(preview).getByRole('button', { name: '推进 20%' }))
+		expect(within(preview).getByText('68%')).toBeInTheDocument()
+
+		fireEvent.click(screen.getByRole('button', { name: 'Alert / Toast' }))
+		fireEvent.click(within(preview).getByRole('button', { name: '触发当前 Toast' }))
+		expect(screen.getByText('Toast · 工作区有可用更新')).toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: '关闭提示' }))
+		await waitFor(() =>
+			expect(screen.queryByText('Toast · 工作区有可用更新')).not.toBeInTheDocument(),
+		)
+		fireEvent.click(within(preview).getByRole('button', { name: '触发当前 Toast' }))
+		expect(screen.getByText('Toast · 工作区有可用更新')).toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: 'Disabled / Invalid / Danger / Save' }))
+		await waitFor(() =>
+			expect(screen.queryByText('Toast · 工作区有可用更新')).not.toBeInTheDocument(),
+		)
+		fireEvent.click(within(preview).getByRole('button', { name: '保存' }))
+		expect(within(preview).getByText('保存演示正在等待结果。')).toBeInTheDocument()
+		fireEvent.click(within(preview).getByRole('button', { name: '模拟错误' }))
+		expect(within(preview).getByRole('alert')).toHaveTextContent('保存失败')
+		fireEvent.click(within(preview).getByRole('button', { name: '重试保存' }))
+		expect(within(preview).getByText('已保存本地演示状态；刷新后不会保留。')).toBeInTheDocument()
+
+		fireEvent.change(search, { target: { value: 'Launcher' } })
+		fireEvent.click(screen.getByRole('button', { name: 'Launcher：搜索、创建与恢复' }))
+		const launcherSearch = within(preview).getByRole('searchbox', { name: '搜索或创建任务' })
+		fireEvent.change(launcherSearch, { target: { value: '不存在的长任务' } })
+		expect(within(preview).getByRole('heading', { name: '没有匹配的任务' })).toBeInTheDocument()
+		fireEvent.click(within(preview).getByRole('button', { name: '创建“不存在的长任务”' }))
+		expect(within(preview).getByText('已在 fixture 中创建：不存在的长任务')).toBeInTheDocument()
+		const launcherErrorControl = within(preview).getByRole('button', {
+			name: '模拟搜索错误',
+		})
+		fireEvent.click(launcherErrorControl)
+		expect(within(preview).getByRole('alert')).toHaveTextContent('Launcher 搜索失败')
+		fireEvent.click(within(preview).getByRole('button', { name: '重试搜索' }))
+		expect(within(preview).getByRole('list', { name: 'Launcher 任务结果' })).toBeInTheDocument()
+		expect(within(preview).getByRole('status')).toHaveTextContent('搜索已恢复')
+		expect(launcherErrorControl).toHaveFocus()
+		expect(within(preview).getByText(/原生窗口激活、全局快捷键/)).toBeInTheDocument()
 
 		const heroUIView = screen.getByRole('button', { name: 'HeroUI' })
 		act(() => heroUIView.focus())
