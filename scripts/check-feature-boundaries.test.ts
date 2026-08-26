@@ -35,6 +35,73 @@ import { privateTask } from '@/features/task/model/private-task'
 		})
 	})
 
+	test('拒绝生产代码静态或动态反向依赖 UI Lab', () => {
+		const violations = scanFeatureBoundarySources([
+			{
+				path: 'src/layout/StaticConsumer.tsx',
+				source: `import { UiLabApp } from '@/ui-lab/UiLabApp'`,
+			},
+			{
+				path: 'src/layout/AliasTraversalConsumer.tsx',
+				source: `import { UiLabApp } from '@/shared/../ui-lab/UiLabApp'`,
+			},
+			{
+				path: 'src/routes/DynamicConsumer.tsx',
+				source: `void import('../ui-lab/uiLabCatalog')`,
+			},
+			{
+				path: 'src/ui-lab/main.tsx',
+				source: `
+import { bootstrapAppearance } from '@/features/appearance'
+import '../styles/index.css'
+import { UiLabApp } from './UiLabApp'
+void bootstrapAppearance
+void UiLabApp
+`,
+			},
+		])
+
+		expect(violations.map(({ path, ruleId }) => ({ path, ruleId }))).toEqual([
+			{ path: 'src/layout/StaticConsumer.tsx', ruleId: 'production-ui-lab-import' },
+			{ path: 'src/layout/AliasTraversalConsumer.tsx', ruleId: 'production-ui-lab-import' },
+			{ path: 'src/routes/DynamicConsumer.tsx', ruleId: 'production-ui-lab-import' },
+		])
+	})
+
+	test('UI Lab 只消费内部模块和既有公开 Interface', () => {
+		const violations = scanFeatureBoundarySources([
+			{
+				path: 'src/ui-lab/Allowed.tsx',
+				source: `
+import { Button } from '@heroui/react'
+import { publicTask } from '@/features/task'
+import type { TaskContract } from '@/features/task/contract'
+import { PageFrame } from '@/shared/components/page-frame'
+import { localEntry } from './uiLabCatalog'
+void Button
+void publicTask
+void PageFrame
+void localEntry
+`,
+			},
+			{
+				path: 'src/ui-lab/Rejected.tsx',
+				source: `
+import { App } from '@/app/App'
+import { TraversalApp } from '@/ui-lab/../app/App'
+import { ShellChrome } from '../layout/ShellChrome'
+void import('@/features/task/components/TaskBoard')
+void App
+void TraversalApp
+void ShellChrome
+`,
+			},
+		])
+
+		expect(violations.filter(({ ruleId }) => ruleId === 'feature-deep-import')).toHaveLength(1)
+		expect(violations.filter(({ ruleId }) => ruleId === 'ui-lab-private-import')).toHaveLength(3)
+	})
+
 	test('识别 named import、dot part 与静态视觉越权', () => {
 		const violations = scanFeatureBoundarySources([
 			{

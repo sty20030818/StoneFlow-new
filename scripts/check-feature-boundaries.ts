@@ -1,6 +1,6 @@
 /** Feature public-surface 与 HeroUI 视觉所有权门禁。 */
 import { readdirSync, readFileSync, statSync } from 'node:fs'
-import { join, relative } from 'node:path'
+import { dirname, join, relative } from 'node:path'
 
 const FEATURES = [
 	'appearance',
@@ -64,6 +64,8 @@ const transpiler = new Bun.Transpiler({ loader: 'tsx' })
 export type BoundarySource = { path: string; source: string }
 export type BoundaryRuleId =
 	| 'feature-deep-import'
+	| 'production-ui-lab-import'
+	| 'ui-lab-private-import'
 	| 'legacy-visual-import'
 	| 'legacy-visual-style'
 	| 'parallel-visual-import'
@@ -146,6 +148,38 @@ function isProductionSource(path: string) {
 	return (
 		!/(^|\/)(?:__tests__|test)(?:\/|$)/.test(path) && !/\.(?:test|spec|stories)\.[^/]+$/.test(path)
 	)
+}
+
+function isUiLabSource(path: string) {
+	const pathInSrc = pathInsideSrc(path)
+	return pathInSrc === 'ui-lab' || pathInSrc.startsWith('ui-lab/')
+}
+
+function resolveSourceImport(filePath: string, modulePath: string) {
+	if (modulePath.startsWith('@/')) return normalizePath(join('src', modulePath.slice(2)))
+	if (modulePath.startsWith('/src/'))
+		return normalizePath(join('src', modulePath.slice('/src/'.length)))
+	if (!modulePath.startsWith('.')) return null
+	return normalizePath(join(dirname(normalizePath(filePath)), modulePath))
+}
+
+function isUiLabTarget(path: string) {
+	return path === 'src/ui-lab' || path.startsWith('src/ui-lab/')
+}
+
+function isPublicFeatureTarget(path: string) {
+	for (const feature of FEATURES) {
+		const base = `src/features/${feature}`
+		if (path === base || STABLE_SUFFIXES.some((suffix) => path === `${base}/${suffix}`)) return true
+	}
+	return false
+}
+
+function isKnownFeatureTarget(path: string) {
+	return FEATURES.some((feature) => {
+		const base = `src/features/${feature}`
+		return path === base || path.startsWith(`${base}/`)
+	})
 }
 
 function lineNumber(source: string, index: number) {
@@ -601,7 +635,7 @@ function scanLegacyVisualStyles(file: BoundarySource) {
 }
 
 function scanFeatureImports(file: BoundarySource, imports: readonly ImportReference[]) {
-	const references = imports.filter((item) => !item.dynamic)
+	const references = [...imports]
 	for (const match of file.source.matchAll(/vi\.mock\(\s*['"](@\/features\/[^'"]+)['"]/g)) {
 		references.push({ path: match[1], start: match.index ?? 0 })
 	}
@@ -628,6 +662,48 @@ function scanFeatureImports(file: BoundarySource, imports: readonly ImportRefere
 	return violations
 }
 
+function scanUiLabImports(file: BoundarySource, imports: readonly ImportReference[]) {
+	const violations: BoundaryViolation[] = []
+	for (const reference of imports) {
+		const target = resolveSourceImport(file.path, reference.path)
+		if (!target) continue
+
+		if (!isUiLabSource(file.path)) {
+			if (!isUiLabTarget(target)) continue
+			violations.push({
+				path: file.path,
+				line: lineNumber(file.source, reference.start),
+				ruleId: 'production-ui-lab-import',
+				excerpt: excerptAt(file.source, reference.start),
+				detail: reference.path,
+			})
+			continue
+		}
+
+		const isLabInternal = isUiLabTarget(target)
+		const isShared = target === 'src/shared' || target.startsWith('src/shared/')
+		const isAliasFeature = reference.path.startsWith('@/features/') && isKnownFeatureTarget(target)
+		const isStyleEntry = file.path === 'src/ui-lab/main.tsx' && target === 'src/styles/index.css'
+		if (
+			isLabInternal ||
+			isShared ||
+			isAliasFeature ||
+			isStyleEntry ||
+			isPublicFeatureTarget(target)
+		)
+			continue
+
+		violations.push({
+			path: file.path,
+			line: lineNumber(file.source, reference.start),
+			ruleId: 'ui-lab-private-import',
+			excerpt: excerptAt(file.source, reference.start),
+			detail: reference.path,
+		})
+	}
+	return violations
+}
+
 export function scanFeatureBoundarySources(sources: readonly BoundarySource[]) {
 	const violations: BoundaryViolation[] = []
 	for (const file of sources) {
@@ -637,6 +713,7 @@ export function scanFeatureBoundarySources(sources: readonly BoundarySource[]) {
 		const imports = scanImports(file.source)
 		violations.push(...scanFeatureImports(file, imports))
 		if (!isProductionSource(file.path)) continue
+		violations.push(...scanUiLabImports(file, imports))
 
 		for (const reference of imports) {
 			const ruleId = classifyVisualImport(reference.path)
