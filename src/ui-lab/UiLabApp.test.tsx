@@ -39,6 +39,45 @@ describe('UiLabApp', () => {
 		fireEvent.click(within(preview).getByRole('radio', { name: '窄容器' }))
 		expect(within(preview).getByText('当前条件：窄容器')).toBeInTheDocument()
 
+		fireEvent.click(screen.getByRole('button', { name: 'Fields' }))
+		expect(
+			screen.getByRole('heading', { name: 'Input / TextArea / SearchField' }),
+		).toBeInTheDocument()
+		const fieldSearch = within(preview).getByRole('searchbox', {
+			name: 'SearchField 可清除查询',
+		})
+		fireEvent.change(fieldSearch, { target: { value: '界面审查' } })
+		expect(within(preview).getByText('当前查询：界面审查')).toBeInTheDocument()
+		fireEvent.click(within(preview).getByRole('button', { name: '清空字段搜索' }))
+		expect(within(preview).getByText('当前查询：空值')).toBeInTheDocument()
+
+		fireEvent.click(screen.getByRole('button', { name: 'Checkbox / Radio / Switch / Toggle' }))
+		const reminderCheckbox = within(preview).getByRole('checkbox', { name: '同步提醒' })
+		fireEvent.click(reminderCheckbox)
+		expect(reminderCheckbox).toBeChecked()
+		expect(
+			within(preview).queryByRole('searchbox', { name: 'SearchField 可清除查询' }),
+		).not.toBeInTheDocument()
+
+		fireEvent.change(search, { target: { value: '设置表单' } })
+		fireEvent.click(screen.getByRole('button', { name: 'Settings Form：保存与重试' }))
+		expect(screen.getByRole('heading', { name: 'Settings Form：保存与重试' })).toBeInTheDocument()
+		expect(within(preview).queryByRole('checkbox', { name: '同步提醒' })).not.toBeInTheDocument()
+
+		vi.useFakeTimers()
+		try {
+			fireEvent.click(within(preview).getByRole('button', { name: '保存设置' }))
+			expect(within(preview).getByText('正在保存演示设置…')).toBeInTheDocument()
+			act(() => vi.advanceTimersByTime(600))
+			expect(within(preview).getByRole('alert')).toHaveTextContent('保存失败')
+
+			fireEvent.click(within(preview).getByRole('button', { name: '重试保存' }))
+			act(() => vi.advanceTimersByTime(600))
+			expect(within(preview).getByText('已保存演示设置；页面刷新后不会保留。')).toBeInTheDocument()
+		} finally {
+			vi.useRealTimers()
+		}
+
 		const heroUIView = screen.getByRole('button', { name: 'HeroUI' })
 		act(() => heroUIView.focus())
 		fireEvent.keyDown(heroUIView, { key: 'Enter' })

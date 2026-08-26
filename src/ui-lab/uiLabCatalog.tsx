@@ -3,6 +3,7 @@ import { useState, type ComponentType } from 'react'
 import { Button } from '@heroui/react'
 
 import { TICKET_02_SAMPLES } from './samples/ticket-02/ticket02Samples'
+import { TICKET_03_SAMPLES } from './samples/ticket-03/fieldsAndSettingsSamples'
 
 export type UiLabViewId = 'stoneflow' | 'heroui'
 
@@ -74,4 +75,5 @@ export const UI_LAB_SAMPLES: readonly UiLabSample[] = [
 		verification: 'Lab 可验证',
 		Preview: HeroUIButtonPreview,
 	},
+	...TICKET_03_SAMPLES,
 ]
