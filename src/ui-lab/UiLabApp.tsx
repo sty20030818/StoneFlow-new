@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { Button, SearchField } from '@heroui/react'
 
@@ -39,6 +39,7 @@ export function UiLabApp() {
 	const [query, setQuery] = useState('')
 	const [coverageFilter, setCoverageFilter] = useState<CoverageFilter>('all')
 	const [selectedId, setSelectedId] = useState('stoneflow-button')
+	const previewPaneRef = useRef<HTMLElement>(null)
 
 	const view = UI_LAB_VIEWS.find((item) => item.id === viewId)!
 	const normalizedQuery = query.trim().toLocaleLowerCase()
@@ -71,6 +72,10 @@ export function UiLabApp() {
 	} else if (coverageFilter === 'real-app-only') {
 		emptyMessage = '当前分类没有仅真实应用验证项'
 	}
+
+	useEffect(() => {
+		if (previewPaneRef.current) previewPaneRef.current.scrollTop = 0
+	}, [selectedSample?.id])
 
 	function selectView(nextViewId: UiLabViewId) {
 		const nextView = UI_LAB_VIEWS.find((item) => item.id === nextViewId)!
@@ -163,12 +168,14 @@ export function UiLabApp() {
 						<h2 className='mb-2 text-xs font-medium text-muted' id='ui-lab-coverage-heading'>
 							覆盖
 						</h2>
-						<div className='flex flex-wrap gap-1'>
+						<div className='grid grid-cols-2 gap-1'>
 							{COVERAGE_FILTERS.map((item) => (
 								<Button
 									aria-pressed={item.id === coverageFilter}
+									fullWidth
 									key={item.id}
 									onPress={() => selectCoverageFilter(item.id)}
+									size='sm'
 									type='button'
 									variant={item.id === coverageFilter ? 'secondary' : 'ghost'}
 								>
@@ -236,11 +243,12 @@ export function UiLabApp() {
 				<main
 					className='flex min-h-0 min-w-0 flex-col overflow-y-auto rounded-lg border border-surface bg-background'
 					id='ui-lab-preview'
+					ref={previewPaneRef}
 					tabIndex={-1}
 				>
 					{selectedSample ? (
 						<>
-							<header className='border-b border-separator p-4'>
+							<header className='shrink-0 border-b border-separator p-4'>
 								<p className='text-xs font-medium text-muted'>
 									{view.label} · {selectedSample.category}
 								</p>
@@ -250,7 +258,7 @@ export function UiLabApp() {
 								</p>
 							</header>
 
-							<dl className='grid grid-cols-2 gap-x-6 gap-y-3 border-b border-separator p-4 text-sm xl:grid-cols-3'>
+							<dl className='grid shrink-0 grid-cols-2 gap-x-6 gap-y-3 border-b border-separator p-4 text-sm xl:grid-cols-3'>
 								<div>
 									<dt className='text-xs text-muted'>主要 owner</dt>
 									<dd className='mt-1'>{selectedSample.owner}</dd>
@@ -281,7 +289,7 @@ export function UiLabApp() {
 
 					<section
 						aria-label='当前样例预览'
-						className='flex min-h-48 flex-1 items-center justify-center p-6 sm:min-h-64'
+						className='flex min-h-48 flex-1 items-start justify-center p-6 sm:min-h-64'
 					>
 						{selectedSample?.coverage === 'rendered' ? (
 							<selectedSample.Preview key={selectedSample.id} />

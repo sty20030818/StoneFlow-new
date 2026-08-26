@@ -113,7 +113,7 @@ describe('UiLabApp', () => {
 
 		fireEvent.click(screen.getByRole('button', { name: 'Sidebar' }))
 		const compactSidebar = within(preview).getByRole('treegrid', {
-			name: 'StoneFlow 32px 侧边栏',
+			name: 'StoneFlow 32px token 侧边栏',
 		})
 		fireEvent.click(within(compactSidebar).getByRole('row', { name: '收件箱' }))
 		expect(within(preview).getByText('当前项：收件箱')).toBeInTheDocument()

@@ -4,7 +4,7 @@
 
 **Blocked by:** None — can start immediately.
 
-**Status:** completed
+**Status:** completed; archived; manual acceptance transferred
 
 - [x] 开发者可以通过独立开发入口直接打开 UI Lab；入口不要求进入 Main、Launcher、业务路由、真实 Store 或 Tauri 流程，Lab 加载失败也不影响两类正式窗口。
 - [x] UI Lab 默认进入 StoneFlow 视图，并可在 StoneFlow 与 HeroUI 两个视图之间切换；切换后不会保留属于上一视图的无效选择。

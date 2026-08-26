@@ -1,9 +1,11 @@
 # StoneFlow UI 系统实验室
 
-**Status:** ready-for-agent  
-**Triage:** ready-for-agent  
+**Status:** completed; archived; manual acceptance transferred
+**Triage:** completed
 **日期:** 2026-08-26  
 **采用基线:** HeroUI OSS 3.2.4、HeroUI Styles 3.2.4、HeroUI Pro 1.0.0-beta.8
+
+2026-08-26，九个垂直切片、浏览器 UI Lab、自动化边界与生产构建隔离均已完成。真实 Tauri Main/Launcher、WebView、窗口缩放与跨窗口一致性仍在[统一产品验收](../../unified-product-acceptance/spec.md)中等待执行，不记为已经通过；本轮发现的共享 UI/UX 问题冻结在 09 ticket 的 Evidence 中，后续修复或迁移另建独立工作包。
 
 ## Problem Statement
 
@@ -347,8 +349,8 @@ StoneFlow 样例默认采用目标视觉基线，而不是永久保留旧主题�
 
 ## Further Notes
 
-- 本规格基于 [UI 组件审查与实验室研究](../../Documents/04-专题研究/2026-08-26-ui-component-audit-lab-research.md)，其中记录了当前仓库观察、HeroUI 官方资料和方案比较。
-- 现有 [统一产品验收规格](../unified-product-acceptance/spec.md) 继续拥有 Main 与 Launcher 的最终真实应用验收；两个工作包职责互补，不互相替代。
+- 本规格基于 [UI 组件审查与实验室研究](../../../Documents/04-专题研究/2026-08-26-ui-component-audit-lab-research.md)，其中记录了当前仓库观察、HeroUI 官方资料和方案比较。
+- 现有 [统一产品验收规格](../../unified-product-acceptance/spec.md) 继续拥有 Main 与 Launcher 的最终真实应用验收；两个工作包职责互补，不互相替代。
 - 已知的按钮、面包屑、侧栏、输入框和焦点问题是首批审查种子，不是预先确认的全局结论。UI Lab 的首要价值是让这些判断变得可复现、可归因。
 - 当前 UI/UX 风险可判断为“系统一致性问题中等、观察与验收缺口较高”。因此，两个独立全量画廊不值得做；一个共用基础设施、系统级覆盖、按需挂载且排除生产的 UI Lab 值得做。
 - 规格已经确定最高自动化 seam：一个 UI Lab 根级 DOM 集成测试。视觉结论由浏览器人工矩阵提供，桌面真实性由 Main/Launcher smoke 提供。

@@ -135,10 +135,10 @@ function SidebarDensityPreview() {
 					className='min-h-72 min-w-0 rounded-lg border border-surface p-3'
 				>
 					<h3 className='mb-2 text-sm font-medium' id='sidebar-density-32'>
-						StoneFlow 当前 32px
+						StoneFlow 32px token
 					</h3>
 					<SidebarFixture
-						ariaLabel='StoneFlow 32px 侧边栏'
+						ariaLabel='StoneFlow 32px token 侧边栏'
 						idPrefix='density-32'
 						onSelect={setSelectedId}
 						selectedId={selectedId}
@@ -150,10 +150,10 @@ function SidebarDensityPreview() {
 					style={{ '--control-height-md': '36px' } as CSSProperties}
 				>
 					<h3 className='mb-2 text-sm font-medium' id='sidebar-density-36'>
-						HeroUI Pro 上游 36px 参考
+						36px token 覆写验证
 					</h3>
 					<SidebarFixture
-						ariaLabel='HeroUI Pro 36px 参考侧边栏'
+						ariaLabel='36px token 覆写验证侧边栏'
 						idPrefix='density-36'
 						onSelect={setSelectedId}
 						selectedId={selectedId}
@@ -166,7 +166,7 @@ function SidebarDensityPreview() {
 			<p className='text-xs leading-5 text-muted'>
 				操作提示：点击或按 Enter/Space 切换当前项；按 Tab 进入导航后用方向键移动，观察
 				Hover、Pressed 与 Keyboard Focus Visible。对比只改变 Lab
-				容器中的既有高度变量，不修改产品规则。
+				容器中的既有高度变量；若两侧没有实际密度差异，说明组件没有消费该 token，应记录为共享问题。
 			</p>
 		</div>
 	)
@@ -405,7 +405,7 @@ export const TICKET_04_SAMPLES = [
 		name: 'Sidebar',
 		view: 'stoneflow',
 		category: 'Navigation',
-		description: '以相同内容并排观察 StoneFlow 32px 与 HeroUI Pro 上游 36px 密度基线。',
+		description: '以相同内容并排观察 32px 与 36px 既有高度 token 是否真的被 Sidebar 消费。',
 		keywords: ['sidebar', '侧边栏', '32px', '36px', 'density', '密度'],
 		owner: 'HeroUI Pro',
 		source: '@heroui-pro/react@1.0.0-beta.8；src/styles/theme.css',
