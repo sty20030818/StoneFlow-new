@@ -112,6 +112,35 @@ describe('UiLabApp', () => {
 		expect(nextPage).toBeDisabled()
 		expect(within(preview).queryByRole('tab', { name: '概览' })).not.toBeInTheDocument()
 
+		fireEvent.click(screen.getByRole('button', { name: 'Overlays' }))
+		for (const sampleName of [
+			'Tooltip',
+			'Dropdown',
+			'Popover',
+			'Context Menu',
+			'Modal',
+			'AlertDialog',
+			'Sheet',
+		]) {
+			expect(screen.getByRole('button', { name: sampleName })).toBeInTheDocument()
+		}
+		expect(within(preview).getByRole('heading', { name: 'Tooltip' })).toBeInTheDocument()
+
+		fireEvent.click(screen.getByRole('button', { name: 'Popover' }))
+		fireEvent.click(within(preview).getByRole('button', { name: '打开排序说明' }))
+		expect(screen.getByRole('dialog', { name: '任务排序说明' })).toBeInTheDocument()
+		expect(document.querySelectorAll('[data-ui-lab-preview-root]')).toHaveLength(1)
+
+		fireEvent.click(screen.getByRole('button', { hidden: true, name: 'Sheet' }))
+		expect(screen.queryByRole('dialog', { name: '任务排序说明' })).not.toBeInTheDocument()
+		expect(within(preview).getByRole('heading', { name: 'Sheet' })).toBeInTheDocument()
+		expect(within(preview).queryByRole('heading', { name: 'Popover' })).not.toBeInTheDocument()
+		expect(document.querySelectorAll('[data-ui-lab-preview-root]')).toHaveLength(1)
+		fireEvent.change(search, { target: { value: 'Task Detail' } })
+		fireEvent.click(screen.getByRole('button', { name: 'Task Detail 焦点' }))
+		expect(within(preview).getByRole('heading', { name: 'Task Detail 焦点' })).toBeInTheDocument()
+		expect(within(preview).queryByRole('heading', { name: 'Sheet' })).not.toBeInTheDocument()
+
 		const heroUIView = screen.getByRole('button', { name: 'HeroUI' })
 		act(() => heroUIView.focus())
 		fireEvent.keyDown(heroUIView, { key: 'Enter' })
