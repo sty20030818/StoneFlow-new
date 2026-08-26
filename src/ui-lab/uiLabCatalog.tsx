@@ -2,6 +2,8 @@ import { useState, type ComponentType } from 'react'
 
 import { Button } from '@heroui/react'
 
+import { TICKET_02_SAMPLES } from './samples/ticket-02/ticket02Samples'
+
 export type UiLabViewId = 'stoneflow' | 'heroui'
 
 export type UiLabSample = {
@@ -43,21 +45,6 @@ export const UI_LAB_VIEWS = [
 	},
 ] as const
 
-function StoneFlowButtonPreview() {
-	const [presses, setPresses] = useState(0)
-	return (
-		<div className='flex flex-col items-start gap-3'>
-			<h2 className='text-base font-semibold'>StoneFlow Button</h2>
-			<Button onPress={() => setPresses((count) => count + 1)} type='button' variant='primary'>
-				新建任务
-			</Button>
-			<p aria-live='polite' className='text-sm text-muted'>
-				已触发 {presses} 次
-			</p>
-		</div>
-	)
-}
-
 function HeroUIButtonPreview() {
 	const [presses, setPresses] = useState(0)
 	return (
@@ -74,18 +61,7 @@ function HeroUIButtonPreview() {
 }
 
 export const UI_LAB_SAMPLES: readonly UiLabSample[] = [
-	{
-		id: 'stoneflow-button',
-		name: 'StoneFlow Button',
-		view: 'stoneflow',
-		category: 'Actions',
-		description: '检查 StoneFlow 主操作在当前主题中的语义、密度与真实交互。',
-		keywords: ['button', '按钮', '主操作', 'action'],
-		owner: 'StoneFlow recipe（视觉）',
-		states: 'Rest、Hover、Pressed、Keyboard Focus',
-		verification: 'Lab 可验证',
-		Preview: StoneFlowButtonPreview,
-	},
+	...TICKET_02_SAMPLES,
 	{
 		id: 'heroui-button',
 		name: 'HeroUI Button',

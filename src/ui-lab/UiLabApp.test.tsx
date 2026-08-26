@@ -16,15 +16,28 @@ describe('UiLabApp', () => {
 		expect(within(preview).getByText('已触发 1 次')).toBeInTheDocument()
 
 		fireEvent.click(screen.getByRole('button', { name: 'Foundations' }))
-		expect(screen.getByText('这个分类还没有样例')).toBeInTheDocument()
+		expect(within(preview).getByRole('heading', { name: '语义颜色与排版' })).toBeInTheDocument()
 		fireEvent.click(screen.getByRole('button', { name: 'Actions' }))
 		expect(within(preview).getByRole('heading', { name: 'StoneFlow Button' })).toBeInTheDocument()
+
+		fireEvent.click(screen.getByRole('button', { name: '动作分组与 Toolbar' }))
+		expect(within(preview).getByRole('toolbar', { name: '审查动作工具栏' })).toBeInTheDocument()
+		const compactDensity = within(preview).getByRole('radio', { name: '紧凑密度' })
+		fireEvent.click(compactDensity)
+		expect(compactDensity).toHaveAttribute('aria-checked', 'true')
 
 		const search = screen.getByRole('searchbox', { name: '搜索样例' })
 		fireEvent.change(search, { target: { value: '不存在的组件' } })
 		expect(screen.getByText('没有匹配的样例')).toBeInTheDocument()
 		fireEvent.click(screen.getByRole('button', { name: '清空搜索' }))
-		expect(within(preview).getByRole('heading', { name: 'StoneFlow Button' })).toBeInTheDocument()
+		expect(within(preview).getByRole('heading', { name: '动作分组与 Toolbar' })).toBeInTheDocument()
+
+		fireEvent.change(search, { target: { value: 'PageFrame' } })
+		fireEvent.click(screen.getByRole('button', { name: 'PageFrame 组合场景' }))
+		expect(within(preview).getByRole('heading', { name: 'PageFrame 组合场景' })).toBeInTheDocument()
+		expect(within(preview).queryByRole('button', { name: '新建任务' })).not.toBeInTheDocument()
+		fireEvent.click(within(preview).getByRole('radio', { name: '窄容器' }))
+		expect(within(preview).getByText('当前条件：窄容器')).toBeInTheDocument()
 
 		const heroUIView = screen.getByRole('button', { name: 'HeroUI' })
 		act(() => heroUIView.focus())
