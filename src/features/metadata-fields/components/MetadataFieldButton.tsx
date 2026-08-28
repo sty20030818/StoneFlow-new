@@ -73,7 +73,7 @@ export const MetadataFieldButton = forwardRef<HTMLButtonElement, MetadataFieldBu
 				ref={ref}
 				size='sm'
 				type='button'
-				variant='secondary'
+				variant='ghost'
 			>
 				<span className='flex min-w-0 items-center gap-2 text-left'>
 					{icon}

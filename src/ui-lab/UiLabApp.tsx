@@ -3,14 +3,21 @@ import { useEffect, useRef, useState } from 'react'
 import { Button, SearchField } from '@heroui/react'
 
 import {
+	reviewBatchForSample,
+	reviewEntryForSample,
+	UI_LAB_REVIEW_BATCHES,
 	UI_LAB_SAMPLES,
 	UI_LAB_VIEWS,
 	type UiLabCoverage,
+	type UiLabReviewBatch,
+	type UiLabReviewBatchId,
+	type UiLabReviewStatus,
 	type UiLabSample,
 	type UiLabViewId,
 } from './uiLabCatalog'
 
 type CoverageFilter = 'all' | 'missing' | 'pending-owner' | 'real-app-only'
+type NavigationMode = 'batch' | 'category'
 
 const COVERAGE_FILTERS: readonly { id: CoverageFilter; label: string }[] = [
 	{ id: 'all', label: '全部' },
@@ -25,6 +32,12 @@ const COVERAGE_LABELS: Record<UiLabCoverage, string> = {
 	'real-app-only': '仅真实应用',
 }
 
+const REVIEW_STATUS_LABELS: Record<UiLabReviewStatus, string> = {
+	done: 'Lab 审查完成',
+	pending: '待审查',
+	external: '转真实应用验收',
+}
+
 function samplesInView(view: UiLabViewId) {
 	return UI_LAB_SAMPLES.filter((sample) => sample.view === view)
 }
@@ -33,8 +46,33 @@ function firstSample(view: UiLabViewId, category: string) {
 	return UI_LAB_SAMPLES.find((sample) => sample.view === view && sample.category === category)
 }
 
+function samplesInBatch(view: UiLabViewId, batchId: UiLabReviewBatchId) {
+	const batch = UI_LAB_REVIEW_BATCHES.find((item) => item.id === batchId)
+	if (!batch) return []
+	const sampleIds = new Set(batch.entries.map((entry) => entry.sampleId))
+	return UI_LAB_SAMPLES.filter((sample) => sample.view === view && sampleIds.has(sample.id))
+}
+
+function allSamplesInBatch(batchId: UiLabReviewBatchId) {
+	const batch = UI_LAB_REVIEW_BATCHES.find((item) => item.id === batchId)
+	if (!batch) return []
+	const sampleIds = new Set(batch.entries.map((entry) => entry.sampleId))
+	return UI_LAB_SAMPLES.filter((sample) => sampleIds.has(sample.id))
+}
+
+function reviewBatchProgress(batch: UiLabReviewBatch) {
+	const reviewableEntries = batch.entries.filter((entry) => entry.status !== 'external')
+	return {
+		done: reviewableEntries.filter((entry) => entry.status === 'done').length,
+		total: reviewableEntries.length,
+		external: batch.entries.filter((entry) => entry.status === 'external').length,
+	}
+}
+
 export function UiLabApp() {
 	const [viewId, setViewId] = useState<UiLabViewId>('stoneflow')
+	const [navigationMode, setNavigationMode] = useState<NavigationMode>('batch')
+	const [batchId, setBatchId] = useState<UiLabReviewBatchId>('batch-01')
 	const [category, setCategory] = useState('Actions')
 	const [query, setQuery] = useState('')
 	const [coverageFilter, setCoverageFilter] = useState<CoverageFilter>('all')
@@ -42,10 +80,19 @@ export function UiLabApp() {
 	const previewPaneRef = useRef<HTMLElement>(null)
 
 	const view = UI_LAB_VIEWS.find((item) => item.id === viewId)!
+	const selectedBatch = UI_LAB_REVIEW_BATCHES.find((item) => item.id === batchId)!
 	const normalizedQuery = query.trim().toLocaleLowerCase()
-	const visibleSamples = samplesInView(viewId)
+	const catalogScope =
+		navigationMode === 'batch' && normalizedQuery.length === 0
+			? UI_LAB_SAMPLES
+			: samplesInView(viewId)
+	const visibleSamples = catalogScope
 		.filter((sample) => {
-			if (normalizedQuery.length === 0) return sample.category === category
+			if (normalizedQuery.length === 0) {
+				return navigationMode === 'batch'
+					? selectedBatch.entries.some((entry) => entry.sampleId === sample.id)
+					: sample.category === category
+			}
 			return [sample.name, sample.description, ...sample.keywords]
 				.join(' ')
 				.toLocaleLowerCase()
@@ -59,18 +106,22 @@ export function UiLabApp() {
 		})
 	const selectedSample =
 		visibleSamples.find((sample) => sample.id === selectedId) ?? visibleSamples[0] ?? null
+	const selectedReviewBatch = selectedSample ? reviewBatchForSample(selectedSample.id) : undefined
+	const selectedReviewEntry = selectedSample ? reviewEntryForSample(selectedSample.id) : undefined
 	let emptyMessage =
-		viewId === 'heroui' && category === '探索中'
+		navigationMode === 'category' && viewId === 'heroui' && category === '探索中'
 			? '首期不放探索项；只有带明确产品假设的独立 ticket 才能加入。'
-			: '这个分类还没有样例'
+			: navigationMode === 'batch'
+				? '这个批次没有样例'
+				: '这个分类还没有样例'
 	if (normalizedQuery) {
 		emptyMessage = coverageFilter === 'all' ? '没有匹配的样例' : '没有同时匹配搜索与覆盖筛选的条目'
 	} else if (coverageFilter === 'missing') {
-		emptyMessage = '当前分类没有缺失样例'
+		emptyMessage = `当前${navigationMode === 'batch' ? '批次' : '分类'}没有缺失样例`
 	} else if (coverageFilter === 'pending-owner') {
-		emptyMessage = '当前分类没有待归属样例'
+		emptyMessage = `当前${navigationMode === 'batch' ? '批次' : '分类'}没有待归属样例`
 	} else if (coverageFilter === 'real-app-only') {
-		emptyMessage = '当前分类没有仅真实应用验证项'
+		emptyMessage = `当前${navigationMode === 'batch' ? '批次' : '分类'}没有仅真实应用验证项`
 	}
 
 	useEffect(() => {
@@ -79,11 +130,48 @@ export function UiLabApp() {
 
 	function selectView(nextViewId: UiLabViewId) {
 		const nextView = UI_LAB_VIEWS.find((item) => item.id === nextViewId)!
-		const nextSample = firstSample(nextViewId, nextView.defaultCategory)
+		let nextSample =
+			navigationMode === 'batch'
+				? samplesInBatch(nextViewId, batchId)[0]
+				: firstSample(nextViewId, nextView.defaultCategory)
+		if (navigationMode === 'batch' && !nextSample) {
+			setNavigationMode('category')
+			nextSample = firstSample(nextViewId, nextView.defaultCategory)
+		}
 		setViewId(nextViewId)
 		setCategory(nextView.defaultCategory)
 		setQuery('')
 		setCoverageFilter('all')
+		setSelectedId(nextSample?.id ?? '')
+	}
+
+	function selectNavigationMode(nextMode: NavigationMode) {
+		setNavigationMode(nextMode)
+		setQuery('')
+		setCoverageFilter('all')
+		if (nextMode === 'batch') {
+			const nextBatch = selectedSample ? reviewBatchForSample(selectedSample.id) : selectedBatch
+			setBatchId(nextBatch?.id ?? 'batch-01')
+			setSelectedId(
+				selectedSample?.view === viewId &&
+					nextBatch?.entries.some((entry) => entry.sampleId === selectedSample.id)
+					? selectedSample.id
+					: (samplesInBatch(viewId, nextBatch?.id ?? 'batch-01')[0]?.id ?? ''),
+			)
+			return
+		}
+		const nextCategory = selectedSample?.category ?? view.defaultCategory
+		setCategory(nextCategory)
+		setSelectedId(selectedSample?.id ?? firstSample(viewId, nextCategory)?.id ?? '')
+	}
+
+	function selectBatch(nextBatchId: UiLabReviewBatchId) {
+		const nextSample =
+			samplesInBatch(viewId, nextBatchId)[0] ?? allSamplesInBatch(nextBatchId)[0] ?? null
+		setBatchId(nextBatchId)
+		setQuery('')
+		setCoverageFilter('all')
+		if (nextSample) setViewId(nextSample.view)
 		setSelectedId(nextSample?.id ?? '')
 	}
 
@@ -95,7 +183,10 @@ export function UiLabApp() {
 	}
 
 	function selectSample(sample: UiLabSample) {
+		setViewId(sample.view)
 		setCategory(sample.category)
+		const nextBatch = reviewBatchForSample(sample.id)
+		if (nextBatch) setBatchId(nextBatch.id)
 		setSelectedId(sample.id)
 	}
 
@@ -185,54 +276,134 @@ export function UiLabApp() {
 						</div>
 					</section>
 
-					<section aria-labelledby='ui-lab-category-heading' className='mt-4'>
-						<h2 className='mb-2 text-xs font-medium text-muted' id='ui-lab-category-heading'>
-							分类
+					<section aria-labelledby='ui-lab-navigation-mode-heading' className='mt-4'>
+						<h2 className='mb-2 text-xs font-medium text-muted' id='ui-lab-navigation-mode-heading'>
+							组织方式
+						</h2>
+						<div className='grid grid-cols-2 gap-1'>
+							<Button
+								aria-pressed={navigationMode === 'batch'}
+								fullWidth
+								onPress={() => selectNavigationMode('batch')}
+								size='sm'
+								type='button'
+								variant={navigationMode === 'batch' ? 'secondary' : 'ghost'}
+							>
+								按批次
+							</Button>
+							<Button
+								aria-pressed={navigationMode === 'category'}
+								fullWidth
+								onPress={() => selectNavigationMode('category')}
+								size='sm'
+								type='button'
+								variant={navigationMode === 'category' ? 'secondary' : 'ghost'}
+							>
+								按分类
+							</Button>
+						</div>
+					</section>
+
+					<section aria-labelledby='ui-lab-directory-heading' className='mt-4'>
+						<h2 className='mb-2 text-xs font-medium text-muted' id='ui-lab-directory-heading'>
+							{navigationMode === 'batch' ? '审查批次' : '分类'}
 						</h2>
 						<div className='flex flex-col gap-1'>
-							{view.categories.map((item) => {
-								const count = samplesInView(viewId).filter(
-									(sample) => sample.category === item,
-								).length
-								return (
-									<Button
-										aria-current={item === category ? 'true' : undefined}
-										fullWidth
-										key={item}
-										onPress={() => selectCategory(item)}
-										type='button'
-										variant={item === category ? 'secondary' : 'ghost'}
-									>
-										<span className='flex min-w-0 flex-1 items-center justify-between gap-3'>
-											<span className='truncate'>{item}</span>
-											<span aria-hidden='true' className='text-xs text-muted'>
-												{count}
-											</span>
-										</span>
-									</Button>
-								)
-							})}
+							{navigationMode === 'batch'
+								? UI_LAB_REVIEW_BATCHES.map((item) => {
+										const progress = reviewBatchProgress(item)
+										const isDone = progress.done === progress.total && progress.external === 0
+										return (
+											<Button
+												aria-current={item.id === batchId ? 'true' : undefined}
+												fullWidth
+												key={item.id}
+												onPress={() => selectBatch(item.id)}
+												type='button'
+												variant={item.id === batchId ? 'secondary' : 'ghost'}
+											>
+												<span className='flex min-w-0 flex-1 items-center gap-2'>
+													<span aria-hidden='true' className='w-3 shrink-0 text-center'>
+														{isDone ? '✓' : '○'}
+													</span>
+													<span className='min-w-0 flex-1 truncate text-left'>
+														{item.label} · {item.title}
+													</span>
+													<span className='shrink-0 text-xs text-muted'>
+														{progress.done}/{progress.total}
+														{progress.external > 0 ? ` · ${progress.external} 外部` : ''}
+													</span>
+												</span>
+											</Button>
+										)
+									})
+								: view.categories.map((item) => {
+										const count = samplesInView(viewId).filter(
+											(sample) => sample.category === item,
+										).length
+										return (
+											<Button
+												aria-current={item === category ? 'true' : undefined}
+												fullWidth
+												key={item}
+												onPress={() => selectCategory(item)}
+												type='button'
+												variant={item === category ? 'secondary' : 'ghost'}
+											>
+												<span className='flex min-w-0 flex-1 items-center justify-between gap-3'>
+													<span className='truncate'>{item}</span>
+													<span aria-hidden='true' className='text-xs text-muted'>
+														{count}
+													</span>
+												</span>
+											</Button>
+										)
+									})}
 						</div>
+						{navigationMode === 'batch' ? (
+							<p className='mt-2 text-xs leading-5 text-muted'>{selectedBatch.objective}</p>
+						) : null}
 					</section>
 
 					<section aria-labelledby='ui-lab-sample-heading' className='mt-4'>
 						<h2 className='mb-2 text-xs font-medium text-muted' id='ui-lab-sample-heading'>
-							样例
+							{navigationMode === 'batch' ? '审查清单' : '样例'}
 						</h2>
 						{visibleSamples.length > 0 ? (
 							<div className='flex flex-col gap-1'>
-								{visibleSamples.map((sample) => (
-									<Button
-										aria-current={sample.id === selectedSample?.id ? 'true' : undefined}
-										fullWidth
-										key={sample.id}
-										onPress={() => selectSample(sample)}
-										type='button'
-										variant={sample.id === selectedSample?.id ? 'secondary' : 'ghost'}
-									>
-										{sample.name}
-									</Button>
-								))}
+								{visibleSamples.map((sample) => {
+									const reviewEntry = reviewEntryForSample(sample.id)
+									return (
+										<Button
+											aria-current={sample.id === selectedSample?.id ? 'true' : undefined}
+											fullWidth
+											key={sample.id}
+											onPress={() => selectSample(sample)}
+											type='button'
+											variant={sample.id === selectedSample?.id ? 'secondary' : 'ghost'}
+										>
+											{navigationMode === 'batch' && reviewEntry ? (
+												<span className='flex min-w-0 flex-1 items-center gap-2'>
+													<span aria-hidden='true' className='w-3 shrink-0 text-center'>
+														{reviewEntry.status === 'done'
+															? '✓'
+															: reviewEntry.status === 'external'
+																? '↗'
+																: '○'}
+													</span>
+													<span className='min-w-0 flex-1 truncate text-left'>{sample.name}</span>
+													<span className='shrink-0 text-xs text-muted'>
+														{reviewEntry.role === 'reference'
+															? `对照 · ${REVIEW_STATUS_LABELS[reviewEntry.status]}`
+															: REVIEW_STATUS_LABELS[reviewEntry.status]}
+													</span>
+												</span>
+											) : (
+												sample.name
+											)}
+										</Button>
+									)
+								})}
 							</div>
 						) : (
 							<p className='rounded-md bg-surface-secondary p-3 text-sm text-muted'>无可用样例</p>
@@ -250,7 +421,7 @@ export function UiLabApp() {
 						<>
 							<header className='shrink-0 border-b border-separator p-4'>
 								<p className='text-xs font-medium text-muted'>
-									{view.label} · {selectedSample.category}
+									{view.label} · {selectedReviewBatch?.label} · {selectedSample.category}
 								</p>
 								<h2 className='mt-1 text-lg font-semibold'>{selectedSample.name}</h2>
 								<p className='mt-1 max-w-3xl text-sm leading-6 text-muted'>
@@ -272,12 +443,17 @@ export function UiLabApp() {
 									<dd className='mt-1'>{selectedSample.verification}</dd>
 								</div>
 								<div>
-									<dt className='text-xs text-muted'>所属视图</dt>
-									<dd className='mt-1'>{view.label}</dd>
+									<dt className='text-xs text-muted'>人工审查</dt>
+									<dd className='mt-1'>
+										{selectedReviewEntry?.role === 'reference' ? 'HeroUI 对照 · ' : ''}
+										{selectedReviewEntry
+											? REVIEW_STATUS_LABELS[selectedReviewEntry.status]
+											: '未纳入批次'}
+									</dd>
 								</div>
 								<div>
 									<dt className='text-xs text-muted'>来源</dt>
-									<dd className='mt-1 break-words'>{selectedSample.source}</dd>
+									<dd className='mt-1 warp-break-words'>{selectedSample.source}</dd>
 								</div>
 								<div>
 									<dt className='text-xs text-muted'>覆盖状态</dt>

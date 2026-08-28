@@ -31,7 +31,7 @@ const breadcrumbRouter = createRouter({
 function BreadcrumbPreview() {
 	return (
 		<div className='flex w-full max-w-3xl flex-col gap-5'>
-			<div className='rounded-lg border border-surface bg-surface-secondary p-4'>
+			<div className='rounded-lg border border-surface bg-background p-4'>
 				<RouterContextProvider router={breadcrumbRouter}>
 					<AppBreadcrumb
 						items={[
@@ -61,7 +61,8 @@ function BreadcrumbPreview() {
 				</div>
 			</dl>
 			<p className='text-xs leading-5 text-muted'>
-				操作提示：用 Tab 聚焦祖先链接，再用指针观察真实 Hover；Lab 不覆盖颜色、下划线或焦点样式。
+				操作提示：用 Tab 聚焦祖先链接；键盘焦点应与 Link 样本一致。指针 Hover 只出现中性 Ghost
+				背景，不出现蓝色或下划线；当前项不伪装成可点击。
 			</p>
 		</div>
 	)
@@ -90,37 +91,44 @@ function SidebarFixture({
 	selectedId: string
 }) {
 	return (
-		<Sidebar
-			aria-label={ariaLabel}
+		<Sidebar.Provider
 			className='h-full min-h-0'
-			style={{ '--sidebar-width': '100%', display: 'flex' } as CSSProperties}
+			collapsible='none'
+			style={{ '--control-height-md': '36px' } as CSSProperties}
+			toggleShortcut={false}
 		>
-			<Sidebar.Content>
-				<Sidebar.Group>
-					<Sidebar.GroupLabel>工作区</Sidebar.GroupLabel>
-					<Sidebar.Menu aria-label={ariaLabel}>
-						{SIDEBAR_ITEMS.map((item) => {
-							const Icon = item.icon
-							return (
-								<Sidebar.MenuItem
-									id={`${idPrefix}-${item.id}`}
-									isCurrent={selectedId === item.id}
-									isDisabled={'isDisabled' in item && item.isDisabled}
-									key={item.id}
-									onAction={() => onSelect(item.id)}
-									textValue={item.label}
-								>
-									<Sidebar.MenuIcon>
-										<Icon aria-hidden className='size-4' />
-									</Sidebar.MenuIcon>
-									<Sidebar.MenuLabel>{item.label}</Sidebar.MenuLabel>
-								</Sidebar.MenuItem>
-							)
-						})}
-					</Sidebar.Menu>
-				</Sidebar.Group>
-			</Sidebar.Content>
-		</Sidebar>
+			<Sidebar
+				aria-label={ariaLabel}
+				className='h-full min-h-0'
+				style={{ '--sidebar-width': '100%' } as CSSProperties}
+			>
+				<Sidebar.Content>
+					<Sidebar.Group>
+						<Sidebar.GroupLabel>工作区</Sidebar.GroupLabel>
+						<Sidebar.Menu aria-label={ariaLabel}>
+							{SIDEBAR_ITEMS.map((item) => {
+								const Icon = item.icon
+								return (
+									<Sidebar.MenuItem
+										id={`${idPrefix}-${item.id}`}
+										isCurrent={selectedId === item.id}
+										isDisabled={'isDisabled' in item && item.isDisabled}
+										key={item.id}
+										onAction={() => onSelect(item.id)}
+										textValue={item.label}
+									>
+										<Sidebar.MenuIcon>
+											<Icon aria-hidden className='size-4' />
+										</Sidebar.MenuIcon>
+										<Sidebar.MenuLabel>{item.label}</Sidebar.MenuLabel>
+									</Sidebar.MenuItem>
+								)
+							})}
+						</Sidebar.Menu>
+					</Sidebar.Group>
+				</Sidebar.Content>
+			</Sidebar>
+		</Sidebar.Provider>
 	)
 }
 
@@ -128,45 +136,28 @@ function SidebarDensityPreview() {
 	const [selectedId, setSelectedId] = useState('tasks')
 
 	return (
-		<div className='flex w-full max-w-4xl flex-col gap-4'>
-			<div className='grid gap-4 md:grid-cols-2'>
-				<section
-					aria-labelledby='sidebar-density-32'
-					className='min-h-72 min-w-0 rounded-lg border border-surface p-3'
-				>
-					<h3 className='mb-2 text-sm font-medium' id='sidebar-density-32'>
-						StoneFlow 32px token
-					</h3>
-					<SidebarFixture
-						ariaLabel='StoneFlow 32px token 侧边栏'
-						idPrefix='density-32'
-						onSelect={setSelectedId}
-						selectedId={selectedId}
-					/>
-				</section>
-				<section
-					aria-labelledby='sidebar-density-36'
-					className='min-h-72 min-w-0 rounded-lg border border-surface p-3'
-					style={{ '--control-height-md': '36px' } as CSSProperties}
-				>
-					<h3 className='mb-2 text-sm font-medium' id='sidebar-density-36'>
-						36px token 覆写验证
-					</h3>
-					<SidebarFixture
-						ariaLabel='36px token 覆写验证侧边栏'
-						idPrefix='density-36'
-						onSelect={setSelectedId}
-						selectedId={selectedId}
-					/>
-				</section>
-			</div>
+		<div className='flex w-full max-w-md flex-col gap-4'>
+			<section
+				aria-labelledby='sidebar-density-36'
+				className='min-h-72 min-w-0 rounded-lg border border-surface p-3'
+			>
+				<h3 className='mb-2 text-sm font-medium' id='sidebar-density-36'>
+					StoneFlow 36px token
+				</h3>
+				<SidebarFixture
+					ariaLabel='StoneFlow 36px token 侧边栏'
+					idPrefix='density-36'
+					onSelect={setSelectedId}
+					selectedId={selectedId}
+				/>
+			</section>
 			<p aria-live='polite' className='text-sm text-muted'>
 				当前项：{SIDEBAR_ITEMS.find((item) => item.id === selectedId)?.label}
 			</p>
 			<p className='text-xs leading-5 text-muted'>
 				操作提示：点击或按 Enter/Space 切换当前项；按 Tab 进入导航后用方向键移动，观察
-				Hover、Pressed 与 Keyboard Focus Visible。对比只改变 Lab
-				容器中的既有高度变量；若两侧没有实际密度差异，说明组件没有消费该 token，应记录为共享问题。
+				Hover、Pressed 与 Keyboard Focus Visible。Lab 已选择 36px；结构、状态和交互仍使用 HeroUI Pro
+				原生实现。
 			</p>
 		</div>
 	)
@@ -214,6 +205,7 @@ function TabsPreview() {
 			</Tabs>
 			<p className='mt-4 text-xs leading-5 text-muted'>
 				操作提示：Tab 进入 TabList 后，用左右方向键切换；禁用项应被跳过，Tab 离开组件进入面板内容。
+				键盘焦点只应落在当前 Tab，不应包住整个 Tabs。
 			</p>
 		</div>
 	)
@@ -289,8 +281,8 @@ function CommandPreview() {
 				{lastAction}
 			</p>
 			<p className='text-xs leading-5 text-muted'>
-				操作提示：打开后输入筛选，使用上下方向键移动，Enter 执行，Escape
-				关闭；不可用命令应被跳过，关闭后焦点应返回触发按钮。
+				操作提示：搜索区原生只有下分隔线，不应出现独立直角焦点框。打开后输入筛选，使用上下方向键移动，Enter
+				执行，Escape 关闭；不可用命令应被跳过，关闭后焦点应返回触发按钮。
 			</p>
 			<Command>
 				<Command.Backdrop isDismissable isOpen={open} onOpenChange={setOpen}>
@@ -362,7 +354,7 @@ function ShellViewport({ narrow }: { narrow: boolean }) {
 				</div>
 				<div className='min-w-0 p-4'>
 					<p className='text-xs text-muted'>工作区 / 项目</p>
-					<h4 className='mt-1 break-words text-base font-semibold'>
+					<h4 className='mt-1 warp-break-words text-base font-semibold'>
 						用于观察长中文标题在有限空间内如何换行而不挤压导航结构
 					</h4>
 					<div className='mt-4 space-y-2 text-sm text-muted'>
@@ -391,13 +383,13 @@ export const TICKET_04_SAMPLES = [
 		view: 'stoneflow',
 		category: 'Navigation',
 		description:
-			'用真实 AppBreadcrumb 审查 shared 组件定义的祖先链接、当前项与 aria-current，不在 Lab 修饰结果。',
+			'用真实 AppBreadcrumb 审查祖先链接、当前项与 aria-current; Lab 先预览已选 Ghost 视觉，生产组件暂不修改。',
 		keywords: ['breadcrumb', 'breadcrumbs', '面包屑', '链接', 'current'],
 		owner: '共享 AppBreadcrumb',
 		source: 'src/shared/components/AppBreadcrumb.tsx',
 		coverage: 'rendered',
 		states: 'Rest、Hover、Keyboard Focus Visible、Current、长中文',
-		verification: 'Lab 可验证；真实路由跳转仍在 Main 验证',
+		verification: 'Lab 可验证目标视觉；真实路由跳转与生产迁移仍在后续任务验证',
 		Preview: BreadcrumbPreview,
 	},
 	{
@@ -405,13 +397,13 @@ export const TICKET_04_SAMPLES = [
 		name: 'Sidebar',
 		view: 'stoneflow',
 		category: 'Navigation',
-		description: '以相同内容并排观察 32px 与 36px 既有高度 token 是否真的被 Sidebar 消费。',
-		keywords: ['sidebar', '侧边栏', '32px', '36px', 'density', '密度'],
+		description: '以 36px 高度审查 HeroUI Pro Sidebar 的原生结构、状态和键盘交互。',
+		keywords: ['sidebar', '侧边栏', '36px', 'density', '密度'],
 		owner: 'HeroUI Pro',
 		source: '@heroui-pro/react@1.0.0-beta.8；src/styles/theme.css',
 		coverage: 'rendered',
 		states: 'Rest、Hover、Pressed、Current、Keyboard Focus Visible、Disabled、长中文',
-		verification: 'Lab 可验证；此处不修改产品密度规则',
+		verification: 'Lab 已选定 36px；生产 token 留到后续统一任务修改',
 		Preview: SidebarDensityPreview,
 	},
 	{
@@ -461,15 +453,16 @@ export const TICKET_04_SAMPLES = [
 		name: 'Settings Navigation',
 		view: 'stoneflow',
 		category: 'Navigation',
-		description: '登记 SettingsSidebar 的真实上下文边界与可复现的 Main 验证路径。',
+		description:
+			'不单独审查一张“Settings”组件；功能已有自动测试，只在 Main 人工检查导航视觉与窄宽度布局。',
 		keywords: ['settings', 'navigation', '设置', '设置导航', 'sidebar'],
 		owner: 'Settings feature',
 		source: 'src/features/settings/index.ts',
 		coverage: 'real-app-only',
-		states: 'Current、Hover、Keyboard Focus Visible',
-		verification: '仅真实应用验证',
+		states: '自动：Current、返回、分区跳转；人工：Hover、Keyboard Focus、长中文、窄宽度',
+		verification: '行为已有组件测试；视觉仅在真实应用逐项验收',
 		reason:
-			'SettingsSidebar 依赖真实 TanStack Router、当前 Scope、返回路径与持久化分区状态；必须在 Main 中验证，UI Lab 不复制导航 JSX 或伪造第二套状态。',
+			'SettingsSidebar 依赖真实 TanStack Router、当前 Scope、返回路径与持久化分区状态，因此 UI Lab 不复制导航 JSX。现有自动测试已覆盖当前分区、返回原路径和分区跳转；请在 Main 只人工审查 Hover、Keyboard Focus、长中文截断与窄 Sidebar 布局。',
 	},
 	{
 		id: 'stoneflow-shell-sidebar-scene',

@@ -293,14 +293,27 @@ type SaveState = 'idle' | 'pending' | 'saved' | 'error'
 function SemanticFeedbackPreview() {
 	const [saveState, setSaveState] = useState<SaveState>('idle')
 	const [dangerMessage, setDangerMessage] = useState('')
+	const [requiredTitle, setRequiredTitle] = useState('')
+	const requiredTitleInvalid = requiredTitle.trim().length === 0
 
 	return (
 		<div className='grid w-full max-w-5xl gap-5 lg:grid-cols-2'>
-			<section aria-labelledby='feedback-field-heading' className='space-y-4 rounded-lg border p-4'>
+			<section
+				aria-labelledby='feedback-field-heading'
+				className='space-y-4 rounded-lg border p-4'
+				data-ui-lab-semantic-feedback
+			>
 				<h3 className='text-sm font-semibold' id='feedback-field-heading'>
 					Disabled 与 Invalid
 				</h3>
-				<TextField fullWidth isInvalid isRequired name='feedback-required-title'>
+				<TextField
+					fullWidth
+					isInvalid={requiredTitleInvalid}
+					isRequired
+					name='feedback-required-title'
+					onChange={setRequiredTitle}
+					value={requiredTitle}
+				>
 					<Label>任务标题（必填）</Label>
 					<Input />
 					<FieldError>请输入任务标题；错误不只通过边框颜色表达。</FieldError>
@@ -414,7 +427,7 @@ function LauncherLifecyclePreview() {
 	}
 
 	return (
-		<div className='w-full max-w-[34rem] space-y-4'>
+		<div className='w-full max-w-136 space-y-4'>
 			<section aria-label='Launcher 可移植界面' className='rounded-xl border bg-surface p-3'>
 				<div className='flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end'>
 					<SearchField

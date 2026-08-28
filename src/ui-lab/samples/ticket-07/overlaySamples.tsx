@@ -148,16 +148,10 @@ function ContextMenuPreview() {
 		>
 			<h3 className='text-base font-semibold'>Context Menu</h3>
 			<ContextMenu>
-				<ContextMenu.Trigger<'button'>
-					render={(props) => (
-						<button
-							{...props}
-							className='rounded-lg border border-dashed border-border bg-surface-secondary px-5 py-8 text-sm'
-							type='button'
-						/>
-					)}
-				>
-					右键、长按或按 Shift + F10
+				<ContextMenu.Trigger tabIndex={0}>
+					<div className='cursor-context-menu select-none rounded-lg border border-dashed border-border bg-surface-secondary px-5 py-8 text-sm'>
+						右键打开；触屏设备长按 500ms
+					</div>
 				</ContextMenu.Trigger>
 				<ContextMenu.Popover>
 					<ContextMenu.Menu
@@ -182,7 +176,7 @@ function ContextMenuPreview() {
 			</p>
 			<FocusReturnNote
 				closeAction='选择动作、点到外部或按 Escape'
-				trigger='右键、长按或按 Shift + F10'
+				trigger='右键打开；触屏设备长按 500ms'
 			/>
 		</div>
 	)

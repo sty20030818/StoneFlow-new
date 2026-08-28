@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import { CalendarDate } from '@internationalized/date'
 import {
+	Alert,
 	Button,
 	Card,
 	Checkbox,
@@ -113,7 +114,7 @@ function FieldStatesPreview() {
 					<SearchField.Group>
 						<SearchField.SearchIcon />
 						<SearchField.Input />
-						<Spinner color='current' size='sm' />
+						<Spinner className='me-2' color='current' size='sm' />
 					</SearchField.Group>
 					<Description>加载状态同时使用忙碌语义、动画和文字说明。</Description>
 				</SearchField>
@@ -210,6 +211,7 @@ function CompositeFieldsPreview() {
 
 function SelectionControlsPreview() {
 	const [isCompact, setIsCompact] = useState(false)
+	const [partialSelection, setPartialSelection] = useState<boolean | 'mixed'>('mixed')
 
 	return (
 		<div className='grid w-full min-w-0 gap-6 lg:grid-cols-2'>
@@ -218,17 +220,26 @@ function SelectionControlsPreview() {
 					Checkbox 状态
 				</h3>
 				<div className='mt-3 flex flex-col gap-3'>
-					<Checkbox name='sync-reminders'>
+					<Checkbox name='sync-reminders-primary' variant='primary'>
 						<Checkbox.Content>
 							<Checkbox.Control>
 								<Checkbox.Indicator />
 							</Checkbox.Control>
-							同步提醒
+							Primary（白底浅阴影）
+						</Checkbox.Content>
+					</Checkbox>
+
+					<Checkbox name='sync-reminders' variant='secondary'>
+						<Checkbox.Content>
+							<Checkbox.Control>
+								<Checkbox.Indicator />
+							</Checkbox.Control>
+							Secondary（灰底无阴影）
 						</Checkbox.Content>
 						<Description>点击文字与控件都能切换。</Description>
 					</Checkbox>
 
-					<Checkbox defaultSelected name='completed-visible'>
+					<Checkbox defaultSelected name='completed-visible' variant='secondary'>
 						<Checkbox.Content>
 							<Checkbox.Control>
 								<Checkbox.Indicator />
@@ -237,7 +248,13 @@ function SelectionControlsPreview() {
 						</Checkbox.Content>
 					</Checkbox>
 
-					<Checkbox isIndeterminate name='partial-selection'>
+					<Checkbox
+						isIndeterminate={partialSelection === 'mixed'}
+						isSelected={partialSelection === true}
+						name='partial-selection'
+						onChange={setPartialSelection}
+						variant='secondary'
+					>
 						<Checkbox.Content>
 							<Checkbox.Control>
 								<Checkbox.Indicator />
@@ -246,7 +263,7 @@ function SelectionControlsPreview() {
 						</Checkbox.Content>
 					</Checkbox>
 
-					<Checkbox isDisabled name='managed-policy'>
+					<Checkbox isDisabled name='managed-policy' variant='secondary'>
 						<Checkbox.Content>
 							<Checkbox.Control>
 								<Checkbox.Indicator />
@@ -293,13 +310,13 @@ function SelectionControlsPreview() {
 					</RadioGroup>
 
 					<Switch defaultSelected name='background-sync'>
-						<Switch.Control>
-							<Switch.Thumb />
-						</Switch.Control>
 						<Switch.Content>
+							<Switch.Control>
+								<Switch.Thumb />
+							</Switch.Control>
 							<Label>后台同步</Label>
-							<Description>开关文字提供状态语义，不只看颜色。</Description>
 						</Switch.Content>
+						<Description>开关文字提供状态语义，不只看颜色。</Description>
 					</Switch>
 
 					<div>
@@ -341,7 +358,7 @@ function SettingsFormPreview() {
 
 	return (
 		<Form
-			className='flex w-full max-w-[32rem] min-w-0 flex-col gap-3'
+			className='flex w-full max-w-lg min-w-0 flex-col gap-3'
 			onSubmit={(event) => {
 				event.preventDefault()
 				scheduleSave('error')
@@ -370,13 +387,13 @@ function SettingsFormPreview() {
 						</TextField>
 
 						<Switch defaultSelected name='restore-view'>
-							<Switch.Control>
-								<Switch.Thumb />
-							</Switch.Control>
 							<Switch.Content>
+								<Switch.Control>
+									<Switch.Thumb />
+								</Switch.Control>
 								<Label>在关闭窗口后仍保留尚未完成的筛选与视图偏好</Label>
-								<Description>长标签应自然换行，点击文字仍能切换。</Description>
 							</Switch.Content>
+							<Description>长标签应自然换行，点击文字仍能切换。</Description>
 						</Switch>
 					</div>
 				</Card.Content>
@@ -402,17 +419,16 @@ function SettingsFormPreview() {
 			</Card>
 
 			{status === 'error' ? (
-				<div className='rounded-lg border border-danger p-3' role='alert'>
-					<p className='text-sm font-medium'>保存失败：模拟连接中断，未写入任何设置。</p>
-					<Button
-						className='mt-3'
-						onPress={() => scheduleSave('saved')}
-						type='button'
-						variant='secondary'
-					>
+				<Alert role='alert' status='danger'>
+					<Alert.Indicator />
+					<Alert.Content>
+						<Alert.Title>保存失败</Alert.Title>
+						<Alert.Description>模拟连接中断，未写入任何设置；表单输入仍保留。</Alert.Description>
+					</Alert.Content>
+					<Button onPress={() => scheduleSave('saved')} type='button' variant='danger'>
 						重试保存
 					</Button>
-				</div>
+				</Alert>
 			) : null}
 
 			<p aria-live='polite' className='min-h-5 text-sm text-muted' role='status'>

@@ -10,6 +10,30 @@ import { TICKET_08_SAMPLES } from './samples/ticket-08/herouiCandidateSamples'
 
 export type UiLabViewId = 'stoneflow' | 'heroui'
 export type UiLabCoverage = 'rendered' | 'missing' | 'real-app-only'
+export type UiLabReviewStatus = 'done' | 'pending' | 'external'
+export type UiLabReviewBatchId =
+	| 'batch-01'
+	| 'batch-02'
+	| 'batch-03'
+	| 'batch-04'
+	| 'batch-05'
+	| 'batch-06'
+	| 'batch-07'
+	| 'batch-08'
+
+export type UiLabReviewEntry = {
+	sampleId: string
+	role: 'target' | 'reference'
+	status: UiLabReviewStatus
+}
+
+export type UiLabReviewBatch = {
+	id: UiLabReviewBatchId
+	label: string
+	title: string
+	objective: string
+	entries: readonly UiLabReviewEntry[]
+}
 
 type UiLabSampleBase = {
 	id: string
@@ -82,3 +106,133 @@ export const UI_LAB_SAMPLES: readonly UiLabSample[] = [
 			'Portal 归属、WebView 激活、窗口断点、缩放与跨窗口一致性依赖真实 Tauri Main / Launcher 窗口，不能在浏览器 UI Lab 中可靠复现。',
 	},
 ]
+
+export const UI_LAB_REVIEW_BATCHES: readonly UiLabReviewBatch[] = [
+	{
+		id: 'batch-01',
+		label: '第一批',
+		title: '基础与动作',
+		objective: '确认语义颜色、排版、几何、动作层级、Toolbar 与 Link 的目标基线。',
+		entries: [
+			{ sampleId: 'foundations-color-typography', role: 'target', status: 'done' },
+			{ sampleId: 'foundations-geometry', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-button', role: 'target', status: 'done' },
+			{ sampleId: 'actions-groups-toolbar', role: 'target', status: 'done' },
+			{ sampleId: 'actions-link-semantics', role: 'target', status: 'done' },
+			{ sampleId: 'heroui-button', role: 'reference', status: 'done' },
+		],
+	},
+	{
+		id: 'batch-02',
+		label: '第二批',
+		title: '表单与选择',
+		objective: '检查复合 Field、框中框、选择控件、半选行为与 Pointer/Keyboard Focus。',
+		entries: [
+			{ sampleId: 'stoneflow-field-states', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-composite-fields', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-selection-controls', role: 'target', status: 'done' },
+			{ sampleId: 'heroui-input', role: 'reference', status: 'done' },
+			{ sampleId: 'heroui-select', role: 'reference', status: 'done' },
+			{ sampleId: 'heroui-search-field-candidate', role: 'reference', status: 'done' },
+			{ sampleId: 'heroui-date-picker-candidate', role: 'reference', status: 'done' },
+		],
+	},
+	{
+		id: 'batch-03',
+		label: '第三批',
+		title: '导航',
+		objective: '确认 Breadcrumb、Sidebar、Tabs、Pagination、Command 与 Settings Navigation。',
+		entries: [
+			{ sampleId: 'stoneflow-breadcrumb', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-sidebar-density', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-tabs', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-pagination', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-command-navigation', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-settings-navigation', role: 'target', status: 'done' },
+			{ sampleId: 'heroui-breadcrumbs', role: 'reference', status: 'done' },
+		],
+	},
+	{
+		id: 'batch-04',
+		label: '第四批',
+		title: '集合与任务行',
+		objective: '确认集合键盘路径、Menu、ListBox/ListView、Task Row 与 Group Header。',
+		entries: [
+			{ sampleId: 'stoneflow-row-shell', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-menu', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-list-box', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-list-view', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-task-row', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-group-header', role: 'target', status: 'done' },
+			{ sampleId: 'heroui-list-view', role: 'reference', status: 'done' },
+		],
+	},
+	{
+		id: 'batch-05',
+		label: '第五批',
+		title: '元数据与 Task Board',
+		objective: '检查紧凑元数据、溢出、可移除状态和 Task Board 组合密度。',
+		entries: [
+			{ sampleId: 'stoneflow-table', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-tag', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-chip', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-badge', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-avatar', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-task-board', role: 'target', status: 'done' },
+		],
+	},
+	{
+		id: 'batch-06',
+		label: '第六批',
+		title: '反馈与 Launcher',
+		objective: '检查空、加载、错误、恢复、Toast 生命周期和 Launcher 可移植视觉。',
+		entries: [
+			{ sampleId: 'stoneflow-empty-error-recovery', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-loading-feedback', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-alert-toast', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-semantic-feedback', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-launcher-lifecycle', role: 'target', status: 'done' },
+			{ sampleId: 'heroui-empty-state', role: 'reference', status: 'done' },
+		],
+	},
+	{
+		id: 'batch-07',
+		label: '第七批',
+		title: '浮层与焦点',
+		objective: '检查打开、初始焦点、Tab、Escape、焦点恢复、Danger 与 Portal 生命周期。',
+		entries: [
+			{ sampleId: 'stoneflow-tooltip', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-dropdown', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-popover', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-context-menu', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-modal', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-alert-dialog', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-sheet', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-task-detail-focus', role: 'target', status: 'done' },
+			{ sampleId: 'heroui-tooltip', role: 'reference', status: 'done' },
+			{ sampleId: 'heroui-modal', role: 'reference', status: 'done' },
+		],
+	},
+	{
+		id: 'batch-08',
+		label: '第八批',
+		title: '组合与桌面边界',
+		objective: '检查组件组合后的层级与几何，并把桌面专属行为转交真实 Tauri 验收。',
+		entries: [
+			{ sampleId: 'page-frame-scene', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-settings-form', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-shell-sidebar-scene', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-main-launcher-real-app', role: 'target', status: 'external' },
+		],
+	},
+]
+
+export function reviewBatchForSample(sampleId: string) {
+	return UI_LAB_REVIEW_BATCHES.find((batch) =>
+		batch.entries.some((entry) => entry.sampleId === sampleId),
+	)
+}
+
+export function reviewEntryForSample(sampleId: string) {
+	return reviewBatchForSample(sampleId)?.entries.find((entry) => entry.sampleId === sampleId)
+}

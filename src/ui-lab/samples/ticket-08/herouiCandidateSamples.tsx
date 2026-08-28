@@ -28,6 +28,7 @@ function CandidateFrame({
 	gap,
 	decision,
 	boundary = '浏览器 Lab 可验证；业务数据与原生窗口行为留在真实应用。',
+	previewClassName = 'bg-surface-secondary',
 	children,
 }: {
 	title: string
@@ -36,6 +37,7 @@ function CandidateFrame({
 	gap: string
 	decision: string
 	boundary?: string
+	previewClassName?: string
 	children: ReactNode
 }) {
 	return (
@@ -47,7 +49,7 @@ function CandidateFrame({
 				</p>
 			</header>
 
-			<div className='rounded-lg border border-surface bg-surface-secondary p-4'>{children}</div>
+			<div className={`rounded-lg border border-surface p-4 ${previewClassName}`}>{children}</div>
 
 			<dl className='grid gap-3 text-sm sm:grid-cols-2'>
 				<div>
@@ -72,29 +74,16 @@ function CandidateFrame({
 }
 
 function HeroUIButtonPreview() {
-	const [presses, setPresses] = useState(0)
-
 	return (
 		<CandidateFrame
-			decision='已采用：能渲染、值得保留，生产迁移已完成。'
-			gap='HeroUI 提供交互原语；动作层级、文案与危险语义仍由产品消费方负责。'
-			scope='全局动作、表单提交、工具栏与图标按钮。'
+			decision='已采用：与 StoneFlow Button 共享组件和主题，不重复人工审查。'
+			gap='HeroUI 提供结构、状态与可访问性；StoneFlow 记录产品语义和主题结果。'
+			scope='目录记录；交互状态统一在 StoneFlow Button 审查。'
 			title='HeroUI Button'
 		>
-			<div className='flex flex-wrap items-center gap-3'>
-				<Button onPress={() => setPresses((count) => count + 1)} type='button'>
-					主要动作
-				</Button>
-				<Button type='button' variant='secondary'>
-					次要动作
-				</Button>
-				<Button isDisabled type='button' variant='outline'>
-					暂不可用
-				</Button>
-				<span aria-live='polite' className='text-sm text-muted'>
-					已触发 {presses} 次
-				</span>
-			</div>
+			<p className='text-sm leading-6 text-muted'>
+				请在 StoneFlow → Actions → StoneFlow Button 完成按钮的视觉与交互审查。
+			</p>
 		</CandidateFrame>
 	)
 }
@@ -150,9 +139,10 @@ function HeroUISelectPreview() {
 function HeroUIBreadcrumbsPreview() {
 	return (
 		<CandidateFrame
-			decision='已采用：能渲染、值得保留，生产迁移已完成。'
-			gap='HeroUI 负责导航语义；路由适配、长标题和 StoneFlow 链接视觉由共享 AppBreadcrumb 负责。'
-			scope='AppBreadcrumb 与设置路径。'
+			decision='已采用：保留 HeroUI 导航语义；StoneFlow 视觉仍待后续生产任务迁移。'
+			gap='HeroUI 默认使用蓝色与下划线 Link；Lab 当前统一预览中性文字、Ghost Hover 与 Link 同款 Focus。'
+			previewClassName='bg-background'
+			scope='HeroUI Breadcrumbs 与共享 AppBreadcrumb 的后续统一。'
 			title='HeroUI Breadcrumbs'
 		>
 			<Breadcrumbs aria-label='HeroUI 候选路径'>
@@ -239,7 +229,7 @@ function HeroUIEmptyStatePreview() {
 }
 
 function HeroUIListViewPreview() {
-	const [active, setActive] = useState('task-1')
+	const [lastOpened, setLastOpened] = useState('尚未打开结果')
 
 	return (
 		<CandidateFrame
@@ -248,34 +238,41 @@ function HeroUIListViewPreview() {
 			scope='全局搜索结果的任务与项目列表。'
 			title='HeroUI ListView'
 		>
-			<ListView aria-label='HeroUI 候选任务' className='max-w-md' variant='secondary'>
-				<ListView.Item
-					aria-current={active === 'task-1' ? 'true' : undefined}
-					id='task-1'
-					onAction={() => setActive('task-1')}
-					textValue='整理组件清单'
+			<div data-ui-lab-list-view>
+				<ListView
+					aria-label='HeroUI 候选任务'
+					className='max-w-md'
+					onAction={(key) => setLastOpened(String(key))}
+					selectionMode='none'
+					variant='primary'
 				>
-					<ListView.ItemContent>
-						<div className='min-w-0'>
-							<ListView.Title>整理组件清单</ListView.Title>
-							<ListView.Description>UI Lab · 今天</ListView.Description>
-						</div>
-					</ListView.ItemContent>
-				</ListView.Item>
-				<ListView.Item
-					aria-current={active === 'task-2' ? 'true' : undefined}
-					id='task-2'
-					onAction={() => setActive('task-2')}
-					textValue='复核长中文标题'
-				>
-					<ListView.ItemContent>
-						<div className='min-w-0'>
-							<ListView.Title>复核长中文标题在窄容器中的截断与动作可见性</ListView.Title>
-							<ListView.Description>设计系统 · 明天</ListView.Description>
-						</div>
-					</ListView.ItemContent>
-				</ListView.Item>
-			</ListView>
+					<ListView.Item id='task-1' textValue='整理组件清单'>
+						<ListView.ItemContent>
+							<div className='flex min-w-0 flex-col gap-1'>
+								<ListView.Title>整理组件清单</ListView.Title>
+								<ListView.Description>UI Lab</ListView.Description>
+							</div>
+						</ListView.ItemContent>
+						<ListView.ItemAction>
+							<time className='whitespace-nowrap text-xs text-muted'>今天</time>
+						</ListView.ItemAction>
+					</ListView.Item>
+					<ListView.Item id='task-2' textValue='复核长中文标题'>
+						<ListView.ItemContent>
+							<div className='flex min-w-0 flex-col gap-1'>
+								<ListView.Title>复核长中文标题在窄容器中的截断与动作可见性</ListView.Title>
+								<ListView.Description>设计系统</ListView.Description>
+							</div>
+						</ListView.ItemContent>
+						<ListView.ItemAction>
+							<time className='whitespace-nowrap text-xs text-muted'>明天</time>
+						</ListView.ItemAction>
+					</ListView.Item>
+				</ListView>
+				<p className='mt-3 text-sm text-muted' role='status'>
+					最近打开：{lastOpened}
+				</p>
+			</div>
 		</CandidateFrame>
 	)
 }
@@ -362,13 +359,13 @@ export const TICKET_08_SAMPLES: readonly UiLabSample[] = [
 		name: 'HeroUI Button',
 		view: 'heroui',
 		category: '已采用',
-		description: '核对生产动作使用的真实 Button 变体、状态与 StoneFlow 主题。',
+		description: '已采用并与 StoneFlow Button 共享组件和主题；目录只记录归属。',
 		keywords: ['button', '按钮', 'action', '已采用'],
 		owner: 'HeroUI OSS',
 		source: '@heroui/react@3.2.4',
 		coverage: 'rendered',
-		states: 'Rest、Hover、Pressed、Keyboard Focus、Disabled',
-		verification: 'Lab 可验证；产品动作语义由消费方验证',
+		states: '采用状态；交互状态由 StoneFlow Button 覆盖',
+		verification: '复用 StoneFlow Button 的 Lab 验证',
 		Preview: HeroUIButtonPreview,
 	},
 	{
@@ -404,13 +401,13 @@ export const TICKET_08_SAMPLES: readonly UiLabSample[] = [
 		name: 'HeroUI Breadcrumbs',
 		view: 'heroui',
 		category: '已采用',
-		description: '核对层级导航、可导航祖先与当前页语义。',
+		description: '核对层级导航语义，以及 StoneFlow 拟采用的 Ghost Hover 与 Link 同款 Focus。',
 		keywords: ['breadcrumbs', '面包屑', '导航', '已采用'],
 		owner: 'HeroUI OSS',
 		source: '@heroui/react@3.2.4',
 		coverage: 'rendered',
 		states: 'Rest、Hover、Keyboard Focus、Current',
-		verification: 'Lab 可验证；真实路由由 AppBreadcrumb 验证',
+		verification: 'Lab 可验证目标视觉；真实路由与生产迁移由 AppBreadcrumb 后续任务验证',
 		Preview: HeroUIBreadcrumbsPreview,
 	},
 	{
@@ -460,12 +457,12 @@ export const TICKET_08_SAMPLES: readonly UiLabSample[] = [
 		name: 'HeroUI ListView',
 		view: 'heroui',
 		category: '已采用',
-		description: '核对搜索结果列表的单列结构、动作与键盘路径。',
+		description: '核对搜索结果 ListView 的 Primary 表面、none 模式、标题层级、时间与键盘路径。',
 		keywords: ['listview', 'list view', '列表', '搜索结果', '已采用'],
 		owner: 'HeroUI Pro',
 		source: '@heroui-pro/react@1.0.0-beta.8',
 		coverage: 'rendered',
-		states: 'Rest、Hover、Current、Keyboard Focus、Long Content',
+		states: 'Primary、None、Hover、Action、Time、Keyboard Focus、Long Content',
 		verification: 'Lab 可验证；查询与路由仅真实应用',
 		Preview: HeroUIListViewPreview,
 	},

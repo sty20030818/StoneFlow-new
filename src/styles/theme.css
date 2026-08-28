@@ -69,12 +69,12 @@
 	--success-soft-foreground: #176f2b;
 	--success-soft-hover: color-mix(in srgb, #ecf8ef 85%, #258641 15%);
 
-	--warning: #b7791f;
+	--warning: #c88a22;
 	--warning-foreground: var(--eclipse);
-	--warning-hover: color-mix(in srgb, #b7791f 90%, var(--eclipse) 10%);
+	--warning-hover: color-mix(in srgb, #c88a22 90%, var(--eclipse) 10%);
 	--warning-soft: #fff7e8;
 	--warning-soft-foreground: #835c17;
-	--warning-soft-hover: color-mix(in srgb, #fff7e8 80%, #b7791f 20%);
+	--warning-soft-hover: color-mix(in srgb, #fff7e8 80%, #c88a22 20%);
 
 	--danger: #d14343;
 	--danger-foreground: #ffffff;

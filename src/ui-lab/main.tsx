@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { bootstrapAppearance } from '@/features/appearance'
 
 import '../styles/index.css'
+import './uiLab.css'
 import { UiLabApp } from './UiLabApp'
 
 bootstrapAppearance()

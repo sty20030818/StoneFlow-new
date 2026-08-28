@@ -1,9 +1,135 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 
 import { UiLabApp } from './UiLabApp'
+import { UI_LAB_REVIEW_BATCHES, UI_LAB_SAMPLES } from './uiLabCatalog'
 
 describe('UiLabApp', () => {
-	it('通过同一工作台完成双视图、分类、搜索、单预览与键盘路径', async () => {
+	it('每个样例只属于一个人工审查批次', () => {
+		const entries = UI_LAB_REVIEW_BATCHES.flatMap((batch) => batch.entries)
+		const sampleIds = UI_LAB_SAMPLES.map((sample) => sample.id).sort()
+		const reviewIds = entries.map((entry) => entry.sampleId).sort()
+
+		expect(new Set(reviewIds).size).toBe(reviewIds.length)
+		expect(reviewIds).toEqual(sampleIds)
+		expect(
+			UI_LAB_REVIEW_BATCHES.every((batch) =>
+				batch.entries
+					.filter((entry) => entry.status !== 'external')
+					.every((entry) => entry.status === 'done'),
+			),
+		).toBe(true)
+		expect(
+			UI_LAB_REVIEW_BATCHES.some((batch) =>
+				batch.entries.some((entry) => entry.status === 'external'),
+			),
+		).toBe(true)
+	})
+
+	it('当前批次没有目标视图样例时回到该视图的分类目录', () => {
+		render(<UiLabApp />)
+
+		fireEvent.click(screen.getByRole('button', { name: /第五批 · 元数据与 Task Board/ }))
+		fireEvent.click(screen.getByRole('button', { name: 'HeroUI' }))
+
+		expect(screen.getByRole('button', { name: '按分类' })).toHaveAttribute('aria-pressed', 'true')
+		expect(screen.getByRole('button', { name: 'HeroUI' })).toHaveAttribute('aria-pressed', 'true')
+		expect(
+			within(screen.getByRole('region', { name: '当前样例预览' })).getByRole('heading', {
+				name: 'HeroUI Button',
+			}),
+		).toBeInTheDocument()
+	})
+
+	it('第七批 Context Menu 保留游标坐标锚点并支持触屏长按', () => {
+		render(<UiLabApp />)
+
+		fireEvent.click(screen.getByRole('button', { name: /第七批 · 浮层与焦点/ }))
+		fireEvent.click(screen.getByRole('button', { name: /Context Menu.*Lab 审查完成/ }))
+		const preview = screen.getByRole('region', { name: '当前样例预览' })
+		const trigger = preview.querySelector<HTMLElement>('[data-slot="context-menu-trigger"]')
+		expect(trigger).not.toBeNull()
+		expect(trigger).toHaveClass('context-menu__trigger')
+
+		vi.spyOn(trigger!, 'getBoundingClientRect').mockReturnValue({
+			bottom: 160,
+			height: 80,
+			left: 100,
+			right: 300,
+			top: 80,
+			width: 200,
+			x: 100,
+			y: 80,
+			toJSON: () => ({}),
+		})
+
+		vi.useFakeTimers()
+		try {
+			fireEvent.touchStart(trigger!, {
+				touches: [{ clientX: 140, clientY: 110 }],
+			})
+			act(() => vi.advanceTimersByTime(500))
+
+			const anchor = trigger!.querySelector<HTMLElement>('[aria-hidden="true"]')
+			expect(anchor).toHaveStyle({ left: '40px', top: '30px' })
+			expect(screen.getByRole('menu', { name: '任务上下文菜单' })).toBeInTheDocument()
+		} finally {
+			vi.useRealTimers()
+		}
+	})
+
+	it('第五批用标签下拉维护已选标签', async () => {
+		render(<UiLabApp />)
+
+		fireEvent.click(screen.getByRole('button', { name: /第五批 · 元数据与 Task Board/ }))
+		fireEvent.click(screen.getByRole('button', { name: /Labels.*Lab 审查完成/ }))
+		expect(screen.getByRole('status')).toHaveTextContent('已选择标签：Bug、123')
+
+		fireEvent.click(screen.getByRole('button', { name: '编辑任务标签' }))
+		const menu = await screen.findByRole('menu', { name: '编辑任务标签' })
+		expect(screen.getByText('L')).toBeInTheDocument()
+		const selectedGroup = within(menu).getByRole('group', { name: '已选择' })
+		const availableGroup = screen.getByRole('group', { name: '可添加' })
+		expect(within(selectedGroup).getByRole('menuitemcheckbox', { name: 'Bug' })).toBeChecked()
+		expect(within(selectedGroup).getByRole('menuitemcheckbox', { name: '123' })).toBeChecked()
+		const feature = within(availableGroup).getByRole('menuitemcheckbox', { name: 'Feature' })
+		const featureCheckbox = feature.querySelector<HTMLElement>('[data-slot="checkbox"]')
+		expect(featureCheckbox).not.toBeNull()
+		fireEvent.pointerDown(featureCheckbox!)
+		fireEvent.click(featureCheckbox!)
+		expect(screen.getByRole('menu', { name: '编辑任务标签' })).toBeInTheDocument()
+		await waitFor(() =>
+			expect(
+				within(screen.getByRole('group', { name: '已选择' })).getByRole('menuitemcheckbox', {
+					name: 'Feature',
+				}),
+			).toBeChecked(),
+		)
+		expect(within(menu).queryByText('已选择')).not.toBeInTheDocument()
+		expect(within(menu).queryByText('可添加')).not.toBeInTheDocument()
+		const improvement = within(screen.getByRole('group', { name: '可添加' })).getByRole(
+			'menuitemcheckbox',
+			{ name: 'Improvement' },
+		)
+		fireEvent.pointerDown(improvement)
+		fireEvent.click(improvement)
+		expect(screen.getByRole('status')).toHaveTextContent('已选择标签：Bug、123、Feature')
+		await waitFor(() =>
+			expect(screen.queryByRole('menu', { name: '编辑任务标签' })).not.toBeInTheDocument(),
+		)
+		expect(screen.getByRole('status')).toHaveTextContent(
+			'已选择标签：Bug、123、Feature、Improvement',
+		)
+
+		fireEvent.click(screen.getByRole('button', { name: /第四批 · 集合与任务行/ }))
+		fireEvent.click(screen.getByRole('button', { name: /Menu.*Lab 审查完成/ }))
+		fireEvent.click(screen.getByRole('button', { name: '操作菜单' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /打开任务/ }))
+		await waitFor(() =>
+			expect(screen.queryByRole('menu', { name: '任务操作菜单' })).not.toBeInTheDocument(),
+		)
+	})
+
+	it('通过同一工作台完成双视图、批次、分类、搜索、单预览与键盘路径', async () => {
 		render(<UiLabApp />)
 
 		const preview = screen.getByRole('region', { name: '当前样例预览' })
@@ -11,6 +137,34 @@ describe('UiLabApp', () => {
 			'aria-pressed',
 			'true',
 		)
+		expect(screen.getByRole('button', { name: '按批次' })).toHaveAttribute('aria-pressed', 'true')
+		for (const batchName of [
+			/第一批 · 基础与动作/,
+			/第二批 · 表单与选择/,
+			/第三批 · 导航/,
+			/第四批 · 集合与任务行/,
+			/第五批 · 元数据与 Task Board/,
+			/第六批 · 反馈与 Launcher/,
+			/第七批 · 浮层与焦点/,
+			/第八批 · 组合与桌面边界/,
+		]) {
+			expect(screen.getByRole('button', { name: batchName })).toBeInTheDocument()
+		}
+		expect(screen.getByRole('button', { name: /第一批 · 基础与动作/ })).toHaveTextContent('6/6')
+		expect(screen.getByRole('button', { name: /第五批 · 元数据与 Task Board/ })).toHaveTextContent(
+			'6/6',
+		)
+		expect(screen.getByRole('button', { name: /第六批 · 反馈与 Launcher/ })).toHaveTextContent(
+			'6/6',
+		)
+		expect(screen.getByRole('button', { name: /第七批 · 浮层与焦点/ })).toHaveTextContent('10/10')
+		expect(screen.getByRole('button', { name: /第八批 · 组合与桌面边界/ })).toHaveTextContent('3/3')
+		fireEvent.click(screen.getByRole('button', { name: /第四批 · 集合与任务行/ }))
+		expect(screen.getByRole('button', { name: /RowShell.*Lab 审查完成/ })).toBeInTheDocument()
+		expect(screen.queryByRole('button', { name: /Table.*待审查/ })).not.toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: /第一批 · 基础与动作/ }))
+		fireEvent.click(screen.getByRole('button', { name: '按分类' }))
+
 		for (const categoryName of [
 			'Foundations',
 			'Actions',
@@ -23,6 +177,7 @@ describe('UiLabApp', () => {
 		]) {
 			expect(screen.getByRole('button', { name: categoryName })).toBeInTheDocument()
 		}
+		fireEvent.click(screen.getByRole('button', { name: 'Actions' }))
 		expect(screen.getByRole('button', { name: '全部' })).toHaveAttribute('aria-pressed', 'true')
 		expect(within(preview).getByRole('heading', { name: 'StoneFlow Button' })).toBeInTheDocument()
 		fireEvent.click(within(preview).getByRole('button', { name: '新建任务' }))
@@ -65,9 +220,28 @@ describe('UiLabApp', () => {
 		expect(within(preview).getByText('当前查询：空值')).toBeInTheDocument()
 
 		fireEvent.click(screen.getByRole('button', { name: 'Checkbox / Radio / Switch / Toggle' }))
-		const reminderCheckbox = within(preview).getByRole('checkbox', { name: '同步提醒' })
+		const reminderCheckbox = within(preview).getByRole('checkbox', {
+			name: 'Secondary（灰底无阴影）',
+		})
 		fireEvent.click(reminderCheckbox)
 		expect(reminderCheckbox).toBeChecked()
+		const partialSelection = within(preview).getByRole('checkbox', {
+			name: '部分项目已选择（半选）',
+		})
+		expect(partialSelection).toBePartiallyChecked()
+		fireEvent.click(partialSelection)
+		expect(partialSelection).toBeChecked()
+		expect(partialSelection).not.toBePartiallyChecked()
+		fireEvent.click(partialSelection)
+		expect(partialSelection).not.toBeChecked()
+		const backgroundSync = within(preview).getByRole('switch', { name: '后台同步' })
+		const backgroundSyncControl = backgroundSync
+			.closest('[data-slot="switch-content"]')
+			?.querySelector('[data-slot="switch-control"]')
+		expect(backgroundSyncControl).not.toBeNull()
+		expect(backgroundSync).toBeChecked()
+		fireEvent.click(backgroundSync)
+		expect(backgroundSync).not.toBeChecked()
 		expect(
 			within(preview).queryByRole('searchbox', { name: 'SearchField 可清除查询' }),
 		).not.toBeInTheDocument()
@@ -82,7 +256,12 @@ describe('UiLabApp', () => {
 			fireEvent.click(within(preview).getByRole('button', { name: '保存设置' }))
 			expect(within(preview).getByText('正在保存演示设置…')).toBeInTheDocument()
 			act(() => vi.advanceTimersByTime(600))
-			expect(within(preview).getByRole('alert')).toHaveTextContent('保存失败')
+			const saveFailure = within(preview).getByRole('alert')
+			expect(saveFailure).toHaveTextContent('保存失败')
+			expect(saveFailure).toHaveClass('alert--danger')
+			expect(within(saveFailure).getByRole('button', { name: '重试保存' })).toHaveClass(
+				'button--danger',
+			)
 
 			fireEvent.click(within(preview).getByRole('button', { name: '重试保存' }))
 			act(() => vi.advanceTimersByTime(600))
@@ -113,7 +292,7 @@ describe('UiLabApp', () => {
 
 		fireEvent.click(screen.getByRole('button', { name: 'Sidebar' }))
 		const compactSidebar = within(preview).getByRole('treegrid', {
-			name: 'StoneFlow 32px token 侧边栏',
+			name: 'StoneFlow 36px token 侧边栏',
 		})
 		fireEvent.click(within(compactSidebar).getByRole('row', { name: '收件箱' }))
 		expect(within(preview).getByText('当前项：收件箱')).toBeInTheDocument()
@@ -203,6 +382,16 @@ describe('UiLabApp', () => {
 		await waitFor(() =>
 			expect(screen.queryByText('Toast · 工作区有可用更新')).not.toBeInTheDocument(),
 		)
+		const requiredTitle = within(preview).getByRole('textbox', { name: '任务标题（必填）' })
+		expect(requiredTitle).toHaveAttribute('aria-invalid', 'true')
+		expect(
+			within(preview).getByText('请输入任务标题；错误不只通过边框颜色表达。'),
+		).toBeInTheDocument()
+		fireEvent.change(requiredTitle, { target: { value: '完善同步恢复规则' } })
+		await waitFor(() => expect(requiredTitle).not.toHaveAttribute('aria-invalid', 'true'))
+		expect(
+			within(preview).queryByText('请输入任务标题；错误不只通过边框颜色表达。'),
+		).not.toBeInTheDocument()
 		fireEvent.click(within(preview).getByRole('button', { name: '保存' }))
 		expect(within(preview).getByText('保存演示正在等待结果。')).toBeInTheDocument()
 		fireEvent.click(within(preview).getByRole('button', { name: '模拟错误' }))
@@ -235,7 +424,7 @@ describe('UiLabApp', () => {
 			'ListBox',
 			'ListView',
 			'Table',
-			'Tag',
+			'Labels',
 			'Chip',
 			'Badge',
 			'Avatar',
@@ -246,14 +435,48 @@ describe('UiLabApp', () => {
 			expect(screen.getByRole('button', { name: sampleName })).toBeInTheDocument()
 		}
 		expect(within(preview).getByRole('heading', { name: 'RowShell' })).toBeInTheDocument()
-		fireEvent.click(within(preview).getByRole('button', { name: '普通事项' }))
+		const normalRow = within(preview).getByRole('row', { name: '普通事项' })
+		const selectedRow = within(preview).getByRole('row', { name: '选中事项' })
+		normalRow.focus()
+		fireEvent.keyDown(normalRow, { key: 'ArrowDown' })
+		expect(selectedRow).toHaveFocus()
+		expect(normalRow).toHaveAttribute('tabindex', '-1')
+		expect(selectedRow).toHaveAttribute('tabindex', '0')
+		fireEvent.click(normalRow)
 		expect(within(preview).getByRole('status')).toHaveTextContent('当前行：普通事项')
-		expect(within(preview).getByRole('button', { name: '普通事项' })).toHaveAttribute(
-			'aria-pressed',
-			'true',
-		)
+		expect(normalRow).toHaveAttribute('aria-selected', 'true')
 		fireEvent.click(within(preview).getByRole('button', { name: '更多操作：含尾部操作' }))
 		expect(within(preview).getByRole('status')).toHaveTextContent('已触发：含尾部操作')
+
+		fireEvent.click(screen.getByRole('button', { name: 'Menu' }))
+		const menuTrigger = within(preview).getByRole('button', { name: '操作菜单' })
+		fireEvent.click(menuTrigger)
+		const menuSearch = await screen.findByRole('searchbox', { name: '搜索任务操作' })
+		fireEvent.change(menuSearch, { target: { value: '回收站' } })
+		expect(screen.getByRole('menuitem', { name: /移到回收站/ })).toBeInTheDocument()
+		expect(screen.queryByRole('menuitem', { name: /打开任务/ })).not.toBeInTheDocument()
+		fireEvent.keyDown(menuSearch, { key: 'Escape' })
+		await waitFor(() =>
+			expect(screen.queryByRole('searchbox', { name: '搜索任务操作' })).not.toBeInTheDocument(),
+		)
+		expect(menuTrigger).toHaveFocus()
+
+		fireEvent.click(screen.getByRole('button', { name: 'Task Row' }))
+		const firstSelectedTask = within(preview)
+			.getByRole('checkbox', { name: /选择任务：把跨窗口同步失败/ })
+			.closest('[data-row-shell]')
+		const secondSelectedTask = within(preview)
+			.getByRole('checkbox', { name: '选择任务：连续选中分组的中间任务' })
+			.closest('[data-row-shell]')
+		const thirdSelectedTask = within(preview)
+			.getByRole('checkbox', { name: '选择任务：简短任务标题' })
+			.closest('[data-row-shell]')
+		expect(firstSelectedTask).toHaveAttribute('data-selection-group-position', 'first')
+		expect(secondSelectedTask).toHaveAttribute('data-selection-group-position', 'middle')
+		expect(thirdSelectedTask).toHaveAttribute('data-selection-group-position', 'last')
+		fireEvent.click(within(preview).getByRole('checkbox', { name: /选择任务：把跨窗口同步失败/ }))
+		expect(secondSelectedTask).toHaveAttribute('data-selection-group-position', 'first')
+		expect(thirdSelectedTask).toHaveAttribute('data-selection-group-position', 'last')
 
 		fireEvent.change(search, { target: { value: 'Task Board' } })
 		fireEvent.click(screen.getByRole('button', { name: 'Task Board' }))
@@ -264,7 +487,7 @@ describe('UiLabApp', () => {
 		expect(wideBoard).toBeInTheDocument()
 		expect(within(preview).getByRole('region', { name: '紧凑容器 · 520px' })).toBeInTheDocument()
 		expect(within(preview).queryByRole('heading', { name: 'RowShell' })).not.toBeInTheDocument()
-		const groupHeader = within(wideBoard).getByRole('button', { name: /进行中.*已展开/ })
+		let groupHeader = within(wideBoard).getByRole('button', { name: '折叠 进行中' })
 		const groupContent = document.getElementById(groupHeader.getAttribute('aria-controls')!)
 		expect(groupContent).not.toHaveAttribute('hidden')
 		fireEvent.click(groupHeader)
@@ -275,7 +498,9 @@ describe('UiLabApp', () => {
 				name: '切换状态：审查当前组件的键盘焦点与尾部动作',
 			}),
 		).not.toBeInTheDocument()
-		fireEvent.click(groupHeader)
+		groupHeader = within(wideBoard).getByRole('button', { name: '展开 进行中' })
+		fireEvent.doubleClick(groupHeader.closest('[data-ui-lab-group-header]')!)
+		groupHeader = within(wideBoard).getByRole('button', { name: '折叠 进行中' })
 		expect(groupHeader).toHaveAttribute('aria-expanded', 'true')
 		expect(groupContent).not.toHaveAttribute('hidden')
 		expect(document.querySelectorAll('[data-ui-lab-preview-root]')).toHaveLength(1)
@@ -319,7 +544,11 @@ describe('UiLabApp', () => {
 		expect(heroUIView).toHaveFocus()
 		expect(heroUIView).toHaveAttribute('aria-pressed', 'true')
 		expect(within(preview).getByRole('heading', { name: 'HeroUI Button' })).toBeInTheDocument()
-		expect(within(preview).getByRole('button', { name: '主要动作' })).toBeInTheDocument()
+		expect(
+			within(preview).getByText(
+				'请在 StoneFlow → Actions → StoneFlow Button 完成按钮的视觉与交互审查。',
+			),
+		).toBeInTheDocument()
 		expect(within(preview).queryByRole('button', { name: '新建任务' })).not.toBeInTheDocument()
 
 		for (const categoryName of ['已采用', '替换候选', '探索中']) {

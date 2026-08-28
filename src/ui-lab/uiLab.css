@@ -1,0 +1,138 @@
+/* Primary 对照恢复 HeroUI 官方浅阴影；Secondary 继续使用上游的灰底与 shadow-none。 */
+.checkbox--primary {
+	--field-shadow:
+		0 2px 4px 0 rgb(0 0 0 / 0.04), 0 1px 2px 0 rgb(0 0 0 / 0.06), 0 0 1px 0 rgb(0 0 0 / 0.06);
+}
+
+/* StoneFlow 只收敛 Checkbox 的圆角，并移除误入的全局 1px field border。 */
+.checkbox__control {
+	border-width: 0;
+	border-radius: var(--radius-sm);
+}
+
+.checkbox__control::before {
+	border-radius: var(--radius-sm);
+}
+
+/* HeroUI 默认 Breadcrumb 是蓝色下划线 Link；Lab 先验证 StoneFlow 的 Ghost 方案。 */
+.breadcrumbs .breadcrumbs__link {
+	min-height: var(--control-height-sm);
+	border-radius: var(--radius-pill);
+	padding-inline: 0.5rem;
+	color: var(--muted);
+	text-decoration: none;
+}
+
+.breadcrumbs .breadcrumbs__link[data-current="true"] {
+	color: var(--foreground);
+}
+
+@media (hover: hover) {
+	.breadcrumbs .breadcrumbs__link:not([data-current="true"]):is(:hover, [data-hovered="true"]) {
+		background-color: var(--default);
+		color: var(--foreground);
+		text-decoration: none;
+	}
+}
+
+/* Lab 先验证 Linear 风格灰阶；结构与键盘行为仍由 HeroUI Pro 负责。 */
+[data-theme="stoneflow-light"] .sidebar {
+	background: #efeff0;
+}
+
+@media (hover: hover) {
+	[data-theme="stoneflow-light"] .sidebar__menu-item:hover .sidebar__menu-item-content,
+	[data-theme="stoneflow-light"]
+		.sidebar__menu-item[data-hovered="true"]
+		.sidebar__menu-item-content {
+		background: #e7e7e8;
+	}
+}
+
+[data-theme="stoneflow-light"]
+	.sidebar__menu-item:is([data-current="true"], :active, [data-pressed="true"])
+	.sidebar__menu-item-content {
+	background: #e1e1e2;
+}
+
+/* 复合控件外壳不重复画框；焦点只在真实菜单项内容内显示。 */
+[data-theme="stoneflow-light"]
+	:is(
+		.sidebar__menu[data-focus-visible],
+		.sidebar__menu-item:is(:focus-visible, [data-focus-visible="true"])
+	) {
+	box-shadow: none;
+	outline: none;
+}
+
+[data-theme="stoneflow-light"]
+	.sidebar__menu-item:is(:focus-visible, [data-focus-visible="true"])
+	.sidebar__menu-item-content {
+	box-shadow: inset 0 0 0 2px var(--focus);
+	outline: none;
+}
+
+@media (forced-colors: active) {
+	[data-theme="stoneflow-light"]
+		.sidebar__menu-item:is(:focus-visible, [data-focus-visible="true"])
+		.sidebar__menu-item-content {
+		box-shadow: none;
+		outline: 2px solid Highlight;
+		outline-offset: -2px;
+	}
+}
+
+/* Breadcrumb 的键盘焦点与已审查的 Link 样本保持一致。 */
+.breadcrumbs
+	.breadcrumbs__link:not([data-current="true"]):is(:focus-visible, [data-focus-visible="true"]) {
+	box-shadow: none;
+	outline: 2px solid var(--focus);
+	outline-offset: 2px;
+}
+
+/* 第四、五批先在 Lab 验证行状态，生产迁移留给统一任务。 */
+[data-ui-lab-group-header] {
+	background: #efeff0;
+}
+
+[data-ui-lab-task-rows] [data-row-shell][data-selected="true"] {
+	background: #e8e8f4;
+}
+
+@media (hover: hover) {
+	[data-ui-lab-row-shell]
+		[data-row-shell][data-interactive="true"]:not(
+			[data-active="true"],
+			[data-selected="true"]
+		):hover,
+	[data-ui-lab-list-view] .list-view__item:is(:hover, [data-hovered="true"]) {
+		background: #e7e7e8;
+	}
+
+	[data-ui-lab-task-rows] [data-row-shell]:not([data-selected="true"]):hover {
+		background: #efeff0;
+	}
+
+	[data-ui-lab-task-rows] [data-row-shell][data-selected="true"]:hover {
+		background: #dedeea;
+	}
+}
+
+[data-ui-lab-list-view] .list-view__item:is(:active, [data-pressed="true"]) {
+	background: #e1e1e2;
+}
+
+/* 搜索菜单以 Popover 自身作为表面，搜索行不再嵌套第二个圆角输入框。 */
+.ui-lab-menu-search,
+.ui-lab-menu-search:is(:focus-within, [data-focus-within="true"]) {
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+	outline: none;
+}
+
+/* Invalid 优先于 Focus：StoneFlow 的 1px 字段边框不能在 Danger ring 内继续显示 Accent。 */
+[data-ui-lab-semantic-feedback] [data-slot="input"][data-invalid="true"] {
+	border-color: var(--danger);
+}

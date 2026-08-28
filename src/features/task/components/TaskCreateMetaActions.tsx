@@ -17,7 +17,7 @@ import {
 import { FolderIcon } from 'lucide-react'
 
 /**
- * 状态元数据下拉 — outline button + DropdownMenu。
+ * 状态元数据下拉入口 + DropdownMenu。
  */
 export function StatusMetaAction({
 	status,
@@ -44,7 +44,7 @@ export function StatusMetaAction({
 }
 
 /**
- * 优先级元数据下拉 — outline button + DropdownMenu。
+ * 优先级元数据下拉入口 + DropdownMenu。
  */
 export function PriorityMetaAction({
 	priority,

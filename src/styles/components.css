@@ -72,13 +72,6 @@
 		max-block-size: var(--icon-size);
 	}
 
-	/* 键盘焦点统一为贴住控件的 1px keyline；鼠标 focus 不触发此状态。 */
-	[data-theme="stoneflow-light"] :where(:focus-visible, [data-focus-visible="true"]) {
-		--tw-ring-shadow: 0 0 #0000;
-		box-shadow: inset 0 0 0 1px var(--focus);
-		outline: none;
-	}
-
 	[data-theme="stoneflow-light"] :is(.button--lg, .toggle-button--lg) {
 		height: var(--control-height-lg);
 		min-height: var(--control-height-lg);
@@ -217,6 +210,11 @@
 		max-block-size: var(--icon-size);
 	}
 
+	/* MenuItem 属于 Control；Popover 外壳继续使用 Overlay 圆角。 */
+	[data-theme="stoneflow-light"] .menu-item {
+		border-radius: var(--radius-control);
+	}
+
 	[data-theme="stoneflow-light"] .sidebar {
 		border-color: var(--separator);
 		background: var(--surface-secondary);
@@ -283,6 +281,13 @@
 		min-height: 2.25rem;
 		gap: 0.5rem;
 		padding: 0.5rem 0.625rem;
+	}
+
+	/* 无可聚焦子项时 TabPanel 本身会进入 Tab 序；用圆角表面焦点代替全局直角框。 */
+	[data-theme="stoneflow-light"] .tabs__panel:is(:focus-visible, [data-focus-visible="true"]) {
+		border-radius: var(--radius-surface);
+		box-shadow: inset 0 0 0 2px var(--focus);
+		outline: none;
 	}
 
 	/* 轻量边框提供原生桌面层级；圆角与阴影由主题 token 驱动上游 recipe。 */
@@ -474,10 +479,11 @@
 	}
 
 	@media (forced-colors: active) {
-		[data-theme="stoneflow-light"] :where(:focus-visible, [data-focus-visible="true"]) {
+		/* 只接管真实 DOM 焦点，避免 React Aria 的复合组件状态给外壳重复画框。 */
+		[data-theme="stoneflow-light"] :focus-visible {
 			box-shadow: none;
-			outline: 1px solid Highlight;
-			outline-offset: -1px;
+			outline: 2px solid Highlight;
+			outline-offset: -2px;
 		}
 
 		[data-theme="stoneflow-light"] [data-row-shell][data-focus-source="keyboard"],

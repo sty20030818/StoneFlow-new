@@ -59,21 +59,25 @@ function FoundationsColorTypographyPreview() {
 						<p className='text-sm font-medium'>Accent soft</p>
 						<p className='mt-1 text-xs'>低强度选择与提示</p>
 					</div>
-					<div className='rounded-lg bg-success p-3 text-success-foreground'>
-						<p className='text-sm font-medium'>成功 · Success</p>
-						<p className='mt-1 text-xs'>操作已经完成</p>
+					<div className='rounded-lg border border-border bg-surface p-3 text-foreground'>
+						<span aria-hidden className='block h-5 rounded-sm bg-success' />
+						<p className='mt-2 text-sm font-medium'>成功 · Success</p>
+						<p className='mt-1 text-xs text-muted'>操作已经完成</p>
 					</div>
-					<div className='rounded-lg bg-warning p-3 text-warning-foreground'>
-						<p className='text-sm font-medium'>警告 · Warning</p>
-						<p className='mt-1 text-xs'>需要留意但未失败</p>
+					<div className='rounded-lg border border-border bg-surface p-3 text-foreground'>
+						<span aria-hidden className='block h-5 rounded-sm bg-warning' />
+						<p className='mt-2 text-sm font-medium'>警告 · Warning</p>
+						<p className='mt-1 text-xs text-muted'>需要留意但未失败</p>
 					</div>
-					<div className='rounded-lg bg-info p-3 text-info-foreground'>
-						<p className='text-sm font-medium'>信息 · Info</p>
-						<p className='mt-1 text-xs'>中性说明与系统提示</p>
+					<div className='rounded-lg border border-border bg-surface p-3 text-foreground'>
+						<span aria-hidden className='block h-5 rounded-sm bg-info' />
+						<p className='mt-2 text-sm font-medium'>信息 · Info</p>
+						<p className='mt-1 text-xs text-muted'>中性说明与系统提示</p>
 					</div>
-					<div className='rounded-lg bg-danger p-3 text-danger-foreground'>
-						<p className='text-sm font-medium'>危险 · Danger</p>
-						<p className='mt-1 text-xs'>不可逆或高风险动作</p>
+					<div className='rounded-lg border border-border bg-surface p-3 text-foreground'>
+						<span aria-hidden className='block h-5 rounded-sm bg-danger' />
+						<p className='mt-2 text-sm font-medium'>危险 · Danger</p>
+						<p className='mt-1 text-xs text-muted'>不可逆或高风险动作</p>
 					</div>
 				</div>
 			</section>
@@ -115,8 +119,8 @@ function FoundationsGeometryPreview() {
 			<header>
 				<h3 className='text-base font-semibold'>几何、边界与图标基线</h3>
 				<p className='mt-1 text-sm leading-6 text-muted'>
-					通过真实布局 utility、HeroUI Button 与当前 Surface 效果观察 4/8/12 节奏和 28/32/36
-					控件高度。
+					通过真实布局 utility、HeroUI Button 与当前 Surface 效果观察两级组件间距、28/32/36
+					控件高度和现有圆角边界。
 				</p>
 			</header>
 
@@ -126,7 +130,7 @@ function FoundationsGeometryPreview() {
 				</h4>
 				<div className='mt-3 flex flex-wrap items-end gap-6'>
 					<div>
-						<p className='mb-2 text-xs text-muted'>4px · gap-1</p>
+						<p className='mb-2 text-xs text-muted'>4px · 紧耦合 / gap-1</p>
 						<div className='flex gap-1 rounded-md border border-border p-2'>
 							<span className='size-5 rounded-sm bg-accent-soft' />
 							<span className='size-5 rounded-sm bg-accent-soft' />
@@ -134,22 +138,17 @@ function FoundationsGeometryPreview() {
 						</div>
 					</div>
 					<div>
-						<p className='mb-2 text-xs text-muted'>8px · gap-2</p>
+						<p className='mb-2 text-xs text-muted'>8px · 普通同级 / gap-2</p>
 						<div className='flex gap-2 rounded-md border border-border p-2'>
 							<span className='size-5 rounded-sm bg-accent-soft' />
 							<span className='size-5 rounded-sm bg-accent-soft' />
 							<span className='size-5 rounded-sm bg-accent-soft' />
 						</div>
 					</div>
-					<div>
-						<p className='mb-2 text-xs text-muted'>12px · gap-3</p>
-						<div className='flex gap-3 rounded-md border border-border p-2'>
-							<span className='size-5 rounded-sm bg-accent-soft' />
-							<span className='size-5 rounded-sm bg-accent-soft' />
-							<span className='size-5 rounded-sm bg-accent-soft' />
-						</div>
-					</div>
 				</div>
+				<p className='mt-3 text-xs leading-5 text-muted'>
+					本样本只保留 gap-1 / gap-2；更大的距离属于区块布局，Button 图文距离由共享 recipe 管理。
+				</p>
 			</section>
 
 			<section
@@ -189,19 +188,19 @@ function FoundationsGeometryPreview() {
 				<div className='mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4'>
 					<div className='rounded-md border border-border bg-surface p-3'>
 						<p className='text-sm font-medium'>6px · Control</p>
-						<p className='mt-1 text-xs text-muted'>普通控件与导航行</p>
+						<p className='mt-1 text-xs text-muted'>字段、导航行等矩形控件</p>
 					</div>
 					<div className='rounded-lg border border-border bg-surface p-3'>
 						<p className='text-sm font-medium'>8px · Surface</p>
-						<p className='mt-1 text-xs text-muted'>内容表面与行分组</p>
+						<p className='mt-1 text-xs text-muted'>持久内容表面与行分组</p>
 					</div>
 					<div className='rounded-xl border border-border bg-overlay p-3 shadow-overlay'>
 						<p className='text-sm font-medium'>12px · Overlay</p>
-						<p className='mt-1 text-xs text-muted'>浮层 elevation</p>
+						<p className='mt-1 text-xs text-muted'>Popover、Modal 等浮层</p>
 					</div>
-					<div className='rounded-lg border border-separator bg-surface-secondary p-3'>
-						<p className='text-sm font-medium'>1px · Separator</p>
-						<p className='mt-1 text-xs text-muted'>低噪声结构边界</p>
+					<div className='rounded-full border border-border bg-surface p-3'>
+						<p className='text-sm font-medium'>Pill</p>
+						<p className='mt-1 text-xs text-muted'>Button、Chip 等紧凑封闭控件</p>
 					</div>
 				</div>
 			</section>
@@ -408,25 +407,27 @@ function ActionGroupsPreview() {
 }
 
 function LinkActionPreview() {
-	const [actions, setActions] = useState(0)
-
 	return (
 		<div className='w-full max-w-3xl space-y-5'>
 			<header>
-				<h3 className='text-base font-semibold'>Link 与按钮动作</h3>
+				<h3 className='text-base font-semibold'>Link</h3>
 				<p className='mt-1 text-sm leading-6 text-muted'>
-					链接负责导航，按钮负责改变当前界面状态，当前项不再提供可激活的链接。
+					Link 只负责导航；本样本只观察链接自身的 Rest、Hover、Pressed 与 Keyboard Focus Visible。
 				</p>
 			</header>
 
-			<nav aria-label='链接语义示例' className='flex flex-wrap items-center gap-4'>
-				<Link href='#link-preview-target'>前往检查说明</Link>
-				<span aria-current='page' className='text-sm font-medium'>
-					当前检查项
-				</span>
-				<Button onPress={() => setActions((count) => count + 1)} type='button' variant='ghost'>
-					标记已检查
-				</Button>
+			<nav aria-label='链接状态示例'>
+				<Link
+					className='text-sm'
+					href='#link-preview-target'
+					style={({ isFocusVisible }) => ({
+						boxShadow: isFocusVisible ? 'none' : undefined,
+						outline: isFocusVisible ? '2px solid var(--focus)' : undefined,
+						outlineOffset: isFocusVisible ? 2 : undefined,
+					})}
+				>
+					前往检查说明
+				</Link>
 			</nav>
 
 			<div
@@ -434,13 +435,10 @@ function LinkActionPreview() {
 				id='link-preview-target'
 			>
 				<p className='text-sm'>导航目标仍在当前实验室内，不触发业务路由或外部副作用。</p>
-				<p aria-live='polite' className='mt-1 text-xs text-muted'>
-					按钮动作已触发 {actions} 次
-				</p>
 			</div>
 
 			<p className='text-xs leading-5 text-muted'>
-				分别用指针与 Tab 触发真实 Hover、Pressed 和 Focus Visible；Lab 不覆盖 Link 的颜色或下划线。
+				用指针和 Tab 检查目标态的下划线、字号与单层 Focus Visible；生产对齐留到审查结束后的任务。
 			</p>
 		</div>
 	)
@@ -596,7 +594,7 @@ export const TICKET_02_SAMPLES = [
 		name: '几何、边界与图标',
 		view: 'stoneflow',
 		category: 'Foundations',
-		description: '比较实际 4/8/12 间距、28/32/36 控件高度、圆角、边框、阴影和图标基线。',
+		description: '比较实际 4/8 基础间距、28/32/36 控件高度、圆角、边框、阴影和图标基线。',
 		keywords: ['foundation', 'spacing', 'radius', 'height', 'icon', '间距', '圆角', '图标'],
 		owner: '全局主题',
 		source: 'src/styles/theme.css；@heroui/react@3.2.4',
@@ -636,16 +634,15 @@ export const TICKET_02_SAMPLES = [
 	},
 	{
 		id: 'actions-link-semantics',
-		name: 'Link 与按钮动作',
+		name: 'Link',
 		view: 'stoneflow',
 		category: 'Actions',
-		description:
-			'比较导航链接、当前项和界面动作；HeroUI 提供结构状态，全局主题提供语义颜色，产品决定动作语义。',
-		keywords: ['link', '链接', '导航', 'button', 'hover', 'focus'],
+		description: '观察共享导航链接的字号、下划线、按压与键盘焦点。',
+		keywords: ['link', '链接', '导航', 'hover', 'focus'],
 		owner: 'HeroUI OSS',
 		source: '@heroui/react@3.2.4',
 		coverage: 'rendered',
-		states: 'Rest、Hover、Pressed、Current、Pointer Focus、Keyboard Focus Visible',
+		states: 'Rest、Hover、Pressed、Pointer Focus、Keyboard Focus Visible',
 		verification: 'Lab 可验证；真实路由需应用 smoke',
 		Preview: LinkActionPreview,
 	},
