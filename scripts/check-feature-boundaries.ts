@@ -73,6 +73,8 @@ export type BoundaryRuleId =
 	| 'heroui-state-style'
 	| 'heroui-skin-style'
 	| 'heroui-internal-metric'
+	| 'ui-lab-shared-recipe'
+	| 'visual-token-bypass'
 	| 'legacy-ui-dependency'
 	| 'dependency-provenance'
 	| 'legacy-visual-path'
@@ -634,6 +636,46 @@ function scanLegacyVisualStyles(file: BoundarySource) {
 	return violations
 }
 
+function scanCssVisualOwnership(file: BoundarySource) {
+	if (file.path !== 'src/styles/components.css' && file.path !== 'src/ui-lab/uiLab.css') {
+		return []
+	}
+
+	const violations: BoundaryViolation[] = []
+	const colorLiteral = /#[\da-f]{3,8}\b|(?:rgba?|hsla?|oklch|oklab|lab|lch)\(/gi
+	for (const match of file.source.matchAll(colorLiteral)) {
+		const start = match.index ?? 0
+		violations.push({
+			path: file.path,
+			line: lineNumber(file.source, start),
+			ruleId: 'visual-token-bypass',
+			excerpt: excerptAt(file.source, start),
+			detail: match[0],
+			token: match[0],
+		})
+	}
+
+	if (file.path !== 'src/ui-lab/uiLab.css') return violations
+
+	const sharedSelector =
+		/^\s*(?:\[data-theme[^\]]*\]|\.checkbox\b|\.breadcrumbs\b|\.sidebar\b|\.list-view\b|\[data-row-shell(?:[^\]]*)?\])/gm
+	const sharedToken = /^\s*--(?!ui-lab-)[\w-]+\s*:/gm
+	for (const pattern of [sharedSelector, sharedToken]) {
+		for (const match of file.source.matchAll(pattern)) {
+			const start = match.index ?? 0
+			violations.push({
+				path: file.path,
+				line: lineNumber(file.source, start),
+				ruleId: 'ui-lab-shared-recipe',
+				excerpt: excerptAt(file.source, start),
+				detail: match[0].trim(),
+			})
+		}
+	}
+
+	return violations
+}
+
 function scanFeatureImports(file: BoundarySource, imports: readonly ImportReference[]) {
 	const references = [...imports]
 	for (const match of file.source.matchAll(/vi\.mock\(\s*['"](@\/features\/[^'"]+)['"]/g)) {
@@ -708,7 +750,10 @@ export function scanFeatureBoundarySources(sources: readonly BoundarySource[]) {
 	const violations: BoundaryViolation[] = []
 	for (const file of sources) {
 		if (isProductionSource(file.path)) violations.push(...scanLegacyVisualStyles(file))
-		if (file.path.endsWith('.css')) continue
+		if (file.path.endsWith('.css')) {
+			violations.push(...scanCssVisualOwnership(file))
+			continue
+		}
 
 		const imports = scanImports(file.source)
 		violations.push(...scanFeatureImports(file, imports))

@@ -188,6 +188,45 @@ export function VisualDebt() {
 		])
 	})
 
+	test('UI Lab CSS 只保留 fixture，并由共享主题持有实际视觉值', () => {
+		const violations = scanFeatureBoundarySources([
+			{
+				path: 'src/ui-lab/uiLab.css',
+				source: `
+.checkbox--primary {
+	--field-shadow: #ffffff;
+}
+[data-theme="stoneflow-light"] .sidebar {
+	background: rgb(239 239 240);
+}
+[data-row-shell] {
+	background: var(--default);
+}
+.ui-lab-menu-search {
+	background: var(--overlay);
+}
+[data-ui-lab-task-rows] [data-row-shell] {
+	background: var(--default);
+}
+`,
+			},
+			{
+				path: 'src/styles/components.css',
+				source: `.menu-item { background: oklch(94% 0.001 286.375); }`,
+			},
+		])
+
+		expect(violations.map(({ path, ruleId }) => ({ path, ruleId }))).toEqual([
+			{ path: 'src/ui-lab/uiLab.css', ruleId: 'visual-token-bypass' },
+			{ path: 'src/ui-lab/uiLab.css', ruleId: 'visual-token-bypass' },
+			{ path: 'src/ui-lab/uiLab.css', ruleId: 'ui-lab-shared-recipe' },
+			{ path: 'src/ui-lab/uiLab.css', ruleId: 'ui-lab-shared-recipe' },
+			{ path: 'src/ui-lab/uiLab.css', ruleId: 'ui-lab-shared-recipe' },
+			{ path: 'src/ui-lab/uiLab.css', ruleId: 'ui-lab-shared-recipe' },
+			{ path: 'src/styles/components.css', ruleId: 'visual-token-bypass' },
+		])
+	})
+
 	test('允许结构布局、外部几何与显式内容高度', () => {
 		const violations = scanFeatureBoundarySources([
 			{

@@ -45,10 +45,10 @@
 	--overlay-foreground: var(--foreground);
 	--muted: #626267;
 
-	--default: #efeff1;
+	--default: #efeff0;
 	--default-foreground: var(--foreground);
-	--default-hover: #e8e8eb;
-	--default-pressed: #dfdfe3;
+	--default-hover: #e7e7e8;
+	--default-pressed: #e1e1e2;
 	--default-soft: color-mix(in srgb, var(--surface-secondary) 50%, transparent);
 	--default-soft-foreground: var(--foreground);
 	--default-soft-hover: color-mix(in srgb, var(--surface-secondary) 60%, transparent);
@@ -110,15 +110,17 @@
 
 	--surface-shadow: 0 0 0 transparent;
 	--field-shadow: 0 0 0 transparent;
+	--checkbox-primary-shadow:
+		0 2px 4px 0 rgb(0 0 0 / 0.04), 0 1px 2px 0 rgb(0 0 0 / 0.06), 0 0 1px 0 rgb(0 0 0 / 0.06);
 	--overlay-shadow: 0 8px 24px rgb(20 20 24 / 0.08), 0 2px 6px rgb(20 20 24 / 0.04);
 
 	/* Accent 只承担主操作、焦点和小面积状态；软表面统一从当前预设派生。 */
 	--accent-foreground: var(--white);
 	--accent-hover: color-mix(in srgb, var(--accent) 90%, var(--black));
 	--accent-pressed: color-mix(in srgb, var(--accent) 82%, var(--black));
-	--accent-soft: color-mix(in srgb, var(--accent-base) 7%, var(--surface));
+	--accent-soft: color-mix(in srgb, var(--accent) 8%, var(--surface-secondary));
 	--accent-soft-foreground: color-mix(in srgb, var(--accent) 72%, var(--foreground));
-	--accent-soft-hover: color-mix(in srgb, var(--accent-base) 11%, var(--surface));
+	--accent-soft-hover: color-mix(in srgb, var(--accent) 14%, var(--surface-secondary));
 	--accent-border: color-mix(in srgb, var(--accent-base) 70%, var(--border-secondary));
 	--focus: var(--accent-base);
 	--link: color-mix(in srgb, var(--accent) 78%, var(--foreground));

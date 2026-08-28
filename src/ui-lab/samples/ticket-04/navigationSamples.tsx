@@ -91,12 +91,7 @@ function SidebarFixture({
 	selectedId: string
 }) {
 	return (
-		<Sidebar.Provider
-			className='h-full min-h-0'
-			collapsible='none'
-			style={{ '--control-height-md': '36px' } as CSSProperties}
-			toggleShortcut={false}
-		>
+		<Sidebar.Provider className='h-full min-h-0' collapsible='none' toggleShortcut={false}>
 			<Sidebar
 				aria-label={ariaLabel}
 				className='h-full min-h-0'

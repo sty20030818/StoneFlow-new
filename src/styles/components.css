@@ -204,6 +204,50 @@
 		font-family: var(--font-mono);
 	}
 
+	/* Checkbox 保留 HeroUI 原生状态与动画，只恢复官方 Primary 阴影和 4px 几何。 */
+	[data-theme="stoneflow-light"] .checkbox {
+		--border-width-field: 0px;
+	}
+
+	[data-theme="stoneflow-light"] .checkbox--primary {
+		--field-shadow: var(--checkbox-primary-shadow);
+	}
+
+	[data-theme="stoneflow-light"] :is(.checkbox__control, .checkbox__control::before) {
+		border-radius: var(--radius-sm);
+	}
+
+	/* Breadcrumb 祖先项使用填充式 Ghost；当前位置仍由 React Aria 持有语义。 */
+	[data-theme="stoneflow-light"] .breadcrumbs .breadcrumbs__link {
+		min-height: var(--control-height-sm);
+		border-radius: var(--radius-pill);
+		padding-inline: 0.5rem;
+		color: var(--muted);
+		text-decoration: none;
+	}
+
+	[data-theme="stoneflow-light"] .breadcrumbs .breadcrumbs__link[data-current="true"] {
+		color: var(--foreground);
+	}
+
+	@media (hover: hover) {
+		[data-theme="stoneflow-light"]
+			.breadcrumbs
+			.breadcrumbs__link:not([data-current="true"]):is(:hover, [data-hovered="true"]) {
+			background: var(--default);
+			color: var(--foreground);
+			text-decoration: none;
+		}
+	}
+
+	[data-theme="stoneflow-light"]
+		.breadcrumbs
+		.breadcrumbs__link:not([data-current="true"]):is(:focus-visible, [data-focus-visible="true"]) {
+		box-shadow: none;
+		outline: 2px solid var(--focus);
+		outline-offset: 2px;
+	}
+
 	/* 集合行的几何交还 HeroUI；StoneFlow 只统一紧凑图标。 */
 	[data-theme="stoneflow-light"] :is(.menu-item, .list-box-item, .command__item) > svg {
 		max-inline-size: var(--icon-size);
@@ -217,7 +261,7 @@
 
 	[data-theme="stoneflow-light"] .sidebar {
 		border-color: var(--separator);
-		background: var(--surface-secondary);
+		background: var(--default);
 	}
 
 	[data-theme="stoneflow-light"]
@@ -228,7 +272,6 @@
 	}
 
 	[data-theme="stoneflow-light"] .sidebar__menu-item-content {
-		min-height: var(--control-height-md);
 		gap: 0.5rem;
 		border-radius: var(--radius-control);
 		padding-block: 0.25rem;
@@ -254,22 +297,31 @@
 		[data-theme="stoneflow-light"]
 			.sidebar__menu-item[data-hovered="true"]
 			.sidebar__menu-item-content {
-			background: var(--surface-hover);
+			background: var(--default-hover);
 		}
 	}
 
 	[data-theme="stoneflow-light"]
-		.sidebar__menu-item[data-current="true"]
+		.sidebar__menu-item:is([data-current="true"], :active, [data-pressed="true"])
 		.sidebar__menu-item-content {
-		background: var(--default);
+		background: var(--default-pressed);
 	}
 
-	@media (hover: hover) {
-		[data-theme="stoneflow-light"]
-			.sidebar__menu-item[data-current="true"]:hover
-			.sidebar__menu-item-content {
-			background: var(--default-hover);
-		}
+	/* Tree 外壳不重复画框；焦点只落在真实的圆角 MenuItem 内容。 */
+	[data-theme="stoneflow-light"]
+		:is(
+			.sidebar__menu[data-focus-visible],
+			.sidebar__menu-item:is(:focus-visible, [data-focus-visible="true"])
+		) {
+		box-shadow: none;
+		outline: none;
+	}
+
+	[data-theme="stoneflow-light"]
+		.sidebar__menu-item:is(:focus-visible, [data-focus-visible="true"])
+		.sidebar__menu-item-content {
+		box-shadow: inset 0 0 0 2px var(--focus);
+		outline: none;
 	}
 
 	[data-theme="stoneflow-light"] .list-view--primary {
@@ -281,6 +333,30 @@
 		min-height: 2.25rem;
 		gap: 0.5rem;
 		padding: 0.5rem 0.625rem;
+	}
+
+	@media (hover: hover) {
+		[data-theme="stoneflow-light"]
+			.list-view--primary
+			.list-view__item:is(:hover, [data-hovered="true"]):not([data-selected="true"]) {
+			background: var(--default-hover);
+		}
+
+		[data-theme="stoneflow-light"]
+			.list-view--primary
+			.list-view__item[data-selected="true"]:is(:hover, [data-hovered="true"]) {
+			background: var(--accent-soft-hover);
+		}
+	}
+
+	[data-theme="stoneflow-light"] .list-view--primary .list-view__item[data-selected="true"] {
+		background: var(--accent-soft);
+	}
+
+	[data-theme="stoneflow-light"]
+		.list-view--primary
+		.list-view__item:is(:active, [data-pressed="true"]):not([data-selected="true"]) {
+		background: var(--default-pressed);
 	}
 
 	/* 无可聚焦子项时 TabPanel 本身会进入 Tab 序；用圆角表面焦点代替全局直角框。 */
@@ -393,7 +469,7 @@
 
 	[data-theme="stoneflow-light"]
 		[data-row-shell][data-hovered="true"]:not([data-active="true"], [data-selected="true"]) {
-		background: var(--surface-hover);
+		background: var(--default-hover);
 	}
 
 	@media (hover: hover) {
@@ -402,7 +478,7 @@
 				[data-active="true"],
 				[data-selected="true"]
 			):hover {
-			background: var(--surface-hover);
+			background: var(--default-hover);
 		}
 
 		[data-theme="stoneflow-light"]
@@ -439,7 +515,7 @@
 		[data-row-shell][data-interactive="true"]:is(:active, [data-pressed="true"]):not(
 			[data-selected="true"]
 		) {
-		background: var(--default-hover);
+		background: var(--default-pressed);
 	}
 
 	[data-theme="stoneflow-light"] [data-row-shell][data-focus-source="keyboard"],
@@ -495,6 +571,24 @@
 		[data-theme="stoneflow-light"] [data-row-shell][data-focus-suppressed="true"]:focus-visible {
 			border-color: Highlight;
 			outline: none;
+		}
+
+		[data-theme="stoneflow-light"]
+			.breadcrumbs
+			.breadcrumbs__link:not([data-current="true"]):is(
+				:focus-visible,
+				[data-focus-visible="true"]
+			) {
+			box-shadow: none;
+			outline-color: Highlight;
+		}
+
+		[data-theme="stoneflow-light"]
+			.sidebar__menu-item:is(:focus-visible, [data-focus-visible="true"])
+			.sidebar__menu-item-content {
+			box-shadow: none;
+			outline: 2px solid Highlight;
+			outline-offset: -2px;
 		}
 	}
 }
