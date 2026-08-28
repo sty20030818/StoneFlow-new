@@ -20,7 +20,7 @@ import { MetadataFieldButton } from './MetadataFieldButton'
 import type { MetadataCommandShortcut } from './MetadataFieldDropdown'
 import { MetadataPlacementGroupList } from './MetadataPlacementGroupList'
 
-export type MetadataPlacementDropdownProps = {
+type MetadataPlacementDropdownProps = {
 	label: string
 	menuLabel?: string
 	shortcut?: MetadataCommandShortcut

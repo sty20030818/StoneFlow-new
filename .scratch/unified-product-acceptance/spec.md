@@ -8,6 +8,12 @@
 
 验收中发现的问题必须新建独立修复任务；不得修改或重新打开已归档任务来承载新问题。
 
+## 前置工程证据
+
+- [UI 系统生产迁移](../archive/ui-system-production-migration/spec.md)已完成并归档。已提交实现范围为 `4eda8e8d..43ffe860`（Ticket 01：`9761aac3`；Ticket 02～05：`43ffe860`）；Ticket 06 的清理与本节归档记录由同一最终差异持有，不记录自引用的未来提交号。
+- 自动化准备证据：`bun run check`、`bun run build` 与 `git diff --check` 通过；前端 188 个文件共 932 项、脚本 160 项、Rust 233 项通过，7 项 PostgreSQL 集成测试因未提供数据库按既有条件忽略；生产构建不包含 `ui-lab.html`。
+- 本轮影响下方既有验收项 1～6；第 7～9 项没有受到 UI 迁移影响。该记录只证明工程前置完成，所有九项仍按实际设备与环境结果勾选。
+
 ## 待统一验收
 
 - [ ] 在真实 macOS Tauri Main 与 Launcher 完成冷启动、重启、六色 Accent 切换与跨窗口一致性检查，确认无可见默认色闪烁。

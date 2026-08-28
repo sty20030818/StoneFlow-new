@@ -194,6 +194,12 @@
 		box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--focus-subtle) 28%, transparent);
 	}
 
+	/* Invalid 优先于 Focus，避免 Danger ring 内仍保留 Accent 字段边框。 */
+	[data-theme="stoneflow-light"]
+		:is(.input, .textarea):is([data-invalid="true"], [aria-invalid="true"]) {
+		border-color: var(--danger);
+	}
+
 	@media (min-width: 48rem) {
 		[data-theme="stoneflow-light"] .input[data-field-role="detail-title"] {
 			font-size: 1.375rem;

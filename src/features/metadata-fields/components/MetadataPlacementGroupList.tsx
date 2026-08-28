@@ -10,7 +10,7 @@ import type {
 } from '@/features/metadata-fields/core'
 import { MetadataFieldMenuItem } from './MetadataFieldMenuItem'
 
-export type MetadataPlacementGroupListProps = {
+type MetadataPlacementGroupListProps = {
 	groups: TaskPlacementGroup[]
 	getIndicator: (target: TaskPlacementTarget) => MetadataFieldIndicator
 	getDigit: (item: TaskPlacementGroupItem) => string

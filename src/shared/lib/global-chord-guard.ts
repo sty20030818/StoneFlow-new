@@ -12,8 +12,3 @@ export function setGlobalChordPending(pending: boolean) {
 export function isGlobalChordPending(): boolean {
 	return globalChordPending
 }
-
-/** 仅用于测试场景的重置，避免跨用例脏数据。 */
-export function __resetGlobalChordGuardForTests() {
-	globalChordPending = false
-}

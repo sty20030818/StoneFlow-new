@@ -1,12 +1,11 @@
 import { redirect, useNavigate } from '@tanstack/react-router'
 
-import { openCanonicalProjectDetail, openStartupFallback, openTaskDetail } from '@/app/navigation'
+import { openStartupFallback } from '@/app/navigation'
 import { listVisibleSpaces } from '@/features/space'
 import { projectDetailQueryOptions } from '@/features/project'
 import { taskDetailQueryOptions } from '@/features/task'
-import type { Scope, Space, TaskDetail } from '@/shared/types'
+import type { Scope, Space } from '@/shared/types'
 import type { QueryClient } from '@tanstack/react-query'
-import type { ProjectDetail } from '@/features/project'
 import { TaskPageState } from '@/features/task'
 
 export type DetailRouteErrorState = {
@@ -130,14 +129,6 @@ export function createProjectLoaderError(error: unknown): DetailRouteErrorState 
 		actionLabel: '返回工作区',
 		actionTo: openStartupFallback(),
 	}
-}
-
-export function buildTaskDetailFallbackPath(task: TaskDetail) {
-	return openTaskDetail(task.id, task.spaceId)
-}
-
-export function buildProjectDetailFallbackPath(project: ProjectDetail) {
-	return openCanonicalProjectDetail(project.id, project.spaceId)
 }
 
 export function isDetailRouteError(error: unknown): error is DetailRouteErrorState {

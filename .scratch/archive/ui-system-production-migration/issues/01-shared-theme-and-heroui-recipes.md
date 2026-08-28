@@ -19,8 +19,8 @@
 ## 完成证据
 
 - Hard cut：中性 Rest/Hover/Pressed 收敛为 `#efeff0 / #e7e7e8 / #e1e1e2`，Task Row 的选中态继续由可切换 Accent 派生；没有把 Linear 色值写进产品组件。
-- 共享 Owner：Checkbox、Breadcrumb、Sidebar、Row 与 List recipe 已归入 `theme.css` / `components.css`；`uiLab.css` 删除重复实现，只保留 TaskBoard、Menu Search 与 Invalid Feedback fixture。
+- 共享 Owner：Checkbox、Breadcrumb、Sidebar、Row、List 与 Invalid Field recipe 已归入 `theme.css` / `components.css`；`uiLab.css` 删除重复实现，只保留 TaskBoard 与 Menu Search fixture，TaskBoard Hover 复用生产 `--default-hover` 语义。
 - HeroUI 原生职责：Checkbox 状态与动画、Sidebar Tree、ListView GridList、Overlay 和可访问性均保持由 HeroUI / React Aria 管理；Sidebar 删除本地 `32px` 覆盖后恢复 HeroUI Pro 原生 `36px`。
 - No-op：Warning `#c88a22`、`6/8/12px` 与 Pill 圆角、`28/32/36px` 控件高度、MenuItem `6px`、Tabs Panel 焦点均已符合已确认目标，未为一致项制造改动。
-- 防回流：既有 feature boundary 检查新增 CSS Owner 规则，拒绝 UI Lab 重新持有共享 selector、非 Lab token 及实际色值。
+- 防回流：既有 feature boundary 检查新增 CSS Owner 规则，拒绝 UI Lab 重新持有共享 selector、HeroUI `data-slot` recipe、非 Lab token 及实际色值。
 - 自动验证：所列命令全部通过；`bun lint` 仅保留仓库既有 React warnings，无 error。未启动新开发服务或浏览器，真实应用视觉验收留给后续产品切片。

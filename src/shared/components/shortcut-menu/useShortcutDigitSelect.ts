@@ -14,7 +14,7 @@ type UseShortcutDigitSelectOptions<TValue> = {
  * - 仅处理单个数字键；
  * - 不改菜单项顺序，不改原有点击行为。
  */
-export function useShortcutDigitSelect<TValue>({
+function useShortcutDigitSelect<TValue>({
 	items,
 	onSelect,
 }: UseShortcutDigitSelectOptions<TValue>) {
@@ -64,7 +64,7 @@ type ShortcutDigitSelectLayerProps<TValue> = UseShortcutDigitSelectOptions<TValu
 
 /**
  * 只在 DropdownMenuContent 挂载期间接管数字键。
- * 这样不需要把 Radix Root 做成受控组件，也不会在菜单关闭后保留监听。
+ * 菜单关闭后随内容卸载，不会保留全局监听。
  */
 export function ShortcutDigitSelectLayer<TValue>(props: ShortcutDigitSelectLayerProps<TValue>) {
 	useShortcutDigitSelect(props)

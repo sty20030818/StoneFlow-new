@@ -38,10 +38,9 @@ src/features/danger-confirm/
 
 | 类 | 符号 |
 |----|------|
-| 类型 | `DangerConfirmIntent` · `DangerConfirmEntityType` · `DangerConfirmRequest` · `DangerConfirmCopy` |
+| 类型 | `DangerConfirmRequest` · `DangerConfirmCopy` |
 | 文案 | `buildDangerConfirmCopy` |
 | Runtime | `DangerConfirmProvider` · `useDangerConfirm` |
-| UI | `DangerConfirmDialog`（通常 Provider 内挂载；测试可直接用） |
 
 `requestDangerConfirm` 返回 `Promise<boolean>`。
 

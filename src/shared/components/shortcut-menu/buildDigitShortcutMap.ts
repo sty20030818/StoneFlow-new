@@ -5,7 +5,7 @@ export type ShortcutMenuItem<TValue> = {
 	disabled?: boolean
 }
 
-export type DigitShortcutMapItem<TValue> = {
+type DigitShortcutMapItem<TValue> = {
 	digit: string
 	item: ShortcutMenuItem<TValue>
 }

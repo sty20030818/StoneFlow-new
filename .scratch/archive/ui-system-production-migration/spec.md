@@ -1,12 +1,12 @@
 # StoneFlow UI Lab 目标生产迁移
 
-**Status:** ready-for-agent  
-**Triage:** ready-for-agent  
-**日期:** 2026-08-28  
-**采用基线:** HeroUI OSS 3.2.4、HeroUI Styles 3.2.4、HeroUI Pro 1.0.0-beta.8  
-**设计输入:** [已归档 UI Lab 人工审查规格](../archive/ui-lab-review/spec.md)  
-**长期门禁:** [ADR-0003](../../Documents/01-架构/adr/ADR-0003-ui-lab-review-and-product-migration-gate.md)  
-**真实应用验收:** [统一产品验收](../unified-product-acceptance/spec.md)
+**Status:** completed; archived; real-app acceptance transferred
+**Triage:** completed
+**日期:** 2026-08-28
+**采用基线:** HeroUI OSS 3.2.4、HeroUI Styles 3.2.4、HeroUI Pro 1.0.0-beta.8
+**设计输入:** [已归档 UI Lab 人工审查规格](../ui-lab-review/spec.md)
+**长期门禁:** [ADR-0003](../../../Documents/01-架构/adr/ADR-0003-ui-lab-review-and-product-migration-gate.md)
+**真实应用验收:** [统一产品验收](../../unified-product-acceptance/spec.md)
 
 ## Problem Statement
 

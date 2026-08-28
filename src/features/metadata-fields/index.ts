@@ -33,8 +33,6 @@ export {
 
 export {
 	MetadataFieldDropdown,
-	type MetadataCommandShortcut,
-	MetadataFieldButton,
 	MetadataDateDropdown,
 	MetadataFieldValue,
 	CustomDateDialog,
@@ -50,9 +48,6 @@ export {
 	getTaskPriorityMetadataDropdownProps,
 	getTaskStatusMetadataDropdownProps,
 	taskDateMetadataIcons,
-	createProjectParentMetadataDropdownProps,
-	projectDateMetadataIcons,
 	createSpaceMetadataDropdownProps,
-	createSpaceMetadataOptions,
 	getSpaceMetadataButtonVisual,
 } from './adapters'

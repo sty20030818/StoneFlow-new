@@ -12,7 +12,7 @@ type FooterCustomizeItem = {
 	icon: React.ComponentType<{ className?: string }>
 }
 
-export type SidebarCustomizeSubmenuProps = {
+type SidebarCustomizeSubmenuProps = {
 	navItems: MainNavItemViewModel[]
 	footerItems?: FooterCustomizeItem[]
 	visibleNavItemCount: number

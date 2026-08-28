@@ -7,7 +7,7 @@ type StopEvent = {
 	stopPropagation: () => void
 }
 
-export type MetadataFieldButtonProps = {
+type MetadataFieldButtonProps = {
 	icon?: ReactNode
 	label: ReactNode
 	trailing?: ReactNode

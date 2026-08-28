@@ -5,7 +5,7 @@ import { FolderIcon } from 'lucide-react'
 
 import { SidebarProjectNavRow } from './SidebarNavRow'
 
-export type ProjectNavMenuItemProps = {
+type ProjectNavMenuItemProps = {
 	currentScope: Scope
 	currentSpaceId: string | null
 	project: ShellProjectLink

@@ -3,13 +3,8 @@ import {
 	createSpaceActionSpec,
 	mapMetadataActionSpecToDropdownProps,
 	type MetadataDropdownMappedProps,
-	type MetadataFieldOption,
 } from '@/features/metadata-fields/core'
 import type { Space } from '@/shared/types'
-
-export function createSpaceMetadataOptions(spaces: Space[]): Array<MetadataFieldOption<string>> {
-	return createSpaceMetadataDropdownProps(spaces).options
-}
 
 export function createSpaceMetadataDropdownProps(
 	spaces: Space[],

@@ -6,7 +6,7 @@ import { CheckIcon, MinusIcon } from 'lucide-react'
 import type { MetadataFieldIndicator } from '@/features/metadata-fields/core'
 import { cn } from '@/shared/lib/utils'
 
-export type MetadataFieldMenuItemProps<TValue> = {
+type MetadataFieldMenuItemProps<TValue> = {
 	id: string
 	value: TValue
 	label: string

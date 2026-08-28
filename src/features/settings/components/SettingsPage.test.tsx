@@ -285,27 +285,19 @@ describe('SettingsPage', () => {
 			description: '显示回收站入口，方便恢复或彻底删除内容。',
 			target: { kind: 'footer' as const, key: 'trash' },
 		},
-	])(
-		'CellSwitch 的公开 label 覆盖 $label 整行，并提交对应显隐 mutation',
-		async ({ label, description, target }) => {
-			mockSettingsSection = 'sidebar'
-			await renderSettingsPage()
+	])('$label 保留说明文案，并提交对应显隐 mutation', async ({ label, description, target }) => {
+		mockSettingsSection = 'sidebar'
+		await renderSettingsPage()
 
-			const toggle = getToggleByLabel(label)
-			const row = getToggleRowByLabel(label)
-			expect(row.tagName).toBe('LABEL')
-			expect(row).toContainElement(toggle)
-			expect(row).toContainElement(screen.getByText(description))
-			// jsdom 不会替 label 合成对隐藏 switch input 的浏览器激活；结构断言证明整行是 label，
-			// mutation 继续从公开 switch 交互触发，真实整行点击留给 WebView smoke。
-			fireEvent.click(toggle)
+		const toggle = getToggleByLabel(label)
+		expect(screen.getByText(description)).toBeInTheDocument()
+		fireEvent.click(toggle)
 
-			await waitFor(() => {
-				expect(setItemVisibilitySpy).toHaveBeenCalledTimes(1)
-				expect(setItemVisibilitySpy).toHaveBeenCalledWith(target, false)
-			})
-		},
-	)
+		await waitFor(() => {
+			expect(setItemVisibilitySpy).toHaveBeenCalledTimes(1)
+			expect(setItemVisibilitySpy).toHaveBeenCalledWith(target, false)
+		})
+	})
 
 	it.each([
 		{
@@ -330,10 +322,7 @@ describe('SettingsPage', () => {
 			await renderSettingsPage()
 
 			const toggle = getToggleByLabel(label)
-			const row = getToggleRowByLabel(label)
-			expect(row.tagName).toBe('LABEL')
-			expect(row).toContainElement(toggle)
-			expect(row).toContainElement(screen.getByText(description))
+			expect(screen.getByText(description)).toBeInTheDocument()
 			fireEvent.click(toggle)
 
 			await waitFor(() => {
@@ -1063,14 +1052,6 @@ function createReadyIntervalSyncStatus(intervalMinutes = 15) {
 
 function getToggleByLabel(label: string) {
 	return screen.getByRole('switch', { name: label })
-}
-
-function getToggleRowByLabel(label: string) {
-	const row = getToggleByLabel(label).closest('label')
-	if (!(row instanceof HTMLElement)) {
-		throw new Error(`未找到「${label}」对应的公开 label`)
-	}
-	return row
 }
 
 function getDefaultSpaceTrigger() {

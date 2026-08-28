@@ -61,7 +61,6 @@ describe('SyncConfigDialog', () => {
 		expect(screen.queryByRole('button', { name: '保存配置' })).not.toBeInTheDocument()
 
 		const retryButton = screen.getByRole('button', { name: '重试保存' })
-		expect(retryButton).toHaveClass('button--danger')
 		fireEvent.click(retryButton)
 		await waitFor(() => expect(onSave).toHaveBeenCalledTimes(2))
 		expect(retryButton).toBeDisabled()

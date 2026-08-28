@@ -4,7 +4,7 @@ import { Chip } from '@heroui/react'
 import { cn } from '@/shared/lib/utils'
 import { OverflowTooltip } from '@/shared/components/tooltip'
 
-export type MetadataFieldValueProps = {
+type MetadataFieldValueProps = {
 	icon?: ReactNode
 	label: ReactNode
 	ariaLabel?: string

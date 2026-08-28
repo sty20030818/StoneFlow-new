@@ -5,14 +5,14 @@ import type { SettingsSectionKey } from '../contract'
 import type { Scope } from '@/shared/types'
 import { CloudIcon, PanelLeftIcon, SlidersHorizontalIcon, SparklesIcon } from 'lucide-react'
 
-export type SettingsNavItem = {
+type SettingsNavItem = {
 	key: SettingsSectionKey
 	label: string
 	icon: ComponentType<{ className?: string }>
 	to: (scope: Scope, fallbackSpaceId?: string | null) => string
 }
 
-export type SettingsNavGroup = {
+type SettingsNavGroup = {
 	key: string
 	label: string
 	items: SettingsNavItem[]

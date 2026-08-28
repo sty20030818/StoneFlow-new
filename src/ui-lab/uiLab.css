@@ -5,7 +5,7 @@
 
 @media (hover: hover) {
 	[data-ui-lab-task-rows] [data-row-shell]:not([data-selected="true"]):hover {
-		background: var(--default);
+		background: var(--default-hover);
 	}
 }
 
@@ -17,9 +17,4 @@
 	background: transparent;
 	box-shadow: none;
 	outline: none;
-}
-
-/* Invalid 优先于 Focus：StoneFlow 的 1px 字段边框不能在 Danger ring 内继续显示 Accent。 */
-[data-ui-lab-semantic-feedback] [data-slot="input"][data-invalid="true"] {
-	border-color: var(--danger);
 }

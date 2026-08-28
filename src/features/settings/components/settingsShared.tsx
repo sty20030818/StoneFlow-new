@@ -20,8 +20,8 @@ export function SettingsSection({
 			<Card>
 				<Card.Header>
 					<div className='grid gap-1'>
-						<Card.Title className='font-semibold tracking-[-0.01em]'>{title}</Card.Title>
-						<Card.Description className='max-w-3xl text-xs'>{description}</Card.Description>
+						<Card.Title>{title}</Card.Title>
+						<Card.Description className='max-w-3xl'>{description}</Card.Description>
 					</div>
 				</Card.Header>
 				<Card.Content>
@@ -53,7 +53,7 @@ export function SettingsToggleRow({
 			isSelected={isSelected}
 			onChange={onChange}
 		>
-			<CellSwitch.Trigger className='h-auto min-h-11 py-2.5'>
+			<CellSwitch.Trigger>
 				<CellSwitch.Label className='whitespace-normal'>
 					<span className='block text-[13px] font-medium text-foreground'>{label}</span>
 					<span className='mt-0.5 block text-xs font-normal leading-5 text-muted'>

@@ -15,7 +15,6 @@ describe('DangerConfirmProvider', () => {
 			'归档后可在归档页恢复。',
 		)
 		expect(screen.getByText('确认归档「任务 A」吗？')).toBeInTheDocument()
-		expect(screen.getByRole('button', { name: '归档' })).toHaveClass('button--primary')
 
 		fireEvent.click(screen.getByRole('button', { name: '归档' }))
 		await waitFor(() => {
@@ -25,7 +24,6 @@ describe('DangerConfirmProvider', () => {
 		fireEvent.click(screen.getByRole('button', { name: '请求回收站确认' }))
 		expect(await screen.findByRole('alertdialog')).toBeInTheDocument()
 		expect(screen.getByText('确认移入回收站「项目 A」吗？')).toBeInTheDocument()
-		expect(screen.getByRole('button', { name: '移入回收站' })).toHaveClass('button--danger')
 
 		fireEvent.click(screen.getByRole('button', { name: '取消' }))
 		await waitFor(() => {

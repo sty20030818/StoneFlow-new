@@ -37,11 +37,6 @@ export type TaskDisplayComparatorContext = {
 	pageKey: TaskDisplayPageKey
 }
 
-export type TaskDisplayGroupingContext = {
-	pageKey: TaskDisplayPageKey
-	includeEmptySections: boolean
-}
-
 export type TaskDateBucketKey = 'overdue' | 'today' | 'tomorrow' | 'this-week' | 'later' | 'none'
 
 export type TaskDisplayStatusRank = Record<TaskStatus, number>

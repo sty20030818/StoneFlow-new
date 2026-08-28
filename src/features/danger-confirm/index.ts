@@ -9,8 +9,6 @@
 
 /** 确认文案与请求类型（纯 model）。 */
 export {
-	type DangerConfirmIntent,
-	type DangerConfirmEntityType,
 	type DangerConfirmRequest,
 	type DangerConfirmCopy,
 	buildDangerConfirmCopy,
@@ -18,6 +16,3 @@ export {
 
 /** Provider + `useDangerConfirm()`（runtime）。 */
 export { DangerConfirmProvider, useDangerConfirm } from './runtime/DangerConfirmProvider'
-
-/** 确认对话框 UI（通常由 Provider 内部挂载；测试可直接用）。 */
-export { DangerConfirmDialog } from './components/DangerConfirmDialog'

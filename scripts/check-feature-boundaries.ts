@@ -660,7 +660,8 @@ function scanCssVisualOwnership(file: BoundarySource) {
 	const sharedSelector =
 		/^\s*(?:\[data-theme[^\]]*\]|\.checkbox\b|\.breadcrumbs\b|\.sidebar\b|\.list-view\b|\[data-row-shell(?:[^\]]*)?\])/gm
 	const sharedToken = /^\s*--(?!ui-lab-)[\w-]+\s*:/gm
-	for (const pattern of [sharedSelector, sharedToken]) {
+	const herouiSlotSelector = /^[^{\n]*\[data-slot(?:[^\]]*)?\][^{\n]*\{/gm
+	for (const pattern of [sharedSelector, sharedToken, herouiSlotSelector]) {
 		for (const match of file.source.matchAll(pattern)) {
 			const start = match.index ?? 0
 			violations.push({

@@ -208,6 +208,9 @@ export function VisualDebt() {
 [data-ui-lab-task-rows] [data-row-shell] {
 	background: var(--default);
 }
+[data-ui-lab-semantic-feedback] [data-slot="input"] {
+	border-color: var(--danger);
+}
 `,
 			},
 			{
@@ -219,6 +222,7 @@ export function VisualDebt() {
 		expect(violations.map(({ path, ruleId }) => ({ path, ruleId }))).toEqual([
 			{ path: 'src/ui-lab/uiLab.css', ruleId: 'visual-token-bypass' },
 			{ path: 'src/ui-lab/uiLab.css', ruleId: 'visual-token-bypass' },
+			{ path: 'src/ui-lab/uiLab.css', ruleId: 'ui-lab-shared-recipe' },
 			{ path: 'src/ui-lab/uiLab.css', ruleId: 'ui-lab-shared-recipe' },
 			{ path: 'src/ui-lab/uiLab.css', ruleId: 'ui-lab-shared-recipe' },
 			{ path: 'src/ui-lab/uiLab.css', ruleId: 'ui-lab-shared-recipe' },

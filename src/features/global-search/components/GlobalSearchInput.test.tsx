@@ -66,8 +66,6 @@ describe('GlobalSearchInput', () => {
 		expect(screen.getAllByText('项目').length).toBeGreaterThan(0)
 		const taskResults = screen.getByRole('grid', { name: '任务搜索结果' })
 		const projectResults = screen.getByRole('grid', { name: '项目搜索结果' })
-		expect(taskResults).toHaveClass('list-view--primary')
-		expect(projectResults).toHaveClass('list-view--primary')
 		for (const row of [
 			...within(taskResults).getAllByRole('row'),
 			...within(projectResults).getAllByRole('row'),

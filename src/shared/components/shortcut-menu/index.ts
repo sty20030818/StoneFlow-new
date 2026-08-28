@@ -1,6 +1,2 @@
-export {
-	buildDigitShortcutMap,
-	type DigitShortcutMapItem,
-	type ShortcutMenuItem,
-} from './buildDigitShortcutMap'
-export { ShortcutDigitSelectLayer, useShortcutDigitSelect } from './useShortcutDigitSelect'
+export { buildDigitShortcutMap, type ShortcutMenuItem } from './buildDigitShortcutMap'
+export { ShortcutDigitSelectLayer } from './useShortcutDigitSelect'

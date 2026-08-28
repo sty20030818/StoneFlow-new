@@ -3,7 +3,7 @@
  * DisplayOptionsButton 订阅；无订阅时事件被忽略。
  */
 
-export type DisplayUiEvent = { type: 'open-menu' }
+type DisplayUiEvent = { type: 'open-menu' }
 
 type Listener = (event: DisplayUiEvent) => void
 

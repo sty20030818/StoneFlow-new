@@ -34,7 +34,7 @@ export type MetadataCommandShortcut = {
 	scope: KeybindingScope
 }
 
-export type MetadataFieldDropdownProps<TValue> = {
+type MetadataFieldDropdownProps<TValue> = {
 	fieldKey?: MetadataFieldKey
 	label: string
 	value: TValue

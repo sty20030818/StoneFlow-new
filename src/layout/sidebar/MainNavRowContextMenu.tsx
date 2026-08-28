@@ -14,7 +14,7 @@ type FooterCustomizeItem = {
 	icon: React.ComponentType<{ className?: string }>
 }
 
-export type MainNavRowContextMenuProps = {
+type MainNavRowContextMenuProps = {
 	itemKey: SidebarMainItemKey
 	navItems: MainNavItemViewModel[]
 	footerItems: FooterCustomizeItem[]

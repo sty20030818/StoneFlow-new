@@ -5,7 +5,7 @@
 **日期:** 2026-08-28  
 **长期门禁:** [ADR-0003](../../../Documents/01-架构/adr/ADR-0003-ui-lab-review-and-product-migration-gate.md)
 
-2026-08-28，八批可在 Lab 内审查的项目均已由用户人工验证完成；Main / Launcher 继续作为真实应用外部验收项，不记为 Lab 已通过。生产迁移已转交[StoneFlow UI Lab 目标生产迁移](../../ui-system-production-migration/spec.md)。
+2026-08-28，八批可在 Lab 内审查的项目均已由用户人工验证完成；Main / Launcher 继续作为真实应用外部验收项，不记为 Lab 已通过。[StoneFlow UI Lab 目标生产迁移](../ui-system-production-migration/spec.md)已完成并归档。
 
 ## 1. 文档职责
 
@@ -325,7 +325,7 @@
 6. **反馈与 Overlay：** Empty/Error/Retry、异步反馈、Toast 生命周期，以及 Tooltip、Menu、Context Menu、Modal、AlertDialog、Sheet 的共享配方与焦点恢复。
 7. **真实应用验收与清理：** Main / Launcher、macOS/Windows WebView、窗口断点、缩放与跨窗口一致性；验收后删除旧自实现、重复 recipe 与兼容路径。
 
-正式范围、实施顺序、排除项和验证合同由[生产迁移规格](../../ui-system-production-migration/spec.md)继续维护。每个迁移切片必须审计真实消费者，在共同 Owner 处 hard cut，删除旧路径与兼容代码，并运行与风险相称的聚焦测试、类型/Lint/边界/格式检查；真实应用 smoke 继续由既有统一产品验收工作包负责。
+正式范围、实施顺序、排除项和验证合同已由[生产迁移规格](../ui-system-production-migration/spec.md)完成并归档。各迁移切片均已审计真实消费者，在共同 Owner 处 hard cut，删除旧路径与兼容代码，并运行与风险相称的聚焦测试、类型/Lint/边界/格式检查；真实应用 smoke 继续由既有统一产品验收工作包负责。
 
 ## 12. 明确不做
 

@@ -5,7 +5,7 @@ import { TargetIcon } from 'lucide-react'
 
 import { SidebarNavRow } from './SidebarNavRow'
 
-export type StandaloneNavMenuItemProps = {
+type StandaloneNavMenuItemProps = {
 	badge?: string
 	currentScope: Scope
 	fallbackSpaceId: string | null

@@ -1,4 +1,3 @@
-export { SIDEBAR_ENTITY_SELECTOR } from './constants'
 export { MainNavSidebarMenuItem } from './MainNavSidebarMenuItem'
 export { StandaloneNavMenuItem } from './StandaloneNavMenuItem'
 export { ProjectNavMenuItem } from './ProjectNavMenuItem'

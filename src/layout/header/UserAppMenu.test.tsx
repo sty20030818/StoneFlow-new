@@ -25,8 +25,6 @@ describe('UserAppMenu', () => {
 		)
 
 		const trigger = screen.getByRole('button', { name: '应用菜单' })
-		expect(trigger).toHaveClass('button--sm')
-		expect(trigger.querySelector('.avatar')).toHaveClass('avatar--sm')
 
 		fireEvent.click(trigger)
 

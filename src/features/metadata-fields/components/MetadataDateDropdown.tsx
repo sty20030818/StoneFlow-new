@@ -15,7 +15,7 @@ import { useDialogStore } from '@/features/shell-dialogs'
 
 import { MetadataFieldDropdown, type MetadataCommandShortcut } from './MetadataFieldDropdown'
 
-export type MetadataDateDropdownProps = {
+type MetadataDateDropdownProps = {
 	label: string
 	value: string | null | undefined
 	icon: ReactNode

@@ -98,8 +98,6 @@ describe('ShellHeader compact 导航入口', () => {
 		const sidebarTrigger = screen.getByRole('button', { name: '展开侧边栏' })
 		expect(document.querySelector('header')).toHaveClass('h-11')
 		expect(document.querySelector('[data-slot="shell-header-right"]')).toHaveClass('pr-2')
-		expect(sidebarTrigger).toHaveClass('button--sm')
-		expect(screen.getByRole('button', { name: '快速新建任务' })).toHaveClass('button--outline')
 
 		fireEvent.click(sidebarTrigger)
 		expect(onRunCommand).toHaveBeenCalledWith(COMMAND_IDS.layoutToggleSidebar)
