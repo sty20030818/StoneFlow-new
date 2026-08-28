@@ -245,6 +245,20 @@ describe('SettingsPage', () => {
 		expect(screen.queryByText('设置功能建设中')).not.toBeInTheDocument()
 	})
 
+	it('设置路径复用共享面包屑，只有祖先页可导航', async () => {
+		mockSettingsSection = 'sidebar'
+		await renderSettingsPage()
+
+		expect(screen.getByRole('link', { name: '设置' })).toHaveAttribute(
+			'href',
+			'/all/settings/general',
+		)
+		const current = screen.getByText('侧边栏').closest('[aria-current="page"]')
+		expect(current).toHaveAttribute('aria-current', 'page')
+		expect(current).not.toHaveAttribute('role')
+		expect(screen.getAllByRole('link')).toHaveLength(1)
+	})
+
 	it.each([
 		{
 			label: '所有任务',

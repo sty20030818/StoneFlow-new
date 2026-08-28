@@ -1,4 +1,4 @@
-import { act, fireEvent, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { vi } from 'vitest'
 
@@ -64,10 +64,23 @@ describe('GlobalSearchInput', () => {
 
 		expect((await screen.findAllByText('任务')).length).toBeGreaterThan(0)
 		expect(screen.getAllByText('项目').length).toBeGreaterThan(0)
-		expect(screen.getByRole('grid', { name: '任务搜索结果' })).toBeInTheDocument()
-		expect(screen.getByRole('grid', { name: '项目搜索结果' })).toBeInTheDocument()
-		expect(screen.getByText('独立事项')).toBeInTheDocument()
+		const taskResults = screen.getByRole('grid', { name: '任务搜索结果' })
+		const projectResults = screen.getByRole('grid', { name: '项目搜索结果' })
+		expect(taskResults).toHaveClass('list-view--primary')
+		expect(projectResults).toHaveClass('list-view--primary')
+		for (const row of [
+			...within(taskResults).getAllByRole('row'),
+			...within(projectResults).getAllByRole('row'),
+		]) {
+			expect(row).not.toHaveAttribute('aria-selected')
+		}
+		expect(within(taskResults).getByRole('row', { name: '打开任务 独立事项任务' })).toHaveAttribute(
+			'aria-current',
+			'true',
+		)
+		expect(screen.getByText('独立事项 · 工作')).toBeInTheDocument()
 		expect(screen.getAllByText('工作').length).toBeGreaterThan(0)
+		expect(screen.getAllByText('5/9').length).toBeGreaterThan(0)
 	})
 
 	it('刷新查询时保留旧结果并静默刷新', async () => {
@@ -169,10 +182,17 @@ describe('GlobalSearchInput', () => {
 		const input = screen.getByLabelText('全局搜索')
 		fireEvent.change(input, { target: { value: '任务' } })
 		await flushSearch(1)
+		const [firstRow, secondRow] = screen.getAllByRole('row')
+		expect(firstRow).toHaveAttribute('aria-current', 'true')
+		expect(secondRow).not.toHaveAttribute('aria-current')
 
 		fireEvent.keyDown(input, { key: 'ArrowDown' })
 
 		expect(HTMLElement.prototype.scrollIntoView).toHaveBeenCalled()
+		await waitFor(() => {
+			expect(firstRow).not.toHaveAttribute('aria-current')
+			expect(secondRow).toHaveAttribute('aria-current', 'true')
+		})
 	})
 })
 

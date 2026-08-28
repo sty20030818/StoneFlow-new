@@ -69,7 +69,7 @@ function BreadcrumbNodeItem({
 		</>
 	)
 	const className = cn(
-		'breadcrumbs__link inline-flex h-5 items-center gap-1 leading-5',
+		'breadcrumbs__link inline-flex items-center gap-1',
 		truncate ? 'min-w-0 max-w-full' : null,
 		isCurrent ? 'font-semibold' : null,
 	)
@@ -80,10 +80,8 @@ function BreadcrumbNodeItem({
 			{isCurrent || !to ? (
 				<span
 					aria-current={isCurrent ? 'page' : undefined}
-					aria-disabled={isCurrent ? true : undefined}
 					className={className}
 					data-current={isCurrent}
-					role={isCurrent ? 'link' : undefined}
 				>
 					{content}
 				</span>

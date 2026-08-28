@@ -41,11 +41,7 @@ export type MetadataPlacementDropdownProps = {
 	onChange: (value: TaskPlacementTarget) => void
 }
 
-export function MetadataPlacementDropdown(props: MetadataPlacementDropdownProps) {
-	return <GroupedPlacementDropdown {...props} />
-}
-
-function GroupedPlacementDropdown({
+export function MetadataPlacementDropdown({
 	label,
 	value,
 	values,

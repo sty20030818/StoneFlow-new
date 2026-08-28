@@ -42,10 +42,10 @@ export function SyncConfigDialog({
 		if (busy || configIncomplete) return
 
 		setSaving(true)
-		setError(null)
 		try {
 			await onSave({ databaseUrl: databaseUrl.trim() })
 			// 保存成功立刻关窗，不把后续状态刷新绑在弹窗上。
+			setError(null)
 			onClose()
 		} catch (saveError) {
 			setError(normalizeTauriError(saveError, '同步配置保存失败'))
@@ -121,6 +121,16 @@ export function SyncConfigDialog({
 											<Alert.Title>保存失败</Alert.Title>
 											<Alert.Description>{error}</Alert.Description>
 										</Alert.Content>
+										<Button
+											isDisabled={busy || configIncomplete}
+											isPending={busy}
+											onPress={() => void handleSave()}
+											size='sm'
+											type='button'
+											variant='danger'
+										>
+											{busy ? '重试中...' : '重试保存'}
+										</Button>
 									</Alert>
 								) : null}
 							</>
@@ -131,7 +141,7 @@ export function SyncConfigDialog({
 						<Button isDisabled={busy} onPress={onClose} type='button' variant='ghost'>
 							{environmentManaged ? '关闭' : '取消'}
 						</Button>
-						{!environmentManaged ? (
+						{!environmentManaged && !error ? (
 							<Button
 								isDisabled={busy || configIncomplete}
 								onPress={() => void handleSave()}

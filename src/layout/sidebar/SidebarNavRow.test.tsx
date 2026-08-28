@@ -54,7 +54,9 @@ describe('SidebarNavRow', () => {
 		fireEvent.contextMenu(label)
 
 		expect(await screen.findByRole('menuitem', { name: '归档' })).toBeInTheDocument()
-		expect(label.closest('[data-open="true"]')).toBeInTheDocument()
+		const trigger = label.closest('[data-open="true"]')
+		expect(trigger).toBeInTheDocument()
+		expect(trigger).not.toHaveAttribute('tabindex')
 	})
 
 	it('项目路由随 Space 变化时仍以项目 id 保持 collection item 身份', async () => {

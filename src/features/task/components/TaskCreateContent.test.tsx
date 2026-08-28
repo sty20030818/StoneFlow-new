@@ -46,6 +46,28 @@ describe('TaskCreateContent', () => {
 		expect(openPageMock).not.toHaveBeenCalled()
 	})
 
+	it('Metadata 选择继续写入同一任务创建合同', async () => {
+		renderTaskCreate()
+
+		fireEvent.change(screen.getByPlaceholderText('任务标题'), { target: { value: '项目任务' } })
+		fireEvent.click(screen.getByRole('button', { name: '状态' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /进行中/ }))
+		fireEvent.click(screen.getByRole('button', { name: '优先级' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /^高/ }))
+		fireEvent.click(screen.getByRole('button', { name: '归属' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /项目 A/ }))
+		fireEvent.click(screen.getByRole('button', { name: '创建任务' }))
+
+		await waitFor(() => expect(createTaskMock).toHaveBeenCalledTimes(1))
+		expect(createTaskMock).toHaveBeenCalledWith(
+			expect.objectContaining({
+				placement: { kind: 'project', projectId: 'project-a' },
+				priority: 3,
+				status: 'doing',
+			}),
+		)
+	})
+
 	it('continue 进入下一条，open 关闭弹窗并打开刚创建任务', async () => {
 		const onClose = vi.fn()
 		renderTaskCreate({ onClose, withActions: true })

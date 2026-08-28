@@ -9,6 +9,25 @@ import type { TaskDetailDraft } from '../model/taskDetailDraft'
 import { TaskPropertiesSection } from './TaskPropertiesSection'
 
 describe('TaskPropertiesSection', () => {
+	it('属性菜单选择后继续使用 immediate autosave 合同', async () => {
+		const autosave = createAutosaveController()
+
+		render(
+			<TaskPropertiesSection
+				autosave={autosave}
+				projects={createProjects()}
+				spaces={createSpaces()}
+			/>,
+		)
+
+		fireEvent.click(screen.getByRole('button', { name: '状态' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /进行中/ }))
+
+		expect(autosave.setField).toHaveBeenCalledWith('status', 'doing', {
+			saveMode: 'immediate',
+		})
+	})
+
 	it('跨 space 选择项目时立即提交归属变更', async () => {
 		const autosave = createAutosaveController()
 

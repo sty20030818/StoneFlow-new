@@ -36,6 +36,7 @@ describe('metadata-fields', () => {
 		fireEvent.keyDown(window, { key: '1' })
 
 		expect(onChange).toHaveBeenCalledWith(2)
+		await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument())
 	})
 
 	it('禁用字段保留上下文名称，并向键盘用户说明原因', async () => {

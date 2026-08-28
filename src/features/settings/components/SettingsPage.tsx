@@ -1,8 +1,7 @@
 import { useEffect } from 'react'
-import { Breadcrumbs } from '@heroui/react'
 import { Settings2Icon } from 'lucide-react'
 
-import { useCurrentShellRoute } from '@/app/navigation'
+import { openSettings, resolveShellRouteScope, useCurrentShellRoute } from '@/app/navigation'
 import {
 	getSettingsSectionLabel,
 	DEFAULT_SETTINGS_SECTION,
@@ -14,6 +13,7 @@ import { SettingsSidebarPanel } from './panels/SettingsSidebarPanel'
 import { SettingsSyncPanel } from './panels/SettingsSyncPanel'
 import { SettingsSection, SettingsStack } from './settingsShared'
 import { UpdateSettingsSection } from '@/features/update'
+import { AppBreadcrumb } from '@/shared/components/AppBreadcrumb'
 import { PageFrame } from '@/shared/components/page-frame'
 
 function resolveActiveSection(section: SettingsSectionKey | null | undefined): SettingsSectionKey {
@@ -66,15 +66,21 @@ export function SettingsPage() {
 		<PageFrame.Root>
 			<PageFrame.Header
 				breadcrumb={
-					<Breadcrumbs aria-label='设置路径'>
-						<Breadcrumbs.Item>
-							<span className='inline-flex items-center gap-1.5 text-foreground'>
-								<Settings2Icon aria-hidden className='size-4 shrink-0 text-muted' />
-								设置
-							</span>
-						</Breadcrumbs.Item>
-						<Breadcrumbs.Item>{sectionLabel}</Breadcrumbs.Item>
-					</Breadcrumbs>
+					<AppBreadcrumb
+						items={[
+							{
+								key: 'settings',
+								label: '设置',
+								icon: Settings2Icon,
+								to: openSettings(resolveShellRouteScope(shellRoute), 'general', shellRoute.spaceId),
+							},
+							{
+								key: `settings:${section}`,
+								label: sectionLabel,
+								current: true,
+							},
+						]}
+					/>
 				}
 			/>
 			<PageFrame.Body>

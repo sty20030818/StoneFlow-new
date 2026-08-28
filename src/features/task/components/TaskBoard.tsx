@@ -63,7 +63,7 @@ const TASK_BOARD_SELECTION_GROUP_POSITION_CLASS: Record<RowSelectionGroupPositio
 }
 
 const TASK_BOARD_SECTION_HEADER_CLASS =
-	'relative z-10 flex items-center gap-2 rounded-md bg-surface-secondary pl-3 pr-1'
+	'relative z-10 flex items-center gap-2 rounded-md bg-default pl-3 pr-1'
 
 export type TaskBoardProps = {
 	tasks: TaskListItem[]
@@ -738,7 +738,7 @@ export function TaskBoard({
 							) : (
 								<div
 									className={cn(
-										selectionGroupPosition && 'overflow-hidden bg-default',
+										selectionGroupPosition && 'overflow-hidden bg-accent-soft',
 										selectionGroupPosition &&
 											TASK_BOARD_SELECTION_GROUP_POSITION_CLASS[selectionGroupPosition],
 									)}

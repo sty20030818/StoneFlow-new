@@ -76,7 +76,7 @@ vi.mock('@/features/task/components/TaskRowAdapter', () => ({
 }))
 
 describe('TaskBoard', () => {
-	it('状态分组标题保持次级表面与圆角', () => {
+	it('状态分组标题使用批准的中性默认表面与圆角', () => {
 		const { container } = renderTaskBoard(
 			<TaskBoardHarness
 				onEmptyAction={() => undefined}
@@ -92,7 +92,7 @@ describe('TaskBoard', () => {
 		const sectionHeaders = container.querySelectorAll('[data-board-section-header="true"]')
 		expect(sectionHeaders.length).toBeGreaterThan(0)
 		for (const sectionHeader of sectionHeaders) {
-			expect(sectionHeader).toHaveClass('rounded-md', 'bg-surface-secondary')
+			expect(sectionHeader).toHaveClass('rounded-md', 'bg-default')
 			expect(sectionHeader).toHaveStyle({ height: '36px' })
 		}
 	})
@@ -116,11 +116,11 @@ describe('TaskBoard', () => {
 		)
 
 		expect(screen.getByRole('row', { name: '打开任务 任务 A' }).parentElement).toHaveClass(
-			'bg-default',
+			'bg-accent-soft',
 			'rounded-t-lg',
 		)
 		expect(screen.getByRole('row', { name: '打开任务 任务 B' }).parentElement).toHaveClass(
-			'bg-default',
+			'bg-accent-soft',
 			'rounded-b-lg',
 		)
 	})

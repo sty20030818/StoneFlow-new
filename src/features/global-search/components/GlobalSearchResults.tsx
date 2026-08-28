@@ -4,6 +4,7 @@ import { ListView } from '@heroui-pro/react'
 import { Surface } from '@heroui/react'
 
 import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
+import { formatShortDate } from '@/shared/lib/date'
 import { cn } from '@/shared/lib/utils'
 import {
 	formatTaskPriorityLabel,
@@ -11,7 +12,6 @@ import {
 	PriorityIcon,
 	TaskStatusIndicator,
 } from '@/features/task'
-import { OverflowTooltip } from '@/shared/components/tooltip'
 import { FolderIcon, SearchIcon } from 'lucide-react'
 
 type GlobalSearchResultsProps = {
@@ -62,7 +62,7 @@ export function GlobalSearchResults({
 						{taskItems.length > 0 ? (
 							<section className='space-y-1'>
 								<SearchGroupHeading title='任务' />
-								<ListView aria-label='任务搜索结果' variant='secondary'>
+								<ListView aria-label='任务搜索结果' selectionMode='none' variant='primary'>
 									{taskItems.map(({ index, item }) => (
 										<SearchTaskResultRow
 											isActive={highlightedIndex === index}
@@ -80,7 +80,7 @@ export function GlobalSearchResults({
 						{projectItems.length > 0 ? (
 							<section className='space-y-1'>
 								<SearchGroupHeading title='项目' />
-								<ListView aria-label='项目搜索结果' variant='secondary'>
+								<ListView aria-label='项目搜索结果' selectionMode='none' variant='primary'>
 									{projectItems.map(({ index, item }) => (
 										<SearchProjectResultRow
 											isActive={highlightedIndex === index}
@@ -120,13 +120,16 @@ function SearchTaskResultRow({
 
 	return (
 		<ListView.Item
-			aria-current={isActive ? 'true' : undefined}
 			aria-label={`打开任务 ${task.title}`}
-			className='w-full'
 			data-search-index={taskIndex}
 			id={`task:${task.id}`}
 			onAction={onSelect}
 			onHoverStart={onHighlight}
+			ref={(element) => {
+				// 当前锁定的 React Aria GridListItem 会过滤 aria-current，写到真实 row 保留外部高亮语义。
+				if (isActive) element?.setAttribute('aria-current', 'true')
+				else element?.removeAttribute('aria-current')
+			}}
 			textValue={task.title}
 		>
 			<ListView.ItemContent>
@@ -142,15 +145,20 @@ function SearchTaskResultRow({
 				>
 					<TaskStatusIndicator status={task.status} />
 				</span>
-				<div className='min-w-0 flex-1'>
-					<OverflowTooltip className='text-[13px] font-medium text-foreground' content={task.title}>
-						{task.title}
-					</OverflowTooltip>
+				<div className='flex min-w-0 flex-1 flex-col gap-1'>
+					<ListView.Title>{task.title}</ListView.Title>
+					<ListView.Description>
+						{placementLabel} · {task.spaceName}
+					</ListView.Description>
 				</div>
 			</ListView.ItemContent>
-			<ListView.ItemAction className='hidden shrink-0 md:flex'>
-				<ContextPill label={placementLabel} />
-				<ContextPill label={task.spaceName} />
+			<ListView.ItemAction>
+				<time
+					className='whitespace-nowrap text-xs tabular-nums text-muted'
+					dateTime={task.updatedAt}
+				>
+					{formatShortDate(task.updatedAt)}
+				</time>
 			</ListView.ItemAction>
 		</ListView.Item>
 	)
@@ -173,31 +181,35 @@ function SearchProjectResultRow({
 }: SearchProjectResultRowProps) {
 	return (
 		<ListView.Item
-			aria-current={isActive ? 'true' : undefined}
 			aria-label={`打开项目 ${project.name}`}
-			className='w-full'
 			data-search-index={projectIndex}
 			id={`project:${project.id}`}
 			onAction={onSelect}
 			onHoverStart={onHighlight}
+			ref={(element) => {
+				if (isActive) element?.setAttribute('aria-current', 'true')
+				else element?.removeAttribute('aria-current')
+			}}
 			textValue={project.name}
 		>
 			<ListView.ItemContent>
 				<span className='flex shrink-0 items-center justify-center text-muted'>
 					<FolderIcon className='size-3.5' />
 				</span>
-				<div className='min-w-0 flex-1'>
-					<OverflowTooltip
-						className='text-[13px] font-medium text-foreground'
-						content={project.name}
-					>
-						{project.name}
-					</OverflowTooltip>
+				<div className='flex min-w-0 flex-1 flex-col gap-1'>
+					<ListView.Title>{project.name}</ListView.Title>
+					<ListView.Description>
+						{project.completedAt ? `已完成 · ${project.spaceName}` : project.spaceName}
+					</ListView.Description>
 				</div>
 			</ListView.ItemContent>
-			<ListView.ItemAction className='hidden shrink-0 md:flex'>
-				{project.completedAt ? <ContextPill label='已完成' /> : null}
-				<ContextPill label={project.spaceName} />
+			<ListView.ItemAction>
+				<time
+					className='whitespace-nowrap text-xs tabular-nums text-muted'
+					dateTime={project.updatedAt}
+				>
+					{formatShortDate(project.updatedAt)}
+				</time>
 			</ListView.ItemAction>
 		</ListView.Item>
 	)
@@ -224,16 +236,5 @@ function SearchPanelState({ label, tone = 'muted' }: { label: string; tone?: 'mu
 				<span>{label}</span>
 			</div>
 		</Surface>
-	)
-}
-
-function ContextPill({ label }: { label: string }) {
-	return (
-		<OverflowTooltip
-			className='inline-flex max-w-36 items-center rounded-md bg-surface-secondary px-2 py-1 text-[11px] font-medium text-muted'
-			content={label}
-		>
-			{label}
-		</OverflowTooltip>
 	)
 }

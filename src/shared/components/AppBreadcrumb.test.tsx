@@ -6,7 +6,7 @@ import { renderWithRouterContext } from '@/test/renderWithRouter'
 import { AppBreadcrumb } from './AppBreadcrumb'
 
 describe('AppBreadcrumb', () => {
-	it('可点击节点渲染为 link，当前节点带 aria-current', async () => {
+	it('只有祖先节点可聚焦，当前节点只保留 aria-current', async () => {
 		await renderWithRouterContext(
 			<AppBreadcrumb
 				items={[
@@ -20,6 +20,7 @@ describe('AppBreadcrumb', () => {
 						key: 'project',
 						label: '项目 A',
 						current: true,
+						to: '/space-1/project/project-a',
 					},
 				]}
 			/>,
@@ -29,9 +30,10 @@ describe('AppBreadcrumb', () => {
 			'href',
 			'/space-1/projects',
 		)
-		expect(screen.getByText('项目 A').closest('[aria-current="page"]')).toHaveAttribute(
-			'aria-current',
-			'page',
-		)
+		const current = screen.getByText('项目 A').closest('[aria-current="page"]')
+		expect(screen.getAllByRole('link')).toHaveLength(1)
+		expect(current).toHaveAttribute('aria-current', 'page')
+		expect(current).not.toHaveAttribute('role')
+		expect(current).not.toHaveAttribute('tabindex')
 	})
 })

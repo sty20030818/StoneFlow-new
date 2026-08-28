@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react'
+import { act, fireEvent, screen } from '@testing-library/react'
 import { Sidebar } from '@heroui-pro/react'
 
 import { SettingsSidebar } from './SettingsSidebar'
@@ -36,6 +36,19 @@ describe('SettingsSidebar', () => {
 		fireEvent.click(screen.getByRole('row', { name: '更新' }))
 
 		expect(await screen.findByTestId('location')).toHaveTextContent('/all/settings/update')
+	})
+
+	it('方向键在真实导航行之间移动焦点', async () => {
+		await renderSettingsSidebar('sync')
+
+		const sync = screen.getByRole('row', { name: '云同步' })
+		const update = screen.getByRole('row', { name: '更新' })
+		act(() => {
+			sync.focus()
+			fireEvent.keyDown(sync, { key: 'ArrowDown' })
+		})
+
+		expect(update).toHaveFocus()
 	})
 })
 
