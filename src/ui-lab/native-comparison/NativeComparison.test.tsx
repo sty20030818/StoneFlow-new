@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 
-import { NativeComparison } from './NativeComparison'
+import { NativeComparison, NativeComparisonFixture } from './NativeComparison'
 import {
 	currentNativeComparisonAccent,
 	nativeComparisonUrl,
@@ -13,6 +13,12 @@ describe('NativeComparison', () => {
 			ok: true,
 			value: { mode: 'token', fixture: 'button', accent: 'ocean' },
 		})
+		expect(
+			parseNativeComparisonQuery('?mode=token&fixture=oss-actions&accent=ocean'),
+		).toMatchObject({
+			ok: true,
+			value: { fixture: 'oss-actions' },
+		})
 		expect(parseNativeComparisonQuery('?mode=current&fixture=button')).toMatchObject({ ok: false })
 		expect(parseNativeComparisonQuery('?mode=upstream&fixture=modal')).toMatchObject({ ok: false })
 		expect(parseNativeComparisonQuery('?mode=token&fixture=tooltip&accent=unknown')).toMatchObject({
@@ -22,6 +28,17 @@ describe('NativeComparison', () => {
 		expect(nativeComparisonUrl({ mode: 'upstream', fixture: 'tooltip', accent: 'plum' })).toBe(
 			'/ui-lab-baseline.html?mode=upstream&fixture=tooltip&accent=plum',
 		)
+	})
+
+	it('第九批复用真实 SearchField 语义与 NumberField 步进行为', () => {
+		const { rerender } = render(<NativeComparisonFixture fixture='oss-search-field' />)
+		expect(screen.getByRole('searchbox', { name: 'Global Search' })).toBeInTheDocument()
+		expect(screen.getByRole('searchbox', { name: 'Filter' })).toBeInTheDocument()
+
+		rerender(<NativeComparisonFixture fixture='oss-number-field' />)
+		const interval = screen.getByRole('textbox', { name: '同步间隔（分钟）' })
+		fireEvent.click(screen.getByRole('button', { name: /增加同步间隔/ }))
+		expect(interval).toHaveValue('16')
 	})
 
 	it('用两个具名 iframe 隔离 Upstream 与 Token，并只在父文档挂载一个 Current fixture', () => {

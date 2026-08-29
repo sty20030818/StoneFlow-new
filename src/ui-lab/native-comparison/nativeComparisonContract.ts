@@ -1,7 +1,20 @@
 import { ACCENT_PRESETS, DEFAULT_ACCENT_PRESET } from '@/features/appearance'
 
 export type NativeComparisonMode = 'upstream' | 'token'
-export type NativeComparisonFixtureId = 'button' | 'tooltip'
+export const NATIVE_COMPARISON_FIXTURE_IDS = [
+	'button',
+	'tooltip',
+	'oss-actions',
+	'oss-text-fields',
+	'oss-search-field',
+	'oss-number-field',
+	'oss-choice-controls',
+	'oss-select-listbox',
+	'oss-combobox-autocomplete',
+	'oss-date-color',
+	'oss-compact-metadata',
+] as const
+export type NativeComparisonFixtureId = (typeof NATIVE_COMPARISON_FIXTURE_IDS)[number]
 export type NativeComparisonAccent = (typeof ACCENT_PRESETS)[number]['id']
 
 export type NativeComparisonQuery = {
@@ -11,7 +24,7 @@ export type NativeComparisonQuery = {
 }
 
 const MODES = new Set<NativeComparisonMode>(['upstream', 'token'])
-const FIXTURES = new Set<NativeComparisonFixtureId>(['button', 'tooltip'])
+const FIXTURES = new Set<string>(NATIVE_COMPARISON_FIXTURE_IDS)
 const ACCENTS = new Set<NativeComparisonAccent>(ACCENT_PRESETS.map(({ id }) => id))
 
 export function parseNativeComparisonQuery(
@@ -25,7 +38,7 @@ export function parseNativeComparisonQuery(
 		return { ok: false, message: '无效 mode；仅支持 upstream 或 token。' }
 	}
 	if (!FIXTURES.has(fixture as NativeComparisonFixtureId)) {
-		return { ok: false, message: '无效 fixture；仅支持 button 或 tooltip。' }
+		return { ok: false, message: '无效 fixture；请选择已登记的原生对照。' }
 	}
 	if (!ACCENTS.has(accent as NativeComparisonAccent)) {
 		return { ok: false, message: '无效 accent；请从 StoneFlow 已登记预设中选择。' }

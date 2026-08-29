@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ComponentType } from 'react'
 
 import { Button, Spinner, Tooltip } from '@heroui/react'
 
@@ -8,11 +8,7 @@ import {
 	type NativeComparisonFixtureId,
 	type NativeComparisonMode,
 } from './nativeComparisonContract'
-
-const FIXTURE_LABELS: Record<NativeComparisonFixtureId, string> = {
-	button: 'Button',
-	tooltip: 'Tooltip',
-}
+import { TICKET_09_NATIVE_FIXTURES } from '../samples/ticket-09/heroUiOssAtomsFormsSamples'
 
 function ButtonFixture() {
 	const [pressed, setPressed] = useState(false)
@@ -63,8 +59,21 @@ function TooltipFixture() {
 	)
 }
 
+const NATIVE_COMPARISON_FIXTURES = {
+	button: { label: 'Button', Preview: ButtonFixture },
+	tooltip: { label: 'Tooltip', Preview: TooltipFixture },
+	...TICKET_09_NATIVE_FIXTURES,
+} satisfies Record<NativeComparisonFixtureId, { label: string; Preview: ComponentType }>
+const TALL_FIXTURES = new Set<NativeComparisonFixtureId>([
+	'oss-text-fields',
+	'oss-select-listbox',
+	'oss-combobox-autocomplete',
+	'oss-date-color',
+])
+
 export function NativeComparisonFixture({ fixture }: { fixture: NativeComparisonFixtureId }) {
-	return fixture === 'button' ? <ButtonFixture /> : <TooltipFixture />
+	const Preview = NATIVE_COMPARISON_FIXTURES[fixture].Preview
+	return <Preview />
 }
 
 function BaselineFrame({
@@ -77,6 +86,8 @@ function BaselineFrame({
 	const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
 	const label = mode === 'upstream' ? 'Upstream' : 'Token'
 	const accent = currentNativeComparisonAccent(document.documentElement.dataset.accent)
+	const fixtureLabel = NATIVE_COMPARISON_FIXTURES[fixture].label
+	const isTall = TALL_FIXTURES.has(fixture)
 	const src = nativeComparisonUrl({ mode, fixture, accent })
 	return (
 		<article aria-label={`${label} 对照`} className='min-w-0 rounded-lg border border-separator'>
@@ -88,13 +99,17 @@ function BaselineFrame({
 						: '官方 CSS + StoneFlow fonts.css / theme.css'}
 				</p>
 			</header>
-			<div className='relative min-h-72'>
+			<div className={isTall ? 'relative min-h-[36rem]' : 'relative min-h-72'}>
 				<iframe
-					className='h-72 w-full rounded-b-lg bg-background'
+					className={
+						isTall
+							? 'h-[36rem] w-full rounded-b-lg bg-background'
+							: 'h-72 w-full rounded-b-lg bg-background'
+					}
 					onError={() => setStatus('error')}
 					onLoad={() => setStatus('ready')}
 					src={src}
-					title={`${label} · ${FIXTURE_LABELS[fixture]} 隔离对照`}
+					title={`${label} · ${fixtureLabel} 隔离对照`}
 				/>
 				{status === 'loading' ? (
 					<p
@@ -118,6 +133,7 @@ function BaselineFrame({
 }
 
 export function NativeComparison({ fixture }: { fixture: NativeComparisonFixtureId }) {
+	const isTall = TALL_FIXTURES.has(fixture)
 	return (
 		<div className='w-full' data-native-comparison={fixture}>
 			<div className='mb-4 rounded-lg border border-separator bg-surface-secondary p-3 text-sm leading-6'>
@@ -132,7 +148,10 @@ export function NativeComparison({ fixture }: { fixture: NativeComparisonFixture
 						<h3 className='text-sm font-medium'>Current</h3>
 						<p className='mt-1 text-xs text-muted'>生产 styles/index.css</p>
 					</header>
-					<div className='min-h-72 p-4' data-native-comparison-current={fixture}>
+					<div
+						className={isTall ? 'h-[36rem] overflow-y-auto p-4' : 'min-h-72 p-4'}
+						data-native-comparison-current={fixture}
+					>
 						<NativeComparisonFixture fixture={fixture} />
 					</div>
 				</article>

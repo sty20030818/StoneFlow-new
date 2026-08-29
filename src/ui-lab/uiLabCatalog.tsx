@@ -13,6 +13,7 @@ import { TICKET_05_SAMPLES } from './samples/ticket-05/collectionsAndTaskSamples
 import { TICKET_06_SAMPLES } from './samples/ticket-06/feedbackLauncherSamples'
 import { TICKET_07_SAMPLES } from './samples/ticket-07/overlaySamples'
 import { TICKET_08_SAMPLES } from './samples/ticket-08/herouiCandidateSamples'
+import { TICKET_09_SAMPLES } from './samples/ticket-09/heroUiOssAtomsFormsSamples'
 
 export type UiLabViewId = 'stoneflow' | 'heroui'
 export type UiLabCoverage =
@@ -35,6 +36,7 @@ export type UiLabReviewBatchId =
 	| 'batch-06'
 	| 'batch-07'
 	| 'batch-08'
+	| 'batch-09'
 
 export type UiLabReviewEntry = {
 	sampleId: string
@@ -61,6 +63,9 @@ type UiLabCatalogEntryBase = {
 	source: string
 	states: string
 	verification: string
+	inventoryRefs?: readonly string[]
+	recommendedOwner?: string
+	disposition?: UiLabDisposition
 }
 
 export type UiLabReviewUnitInput =
@@ -133,7 +138,7 @@ export const UI_LAB_VIEWS = [
 	},
 ] as const
 
-const UI_LAB_REVIEW_UNITS = [
+const UI_LAB_REVIEW_UNITS: readonly UiLabReviewUnitInput[] = [
 	...TICKET_02_SAMPLES,
 	...TICKET_03_SAMPLES,
 	...TICKET_04_SAMPLES,
@@ -141,6 +146,7 @@ const UI_LAB_REVIEW_UNITS = [
 	...TICKET_06_SAMPLES,
 	...TICKET_07_SAMPLES,
 	...TICKET_08_SAMPLES,
+	...TICKET_09_SAMPLES,
 	{
 		id: 'stoneflow-main-launcher-real-app',
 		name: 'Main / Launcher 原生窗口验收',
@@ -156,7 +162,7 @@ const UI_LAB_REVIEW_UNITS = [
 		reason:
 			'Portal 归属、WebView 激活、窗口断点、缩放与跨窗口一致性依赖真实 Tauri Main / Launcher 窗口，不能在浏览器 UI Lab 中可靠复现。',
 	},
-] satisfies readonly UiLabReviewUnitInput[]
+]
 
 type UiLabLedgerEntry = Extract<UiLabCatalogEntry, { entryKind: 'ledger-only' }>
 
@@ -280,24 +286,42 @@ const REVIEW_UNIT_IDS = new Set(UI_LAB_REVIEW_UNITS.map((entry) => entry.id))
 
 export const UI_LAB_CATALOG: readonly UiLabCatalogEntry[] = [
 	...UI_LAB_REVIEW_UNITS.map((entry) => {
-		const inventory = INVENTORY_BY_ID.get(entry.id)
+		const inventories = (entry.inventoryRefs ?? [entry.id])
+			.map((id) => INVENTORY_BY_ID.get(id))
+			.filter((value): value is UiLabLedgerEntry => Boolean(value))
+		const inventory = inventories[0]
+		const consumers = [...new Set(inventories.flatMap((item) => item.consumers ?? []))]
+		const families = inventories.flatMap((item) => (item.family ? [item.family] : []))
+		const adoption = inventories.some((item) => item.adoption === 'used')
+			? ('used' as const)
+			: inventories.some((item) => item.adoption === 'candidate')
+				? ('candidate' as const)
+				: inventory?.adoption
 		return {
 			...entry,
 			entryKind: 'review-unit' as const,
-			owner: inventory?.owner ?? entry.owner,
-			family: inventory?.family ?? null,
+			owner: entry.owner,
+			family: entry.inventoryRefs
+				? families.length > 0
+					? families.join(' / ')
+					: null
+				: (inventory?.family ?? null),
 			capabilityKind: inventory?.capabilityKind ?? null,
 			sourcePackage: inventory?.sourcePackage ?? null,
 			packageVersion: inventory?.packageVersion ?? null,
-			definitionPath: inventory?.definitionPath ?? null,
-			recommendedOwner: inventory?.recommendedOwner ?? null,
+			definitionPath:
+				entry.inventoryRefs && entry.inventoryRefs.length > 1
+					? null
+					: (inventory?.definitionPath ?? null),
+			recommendedOwner: entry.recommendedOwner ?? inventory?.recommendedOwner ?? null,
 			disposition:
+				entry.disposition ??
 				inventory?.disposition ??
 				(entry.coverage === 'real-app-only' ? ('real-app-only' as const) : null),
-			consumers: inventory?.consumers ?? null,
+			consumers: consumers.length > 0 ? consumers : (inventory?.consumers ?? null),
 			compositionParent: inventory?.compositionParent ?? null,
-			ingredients: inventory?.ingredients ?? null,
-			adoption: inventory?.adoption ?? null,
+			ingredients: entry.inventoryRefs ?? inventory?.ingredients ?? null,
+			adoption: adoption ?? null,
 		}
 	}),
 	...INVENTORY_ENTRIES.filter((entry) => !REVIEW_UNIT_IDS.has(entry.id)),
@@ -420,6 +444,18 @@ export const UI_LAB_REVIEW_BATCHES: readonly UiLabReviewBatch[] = [
 			{ sampleId: 'stoneflow-shell-sidebar-scene', role: 'target', status: 'done' },
 			{ sampleId: 'stoneflow-main-launcher-real-app', role: 'target', status: 'external' },
 		],
+	},
+	{
+		id: 'batch-09',
+		label: '第九批',
+		title: 'HeroUI 原子与表单',
+		objective:
+			'用同一 fixture 核对 OSS 原子、表单与紧凑元数据在 Upstream、Token、Current 三层的归属。',
+		entries: TICKET_09_SAMPLES.map(({ id }) => ({
+			sampleId: id,
+			role: 'target' as const,
+			status: 'pending' as const,
+		})),
 	},
 ]
 

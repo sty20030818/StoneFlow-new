@@ -27,10 +27,21 @@ describe('UiLabApp', () => {
 			),
 		).toBe(true)
 		expect(
-			UI_LAB_REVIEW_BATCHES.every((batch) =>
+			UI_LAB_CATALOG.filter((entry) => entry.entryKind === 'review-unit').every((entry) =>
+				(entry.inventoryRefs ?? []).every((inventoryId) => catalogIds.includes(inventoryId)),
+			),
+		).toBe(true)
+		expect(
+			UI_LAB_REVIEW_BATCHES.slice(0, 8).every((batch) =>
 				batch.entries
 					.filter((entry) => entry.status !== 'external')
 					.every((entry) => entry.status === 'done'),
+			),
+		).toBe(true)
+		expect(UI_LAB_REVIEW_BATCHES.find((batch) => batch.id === 'batch-09')?.entries).toHaveLength(9)
+		expect(
+			UI_LAB_REVIEW_BATCHES.find((batch) => batch.id === 'batch-09')?.entries.every(
+				(entry) => entry.status === 'pending',
 			),
 		).toBe(true)
 		expect(
@@ -38,6 +49,33 @@ describe('UiLabApp', () => {
 				batch.entries.some((entry) => entry.status === 'external'),
 			),
 		).toBe(true)
+	})
+
+	it('第九批从总账派生真实消费者，并保持原生候选与人工审查边界', () => {
+		const searchField = UI_LAB_CATALOG.find(
+			(entry) => entry.id === 'heroui-oss-search-field-review',
+		)
+		const autocomplete = UI_LAB_CATALOG.find(
+			(entry) => entry.id === 'heroui-oss-combobox-autocomplete-review',
+		)
+
+		expect(searchField).toMatchObject({
+			owner: 'Recipe',
+			recommendedOwner: 'Recipe',
+			disposition: 'keep',
+			coverage: 'rendered',
+		})
+		expect(searchField?.consumers).toEqual([
+			'src/features/filter/components/FilterMenu.tsx',
+			'src/features/filter/components/FilterValueSubMenu.tsx',
+			'src/features/global-search/components/GlobalSearchInput.tsx',
+		])
+		expect(autocomplete).toMatchObject({
+			owner: 'Upstream',
+			recommendedOwner: 'Upstream',
+			disposition: 'candidate',
+			consumers: [],
+		})
 	})
 
 	it('完整登记 StoneFlow 与锁定版 HeroUI 能力，且组合链接没有悬空', () => {
@@ -713,6 +751,7 @@ describe('UiLabApp', () => {
 
 		fireEvent.click(screen.getByRole('button', { hidden: true, name: '替换候选' }))
 		expect(screen.queryByRole('dialog', { name: '确认审查范围' })).not.toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: 'HeroUI Autocomplete' }))
 		expect(screen.getByRole('heading', { name: 'HeroUI Autocomplete' })).toBeInTheDocument()
 		expect(within(preview).getByText('未在 UI Lab 渲染')).toBeInTheDocument()
 		expect(screen.getByText('候选（尚未批准）')).toBeInTheDocument()

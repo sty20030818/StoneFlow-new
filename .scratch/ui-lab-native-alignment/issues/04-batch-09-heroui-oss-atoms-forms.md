@@ -4,21 +4,21 @@
 
 **Blocked by:** 03 — 跑通 Upstream、Token 与 Current 的隔离对照。
 
-**Status:** planned
+**Status:** implemented — 第九批已进入待人工审查
 
 **Primary write scope:** 新增一个第九批 sample/fixture 模块、Ticket 01 建立的 catalog 注册入口、必要的 UI Lab 根级测试；禁止修改 `src/features`、`src/shared`、`src/layout`、`src/styles`、依赖和锁文件。
 
-- [ ] 第九批包含九个 review unit：Actions；Text Fields；SearchField；NumberField；Choice Controls；Select/ListBox；ComboBox/Autocomplete；Date/Calendar/ColorSwatchPicker；Compact Metadata。
-- [ ] Actions 覆盖 Button、ToggleButton、ToggleButtonGroup、Toolbar；Text Fields 覆盖 Form、TextField、Input、TextArea、Label、Description、FieldError。
-- [ ] SearchField 使用 Global Search 与 Filter 两类真实消费者，明确标为生产已使用；NumberField 使用 Settings Sync 的真实配置语义。
-- [ ] Choice Controls 覆盖 Checkbox、Radio、RadioGroup、Switch；只使用上游公共状态、键盘与可访问性，不在 Lab 伪造 Focus、动画或半选状态机。
-- [ ] Select/ListBox 覆盖单选、禁用、长值和键盘路径；ComboBox/Autocomplete 只在锁定版本公共能力真实存在时作为可搜索属性菜单候选，不发明 API。
-- [ ] Date/Calendar/ColorSwatchPicker 记录当前生产 Calendar/日期组合和 Space 颜色选择原料；完整 Space Editor 留给后续产品场景。
-- [ ] Compact Metadata 覆盖生产相关的 Chip、Avatar、Kbd、Separator；第一至八批已确认项目只补 Upstream/Token/Current 归因，不要求重复审查相同 Current。
-- [ ] 每个 review unit 记录 Owner、处置、消费者、覆盖方式和适用状态；无独立预览的家族有明确理由。
-- [ ] 三层对照复用相同数据与 props；相同结果只渲染一次并标记 `Upstream · 无覆盖`，不复制组件实现。
-- [ ] 状态仅覆盖适用的 default、hover、pressed、focus-visible、disabled、invalid、selected/mixed、长中文和窄宽度，不生成笛卡尔积。
-- [ ] Current 视觉、生产组件、样式和依赖均无变化；第九批进入 `pending`，只有用户实际确认后才能改为 `done`。
+- [x] 第九批包含九个 review unit：Actions；Text Fields；SearchField；NumberField；Choice Controls；Select/ListBox；ComboBox/Autocomplete；Date/Calendar/ColorSwatchPicker；Compact Metadata。
+- [x] Actions 覆盖 Button、ToggleButton、ToggleButtonGroup、Toolbar；Text Fields 覆盖 Form、TextField、Input、TextArea、Label、Description、FieldError。
+- [x] SearchField 使用 Global Search 与 Filter 两类真实消费者，明确标为生产已使用；NumberField 使用 Settings Sync 的真实配置语义。
+- [x] Choice Controls 覆盖 Checkbox、Radio、RadioGroup、Switch；只使用上游公共状态、键盘与可访问性，不在 Lab 伪造 Focus、动画或半选状态机。
+- [x] Select/ListBox 覆盖单选、禁用、长值和键盘路径；ComboBox/Autocomplete 只在锁定版本公共能力真实存在时作为可搜索属性菜单候选，不发明 API。
+- [x] Date/Calendar/ColorSwatchPicker 记录当前生产 Calendar/日期组合和 Space 颜色选择原料；完整 Space Editor 留给后续产品场景。
+- [x] Compact Metadata 覆盖生产相关的 Chip、Avatar、Kbd、Separator；第一至八批已确认项目只补 Upstream/Token/Current 归因，不要求重复审查相同 Current。
+- [x] 每个 review unit 记录 Owner、处置、消费者、覆盖方式和适用状态；无独立预览的家族有明确理由。
+- [x] 三层对照复用相同数据与 props；相同结果只渲染一次并标记 `Upstream · 无覆盖`，不复制组件实现。
+- [x] 状态仅覆盖适用的 default、hover、pressed、focus-visible、disabled、invalid、selected/mixed、长中文和窄宽度，不生成笛卡尔积。
+- [x] Current 视觉、生产组件、样式和依赖均无变化；第九批进入 `pending`，只有用户实际确认后才能改为 `done`。
 
 ## Verification
 
@@ -29,3 +29,10 @@
 - `bun run lint:boundaries`
 - `bun format:check`
 - `git diff --check`
+
+## Implementation evidence
+
+- 九个 review unit 复用同一隔离 renderer；Catalog 通过 `inventoryRefs` 从既有 HeroUI 总账派生真实消费者与上游原料，没有复制消费者清单。
+- SearchField 同时覆盖 Global Search 与 Filter 语义；NumberField 使用生产同步间隔的 1–1440 分钟合同；ComboBox 与 Autocomplete 使用锁定版本公开 compound API。
+- 聚焦 DOM 测试 2 files / 11 tests 通过；`bun typecheck`、`bun lint`、`bun run lint:boundaries`、`bun format:check`、`bun run build` 与 `git diff --check` 通过，lint 仅保留任务外既有 warnings。
+- 生产构建仍只有 `index.html` 与 `launcher.html`；未修改生产组件、样式、依赖或锁文件。第九批视觉结论仍待用户人工审查。
