@@ -133,11 +133,8 @@ describe('UiLabApp', () => {
 
 		expect(screen.getByRole('button', { name: '按分类' })).toHaveAttribute('aria-pressed', 'true')
 		expect(screen.getByRole('button', { name: 'HeroUI' })).toHaveAttribute('aria-pressed', 'true')
-		expect(
-			within(screen.getByRole('region', { name: '当前样例预览' })).getByRole('heading', {
-				name: 'HeroUI Button',
-			}),
-		).toBeInTheDocument()
+		expect(screen.getByRole('heading', { name: 'HeroUI Button' })).toBeInTheDocument()
+		expect(document.querySelector('[data-native-comparison="button"]')).toBeInTheDocument()
 	})
 
 	it('第七批 Context Menu 保留游标坐标锚点并支持触屏长按', () => {
@@ -648,12 +645,10 @@ describe('UiLabApp', () => {
 		fireEvent.keyUp(heroUIView, { key: 'Enter' })
 		expect(heroUIView).toHaveFocus()
 		expect(heroUIView).toHaveAttribute('aria-pressed', 'true')
-		expect(within(preview).getByRole('heading', { name: 'HeroUI Button' })).toBeInTheDocument()
-		expect(
-			within(preview).getByText(
-				'请在 StoneFlow → Actions → StoneFlow Button 完成按钮的视觉与交互审查。',
-			),
-		).toBeInTheDocument()
+		expect(screen.getByRole('heading', { name: 'HeroUI Button' })).toBeInTheDocument()
+		expect(document.querySelector('[data-native-comparison="button"]')).toBeInTheDocument()
+		expect(screen.getByTitle('Upstream · Button 隔离对照')).toBeInTheDocument()
+		expect(screen.getByTitle('Token · Button 隔离对照')).toBeInTheDocument()
 		expect(within(preview).queryByRole('button', { name: '新建任务' })).not.toBeInTheDocument()
 		fireEvent.click(screen.getByRole('button', { name: 'HeroUI SearchField' }))
 		const adoptedSearch = within(preview).getByRole('searchbox', {
@@ -689,7 +684,7 @@ describe('UiLabApp', () => {
 		expect(
 			screen.queryByRole('button', { name: 'HeroUI ColorSwatchPicker' }),
 		).not.toBeInTheDocument()
-		expect(within(preview).getByRole('heading', { name: 'HeroUI Button' })).toBeInTheDocument()
+		expect(screen.getByRole('heading', { name: 'HeroUI Button' })).toBeInTheDocument()
 		fireEvent.click(screen.getByRole('button', { name: '按分类' }))
 
 		for (const categoryName of ['已采用', '替换候选', '探索中']) {
@@ -707,6 +702,10 @@ describe('UiLabApp', () => {
 		]) {
 			expect(screen.getByRole('button', { name: sampleName })).toBeInTheDocument()
 		}
+		fireEvent.click(screen.getByRole('button', { name: 'HeroUI Tooltip' }))
+		expect(document.querySelector('[data-native-comparison="tooltip"]')).toBeInTheDocument()
+		expect(document.querySelectorAll('[data-native-comparison]')).toHaveLength(1)
+		expect(screen.getByTitle('Upstream · Tooltip 隔离对照')).toBeInTheDocument()
 
 		fireEvent.click(screen.getByRole('button', { name: 'HeroUI Modal' }))
 		fireEvent.click(within(preview).getByRole('button', { name: '打开 Modal' }))

@@ -24,7 +24,7 @@ export const ACCENT_PRESETS = [
 
 type AccentPresetId = (typeof ACCENT_PRESETS)[number]['id']
 
-const DEFAULT_ACCENT_PRESET: AccentPresetId = 'cobalt'
+export const DEFAULT_ACCENT_PRESET: AccentPresetId = 'cobalt'
 
 function normalizeAccentPreference(value: unknown): AccentPresetId {
 	return ACCENT_PRESETS.some((preset) => preset.id === value)

@@ -15,7 +15,6 @@ import {
 	SearchField,
 	Select,
 	TextField,
-	Tooltip,
 } from '@heroui/react'
 import { EmptyState, ListView } from '@heroui-pro/react'
 
@@ -70,21 +69,6 @@ function CandidateFrame({
 				</div>
 			</dl>
 		</div>
-	)
-}
-
-function HeroUIButtonPreview() {
-	return (
-		<CandidateFrame
-			decision='已采用：与 StoneFlow Button 共享组件和主题，不重复人工审查。'
-			gap='HeroUI 提供结构、状态与可访问性；StoneFlow 记录产品语义和主题结果。'
-			scope='目录记录；交互状态统一在 StoneFlow Button 审查。'
-			title='HeroUI Button'
-		>
-			<p className='text-sm leading-6 text-muted'>
-				请在 StoneFlow → Actions → StoneFlow Button 完成按钮的视觉与交互审查。
-			</p>
-		</CandidateFrame>
 	)
 }
 
@@ -150,24 +134,6 @@ function HeroUIBreadcrumbsPreview() {
 				<Breadcrumbs.Item href='#heroui-breadcrumbs-preview'>项目</Breadcrumbs.Item>
 				<Breadcrumbs.Item>界面审查</Breadcrumbs.Item>
 			</Breadcrumbs>
-		</CandidateFrame>
-	)
-}
-
-function HeroUITooltipPreview() {
-	return (
-		<CandidateFrame
-			decision='已采用：能渲染、值得保留，生产迁移已完成。'
-			gap='Tooltip 只能补充非必要信息；禁用动作原因和关键说明必须常驻可见。'
-			scope='命令快捷键、图标动作和文字溢出提示。'
-			title='HeroUI Tooltip'
-		>
-			<Tooltip delay={0}>
-				<Button type='button' variant='secondary'>
-					聚焦或悬停
-				</Button>
-				<Tooltip.Content>补充说明，不承载完成任务所必需的信息。</Tooltip.Content>
-			</Tooltip>
 		</CandidateFrame>
 	)
 }
@@ -364,9 +330,9 @@ export const TICKET_08_SAMPLES: readonly UiLabReviewUnitInput[] = [
 		owner: 'HeroUI OSS',
 		source: '@heroui/react@3.2.4',
 		coverage: 'rendered',
+		comparisonFixture: 'button',
 		states: '采用状态；交互状态由 StoneFlow Button 覆盖',
 		verification: '复用 StoneFlow Button 的 Lab 验证',
-		Preview: HeroUIButtonPreview,
 	},
 	{
 		id: 'heroui-input',
@@ -420,9 +386,9 @@ export const TICKET_08_SAMPLES: readonly UiLabReviewUnitInput[] = [
 		owner: 'HeroUI OSS',
 		source: '@heroui/react@3.2.4',
 		coverage: 'rendered',
+		comparisonFixture: 'tooltip',
 		states: 'Hover、Keyboard Focus、Open、Closed',
 		verification: 'Lab 可验证；不得承担必要信息',
-		Preview: HeroUITooltipPreview,
 	},
 	{
 		id: 'heroui-modal',

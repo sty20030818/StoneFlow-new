@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import { Button, SearchField } from '@heroui/react'
 
+import { NativeComparison } from './native-comparison/NativeComparison'
 import {
 	reviewBatchForEntry,
 	reviewEntryForEntry,
@@ -566,7 +567,14 @@ export function UiLabApp() {
 						className='flex min-h-48 flex-1 items-start justify-center p-6 sm:min-h-64'
 					>
 						{selectedSample?.coverage === 'rendered' ? (
-							<selectedSample.Preview key={selectedSample.id} />
+							selectedSample.comparisonFixture ? (
+								<NativeComparison
+									fixture={selectedSample.comparisonFixture}
+									key={selectedSample.id}
+								/>
+							) : (
+								<selectedSample.Preview key={selectedSample.id} />
+							)
 						) : selectedSample ? (
 							<div className='max-w-2xl rounded-lg border border-dashed border-border p-4 text-sm leading-6'>
 								<p className='font-medium'>未在 UI Lab 渲染</p>

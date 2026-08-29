@@ -5,6 +5,7 @@ import {
 	STONEFLOW_CATALOG_REGISTRATIONS,
 	type StoneFlowCatalogRegistration,
 } from './catalog/stoneFlowRegistrations'
+import type { NativeComparisonFixtureId } from './native-comparison/nativeComparisonContract'
 import { TICKET_02_SAMPLES } from './samples/ticket-02/ticket02Samples'
 import { TICKET_03_SAMPLES } from './samples/ticket-03/fieldsAndSettingsSamples'
 import { TICKET_04_SAMPLES } from './samples/ticket-04/navigationSamples'
@@ -63,9 +64,21 @@ type UiLabCatalogEntryBase = {
 }
 
 export type UiLabReviewUnitInput =
-	| (UiLabCatalogEntryBase & { coverage: 'rendered'; Preview: ComponentType; reason?: never })
+	| (UiLabCatalogEntryBase & {
+			coverage: 'rendered'
+			Preview: ComponentType
+			comparisonFixture?: never
+			reason?: never
+	  })
+	| (UiLabCatalogEntryBase & {
+			coverage: 'rendered'
+			comparisonFixture: NativeComparisonFixtureId
+			Preview?: never
+			reason?: never
+	  })
 	| (UiLabCatalogEntryBase & {
 			coverage: 'missing' | 'real-app-only'
+			comparisonFixture?: never
 			reason: string
 			Preview?: never
 	  })
