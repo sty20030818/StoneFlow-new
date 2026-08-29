@@ -19,8 +19,10 @@ StoneFlow 已选择 HeroUI OSS/Pro 作为唯一 UI 平台，但“采用同一�
    - “Lab 审查完成”不等于“生产已改造”，也不等于“真实桌面应用已验收”。
 3. 审查范围按批次组织，同时保留样例原有的功能分类。批次成员、对照项和当前状态由 `src/ui-lab/uiLabCatalog.tsx` 唯一维护，UI 从该目录派生清单和进度，不建立可在浏览器中随意勾选但刷新即丢失的第二份状态。
 4. HeroUI OSS/Pro 继续拥有标准控件的结构、键盘行为、Focus、Overlay、可访问性、官方状态和动效。StoneFlow 优先保留这些原生 UI/UX，只通过 `theme.css` 和 `components.css` 调整已确认的语义颜色、圆角、密度和少量跨应用公共差异；产品 Module 继续拥有产品结构、业务状态和必要动态几何。
+   - 为审计 StoneFlow 相对锁定版本 HeroUI 上游的视觉增量，UI Lab 可以在仅开发环境的隔离 renderer 中复用同一 fixture，展示 Upstream、Token 与 Current 诊断基线。
+   - 这些基线只是审查视图，不是可切换的产品主题或并行实现；不得进入生产入口、复制组件实现，或建立第二份 token、recipe、catalog、Provider 与 runtime。
 5. 不为了“更像 StoneFlow”重新实现 Checkbox、Input、Select、Menu、ListView 等上游控件，不新增一对一 wrapper、第二套 token/variant runtime、页面私有皮肤或 Lab 专用兼容层。RowShell、TaskBoard 虚拟几何、Command/selection 等已确认产品合同仍由 StoneFlow 自己拥有。
-6. 目标视觉不要求恢复旧 StoneFlow。长期方向是统一、规范、简洁、整齐、有条理、冷静和低装饰：
+6. 已经通过人工审查和生产迁移确认的 Current 视觉，是后续 HeroUI 原生实现对齐的冻结目标；“靠近 HeroUI”指公共 API、状态机和实现所有权向上游收敛，不授权视觉重设计。任何可观察差异必须重新进入 Lab 决策。目标视觉不要求恢复旧 StoneFlow，长期方向是统一、规范、简洁、整齐、有条理、冷静和低装饰：
    - 组件内部间距优先使用 `4px` 与 `8px`；更大间距只表达区块或页面层级；
    - Control、Surface、Overlay 继续使用少量语义圆角，Checkbox 明确使用 `4px`，pill 只用于适合的封闭控件；
    - 标准控件优先保留 HeroUI 原生 Primary/Secondary 外观，不额外加装饰边；Metadata 文本属性入口统一使用 Ghost；
@@ -44,6 +46,7 @@ StoneFlow 已选择 HeroUI OSS/Pro 作为唯一 UI 平台，但“采用同一�
 - 在所有批次完成前，Lab 的目标结果与生产应用可能暂时不一致；这种差异必须明确标注，不能把 Lab 当成当前生产真相。
 - 人工审查状态是版本控制中的显式决定，需要在用户确认后修改 catalog；它不是浏览器本地偏好。
 - Lab 无法代替真实 Main、Launcher、macOS/Windows WebView 和跨窗口验收，生产改造后仍需最小真实应用 smoke。
+- 隔离 renderer 可以作为版本锁定的开发诊断工具长期保留，但只组合既有单一事实源；生产始终只有 Current 一条样式与实现路径。
 - 本 ADR 固定长期门禁与目标原则，逐项问题、批次内容和当前审查记录由活跃规格维护，避免 ADR 变成持续变动的 issue tracker。
 
 ## 放弃的方案
@@ -63,3 +66,4 @@ StoneFlow 已选择 HeroUI OSS/Pro 作为唯一 UI 平台，但“采用同一�
 - [UI 组件审查与实验室研究](../../04-专题研究/2026-08-26-ui-component-audit-lab-research.md)
 - [已归档 UI Lab 人工审查规格](../../../.scratch/archive/ui-lab-review/spec.md)
 - [已归档 UI Lab 建设规格](../../../.scratch/archive/ui-system-lab/spec.md)
+- [UI Lab 全量清单与 HeroUI 原生实现对齐规格](../../../.scratch/ui-lab-native-alignment/spec.md)
