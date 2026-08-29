@@ -24,7 +24,7 @@ import {
 	SearchXIcon,
 } from 'lucide-react'
 
-import type { UiLabSample } from '../../uiLabCatalog'
+import type { UiLabReviewUnitInput } from '../../uiLabCatalog'
 
 type RecoveryState = 'empty' | 'error' | 'ready'
 
@@ -606,4 +606,4 @@ export const TICKET_06_SAMPLES = [
 			'Lab 可验证可移植界面；窗口、快捷键、真实创建、WebView 与跨窗口状态仅真实应用验证',
 		Preview: LauncherLifecyclePreview,
 	},
-] as const satisfies readonly UiLabSample[]
+] as const satisfies readonly UiLabReviewUnitInput[]

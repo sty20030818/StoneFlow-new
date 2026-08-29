@@ -20,7 +20,7 @@ import {
 
 import { AppBreadcrumb } from '@/shared/components/AppBreadcrumb'
 
-import type { UiLabSample } from '../../uiLabCatalog'
+import type { UiLabReviewUnitInput } from '../../uiLabCatalog'
 
 const breadcrumbRouter = createRouter({
 	routeTree: createRootRoute(),
@@ -473,4 +473,4 @@ export const TICKET_04_SAMPLES = [
 		verification: 'Lab 可验证组合；窗口、路由、Store 与 Tauri 仅真实应用验证',
 		Preview: ShellSidebarPreview,
 	},
-] as const satisfies readonly UiLabSample[]
+] as const satisfies readonly UiLabReviewUnitInput[]

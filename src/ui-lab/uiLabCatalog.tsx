@@ -9,7 +9,9 @@ import { TICKET_07_SAMPLES } from './samples/ticket-07/overlaySamples'
 import { TICKET_08_SAMPLES } from './samples/ticket-08/herouiCandidateSamples'
 
 export type UiLabViewId = 'stoneflow' | 'heroui'
-export type UiLabCoverage = 'rendered' | 'missing' | 'real-app-only'
+export type UiLabCoverage = 'rendered' | 'missing' | 'real-app-only' | 'ledger-only'
+export type UiLabDisposition = 'keep' | 'simplify' | 'candidate' | 'real-app-only'
+export type UiLabAdoptionStatus = 'used' | 'candidate' | 'no-current-scenario'
 export type UiLabReviewStatus = 'done' | 'pending' | 'external'
 export type UiLabReviewBatchId =
 	| 'batch-01'
@@ -35,7 +37,7 @@ export type UiLabReviewBatch = {
 	entries: readonly UiLabReviewEntry[]
 }
 
-type UiLabSampleBase = {
+type UiLabCatalogEntryBase = {
 	id: string
 	name: string
 	view: UiLabViewId
@@ -48,13 +50,31 @@ type UiLabSampleBase = {
 	verification: string
 }
 
-export type UiLabSample =
-	| (UiLabSampleBase & { coverage: 'rendered'; Preview: ComponentType; reason?: never })
-	| (UiLabSampleBase & {
+export type UiLabReviewUnitInput =
+	| (UiLabCatalogEntryBase & { coverage: 'rendered'; Preview: ComponentType; reason?: never })
+	| (UiLabCatalogEntryBase & {
 			coverage: 'missing' | 'real-app-only'
 			reason: string
 			Preview?: never
 	  })
+
+type UiLabInventoryMetadata = {
+	recommendedOwner: string | null
+	disposition: UiLabDisposition | null
+	consumers: readonly string[] | null
+	compositionParent: string | null
+	adoption: UiLabAdoptionStatus | null
+}
+
+export type UiLabCatalogEntry =
+	| (UiLabReviewUnitInput & UiLabInventoryMetadata & { entryKind: 'review-unit' })
+	| (UiLabCatalogEntryBase &
+			UiLabInventoryMetadata & {
+				entryKind: 'ledger-only'
+				coverage: 'ledger-only'
+				reason: string
+				Preview?: never
+			})
 
 export const UI_LAB_VIEWS = [
 	{
@@ -82,7 +102,7 @@ export const UI_LAB_VIEWS = [
 	},
 ] as const
 
-export const UI_LAB_SAMPLES: readonly UiLabSample[] = [
+const UI_LAB_REVIEW_UNITS = [
 	...TICKET_02_SAMPLES,
 	...TICKET_03_SAMPLES,
 	...TICKET_04_SAMPLES,
@@ -104,6 +124,38 @@ export const UI_LAB_SAMPLES: readonly UiLabSample[] = [
 		verification: '统一产品验收；UI Lab 不代签',
 		reason:
 			'Portal 归属、WebView 激活、窗口断点、缩放与跨窗口一致性依赖真实 Tauri Main / Launcher 窗口，不能在浏览器 UI Lab 中可靠复现。',
+	},
+] satisfies readonly UiLabReviewUnitInput[]
+
+export const UI_LAB_CATALOG: readonly UiLabCatalogEntry[] = [
+	...UI_LAB_REVIEW_UNITS.map((entry) => ({
+		...entry,
+		entryKind: 'review-unit' as const,
+		recommendedOwner: null,
+		disposition: entry.coverage === 'real-app-only' ? ('real-app-only' as const) : null,
+		consumers: null,
+		compositionParent: null,
+		adoption: null,
+	})),
+	{
+		id: 'heroui-color-swatch-picker-ledger',
+		name: 'HeroUI ColorSwatchPicker',
+		view: 'heroui',
+		category: '已采用',
+		description: '登记 Space Editor 已使用的 HeroUI 颜色选择器；当前不为目录完整度复制生产预览。',
+		keywords: ['color', 'swatch', 'picker', '颜色', '空间编辑'],
+		owner: 'Upstream',
+		recommendedOwner: 'Upstream',
+		disposition: 'keep',
+		consumers: ['src/features/space/components/SpaceEditorDialog.tsx'],
+		compositionParent: 'Space Editor',
+		adoption: 'used',
+		source: '@heroui/react@3.2.4',
+		entryKind: 'ledger-only',
+		coverage: 'ledger-only',
+		states: 'Selected、Disabled、Keyboard Focus',
+		verification: '生产使用已由静态源码确认；独立视觉尚未在 Lab 审查',
+		reason: '该能力已在 Space Editor 组合中使用；独立原生对照由后续审查批次补充。',
 	},
 ]
 
@@ -227,12 +279,12 @@ export const UI_LAB_REVIEW_BATCHES: readonly UiLabReviewBatch[] = [
 	},
 ]
 
-export function reviewBatchForSample(sampleId: string) {
+export function reviewBatchForEntry(entryId: string) {
 	return UI_LAB_REVIEW_BATCHES.find((batch) =>
-		batch.entries.some((entry) => entry.sampleId === sampleId),
+		batch.entries.some((entry) => entry.sampleId === entryId),
 	)
 }
 
-export function reviewEntryForSample(sampleId: string) {
-	return reviewBatchForSample(sampleId)?.entries.find((entry) => entry.sampleId === sampleId)
+export function reviewEntryForEntry(entryId: string) {
+	return reviewBatchForEntry(entryId)?.entries.find((entry) => entry.sampleId === entryId)
 }

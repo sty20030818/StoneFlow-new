@@ -37,7 +37,7 @@ import {
 
 import { RowShell, type RowSelectionGroupPosition } from '@/shared/components/row'
 
-import type { UiLabSample } from '../../uiLabCatalog'
+import type { UiLabReviewUnitInput } from '../../uiLabCatalog'
 
 const LONG_TITLE = '把跨窗口同步失败后的恢复路径整理成一条可复现、可验证且能长期维护的规则'
 
@@ -1092,4 +1092,4 @@ export const TICKET_05_SAMPLES = [
 		verification: 'Lab 可验证布局证据；虚拟滚动、Store、Query、Tauri 与写入仅真实应用验证',
 		Preview: TaskBoardPreview,
 	},
-] as const satisfies readonly UiLabSample[]
+] as const satisfies readonly UiLabReviewUnitInput[]

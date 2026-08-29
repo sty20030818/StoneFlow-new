@@ -1,16 +1,26 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 
 import { UiLabApp } from './UiLabApp'
-import { UI_LAB_REVIEW_BATCHES, UI_LAB_SAMPLES } from './uiLabCatalog'
+import { UI_LAB_CATALOG, UI_LAB_REVIEW_BATCHES } from './uiLabCatalog'
 
 describe('UiLabApp', () => {
-	it('每个样例只属于一个人工审查批次', () => {
+	it('每个审查单元只属于一个批次，总账条目无需进入批次', () => {
 		const entries = UI_LAB_REVIEW_BATCHES.flatMap((batch) => batch.entries)
-		const sampleIds = UI_LAB_SAMPLES.map((sample) => sample.id).sort()
+		const catalogIds = UI_LAB_CATALOG.map((entry) => entry.id)
+		const reviewUnitIds = UI_LAB_CATALOG.filter((entry) => entry.entryKind === 'review-unit')
+			.map((entry) => entry.id)
+			.sort()
 		const reviewIds = entries.map((entry) => entry.sampleId).sort()
 
+		expect(new Set(catalogIds).size).toBe(catalogIds.length)
 		expect(new Set(reviewIds).size).toBe(reviewIds.length)
-		expect(reviewIds).toEqual(sampleIds)
+		expect(reviewIds).toEqual(reviewUnitIds)
+		expect(reviewIds.every((id) => catalogIds.includes(id))).toBe(true)
+		expect(
+			UI_LAB_CATALOG.filter((entry) => entry.entryKind === 'ledger-only').every(
+				(entry) => !reviewIds.includes(entry.id),
+			),
+		).toBe(true)
 		expect(
 			UI_LAB_REVIEW_BATCHES.every((batch) =>
 				batch.entries
@@ -151,6 +161,7 @@ describe('UiLabApp', () => {
 			expect(screen.getByRole('button', { name: batchName })).toBeInTheDocument()
 		}
 		expect(screen.getByRole('button', { name: /第一批 · 基础与动作/ })).toHaveTextContent('6/6')
+		expect(screen.getByRole('button', { name: /第三批 · 导航/ })).toHaveTextContent('6/6')
 		expect(screen.getByRole('button', { name: /第五批 · 元数据与 Task Board/ })).toHaveTextContent(
 			'6/6',
 		)
@@ -194,7 +205,7 @@ describe('UiLabApp', () => {
 		fireEvent.click(compactDensity)
 		expect(compactDensity).toHaveAttribute('aria-checked', 'true')
 
-		const search = screen.getByRole('searchbox', { name: '搜索样例' })
+		const search = screen.getByRole('searchbox', { name: '搜索目录' })
 		fireEvent.change(search, { target: { value: '不存在的组件' } })
 		expect(screen.getByText('没有匹配的样例')).toBeInTheDocument()
 		fireEvent.click(screen.getByRole('button', { name: '清空搜索' }))
@@ -529,8 +540,12 @@ describe('UiLabApp', () => {
 		).toBeInTheDocument()
 		fireEvent.click(screen.getByRole('button', { name: '清空搜索' }))
 
-		fireEvent.click(screen.getByRole('button', { name: '缺失样例' }))
-		expect(within(preview).getByText('当前分类没有缺失样例')).toBeInTheDocument()
+		const noPreviewFilter = screen.getByRole('button', { name: '无独立预览' })
+		fireEvent.click(noPreviewFilter)
+		expect(noPreviewFilter).toHaveAttribute('aria-pressed', 'true')
+		expect(
+			screen.getByRole('heading', { name: 'Main / Launcher 原生窗口验收' }),
+		).toBeInTheDocument()
 		fireEvent.click(screen.getByRole('button', { name: '待归属' }))
 		expect(within(preview).getByText('当前分类没有待归属样例')).toBeInTheDocument()
 		fireEvent.click(screen.getByRole('button', { name: 'Actions' }))
@@ -550,6 +565,36 @@ describe('UiLabApp', () => {
 			),
 		).toBeInTheDocument()
 		expect(within(preview).queryByRole('button', { name: '新建任务' })).not.toBeInTheDocument()
+
+		for (const ledgerQuery of [
+			'HeroUI ColorSwatchPicker',
+			'swatch',
+			'@heroui/react@3.2.4',
+			'SpaceEditorDialog.tsx',
+		]) {
+			fireEvent.change(search, { target: { value: ledgerQuery } })
+			expect(screen.getByRole('button', { name: 'HeroUI ColorSwatchPicker' })).toBeInTheDocument()
+			fireEvent.click(screen.getByRole('button', { name: '清空搜索' }))
+		}
+
+		fireEvent.change(search, { target: { value: 'SpaceEditorDialog.tsx' } })
+		fireEvent.click(screen.getByRole('button', { name: 'HeroUI ColorSwatchPicker' }))
+		expect(screen.getByRole('heading', { name: 'HeroUI ColorSwatchPicker' })).toBeInTheDocument()
+		expect(screen.getByText('仅总账（无独立预览）')).toBeInTheDocument()
+		expect(
+			screen.getByText('src/features/space/components/SpaceEditorDialog.tsx'),
+		).toBeInTheDocument()
+		expect(screen.getByText('Space Editor')).toBeInTheDocument()
+		expect(screen.getByText('Keep')).toBeInTheDocument()
+		expect(document.querySelectorAll('[data-ui-lab-preview-root]')).toHaveLength(0)
+		expect(within(preview).getByText(/该能力已在 Space Editor 组合中使用/)).toBeInTheDocument()
+
+		fireEvent.click(screen.getByRole('button', { name: '按批次' }))
+		expect(
+			screen.queryByRole('button', { name: 'HeroUI ColorSwatchPicker' }),
+		).not.toBeInTheDocument()
+		expect(within(preview).getByRole('heading', { name: 'HeroUI Button' })).toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: '按分类' }))
 
 		for (const categoryName of ['已采用', '替换候选', '探索中']) {
 			expect(screen.getByRole('button', { name: categoryName })).toBeInTheDocument()

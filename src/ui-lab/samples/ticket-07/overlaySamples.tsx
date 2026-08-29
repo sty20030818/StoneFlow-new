@@ -13,7 +13,7 @@ import {
 } from '@heroui/react'
 import { ContextMenu, Sheet } from '@heroui-pro/react'
 
-import type { UiLabSample } from '../../uiLabCatalog'
+import type { UiLabReviewUnitInput } from '../../uiLabCatalog'
 
 function FocusReturnNote({ closeAction, trigger }: { closeAction: string; trigger: string }) {
 	return (
@@ -500,4 +500,4 @@ export const TICKET_07_SAMPLES = [
 		verification: 'Lab 仅验证最小焦点路径；1024 Aside/Sheet、WebView、草稿与业务数据仅真实应用验证',
 		Preview: TaskDetailFocusPreview,
 	},
-] as const satisfies readonly UiLabSample[]
+] as const satisfies readonly UiLabReviewUnitInput[]

@@ -19,7 +19,7 @@ import {
 } from '@heroui/react'
 import { EmptyState, ListView } from '@heroui-pro/react'
 
-import type { UiLabSample } from '../../uiLabCatalog'
+import type { UiLabReviewUnitInput } from '../../uiLabCatalog'
 
 function CandidateFrame({
 	title,
@@ -353,7 +353,7 @@ function HeroUIDatePickerPreview() {
 	)
 }
 
-export const TICKET_08_SAMPLES: readonly UiLabSample[] = [
+export const TICKET_08_SAMPLES: readonly UiLabReviewUnitInput[] = [
 	{
 		id: 'heroui-button',
 		name: 'HeroUI Button',

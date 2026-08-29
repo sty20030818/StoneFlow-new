@@ -26,7 +26,7 @@ import {
 	DateField,
 } from '@heroui/react'
 
-import type { UiLabSample } from '../../uiLabCatalog'
+import type { UiLabReviewUnitInput } from '../../uiLabCatalog'
 
 function FieldStatesPreview() {
 	const [query, setQuery] = useState('长期目标')
@@ -506,4 +506,4 @@ export const TICKET_03_SAMPLES = [
 		verification: 'Lab 可验证；真实持久化仅真实应用验证',
 		Preview: SettingsFormPreview,
 	},
-] as const satisfies readonly UiLabSample[]
+] as const satisfies readonly UiLabReviewUnitInput[]
