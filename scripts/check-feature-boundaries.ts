@@ -2,6 +2,11 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join, relative } from 'node:path'
 
+import {
+	HEROUI_REGISTRATIONS,
+	type HeroUIPackageName,
+} from '../src/ui-lab/catalog/heroUiRegistrations'
+
 const FEATURES = [
 	'appearance',
 	'task',
@@ -69,6 +74,7 @@ export type BoundaryRuleId =
 	| 'legacy-visual-import'
 	| 'legacy-visual-style'
 	| 'parallel-visual-import'
+	| 'heroui-catalog-drift'
 	| 'heroui-important-style'
 	| 'heroui-state-style'
 	| 'heroui-skin-style'
@@ -91,6 +97,14 @@ export type BoundaryViolation = {
 }
 
 type ImportReference = { path: string; start: number; dynamic?: boolean }
+type HeroUIImportBinding = {
+	family: string
+	local: string
+	packageName: HeroUIPackageName
+	modulePath: string
+	typeOnly: boolean
+	start: number
+}
 type StaticFragment = { value: string; start: number }
 type DependencyManifest = {
 	dependencies?: Record<string, string>
@@ -155,6 +169,16 @@ function isProductionSource(path: string) {
 function isUiLabSource(path: string) {
 	const pathInSrc = pathInsideSrc(path)
 	return pathInSrc === 'ui-lab' || pathInSrc.startsWith('ui-lab/')
+}
+
+function isHeroUICatalogSource(path: string) {
+	return (
+		isProductionSource(path) &&
+		!isUiLabSource(path) &&
+		!/(^|\/)(?:archive|archived)(?:\/|$)/.test(path) &&
+		!/(^|\/)testing\//.test(path) &&
+		!/(^|\/)[^/]*debug[^/]*\.[jt]sx?$/i.test(path)
+	)
 }
 
 function resolveSourceImport(filePath: string, modulePath: string) {
@@ -335,36 +359,152 @@ function moduleLiteralStart(source: string, modulePath: string, from = 0) {
 	return Math.min(single, double)
 }
 
+function maskComments(source: string) {
+	const masked = [...source]
+	for (let index = 0; index < source.length; index += 1) {
+		if (/['"`]/.test(source[index])) {
+			index = readQuotedEnd(source, index) - 1
+			continue
+		}
+		if (source[index] !== '/' || (source[index + 1] !== '/' && source[index + 1] !== '*')) {
+			continue
+		}
+		const block = source[index + 1] === '*'
+		const end = block ? source.indexOf('*/', index + 2) : source.indexOf('\n', index + 2)
+		const commentEnd = end < 0 ? source.length : end + (block ? 2 : 0)
+		for (let cursor = index; cursor < commentEnd; cursor += 1) {
+			if (masked[cursor] !== '\n') masked[cursor] = ' '
+		}
+		index = commentEnd - 1
+	}
+	return masked.join('')
+}
+
 function scanImports(source: string): ImportReference[] {
+	const maskedSource = maskComments(source)
 	let cursor = 0
 	return transpiler
 		.scan(source)
 		.imports.filter((item) => item.kind === 'import-statement' || item.kind === 'dynamic-import')
 		.map((item) => {
-			const start = moduleLiteralStart(source, item.path, cursor)
+			const start = moduleLiteralStart(maskedSource, item.path, cursor)
 			cursor = start + item.path.length
 			return { path: item.path, start, dynamic: item.kind === 'dynamic-import' }
 		})
 }
 
-function collectHeroUIBindings(source: string, imports: readonly ImportReference[]) {
-	const paths = new Set(
+function heroUIPackageName(modulePath: string): HeroUIPackageName | null {
+	for (const packageName of ['@heroui/react', '@heroui-pro/react'] as const) {
+		if (modulePath === packageName || modulePath.startsWith(`${packageName}/`)) {
+			return packageName
+		}
+	}
+	return null
+}
+
+function collectHeroUIImportBindings(
+	source: string,
+	imports: readonly ImportReference[],
+): HeroUIImportBinding[] {
+	const maskedSource = maskComments(source)
+	const staticImports = new Set(
 		imports
-			.map((item) => item.path)
-			.filter((path) => /^@heroui(?:-pro)?\/react(?:\/[^'"]+)?$/.test(path)),
+			.filter((reference) => !reference.dynamic && heroUIPackageName(reference.path))
+			.map((reference) => reference.path),
 	)
-	const bindings = new Map<string, string>()
-	for (const match of source.matchAll(
-		/\bimport\s*{([^}]*)}\s*from\s*(['"])(@heroui(?:-pro)?\/react(?:\/[^'"]+)?)\2/g,
+	const bindings: HeroUIImportBinding[] = []
+	for (const match of maskedSource.matchAll(
+		/\bimport\s+(type\s+)?{([^}]*)}\s*from\s*(['"])(@heroui(?:-pro)?\/react(?:\/[^'"]+)?)\3/g,
 	)) {
-		if (!paths.has(match[3])) continue
-		for (const raw of match[1].split(',')) {
-			const specifier = raw.trim().replace(/^type\s+/, '')
+		const packageName = heroUIPackageName(match[4])
+		if (!packageName) continue
+		const importTypeOnly = Boolean(match[1])
+		const start = moduleLiteralStart(maskedSource, match[4], match.index ?? 0)
+		if (!staticImports.has(match[4])) continue
+		for (const raw of match[2].split(',')) {
+			const trimmed = raw.trim()
+			const inlineTypeOnly = trimmed.startsWith('type ')
+			const specifier = trimmed.replace(/^type\s+/, '')
 			const parsed = specifier.match(/^([A-Za-z_$][\w$]*)(?:\s+as\s+([A-Za-z_$][\w$]*))?$/)
-			if (parsed) bindings.set(parsed[2] ?? parsed[1], parsed[1])
+			if (!parsed) continue
+			bindings.push({
+				family: parsed[1],
+				local: parsed[2] ?? parsed[1],
+				packageName,
+				modulePath: match[4],
+				typeOnly: importTypeOnly || inlineTypeOnly,
+				start,
+			})
 		}
 	}
 	return bindings
+}
+
+function scanHeroUICatalogDrift(
+	file: BoundarySource,
+	imports: readonly ImportReference[],
+	bindings: readonly HeroUIImportBinding[],
+) {
+	if (!isHeroUICatalogSource(file.path)) return []
+	const violations: BoundaryViolation[] = []
+	for (const binding of bindings) {
+		if (binding.typeOnly) continue
+		const registration = HEROUI_REGISTRATIONS.find(
+			(entry) =>
+				entry.packageName === binding.packageName &&
+				entry.family === binding.family &&
+				entry.exportKind !== 'type' &&
+				(binding.modulePath === binding.packageName || entry.exportPath === binding.modulePath),
+		)
+		if (registration?.adoption === 'used' && registration.consumers.includes(file.path)) {
+			continue
+		}
+		const detail = !registration
+			? `${binding.modulePath} 的 runtime ${binding.family} 尚未登记`
+			: registration.adoption !== 'used'
+				? `${binding.modulePath} 的 ${binding.family} 仍登记为 ${registration.adoption}`
+				: `${binding.modulePath} 的 ${binding.family} 尚未登记消费者 ${file.path}`
+		violations.push({
+			path: file.path,
+			line: lineNumber(file.source, binding.start),
+			ruleId: 'heroui-catalog-drift',
+			excerpt: excerptAt(file.source, binding.start),
+			detail,
+		})
+	}
+	const handledStatements = new Set(
+		bindings.map((binding) => `${binding.start}:${binding.modulePath}`),
+	)
+	const handledImports = new Map<string, number>()
+	for (const statement of handledStatements) {
+		const modulePath = statement.slice(statement.indexOf(':') + 1)
+		handledImports.set(modulePath, (handledImports.get(modulePath) ?? 0) + 1)
+	}
+	const maskedSource = maskComments(file.source)
+	for (const reference of imports) {
+		if (!heroUIPackageName(reference.path)) continue
+		const handledCount = handledImports.get(reference.path) ?? 0
+		if (!reference.dynamic && handledCount > 0) {
+			handledImports.set(reference.path, handledCount - 1)
+			continue
+		}
+		if (!reference.dynamic) {
+			const importStart = maskedSource.lastIndexOf('import', reference.start)
+			const exportStart = maskedSource.lastIndexOf('export', reference.start)
+			const statementStart = Math.max(importStart, exportStart, 0)
+			if (/\bimport\s+type\b/.test(maskedSource.slice(statementStart, reference.start))) continue
+		}
+		violations.push({
+			path: file.path,
+			line: lineNumber(file.source, reference.start),
+			ruleId: 'heroui-catalog-drift',
+			excerpt: excerptAt(file.source, reference.start),
+			detail: reference.dynamic
+				? `${reference.path} 的动态 import 无法映射到 catalog 家族`
+				: `${reference.path} 使用了无法映射到 catalog 家族的 runtime import/export`,
+		})
+	}
+	return violations
 }
 
 function readQuotedEnd(source: string, start: number) {
@@ -757,9 +897,11 @@ export function scanFeatureBoundarySources(sources: readonly BoundarySource[]) {
 		}
 
 		const imports = scanImports(file.source)
+		const heroUIBindings = collectHeroUIImportBindings(file.source, imports)
 		violations.push(...scanFeatureImports(file, imports))
 		if (!isProductionSource(file.path)) continue
 		violations.push(...scanUiLabImports(file, imports))
+		violations.push(...scanHeroUICatalogDrift(file, imports, heroUIBindings))
 
 		for (const reference of imports) {
 			const ruleId = classifyVisualImport(reference.path)
@@ -779,7 +921,16 @@ export function scanFeatureBoundarySources(sources: readonly BoundarySource[]) {
 		}
 
 		if (file.path.endsWith('.tsx')) {
-			violations.push(...scanHeroUIStyles(file, collectHeroUIBindings(file.source, imports)))
+			violations.push(
+				...scanHeroUIStyles(
+					file,
+					new Map(
+						heroUIBindings
+							.filter((binding) => !binding.typeOnly)
+							.map((binding) => [binding.local, binding.family]),
+					),
+				),
+			)
 		}
 	}
 

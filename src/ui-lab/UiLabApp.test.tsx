@@ -1,5 +1,10 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 
+import { HEROUI_REGISTRATIONS } from './catalog/heroUiRegistrations'
+import {
+	STONEFLOW_CATALOG_REGISTRATIONS,
+	STONEFLOW_PRODUCT_SCENE_REGISTRATIONS,
+} from './catalog/stoneFlowRegistrations'
 import { UiLabApp } from './UiLabApp'
 import { UI_LAB_CATALOG, UI_LAB_REVIEW_BATCHES } from './uiLabCatalog'
 
@@ -33,6 +38,91 @@ describe('UiLabApp', () => {
 				batch.entries.some((entry) => entry.status === 'external'),
 			),
 		).toBe(true)
+	})
+
+	it('完整登记 StoneFlow 与锁定版 HeroUI 能力，且组合链接没有悬空', () => {
+		const catalogIds = new Set(UI_LAB_CATALOG.map((entry) => entry.id))
+		const heroUIKeys = HEROUI_REGISTRATIONS.map(
+			(entry) => `${entry.packageName}#${entry.family}#${entry.exportKind}`,
+		)
+		const stoneFlowIds = new Set(STONEFLOW_CATALOG_REGISTRATIONS.map((entry) => entry.id))
+
+		expect(new Set(heroUIKeys).size).toBe(heroUIKeys.length)
+		expect(new Set(stoneFlowIds).size).toBe(STONEFLOW_CATALOG_REGISTRATIONS.length)
+		expect(HEROUI_REGISTRATIONS.every((entry) => catalogIds.has(entry.id))).toBe(true)
+		expect(STONEFLOW_CATALOG_REGISTRATIONS.every((entry) => catalogIds.has(entry.id))).toBe(true)
+		expect(
+			STONEFLOW_CATALOG_REGISTRATIONS.every(
+				(entry) => !entry.compositionParent || stoneFlowIds.has(entry.compositionParent),
+			),
+		).toBe(true)
+		expect(
+			STONEFLOW_CATALOG_REGISTRATIONS.every((entry) =>
+				entry.ingredients.every((ingredient) => catalogIds.has(ingredient)),
+			),
+		).toBe(true)
+		expect(
+			STONEFLOW_CATALOG_REGISTRATIONS.find((entry) => entry.id === 'stoneflow-row-shell')
+				?.consumers,
+		).toEqual([
+			'src/features/lifecycle/components/LifecycleRowAdapter.tsx',
+			'src/features/project/components/ProjectRowAdapter.tsx',
+			'src/features/task/components/TaskRowAdapter.tsx',
+		])
+		for (const [name, definitionPath] of [
+			['PriorityIcon', 'src/features/task/model/indicators/PriorityIcon.tsx'],
+			['TaskStatusIndicator', 'src/features/task/model/indicators/TaskStatusIndicator.tsx'],
+			['RouterFeedbackPage', 'src/routes/-router-feedback.tsx'],
+		]) {
+			expect(STONEFLOW_CATALOG_REGISTRATIONS).toContainEqual(
+				expect.objectContaining({ name, definitionPath }),
+			)
+		}
+
+		for (const family of [
+			'ColorSwatchPicker',
+			'Disclosure',
+			'ProgressCircle',
+			'ScrollShadow',
+			'Surface',
+			'ActionBar',
+			'CellSelect',
+			'CellSwitch',
+			'Resizable',
+			'Timeline',
+		]) {
+			expect(HEROUI_REGISTRATIONS.some((entry) => entry.family === family)).toBe(true)
+		}
+		expect(HEROUI_REGISTRATIONS.find((entry) => entry.family === 'SearchField')).toMatchObject({
+			adoption: 'used',
+		})
+		expect(HEROUI_REGISTRATIONS.find((entry) => entry.family === 'Breadcrumbs')).toMatchObject({
+			adoption: 'used',
+		})
+		expect(
+			HEROUI_REGISTRATIONS.find((entry) => entry.id === 'heroui-oss-toast-function'),
+		).toMatchObject({ exportKind: 'function', adoption: 'used' })
+		expect(
+			HEROUI_REGISTRATIONS.find((entry) => entry.id === 'heroui-oss-selection-type'),
+		).toMatchObject({ exportKind: 'type', adoption: 'used' })
+		expect(STONEFLOW_PRODUCT_SCENE_REGISTRATIONS.length).toBeGreaterThanOrEqual(9)
+		for (const sceneId of [
+			'stoneflow-scene-shell',
+			'stoneflow-scene-task-board',
+			'stoneflow-scene-task-detail',
+			'stoneflow-scene-global-search',
+			'stoneflow-scene-settings-sync',
+			'stoneflow-scene-entity-detail',
+			'stoneflow-scene-launcher',
+			'stoneflow-scene-feedback-recovery',
+			'stoneflow-scene-space-editor',
+		]) {
+			expect(
+				STONEFLOW_PRODUCT_SCENE_REGISTRATIONS.find(
+					(entry) => entry.id === sceneId,
+				)?.ingredients.some((ingredient) => ingredient.startsWith('heroui-')),
+			).toBe(true)
+		}
 	})
 
 	it('当前批次没有目标视图样例时回到该视图的分类目录', () => {
@@ -565,6 +655,12 @@ describe('UiLabApp', () => {
 			),
 		).toBeInTheDocument()
 		expect(within(preview).queryByRole('button', { name: '新建任务' })).not.toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: 'HeroUI SearchField' }))
+		const adoptedSearch = within(preview).getByRole('searchbox', {
+			name: '搜索任务与项目',
+		})
+		fireEvent.change(adoptedSearch, { target: { value: '日期' } })
+		expect(within(preview).getByText('当前查询：日期')).toBeInTheDocument()
 
 		for (const ledgerQuery of [
 			'HeroUI ColorSwatchPicker',
@@ -580,14 +676,14 @@ describe('UiLabApp', () => {
 		fireEvent.change(search, { target: { value: 'SpaceEditorDialog.tsx' } })
 		fireEvent.click(screen.getByRole('button', { name: 'HeroUI ColorSwatchPicker' }))
 		expect(screen.getByRole('heading', { name: 'HeroUI ColorSwatchPicker' })).toBeInTheDocument()
-		expect(screen.getByText('仅总账（无独立预览）')).toBeInTheDocument()
+		expect(screen.getByText('由产品组合覆盖')).toBeInTheDocument()
 		expect(
 			screen.getByText('src/features/space/components/SpaceEditorDialog.tsx'),
 		).toBeInTheDocument()
-		expect(screen.getByText('Space Editor')).toBeInTheDocument()
+		expect(screen.getByText('生产组合（见消费位置）')).toBeInTheDocument()
 		expect(screen.getByText('Keep')).toBeInTheDocument()
 		expect(document.querySelectorAll('[data-ui-lab-preview-root]')).toHaveLength(0)
-		expect(within(preview).getByText(/该能力已在 Space Editor 组合中使用/)).toBeInTheDocument()
+		expect(within(preview).getByText(/当前能力已由真实产品组合消费/)).toBeInTheDocument()
 
 		fireEvent.click(screen.getByRole('button', { name: '按批次' }))
 		expect(
@@ -618,14 +714,9 @@ describe('UiLabApp', () => {
 
 		fireEvent.click(screen.getByRole('button', { hidden: true, name: '替换候选' }))
 		expect(screen.queryByRole('dialog', { name: '确认审查范围' })).not.toBeInTheDocument()
-		expect(within(preview).getByRole('heading', { name: 'HeroUI SearchField' })).toBeInTheDocument()
-		expect(screen.getByRole('button', { name: 'HeroUI DatePicker' })).toBeInTheDocument()
-
-		const candidateSearch = within(preview).getByRole('searchbox', {
-			name: '搜索任务与项目',
-		})
-		fireEvent.change(candidateSearch, { target: { value: '日期' } })
-		expect(within(preview).getByText('当前查询：日期')).toBeInTheDocument()
+		expect(screen.getByRole('heading', { name: 'HeroUI Autocomplete' })).toBeInTheDocument()
+		expect(within(preview).getByText('未在 UI Lab 渲染')).toBeInTheDocument()
+		expect(screen.getByText('候选（尚未批准）')).toBeInTheDocument()
 
 		fireEvent.change(search, { target: { value: 'DatePicker' } })
 		fireEvent.click(screen.getByRole('button', { name: 'HeroUI DatePicker' }))
@@ -635,8 +726,9 @@ describe('UiLabApp', () => {
 		).not.toBeInTheDocument()
 
 		fireEvent.click(screen.getByRole('button', { name: '探索中' }))
-		expect(
-			within(preview).getByText('首期不放探索项；只有带明确产品假设的独立 ticket 才能加入。'),
-		).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: 'HeroUI Accordion' })).toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: 'HeroUI Accordion' }))
+		expect(within(preview).getByText(/当前无产品消费者/)).toBeInTheDocument()
+		expect(screen.getByText('Upstream · 无覆盖')).toBeInTheDocument()
 	})
 })

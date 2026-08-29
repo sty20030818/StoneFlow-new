@@ -1,5 +1,9 @@
 import { describe, expect, test } from 'bun:test'
+import { existsSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
+import { HEROUI_REGISTRATIONS } from '../src/ui-lab/catalog/heroUiRegistrations'
+import { STONEFLOW_CATALOG_REGISTRATIONS } from '../src/ui-lab/catalog/stoneFlowRegistrations'
 import { scanFeatureBoundarySources, scanUiRepositoryContract } from './check-feature-boundaries'
 
 const TERMINAL_STYLE_PATHS = [
@@ -11,6 +15,140 @@ const TERMINAL_STYLE_PATHS = [
 ]
 
 describe('feature and HeroUI boundary scanner', () => {
+	test('锁定版 HeroUI 的全部公开组件 subpath 都进入同一 registration', () => {
+		for (const [packageName, packageDirectory, nonComponentExports] of [
+			['@heroui/react', '@heroui/react', new Set(['./package.json', './rac', './styles'])],
+			['@heroui-pro/react', '@heroui-pro/react', new Set(['./css', './package.json'])],
+		] as const) {
+			const packageJson = JSON.parse(
+				readFileSync(
+					join(import.meta.dir, '..', 'node_modules', packageDirectory, 'package.json'),
+					'utf8',
+				),
+			) as { exports: Record<string, unknown>; version: string }
+			const publicComponents = Object.keys(packageJson.exports)
+				.filter(
+					(path) => path.startsWith('./') && !path.includes('*') && !nonComponentExports.has(path),
+				)
+				.map((path) => `${packageName}${path.slice(1)}`)
+				.sort()
+			const registeredComponents = HEROUI_REGISTRATIONS.filter(
+				(entry) => entry.packageName === packageName && entry.exportKind === 'component',
+			)
+				.map((entry) => entry.exportPath)
+				.sort()
+
+			expect(registeredComponents).toEqual(publicComponents)
+			expect(
+				HEROUI_REGISTRATIONS.filter((entry) => entry.packageName === packageName).every(
+					(entry) => entry.packageVersion === packageJson.version,
+				),
+			).toBe(true)
+		}
+	})
+
+	test('StoneFlow registration 的定义与直接消费者路径都存在', () => {
+		expect(
+			STONEFLOW_CATALOG_REGISTRATIONS.every(
+				(entry) => existsSync(entry.definitionPath) && entry.consumers.every(existsSync),
+			),
+		).toBe(true)
+	})
+
+	test('HeroUI catalog 门禁允许已登记家族、alias、type-only、函数 API 与公开 subpath', () => {
+		const violations = scanFeatureBoundarySources([
+			{
+				path: 'src/layout/ShellHeader.tsx',
+				source: `
+// import { CommentOnlyUnknown } from '@heroui/react'
+const documentation = '@heroui/react'
+import { Button as HeroButton } from '@heroui/react'
+void documentation
+void HeroButton
+`,
+			},
+			{
+				path: 'src/features/update/hooks/useManualUpdateCheck.ts',
+				source: `
+import { toast } from '@heroui/react/toast'
+void toast
+`,
+			},
+			{
+				path: 'src/features/entity-detail/components/EntityDetailDrawerHost.tsx',
+				source: `
+import { Resizable as Layout } from '@heroui-pro/react/resizable'
+void Layout
+`,
+			},
+			{
+				path: 'src/features/filter/components/FilterBar.tsx',
+				source: `
+import { type Selection } from '@heroui/react'
+import type { UnknownDocumentationType } from '@heroui/react'
+type Selected = Selection
+`,
+			},
+			{
+				path: 'src/ui-lab/Unknown.tsx',
+				source: `import { UnregisteredLabOnly } from '@heroui/react'`,
+			},
+			{
+				path: 'src/layout/Unknown.test.tsx',
+				source: `import { UnregisteredTestOnly } from '@heroui/react'`,
+			},
+			{
+				path: 'src/features/task/testing/Unknown.tsx',
+				source: `import { UnregisteredTestingOnly } from '@heroui/react'`,
+			},
+			{
+				path: 'src/archive/Unknown.tsx',
+				source: `import { UnregisteredArchivedOnly } from '@heroui/react'`,
+			},
+			{
+				path: 'src/routes/debug.unknown.tsx',
+				source: `import { UnregisteredDebugOnly } from '@heroui/react'`,
+			},
+		])
+
+		expect(violations.filter(({ ruleId }) => ruleId === 'heroui-catalog-drift')).toEqual([])
+	})
+
+	test('HeroUI catalog 门禁拒绝未登记、未采用、消费漂移与无法映射的 runtime import', () => {
+		const violations = scanFeatureBoundarySources([
+			{
+				path: 'src/layout/CatalogDrift.tsx',
+				source: `
+/* import { BlockCommentOnlyUnknown } from '@heroui/react' */
+import { Accordion, ActionBar, Button, Selection, UnregisteredWidget } from '@heroui/react'
+import * as HeroUIPro from '@heroui-pro/react'
+export { Button as ReExportedButton } from '@heroui/react'
+void import('@heroui-pro/react')
+void Accordion
+void ActionBar
+void Button
+void Selection
+void UnregisteredWidget
+void HeroUIPro
+`,
+			},
+		]).filter(({ ruleId }) => ruleId === 'heroui-catalog-drift')
+
+		expect(violations).toHaveLength(8)
+		expect(violations.map(({ detail }) => detail)).toEqual(
+			expect.arrayContaining([
+				'@heroui/react 的 Accordion 仍登记为 no-current-scenario',
+				'@heroui/react 的 runtime ActionBar 尚未登记',
+				'@heroui/react 的 Button 尚未登记消费者 src/layout/CatalogDrift.tsx',
+				'@heroui/react 的 runtime Selection 尚未登记',
+				'@heroui/react 的 runtime UnregisteredWidget 尚未登记',
+				'@heroui-pro/react 使用了无法映射到 catalog 家族的 runtime import/export',
+				'@heroui/react 使用了无法映射到 catalog 家族的 runtime import/export',
+				'@heroui-pro/react 的动态 import 无法映射到 catalog 家族',
+			]),
+		)
+	})
+
 	test('保留既有 feature public-surface 边界', () => {
 		const violations = scanFeatureBoundarySources([
 			{
@@ -130,7 +268,7 @@ export function Example() {
 }
 `,
 			},
-		])
+		]).filter(({ ruleId }) => ruleId !== 'heroui-catalog-drift')
 
 		expect(violations.map(({ ruleId, tag, token }) => ({ ruleId, tag, token }))).toEqual([
 			{ ruleId: 'heroui-skin-style', tag: 'Button', token: 'rounded-lg' },
@@ -172,7 +310,7 @@ export function VisualDebt() {
 }
 `,
 			},
-		])
+		]).filter(({ ruleId }) => ruleId !== 'heroui-catalog-drift')
 
 		expect(violations.map(({ ruleId }) => ruleId)).toEqual([
 			'legacy-visual-style',
@@ -269,7 +407,7 @@ import { oldButton } from '@/shared/components/base/button'
 export const Fixture = () => <Button className="rounded-lg" />
 `,
 			},
-		])
+		]).filter(({ ruleId }) => ruleId !== 'heroui-catalog-drift')
 
 		expect(violations.map(({ ruleId, tag, token }) => ({ ruleId, tag, token }))).toEqual([
 			{ ruleId: 'heroui-internal-metric', tag: 'Button', token: 'h-11' },

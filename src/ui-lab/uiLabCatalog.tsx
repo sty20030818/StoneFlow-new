@@ -1,5 +1,10 @@
 import type { ComponentType } from 'react'
 
+import { HEROUI_REGISTRATIONS, type HeroUIRegistration } from './catalog/heroUiRegistrations'
+import {
+	STONEFLOW_CATALOG_REGISTRATIONS,
+	type StoneFlowCatalogRegistration,
+} from './catalog/stoneFlowRegistrations'
 import { TICKET_02_SAMPLES } from './samples/ticket-02/ticket02Samples'
 import { TICKET_03_SAMPLES } from './samples/ticket-03/fieldsAndSettingsSamples'
 import { TICKET_04_SAMPLES } from './samples/ticket-04/navigationSamples'
@@ -9,7 +14,14 @@ import { TICKET_07_SAMPLES } from './samples/ticket-07/overlaySamples'
 import { TICKET_08_SAMPLES } from './samples/ticket-08/herouiCandidateSamples'
 
 export type UiLabViewId = 'stoneflow' | 'heroui'
-export type UiLabCoverage = 'rendered' | 'missing' | 'real-app-only' | 'ledger-only'
+export type UiLabCoverage =
+	| 'rendered'
+	| 'missing'
+	| 'covered-in-composition'
+	| 'upstream-no-override'
+	| 'candidate'
+	| 'real-app-only'
+export type UiLabCapabilityKind = 'component' | 'function' | 'type' | 'product-scene'
 export type UiLabDisposition = 'keep' | 'simplify' | 'candidate' | 'real-app-only'
 export type UiLabAdoptionStatus = 'used' | 'candidate' | 'no-current-scenario'
 export type UiLabReviewStatus = 'done' | 'pending' | 'external'
@@ -59,10 +71,16 @@ export type UiLabReviewUnitInput =
 	  })
 
 type UiLabInventoryMetadata = {
+	family: string | null
+	capabilityKind: UiLabCapabilityKind | null
+	sourcePackage: string | null
+	packageVersion: string | null
+	definitionPath: string | null
 	recommendedOwner: string | null
 	disposition: UiLabDisposition | null
 	consumers: readonly string[] | null
 	compositionParent: string | null
+	ingredients: readonly string[] | null
 	adoption: UiLabAdoptionStatus | null
 }
 
@@ -71,7 +89,7 @@ export type UiLabCatalogEntry =
 	| (UiLabCatalogEntryBase &
 			UiLabInventoryMetadata & {
 				entryKind: 'ledger-only'
-				coverage: 'ledger-only'
+				coverage: Exclude<UiLabCoverage, 'rendered' | 'missing'>
 				reason: string
 				Preview?: never
 			})
@@ -127,36 +145,149 @@ const UI_LAB_REVIEW_UNITS = [
 	},
 ] satisfies readonly UiLabReviewUnitInput[]
 
-export const UI_LAB_CATALOG: readonly UiLabCatalogEntry[] = [
-	...UI_LAB_REVIEW_UNITS.map((entry) => ({
-		...entry,
-		entryKind: 'review-unit' as const,
-		recommendedOwner: null,
-		disposition: entry.coverage === 'real-app-only' ? ('real-app-only' as const) : null,
-		consumers: null,
-		compositionParent: null,
-		adoption: null,
-	})),
-	{
-		id: 'heroui-color-swatch-picker-ledger',
-		name: 'HeroUI ColorSwatchPicker',
+type UiLabLedgerEntry = Extract<UiLabCatalogEntry, { entryKind: 'ledger-only' }>
+
+function heroUIRegistrationToEntry(registration: HeroUIRegistration): UiLabLedgerEntry {
+	const isUsed = registration.adoption === 'used'
+	const isCandidate = registration.adoption === 'candidate'
+	const packageLabel = registration.packageName === '@heroui-pro/react' ? 'HeroUI Pro' : 'HeroUI'
+	return {
+		id: registration.id,
+		name: `${packageLabel} ${registration.family}`,
 		view: 'heroui',
-		category: '已采用',
-		description: '登记 Space Editor 已使用的 HeroUI 颜色选择器；当前不为目录完整度复制生产预览。',
-		keywords: ['color', 'swatch', 'picker', '颜色', '空间编辑'],
+		category: isUsed ? '已采用' : isCandidate ? '替换候选' : '探索中',
+		description: isUsed
+			? `生产已使用的 ${packageLabel} ${registration.family}；目录记录真实消费者，不为清单完整度复制预览。`
+			: isCandidate
+				? `${packageLabel} ${registration.family} 有明确产品替换对象；迁移必须由后续对照证明合同不退化且实现确实简化。`
+				: `锁定版本公开的 ${packageLabel} ${registration.family} 能力；StoneFlow 当前没有真实使用场景。`,
+		keywords: [
+			registration.family,
+			registration.packageName,
+			registration.exportPath,
+			registration.exportKind,
+			registration.adoption,
+		],
 		owner: 'Upstream',
 		recommendedOwner: 'Upstream',
-		disposition: 'keep',
-		consumers: ['src/features/space/components/SpaceEditorDialog.tsx'],
-		compositionParent: 'Space Editor',
-		adoption: 'used',
-		source: '@heroui/react@3.2.4',
+		disposition: isCandidate ? 'candidate' : 'keep',
+		consumers: registration.consumers,
+		compositionParent: registration.consumers.length > 0 ? '生产组合（见消费位置）' : null,
+		ingredients: [],
+		adoption: registration.adoption,
+		family: registration.family,
+		capabilityKind: registration.exportKind,
+		sourcePackage: registration.packageName,
+		packageVersion: registration.packageVersion,
+		definitionPath: registration.exportPath,
+		source: `${registration.packageName}@${registration.packageVersion} · ${registration.exportPath}`,
 		entryKind: 'ledger-only',
-		coverage: 'ledger-only',
-		states: 'Selected、Disabled、Keyboard Focus',
-		verification: '生产使用已由静态源码确认；独立视觉尚未在 Lab 审查',
-		reason: '该能力已在 Space Editor 组合中使用；独立原生对照由后续审查批次补充。',
-	},
+		coverage: isUsed
+			? 'covered-in-composition'
+			: isCandidate
+				? 'candidate'
+				: 'upstream-no-override',
+		states:
+			registration.exportKind === 'component'
+				? '公开组件能力；具体状态由真实消费场景决定'
+				: registration.exportKind === 'function'
+					? '函数 API；无独立视觉状态'
+					: 'TypeScript 类型；无视觉状态',
+		verification: isUsed
+			? '生产 import 快照与 catalog 漂移门禁；视觉和交互由消费方验证'
+			: '锁定版本公开导出已登记；当前不声明生产覆盖',
+		reason: isUsed
+			? '当前能力已由真实产品组合消费；独立预览只在能暴露额外判断时补充。'
+			: isCandidate
+				? '候选只登记，不代表迁移获批；由后续同 fixture 对照决定。'
+				: '当前无产品消费者，不创建无假设 Demo，也不计入生产覆盖率。',
+	}
+}
+
+function stoneFlowCategory(registration: StoneFlowCatalogRegistration) {
+	if (registration.kind === 'product-scene') return 'Product Scenes'
+	const path = registration.definitionPath.toLocaleLowerCase()
+	if (/(dialog|popover|tooltip|drawer|overlay|context-menu)/.test(path)) return 'Overlays'
+	if (/(form|field|filter|editor|composer|control)/.test(path)) return 'Fields'
+	if (/(sidebar|breadcrumb|navigation|route|page-frame|header)/.test(path)) return 'Navigation'
+	if (/(board|row|list|grid|collection|workspace|project|task|lifecycle|view)/.test(path)) {
+		return 'Collections'
+	}
+	if (/(alert|toast|feedback|update|status|empty|error|loading|changelog)/.test(path)) {
+		return 'Feedback'
+	}
+	return 'Actions'
+}
+
+function stoneFlowRegistrationToEntry(
+	registration: StoneFlowCatalogRegistration,
+): UiLabLedgerEntry {
+	return {
+		id: registration.id,
+		name: registration.name,
+		view: 'stoneflow',
+		category: stoneFlowCategory(registration),
+		description:
+			registration.kind === 'product-scene'
+				? `StoneFlow 产品组合场景；只登记真实组件关系，不复制 Router、Store 或桌面运行时。`
+				: `生产可达的 StoneFlow ${registration.name}；由产品组合覆盖，不为总账完整度复制独立 Demo。`,
+		keywords: [
+			registration.name,
+			registration.definitionPath,
+			registration.kind,
+			...registration.ingredients,
+		],
+		owner: registration.owner,
+		recommendedOwner: registration.recommendedOwner,
+		disposition: registration.disposition,
+		consumers: registration.consumers,
+		compositionParent: registration.compositionParent,
+		ingredients: registration.ingredients,
+		adoption: registration.adoption,
+		family: registration.name,
+		capabilityKind: registration.kind,
+		sourcePackage: null,
+		packageVersion: null,
+		definitionPath: registration.definitionPath,
+		source: registration.definitionPath,
+		entryKind: 'ledger-only',
+		coverage: registration.coverage,
+		states: '由对应产品组合与真实消费者定义',
+		verification: registration.verification,
+		reason: registration.reason,
+	}
+}
+
+const INVENTORY_ENTRIES = [
+	...STONEFLOW_CATALOG_REGISTRATIONS.map(stoneFlowRegistrationToEntry),
+	...HEROUI_REGISTRATIONS.map(heroUIRegistrationToEntry),
+] satisfies readonly UiLabLedgerEntry[]
+const INVENTORY_BY_ID = new Map(INVENTORY_ENTRIES.map((entry) => [entry.id, entry]))
+const REVIEW_UNIT_IDS = new Set(UI_LAB_REVIEW_UNITS.map((entry) => entry.id))
+
+export const UI_LAB_CATALOG: readonly UiLabCatalogEntry[] = [
+	...UI_LAB_REVIEW_UNITS.map((entry) => {
+		const inventory = INVENTORY_BY_ID.get(entry.id)
+		return {
+			...entry,
+			entryKind: 'review-unit' as const,
+			owner: inventory?.owner ?? entry.owner,
+			family: inventory?.family ?? null,
+			capabilityKind: inventory?.capabilityKind ?? null,
+			sourcePackage: inventory?.sourcePackage ?? null,
+			packageVersion: inventory?.packageVersion ?? null,
+			definitionPath: inventory?.definitionPath ?? null,
+			recommendedOwner: inventory?.recommendedOwner ?? null,
+			disposition:
+				inventory?.disposition ??
+				(entry.coverage === 'real-app-only' ? ('real-app-only' as const) : null),
+			consumers: inventory?.consumers ?? null,
+			compositionParent: inventory?.compositionParent ?? null,
+			ingredients: inventory?.ingredients ?? null,
+			adoption: inventory?.adoption ?? null,
+		}
+	}),
+	...INVENTORY_ENTRIES.filter((entry) => !REVIEW_UNIT_IDS.has(entry.id)),
 ]
 
 export const UI_LAB_REVIEW_BATCHES: readonly UiLabReviewBatch[] = [

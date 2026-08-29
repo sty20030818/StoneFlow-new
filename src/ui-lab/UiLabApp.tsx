@@ -9,6 +9,7 @@ import {
 	UI_LAB_REVIEW_BATCHES,
 	UI_LAB_VIEWS,
 	type UiLabAdoptionStatus,
+	type UiLabCapabilityKind,
 	type UiLabCatalogEntry,
 	type UiLabCoverage,
 	type UiLabDisposition,
@@ -31,8 +32,17 @@ const COVERAGE_FILTERS: readonly { id: CoverageFilter; label: string }[] = [
 const COVERAGE_LABELS: Record<UiLabCoverage, string> = {
 	rendered: 'Lab 已渲染',
 	missing: '缺失样例',
+	'covered-in-composition': '由产品组合覆盖',
+	'upstream-no-override': 'Upstream · 无覆盖',
+	candidate: '候选（尚未批准）',
 	'real-app-only': '仅真实应用',
-	'ledger-only': '仅总账（无独立预览）',
+}
+
+const CAPABILITY_KIND_LABELS: Record<UiLabCapabilityKind, string> = {
+	component: '组件',
+	function: '函数 API',
+	type: 'TypeScript 类型',
+	'product-scene': '产品组合场景',
 }
 
 const DISPOSITION_LABELS: Record<UiLabDisposition, string> = {
@@ -121,6 +131,12 @@ export function UiLabApp() {
 				sample.recommendedOwner ?? '',
 				...(sample.consumers ?? []),
 				...sample.keywords,
+				sample.family ?? '',
+				sample.capabilityKind ?? '',
+				sample.sourcePackage ?? '',
+				sample.packageVersion ?? '',
+				sample.definitionPath ?? '',
+				...(sample.ingredients ?? []),
 			]
 				.join(' ')
 				.toLocaleLowerCase()
@@ -136,12 +152,7 @@ export function UiLabApp() {
 		visibleSamples.find((sample) => sample.id === selectedId) ?? visibleSamples[0] ?? null
 	const selectedReviewBatch = selectedSample ? reviewBatchForEntry(selectedSample.id) : undefined
 	const selectedReviewEntry = selectedSample ? reviewEntryForEntry(selectedSample.id) : undefined
-	let emptyMessage =
-		navigationMode === 'category' && viewId === 'heroui' && category === '探索中'
-			? '首期不放探索项；只有带明确产品假设的独立 ticket 才能加入。'
-			: navigationMode === 'batch'
-				? '这个批次没有样例'
-				: '这个分类还没有样例'
+	let emptyMessage = navigationMode === 'batch' ? '这个批次没有样例' : '这个分类还没有样例'
 	if (normalizedQuery) {
 		emptyMessage = coverageFilter === 'all' ? '没有匹配的样例' : '没有同时匹配搜索与覆盖筛选的条目'
 	} else if (coverageFilter === 'no-preview') {
@@ -459,6 +470,23 @@ export function UiLabApp() {
 
 							<dl className='grid shrink-0 grid-cols-2 gap-x-6 gap-y-3 border-b border-separator p-4 text-sm xl:grid-cols-3'>
 								<div>
+									<dt className='text-xs text-muted'>家族 / 类型</dt>
+									<dd className='mt-1'>
+										{selectedSample.family ?? '未记录'}
+										{selectedSample.capabilityKind
+											? ` · ${CAPABILITY_KIND_LABELS[selectedSample.capabilityKind]}`
+											: ''}
+									</dd>
+								</div>
+								<div>
+									<dt className='text-xs text-muted'>来源包 / 锁定版本</dt>
+									<dd className='mt-1 break-words'>
+										{selectedSample.sourcePackage
+											? `${selectedSample.sourcePackage}@${selectedSample.packageVersion}`
+											: '项目内组件'}
+									</dd>
+								</div>
+								<div>
 									<dt className='text-xs text-muted'>当前 Owner</dt>
 									<dd className='mt-1'>{selectedSample.owner}</dd>
 								</div>
@@ -502,14 +530,28 @@ export function UiLabApp() {
 									<dd className='mt-1 break-words'>{selectedSample.source}</dd>
 								</div>
 								<div>
-									<dt className='text-xs text-muted'>消费位置</dt>
+									<dt className='text-xs text-muted'>定义路径</dt>
+									<dd className='mt-1 break-words'>{selectedSample.definitionPath ?? '未记录'}</dd>
+								</div>
+								<div>
+									<dt className='text-xs text-muted'>消费 / 覆盖位置</dt>
 									<dd className='mt-1 break-words'>
-										{selectedSample.consumers?.join('；') ?? '未记录'}
+										{selectedSample.consumers && selectedSample.consumers.length > 0
+											? selectedSample.consumers.join('；')
+											: '当前无生产消费者'}
 									</dd>
 								</div>
 								<div>
 									<dt className='text-xs text-muted'>组合父项</dt>
 									<dd className='mt-1'>{selectedSample.compositionParent ?? '未记录'}</dd>
+								</div>
+								<div>
+									<dt className='text-xs text-muted'>上游原料 / 子项</dt>
+									<dd className='mt-1 break-words'>
+										{selectedSample.ingredients && selectedSample.ingredients.length > 0
+											? selectedSample.ingredients.join('；')
+											: '无'}
+									</dd>
 								</div>
 								<div>
 									<dt className='text-xs text-muted'>覆盖状态</dt>
