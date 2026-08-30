@@ -9,6 +9,7 @@ import {
 	type NativeComparisonMode,
 } from './nativeComparisonContract'
 import { TICKET_09_NATIVE_FIXTURES } from '../samples/ticket-09/heroUiOssAtomsFormsSamples'
+import { TICKET_10_NATIVE_FIXTURES } from '../samples/ticket-10/heroUiComplexControlsSamples'
 
 function ButtonFixture() {
 	const [pressed, setPressed] = useState(false)
@@ -63,12 +64,20 @@ const NATIVE_COMPARISON_FIXTURES = {
 	button: { label: 'Button', Preview: ButtonFixture },
 	tooltip: { label: 'Tooltip', Preview: TooltipFixture },
 	...TICKET_09_NATIVE_FIXTURES,
+	...TICKET_10_NATIVE_FIXTURES,
 } satisfies Record<NativeComparisonFixtureId, { label: string; Preview: ComponentType }>
 const TALL_FIXTURES = new Set<NativeComparisonFixtureId>([
 	'oss-text-fields',
 	'oss-select-listbox',
 	'oss-combobox-autocomplete',
 	'oss-date-color',
+	'complex-menu',
+	'complex-overlays',
+	'complex-collections',
+	'complex-command',
+	'complex-cell-controls',
+	'complex-layout-surfaces',
+	'complex-timeline-hover-card',
 ])
 
 export function NativeComparisonFixture({ fixture }: { fixture: NativeComparisonFixtureId }) {

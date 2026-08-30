@@ -44,11 +44,60 @@ describe('UiLabApp', () => {
 				(entry) => entry.status === 'pending',
 			),
 		).toBe(true)
+		expect(UI_LAB_REVIEW_BATCHES.find((batch) => batch.id === 'batch-10')?.entries).toHaveLength(10)
+		expect(
+			UI_LAB_REVIEW_BATCHES.find((batch) => batch.id === 'batch-10')?.entries.every(
+				(entry) => entry.status === 'pending',
+			),
+		).toBe(true)
 		expect(
 			UI_LAB_REVIEW_BATCHES.some((batch) =>
 				batch.entries.some((entry) => entry.status === 'external'),
 			),
 		).toBe(true)
+	})
+
+	it('第十批区分独立对照、组合覆盖、候选与 ledger-only', () => {
+		const collections = UI_LAB_CATALOG.find(
+			(entry) => entry.id === 'heroui-complex-collections-review',
+		)
+		const cells = UI_LAB_CATALOG.find((entry) => entry.id === 'heroui-complex-cell-controls-review')
+		const sidebar = UI_LAB_CATALOG.find((entry) => entry.id === 'heroui-pro-sidebar')
+
+		expect(collections).toMatchObject({
+			coverage: 'rendered',
+			adoption: 'used',
+			ingredients: ['heroui-list-view', 'heroui-oss-table'],
+		})
+		expect(cells).toMatchObject({
+			coverage: 'rendered',
+			adoption: 'used',
+			ingredients: ['heroui-pro-cell-switch', 'heroui-pro-cell-select', 'heroui-pro-inline-select'],
+		})
+		expect(sidebar).toMatchObject({
+			entryKind: 'ledger-only',
+			coverage: 'covered-in-composition',
+			adoption: 'used',
+		})
+		for (const family of [
+			'ActionBar',
+			'CellSelect',
+			'CellSwitch',
+			'Command',
+			'ContextMenu',
+			'EmptyState',
+			'ListView',
+			'Resizable',
+			'Sheet',
+			'Sidebar',
+			'Timeline',
+		]) {
+			expect(
+				UI_LAB_CATALOG.find(
+					(entry) => entry.family === family && entry.sourcePackage === '@heroui-pro/react',
+				),
+			).toMatchObject({ adoption: 'used' })
+		}
 	})
 
 	it('第九批从总账派生真实消费者，并保持原生候选与人工审查边界', () => {

@@ -13,6 +13,16 @@ export const NATIVE_COMPARISON_FIXTURE_IDS = [
 	'oss-combobox-autocomplete',
 	'oss-date-color',
 	'oss-compact-metadata',
+	'complex-menu',
+	'complex-overlays',
+	'complex-navigation',
+	'complex-collections',
+	'complex-command',
+	'complex-action-bar',
+	'complex-cell-controls',
+	'complex-layout-surfaces',
+	'complex-timeline-hover-card',
+	'complex-empty-state',
 ] as const
 export type NativeComparisonFixtureId = (typeof NATIVE_COMPARISON_FIXTURE_IDS)[number]
 export type NativeComparisonAccent = (typeof ACCENT_PRESETS)[number]['id']

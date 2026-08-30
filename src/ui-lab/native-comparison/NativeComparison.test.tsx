@@ -41,6 +41,21 @@ describe('NativeComparison', () => {
 		expect(interval).toHaveValue('16')
 	})
 
+	it('第十批复用复杂控件公共状态，并在切换 fixture 时清理 Portal', async () => {
+		const { rerender } = render(<NativeComparisonFixture fixture='complex-overlays' />)
+		fireEvent.click(screen.getByRole('button', { name: '打开 Modal' }))
+		expect(await screen.findByRole('dialog', { name: '编辑任务' })).toBeInTheDocument()
+
+		rerender(<NativeComparisonFixture fixture='complex-navigation' />)
+		await waitFor(() =>
+			expect(screen.queryByRole('dialog', { name: '编辑任务' })).not.toBeInTheDocument(),
+		)
+		expect(screen.getByRole('button', { name: /详情与诊断/ })).toHaveAttribute(
+			'aria-expanded',
+			'true',
+		)
+	})
+
 	it('用两个具名 iframe 隔离 Upstream 与 Token，并只在父文档挂载一个 Current fixture', () => {
 		document.documentElement.dataset.accent = 'ocean'
 		render(<NativeComparison fixture='button' />)

@@ -14,6 +14,7 @@ import { TICKET_06_SAMPLES } from './samples/ticket-06/feedbackLauncherSamples'
 import { TICKET_07_SAMPLES } from './samples/ticket-07/overlaySamples'
 import { TICKET_08_SAMPLES } from './samples/ticket-08/herouiCandidateSamples'
 import { TICKET_09_SAMPLES } from './samples/ticket-09/heroUiOssAtomsFormsSamples'
+import { TICKET_10_SAMPLES } from './samples/ticket-10/heroUiComplexControlsSamples'
 
 export type UiLabViewId = 'stoneflow' | 'heroui'
 export type UiLabCoverage =
@@ -37,6 +38,7 @@ export type UiLabReviewBatchId =
 	| 'batch-07'
 	| 'batch-08'
 	| 'batch-09'
+	| 'batch-10'
 
 export type UiLabReviewEntry = {
 	sampleId: string
@@ -147,6 +149,7 @@ const UI_LAB_REVIEW_UNITS: readonly UiLabReviewUnitInput[] = [
 	...TICKET_07_SAMPLES,
 	...TICKET_08_SAMPLES,
 	...TICKET_09_SAMPLES,
+	...TICKET_10_SAMPLES,
 	{
 		id: 'stoneflow-main-launcher-real-app',
 		name: 'Main / Launcher 原生窗口验收',
@@ -452,6 +455,17 @@ export const UI_LAB_REVIEW_BATCHES: readonly UiLabReviewBatch[] = [
 		objective:
 			'用同一 fixture 核对 OSS 原子、表单与紧凑元数据在 Upstream、Token、Current 三层的归属。',
 		entries: TICKET_09_SAMPLES.map(({ id }) => ({
+			sampleId: id,
+			role: 'target' as const,
+			status: 'pending' as const,
+		})),
+	},
+	{
+		id: 'batch-10',
+		label: '第十批',
+		title: 'HeroUI 复杂控件',
+		objective: '核对菜单、浮层、集合、命令、Cell Controls 与 Pro 复杂原料的公共状态和产品边界。',
+		entries: TICKET_10_SAMPLES.map(({ id }) => ({
 			sampleId: id,
 			role: 'target' as const,
 			status: 'pending' as const,
