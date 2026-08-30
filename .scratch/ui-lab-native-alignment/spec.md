@@ -1,6 +1,6 @@
 # StoneFlow UI Lab 全量清单与 HeroUI 原生实现对齐
 
-**Status:** ready-for-agent<br>
+**Status:** implemented — pending manual review<br>
 **日期:** 2026-08-30<br>
 **锁定版本:** HeroUI OSS 3.2.4、HeroUI Styles 3.2.4、HeroUI Pro 1.0.0-beta.8<br>
 **长期门禁:** [ADR-0003](../../Documents/01-架构/adr/ADR-0003-ui-lab-review-and-product-migration-gate.md)<br>

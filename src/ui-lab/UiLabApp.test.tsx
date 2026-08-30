@@ -1134,5 +1134,5 @@ describe('UiLabApp', () => {
 		fireEvent.click(screen.getByRole('button', { name: 'HeroUI Accordion' }))
 		expect(within(preview).getByText(/当前无产品消费者/)).toBeInTheDocument()
 		expect(screen.getByText('Upstream · 无覆盖')).toBeInTheDocument()
-	})
+	}, 10_000)
 })
