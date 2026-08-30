@@ -18,6 +18,7 @@ import { TICKET_10_SAMPLES } from './samples/ticket-10/heroUiComplexControlsSamp
 import { TICKET_11_SAMPLES } from './samples/ticket-11/stoneFlowSharedComponentsSamples'
 import { TICKET_12_SAMPLES } from './samples/ticket-12/taskCollectionCompositionSamples'
 import { TICKET_13_SAMPLES } from './samples/ticket-13/shellSettingsDesktopSceneSamples'
+import { TICKET_14_SAMPLES } from './samples/ticket-14/candidateStyleArchitectureSamples'
 
 export type UiLabViewId = 'stoneflow' | 'heroui'
 export type UiLabCoverage =
@@ -45,6 +46,7 @@ export type UiLabReviewBatchId =
 	| 'batch-11'
 	| 'batch-12'
 	| 'batch-13'
+	| 'batch-14'
 
 export type UiLabReviewEntry = {
 	sampleId: string
@@ -75,6 +77,11 @@ type UiLabCatalogEntryBase = {
 	ingredients?: readonly string[]
 	recommendedOwner?: string
 	disposition?: UiLabDisposition
+	preservedContract?: string
+	expectedDeletion?: string
+	recipeFamilies?: readonly string[]
+	adoption?: UiLabAdoptionStatus
+	currentCoverage?: Extract<UiLabCoverage, 'rendered' | 'real-app-only'>
 }
 
 export type UiLabReviewUnitInput =
@@ -87,7 +94,7 @@ export type UiLabReviewUnitInput =
 	| (UiLabCatalogEntryBase & {
 			coverage: 'rendered'
 			comparisonFixture: NativeComparisonFixtureId
-			Preview?: never
+			Preview?: ComponentType
 			reason?: never
 	  })
 	| (UiLabCatalogEntryBase & {
@@ -160,6 +167,7 @@ const UI_LAB_REVIEW_UNITS: readonly UiLabReviewUnitInput[] = [
 	...TICKET_11_SAMPLES,
 	...TICKET_12_SAMPLES,
 	...TICKET_13_SAMPLES,
+	...TICKET_14_SAMPLES,
 	{
 		id: 'stoneflow-main-launcher-real-app',
 		name: 'Main / Launcher 原生窗口验收',
@@ -345,7 +353,7 @@ export const UI_LAB_CATALOG: readonly UiLabCatalogEntry[] = [
 				(hasProductInventory
 					? derivedIngredients
 					: (entry.inventoryRefs ?? inventory?.ingredients ?? null)),
-			adoption: adoption ?? null,
+			adoption: entry.adoption ?? adoption ?? null,
 		}
 	}),
 	...INVENTORY_ENTRIES.filter((entry) => !REVIEW_UNIT_IDS.has(entry.id)),
@@ -523,6 +531,18 @@ export const UI_LAB_REVIEW_BATCHES: readonly UiLabReviewBatch[] = [
 		objective:
 			'复用生产公开组件和既有 fixture，核对 Shell、Settings、Launcher、反馈与桌面场景的可移植边界。',
 		entries: TICKET_13_SAMPLES.map(({ id }) => ({
+			sampleId: id,
+			role: 'target' as const,
+			status: 'pending' as const,
+		})),
+	},
+	{
+		id: 'batch-14',
+		label: '第十四批',
+		title: '替换候选与样式架构',
+		objective:
+			'冻结 Current 视觉，核对五个 HeroUI 候选的真实消费者、保留合同、可删除项与 Recipe 所有权。',
+		entries: TICKET_14_SAMPLES.map(({ id }) => ({
 			sampleId: id,
 			role: 'target' as const,
 			status: 'pending' as const,

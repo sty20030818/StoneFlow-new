@@ -23,6 +23,10 @@ export const NATIVE_COMPARISON_FIXTURE_IDS = [
 	'complex-layout-surfaces',
 	'complex-timeline-hover-card',
 	'complex-empty-state',
+	'candidate-hover-card',
+	'candidate-inline-select',
+	'candidate-tag-group',
+	'candidate-segment',
 ] as const
 export type NativeComparisonFixtureId = (typeof NATIVE_COMPARISON_FIXTURE_IDS)[number]
 export type NativeComparisonAccent = (typeof ACCENT_PRESETS)[number]['id']

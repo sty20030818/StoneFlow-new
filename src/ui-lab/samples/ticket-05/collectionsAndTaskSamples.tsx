@@ -38,6 +38,7 @@ import {
 import { RowShell, type RowSelectionGroupPosition } from '@/shared/components/row'
 
 import type { UiLabReviewUnitInput } from '../../uiLabCatalog'
+import { LABEL_OPTIONS } from '../sharedFixtureData'
 
 const LONG_TITLE = '把跨窗口同步失败后的恢复路径整理成一条可复现、可验证且能长期维护的规则'
 
@@ -394,13 +395,6 @@ function TablePreview() {
 		</div>
 	)
 }
-
-const LABEL_OPTIONS = [
-	{ id: 'bug', label: 'Bug', color: '#f2555a' },
-	{ id: '123', label: '123', color: '#48b782' },
-	{ id: 'feature', label: 'Feature', color: '#a879f7' },
-	{ id: 'improvement', label: 'Improvement', color: '#4c9ff8' },
-] as const
 
 const labelCheckboxStyles = checkboxVariants({ variant: 'primary' })
 

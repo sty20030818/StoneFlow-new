@@ -10,6 +10,7 @@ import {
 } from './nativeComparisonContract'
 import { TICKET_09_NATIVE_FIXTURES } from '../samples/ticket-09/heroUiOssAtomsFormsSamples'
 import { TICKET_10_NATIVE_FIXTURES } from '../samples/ticket-10/heroUiComplexControlsSamples'
+import { TICKET_14_NATIVE_FIXTURES } from '../samples/ticket-14/candidateNativeFixtures'
 
 function ButtonFixture() {
 	const [pressed, setPressed] = useState(false)
@@ -65,6 +66,7 @@ const NATIVE_COMPARISON_FIXTURES = {
 	tooltip: { label: 'Tooltip', Preview: TooltipFixture },
 	...TICKET_09_NATIVE_FIXTURES,
 	...TICKET_10_NATIVE_FIXTURES,
+	...TICKET_14_NATIVE_FIXTURES,
 } satisfies Record<NativeComparisonFixtureId, { label: string; Preview: ComponentType }>
 const TALL_FIXTURES = new Set<NativeComparisonFixtureId>([
 	'oss-text-fields',
@@ -78,6 +80,7 @@ const TALL_FIXTURES = new Set<NativeComparisonFixtureId>([
 	'complex-cell-controls',
 	'complex-layout-surfaces',
 	'complex-timeline-hover-card',
+	'candidate-segment',
 ])
 
 export function NativeComparisonFixture({ fixture }: { fixture: NativeComparisonFixtureId }) {
@@ -141,7 +144,13 @@ function BaselineFrame({
 	)
 }
 
-export function NativeComparison({ fixture }: { fixture: NativeComparisonFixtureId }) {
+export function NativeComparison({
+	fixture,
+	CurrentPreview,
+}: {
+	fixture: NativeComparisonFixtureId
+	CurrentPreview?: ComponentType
+}) {
 	const isTall = TALL_FIXTURES.has(fixture)
 	return (
 		<div className='w-full' data-native-comparison={fixture}>
@@ -161,7 +170,7 @@ export function NativeComparison({ fixture }: { fixture: NativeComparisonFixture
 						className={isTall ? 'h-[36rem] overflow-y-auto p-4' : 'min-h-72 p-4'}
 						data-native-comparison-current={fixture}
 					>
-						<NativeComparisonFixture fixture={fixture} />
+						{CurrentPreview ? <CurrentPreview /> : <NativeComparisonFixture fixture={fixture} />}
 					</div>
 				</article>
 			</div>

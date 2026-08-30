@@ -40,4 +40,18 @@ describe('UI Lab native baseline boundary', () => {
 		expect(vite).not.toContain('ui-lab-baseline.html')
 		expect(vite).not.toContain('ui-lab.html')
 	})
+
+	test('baseline 可达的 fixture registry 不导入 Current 或生产模块', () => {
+		const host = read('src/ui-lab/native-comparison/NativeComparison.tsx')
+		const atoms = read('src/ui-lab/samples/ticket-09/heroUiOssAtomsFormsSamples.tsx')
+		const complex = read('src/ui-lab/samples/ticket-10/heroUiComplexControlsSamples.tsx')
+		const candidate = read('src/ui-lab/samples/ticket-14/candidateNativeFixtures.tsx')
+		const data = read('src/ui-lab/samples/sharedFixtureData.ts')
+
+		expect(host).toContain("from '../samples/ticket-14/candidateNativeFixtures'")
+		expect(host).not.toContain('candidateStyleArchitectureSamples')
+		for (const source of [host, atoms, complex, candidate, data]) {
+			expect(source).not.toMatch(/from ['"]@\/(?:app|features|layout|routes|shared)\//)
+		}
+	})
 })

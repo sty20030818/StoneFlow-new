@@ -383,7 +383,6 @@ const FAMILY_OVERRIDES: Readonly<Record<string, string>> = {
 const CANDIDATE_KEYS = new Set([
 	'@heroui/react#Autocomplete',
 	'@heroui/react#ComboBox',
-	'@heroui/react#TagGroup',
 	'@heroui-pro/react#HoverCard',
 	'@heroui-pro/react#InlineSelect',
 	'@heroui-pro/react#Segment',

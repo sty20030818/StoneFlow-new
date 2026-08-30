@@ -56,6 +56,15 @@ describe('NativeComparison', () => {
 		)
 	})
 
+	it('第十四批原生候选复用与 Current 相同的标签数据', () => {
+		render(<NativeComparisonFixture fixture='candidate-tag-group' />)
+
+		expect(screen.getByText('Bug')).toBeInTheDocument()
+		expect(screen.getByText('123')).toBeInTheDocument()
+		expect(screen.getByText('Feature')).toBeInTheDocument()
+		expect(screen.getByText('Improvement')).toBeInTheDocument()
+	})
+
 	it('用两个具名 iframe 隔离 Upstream 与 Token，并只在父文档挂载一个 Current fixture', () => {
 		document.documentElement.dataset.accent = 'ocean'
 		render(<NativeComparison fixture='button' />)

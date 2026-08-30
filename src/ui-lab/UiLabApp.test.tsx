@@ -68,11 +68,61 @@ describe('UiLabApp', () => {
 				(entry) => entry.status === 'pending',
 			),
 		).toBe(true)
+		expect(UI_LAB_REVIEW_BATCHES.find((batch) => batch.id === 'batch-14')?.entries).toHaveLength(5)
+		expect(
+			UI_LAB_REVIEW_BATCHES.find((batch) => batch.id === 'batch-14')?.entries.every(
+				(entry) => entry.status === 'pending',
+			),
+		).toBe(true)
 		expect(
 			UI_LAB_REVIEW_BATCHES.some((batch) =>
 				batch.entries.some((entry) => entry.status === 'external'),
 			),
 		).toBe(true)
+	})
+
+	it('第十四批候选具有真实目标、保留合同、删除边界与 Recipe 归属', () => {
+		const sampleIds =
+			UI_LAB_REVIEW_BATCHES.find((batch) => batch.id === 'batch-14')?.entries.map(
+				(entry) => entry.sampleId,
+			) ?? []
+		const samples = sampleIds.map((id) => UI_LAB_CATALOG.find((entry) => entry.id === id)!)
+		const tagGroup = samples.find((sample) => sample.id === 'heroui-candidate-tag-group-labels')!
+		const hoverCard = samples.find(
+			(sample) => sample.id === 'heroui-candidate-hover-card-task-preview',
+		)!
+		const comboBox = samples.find(
+			(sample) => sample.id === 'heroui-candidate-combobox-property-menu',
+		)!
+
+		expect(samples).toHaveLength(5)
+		expect(
+			samples.every(
+				(sample) =>
+					sample.coverage === 'rendered' &&
+					Boolean(sample.comparisonFixture) &&
+					Boolean(sample.Preview) &&
+					Boolean(sample.preservedContract) &&
+					Boolean(sample.expectedDeletion) &&
+					Boolean(sample.recipeFamilies?.length) &&
+					Boolean(sample.definitionPath),
+			),
+		).toBe(true)
+		expect(samples.every((sample) => sample.disposition === 'keep')).toBe(true)
+		expect(samples.filter((sample) => sample.adoption === 'candidate')).toHaveLength(4)
+		expect(hoverCard).toMatchObject({
+			coverage: 'rendered',
+			currentCoverage: 'real-app-only',
+		})
+		expect(comboBox.inventoryRefs).toContain('stoneflow-component-page-filter-button')
+		expect(tagGroup).toMatchObject({
+			owner: 'Upstream',
+			recommendedOwner: 'Upstream',
+			disposition: 'keep',
+			adoption: 'no-current-scenario',
+			consumers: [],
+			expectedDeletion: expect.stringContaining('无'),
+		})
 	})
 
 	it('第十三批九个产品场景保持 Product 所有权与可移植边界', () => {
@@ -536,6 +586,43 @@ describe('UiLabApp', () => {
 		expect(screen.getByText('正在下载更新')).toBeInTheDocument()
 	})
 
+	it('第十四批使用真实 Current 面并显示候选收口合同', () => {
+		render(<UiLabApp />)
+
+		const batch = screen.getByRole('button', {
+			name: /第十四批 · 替换候选与样式架构.*0\/5/,
+		})
+		fireEvent.click(batch)
+		const coverageFilters = screen.getByRole('heading', { name: '覆盖' }).closest('section')!
+		fireEvent.click(within(coverageFilters).getByRole('button', { name: '仅真实应用' }))
+		expect(
+			screen.getByRole('button', { name: /HoverCard → Task Preview.*待审查/ }),
+		).toBeInTheDocument()
+		expect(
+			screen.queryByRole('button', { name: /InlineSelect → Metadata.*待审查/ }),
+		).not.toBeInTheDocument()
+		expect(screen.getByText('Current 验证边界')).toBeInTheDocument()
+		fireEvent.click(within(coverageFilters).getByRole('button', { name: '全部' }))
+		fireEvent.click(screen.getByRole('button', { name: /InlineSelect → Metadata.*待审查/ }))
+
+		const current = document.querySelector(
+			'[data-native-comparison-current="candidate-inline-select"]',
+		)
+		expect(current).not.toBeNull()
+		expect(
+			within(current as HTMLElement).getByRole('heading', {
+				name: 'Current · MetadataFieldDropdown',
+			}),
+		).toBeInTheDocument()
+		expect(
+			within(current as HTMLElement).getByRole('button', { name: '优先级' }),
+		).toBeInTheDocument()
+		expect(screen.getByText('必须保留的合同')).toBeInTheDocument()
+		expect(screen.getByText('预期可删除项')).toBeInTheDocument()
+		expect(screen.getByText('相关 Recipe 家族')).toBeInTheDocument()
+		expect(screen.getByTitle('Upstream · InlineSelect Candidate 隔离对照')).toBeInTheDocument()
+	})
+
 	it('通过同一工作台完成双视图、批次、分类、搜索、单预览与键盘路径', async () => {
 		render(<UiLabApp />)
 
@@ -559,6 +646,7 @@ describe('UiLabApp', () => {
 			/第十一批 · StoneFlow 共享产品组件/,
 			/第十二批 · Task 与集合组合/,
 			/第十三批 · Shell、Settings 与桌面流程/,
+			/第十四批 · 替换候选与样式架构/,
 		]) {
 			expect(screen.getByRole('button', { name: batchName })).toBeInTheDocument()
 		}

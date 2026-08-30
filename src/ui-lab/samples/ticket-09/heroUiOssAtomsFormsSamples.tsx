@@ -256,10 +256,13 @@ function SelectListBoxFixture() {
 	)
 }
 
-const PROPERTY_OPTIONS = [
+// Lab 快照只用于对照锁定版本的可搜索原语；生产字段事实仍由 FilterMenu 持有。
+const FILTER_FIELD_SNAPSHOT = [
 	{ id: 'status', name: '状态' },
 	{ id: 'priority', name: '优先级' },
-	{ id: 'assignee', name: '负责人' },
+	{ id: 'project', name: '项目' },
+	{ id: 'due', name: '截止时间' },
+	{ id: 'planned', name: '计划时间' },
 ] as const
 
 function ComboBoxAutocompleteFixture() {
@@ -275,7 +278,7 @@ function ComboBoxAutocompleteFixture() {
 					</ComboBox.InputGroup>
 					<ComboBox.Popover>
 						<ListBox>
-							{PROPERTY_OPTIONS.map((item) => (
+							{FILTER_FIELD_SNAPSHOT.map((item) => (
 								<ListBox.Item id={item.id} key={item.id} textValue={item.name}>
 									<Label>{item.name}</Label>
 									<ListBox.ItemIndicator />
@@ -301,7 +304,7 @@ function ComboBoxAutocompleteFixture() {
 								</SearchField.Group>
 							</SearchField>
 							<ListBox>
-								{PROPERTY_OPTIONS.map((item) => (
+								{FILTER_FIELD_SNAPSHOT.map((item) => (
 									<ListBox.Item id={item.id} key={item.id} textValue={item.name}>
 										<Label>{item.name}</Label>
 										<ListBox.ItemIndicator />

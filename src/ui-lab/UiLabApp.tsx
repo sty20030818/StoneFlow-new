@@ -91,6 +91,10 @@ function allSamplesInBatch(batchId: UiLabReviewBatchId) {
 	return UI_LAB_CATALOG.filter((sample) => sampleIds.has(sample.id))
 }
 
+function hasRealAppBoundary(sample: UiLabCatalogEntry | undefined) {
+	return sample?.coverage === 'real-app-only' || sample?.currentCoverage === 'real-app-only'
+}
+
 function reviewBatchProgress(batch: UiLabReviewBatch) {
 	const reviewableEntries = batch.entries.filter(
 		(entry) =>
@@ -150,7 +154,7 @@ export function UiLabApp() {
 		.filter((sample) => {
 			if (coverageFilter === 'no-preview') return sample.coverage !== 'rendered'
 			if (coverageFilter === 'pending-owner') return sample.owner === '待归属'
-			if (coverageFilter === 'real-app-only') return sample.coverage === 'real-app-only'
+			if (coverageFilter === 'real-app-only') return hasRealAppBoundary(sample)
 			return true
 		})
 	const selectedSample =
@@ -558,10 +562,34 @@ export function UiLabApp() {
 											: '无'}
 									</dd>
 								</div>
+								{selectedSample.preservedContract ? (
+									<div>
+										<dt className='text-xs text-muted'>必须保留的合同</dt>
+										<dd className='mt-1'>{selectedSample.preservedContract}</dd>
+									</div>
+								) : null}
+								{selectedSample.expectedDeletion ? (
+									<div>
+										<dt className='text-xs text-muted'>预期可删除项</dt>
+										<dd className='mt-1'>{selectedSample.expectedDeletion}</dd>
+									</div>
+								) : null}
+								{selectedSample.recipeFamilies ? (
+									<div>
+										<dt className='text-xs text-muted'>相关 Recipe 家族</dt>
+										<dd className='mt-1'>{selectedSample.recipeFamilies.join('；')}</dd>
+									</div>
+								) : null}
 								<div>
 									<dt className='text-xs text-muted'>覆盖状态</dt>
 									<dd className='mt-1'>{COVERAGE_LABELS[selectedSample.coverage]}</dd>
 								</div>
+								{selectedSample.currentCoverage ? (
+									<div>
+										<dt className='text-xs text-muted'>Current 验证边界</dt>
+										<dd className='mt-1'>{COVERAGE_LABELS[selectedSample.currentCoverage]}</dd>
+									</div>
+								) : null}
 							</dl>
 						</>
 					) : null}
@@ -573,6 +601,7 @@ export function UiLabApp() {
 						{selectedSample?.coverage === 'rendered' ? (
 							selectedSample.comparisonFixture ? (
 								<NativeComparison
+									CurrentPreview={selectedSample.Preview}
 									fixture={selectedSample.comparisonFixture}
 									key={selectedSample.id}
 								/>
