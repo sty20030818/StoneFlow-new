@@ -108,7 +108,7 @@ function BulkActionBarFixture() {
 	)
 }
 
-function TaskMetadataReviewFixture() {
+export function TaskMetadataReviewFixture() {
 	const [priority, setPriority] = useState<TaskPriorityValue>(2)
 	const priorityDropdown = getTaskPriorityMetadataDropdownProps()
 

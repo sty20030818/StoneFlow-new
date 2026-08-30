@@ -62,11 +62,47 @@ describe('UiLabApp', () => {
 				(entry) => entry.status === 'pending',
 			),
 		).toBe(true)
+		expect(UI_LAB_REVIEW_BATCHES.find((batch) => batch.id === 'batch-13')?.entries).toHaveLength(9)
+		expect(
+			UI_LAB_REVIEW_BATCHES.find((batch) => batch.id === 'batch-13')?.entries.every(
+				(entry) => entry.status === 'pending',
+			),
+		).toBe(true)
 		expect(
 			UI_LAB_REVIEW_BATCHES.some((batch) =>
 				batch.entries.some((entry) => entry.status === 'external'),
 			),
 		).toBe(true)
+	})
+
+	it('第十三批九个产品场景保持 Product 所有权与可移植边界', () => {
+		const sampleIds =
+			UI_LAB_REVIEW_BATCHES.find((batch) => batch.id === 'batch-13')?.entries.map(
+				(entry) => entry.sampleId,
+			) ?? []
+		const samples = sampleIds.map((id) => UI_LAB_CATALOG.find((entry) => entry.id === id)!)
+
+		expect(samples).toHaveLength(9)
+		expect(
+			samples.every(
+				(sample) =>
+					sample.owner === 'Product' &&
+					sample.recommendedOwner === 'Product' &&
+					sample.disposition === 'keep' &&
+					sample.coverage === 'rendered' &&
+					Boolean(sample.definitionPath) &&
+					Boolean(sample.consumers?.length) &&
+					Boolean(sample.ingredients?.length),
+			),
+		).toBe(true)
+		expect(
+			samples.find((sample) => sample.id === 'stoneflow-product-settings-sync-scene-review'),
+		).toMatchObject({
+			inventoryRefs: expect.arrayContaining([
+				'stoneflow-scene-settings-sync',
+				'stoneflow-component-sync-config-dialog',
+			]),
+		})
 	})
 
 	it('第十二批复用真实边界，并区分产品合同、组合覆盖与标签候选', () => {
@@ -467,6 +503,39 @@ describe('UiLabApp', () => {
 		expect(screen.getByText('当前优先级：高')).toBeInTheDocument()
 	})
 
+	it('第十三批同步配置先失败后重试，并在关闭后清理 Overlay', async () => {
+		render(<UiLabApp />)
+
+		fireEvent.click(screen.getByRole('button', { name: /第十三批 · Shell、Settings 与桌面流程/ }))
+		fireEvent.click(
+			screen.getByRole('button', { name: /Settings \/ Sync · 可移植产品场景.*待审查/ }),
+		)
+		fireEvent.click(screen.getByRole('button', { name: '打开同步配置' }))
+		expect(await screen.findByRole('dialog', { name: '配置云端副本' })).toBeInTheDocument()
+
+		fireEvent.click(screen.getByRole('button', { name: '保存配置' }))
+		expect(await screen.findByText('保存失败')).toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: '重试保存' }))
+		await waitFor(() =>
+			expect(screen.queryByRole('dialog', { name: '配置云端副本' })).not.toBeInTheDocument(),
+		)
+		expect(screen.getByText('已保存本地同步设置；未写入系统钥匙串')).toBeInTheDocument()
+		expect(document.querySelector('[data-slot="modal-backdrop"]')).toBeNull()
+	})
+
+	it('第十三批更新场景只在本地切换真实可见状态', () => {
+		render(<UiLabApp />)
+
+		fireEvent.click(screen.getByRole('button', { name: /第十三批 · Shell、Settings 与桌面流程/ }))
+		fireEvent.click(screen.getByRole('button', { name: /Update · 可移植反馈场景.*待审查/ }))
+		expect(screen.getByText('发现新版本 1.8.0')).toBeInTheDocument()
+
+		fireEvent.click(screen.getByRole('button', { name: '下载失败' }))
+		expect(screen.getByText('更新下载失败')).toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: '重新下载' }))
+		expect(screen.getByText('正在下载更新')).toBeInTheDocument()
+	})
+
 	it('通过同一工作台完成双视图、批次、分类、搜索、单预览与键盘路径', async () => {
 		render(<UiLabApp />)
 
@@ -489,6 +558,7 @@ describe('UiLabApp', () => {
 			/第十批 · HeroUI 复杂控件/,
 			/第十一批 · StoneFlow 共享产品组件/,
 			/第十二批 · Task 与集合组合/,
+			/第十三批 · Shell、Settings 与桌面流程/,
 		]) {
 			expect(screen.getByRole('button', { name: batchName })).toBeInTheDocument()
 		}

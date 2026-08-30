@@ -28,7 +28,7 @@ import type { UiLabReviewUnitInput } from '../../uiLabCatalog'
 
 type RecoveryState = 'empty' | 'error' | 'ready'
 
-function EmptyErrorRecoveryPreview() {
+export function EmptyErrorRecoveryPreview() {
 	const [state, setState] = useState<RecoveryState>('empty')
 	const recoveryControlRef = useRef<HTMLButtonElement>(null)
 
@@ -108,7 +108,7 @@ function EmptyErrorRecoveryPreview() {
 	)
 }
 
-function LoadingFeedbackPreview() {
+export function LoadingFeedbackPreview() {
 	const [progress, setProgress] = useState(48)
 
 	return (
@@ -222,7 +222,7 @@ const FEEDBACK_VARIANTS = [
 	},
 ] as const
 
-function AlertToastPreview() {
+export function AlertToastPreview() {
 	const [variantId, setVariantId] = useState<(typeof FEEDBACK_VARIANTS)[number]['id']>('info')
 	const [queue] = useState(() => new ToastQueue({ maxVisibleToasts: 1 }))
 	const selected = FEEDBACK_VARIANTS.find((item) => item.id === variantId)!
@@ -290,7 +290,7 @@ function AlertToastPreview() {
 
 type SaveState = 'idle' | 'pending' | 'saved' | 'error'
 
-function SemanticFeedbackPreview() {
+export function SemanticFeedbackPreview() {
 	const [saveState, setSaveState] = useState<SaveState>('idle')
 	const [dangerMessage, setDangerMessage] = useState('')
 	const [requiredTitle, setRequiredTitle] = useState('')
@@ -394,7 +394,7 @@ const INITIAL_LAUNCHER_TASKS = [
 	'复查跨窗口状态同步失败后是否保留尚未提交的长中文任务标题',
 ] as const
 
-function LauncherLifecyclePreview() {
+export function LauncherLifecyclePreview() {
 	const [query, setQuery] = useState('')
 	const [createdTask, setCreatedTask] = useState('')
 	const [hasError, setHasError] = useState(false)

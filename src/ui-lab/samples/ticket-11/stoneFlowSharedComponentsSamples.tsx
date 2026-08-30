@@ -44,7 +44,7 @@ function Fixture({ title, children }: { title: string; children: ReactNode }) {
 	)
 }
 
-function PageFrameFixture() {
+export function PageFrameFixture() {
 	const [selectedKey, setSelectedKey] = useState('all')
 	const items = Array.from({ length: 8 }, (_, index) => `第 ${index + 1} 条长内容`)
 
@@ -271,7 +271,7 @@ function AppScrollAreaFixture() {
 	)
 }
 
-function TaskDetailPublicFixture() {
+export function TaskDetailPublicFixture() {
 	const [actionCount, setActionCount] = useState(0)
 
 	return (
@@ -291,7 +291,7 @@ function TaskDetailPublicFixture() {
 	)
 }
 
-function SpaceEditorFixture() {
+export function SpaceEditorFixture() {
 	const [open, setOpen] = useState(false)
 	const [lastSpace, setLastSpace] = useState('尚未提交 Space')
 

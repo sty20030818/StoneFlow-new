@@ -17,6 +17,7 @@ import { TICKET_09_SAMPLES } from './samples/ticket-09/heroUiOssAtomsFormsSample
 import { TICKET_10_SAMPLES } from './samples/ticket-10/heroUiComplexControlsSamples'
 import { TICKET_11_SAMPLES } from './samples/ticket-11/stoneFlowSharedComponentsSamples'
 import { TICKET_12_SAMPLES } from './samples/ticket-12/taskCollectionCompositionSamples'
+import { TICKET_13_SAMPLES } from './samples/ticket-13/shellSettingsDesktopSceneSamples'
 
 export type UiLabViewId = 'stoneflow' | 'heroui'
 export type UiLabCoverage =
@@ -43,6 +44,7 @@ export type UiLabReviewBatchId =
 	| 'batch-10'
 	| 'batch-11'
 	| 'batch-12'
+	| 'batch-13'
 
 export type UiLabReviewEntry = {
 	sampleId: string
@@ -157,6 +159,7 @@ const UI_LAB_REVIEW_UNITS: readonly UiLabReviewUnitInput[] = [
 	...TICKET_10_SAMPLES,
 	...TICKET_11_SAMPLES,
 	...TICKET_12_SAMPLES,
+	...TICKET_13_SAMPLES,
 	{
 		id: 'stoneflow-main-launcher-real-app',
 		name: 'Main / Launcher 原生窗口验收',
@@ -508,6 +511,18 @@ export const UI_LAB_REVIEW_BATCHES: readonly UiLabReviewBatch[] = [
 		objective:
 			'复用既有已确认 fixture 和生产公开组件，核对 TaskBoard、选择、批量动作、搜索、Metadata 与 Timeline 的产品边界。',
 		entries: TICKET_12_SAMPLES.map(({ id }) => ({
+			sampleId: id,
+			role: 'target' as const,
+			status: 'pending' as const,
+		})),
+	},
+	{
+		id: 'batch-13',
+		label: '第十三批',
+		title: 'Shell、Settings 与桌面流程',
+		objective:
+			'复用生产公开组件和既有 fixture，核对 Shell、Settings、Launcher、反馈与桌面场景的可移植边界。',
+		entries: TICKET_13_SAMPLES.map(({ id }) => ({
 			sampleId: id,
 			role: 'target' as const,
 			status: 'pending' as const,

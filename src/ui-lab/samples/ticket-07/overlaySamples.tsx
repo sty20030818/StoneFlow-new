@@ -327,7 +327,7 @@ function SheetPreview() {
 	)
 }
 
-function TaskDetailFocusPreview() {
+export function TaskDetailFocusPreview() {
 	const [completed, setCompleted] = useState(false)
 
 	return (
