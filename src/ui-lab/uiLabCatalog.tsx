@@ -16,6 +16,7 @@ import { TICKET_08_SAMPLES } from './samples/ticket-08/herouiCandidateSamples'
 import { TICKET_09_SAMPLES } from './samples/ticket-09/heroUiOssAtomsFormsSamples'
 import { TICKET_10_SAMPLES } from './samples/ticket-10/heroUiComplexControlsSamples'
 import { TICKET_11_SAMPLES } from './samples/ticket-11/stoneFlowSharedComponentsSamples'
+import { TICKET_12_SAMPLES } from './samples/ticket-12/taskCollectionCompositionSamples'
 
 export type UiLabViewId = 'stoneflow' | 'heroui'
 export type UiLabCoverage =
@@ -41,6 +42,7 @@ export type UiLabReviewBatchId =
 	| 'batch-09'
 	| 'batch-10'
 	| 'batch-11'
+	| 'batch-12'
 
 export type UiLabReviewEntry = {
 	sampleId: string
@@ -154,6 +156,7 @@ const UI_LAB_REVIEW_UNITS: readonly UiLabReviewUnitInput[] = [
 	...TICKET_09_SAMPLES,
 	...TICKET_10_SAMPLES,
 	...TICKET_11_SAMPLES,
+	...TICKET_12_SAMPLES,
 	{
 		id: 'stoneflow-main-launcher-real-app',
 		name: 'Main / Launcher 原生窗口验收',
@@ -493,6 +496,18 @@ export const UI_LAB_REVIEW_BATCHES: readonly UiLabReviewBatch[] = [
 		objective:
 			'核对共享产品组件的公开合同、真实消费者、上游原料与运行时边界，不为 Lab 扩大生产 API。',
 		entries: TICKET_11_SAMPLES.map(({ id }) => ({
+			sampleId: id,
+			role: 'target' as const,
+			status: 'pending' as const,
+		})),
+	},
+	{
+		id: 'batch-12',
+		label: '第十二批',
+		title: 'Task 与集合组合',
+		objective:
+			'复用既有已确认 fixture 和生产公开组件，核对 TaskBoard、选择、批量动作、搜索、Metadata 与 Timeline 的产品边界。',
+		entries: TICKET_12_SAMPLES.map(({ id }) => ({
 			sampleId: id,
 			role: 'target' as const,
 			status: 'pending' as const,

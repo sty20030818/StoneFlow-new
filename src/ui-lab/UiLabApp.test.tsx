@@ -56,11 +56,69 @@ describe('UiLabApp', () => {
 				(entry) => entry.status === 'pending',
 			),
 		).toBe(true)
+		expect(UI_LAB_REVIEW_BATCHES.find((batch) => batch.id === 'batch-12')?.entries).toHaveLength(9)
+		expect(
+			UI_LAB_REVIEW_BATCHES.find((batch) => batch.id === 'batch-12')?.entries.every(
+				(entry) => entry.status === 'pending',
+			),
+		).toBe(true)
 		expect(
 			UI_LAB_REVIEW_BATCHES.some((batch) =>
 				batch.entries.some((entry) => entry.status === 'external'),
 			),
 		).toBe(true)
+	})
+
+	it('第十二批复用真实边界，并区分产品合同、组合覆盖与标签候选', () => {
+		const sampleIds =
+			UI_LAB_REVIEW_BATCHES.find((batch) => batch.id === 'batch-12')?.entries.map(
+				(entry) => entry.sampleId,
+			) ?? []
+		const samples = sampleIds.map((id) => UI_LAB_CATALOG.find((entry) => entry.id === id)!)
+		const labels = samples.find(
+			(sample) => sample.id === 'stoneflow-task-collection-labels-review',
+		)!
+
+		expect(samples).toHaveLength(9)
+		expect(samples.filter((sample) => sample.coverage === 'rendered')).toHaveLength(7)
+		expect(samples.filter((sample) => sample.coverage === 'covered-in-composition')).toHaveLength(2)
+		for (const id of [
+			'stoneflow-task-collection-global-search-review',
+			'stoneflow-task-collection-activity-review',
+		]) {
+			expect(samples.find((sample) => sample.id === id)).toMatchObject({
+				coverage: 'covered-in-composition',
+				reason: expect.any(String),
+			})
+		}
+		expect(
+			samples
+				.filter((sample) => sample !== labels)
+				.every(
+					(sample) =>
+						sample.owner === 'Product' &&
+						sample.recommendedOwner === 'Product' &&
+						sample.disposition === 'keep' &&
+						Boolean(sample.definitionPath) &&
+						Boolean(sample.consumers?.length) &&
+						Boolean(sample.compositionParent) &&
+						Boolean(sample.ingredients?.length),
+				),
+		).toBe(true)
+		expect(labels).toMatchObject({
+			owner: 'UI Lab fixture / HeroUI OSS',
+			recommendedOwner: 'Product',
+			disposition: 'candidate',
+			definitionPath: null,
+			consumers: null,
+			compositionParent: null,
+			ingredients: [
+				'heroui-oss-chip',
+				'heroui-oss-dropdown',
+				'heroui-oss-checkbox',
+				'heroui-search-field-candidate',
+			],
+		})
 	})
 
 	it('第十一批保持 Product 所有权，并区分真实预览与运行时边界', () => {
@@ -378,6 +436,37 @@ describe('UiLabApp', () => {
 		expect(screen.getByText(/已提交：审查空间；Lab 不写入数据库/)).toBeInTheDocument()
 	})
 
+	it('第十二批 Bulk ActionBar 只修改本地选择状态', async () => {
+		render(<UiLabApp />)
+
+		fireEvent.click(screen.getByRole('button', { name: /第十二批 · Task 与集合组合/ }))
+		fireEvent.click(screen.getByRole('button', { name: /Bulk ActionBar · 产品合同.*待审查/ }))
+		expect(await screen.findByRole('toolbar', { name: '批量操作' })).toHaveTextContent('已选 3 项')
+
+		fireEvent.click(screen.getByRole('button', { name: '清空已选' }))
+		await waitFor(() =>
+			expect(screen.queryByRole('toolbar', { name: '批量操作' })).not.toBeInTheDocument(),
+		)
+		expect(screen.getByText('已清空本地选择')).toBeInTheDocument()
+
+		fireEvent.click(screen.getByRole('button', { name: '恢复 3 项选择' }))
+		expect(await screen.findByRole('toolbar', { name: '批量操作' })).toHaveTextContent('已选 3 项')
+	})
+
+	it('第十二批 Task Metadata 通过生产公开组件更新本地优先级', async () => {
+		render(<UiLabApp />)
+
+		fireEvent.click(screen.getByRole('button', { name: /第十二批 · Task 与集合组合/ }))
+		fireEvent.click(screen.getByRole('button', { name: /Task Metadata · 产品合同.*待审查/ }))
+		expect(screen.getByText('当前优先级：中')).toBeInTheDocument()
+
+		const priorityButton = screen.getByRole('button', { name: '优先级' })
+		expect(priorityButton.querySelector('svg')).not.toBeNull()
+		fireEvent.click(priorityButton)
+		fireEvent.click(await screen.findByRole('menuitem', { name: /高/ }))
+		expect(screen.getByText('当前优先级：高')).toBeInTheDocument()
+	})
+
 	it('通过同一工作台完成双视图、批次、分类、搜索、单预览与键盘路径', async () => {
 		render(<UiLabApp />)
 
@@ -399,6 +488,7 @@ describe('UiLabApp', () => {
 			/第九批 · HeroUI 原子与表单/,
 			/第十批 · HeroUI 复杂控件/,
 			/第十一批 · StoneFlow 共享产品组件/,
+			/第十二批 · Task 与集合组合/,
 		]) {
 			expect(screen.getByRole('button', { name: batchName })).toBeInTheDocument()
 		}
@@ -785,6 +875,7 @@ describe('UiLabApp', () => {
 		const noPreviewFilter = screen.getByRole('button', { name: '无独立预览' })
 		fireEvent.click(noPreviewFilter)
 		expect(noPreviewFilter).toHaveAttribute('aria-pressed', 'true')
+		fireEvent.click(screen.getByRole('button', { name: 'Main / Launcher 原生窗口验收' }))
 		expect(
 			screen.getByRole('heading', { name: 'Main / Launcher 原生窗口验收' }),
 		).toBeInTheDocument()

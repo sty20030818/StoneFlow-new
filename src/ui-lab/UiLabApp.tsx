@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 
 import { Button, SearchField } from '@heroui/react'
 
+import { registerTaskMetadataIcons } from '@/features/task'
+
 import { NativeComparison } from './native-comparison/NativeComparison'
 import {
 	reviewBatchForEntry,
@@ -19,6 +21,8 @@ import {
 	type UiLabReviewStatus,
 	type UiLabViewId,
 } from './uiLabCatalog'
+
+registerTaskMetadataIcons()
 
 type CoverageFilter = 'all' | 'no-preview' | 'pending-owner' | 'real-app-only'
 type NavigationMode = 'batch' | 'category'

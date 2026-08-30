@@ -404,7 +404,7 @@ const LABEL_OPTIONS = [
 
 const labelCheckboxStyles = checkboxVariants({ variant: 'primary' })
 
-function LabelsPreview() {
+export function LabelsPreview() {
 	const labelsAnchorRef = useRef<HTMLDivElement>(null)
 	const keepOpenAfterSelectionRef = useRef(false)
 	const pendingSelectedLabelIdsRef = useRef<string[] | null>(null)
@@ -767,7 +767,7 @@ function TaskRowsFixture({
 	})
 }
 
-function TaskRowPreview() {
+export function TaskRowPreview() {
 	return (
 		<div className='@container/task-list w-full max-w-4xl' data-ui-lab-task-rows>
 			<h3 className='text-base font-semibold'>Task Row</h3>
@@ -858,7 +858,7 @@ function TaskGroupFixture({
 	)
 }
 
-function GroupHeaderPreview() {
+export function GroupHeaderPreview() {
 	return (
 		<div className='w-full max-w-3xl'>
 			<h3 className='text-base font-semibold'>Group Header</h3>
@@ -899,7 +899,7 @@ function BoardFixture({ label, narrow = false }: { label: string; narrow?: boole
 	)
 }
 
-function TaskBoardPreview() {
+export function TaskBoardPreview() {
 	return (
 		<div className='flex w-full max-w-5xl flex-col gap-6' data-ui-lab-preview-root='task-board'>
 			<h3 className='text-base font-semibold'>Task Board</h3>
