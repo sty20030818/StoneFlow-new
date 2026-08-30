@@ -50,11 +50,57 @@ describe('UiLabApp', () => {
 				(entry) => entry.status === 'pending',
 			),
 		).toBe(true)
+		expect(UI_LAB_REVIEW_BATCHES.find((batch) => batch.id === 'batch-11')?.entries).toHaveLength(10)
+		expect(
+			UI_LAB_REVIEW_BATCHES.find((batch) => batch.id === 'batch-11')?.entries.every(
+				(entry) => entry.status === 'pending',
+			),
+		).toBe(true)
 		expect(
 			UI_LAB_REVIEW_BATCHES.some((batch) =>
 				batch.entries.some((entry) => entry.status === 'external'),
 			),
 		).toBe(true)
+	})
+
+	it('第十一批保持 Product 所有权，并区分真实预览与运行时边界', () => {
+		const sampleIds =
+			UI_LAB_REVIEW_BATCHES.find((batch) => batch.id === 'batch-11')?.entries.map(
+				(entry) => entry.sampleId,
+			) ?? []
+		const samples = sampleIds.map((id) => UI_LAB_CATALOG.find((entry) => entry.id === id)!)
+
+		expect(samples).toHaveLength(10)
+		expect(
+			samples.every(
+				(sample) =>
+					sample.owner === 'Product' &&
+					sample.recommendedOwner === 'Product' &&
+					sample.disposition === 'keep',
+			),
+		).toBe(true)
+		expect(samples.filter((sample) => sample.coverage === 'rendered')).toHaveLength(7)
+		expect(samples.filter((sample) => sample.coverage === 'covered-in-composition')).toHaveLength(2)
+		expect(samples.filter((sample) => sample.coverage === 'real-app-only')).toHaveLength(1)
+		expect(
+			samples.every(
+				(sample) =>
+					Boolean(sample.definitionPath) &&
+					Boolean(sample.consumers?.length) &&
+					Boolean(sample.compositionParent) &&
+					sample.ingredients !== null,
+			),
+		).toBe(true)
+		expect(
+			UI_LAB_CATALOG.find((entry) => entry.id === 'stoneflow-shared-settings-toggle-row-review')
+				?.ingredients,
+		).toEqual(['heroui-pro-cell-switch'])
+		expect(
+			UI_LAB_CATALOG.find((entry) => entry.id === 'stoneflow-shared-shell-sidebar-review'),
+		).toMatchObject({
+			coverage: 'real-app-only',
+			ingredients: expect.arrayContaining(['heroui-pro-sidebar']),
+		})
 	})
 
 	it('第十批区分独立对照、组合覆盖、候选与 ledger-only', () => {
@@ -313,6 +359,25 @@ describe('UiLabApp', () => {
 		)
 	})
 
+	it('第十一批 Space Editor 使用公开产品组件且提交不写入业务状态', async () => {
+		render(<UiLabApp />)
+
+		fireEvent.click(screen.getByRole('button', { name: /第十一批 · StoneFlow 共享产品组件/ }))
+		fireEvent.click(screen.getByRole('button', { name: /Space Editor 组件.*待审查/ }))
+		fireEvent.click(screen.getByRole('button', { name: '打开 Space Editor' }))
+		expect(await screen.findByRole('dialog', { name: '新建 Space' })).toBeInTheDocument()
+
+		fireEvent.change(screen.getByRole('textbox', { name: '名称' }), {
+			target: { value: '审查空间' },
+		})
+		fireEvent.click(screen.getByRole('button', { name: '创建 Space' }))
+
+		await waitFor(() =>
+			expect(screen.queryByRole('dialog', { name: '新建 Space' })).not.toBeInTheDocument(),
+		)
+		expect(screen.getByText(/已提交：审查空间；Lab 不写入数据库/)).toBeInTheDocument()
+	})
+
 	it('通过同一工作台完成双视图、批次、分类、搜索、单预览与键盘路径', async () => {
 		render(<UiLabApp />)
 
@@ -331,6 +396,9 @@ describe('UiLabApp', () => {
 			/第六批 · 反馈与 Launcher/,
 			/第七批 · 浮层与焦点/,
 			/第八批 · 组合与桌面边界/,
+			/第九批 · HeroUI 原子与表单/,
+			/第十批 · HeroUI 复杂控件/,
+			/第十一批 · StoneFlow 共享产品组件/,
 		]) {
 			expect(screen.getByRole('button', { name: batchName })).toBeInTheDocument()
 		}

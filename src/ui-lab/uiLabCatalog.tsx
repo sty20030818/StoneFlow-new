@@ -15,6 +15,7 @@ import { TICKET_07_SAMPLES } from './samples/ticket-07/overlaySamples'
 import { TICKET_08_SAMPLES } from './samples/ticket-08/herouiCandidateSamples'
 import { TICKET_09_SAMPLES } from './samples/ticket-09/heroUiOssAtomsFormsSamples'
 import { TICKET_10_SAMPLES } from './samples/ticket-10/heroUiComplexControlsSamples'
+import { TICKET_11_SAMPLES } from './samples/ticket-11/stoneFlowSharedComponentsSamples'
 
 export type UiLabViewId = 'stoneflow' | 'heroui'
 export type UiLabCoverage =
@@ -39,6 +40,7 @@ export type UiLabReviewBatchId =
 	| 'batch-08'
 	| 'batch-09'
 	| 'batch-10'
+	| 'batch-11'
 
 export type UiLabReviewEntry = {
 	sampleId: string
@@ -66,6 +68,7 @@ type UiLabCatalogEntryBase = {
 	states: string
 	verification: string
 	inventoryRefs?: readonly string[]
+	ingredients?: readonly string[]
 	recommendedOwner?: string
 	disposition?: UiLabDisposition
 }
@@ -84,7 +87,7 @@ export type UiLabReviewUnitInput =
 			reason?: never
 	  })
 	| (UiLabCatalogEntryBase & {
-			coverage: 'missing' | 'real-app-only'
+			coverage: 'missing' | 'covered-in-composition' | 'real-app-only'
 			comparisonFixture?: never
 			reason: string
 			Preview?: never
@@ -150,6 +153,7 @@ const UI_LAB_REVIEW_UNITS: readonly UiLabReviewUnitInput[] = [
 	...TICKET_08_SAMPLES,
 	...TICKET_09_SAMPLES,
 	...TICKET_10_SAMPLES,
+	...TICKET_11_SAMPLES,
 	{
 		id: 'stoneflow-main-launcher-real-app',
 		name: 'Main / Launcher 原生窗口验收',
@@ -295,6 +299,16 @@ export const UI_LAB_CATALOG: readonly UiLabCatalogEntry[] = [
 		const inventory = inventories[0]
 		const consumers = [...new Set(inventories.flatMap((item) => item.consumers ?? []))]
 		const families = inventories.flatMap((item) => (item.family ? [item.family] : []))
+		const definitionPaths = [
+			...new Set(inventories.flatMap((item) => (item.definitionPath ? [item.definitionPath] : []))),
+		]
+		const compositionParents = [
+			...new Set(
+				inventories.flatMap((item) => (item.compositionParent ? [item.compositionParent] : [])),
+			),
+		]
+		const hasProductInventory = inventories.some((item) => item.view === 'stoneflow')
+		const derivedIngredients = [...new Set(inventories.flatMap((item) => item.ingredients ?? []))]
 		const adoption = inventories.some((item) => item.adoption === 'used')
 			? ('used' as const)
 			: inventories.some((item) => item.adoption === 'candidate')
@@ -312,18 +326,19 @@ export const UI_LAB_CATALOG: readonly UiLabCatalogEntry[] = [
 			capabilityKind: inventory?.capabilityKind ?? null,
 			sourcePackage: inventory?.sourcePackage ?? null,
 			packageVersion: inventory?.packageVersion ?? null,
-			definitionPath:
-				entry.inventoryRefs && entry.inventoryRefs.length > 1
-					? null
-					: (inventory?.definitionPath ?? null),
+			definitionPath: definitionPaths.length > 0 ? definitionPaths.join('；') : null,
 			recommendedOwner: entry.recommendedOwner ?? inventory?.recommendedOwner ?? null,
 			disposition:
 				entry.disposition ??
 				inventory?.disposition ??
 				(entry.coverage === 'real-app-only' ? ('real-app-only' as const) : null),
 			consumers: consumers.length > 0 ? consumers : (inventory?.consumers ?? null),
-			compositionParent: inventory?.compositionParent ?? null,
-			ingredients: entry.inventoryRefs ?? inventory?.ingredients ?? null,
+			compositionParent: compositionParents.length > 0 ? compositionParents.join('；') : null,
+			ingredients:
+				entry.ingredients ??
+				(hasProductInventory
+					? derivedIngredients
+					: (entry.inventoryRefs ?? inventory?.ingredients ?? null)),
 			adoption: adoption ?? null,
 		}
 	}),
@@ -466,6 +481,18 @@ export const UI_LAB_REVIEW_BATCHES: readonly UiLabReviewBatch[] = [
 		title: 'HeroUI 复杂控件',
 		objective: '核对菜单、浮层、集合、命令、Cell Controls 与 Pro 复杂原料的公共状态和产品边界。',
 		entries: TICKET_10_SAMPLES.map(({ id }) => ({
+			sampleId: id,
+			role: 'target' as const,
+			status: 'pending' as const,
+		})),
+	},
+	{
+		id: 'batch-11',
+		label: '第十一批',
+		title: 'StoneFlow 共享产品组件',
+		objective:
+			'核对共享产品组件的公开合同、真实消费者、上游原料与运行时边界，不为 Lab 扩大生产 API。',
+		entries: TICKET_11_SAMPLES.map(({ id }) => ({
 			sampleId: id,
 			role: 'target' as const,
 			status: 'pending' as const,
