@@ -104,7 +104,7 @@ export function TaskLinkEditorPopover({
 							/>
 						</TextField>
 						{error ? (
-							<p className='text-xs text-danger' role='alert'>
+							<p className='text-xs text-danger-on-surface' role='alert'>
 								{error}
 							</p>
 						) : null}

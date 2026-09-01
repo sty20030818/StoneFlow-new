@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { toast } from '@heroui/react'
 
 import { HEROUI_REGISTRATIONS } from './catalog/heroUiRegistrations'
 import {
@@ -8,7 +9,24 @@ import {
 import { UiLabApp } from './UiLabApp'
 import { UI_LAB_CATALOG, UI_LAB_REVIEW_BATCHES } from './uiLabCatalog'
 
+function expandReviewDirectory() {
+	fireEvent.click(screen.getByRole('button', { name: '审查批次' }))
+}
+
+function expandComponentInfo() {
+	fireEvent.click(screen.getByRole('button', { name: '组件信息' }))
+}
+
 describe('UiLabApp', () => {
+	beforeEach(() => {
+		act(() => toast.clear())
+		window.localStorage.removeItem('stoneflow.ui-lab.last-sample')
+	})
+
+	afterEach(() => {
+		act(() => toast.clear())
+	})
+
 	it('每个审查单元只属于一个批次，总账条目无需进入批次', () => {
 		const entries = UI_LAB_REVIEW_BATCHES.flatMap((batch) => batch.entries)
 		const catalogIds = UI_LAB_CATALOG.map((entry) => entry.id)
@@ -32,46 +50,62 @@ describe('UiLabApp', () => {
 			),
 		).toBe(true)
 		expect(
-			UI_LAB_REVIEW_BATCHES.slice(0, 8).every((batch) =>
+			UI_LAB_REVIEW_BATCHES.slice(1, 8).every((batch) =>
 				batch.entries
 					.filter((entry) => entry.status !== 'external')
 					.every((entry) => entry.status === 'done'),
 			),
 		).toBe(true)
+		expect(
+			UI_LAB_REVIEW_BATCHES.find((batch) => batch.id === 'batch-01')?.entries.map(
+				(entry) => entry.status,
+			),
+		).toEqual(['done', 'done', 'done', 'done', 'done', 'done'])
 		expect(UI_LAB_REVIEW_BATCHES.find((batch) => batch.id === 'batch-09')?.entries).toHaveLength(9)
 		expect(
 			UI_LAB_REVIEW_BATCHES.find((batch) => batch.id === 'batch-09')?.entries.every(
-				(entry) => entry.status === 'pending',
+				(entry) => entry.status === 'done',
 			),
 		).toBe(true)
 		expect(UI_LAB_REVIEW_BATCHES.find((batch) => batch.id === 'batch-10')?.entries).toHaveLength(10)
 		expect(
-			UI_LAB_REVIEW_BATCHES.find((batch) => batch.id === 'batch-10')?.entries.every(
-				(entry) => entry.status === 'pending',
+			UI_LAB_REVIEW_BATCHES.find((batch) => batch.id === 'batch-10')?.entries.map(
+				(entry) => entry.status,
 			),
-		).toBe(true)
+		).toEqual(['done', 'done', 'done', 'done', 'done', 'done', 'done', 'done', 'done', 'done'])
 		expect(UI_LAB_REVIEW_BATCHES.find((batch) => batch.id === 'batch-11')?.entries).toHaveLength(10)
 		expect(
-			UI_LAB_REVIEW_BATCHES.find((batch) => batch.id === 'batch-11')?.entries.every(
-				(entry) => entry.status === 'pending',
+			UI_LAB_REVIEW_BATCHES.find((batch) => batch.id === 'batch-11')?.entries.map(
+				(entry) => entry.status,
 			),
-		).toBe(true)
+		).toEqual([
+			'done',
+			'done',
+			'done',
+			'external',
+			'done',
+			'done',
+			'external',
+			'external',
+			'done',
+			'done',
+		])
 		expect(UI_LAB_REVIEW_BATCHES.find((batch) => batch.id === 'batch-12')?.entries).toHaveLength(9)
 		expect(
-			UI_LAB_REVIEW_BATCHES.find((batch) => batch.id === 'batch-12')?.entries.every(
-				(entry) => entry.status === 'pending',
+			UI_LAB_REVIEW_BATCHES.find((batch) => batch.id === 'batch-12')?.entries.map(
+				(entry) => entry.status,
 			),
-		).toBe(true)
+		).toEqual(['done', 'done', 'done', 'done', 'done', 'done', 'external', 'done', 'external'])
 		expect(UI_LAB_REVIEW_BATCHES.find((batch) => batch.id === 'batch-13')?.entries).toHaveLength(9)
 		expect(
-			UI_LAB_REVIEW_BATCHES.find((batch) => batch.id === 'batch-13')?.entries.every(
-				(entry) => entry.status === 'pending',
+			UI_LAB_REVIEW_BATCHES.find((batch) => batch.id === 'batch-13')?.entries.map(
+				(entry) => entry.status,
 			),
-		).toBe(true)
+		).toEqual(['done', 'done', 'done', 'done', 'done', 'done', 'done', 'done', 'done'])
 		expect(UI_LAB_REVIEW_BATCHES.find((batch) => batch.id === 'batch-14')?.entries).toHaveLength(5)
 		expect(
 			UI_LAB_REVIEW_BATCHES.find((batch) => batch.id === 'batch-14')?.entries.every(
-				(entry) => entry.status === 'pending',
+				(entry) => entry.status === 'done',
 			),
 		).toBe(true)
 		expect(
@@ -290,7 +324,7 @@ describe('UiLabApp', () => {
 		}
 	})
 
-	it('第九批从总账派生真实消费者，并保持原生候选与人工审查边界', () => {
+	it('第九批从总账派生真实消费者，并记录人工审查结论', () => {
 		const searchField = UI_LAB_CATALOG.find(
 			(entry) => entry.id === 'heroui-oss-search-field-review',
 		)
@@ -301,7 +335,7 @@ describe('UiLabApp', () => {
 		expect(searchField).toMatchObject({
 			owner: 'Recipe',
 			recommendedOwner: 'Recipe',
-			disposition: 'keep',
+			disposition: 'simplify',
 			coverage: 'rendered',
 		})
 		expect(searchField?.consumers).toEqual([
@@ -315,6 +349,69 @@ describe('UiLabApp', () => {
 			disposition: 'candidate',
 			consumers: [],
 		})
+	})
+
+	it('TextArea 在 hover 重渲染后保留父字段的默认值', () => {
+		render(<UiLabApp />)
+		expandReviewDirectory()
+
+		fireEvent.click(screen.getByRole('button', { name: /第九批 · HeroUI 原子与表单/ }))
+		fireEvent.click(screen.getByRole('button', { name: /Text Fields.*Lab 审查完成/ }))
+		const note = screen.getByRole('textbox', { name: '说明' })
+
+		expect(note).toHaveValue('这是一段用于观察窄宽换行的无副作用长中文。')
+		fireEvent.pointerEnter(note)
+		expect(note).toHaveValue('这是一段用于观察窄宽换行的无副作用长中文。')
+	})
+
+	it('刷新后恢复上次打开的目录样例', () => {
+		const firstRender = render(<UiLabApp />)
+		fireEvent.click(screen.getByRole('button', { name: 'HeroUI' }))
+		const search = screen.getByRole('searchbox', { name: '搜索目录' })
+		fireEvent.change(search, { target: { value: 'SpaceEditorDialog.tsx' } })
+		fireEvent.click(screen.getByRole('button', { name: 'HeroUI ColorSwatchPicker' }))
+		firstRender.unmount()
+
+		render(<UiLabApp />)
+
+		expect(screen.getByRole('button', { name: 'HeroUI' })).toHaveAttribute('aria-pressed', 'true')
+		expect(screen.getByRole('button', { name: '按分类' })).toHaveAttribute('aria-pressed', 'true')
+		expect(
+			screen.getByRole('heading', { level: 2, name: 'HeroUI ColorSwatchPicker' }),
+		).toBeInTheDocument()
+	})
+
+	it('批次样例从 catalog 恢复所属视图与批次', () => {
+		window.localStorage.setItem(
+			'stoneflow.ui-lab.last-sample',
+			JSON.stringify('heroui-oss-text-fields-review'),
+		)
+
+		render(<UiLabApp />)
+		expandReviewDirectory()
+
+		expect(screen.getByRole('button', { name: 'HeroUI' })).toHaveAttribute('aria-pressed', 'true')
+		expect(screen.getByRole('button', { name: '按批次' })).toHaveAttribute('aria-pressed', 'true')
+		expect(screen.getByRole('button', { name: /第九批 · HeroUI 原子与表单/ })).toHaveAttribute(
+			'aria-current',
+			'true',
+		)
+		expect(screen.getByRole('heading', { level: 2, name: 'Text Fields' })).toBeInTheDocument()
+	})
+
+	it('已移除的持久化样例回退到默认页', () => {
+		window.localStorage.setItem(
+			'stoneflow.ui-lab.last-sample',
+			JSON.stringify('removed-ui-lab-sample'),
+		)
+
+		render(<UiLabApp />)
+
+		expect(screen.getByRole('button', { name: 'StoneFlow' })).toHaveAttribute(
+			'aria-pressed',
+			'true',
+		)
+		expect(screen.getByRole('heading', { level: 2, name: 'StoneFlow Button' })).toBeInTheDocument()
 	})
 
 	it('完整登记 StoneFlow 与锁定版 HeroUI 能力，且组合链接没有悬空', () => {
@@ -376,9 +473,13 @@ describe('UiLabApp', () => {
 		expect(HEROUI_REGISTRATIONS.find((entry) => entry.family === 'Breadcrumbs')).toMatchObject({
 			adoption: 'used',
 		})
-		expect(
-			HEROUI_REGISTRATIONS.find((entry) => entry.id === 'heroui-oss-toast-function'),
-		).toMatchObject({ exportKind: 'function', adoption: 'used' })
+		const toastRegistration = HEROUI_REGISTRATIONS.find(
+			(entry) => entry.id === 'heroui-oss-toast-function',
+		)
+		expect(toastRegistration).toMatchObject({ exportKind: 'function', adoption: 'used' })
+		expect(toastRegistration?.consumers).toContain(
+			'src/features/sync/components/SyncConfigDialog.tsx',
+		)
 		expect(
 			HEROUI_REGISTRATIONS.find((entry) => entry.id === 'heroui-oss-selection-type'),
 		).toMatchObject({ exportKind: 'type', adoption: 'used' })
@@ -404,6 +505,7 @@ describe('UiLabApp', () => {
 
 	it('当前批次没有目标视图样例时回到该视图的分类目录', () => {
 		render(<UiLabApp />)
+		expandReviewDirectory()
 
 		fireEvent.click(screen.getByRole('button', { name: /第五批 · 元数据与 Task Board/ }))
 		fireEvent.click(screen.getByRole('button', { name: 'HeroUI' }))
@@ -416,6 +518,7 @@ describe('UiLabApp', () => {
 
 	it('第七批 Context Menu 保留游标坐标锚点并支持触屏长按', () => {
 		render(<UiLabApp />)
+		expandReviewDirectory()
 
 		fireEvent.click(screen.getByRole('button', { name: /第七批 · 浮层与焦点/ }))
 		fireEvent.click(screen.getByRole('button', { name: /Context Menu.*Lab 审查完成/ }))
@@ -453,6 +556,7 @@ describe('UiLabApp', () => {
 
 	it('第五批用标签下拉维护已选标签', async () => {
 		render(<UiLabApp />)
+		expandReviewDirectory()
 
 		fireEvent.click(screen.getByRole('button', { name: /第五批 · 元数据与 Task Board/ }))
 		fireEvent.click(screen.getByRole('button', { name: /Labels.*Lab 审查完成/ }))
@@ -505,9 +609,10 @@ describe('UiLabApp', () => {
 
 	it('第十一批 Space Editor 使用公开产品组件且提交不写入业务状态', async () => {
 		render(<UiLabApp />)
+		expandReviewDirectory()
 
 		fireEvent.click(screen.getByRole('button', { name: /第十一批 · StoneFlow 共享产品组件/ }))
-		fireEvent.click(screen.getByRole('button', { name: /Space Editor 组件.*待审查/ }))
+		fireEvent.click(screen.getByRole('button', { name: /Space Editor 组件.*Lab 审查完成/ }))
 		fireEvent.click(screen.getByRole('button', { name: '打开 Space Editor' }))
 		expect(await screen.findByRole('dialog', { name: '新建 Space' })).toBeInTheDocument()
 
@@ -524,10 +629,13 @@ describe('UiLabApp', () => {
 
 	it('第十二批 Bulk ActionBar 只修改本地选择状态', async () => {
 		render(<UiLabApp />)
+		expandReviewDirectory()
 
 		fireEvent.click(screen.getByRole('button', { name: /第十二批 · Task 与集合组合/ }))
-		fireEvent.click(screen.getByRole('button', { name: /Bulk ActionBar · 产品合同.*待审查/ }))
-		expect(await screen.findByRole('toolbar', { name: '批量操作' })).toHaveTextContent('已选 3 项')
+		fireEvent.click(screen.getByRole('button', { name: /Bulk ActionBar · 产品合同.*Lab 审查完成/ }))
+		const actionBar = await screen.findByRole('toolbar', { name: '批量操作' })
+		expect(actionBar).toHaveTextContent('3')
+		expect(actionBar).not.toHaveTextContent('已选')
 
 		fireEvent.click(screen.getByRole('button', { name: '清空已选' }))
 		await waitFor(() =>
@@ -536,14 +644,15 @@ describe('UiLabApp', () => {
 		expect(screen.getByText('已清空本地选择')).toBeInTheDocument()
 
 		fireEvent.click(screen.getByRole('button', { name: '恢复 3 项选择' }))
-		expect(await screen.findByRole('toolbar', { name: '批量操作' })).toHaveTextContent('已选 3 项')
+		expect(await screen.findByRole('toolbar', { name: '批量操作' })).toHaveTextContent('3')
 	})
 
 	it('第十二批 Task Metadata 通过生产公开组件更新本地优先级', async () => {
 		render(<UiLabApp />)
+		expandReviewDirectory()
 
 		fireEvent.click(screen.getByRole('button', { name: /第十二批 · Task 与集合组合/ }))
-		fireEvent.click(screen.getByRole('button', { name: /Task Metadata · 产品合同.*待审查/ }))
+		fireEvent.click(screen.getByRole('button', { name: /Task Metadata · 产品合同.*Lab 审查完成/ }))
 		expect(screen.getByText('当前优先级：中')).toBeInTheDocument()
 
 		const priorityButton = screen.getByRole('button', { name: '优先级' })
@@ -553,31 +662,65 @@ describe('UiLabApp', () => {
 		expect(screen.getByText('当前优先级：高')).toBeInTheDocument()
 	})
 
-	it('第十三批同步配置先失败后重试，并在关闭后清理 Overlay', async () => {
+	it('第十三批同步配置覆盖正常保存与原位失败恢复，并在关闭后清理 Overlay', async () => {
 		render(<UiLabApp />)
+		expandReviewDirectory()
 
 		fireEvent.click(screen.getByRole('button', { name: /第十三批 · Shell、Settings 与桌面流程/ }))
 		fireEvent.click(
-			screen.getByRole('button', { name: /Settings \/ Sync · 可移植产品场景.*待审查/ }),
+			screen.getByRole('button', {
+				name: /Settings \/ Sync · 可移植产品场景.*Lab 审查完成/,
+			}),
 		)
-		fireEvent.click(screen.getByRole('button', { name: '打开同步配置' }))
+		const openButton = screen.getByRole('button', { name: '打开同步配置' })
+		act(() => openButton.focus())
+		fireEvent.click(openButton)
 		expect(await screen.findByRole('dialog', { name: '配置云端副本' })).toBeInTheDocument()
-
+		await waitFor(() =>
+			expect(screen.getByRole('textbox', { name: '同步数据库连接' })).toHaveFocus(),
+		)
 		fireEvent.click(screen.getByRole('button', { name: '保存配置' }))
-		expect(await screen.findByText('保存失败')).toBeInTheDocument()
-		fireEvent.click(screen.getByRole('button', { name: '重试保存' }))
 		await waitFor(() =>
 			expect(screen.queryByRole('dialog', { name: '配置云端副本' })).not.toBeInTheDocument(),
 		)
-		expect(screen.getByText('已保存本地同步设置；未写入系统钥匙串')).toBeInTheDocument()
+		const successToast = await screen.findByRole('alertdialog', { name: '配置已保存' })
+		expect(successToast).toBeVisible()
+		expect(successToast).toHaveTextContent('正在后台验证连接。')
+		await waitFor(() => expect(openButton).toHaveFocus())
+
+		const failureButton = screen.getByRole('button', { name: '打开并模拟保存失败' })
+		act(() => failureButton.focus())
+		fireEvent.click(failureButton)
+		const saveButton = await screen.findByRole('button', { name: '保存配置' })
+		const databaseUrl = screen.getByRole('textbox', { name: '同步数据库连接' })
+		fireEvent.click(saveButton)
+		const dialog = screen.getByRole('dialog', { name: '配置云端副本' })
+		const inlineError = await within(dialog).findByRole('alert')
+		expect(inlineError).toHaveTextContent('保存失败')
+		expect(inlineError).toHaveTextContent('Lab 模拟保存失败')
+		expect(inlineError).toHaveTextContent('输入已保留，请检查后再次保存。')
+		expect(dialog).toBeInTheDocument()
+		expect(databaseUrl).toHaveValue('postgresql://stoneflow:demo@localhost/stoneflow')
+		expect(databaseUrl).not.toHaveAttribute('aria-invalid', 'true')
+		expect(screen.queryByRole('alertdialog', { name: '保存失败' })).not.toBeInTheDocument()
+		expect(screen.getByRole('button', { name: '保存配置' })).toBe(saveButton)
+		expect(screen.queryByRole('button', { name: '重试保存' })).not.toBeInTheDocument()
+		await waitFor(() => expect(saveButton).toBeEnabled())
+		fireEvent.click(saveButton)
+		await waitFor(() =>
+			expect(screen.queryByRole('dialog', { name: '配置云端副本' })).not.toBeInTheDocument(),
+		)
+		expect(await screen.findByRole('alertdialog', { name: '配置已保存' })).toBeVisible()
+		await waitFor(() => expect(failureButton).toHaveFocus())
 		expect(document.querySelector('[data-slot="modal-backdrop"]')).toBeNull()
 	})
 
 	it('第十三批更新场景只在本地切换真实可见状态', () => {
 		render(<UiLabApp />)
+		expandReviewDirectory()
 
 		fireEvent.click(screen.getByRole('button', { name: /第十三批 · Shell、Settings 与桌面流程/ }))
-		fireEvent.click(screen.getByRole('button', { name: /Update · 可移植反馈场景.*待审查/ }))
+		fireEvent.click(screen.getByRole('button', { name: /Update · 可移植反馈场景.*Lab 审查完成/ }))
 		expect(screen.getByText('发现新版本 1.8.0')).toBeInTheDocument()
 
 		fireEvent.click(screen.getByRole('button', { name: '下载失败' }))
@@ -588,22 +731,24 @@ describe('UiLabApp', () => {
 
 	it('第十四批使用真实 Current 面并显示候选收口合同', () => {
 		render(<UiLabApp />)
+		expandReviewDirectory()
 
 		const batch = screen.getByRole('button', {
-			name: /第十四批 · 替换候选与样式架构.*0\/5/,
+			name: /第十四批 · 替换候选与样式架构.*5\/5/,
 		})
 		fireEvent.click(batch)
+		expandComponentInfo()
 		const coverageFilters = screen.getByRole('heading', { name: '覆盖' }).closest('section')!
 		fireEvent.click(within(coverageFilters).getByRole('button', { name: '仅真实应用' }))
 		expect(
-			screen.getByRole('button', { name: /HoverCard → Task Preview.*待审查/ }),
+			screen.getByRole('button', { name: /HoverCard → Task Preview.*Lab 审查完成/ }),
 		).toBeInTheDocument()
 		expect(
-			screen.queryByRole('button', { name: /InlineSelect → Metadata.*待审查/ }),
+			screen.queryByRole('button', { name: /InlineSelect → Metadata.*Lab 审查完成/ }),
 		).not.toBeInTheDocument()
-		expect(screen.getByText('Current 验证边界')).toBeInTheDocument()
+		expect(screen.getByText('Current 验证边界')).toBeVisible()
 		fireEvent.click(within(coverageFilters).getByRole('button', { name: '全部' }))
-		fireEvent.click(screen.getByRole('button', { name: /InlineSelect → Metadata.*待审查/ }))
+		fireEvent.click(screen.getByRole('button', { name: /InlineSelect → Metadata.*Lab 审查完成/ }))
 
 		const current = document.querySelector(
 			'[data-native-comparison-current="candidate-inline-select"]',
@@ -617,9 +762,9 @@ describe('UiLabApp', () => {
 		expect(
 			within(current as HTMLElement).getByRole('button', { name: '优先级' }),
 		).toBeInTheDocument()
-		expect(screen.getByText('必须保留的合同')).toBeInTheDocument()
-		expect(screen.getByText('预期可删除项')).toBeInTheDocument()
-		expect(screen.getByText('相关 Recipe 家族')).toBeInTheDocument()
+		expect(screen.getByText('必须保留的合同')).toBeVisible()
+		expect(screen.getByText('预期可删除项')).toBeVisible()
+		expect(screen.getByText('相关 Recipe 家族')).toBeVisible()
 		expect(screen.getByTitle('Upstream · InlineSelect Candidate 隔离对照')).toBeInTheDocument()
 	})
 
@@ -627,6 +772,17 @@ describe('UiLabApp', () => {
 		render(<UiLabApp />)
 
 		const preview = screen.getByRole('region', { name: '当前样例预览' })
+		expect(screen.getByRole('button', { name: '审查批次' })).toHaveAttribute(
+			'aria-expanded',
+			'false',
+		)
+		expect(screen.getByRole('button', { name: '组件信息' })).toHaveAttribute(
+			'aria-expanded',
+			'false',
+		)
+		expect(screen.queryByRole('button', { name: /第一批 · 基础与动作/ })).not.toBeInTheDocument()
+		expect(screen.getByText('家族 / 类型')).not.toBeVisible()
+		expandReviewDirectory()
 		expect(screen.getByRole('button', { name: 'StoneFlow' })).toHaveAttribute(
 			'aria-pressed',
 			'true',
@@ -651,7 +807,7 @@ describe('UiLabApp', () => {
 			expect(screen.getByRole('button', { name: batchName })).toBeInTheDocument()
 		}
 		expect(screen.getByRole('button', { name: /第一批 · 基础与动作/ })).toHaveTextContent('6/6')
-		expect(screen.getByRole('button', { name: /第三批 · 导航/ })).toHaveTextContent('6/6')
+		expect(screen.getByRole('button', { name: /第三批 · 导航/ })).toHaveTextContent('7/7')
 		expect(screen.getByRole('button', { name: /第五批 · 元数据与 Task Board/ })).toHaveTextContent(
 			'6/6',
 		)
@@ -659,7 +815,26 @@ describe('UiLabApp', () => {
 			'6/6',
 		)
 		expect(screen.getByRole('button', { name: /第七批 · 浮层与焦点/ })).toHaveTextContent('10/10')
-		expect(screen.getByRole('button', { name: /第八批 · 组合与桌面边界/ })).toHaveTextContent('3/3')
+		const completedDesktopBatch = screen.getByRole('button', {
+			name: /第八批 · 组合与桌面边界/,
+		})
+		expect(completedDesktopBatch).toHaveTextContent('✓')
+		expect(completedDesktopBatch).toHaveTextContent('3/3 · 1 外部')
+		expect(screen.getByRole('button', { name: /第九批 · HeroUI 原子与表单/ })).toHaveTextContent(
+			'9/9',
+		)
+		expect(screen.getByRole('button', { name: /第十批 · HeroUI 复杂控件/ })).toHaveTextContent(
+			'10/10',
+		)
+		expect(
+			screen.getByRole('button', { name: /第十一批 · StoneFlow 共享产品组件/ }),
+		).toHaveTextContent('7/7 · 3 外部')
+		expect(screen.getByRole('button', { name: /第十二批 · Task 与集合组合/ })).toHaveTextContent(
+			'7/7 · 2 外部',
+		)
+		expect(
+			screen.getByRole('button', { name: /第十三批 · Shell、Settings 与桌面流程/ }),
+		).toHaveTextContent('9/9')
 		fireEvent.click(screen.getByRole('button', { name: /第四批 · 集合与任务行/ }))
 		expect(screen.getByRole('button', { name: /RowShell.*Lab 审查完成/ })).toBeInTheDocument()
 		expect(screen.queryByRole('button', { name: /Table.*待审查/ })).not.toBeInTheDocument()
@@ -960,7 +1135,7 @@ describe('UiLabApp', () => {
 		await waitFor(() =>
 			expect(screen.queryByRole('searchbox', { name: '搜索任务操作' })).not.toBeInTheDocument(),
 		)
-		expect(menuTrigger).toHaveFocus()
+		await waitFor(() => expect(menuTrigger).toHaveFocus())
 
 		fireEvent.click(screen.getByRole('button', { name: 'Task Row' }))
 		const firstSelectedTask = within(preview)
@@ -1011,6 +1186,7 @@ describe('UiLabApp', () => {
 			name: 'Main / Launcher 原生窗口验收',
 		})
 		fireEvent.click(nativeWindowEntry)
+		expandComponentInfo()
 		expect(within(preview).queryByRole('heading', { name: 'Task Board' })).not.toBeInTheDocument()
 		expect(document.querySelectorAll('[data-ui-lab-preview-root]')).toHaveLength(0)
 
@@ -1022,7 +1198,7 @@ describe('UiLabApp', () => {
 		).toBeInTheDocument()
 		expect(
 			screen.getByText('src/main.tsx；src/launcher.tsx；src-tauri/tauri.conf.json'),
-		).toBeInTheDocument()
+		).toBeVisible()
 		expect(
 			within(preview).getByText(
 				/Portal 归属、WebView 激活、窗口断点、缩放与跨窗口一致性依赖真实 Tauri/,
@@ -1074,13 +1250,12 @@ describe('UiLabApp', () => {
 
 		fireEvent.change(search, { target: { value: 'SpaceEditorDialog.tsx' } })
 		fireEvent.click(screen.getByRole('button', { name: 'HeroUI ColorSwatchPicker' }))
+		expandComponentInfo()
 		expect(screen.getByRole('heading', { name: 'HeroUI ColorSwatchPicker' })).toBeInTheDocument()
-		expect(screen.getByText('由产品组合覆盖')).toBeInTheDocument()
-		expect(
-			screen.getByText('src/features/space/components/SpaceEditorDialog.tsx'),
-		).toBeInTheDocument()
-		expect(screen.getByText('生产组合（见消费位置）')).toBeInTheDocument()
-		expect(screen.getByText('Keep')).toBeInTheDocument()
+		expect(screen.getByText('由产品组合覆盖')).toBeVisible()
+		expect(screen.getByText('src/features/space/components/SpaceEditorDialog.tsx')).toBeVisible()
+		expect(screen.getByText('生产组合（见消费位置）')).toBeVisible()
+		expect(screen.getByText('Keep')).toBeVisible()
 		expect(document.querySelectorAll('[data-ui-lab-preview-root]')).toHaveLength(0)
 		expect(within(preview).getByText(/当前能力已由真实产品组合消费/)).toBeInTheDocument()
 

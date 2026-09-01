@@ -13,7 +13,7 @@
 - [UI 系统生产迁移](../archive/ui-system-production-migration/spec.md)已完成并归档。已提交实现范围为 `4eda8e8d..43ffe860`（Ticket 01：`9761aac3`；Ticket 02～05：`43ffe860`）；Ticket 06 的清理与本节归档记录由同一最终差异持有，不记录自引用的未来提交号。
 - 自动化准备证据：`bun run check`、`bun run build` 与 `git diff --check` 通过；前端 188 个文件共 932 项、脚本 160 项、Rust 233 项通过，7 项 PostgreSQL 集成测试因未提供数据库按既有条件忽略；生产构建不包含 `ui-lab.html`。
 - 本轮影响下方既有验收项 1～6；第 7～9 项没有受到 UI 迁移影响。该记录只证明工程前置完成，所有九项仍按实际设备与环境结果勾选。
-- [UI Lab 全量清单与 HeroUI 原生实现对齐](../ui-lab-native-alignment/spec.md)已完成目录、隔离对照、HeroUI 漂移门禁与生产构建边界的技术收口；生产产物仍只有 Main/Launcher，且本工作包未修改生产视觉、业务或依赖。Ticket 03 浏览器 smoke、第九至十四批与候选结论仍待人工；追加的真实应用验收输入落在既有第 1～6 项，第 7～9 项不受影响，九项均保持未勾选。
+- [UI Lab 全量清单与 HeroUI 原生实现对齐](../archive/ui-lab-native-alignment/spec.md)已完成并归档目录、隔离对照、HeroUI 漂移门禁、十四批人工审查与生产构建边界；生产产物仍只有 Main/Launcher，且没有新增依赖。人工审查中已按明确反馈修改若干生产视觉与局部交互路径，最终差异审计未发现仍待实施的批准项；追加的真实应用验收输入落在既有第 1～6 项，第 7～9 项不受影响，九项均保持未勾选。
 
 ## 待统一验收
 

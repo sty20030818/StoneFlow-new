@@ -66,4 +66,4 @@ StoneFlow 已选择 HeroUI OSS/Pro 作为唯一 UI 平台，但“采用同一�
 - [UI 组件审查与实验室研究](../../04-专题研究/2026-08-26-ui-component-audit-lab-research.md)
 - [已归档 UI Lab 人工审查规格](../../../.scratch/archive/ui-lab-review/spec.md)
 - [已归档 UI Lab 建设规格](../../../.scratch/archive/ui-system-lab/spec.md)
-- [UI Lab 全量清单与 HeroUI 原生实现对齐规格](../../../.scratch/ui-lab-native-alignment/spec.md)
+- [已归档 UI Lab 全量清单与 HeroUI 原生实现对齐规格](../../../.scratch/archive/ui-lab-native-alignment/spec.md)

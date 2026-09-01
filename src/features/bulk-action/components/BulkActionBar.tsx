@@ -1,6 +1,6 @@
-import { Button } from '@heroui/react'
+import { Button, Chip, Separator } from '@heroui/react'
 import { ActionBar } from '@heroui-pro/react'
-import { XIcon } from 'lucide-react'
+import { Trash2Icon, XIcon } from 'lucide-react'
 
 import {
 	COMMAND_IDS,
@@ -42,20 +42,30 @@ export function BulkActionBar({ runtime, context }: BulkActionBarProps) {
 		const projection = runtime.project(commandId, context)
 		return projection?.visible ? [projection] : []
 	})
+	const primaryProjections = projections.filter(({ id }) => !DANGER_ACTION_IDS.has(id))
+	const dangerProjections = projections.filter(({ id }) => DANGER_ACTION_IDS.has(id))
 	const isOpen = selectedCount > 0 && projections.length > 0
 
 	return (
 		<ActionBar aria-label='批量操作' isOpen={isOpen}>
 			<ActionBar.Prefix>
-				<span className='text-sm font-medium'>已选 {selectedCount} 项</span>
+				<Chip className='shrink-0' size='sm'>
+					{selectedCount}
+				</Chip>
 			</ActionBar.Prefix>
-
+			<Separator />
 			<ActionBar.Content>
-				{projections.map((projection) => (
+				{primaryProjections.map((projection) => (
+					<BulkCommandButton key={projection.id} projection={projection} />
+				))}
+				{primaryProjections.length > 0 && dangerProjections.length > 0 ? (
+					<Separator orientation='vertical' />
+				) : null}
+				{dangerProjections.map((projection) => (
 					<BulkCommandButton key={projection.id} projection={projection} />
 				))}
 			</ActionBar.Content>
-
+			<Separator />
 			<ActionBar.Suffix>
 				<CommandActionTooltip commandId={COMMAND_IDS.selectionClear} label='清空已选' scope='list'>
 					<Button
@@ -75,14 +85,16 @@ export function BulkActionBar({ runtime, context }: BulkActionBarProps) {
 }
 
 function BulkCommandButton({ projection }: { projection: CommandProjection }) {
+	const isDanger = DANGER_ACTION_IDS.has(projection.id)
 	const button = (
 		<Button
 			isDisabled={!projection.enabled}
 			onPress={() => void projection.execute({ source: 'bulk-bar' })}
 			size='sm'
-			variant={DANGER_ACTION_IDS.has(projection.id) ? 'danger' : 'tertiary'}
+			variant={isDanger ? 'danger' : 'tertiary'}
 		>
-			{projection.label}
+			{isDanger ? <Trash2Icon aria-hidden /> : null}
+			<span className={isDanger ? 'action-bar__label' : undefined}>{projection.label}</span>
 		</Button>
 	)
 

@@ -101,6 +101,23 @@ describe('shared tooltip patterns', () => {
 		expect(screen.getByLabelText('按 X')).toBeInTheDocument()
 	})
 
+	it('DisabledActionTooltip 可只显示动作名和快捷键，不伪造禁用原因', async () => {
+		render(
+			<DisabledActionTooltip label='归档任务' reason={null} shortcut={<span>A</span>}>
+				<button disabled type='button'>
+					归档任务
+				</button>
+			</DisabledActionTooltip>,
+		)
+
+		const trigger = screen.getByRole('group', { name: '归档任务' })
+		act(() => trigger.focus())
+		expect(await screen.findByRole('tooltip')).toHaveTextContent('归档任务A')
+		expect(
+			screen.getByRole('tooltip').querySelector('[data-slot="disabled-action-tooltip-reason"]'),
+		).not.toBeInTheDocument()
+	})
+
 	it('OverflowTooltip 首次 hover 复测截断，并在 resize 后不再截断时关闭', async () => {
 		const observers: ResizeObserverTestDouble[] = []
 		vi.spyOn(globalThis, 'ResizeObserver').mockImplementation(

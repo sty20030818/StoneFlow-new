@@ -42,14 +42,17 @@ function command(id: Command['id'], title: string, run: Command['run']): Command
 }
 
 function BulkActionBarFixture() {
-	const [selectedIds, setSelectedIds] = useState(['task-a', 'task-b', 'task-c'])
+	const [selectedIds, setSelectedIds] = useState(['project-a', 'project-b', 'project-c'])
 	const [status, setStatus] = useState('尚未执行批量动作')
 	const runtime = useMemo(
 		() =>
 			new CommandRuntime({
 				registry: new CommandRegistry([
-					command(COMMAND_IDS.openCommandMenu, '打开批量命令', () => {
-						setStatus('已打开本地批量命令入口')
+					command(COMMAND_IDS.projectArchive, '归档项目', () => {
+						setStatus('已触发本地归档动作')
+					}),
+					command(COMMAND_IDS.projectDelete, '删除项目', () => {
+						setStatus('已触发本地删除动作')
 					}),
 				]),
 				getContext: createEmptyCommandContext,
@@ -61,17 +64,17 @@ function BulkActionBarFixture() {
 		return {
 			...base,
 			selection: {
-				type: 'task',
+				type: 'project',
 				ids: selectedIds,
-				entities: selectedIds.map((id) => ({ id, type: 'task', title: id })),
+				entities: selectedIds.map((id) => ({ id, type: 'project', title: id })),
 				primaryEntity: selectedIds[0]
-					? { id: selectedIds[0], type: 'task', title: selectedIds[0] }
+					? { id: selectedIds[0], type: 'project', title: selectedIds[0] }
 					: undefined,
 				clearSelection: () => {
 					setSelectedIds([])
 					setStatus('已清空本地选择')
 				},
-				source: 'task-list',
+				source: 'project-list',
 				hasSelection: selectedIds.length > 0,
 				isSingleSelection: selectedIds.length === 1,
 				isMultiSelection: selectedIds.length > 1,
@@ -90,7 +93,7 @@ function BulkActionBarFixture() {
 			<Button
 				className='self-start'
 				onPress={() => {
-					setSelectedIds(['task-a', 'task-b', 'task-c'])
+					setSelectedIds(['project-a', 'project-b', 'project-c'])
 					setStatus('已恢复 3 项本地选择')
 				}}
 				size='sm'
@@ -114,21 +117,30 @@ export function TaskMetadataReviewFixture() {
 
 	return (
 		<div className='flex w-full max-w-2xl flex-col gap-4'>
-			<div className='flex flex-wrap items-center gap-2'>
-				<MetadataFieldDropdown
-					compact
-					fieldKey='priority'
-					label='优先级'
-					menuLabel={priorityDropdown.menuLabel}
-					onChange={setPriority}
-					options={priorityDropdown.options}
-					value={priority}
-				/>
-				<MetadataFieldValue ariaLabel='空元数据值' label='—' />
-				<MetadataFieldValue
-					ariaLabel='长元数据值'
-					label='这是一个很长很长的项目名称，用于验证截断与提示'
-				/>
+			<div className='flex flex-wrap items-end gap-4'>
+				<div className='flex flex-col gap-1'>
+					<span className='text-xs text-muted'>可编辑优先级</span>
+					<MetadataFieldDropdown
+						compact
+						fieldKey='priority'
+						label='优先级'
+						menuLabel={priorityDropdown.menuLabel}
+						onChange={setPriority}
+						options={priorityDropdown.options}
+						value={priority}
+					/>
+				</div>
+				<div className='flex flex-col gap-1'>
+					<span className='text-xs text-muted'>空值（只读）</span>
+					<MetadataFieldValue ariaLabel='空元数据值' label='—' />
+				</div>
+				<div className='flex flex-col gap-1'>
+					<span className='text-xs text-muted'>长文本（只读）</span>
+					<MetadataFieldValue
+						ariaLabel='长元数据值'
+						label='这是一个很长很长的项目名称，用于验证截断与提示'
+					/>
+				</div>
 			</div>
 			<p aria-live='polite' className='text-sm text-muted'>
 				当前优先级：{priorityDropdown.options.find((option) => option.value === priority)?.label}
@@ -260,7 +272,7 @@ export const TICKET_12_SAMPLES = [
 		name: 'Task Metadata · 产品合同',
 		category: 'Product Scenes',
 		description:
-			'直接渲染生产公开 MetadataFieldDropdown 与 MetadataFieldValue，核对入口、空值和长文本。',
+			'直接渲染生产公开 MetadataFieldDropdown 与 MetadataFieldValue，明确区分可编辑入口和只读样例。',
 		keywords: ['task metadata', 'compact', '28px', 'empty', 'long text'],
 		source:
 			'src/features/metadata-fields/components/MetadataFieldDropdown.tsx；src/features/metadata-fields/components/MetadataFieldValue.tsx',

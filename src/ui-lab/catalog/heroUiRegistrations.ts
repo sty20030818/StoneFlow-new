@@ -178,7 +178,7 @@ const OSS_PRODUCTION_USAGE = [
 	['src/app/providers/AppProviders.tsx', ['Toast']],
 	['src/features/app-info/components/AboutDialog.tsx', ['Alert', 'Button', 'Modal', 'Spinner']],
 	['src/features/app-info/components/AppVersionFooterItem.tsx', ['Chip']],
-	['src/features/bulk-action/components/BulkActionBar.tsx', ['Button']],
+	['src/features/bulk-action/components/BulkActionBar.tsx', ['Button', 'Chip', 'Separator']],
 	['src/features/bulk-action/components/bulk-action-result-toast.ts', ['toast']],
 	['src/features/changelog/ChangelogDialog.tsx', ['Chip', 'Modal', 'Spinner']],
 	['src/features/changelog/ChangelogRelease.tsx', ['Chip']],
@@ -266,7 +266,7 @@ const OSS_PRODUCTION_USAGE = [
 	],
 	[
 		'src/features/sync/components/SyncConfigDialog.tsx',
-		['Alert', 'Button', 'Label', 'Modal', 'TextArea', 'TextField'],
+		['Alert', 'Button', 'FieldError', 'Label', 'Modal', 'TextArea', 'TextField', 'toast'],
 	],
 	['src/features/sync/components/SyncFooterStatusItem.tsx', ['Button', 'Spinner']],
 	['src/features/task/components/TaskBoard.tsx', ['Alert', 'Button', 'Chip', 'Skeleton']],

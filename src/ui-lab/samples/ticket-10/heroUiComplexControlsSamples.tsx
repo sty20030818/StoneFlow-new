@@ -3,6 +3,7 @@ import { useState, type ReactNode } from 'react'
 import {
 	AlertDialog,
 	Button,
+	Chip,
 	Disclosure,
 	Dropdown,
 	Kbd,
@@ -11,6 +12,7 @@ import {
 	Modal,
 	Popover,
 	ScrollShadow,
+	Separator,
 	Surface,
 } from '@heroui/react'
 import {
@@ -27,6 +29,7 @@ import {
 	Timeline,
 } from '@heroui-pro/react'
 import { Resizable } from '@heroui-pro/react/resizable'
+import { ChevronDownIcon, SearchIcon, Trash2Icon } from 'lucide-react'
 
 import type { UiLabReviewUnitInput } from '../../uiLabCatalog'
 
@@ -198,12 +201,14 @@ function OverlaysFixture() {
 
 function NavigationFixture() {
 	return (
-		<Fixture title='Navigation'>
+		<Fixture title='Navigation（Disclosure 折叠面板）'>
 			<Disclosure defaultExpanded>
 				<Disclosure.Heading>
 					<Disclosure.Trigger>
-						<span className='font-medium'>详情与诊断</span>
-						<Disclosure.Indicator />
+						<span className='inline-flex items-center gap-2 font-medium'>
+							详情与诊断
+							<Disclosure.Indicator />
+						</span>
 					</Disclosure.Trigger>
 				</Disclosure.Heading>
 				<Disclosure.Content>
@@ -214,7 +219,9 @@ function NavigationFixture() {
 					</Disclosure.Body>
 				</Disclosure.Content>
 			</Disclosure>
-			<p className='text-sm text-muted'>Tabs 当前没有生产消费者，仅保留在组件总账。</p>
+			<p className='text-sm text-muted'>
+				本样例审查折叠面板；Tabs 没有生产消费者，仅保留在组件总账。
+			</p>
 		</Fixture>
 	)
 }
@@ -284,7 +291,9 @@ function CommandFixture() {
 					<Command.Container size='md'>
 						<Command.Dialog aria-label='审查命令'>
 							<Command.InputGroup aria-label='筛选审查命令'>
-								<Command.InputGroup.Prefix>⌕</Command.InputGroup.Prefix>
+								<Command.InputGroup.Prefix>
+									<SearchIcon aria-hidden className='size-4 shrink-0' />
+								</Command.InputGroup.Prefix>
 								<Command.InputGroup.Input placeholder='搜索命令' />
 								<Command.InputGroup.ClearButton aria-label='清空命令搜索' />
 							</Command.InputGroup>
@@ -326,8 +335,11 @@ function ActionBarFixture() {
 			</p>
 			<ActionBar aria-label='批量操作样本' isOpen={open}>
 				<ActionBar.Prefix>
-					<span className='text-sm font-medium'>已选 2 项</span>
+					<Chip className='shrink-0' size='sm'>
+						2
+					</Chip>
 				</ActionBar.Prefix>
+				<Separator />
 				<ActionBar.Content>
 					<Button size='sm' type='button' variant='tertiary'>
 						移动
@@ -335,10 +347,13 @@ function ActionBarFixture() {
 					<Button isDisabled size='sm' type='button' variant='tertiary'>
 						归档
 					</Button>
-					<Button size='sm' type='button' variant='danger'>
-						删除
+					<Separator orientation='vertical' />
+					<Button aria-label='删除' size='sm' type='button' variant='danger'>
+						<Trash2Icon aria-hidden />
+						<span className='action-bar__label'>删除</span>
 					</Button>
 				</ActionBar.Content>
+				<Separator />
 				<ActionBar.Suffix>
 					<Button
 						aria-label='清空已选'
@@ -407,9 +422,11 @@ function CellControlsFixture() {
 					>
 						<InlineSelect.Trigger>
 							<InlineSelect.Value />
-							<InlineSelect.Indicator />
+							<InlineSelect.Indicator>
+								<ChevronDownIcon aria-hidden className='size-3' />
+							</InlineSelect.Indicator>
 						</InlineSelect.Trigger>
-						<InlineSelect.Popover>
+						<InlineSelect.Popover className='w-24'>
 							<ListBox>
 								<ListBox.Item id='high' textValue='高'>
 									高

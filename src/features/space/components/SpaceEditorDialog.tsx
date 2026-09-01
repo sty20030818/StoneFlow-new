@@ -164,7 +164,7 @@ export function SpaceEditorDialog({
 									</div>
 								</div>
 
-								<div className='grid gap-1.5'>
+								<div className='mt-4 grid gap-1.5'>
 									<Label htmlFor='space-editor-name'>名称</Label>
 									<Input
 										autoFocus
@@ -178,7 +178,7 @@ export function SpaceEditorDialog({
 									/>
 								</div>
 
-								<div className='grid gap-4 sm:grid-cols-2'>
+								<div className='mt-4 grid gap-4 sm:grid-cols-2'>
 									<Select
 										isDisabled={submitting}
 										onChange={(key) => typeof key === 'string' && iconKeyField.onChange(key)}

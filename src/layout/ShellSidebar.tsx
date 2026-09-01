@@ -398,7 +398,9 @@ export function ShellSidebarNavigation({
 										</Dropdown.SubmenuTrigger>
 										{dropdownError ? (
 											<Dropdown.Item id='space-error' isDisabled textValue={dropdownError}>
-												<span className='whitespace-normal text-danger'>{dropdownError}</span>
+												<span className='whitespace-normal text-danger-on-surface'>
+													{dropdownError}
+												</span>
 											</Dropdown.Item>
 										) : null}
 									</Dropdown.Menu>

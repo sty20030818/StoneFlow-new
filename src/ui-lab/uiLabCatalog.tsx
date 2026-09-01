@@ -486,7 +486,7 @@ export const UI_LAB_REVIEW_BATCHES: readonly UiLabReviewBatch[] = [
 		entries: TICKET_09_SAMPLES.map(({ id }) => ({
 			sampleId: id,
 			role: 'target' as const,
-			status: 'pending' as const,
+			status: 'done' as const,
 		})),
 	},
 	{
@@ -494,11 +494,18 @@ export const UI_LAB_REVIEW_BATCHES: readonly UiLabReviewBatch[] = [
 		label: '第十批',
 		title: 'HeroUI 复杂控件',
 		objective: '核对菜单、浮层、集合、命令、Cell Controls 与 Pro 复杂原料的公共状态和产品边界。',
-		entries: TICKET_10_SAMPLES.map(({ id }) => ({
-			sampleId: id,
-			role: 'target' as const,
-			status: 'pending' as const,
-		})),
+		entries: [
+			{ sampleId: 'heroui-complex-menu-review', role: 'target', status: 'done' },
+			{ sampleId: 'heroui-complex-overlays-review', role: 'target', status: 'done' },
+			{ sampleId: 'heroui-complex-navigation-review', role: 'target', status: 'done' },
+			{ sampleId: 'heroui-complex-collections-review', role: 'target', status: 'done' },
+			{ sampleId: 'heroui-complex-command-review', role: 'target', status: 'done' },
+			{ sampleId: 'heroui-complex-action-bar-review', role: 'target', status: 'done' },
+			{ sampleId: 'heroui-complex-cell-controls-review', role: 'target', status: 'done' },
+			{ sampleId: 'heroui-complex-layout-surfaces-review', role: 'target', status: 'done' },
+			{ sampleId: 'heroui-complex-timeline-hover-card-review', role: 'target', status: 'done' },
+			{ sampleId: 'heroui-complex-empty-state-review', role: 'target', status: 'done' },
+		],
 	},
 	{
 		id: 'batch-11',
@@ -506,11 +513,26 @@ export const UI_LAB_REVIEW_BATCHES: readonly UiLabReviewBatch[] = [
 		title: 'StoneFlow 共享产品组件',
 		objective:
 			'核对共享产品组件的公开合同、真实消费者、上游原料与运行时边界，不为 Lab 扩大生产 API。',
-		entries: TICKET_11_SAMPLES.map(({ id }) => ({
-			sampleId: id,
-			role: 'target' as const,
-			status: 'pending' as const,
-		})),
+		entries: [
+			{ sampleId: 'stoneflow-shared-page-frame-review', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-shared-tooltip-family-review', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-shared-app-breadcrumb-review', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-shared-shell-sidebar-review', role: 'target', status: 'external' },
+			{ sampleId: 'stoneflow-shared-row-shell-review', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-shared-app-scroll-area-review', role: 'target', status: 'done' },
+			{
+				sampleId: 'stoneflow-shared-settings-toggle-row-review',
+				role: 'target',
+				status: 'external',
+			},
+			{
+				sampleId: 'stoneflow-shared-global-search-results-review',
+				role: 'target',
+				status: 'external',
+			},
+			{ sampleId: 'stoneflow-shared-task-detail-public-review', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-shared-space-editor-review', role: 'target', status: 'done' },
+		],
 	},
 	{
 		id: 'batch-12',
@@ -518,11 +540,53 @@ export const UI_LAB_REVIEW_BATCHES: readonly UiLabReviewBatch[] = [
 		title: 'Task 与集合组合',
 		objective:
 			'复用既有已确认 fixture 和生产公开组件，核对 TaskBoard、选择、批量动作、搜索、Metadata 与 Timeline 的产品边界。',
-		entries: TICKET_12_SAMPLES.map(({ id }) => ({
-			sampleId: id,
-			role: 'target' as const,
-			status: 'pending' as const,
-		})),
+		entries: [
+			{
+				sampleId: 'stoneflow-task-collection-task-board-review',
+				role: 'target',
+				status: 'done',
+			},
+			{
+				sampleId: 'stoneflow-task-collection-group-header-review',
+				role: 'target',
+				status: 'done',
+			},
+			{
+				sampleId: 'stoneflow-task-collection-task-row-review',
+				role: 'target',
+				status: 'done',
+			},
+			{
+				sampleId: 'stoneflow-task-collection-contiguous-selection-review',
+				role: 'target',
+				status: 'done',
+			},
+			{
+				sampleId: 'stoneflow-task-collection-bulk-action-review',
+				role: 'target',
+				status: 'done',
+			},
+			{
+				sampleId: 'stoneflow-task-collection-labels-review',
+				role: 'target',
+				status: 'done',
+			},
+			{
+				sampleId: 'stoneflow-task-collection-global-search-review',
+				role: 'target',
+				status: 'external',
+			},
+			{
+				sampleId: 'stoneflow-task-collection-metadata-review',
+				role: 'target',
+				status: 'done',
+			},
+			{
+				sampleId: 'stoneflow-task-collection-activity-review',
+				role: 'target',
+				status: 'external',
+			},
+		],
 	},
 	{
 		id: 'batch-13',
@@ -530,11 +594,41 @@ export const UI_LAB_REVIEW_BATCHES: readonly UiLabReviewBatch[] = [
 		title: 'Shell、Settings 与桌面流程',
 		objective:
 			'复用生产公开组件和既有 fixture，核对 Shell、Settings、Launcher、反馈与桌面场景的可移植边界。',
-		entries: TICKET_13_SAMPLES.map(({ id }) => ({
-			sampleId: id,
-			role: 'target' as const,
-			status: 'pending' as const,
-		})),
+		entries: [
+			{ sampleId: 'stoneflow-product-shell-scene-review', role: 'target', status: 'done' },
+			{
+				sampleId: 'stoneflow-product-task-detail-scene-review',
+				role: 'target',
+				status: 'done',
+			},
+			{
+				sampleId: 'stoneflow-product-settings-sync-scene-review',
+				role: 'target',
+				status: 'done',
+			},
+			{
+				sampleId: 'stoneflow-product-entity-detail-scene-review',
+				role: 'target',
+				status: 'done',
+			},
+			{ sampleId: 'stoneflow-product-launcher-scene-review', role: 'target', status: 'done' },
+			{ sampleId: 'stoneflow-product-update-scene-review', role: 'target', status: 'done' },
+			{
+				sampleId: 'stoneflow-product-danger-confirm-scene-review',
+				role: 'target',
+				status: 'done',
+			},
+			{
+				sampleId: 'stoneflow-product-toast-recovery-scene-review',
+				role: 'target',
+				status: 'done',
+			},
+			{
+				sampleId: 'stoneflow-product-space-editor-scene-review',
+				role: 'target',
+				status: 'done',
+			},
+		],
 	},
 	{
 		id: 'batch-14',
@@ -545,7 +639,7 @@ export const UI_LAB_REVIEW_BATCHES: readonly UiLabReviewBatch[] = [
 		entries: TICKET_14_SAMPLES.map(({ id }) => ({
 			sampleId: id,
 			role: 'target' as const,
-			status: 'pending' as const,
+			status: 'done' as const,
 		})),
 	},
 ]

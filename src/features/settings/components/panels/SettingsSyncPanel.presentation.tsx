@@ -112,7 +112,11 @@ export function SyncCloudConfigBadge({
 			<span
 				className={cn(
 					'size-2 shrink-0 rounded-full',
-					unavailable ? 'bg-danger' : configured ? 'bg-success' : 'bg-default',
+					unavailable
+						? 'bg-danger-on-surface'
+						: configured
+							? 'bg-success-on-surface'
+							: 'bg-default',
 				)}
 			/>
 			<Chip.Label>{label}</Chip.Label>

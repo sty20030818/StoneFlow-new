@@ -7,18 +7,18 @@ export function TaskStatusIndicator({ status }: { status: TaskStatus }) {
 	switch (status) {
 		case 'done':
 			return (
-				<CircleCheckIcon className='size-4 shrink-0 stroke-surface text-success [&_circle]:fill-current [&_circle]:stroke-none' />
+				<CircleCheckIcon className='size-4 shrink-0 stroke-surface text-success-on-surface [&_circle]:fill-current [&_circle]:stroke-none' />
 			)
 		case 'doing':
 			return (
 				<span className='flex size-4 shrink-0 items-center justify-center'>
-					<PlayIcon className='size-3 text-info' fill='currentColor' />
+					<PlayIcon className='size-3 text-info-on-surface' fill='currentColor' />
 				</span>
 			)
 		case 'waiting':
 			return (
 				<span className='flex size-4 shrink-0 items-center justify-center'>
-					<PauseIcon className='size-3 text-warning' fill='currentColor' />
+					<PauseIcon className='size-3 text-warning-on-surface' fill='currentColor' />
 				</span>
 			)
 		case 'canceled':

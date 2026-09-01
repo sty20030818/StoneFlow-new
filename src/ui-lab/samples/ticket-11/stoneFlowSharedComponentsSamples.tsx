@@ -153,7 +153,7 @@ function TooltipFamilyFixture() {
 
 				<DisabledActionTooltip
 					label='归档任务'
-					reason='请先选择至少一个任务。'
+					reason={null}
 					shortcut={
 						<Kbd variant='light'>
 							<Kbd.Content>A</Kbd.Content>
@@ -257,11 +257,13 @@ function RowShellFixture() {
 function AppScrollAreaFixture() {
 	return (
 		<Fixture title='AppScrollArea'>
-			<div className='h-64 max-w-2xl overflow-hidden rounded-lg border border-surface'>
+			<div className='h-64 max-w-2xl overflow-hidden rounded-lg border border-separator bg-surface-secondary p-2'>
 				<AppScrollArea>
-					<div className='sticky top-0 z-10 bg-background py-2 text-sm font-medium'>固定标题</div>
+					<div className='sticky top-0 z-10 border-b border-separator bg-surface px-3 py-2 text-sm font-medium shadow-sm'>
+						固定标题
+					</div>
 					{Array.from({ length: 12 }, (_, index) => (
-						<p className='border-b border-separator py-3 text-sm' key={index}>
+						<p className='border-b border-separator bg-surface px-3 py-3 text-sm' key={index}>
 							第 {index + 1} 条用于验证真实 viewport、长内容与滚动边界
 						</p>
 					))}
@@ -338,7 +340,7 @@ export const TICKET_11_SAMPLES = [
 		source: 'src/shared/components/tooltip',
 		coverage: 'rendered',
 		Preview: TooltipFamilyFixture,
-		states: 'Pointer、Keyboard Focus、Shortcut、Disabled Reason、真实溢出',
+		states: 'Pointer、Keyboard Focus、Shortcut、Disabled、真实溢出',
 		verification: '浏览器 Lab；不复制 Trigger props/ref 合并逻辑',
 		inventoryRefs: [
 			'stoneflow-component-action-tooltip',

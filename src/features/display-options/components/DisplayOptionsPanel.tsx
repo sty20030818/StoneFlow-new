@@ -263,7 +263,7 @@ export function DisplayOptionsPanel({
 			</div>
 
 			{isErrored && error ? (
-				<p className='px-2 pb-2 text-[12px] text-danger'>{error}</p>
+				<p className='px-2 pb-2 text-[12px] text-danger-on-surface'>{error}</p>
 			) : isPending ? (
 				<p className='px-2 pb-2 text-[12px] text-muted'>正在读取显示偏好…</p>
 			) : null}

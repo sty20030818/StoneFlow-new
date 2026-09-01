@@ -41,6 +41,9 @@ describe('SpaceEditorDialog', () => {
 			screen.getAllByRole('option').map((option) => option.getAttribute('aria-label')),
 		).toEqual(['蓝色', '绿色', '琥珀', '玫红', '石板灰'])
 		expect(screen.getByRole('option', { name: '蓝色' })).toHaveAttribute('aria-selected', 'true')
+		const body = screen.getByRole('dialog').querySelector('.modal__body')
+		expect(body?.children[1]).toHaveClass('mt-4')
+		expect(body?.children[2]).toHaveClass('mt-4')
 	})
 
 	it('编辑弹窗可以稳定渲染', async () => {

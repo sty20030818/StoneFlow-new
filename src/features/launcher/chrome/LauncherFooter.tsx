@@ -22,9 +22,9 @@ export function LauncherFooter() {
 				className={cn(
 					'flex min-w-0 items-center gap-1.5',
 					state.submitState === 'error'
-						? 'text-danger'
+						? 'text-danger-on-surface'
 						: state.submitState === 'success'
-							? 'text-success'
+							? 'text-success-on-surface'
 							: 'text-muted',
 				)}
 			>

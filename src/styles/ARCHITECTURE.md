@@ -1,7 +1,7 @@
 # StoneFlow 视觉样式架构
 
 > 版本：v4
-> 最后更新：2026-08-25
+> 最后更新：2026-09-01
 > 作用：定义 `src/styles` 的现行合同。
 
 ## 1. 一句话心智
@@ -68,7 +68,7 @@ tailwindcss
 
 - 单一冷灰 Light 主题；
 - 六组 Accent 及其实际消费角色；
-- 固定 Success、Warning、Danger、Info；
+- 固定 Success、Warning、Danger、Info，并区分实心填充与 Surface 上的文字、图标、状态圆点；
 - Background、Surface、Field、Border、Separator、Focus、Backdrop、Shadow；
 - 字体族语义映射、禁用透明度、控件高度与语义圆角；
 - HeroUI 和必要 Tailwind 语义变量映射。
@@ -91,7 +91,7 @@ tailwindcss
 规则：
 
 - Input、Menu 与其他普通 Control 使用 `6px`；Button 与 Toggle 使用 pill；Card 与 Row 分组使用 `8px`；Popover、Modal 与 Sheet 使用 `12px`。
-- pill 用于 Button、Toggle、Chip、Avatar 和状态标记；导航行本身不使用 pill。
+- pill 用于 Button、Toggle、Chip、Avatar、ActionBar 和状态标记；导航行本身不使用 pill。
 - 附着式 ButtonGroup 与 ToggleButtonGroup 的首、中、尾几何继续由 HeroUI 上游负责。
 - 有明确边界的 Surface 使用 `1px` 语义边框；Row 使用分隔线与状态背景；阴影只表达浮层或拖拽 elevation。
 - 不创建无消费者色阶、任意主题配置、Dark 脚手架或 TypeScript token 镜像。
@@ -101,13 +101,14 @@ tailwindcss
 
 HeroUI OSS/Pro 的锁定版本是默认实现，负责组件结构、Hover、Pressed、Selected、Open、Focus-visible、Disabled、Pending、Invalid、Danger、动画及 `prefers-reduced-motion`。`components.css` 不复制上游状态机，只通过公开 BEM 与稳定共享 DOM hook 保存 StoneFlow 确实需要的跨应用差异：
 
-- `NumberField`、`ColorSwatchPicker`、`CellSwitch`、`CellSelect`、`Calendar` 与 `Toolbar` 直接使用上游结构和状态 recipe，不为这些迁移增加局部或全局控件皮肤；
+- `NumberField`、`ColorSwatchPicker`、`CellSwitch`、`CellSelect`、`Calendar`、`Toolbar` 与 `ActionBar` 直接使用上游结构和状态 recipe；其中 NumberField 与 CellSwitch 只共享已批准的无硬框字段外壳，Calendar 只恢复日期单元的真圆语义，ColorSwatchPicker 只恢复 circle variant 的真圆语义，ActionBar 只恢复固定操作 pill 的真圆语义；
 
 - 28/32/36px 工作台控件密度和紧凑集合行；
 - 次级选择的中性表面，避免 Accent 大面积铺色；
 - Card 与 Overlay 的统一轻边界；Surface 保持 HeroUI 上游的无边界语义；
-- `RowShell` 的 selected/current/focus-suppressed/context-menu-open 等稳定共享状态；键盘焦点恢复期间不得让 stale pointer hover 抢回 current 视觉。
-- `Input`、`Textarea` 与 `SearchField` 的 primary / secondary 静止态和 focus 态统一使用白色 field surface；secondary 只降低阴影，hover 使用共享 field-hover。
+- `RowShell` 的 selected/current/focus-suppressed/context-menu-open 等稳定共享状态；普通 hover、current、selected 与 selected + hover 分别使用固定的 `surface-hover`、`surface-active`、`selection` 与 `selection-hover`，不随 Accent 预设漂移；键盘焦点恢复期间不得让 stale pointer hover 抢回 current 视觉。
+- `Input`、`Textarea`、`SearchField`、`NumberField`、`InputGroup`、`Select`、`Autocomplete` 与 `CellSwitch` 的外壳移除硬边框；primary 使用 HeroUI Light 轻阴影，secondary 保持无阴影填充面，focus / invalid 继续由上游 ring 与 outline 表达。
+- `Alert` 使用 1px 轻边界而非卡片阴影；accent、success、warning 与 danger 状态统一使用对应 soft surface 与同色边界，其中 Alert accent 固定表达 Info，不随用户 Accent 预设漂移。
 - 标题、代码和数字输入只通过稳定语义 hook 统一内容层级，不向 Feature 暴露可配置皮肤。
 - 原生 host 合同只保留内容高度、Windows 窗体命中区、拖拽期间关闭 Sidebar transition、compact 导航 Sheet 的系统按钮避让、路由回退链接及 Launcher 嵌入提示所需的窄 recipe。
 - `GlobalSearchResults` 与 Launcher 原生窗 Surface 是两个窄表面例外：上游无对应边界 recipe，稳定 hook 只补齐各自缺失的边界、圆角或阴影，不扩张为通用 Surface 皮肤。

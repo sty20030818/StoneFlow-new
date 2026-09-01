@@ -31,6 +31,7 @@ import {
 	InboxIcon,
 	PinIcon,
 	PlusIcon,
+	TagIcon,
 	TriangleIcon,
 	Trash2Icon,
 } from 'lucide-react'
@@ -504,10 +505,22 @@ export function LabelsPreview() {
 						<Chip.Label>{option.label}</Chip.Label>
 					</Chip>
 				))}
-				{selectedOptions.length === 0 ? <span className='text-sm text-muted'>暂无标签</span> : null}
 				<Dropdown isOpen={open} onOpenChange={setOpen}>
-					<Button aria-label='编辑任务标签' isIconOnly size='sm' type='button' variant='ghost'>
-						<PlusIcon aria-hidden className='size-4' />
+					<Button
+						aria-label={selectedOptions.length > 0 ? '编辑任务标签' : '新增标签'}
+						isIconOnly={selectedOptions.length > 0}
+						size='sm'
+						type='button'
+						variant='ghost'
+					>
+						{selectedOptions.length > 0 ? (
+							<PlusIcon aria-hidden className='size-4' />
+						) : (
+							<>
+								<TagIcon aria-hidden className='size-4' />
+								新增标签
+							</>
+						)}
 					</Button>
 					<Dropdown.Popover
 						ref={handlePopoverRef}
@@ -824,7 +837,7 @@ function TaskGroupFixture({
 					</span>
 				</Button>
 				<div className='flex min-w-0 flex-1 items-center gap-2 px-1 text-xs font-semibold'>
-					<CircleIcon aria-hidden className='size-4 shrink-0 text-warning' />
+					<CircleIcon aria-hidden className='size-4 shrink-0 text-warning-on-surface' />
 					<span className='min-w-0 truncate' title={label}>
 						{label}
 					</span>

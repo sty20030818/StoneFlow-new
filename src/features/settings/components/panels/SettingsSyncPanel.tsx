@@ -217,9 +217,6 @@ export function SettingsSyncPanel() {
 			}
 			setSyncStatus(payload)
 			setDatabaseUrl('')
-			setSyncStatusMessage(
-				'配置已保存。正在后台连接云端并同步；完成后请点「刷新诊断」查看远端工作集。',
-			)
 			// 后台同步结束后静默刷新状态/诊断（给一点时间让 worker 启动）
 			for (const delay of [2500, 8000]) {
 				delayedRefreshTimersRef.current.push(
@@ -229,12 +226,6 @@ export function SettingsSyncPanel() {
 					}, delay),
 				)
 			}
-		} catch (error) {
-			const message = normalizeTauriError(error, '同步配置保存失败')
-			if (mountedRef.current) {
-				setSyncStatusMessage(message)
-			}
-			throw error
 		} finally {
 			if (mountedRef.current) {
 				setSyncSaving(false)
@@ -514,8 +505,10 @@ export function SettingsSyncPanel() {
 					<Disclosure isExpanded={syncDetailsOpen} onExpandedChange={setSyncDetailsOpen}>
 						<Disclosure.Heading>
 							<Disclosure.Trigger>
-								<span className='font-medium'>详情与诊断</span>
-								<Disclosure.Indicator />
+								<span className='inline-flex items-center gap-2 font-medium'>
+									详情与诊断
+									<Disclosure.Indicator />
+								</span>
 							</Disclosure.Trigger>
 						</Disclosure.Heading>
 						<Disclosure.Content>

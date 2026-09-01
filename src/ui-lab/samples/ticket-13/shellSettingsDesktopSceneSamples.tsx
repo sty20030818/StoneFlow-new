@@ -42,29 +42,36 @@ function TaskDetailSceneFixture() {
 function SettingsSyncSceneFixture() {
 	const [open, setOpen] = useState(false)
 	const [databaseUrl, setDatabaseUrl] = useState('postgresql://stoneflow:demo@localhost/stoneflow')
-	const [shouldFail, setShouldFail] = useState(true)
-	const [status, setStatus] = useState('同步设置尚未保存')
+	const [shouldFail, setShouldFail] = useState(false)
 
 	return (
 		<div className='flex w-full max-w-5xl flex-col gap-6'>
 			<section className='rounded-lg border border-surface p-4'>
 				<h3 className='text-sm font-semibold'>真实 SyncConfigDialog</h3>
 				<p className='mt-1 text-sm leading-6 text-muted'>
-					第一次保存固定失败，重试成功；连接串和结果都只存在于当前 fixture。
+					普通入口成功 Toast；显式故障仅失败一次，并保留内联错误与同一保存按钮。
 				</p>
-				<Button
-					className='mt-4'
-					onPress={() => {
-						setShouldFail(true)
-						setOpen(true)
-					}}
-					type='button'
-				>
-					打开同步配置
-				</Button>
-				<p aria-live='polite' className='mt-3 text-sm text-muted'>
-					{status}
-				</p>
+				<div className='mt-4 flex flex-wrap gap-2'>
+					<Button
+						onPress={() => {
+							setShouldFail(false)
+							setOpen(true)
+						}}
+						type='button'
+					>
+						打开同步配置
+					</Button>
+					<Button
+						onPress={() => {
+							setShouldFail(true)
+							setOpen(true)
+						}}
+						type='button'
+						variant='secondary'
+					>
+						打开并模拟保存失败
+					</Button>
+				</div>
 			</section>
 			<SyncConfigDialog
 				configSource='system_keychain'
@@ -76,7 +83,6 @@ function SettingsSyncSceneFixture() {
 						setShouldFail(false)
 						throw new Error('Lab 模拟保存失败')
 					}
-					setStatus('已保存本地同步设置；未写入系统钥匙串')
 				}}
 				open={open}
 			/>
@@ -247,14 +253,16 @@ export const TICKET_13_SAMPLES = [
 		id: 'stoneflow-product-settings-sync-scene-review',
 		name: 'Settings / Sync · 可移植产品场景',
 		category: 'Product Scenes',
-		description: '复用保存反馈并直接渲染公开 SyncConfigDialog；首次失败、重试成功均为本地状态。',
+		description:
+			'直接渲染公开 SyncConfigDialog；普通入口显示成功 Toast，显式故障入口只失败一次，并保留弹窗内联错误与同一保存动作。',
 		keywords: ['settings', 'sync', 'save', 'pending', 'error', 'retry'],
 		source:
 			'src/features/settings/components/SettingsPage.tsx；src/features/sync/components/SyncConfigDialog.tsx',
 		coverage: 'rendered',
 		Preview: SettingsSyncSceneFixture,
-		states: 'Default、Saving、Saved、Failure、Retry、Dialog Close',
-		verification: '本地受控状态；不调用同步、持久化、系统钥匙串或 Tauri Command',
+		states: 'Default、Saving、Success Toast、Inline Failure、Same-action Retry、Dialog Close',
+		verification:
+			'本地受控状态与仅承载成功反馈的 UI Lab 根 Toast.Provider；不调用同步、持久化、系统钥匙串或 Tauri Command',
 		inventoryRefs: [
 			'stoneflow-scene-settings-sync',
 			'stoneflow-component-settings-page',

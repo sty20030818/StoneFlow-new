@@ -4,7 +4,7 @@
 
 **Blocked by:** 02 — 建立完整生产组件总账与 HeroUI 漂移门禁。
 
-**Status:** implemented — 自动化与构建验证完成；现有 Chrome 接管超时，视觉 smoke 待人工补验
+**Status:** complete — 自动化、构建与浏览器 Button smoke 完成
 
 **Primary write scope:** `ui-lab.html`、新增的开发期 baseline HTML/entry/CSS、`src/ui-lab/**` 对照宿主与共享 fixture、UI Lab 根级 DOM/边界测试；`vite.config.ts` 的正式 build inputs 只作验证，不主动扩张。
 
@@ -20,7 +20,7 @@
 - [x] 隔离入口只在 UI Lab 开发访问中可达，不进入 Main、Launcher、Tauri 路由/菜单或生产 build input；`bun run build` 后产物仍只有正式入口。
 - [x] HeroUI Pro 只在私有本地 Lab 使用，不复制上游源码、官网正文或公开托管 baseline。
 - [x] DOM/边界测试证明 mode 选择、fixture 选择、单对照挂载、入口隔离与清理；视觉差异由浏览器人工检查，不通过 className 或 jsdom 截图代签。
-- [ ] 浏览器人工 smoke 至少检查 Button 的默认、Hover、Pressed、Focus-visible、Disabled 与 Pending，并确认三层字体、圆角、颜色和状态没有样式串扰。
+- [x] 浏览器人工 smoke 至少检查 Button 的默认、Hover、Pressed、Focus-visible、Disabled 与 Pending，并确认三层字体、圆角、颜色和状态没有样式串扰。
 - [x] 不新增生产依赖、第二 Provider、runtime theme switch、feature flag、兼容 alias 或 Lab 专用组件 wrapper。
 
 ## Verification
@@ -43,4 +43,5 @@
 - 聚焦 DOM 测试：2 files / 9 tests passed；边界测试：15 tests passed。
 - `bun typecheck`、`bun lint`、`bun run lint:boundaries`、`bun format:check`、`bun run build` 与 `git diff --check` 通过；lint 仅保留任务外既有 warnings。
 - `dist/` 只有 `index.html` 与 `launcher.html` 两个 HTML 入口，不含 UI Lab 或 baseline 文本；现有 Vite 服务可成功编译 baseline entry、Upstream CSS 与 Token CSS。
-- Chrome 中现有 `StoneFlow UI Lab` 标签可发现，但接管连续超时；未新开页面或启动服务，Button/Tooltip 的真实视觉 smoke 保留为待人工验收。
+- 复用现有 UI Lab 服务完成 Button 三层浏览器 smoke：Upstream、Token 与 Current 的默认、Hover、Pressed、Focus-visible、Disabled、Pending 均可触发；三层分别保持官方、Token 与生产几何/颜色，没有可见样式串扰。
+- Tooltip 已由第七批人工结论确认；聚焦 DOM 测试继续守住 Current Portal 清理，iframe renderer 与固定 `src` 守住各自 Document 所有权，不把自动化操控 iframe 的指针 modality 当成视觉代签。

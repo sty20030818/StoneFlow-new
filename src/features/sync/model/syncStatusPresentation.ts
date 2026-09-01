@@ -9,11 +9,11 @@ export type SyncStatusTone = {
 
 /** 状态圆点使用实色，避免与 badge 软底同色导致看不见 */
 const syncStatusDotClassNames: Record<SyncStatus | 'default', string> = {
-	synced: 'bg-success',
-	offline_pending: 'bg-warning',
+	synced: 'bg-success-on-surface',
+	offline_pending: 'bg-warning-on-surface',
 	syncing: 'bg-accent',
-	error: 'bg-danger',
-	needs_attention: 'bg-danger',
+	error: 'bg-danger-on-surface',
+	needs_attention: 'bg-danger-on-surface',
 	disabled: 'bg-default',
 	default: 'bg-default',
 }
@@ -56,9 +56,9 @@ export type SyncReplicaTone = {
 
 export function getSyncReplicaTone(state: SyncReplicaState): SyncReplicaTone {
 	const dotClassNameByState: Record<SyncReplicaState, string> = {
-		ready: 'bg-success',
-		baseline_required: 'bg-warning',
-		diverged: 'bg-danger',
+		ready: 'bg-success-on-surface',
+		baseline_required: 'bg-warning-on-surface',
+		diverged: 'bg-danger-on-surface',
 		uninitialized: 'bg-default',
 	}
 

@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 
-import { Button, SearchField } from '@heroui/react'
+import { Button, Disclosure, SearchField, Toast } from '@heroui/react'
 
 import { registerTaskMetadataIcons } from '@/features/task'
+import { readLocalStorageValue, writeLocalStorageValue } from '@/shared/lib/localStorageValue'
 
 import { NativeComparison } from './native-comparison/NativeComparison'
 import {
@@ -26,6 +27,8 @@ registerTaskMetadataIcons()
 
 type CoverageFilter = 'all' | 'no-preview' | 'pending-owner' | 'real-app-only'
 type NavigationMode = 'batch' | 'category'
+
+const LAST_SAMPLE_STORAGE_KEY = 'stoneflow.ui-lab.last-sample'
 
 const COVERAGE_FILTERS: readonly { id: CoverageFilter; label: string }[] = [
 	{ id: 'all', label: '全部' },
@@ -96,11 +99,7 @@ function hasRealAppBoundary(sample: UiLabCatalogEntry | undefined) {
 }
 
 function reviewBatchProgress(batch: UiLabReviewBatch) {
-	const reviewableEntries = batch.entries.filter(
-		(entry) =>
-			entry.status !== 'external' &&
-			UI_LAB_CATALOG.find((sample) => sample.id === entry.sampleId)?.coverage !== 'real-app-only',
-	)
+	const reviewableEntries = batch.entries.filter((entry) => entry.status !== 'external')
 	return {
 		done: reviewableEntries.filter((entry) => entry.status === 'done').length,
 		total: reviewableEntries.length,
@@ -108,14 +107,25 @@ function reviewBatchProgress(batch: UiLabReviewBatch) {
 	}
 }
 
+function readLastSample() {
+	const sampleId = readLocalStorageValue<unknown>(LAST_SAMPLE_STORAGE_KEY)
+	return typeof sampleId === 'string'
+		? UI_LAB_CATALOG.find((sample) => sample.id === sampleId)
+		: undefined
+}
+
 export function UiLabApp() {
-	const [viewId, setViewId] = useState<UiLabViewId>('stoneflow')
-	const [navigationMode, setNavigationMode] = useState<NavigationMode>('batch')
-	const [batchId, setBatchId] = useState<UiLabReviewBatchId>('batch-01')
-	const [category, setCategory] = useState('Actions')
+	const [initialSample] = useState(readLastSample)
+	const initialReviewBatch = initialSample ? reviewBatchForEntry(initialSample.id) : undefined
+	const [viewId, setViewId] = useState<UiLabViewId>(initialSample?.view ?? 'stoneflow')
+	const [navigationMode, setNavigationMode] = useState<NavigationMode>(
+		initialSample && !initialReviewBatch ? 'category' : 'batch',
+	)
+	const [batchId, setBatchId] = useState<UiLabReviewBatchId>(initialReviewBatch?.id ?? 'batch-01')
+	const [category, setCategory] = useState(initialSample?.category ?? 'Actions')
 	const [query, setQuery] = useState('')
 	const [coverageFilter, setCoverageFilter] = useState<CoverageFilter>('all')
-	const [selectedId, setSelectedId] = useState('stoneflow-button')
+	const [selectedId, setSelectedId] = useState(initialSample?.id ?? 'stoneflow-button')
 	const previewPaneRef = useRef<HTMLElement>(null)
 
 	const view = UI_LAB_VIEWS.find((item) => item.id === viewId)!
@@ -159,6 +169,7 @@ export function UiLabApp() {
 		})
 	const selectedSample =
 		visibleSamples.find((sample) => sample.id === selectedId) ?? visibleSamples[0] ?? null
+	const selectedSampleId = selectedSample?.id
 	const selectedReviewBatch = selectedSample ? reviewBatchForEntry(selectedSample.id) : undefined
 	const selectedReviewEntry = selectedSample ? reviewEntryForEntry(selectedSample.id) : undefined
 	let emptyMessage = navigationMode === 'batch' ? '这个批次没有样例' : '这个分类还没有样例'
@@ -174,7 +185,8 @@ export function UiLabApp() {
 
 	useEffect(() => {
 		if (previewPaneRef.current) previewPaneRef.current.scrollTop = 0
-	}, [selectedSample?.id])
+		if (selectedSampleId) writeLocalStorageValue(LAST_SAMPLE_STORAGE_KEY, selectedSampleId)
+	}, [selectedSampleId])
 
 	function selectView(nextViewId: UiLabViewId) {
 		const nextView = UI_LAB_VIEWS.find((item) => item.id === nextViewId)!
@@ -352,65 +364,74 @@ export function UiLabApp() {
 						</div>
 					</section>
 
-					<section aria-labelledby='ui-lab-directory-heading' className='mt-4'>
-						<h2 className='mb-2 text-xs font-medium text-muted' id='ui-lab-directory-heading'>
-							{navigationMode === 'batch' ? '审查批次' : '分类'}
-						</h2>
-						<div className='flex flex-col gap-1'>
-							{navigationMode === 'batch'
-								? UI_LAB_REVIEW_BATCHES.map((item) => {
-										const progress = reviewBatchProgress(item)
-										const isDone = progress.done === progress.total && progress.external === 0
-										return (
-											<Button
-												aria-current={item.id === batchId ? 'true' : undefined}
-												fullWidth
-												key={item.id}
-												onPress={() => selectBatch(item.id)}
-												type='button'
-												variant={item.id === batchId ? 'secondary' : 'ghost'}
-											>
-												<span className='flex min-w-0 flex-1 items-center gap-2'>
-													<span aria-hidden='true' className='w-3 shrink-0 text-center'>
-														{isDone ? '✓' : '○'}
-													</span>
-													<span className='min-w-0 flex-1 truncate text-left'>
-														{item.label} · {item.title}
-													</span>
-													<span className='shrink-0 text-xs text-muted'>
-														{progress.done}/{progress.total}
-														{progress.external > 0 ? ` · ${progress.external} 外部` : ''}
-													</span>
-												</span>
-											</Button>
-										)
-									})
-								: view.categories.map((item) => {
-										const count = samplesInView(viewId).filter(
-											(sample) => sample.category === item,
-										).length
-										return (
-											<Button
-												aria-current={item === category ? 'true' : undefined}
-												fullWidth
-												key={item}
-												onPress={() => selectCategory(item)}
-												type='button'
-												variant={item === category ? 'secondary' : 'ghost'}
-											>
-												<span className='flex min-w-0 flex-1 items-center justify-between gap-3'>
-													<span className='truncate'>{item}</span>
-													<span aria-hidden='true' className='text-xs text-muted'>
-														{count}
-													</span>
-												</span>
-											</Button>
-										)
-									})}
-						</div>
-						{navigationMode === 'batch' ? (
-							<p className='mt-2 text-xs leading-5 text-muted'>{selectedBatch.objective}</p>
-						) : null}
+					<section aria-label={navigationMode === 'batch' ? '审查批次' : '分类'} className='mt-4'>
+						<Disclosure>
+							<Disclosure.Heading>
+								<Button fullWidth size='sm' slot='trigger' variant='ghost'>
+									{navigationMode === 'batch' ? '审查批次' : '分类'}
+									<Disclosure.Indicator />
+								</Button>
+							</Disclosure.Heading>
+							<Disclosure.Content>
+								<Disclosure.Body>
+									<div className='flex flex-col gap-1'>
+										{navigationMode === 'batch'
+											? UI_LAB_REVIEW_BATCHES.map((item) => {
+													const progress = reviewBatchProgress(item)
+													const isDone = progress.done === progress.total
+													return (
+														<Button
+															aria-current={item.id === batchId ? 'true' : undefined}
+															fullWidth
+															key={item.id}
+															onPress={() => selectBatch(item.id)}
+															type='button'
+															variant={item.id === batchId ? 'secondary' : 'ghost'}
+														>
+															<span className='flex min-w-0 flex-1 items-center gap-2'>
+																<span aria-hidden='true' className='w-3 shrink-0 text-center'>
+																	{isDone ? '✓' : '○'}
+																</span>
+																<span className='min-w-0 flex-1 truncate text-left'>
+																	{item.label} · {item.title}
+																</span>
+																<span className='shrink-0 text-xs text-muted'>
+																	{progress.done}/{progress.total}
+																	{progress.external > 0 ? ` · ${progress.external} 外部` : ''}
+																</span>
+															</span>
+														</Button>
+													)
+												})
+											: view.categories.map((item) => {
+													const count = samplesInView(viewId).filter(
+														(sample) => sample.category === item,
+													).length
+													return (
+														<Button
+															aria-current={item === category ? 'true' : undefined}
+															fullWidth
+															key={item}
+															onPress={() => selectCategory(item)}
+															type='button'
+															variant={item === category ? 'secondary' : 'ghost'}
+														>
+															<span className='flex min-w-0 flex-1 items-center justify-between gap-3'>
+																<span className='truncate'>{item}</span>
+																<span aria-hidden='true' className='text-xs text-muted'>
+																	{count}
+																</span>
+															</span>
+														</Button>
+													)
+												})}
+									</div>
+									{navigationMode === 'batch' ? (
+										<p className='mt-2 text-xs leading-5 text-muted'>{selectedBatch.objective}</p>
+									) : null}
+								</Disclosure.Body>
+							</Disclosure.Content>
+						</Disclosure>
 					</section>
 
 					<section aria-labelledby='ui-lab-sample-heading' className='mt-4'>
@@ -469,7 +490,8 @@ export function UiLabApp() {
 						<>
 							<header className='shrink-0 border-b border-separator p-4'>
 								<p className='text-xs font-medium text-muted'>
-									{view.label} · {selectedReviewBatch?.label ?? '总账'} · {selectedSample.category}
+									{view.label} · {selectedReviewBatch?.label ?? '总账'} · 分类：
+									{selectedSample.category}
 								</p>
 								<h2 className='mt-1 text-lg font-semibold'>{selectedSample.name}</h2>
 								<p className='mt-1 max-w-3xl text-sm leading-6 text-muted'>
@@ -477,120 +499,140 @@ export function UiLabApp() {
 								</p>
 							</header>
 
-							<dl className='grid shrink-0 grid-cols-2 gap-x-6 gap-y-3 border-b border-separator p-4 text-sm xl:grid-cols-3'>
-								<div>
-									<dt className='text-xs text-muted'>家族 / 类型</dt>
-									<dd className='mt-1'>
-										{selectedSample.family ?? '未记录'}
-										{selectedSample.capabilityKind
-											? ` · ${CAPABILITY_KIND_LABELS[selectedSample.capabilityKind]}`
-											: ''}
-									</dd>
-								</div>
-								<div>
-									<dt className='text-xs text-muted'>来源包 / 锁定版本</dt>
-									<dd className='mt-1 break-words'>
-										{selectedSample.sourcePackage
-											? `${selectedSample.sourcePackage}@${selectedSample.packageVersion}`
-											: '项目内组件'}
-									</dd>
-								</div>
-								<div>
-									<dt className='text-xs text-muted'>当前 Owner</dt>
-									<dd className='mt-1'>{selectedSample.owner}</dd>
-								</div>
-								<div>
-									<dt className='text-xs text-muted'>推荐 Owner</dt>
-									<dd className='mt-1'>{selectedSample.recommendedOwner ?? '未记录'}</dd>
-								</div>
-								<div>
-									<dt className='text-xs text-muted'>处置</dt>
-									<dd className='mt-1'>
-										{selectedSample.disposition
-											? DISPOSITION_LABELS[selectedSample.disposition]
-											: '未记录'}
-									</dd>
-								</div>
-								<div>
-									<dt className='text-xs text-muted'>采用状态</dt>
-									<dd className='mt-1'>
-										{selectedSample.adoption ? ADOPTION_LABELS[selectedSample.adoption] : '未记录'}
-									</dd>
-								</div>
-								<div>
-									<dt className='text-xs text-muted'>适用状态</dt>
-									<dd className='mt-1'>{selectedSample.states}</dd>
-								</div>
-								<div>
-									<dt className='text-xs text-muted'>验证边界</dt>
-									<dd className='mt-1'>{selectedSample.verification}</dd>
-								</div>
-								<div>
-									<dt className='text-xs text-muted'>人工审查</dt>
-									<dd className='mt-1'>
-										{selectedReviewEntry?.role === 'reference' ? 'HeroUI 对照 · ' : ''}
-										{selectedReviewEntry
-											? REVIEW_STATUS_LABELS[selectedReviewEntry.status]
-											: '未纳入批次'}
-									</dd>
-								</div>
-								<div>
-									<dt className='text-xs text-muted'>来源</dt>
-									<dd className='mt-1 break-words'>{selectedSample.source}</dd>
-								</div>
-								<div>
-									<dt className='text-xs text-muted'>定义路径</dt>
-									<dd className='mt-1 break-words'>{selectedSample.definitionPath ?? '未记录'}</dd>
-								</div>
-								<div>
-									<dt className='text-xs text-muted'>消费 / 覆盖位置</dt>
-									<dd className='mt-1 break-words'>
-										{selectedSample.consumers && selectedSample.consumers.length > 0
-											? selectedSample.consumers.join('；')
-											: '当前无生产消费者'}
-									</dd>
-								</div>
-								<div>
-									<dt className='text-xs text-muted'>组合父项</dt>
-									<dd className='mt-1'>{selectedSample.compositionParent ?? '未记录'}</dd>
-								</div>
-								<div>
-									<dt className='text-xs text-muted'>上游原料 / 子项</dt>
-									<dd className='mt-1 break-words'>
-										{selectedSample.ingredients && selectedSample.ingredients.length > 0
-											? selectedSample.ingredients.join('；')
-											: '无'}
-									</dd>
-								</div>
-								{selectedSample.preservedContract ? (
-									<div>
-										<dt className='text-xs text-muted'>必须保留的合同</dt>
-										<dd className='mt-1'>{selectedSample.preservedContract}</dd>
-									</div>
-								) : null}
-								{selectedSample.expectedDeletion ? (
-									<div>
-										<dt className='text-xs text-muted'>预期可删除项</dt>
-										<dd className='mt-1'>{selectedSample.expectedDeletion}</dd>
-									</div>
-								) : null}
-								{selectedSample.recipeFamilies ? (
-									<div>
-										<dt className='text-xs text-muted'>相关 Recipe 家族</dt>
-										<dd className='mt-1'>{selectedSample.recipeFamilies.join('；')}</dd>
-									</div>
-								) : null}
-								<div>
-									<dt className='text-xs text-muted'>覆盖状态</dt>
-									<dd className='mt-1'>{COVERAGE_LABELS[selectedSample.coverage]}</dd>
-								</div>
-								{selectedSample.currentCoverage ? (
-									<div>
-										<dt className='text-xs text-muted'>Current 验证边界</dt>
-										<dd className='mt-1'>{COVERAGE_LABELS[selectedSample.currentCoverage]}</dd>
-									</div>
-								) : null}
-							</dl>
+							<div className='shrink-0 border-b border-separator'>
+								<Disclosure>
+									<Disclosure.Heading>
+										<Button fullWidth size='sm' slot='trigger' variant='ghost'>
+											组件信息
+											<Disclosure.Indicator />
+										</Button>
+									</Disclosure.Heading>
+									<Disclosure.Content>
+										<Disclosure.Body>
+											<dl className='grid grid-cols-2 gap-x-6 gap-y-3 p-2 text-sm xl:grid-cols-3'>
+												<div>
+													<dt className='text-xs text-muted'>家族 / 类型</dt>
+													<dd className='mt-1'>
+														{selectedSample.family ?? '未记录'}
+														{selectedSample.capabilityKind
+															? ` · ${CAPABILITY_KIND_LABELS[selectedSample.capabilityKind]}`
+															: ''}
+													</dd>
+												</div>
+												<div>
+													<dt className='text-xs text-muted'>来源包 / 锁定版本</dt>
+													<dd className='mt-1 warp-break-words'>
+														{selectedSample.sourcePackage
+															? `${selectedSample.sourcePackage}@${selectedSample.packageVersion}`
+															: '项目内组件'}
+													</dd>
+												</div>
+												<div>
+													<dt className='text-xs text-muted'>当前 Owner</dt>
+													<dd className='mt-1'>{selectedSample.owner}</dd>
+												</div>
+												<div>
+													<dt className='text-xs text-muted'>推荐 Owner</dt>
+													<dd className='mt-1'>{selectedSample.recommendedOwner ?? '未记录'}</dd>
+												</div>
+												<div>
+													<dt className='text-xs text-muted'>处置</dt>
+													<dd className='mt-1'>
+														{selectedSample.disposition
+															? DISPOSITION_LABELS[selectedSample.disposition]
+															: '未记录'}
+													</dd>
+												</div>
+												<div>
+													<dt className='text-xs text-muted'>采用状态</dt>
+													<dd className='mt-1'>
+														{selectedSample.adoption
+															? ADOPTION_LABELS[selectedSample.adoption]
+															: '未记录'}
+													</dd>
+												</div>
+												<div>
+													<dt className='text-xs text-muted'>适用状态</dt>
+													<dd className='mt-1'>{selectedSample.states}</dd>
+												</div>
+												<div>
+													<dt className='text-xs text-muted'>验证边界</dt>
+													<dd className='mt-1'>{selectedSample.verification}</dd>
+												</div>
+												<div>
+													<dt className='text-xs text-muted'>人工审查</dt>
+													<dd className='mt-1'>
+														{selectedReviewEntry?.role === 'reference' ? 'HeroUI 对照 · ' : ''}
+														{selectedReviewEntry
+															? REVIEW_STATUS_LABELS[selectedReviewEntry.status]
+															: '未纳入批次'}
+													</dd>
+												</div>
+												<div>
+													<dt className='text-xs text-muted'>来源</dt>
+													<dd className='mt-1 warp-break-words'>{selectedSample.source}</dd>
+												</div>
+												<div>
+													<dt className='text-xs text-muted'>定义路径</dt>
+													<dd className='mt-1 warp-break-words'>
+														{selectedSample.definitionPath ?? '未记录'}
+													</dd>
+												</div>
+												<div>
+													<dt className='text-xs text-muted'>消费 / 覆盖位置</dt>
+													<dd className='mt-1 warp-break-words'>
+														{selectedSample.consumers && selectedSample.consumers.length > 0
+															? selectedSample.consumers.join('；')
+															: '当前无生产消费者'}
+													</dd>
+												</div>
+												<div>
+													<dt className='text-xs text-muted'>组合父项</dt>
+													<dd className='mt-1'>{selectedSample.compositionParent ?? '未记录'}</dd>
+												</div>
+												<div>
+													<dt className='text-xs text-muted'>上游原料 / 子项</dt>
+													<dd className='mt-1 warp-break-words'>
+														{selectedSample.ingredients && selectedSample.ingredients.length > 0
+															? selectedSample.ingredients.join('；')
+															: '无'}
+													</dd>
+												</div>
+												{selectedSample.preservedContract ? (
+													<div>
+														<dt className='text-xs text-muted'>必须保留的合同</dt>
+														<dd className='mt-1'>{selectedSample.preservedContract}</dd>
+													</div>
+												) : null}
+												{selectedSample.expectedDeletion ? (
+													<div>
+														<dt className='text-xs text-muted'>预期可删除项</dt>
+														<dd className='mt-1'>{selectedSample.expectedDeletion}</dd>
+													</div>
+												) : null}
+												{selectedSample.recipeFamilies ? (
+													<div>
+														<dt className='text-xs text-muted'>相关 Recipe 家族</dt>
+														<dd className='mt-1'>{selectedSample.recipeFamilies.join('；')}</dd>
+													</div>
+												) : null}
+												<div>
+													<dt className='text-xs text-muted'>覆盖状态</dt>
+													<dd className='mt-1'>{COVERAGE_LABELS[selectedSample.coverage]}</dd>
+												</div>
+												{selectedSample.currentCoverage ? (
+													<div>
+														<dt className='text-xs text-muted'>Current 验证边界</dt>
+														<dd className='mt-1'>
+															{COVERAGE_LABELS[selectedSample.currentCoverage]}
+														</dd>
+													</div>
+												) : null}
+											</dl>
+										</Disclosure.Body>
+									</Disclosure.Content>
+								</Disclosure>
+							</div>
 						</>
 					) : null}
 
@@ -619,6 +661,7 @@ export function UiLabApp() {
 					</section>
 				</main>
 			</div>
+			<Toast.Provider placement='bottom end' />
 		</div>
 	)
 }

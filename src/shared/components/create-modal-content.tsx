@@ -20,7 +20,7 @@ function Metadata({ children, error }: { children: React.ReactNode; error?: stri
 	return (
 		<div className='shrink-0 space-y-1.5 px-3'>
 			<div className='flex flex-wrap items-center gap-1.5'>{children}</div>
-			{error ? <p className='text-xs text-danger'>{error}</p> : null}
+			{error ? <p className='text-xs text-danger-on-surface'>{error}</p> : null}
 		</div>
 	)
 }

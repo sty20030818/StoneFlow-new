@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 
 import {
 	COMMAND_IDS,
@@ -35,8 +35,10 @@ describe('BulkActionBar', () => {
 
 		renderBulkActionBar(<BulkActionBar context={context} runtime={runtime} />)
 
-		expect(screen.getByRole('toolbar', { name: '批量操作' })).toBeInTheDocument()
-		expect(screen.getByText('已选 3 项')).toBeInTheDocument()
+		const actionBar = screen.getByRole('toolbar', { name: '批量操作' })
+		expect(actionBar).toHaveTextContent('3')
+		expect(actionBar).not.toHaveTextContent('已选')
+		expect(within(actionBar).getAllByRole('separator')).toHaveLength(2)
 		fireEvent.click(screen.getByRole('button', { name: '清空已选' }))
 		expect(clearSelection).toHaveBeenCalledTimes(1)
 	})
@@ -74,7 +76,11 @@ describe('BulkActionBar', () => {
 		await waitFor(() => {
 			expect(runArchive).toHaveBeenCalledWith(capturedContext, { source: 'bulk-bar' })
 		})
-		expect(screen.getByRole('button', { name: '删除项目' })).toBeInTheDocument()
+		const actionBar = screen.getByRole('toolbar', { name: '批量操作' })
+		const deleteButton = screen.getByRole('button', { name: '删除项目' })
+		expect(deleteButton).toHaveClass('button--danger')
+		expect(deleteButton.querySelector('svg')).not.toBeNull()
+		expect(within(actionBar).getAllByRole('separator')).toHaveLength(3)
 	})
 
 	it.each([

@@ -1,10 +1,10 @@
 # StoneFlow UI Lab 全量清单与 HeroUI 原生实现对齐
 
-**Status:** implemented — pending manual review<br>
+**Status:** complete — archived<br>
 **日期:** 2026-08-30<br>
 **锁定版本:** HeroUI OSS 3.2.4、HeroUI Styles 3.2.4、HeroUI Pro 1.0.0-beta.8<br>
-**长期门禁:** [ADR-0003](../../Documents/01-架构/adr/ADR-0003-ui-lab-review-and-product-migration-gate.md)<br>
-**现行样式合同:** [StoneFlow 视觉样式架构](../../src/styles/ARCHITECTURE.md)
+**长期门禁:** [ADR-0003](../../../Documents/01-架构/adr/ADR-0003-ui-lab-review-and-product-migration-gate.md)<br>
+**现行样式合同:** [StoneFlow 视觉样式架构](../../../src/styles/ARCHITECTURE.md)
 
 ## Problem Statement
 
@@ -12,7 +12,7 @@ StoneFlow 已完成 UI Lab 第一至八批人工审查和对应生产迁移，�
 
 现有 UI Lab 以人工审查样例为中心，能够验证已知问题，但不是生产组件总账。HeroUI 视图也只覆盖少量已采用组件和候选，无法替代卡顿的官网完成本地查阅。继续按遇到问题才补样例，会让新增生产组件、HeroUI 升级和 `components.css` 覆盖逐渐脱离审查面；反过来，把每个导出和每个调用点都渲染一遍，又会把 Lab 做成第二个组件官网和第二套设计系统。
 
-本规格扩展同一个 UI Lab：建立完整可搜索清单，对真正需要判断的组件提供上游、StoneFlow Token、当前实现和产品组合对照，并把“视觉保持不变、实现尽量原生”变成可审查的迁移输入。Lab 只负责发现、比较和确认；生产重构仍在后续独立工作包中 hard cut。
+本规格扩展同一个 UI Lab：建立完整可搜索清单，对真正需要判断的组件提供上游、StoneFlow Token、当前实现和产品组合对照，并把“视觉保持不变、实现尽量原生”变成可审查的迁移输入。原计划由 Lab 只负责发现、比较和确认；实际人工审查中，用户随后明确要求把部分已确认结果直接修正到生产路径。下一工作包开始前必须先盘清这些已实施改动与剩余差异，不能再把它们描述成尚未开始的迁移。
 
 ## Goals
 
@@ -25,7 +25,7 @@ StoneFlow 已完成 UI Lab 第一至八批人工审查和对应生产迁移，�
 
 ## Non-goals
 
-- 本规格不修改生产视觉、组件实现、业务流程、领域模型、Tauri Command 或存储。
+- 本规格不主动发起全项目生产重构；人工审查中经用户明确要求实施的生产视觉与局部交互修正必须进入最终差异审计，领域模型、Tauri Command 与存储仍不在范围内。
 - 不升级 HeroUI、React Aria、Tailwind 或其他依赖；对照以项目锁定版本为准。
 - 不渲染 HeroUI 的全部导出、全部 props 或状态笛卡尔积，不复制官网文档或源码。
 - 不引入 Storybook、Chromatic、截图基线平台、运行时插件系统或新的生产依赖。
@@ -229,9 +229,9 @@ Catalog 同时支持 ledger-only 记录和 review unit：前者可搜索但不�
 3. 建立 dev-only Upstream/Token 隔离 renderer，并复用现有 fixture。
 4. 按第九至十四批补最小预览和产品场景，由用户逐批审查。
 5. 汇总 `Simplify` 与候选决策；一致项保持不动。
-6. Lab 审查结束后另建生产迁移规格和 tickets，在正确 Owner 处 hard cut，并删除旧路径。
+6. Lab 审查结束后盘点实际生产差异；只有仍存在已批准但未实施的真实缺口时，才建立对应 Owner 的垂直修复 ticket。
 
-Lab 审查阶段不得顺手修改生产皮肤。只有影响 Lab 自身真实性的 bug 可以在本工作包内修复；发现生产差异只记录到 catalog 与本规格，不提前迁移。
+ADR-0003 仍要求 Lab 审查与生产迁移分段。当前执行已因用户逐项明确授权而包含生产皮肤与局部交互修正；这是需要在收口时如实盘点的执行偏差，不修改长期门禁，也不授权继续扩大范围。
 
 已归档生产迁移规格中的“不扩建第九批”只约束当时已完成的工作包。本规格由后续新增的完整清单与 native-alignment 需求独立授权，不回写、不解冻旧规格。
 
@@ -251,7 +251,7 @@ Lab 审查阶段不得顺手修改生产皮肤。只有影响 Lab 自身真实�
 
 - 浏览器 Lab 人工确认视觉对照、适用状态、Owner 和候选取舍。
 - 执行时复用用户已经打开的 UI Lab 服务与 Chrome；未经明确要求，不主动启动长期开发服务或另开浏览器窗口。
-- 100%/125% 缩放、窗口断点、Portal 归属、真实 Shell 焦点恢复、macOS WKWebView、Windows WebView2 和跨窗口状态继续由[统一产品验收](../unified-product-acceptance/spec.md)负责。
+- 100%/125% 缩放、窗口断点、Portal 归属、真实 Shell 焦点恢复、macOS WKWebView、Windows WebView2 和跨窗口状态继续由[统一产品验收](../../unified-product-acceptance/spec.md)负责。
 - Lab、自动化和真实应用证据分别记录，任何一类不得代签另外两类。
 
 ## 12. Acceptance Criteria
@@ -261,7 +261,7 @@ Lab 审查阶段不得顺手修改生产皮肤。只有影响 Lab 自身真实�
 3. 所有生产 HeroUI import 均通过 catalog 漂移门禁；无独立预览的条目有可审查理由。
 4. 有真实差异的组件可以使用同一 fixture 查看适用的 Upstream、Token、Current 和 Product Composition；相同项只渲染一次。
 5. 隔离 baseline 不进入生产构建，不成为第二个生产主题、Provider 或组件系统。
-6. Current 视觉与第一至八批已确认结果保持不变；本工作包没有生产样式迁移。
+6. Catalog、隔离 baseline 与生产入口仍保持单轨；人工审查中已明确批准并实施的生产变化有完整差异记录，未把 Lab 变成可切换主题或第二套实现。
 7. 第九至十四批可从 catalog 派生清单与进度，第一至八批历史完成状态保持不变。
 8. 每个 `Simplify` 或替换候选都指向真实消费者、预期删除项、保留合同和验证边界。
 9. 产品代码不依赖 UI Lab，没有新增生产依赖、兼容层、视觉 wrapper 或平行 token。
@@ -269,7 +269,7 @@ Lab 审查阶段不得顺手修改生产皮肤。只有影响 Lab 自身真实�
 
 ## 13. Exit Criteria
 
-第九至十四批全部完成后，本工作包只输出三类结果：保持现状、可在相同视觉下简化实现、需要用户在 Current 与 Native Candidate 中选择。随后创建新的生产迁移规格和本地 tickets；所有真实消费者可同步修改时使用 hard cut，迁移后删除旧 recipe、自实现和临时对照，不保留永久双轨。
+第九至十四批已全部完成。本轮经用户逐项授权的生产变化已经落到现有 Owner，最终差异审计未发现仍待实施的 `Simplify` 或候选替换，因此不创建空的生产迁移规格或 tickets。后续直接进入既有统一产品验收；只有真实 Main、Launcher 或 WebView 路径暴露失败时，才按失败路径建立独立修复任务，并在所有消费者可同步修改时 hard cut，不保留永久双轨。
 
 ## 14. Implementation Tickets
 
@@ -290,8 +290,8 @@ Tickets 01～03 串行维护 catalog 事实源；03 完成后，04～06 可以�
 
 ## 关联文档
 
-- [已归档 UI Lab 建设规格](../archive/ui-system-lab/spec.md)
-- [已归档 UI Lab 人工审查规格](../archive/ui-lab-review/spec.md)
-- [已归档 UI Lab 生产迁移规格](../archive/ui-system-production-migration/spec.md)
-- [HeroUI UI 平台决策](../../Documents/01-架构/adr/ADR-0002-heroui-ui-platform.md)
-- [UI Lab 门禁决策](../../Documents/01-架构/adr/ADR-0003-ui-lab-review-and-product-migration-gate.md)
+- [已归档 UI Lab 建设规格](../ui-system-lab/spec.md)
+- [已归档 UI Lab 人工审查规格](../ui-lab-review/spec.md)
+- [已归档 UI Lab 生产迁移规格](../ui-system-production-migration/spec.md)
+- [HeroUI UI 平台决策](../../../Documents/01-架构/adr/ADR-0002-heroui-ui-platform.md)
+- [UI Lab 门禁决策](../../../Documents/01-架构/adr/ADR-0003-ui-lab-review-and-product-migration-gate.md)

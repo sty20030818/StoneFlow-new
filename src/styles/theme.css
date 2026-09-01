@@ -35,11 +35,14 @@
 
 	--surface: #ffffff;
 	--surface-foreground: var(--foreground);
-	--surface-hover: #f5f5f6;
+	--surface-hover: #efeff0;
+	--surface-active: #e7e7e8;
 	--surface-secondary: #f3f3f4;
 	--surface-secondary-foreground: #626267;
 	--surface-tertiary: #e8e8ea;
 	--surface-tertiary-foreground: var(--eclipse);
+	--selection: #e8e8f4;
+	--selection-hover: #dedeea;
 
 	--overlay: var(--surface);
 	--overlay-foreground: var(--foreground);
@@ -62,32 +65,36 @@
 	--field-border-hover: #696a6e;
 	--field-border-focus: var(--focus);
 
-	--success: #258641;
-	--success-foreground: var(--white);
-	--success-hover: color-mix(in srgb, #258641 90%, var(--eclipse) 10%);
+	--success: #36a45b;
+	--success-foreground: var(--eclipse);
+	--success-hover: color-mix(in srgb, var(--success) 90%, var(--eclipse) 10%);
+	--success-on-surface: #176f2b;
 	--success-soft: #ecf8ef;
-	--success-soft-foreground: #176f2b;
+	--success-soft-foreground: var(--success-on-surface);
 	--success-soft-hover: color-mix(in srgb, #ecf8ef 85%, #258641 15%);
 
-	--warning: #c88a22;
+	--warning: #d59a32;
 	--warning-foreground: var(--eclipse);
-	--warning-hover: color-mix(in srgb, #c88a22 90%, var(--eclipse) 10%);
+	--warning-hover: color-mix(in srgb, var(--warning) 90%, var(--eclipse) 10%);
+	--warning-on-surface: #835c17;
 	--warning-soft: #fff7e8;
-	--warning-soft-foreground: #835c17;
+	--warning-soft-foreground: var(--warning-on-surface);
 	--warning-soft-hover: color-mix(in srgb, #fff7e8 80%, #c88a22 20%);
 
-	--danger: #d14343;
+	--danger: #dc3434;
 	--danger-foreground: #ffffff;
-	--danger-hover: color-mix(in srgb, #d14343 90%, var(--eclipse) 10%);
+	--danger-hover: color-mix(in srgb, var(--danger) 90%, var(--eclipse) 10%);
+	--danger-on-surface: #a73535;
 	--danger-soft: #fff1f1;
-	--danger-soft-foreground: #a73535;
+	--danger-soft-foreground: var(--danger-on-surface);
 	--danger-soft-hover: color-mix(in srgb, #fff1f1 80%, #d14343 20%);
 
-	--info: #3a72d8;
-	--info-foreground: #ffffff;
-	--info-hover: color-mix(in srgb, #3a72d8 90%, var(--eclipse) 10%);
+	--info: #5c8fe9;
+	--info-foreground: var(--eclipse);
+	--info-hover: color-mix(in srgb, var(--info) 90%, var(--eclipse) 10%);
+	--info-on-surface: #2b59a8;
 	--info-soft: #eff5ff;
-	--info-soft-foreground: #2b59a8;
+	--info-soft-foreground: var(--info-on-surface);
 	--info-soft-hover: color-mix(in srgb, #eff5ff 80%, #3a72d8 20%);
 
 	--segment: var(--surface);
@@ -110,7 +117,7 @@
 
 	--surface-shadow: 0 0 0 transparent;
 	--field-shadow: 0 0 0 transparent;
-	--checkbox-primary-shadow:
+	--field-primary-shadow:
 		0 2px 4px 0 rgb(0 0 0 / 0.04), 0 1px 2px 0 rgb(0 0 0 / 0.06), 0 0 1px 0 rgb(0 0 0 / 0.06);
 	--overlay-shadow: 0 8px 24px rgb(20 20 24 / 0.08), 0 2px 6px rgb(20 20 24 / 0.04);
 
@@ -180,9 +187,13 @@
 	--color-accent-border: var(--accent-border);
 	--color-accent-pressed: var(--accent-pressed);
 	--color-focus-subtle: var(--focus-subtle);
+	--color-success-on-surface: var(--success-on-surface);
+	--color-warning-on-surface: var(--warning-on-surface);
+	--color-danger-on-surface: var(--danger-on-surface);
 	--color-info: var(--info);
 	--color-info-foreground: var(--info-foreground);
 	--color-info-hover: var(--info-hover);
+	--color-info-on-surface: var(--info-on-surface);
 	--color-info-soft: var(--info-soft);
 	--color-info-soft-foreground: var(--info-soft-foreground);
 	--color-info-soft-hover: var(--info-soft-hover);

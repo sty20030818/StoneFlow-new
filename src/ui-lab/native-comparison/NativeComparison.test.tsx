@@ -54,6 +54,12 @@ describe('NativeComparison', () => {
 			'aria-expanded',
 			'true',
 		)
+
+		rerender(<NativeComparisonFixture fixture='complex-action-bar' />)
+		const actionBar = screen.getByRole('toolbar', { name: '批量操作样本' })
+		expect(actionBar).toHaveTextContent('2')
+		expect(actionBar).not.toHaveTextContent('已选')
+		expect(within(actionBar).getAllByRole('separator')).toHaveLength(3)
 	})
 
 	it('第十四批原生候选复用与 Current 相同的标签数据', () => {

@@ -229,7 +229,7 @@ function SearchPanelState({ label, tone = 'muted' }: { label: string; tone?: 'mu
 			<div
 				className={cn(
 					'flex items-center gap-2 px-3 py-2.5 text-[12px]',
-					tone === 'danger' ? 'text-danger' : 'text-muted',
+					tone === 'danger' ? 'text-danger-on-surface' : 'text-muted',
 				)}
 			>
 				<SearchIcon className='size-3.5 shrink-0' />

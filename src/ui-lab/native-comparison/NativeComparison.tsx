@@ -133,7 +133,7 @@ function BaselineFrame({
 				) : null}
 				{status === 'error' ? (
 					<p
-						className='absolute inset-0 grid place-items-center bg-background p-4 text-sm text-danger'
+						className='absolute inset-0 grid place-items-center bg-background p-4 text-sm text-danger-on-surface'
 						role='alert'
 					>
 						{label} 对照加载失败，请检查开发期 baseline 入口。
@@ -155,7 +155,7 @@ export function NativeComparison({
 	return (
 		<div className='w-full' data-native-comparison={fixture}>
 			<div className='mb-4 rounded-lg border border-separator bg-surface-secondary p-3 text-sm leading-6'>
-				<p className='font-medium'>Current 是已确认且冻结的目标视觉</p>
+				<p className='font-medium'>Current 是当前生产视觉</p>
 				<p className='mt-1 text-muted'>原生层只用于判断实现所有权，不会自动迁移生产样式。</p>
 			</div>
 			<div className='grid gap-4 xl:grid-cols-3'>

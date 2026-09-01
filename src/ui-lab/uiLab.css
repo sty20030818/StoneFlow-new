@@ -5,7 +5,11 @@
 
 @media (hover: hover) {
 	[data-ui-lab-task-rows] [data-row-shell]:not([data-selected="true"]):hover {
-		background: var(--default-hover);
+		background: var(--surface-hover);
+	}
+
+	[data-ui-lab-task-rows] [data-row-shell][data-selected="true"]:hover {
+		background: var(--selection-hover);
 	}
 }
 

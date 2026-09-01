@@ -1,6 +1,7 @@
-import { act, fireEvent, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { listen } from '@tauri-apps/api/event'
 import type * as TauriEvent from '@tauri-apps/api/event'
+import { Toast, toast } from '@heroui/react'
 
 import type { ShellSidebarSettings } from '../api/shellDevicePreferences'
 import { SettingsPage } from './SettingsPage'
@@ -90,6 +91,7 @@ vi.mock('@/app/navigation/ShellRouteContext', () => ({
 
 describe('SettingsPage', () => {
 	beforeEach(() => {
+		act(() => toast.clear())
 		mockSettingsSection = 'sidebar'
 		loadSidebarSettingsSpy.mockReset()
 		loadSidebarSettingsSpy.mockResolvedValue(undefined)
@@ -225,6 +227,7 @@ describe('SettingsPage', () => {
 	})
 
 	afterEach(() => {
+		act(() => toast.clear())
 		vi.useRealTimers()
 		localStorage.clear()
 		applyAccentPreference('cobalt')
@@ -498,7 +501,7 @@ describe('SettingsPage', () => {
 		expect(document.documentElement.dataset.accent).toBe('pine')
 	})
 
-	it('保存同步配置时调用 configureSync 并刷新状态', async () => {
+	it('保存同步配置时调用 configureSync、关闭弹窗并显示成功 Toast', async () => {
 		mockSettingsSection = 'sync'
 		await renderSettingsPage()
 		openSyncConfigDialog()
@@ -516,13 +519,49 @@ describe('SettingsPage', () => {
 		// 保存路径直接用 configureSync 返回的状态，不再额外 getSyncStatus
 		expect(getSyncStatusSpy).toHaveBeenCalledTimes(1)
 
-		await waitFor(() => {
-			expect(screen.getByRole('button', { name: '配置同步数据库' })).toBeInTheDocument()
-		})
+		await waitFor(() =>
+			expect(screen.queryByRole('dialog', { name: '配置云端副本' })).not.toBeInTheDocument(),
+		)
+		const successToast = await screen.findByRole('alertdialog', { name: '配置已保存' })
+		expect(successToast).toBeVisible()
+		expect(successToast).toHaveTextContent('正在后台验证连接。')
 		openSyncConfigDialog()
 		await waitFor(() => {
 			expect(screen.getByLabelText('同步数据库连接')).toHaveValue('')
 		})
+	})
+
+	it('同步配置保存失败时显示弹窗内 Alert，并通过原位主按钮再次保存', async () => {
+		configureSyncSpy.mockRejectedValueOnce(new Error('连接被拒绝'))
+		mockSettingsSection = 'sync'
+		await renderSettingsPage()
+		openSyncConfigDialog()
+
+		const dialog = screen.getByRole('dialog', { name: '配置云端副本' })
+		const databaseUrl = screen.getByLabelText('同步数据库连接')
+		fireEvent.change(databaseUrl, {
+			target: { value: 'postgresql://user:secret@db.example.com:5432/sf' },
+		})
+		const saveButton = screen.getByRole('button', { name: '保存配置' })
+		fireEvent.click(saveButton)
+
+		const inlineError = await within(dialog).findByRole('alert')
+		expect(inlineError).toHaveTextContent('保存失败')
+		expect(inlineError).toHaveTextContent('连接被拒绝')
+		expect(inlineError).toHaveTextContent('输入已保留，请检查后再次保存。')
+		expect(dialog).toBeInTheDocument()
+		expect(databaseUrl).toHaveValue('postgresql://user:secret@db.example.com:5432/sf')
+		expect(databaseUrl).not.toHaveAttribute('aria-invalid', 'true')
+		expect(screen.queryByRole('alertdialog', { name: '保存失败' })).not.toBeInTheDocument()
+		expect(screen.getByRole('button', { name: '保存配置' })).toBe(saveButton)
+
+		await waitFor(() => expect(saveButton).toBeEnabled())
+		fireEvent.click(saveButton)
+		await waitFor(() =>
+			expect(screen.queryByRole('dialog', { name: '配置云端副本' })).not.toBeInTheDocument(),
+		)
+		expect(configureSyncSpy).toHaveBeenCalledTimes(2)
+		expect(await screen.findByRole('alertdialog', { name: '配置已保存' })).toBeVisible()
 	})
 
 	it('离开设置页后取消同步配置的延迟刷新', async () => {
@@ -1008,7 +1047,12 @@ describe('SettingsPage', () => {
 })
 
 async function renderSettingsPage() {
-	return renderWithRouterContext(<SettingsPage />)
+	return renderWithRouterContext(
+		<>
+			<SettingsPage />
+			<Toast.Provider placement='bottom end' />
+		</>,
+	)
 }
 
 function openSyncConfigDialog() {

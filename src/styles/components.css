@@ -104,10 +104,41 @@
 		inline-size: var(--control-height-sm);
 	}
 
-	/* 表单只统一工作台密度；交互与校验状态继续使用 HeroUI 原生 recipe。 */
+	/* 表单只统一工作台密度与获批表面；交互与校验状态继续使用 HeroUI 原生 recipe。 */
 	[data-theme="stoneflow-light"] :is(.input, .select__trigger, .search-field__group) {
 		min-height: var(--control-height-md);
 		border-radius: var(--radius-control);
+	}
+
+	/* 只移除字段外壳；NumberField 与 InputGroup 的内部结构分隔继续使用上游 1px。 */
+	[data-theme="stoneflow-light"]
+		:is(
+			.input,
+			.textarea,
+			.search-field__group,
+			.number-field__group,
+			.input-group,
+			.select__trigger,
+			.autocomplete__trigger,
+			.cell-switch__trigger
+		) {
+		border-width: 0;
+	}
+
+	/* Primary 回归 HeroUI Light 的轻阴影；Secondary 仍由上游保持无阴影填充面。 */
+	[data-theme="stoneflow-light"]
+		:is(
+			.input--primary,
+			.textarea--primary,
+			.input-group--primary,
+			.search-field--primary,
+			.number-field--primary,
+			.select--primary,
+			.autocomplete--primary,
+			.checkbox--primary,
+			.cell-switch__trigger--default
+		) {
+		--field-shadow: var(--field-primary-shadow);
 	}
 
 	[data-theme="stoneflow-light"]
@@ -118,29 +149,6 @@
 
 	[data-theme="stoneflow-light"] :is(.input, .select__trigger) {
 		padding-block: 0.3125rem;
-	}
-
-	/* HeroUI 字段保留键盘 focus-visible；鼠标点入只显示文本光标，不重复绘制焦点边。 */
-	[data-theme="stoneflow-light"]
-		:is(.input, .textarea):is(:focus, [data-focused="true"]):not(:focus-visible):not(
-			[data-focus-visible="true"]
-		) {
-		border-color: var(--field-border);
-		box-shadow: var(--field-shadow);
-	}
-
-	[data-theme="stoneflow-light"]
-		:is(.search-field__group, .input-group):focus-within:not(
-			:has(:focus-visible, [data-focus-visible="true"])
-		) {
-		border-color: var(--field-border);
-		box-shadow: var(--field-shadow);
-	}
-
-	[data-theme="stoneflow-light"]
-		:is(.search-field__group, .input-group):has(:focus-visible, [data-focus-visible="true"]) {
-		border-color: var(--focus-subtle);
-		box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--focus-subtle) 28%, transparent);
 	}
 
 	[data-theme="stoneflow-light"] .textarea {
@@ -210,17 +218,27 @@
 		font-family: var(--font-mono);
 	}
 
-	/* Checkbox 保留 HeroUI 原生状态与动画，只恢复官方 Primary 阴影和 4px 几何。 */
+	/* Checkbox 保留 HeroUI 原生状态与动画，只收敛无硬框的 4px 几何。 */
 	[data-theme="stoneflow-light"] .checkbox {
 		--border-width-field: 0px;
 	}
 
-	[data-theme="stoneflow-light"] .checkbox--primary {
-		--field-shadow: var(--checkbox-primary-shadow);
+	[data-theme="stoneflow-light"] .checkbox__control {
+		border-radius: var(--radius-sm);
 	}
 
-	[data-theme="stoneflow-light"] :is(.checkbox__control, .checkbox__control::before) {
-		border-radius: var(--radius-sm);
+	[data-theme="stoneflow-light"] .checkbox__control::before {
+		border-radius: inherit;
+	}
+
+	/* Calendar 保留上游 36px 日期单元与状态 recipe，只恢复日期按钮的真圆语义。 */
+	[data-theme="stoneflow-light"] .calendar__cell {
+		border-radius: var(--radius-pill);
+	}
+
+	/* HeroUI 的 circle 默认半径会受 StoneFlow 高阶 token 收敛；这里只恢复真圆语义。 */
+	[data-theme="stoneflow-light"] .color-swatch-picker--circle .color-swatch-picker__item {
+		border-radius: var(--radius-pill);
 	}
 
 	/* Breadcrumb 祖先项使用填充式 Ghost；当前位置仍由 React Aria 持有语义。 */
@@ -389,6 +407,11 @@
 		border: 1px solid var(--border);
 	}
 
+	/* ActionBar 是固定操作 pill；不让高阶 surface radius 改变它的语义形状。 */
+	[data-theme="stoneflow-light"] .action-bar__wrapper {
+		border-radius: var(--radius-pill);
+	}
+
 	/* 全局搜索不是 Popover state machine，但视觉语义仍是浮层。 */
 	[data-theme="stoneflow-light"] [data-global-search-results="true"] {
 		border: var(--border-width) solid var(--border);
@@ -429,6 +452,37 @@
 		}
 	}
 
+	/* Alert 保持轻边界而非卡片阴影；语义状态再用同色 soft surface 补齐上游反馈。 */
+	[data-theme="stoneflow-light"] .alert {
+		border: var(--border-width) solid var(--border);
+		box-shadow: none;
+	}
+
+	/* Alert 的 accent 消费者都是信息/加载反馈，不随用户 Accent 预设漂移。 */
+	[data-theme="stoneflow-light"] .alert--accent {
+		border-color: color-mix(in srgb, var(--info) 20%, transparent);
+		background: var(--info-soft);
+	}
+
+	[data-theme="stoneflow-light"] .alert--accent :is(.alert__indicator, .alert__title) {
+		color: var(--info-soft-foreground);
+	}
+
+	[data-theme="stoneflow-light"] .alert--success {
+		border-color: color-mix(in srgb, var(--success) 20%, transparent);
+		background: var(--success-soft);
+	}
+
+	[data-theme="stoneflow-light"] .alert--warning {
+		border-color: color-mix(in srgb, var(--warning) 20%, transparent);
+		background: var(--warning-soft);
+	}
+
+	[data-theme="stoneflow-light"] .alert--danger {
+		border-color: color-mix(in srgb, var(--danger) 20%, transparent);
+		background: var(--danger-soft);
+	}
+
 	[data-theme="stoneflow-light"] .alert[data-embedded-alert="true"] {
 		padding: 0.5rem 1rem;
 		border-inline: 0;
@@ -466,16 +520,20 @@
 	}
 
 	[data-theme="stoneflow-light"] [data-row-shell][data-active="true"]:not([data-selected="true"]) {
-		background: var(--default);
+		background: var(--surface-active);
 	}
 
 	[data-theme="stoneflow-light"] [data-row-shell][data-selected="true"] {
-		background: var(--accent-soft);
+		background: var(--selection);
+	}
+
+	[data-theme="stoneflow-light"] [data-row-shell][data-selected="true"][data-hovered="true"] {
+		background: var(--selection-hover);
 	}
 
 	[data-theme="stoneflow-light"]
 		[data-row-shell][data-hovered="true"]:not([data-active="true"], [data-selected="true"]) {
-		background: var(--default-hover);
+		background: var(--surface-hover);
 	}
 
 	@media (hover: hover) {
@@ -484,19 +542,19 @@
 				[data-active="true"],
 				[data-selected="true"]
 			):hover {
-			background: var(--default-hover);
+			background: var(--surface-hover);
 		}
 
 		[data-theme="stoneflow-light"]
 			[data-row-shell][data-interactive="true"][data-active="true"]:not(
 				[data-selected="true"]
 			):hover {
-			background: var(--default-hover);
+			background: var(--surface-active);
 		}
 
 		[data-theme="stoneflow-light"]
 			[data-row-shell][data-interactive="true"][data-selected="true"]:hover {
-			background: var(--accent-soft-hover);
+			background: var(--selection-hover);
 		}
 
 		/* 键盘移动焦点后，不让停留的鼠标继续伪造另一条 hover。 */
@@ -513,7 +571,7 @@
 			[data-row-shell][data-interactive="true"][data-hover-source="keyboard"][data-selected="true"]:not(
 				[data-hovered="true"]
 			):hover {
-			background: var(--accent-soft);
+			background: var(--selection);
 		}
 	}
 
@@ -551,13 +609,13 @@
 	[data-theme="stoneflow-light"]
 		[data-row-context-menu-trigger][data-open="true"]
 		> [data-row-shell] {
-		background: var(--default);
+		background: var(--surface-hover);
 	}
 
 	[data-theme="stoneflow-light"]
 		[data-row-context-menu-trigger][data-open="true"]
 		> [data-row-shell][data-selected="true"] {
-		background: var(--accent-soft-hover);
+		background: var(--selection-hover);
 	}
 
 	@media (forced-colors: active) {
