@@ -16,8 +16,10 @@ use tauri::AppHandle;
 #[cfg(target_os = "macos")]
 use tauri::{LogicalPosition, TitleBarStyle};
 use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
+#[cfg(all(target_os = "windows", not(feature = "task-board-benchmark")))]
+use tauri_plugin_window_state::WindowExt;
 #[cfg(target_os = "windows")]
-use tauri_plugin_window_state::{AppHandleExt, StateFlags, WindowExt};
+use tauri_plugin_window_state::{AppHandleExt, StateFlags};
 
 pub const MAIN_WINDOW_LABEL: &str = "main";
 
@@ -66,7 +68,7 @@ pub fn build_main_window(app: &tauri::App) -> tauri::Result<()> {
         log::warn!("主窗口启动时居中失败: {error}");
     }
 
-    #[cfg(target_os = "windows")]
+    #[cfg(all(target_os = "windows", not(feature = "task-board-benchmark")))]
     if let Err(error) = window.restore_state(WINDOWS_MAIN_WINDOW_STATE) {
         log::warn!("主窗口启动时恢复位置和尺寸失败: {error}");
     }

@@ -4,9 +4,11 @@
 
 **Blocked by:** 02 — 修正 TaskBoard 虚拟化与 React 热路径
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
-- [ ] 修复现有 performance harness：Long Tasks 使用 50ms 门槛，paged fixture 能真实追加并结束请求，Row 保持生产 Context Menu、metadata 与 selection 成本，覆盖 150、300、600、2,000 和 10,000 个已加载富 Row。
+**临时 production benchmark 构建：** `bun run tauri build --config src-tauri/tauri.task-board-benchmark.conf.json --features task-board-benchmark --no-bundle`。构建脚本拒绝 dirty worktree，并把当前 `HEAD` 自动写入报告环境；不得手填或复用其它 commit。
+
+- [x] 修复现有 performance harness：Long Tasks 使用 50ms 门槛，paged fixture 能真实追加并结束请求，Row 保持生产 Context Menu、metadata 与 selection 成本，覆盖 150、300、600、2,000 和 10,000 个已加载富 Row。
 - [ ] 测量前固定 production build、设备与最低支持 WebView、viewport、seed、数据量、重复次数、采集指标和胜负规则；不同引擎必须在同一条件下运行，原始结果可复核。
 - [ ] 先记录 Ticket 02 优化后虚拟路径基线，再建立只存在于 benchmark surface 的 ordinary-list candidate；候选复用 RowShell、RowLayout、BoardRowSlot、BoardSectionHeader、CollectionBody、collection state、cursor pagination 和业务 actions，只替换 layout strategy。
 - [ ] 同一 production build、设备、数据与 viewport 下覆盖 native trackpad fling、反向 fling、scrollbar thumb drag、连续 J/K/Arrow、range selection、折叠/展开、Context Menu 焦点恢复、详情返回焦点、分页追加、错误 retry 和长时内存/DOM 增长。

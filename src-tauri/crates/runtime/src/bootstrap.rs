@@ -24,7 +24,48 @@ use crate::window::launcher::warmup::LauncherWarmupState;
 use crate::window::main::build_main_window;
 use crate::window::LauncherWindowRuntimeState;
 
+const TASK_BOARD_BENCHMARK_IDENTIFIER: &str = "com.stonefish.stoneflow.task-board-benchmark";
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SetupMode {
+    Production,
+    TaskBoardBenchmark,
+}
+
+fn resolve_setup_mode(
+    task_board_benchmark_feature: bool,
+    identifier: &str,
+) -> Result<SetupMode, &'static str> {
+    match (
+        task_board_benchmark_feature,
+        identifier == TASK_BOARD_BENCHMARK_IDENTIFIER,
+    ) {
+        (false, false) => Ok(SetupMode::Production),
+        (true, true) => Ok(SetupMode::TaskBoardBenchmark),
+        (true, false) => Err("task-board-benchmark feature 必须配套 benchmark Tauri 配置"),
+        (false, true) => Err("benchmark Tauri 配置必须配套 task-board-benchmark feature"),
+    }
+}
+
 pub fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    let setup_mode = resolve_setup_mode(
+        cfg!(feature = "task-board-benchmark"),
+        &app.config().identifier,
+    )
+    .map_err(|message| std::io::Error::new(std::io::ErrorKind::InvalidInput, message))?;
+
+    match setup_mode {
+        SetupMode::Production => setup_production_app(app),
+        SetupMode::TaskBoardBenchmark => setup_task_board_benchmark(app),
+    }
+}
+
+fn setup_task_board_benchmark(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    build_main_window(app)?;
+    Ok(())
+}
+
+fn setup_production_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     app.handle().plugin(
         tauri_plugin_log::Builder::default()
             .level(if cfg!(debug_assertions) {
@@ -246,12 +287,28 @@ async fn sleep_or_wake(notify: &std::sync::Arc<tokio::sync::Notify>, secs: u64) 
 
 #[cfg(test)]
 mod tests {
-    use super::spawn_detached_job;
+    use super::{
+        resolve_setup_mode, spawn_detached_job, SetupMode, TASK_BOARD_BENCHMARK_IDENTIFIER,
+    };
     use std::sync::{
         atomic::{AtomicBool, Ordering},
         Arc,
     };
     use std::time::Duration;
+
+    #[test]
+    fn task_board_benchmark_requires_matching_feature_and_identifier() {
+        assert_eq!(
+            resolve_setup_mode(false, "com.stonefish.stoneflow").unwrap(),
+            SetupMode::Production
+        );
+        assert_eq!(
+            resolve_setup_mode(true, TASK_BOARD_BENCHMARK_IDENTIFIER).unwrap(),
+            SetupMode::TaskBoardBenchmark
+        );
+        assert!(resolve_setup_mode(true, "com.stonefish.stoneflow").is_err());
+        assert!(resolve_setup_mode(false, TASK_BOARD_BENCHMARK_IDENTIFIER).is_err());
+    }
 
     #[tokio::test(flavor = "multi_thread")]
     async fn spawn_detached_job_returns_before_task_finishes() {

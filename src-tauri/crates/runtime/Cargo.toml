@@ -8,6 +8,10 @@ rust-version.workspace = true
 name = "stoneflow_runtime"
 path = "src/lib.rs"
 
+[features]
+default = []
+task-board-benchmark = []
+
 [dependencies]
 anyhow.workspace = true
 chrono.workspace = true
