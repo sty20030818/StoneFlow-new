@@ -1,6 +1,6 @@
 # StoneFlow 前端架构（src）
 
-> 版本：v5.3 · 2026-08-24
+> 版本：v5.4 · 2026-09-02
 > 作用：`src/` **定稿最优架构**（WHAT / WHERE）。日常改码以本文 + [`CONVENTIONS.md`](./CONVENTIONS.md) + 各模块 `ARCHITECTURE.md` 为准。
 > 不写：债表、执行进度、变更历史（这些不属于当前架构契约）。
 
@@ -119,9 +119,11 @@ src/
 具有真实行为或跨 Feature 产品合同的 Module、query 跨域失效工具、types、lib、events、form…
 禁止实体业务规则、feature 专属 API。
 
-`shared/components/page-frame` 是工作区页面的深布局 Module，统一 Header、Toolbar、普通/虚拟 Body、滚动和页级操作骨架，但不持有实体数据、Board 分发或业务操作。
+`shared/components/page-frame` 是工作区页面的深布局 Module，统一 Header、Toolbar、普通 `Body`、集合 `CollectionBody`、滚动和页级操作骨架，但不持有实体数据、Board 分发或业务操作。`CollectionBody` 通过 `AppScrollArea` 为 Task Workspace、Project Overview 与 Lifecycle 页面提供唯一真实 viewport；普通内容继续使用 `Body`。
 
-`shared/components/row` 统一 Row 根结构、交互状态组合与选择组语义；Board header 属于 Board，TaskBoard 的外层选择组与虚拟几何属于 TaskBoard。`AppScrollArea` 只封装真实 viewport 及其 ref context；浏览器负责滚动行为，HeroUI Styles 的 `scrollbar` utility 负责外观。它的 Interface 不导出视觉 class 字符串或无生产消费者的配置。Task Detail 当前只有一个生产 owner，详情布局留在 task feature，不为吸收样式 token 保留共享 Detail Module。
+`shared/components/row` 中，`RowShell` 只拥有 Row 的可访问交互根与 active / selected / hover / focus / pending 状态，`RowLayout` 拥有 `selection`、`leading`、`primary`、`properties`、`actions` 五槽排版，并在 selection / actions 槽隔离 Row activation 事件。`shared/components/board` 中，`BoardRowSlot` 拥有 section 内连续选择形状与 `44px + 2px` Row 占位，`BoardSectionHeader` 拥有 `36px` Header anatomy；邻接计算、sticky/absolute positioning、折叠、Context Menu 与领域动作仍归各 Board。`shared/components/collectionGeometry.ts` 是 Row `44px`、Header `36px`、item gap `2px` 的唯一几何事实源。
+
+`AppScrollArea` 只封装真实 viewport 及其 ref context；浏览器负责滚动行为，HeroUI Styles 的 `scrollbar` utility 负责外观。TaskBoard 当前仍由 task feature 拥有 TanStack Virtual、未加载任务 spacer、分组 sticky 与焦点恢复；移除假 spacer 和虚拟热路径优化属于后续 Ticket 02，不是本轮共享合同的一部分。共享 Interface 不导出视觉 class 字符串或无生产消费者的配置。Task Detail 当前只有一个生产 owner，详情布局留在 task feature，不为吸收样式 token 保留共享 Detail Module。
 
 禁止 `shared/components/patterns`、平行 `shared/components/base`、一对一 HeroUI wrapper、TypeScript token 镜像与只转发目录。删除一个共享 Module 后若复杂度不会重新扩散到多个调用方，该 Module 不具备足够 Depth，应删除或并回唯一 Owner。
 

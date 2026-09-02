@@ -1,12 +1,12 @@
 # task-workspace · 任务结果页工作区组合
 
-> 最后更新：2026-08-24
+> 最后更新：2026-09-02
 
 ## 1. 职责 / 不负责
 
 **负责：**
 
-- 统一组合 `PageFrame.Header`、任务视图 Toolbar、Filter Bar 与虚拟化 Body
+- 统一组合 `PageFrame.Header`、任务视图 Toolbar、Filter Bar 与 `PageFrame.CollectionBody`
 - 按 `all`、`standalone`、`project` 上下文给出代码定义的默认视图矩阵
 - 维护默认视图 URL `v` 的选择语义，并在切换查询基线时清除旧 Filter Draft `f`
 - 为任务工作区路由复用 `v` 与 filter `f` 的 search 解析
@@ -79,6 +79,8 @@ src/features/task-workspace/
 | 默认视图矩阵 | 纯 model，由页面上下文与项目完成态派生 |
 | Filter / Display UI | 调用方注入受控值；本模块不另建真相源 |
 | 任务数据 | 无；由调用方提供 Board |
+
+`CollectionBody` 是任务结果页唯一真实 viewport；TaskBoard 的虚拟 spacer、sticky、分页与焦点仍由 task 域持有。本模块只组合 viewport，不解释或改写虚拟几何。
 
 ---
 

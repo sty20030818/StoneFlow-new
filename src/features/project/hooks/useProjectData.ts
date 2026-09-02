@@ -13,7 +13,7 @@ const EMPTY_PROJECT_SIDEBAR_ITEMS: ProjectSidebarItem[] = []
 
 export function useProjectOverviewData(scope: Scope, viewKey: ProjectOverviewViewKey) {
 	const query = useProjectOverviewQuery(scope, viewKey)
-	const status: QueryLoadStatus = query.isError
+	const status: QueryLoadStatus = query.isLoadingError
 		? 'error'
 		: query.isLoading || query.isPending
 			? 'loading'

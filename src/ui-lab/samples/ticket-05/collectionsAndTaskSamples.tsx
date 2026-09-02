@@ -36,7 +36,14 @@ import {
 	Trash2Icon,
 } from 'lucide-react'
 
-import { RowShell, type RowSelectionGroupPosition } from '@/shared/components/row'
+import {
+	BoardRowSlot,
+	BoardSectionHeader,
+	COLLECTION_SECTION_HEADER_SIZE,
+	getBoardRowSelectionPosition,
+	type BoardRowSelectionPosition,
+} from '@/shared/components/board'
+import { RowLayout, RowShell } from '@/shared/components/row'
 
 import type { UiLabReviewUnitInput } from '../../uiLabCatalog'
 import { LABEL_OPTIONS } from '../sharedFixtureData'
@@ -62,7 +69,7 @@ function RowShellPreview() {
 	}
 	const focusRowAt = (index: number) => {
 		const row = rows[index]
-		const target = listRef.current?.children.item(index)
+		const target = listRef.current?.children.item(index)?.querySelector('[data-row-shell]')
 		if (!row || !(target instanceof HTMLElement)) return
 		setFocused(row.id)
 		setStatus(`键盘焦点：${row.title}`)
@@ -82,67 +89,71 @@ function RowShellPreview() {
 				role='grid'
 			>
 				{rows.map((row) => (
-					<RowShell
-						key={row.id}
-						active={row.active}
-						aria-current={row.active ? 'true' : undefined}
-						aria-label={row.title}
-						aria-selected={selected === row.id}
-						interactive
-						pending={row.pending}
-						role='row'
-						selected={selected === row.id}
-						selectionGroupPosition={selected === row.id ? 'single' : undefined}
-						tabIndex={focused === row.id ? 0 : -1}
-						onClick={(event) => {
-							if ((event.target as HTMLElement).closest('button')) return
-							setFocused(row.id)
-							activateRow(row.id, row.title)
-						}}
-						onFocus={() => setFocused(row.id)}
-						onKeyDown={(event) => {
-							if (event.target !== event.currentTarget) return
-							const currentIndex = rows.findIndex((item) => item.id === row.id)
-							const nextIndex =
-								event.key === 'Home'
-									? 0
-									: event.key === 'End'
-										? rows.length - 1
-										: event.key === 'ArrowDown'
-											? Math.min(currentIndex + 1, rows.length - 1)
-											: event.key === 'ArrowUp'
-												? Math.max(currentIndex - 1, 0)
-												: null
-							if (nextIndex !== null) {
+					<BoardRowSlot key={row.id} selectionPosition={selected === row.id ? 'single' : undefined}>
+						<RowShell
+							active={row.active}
+							aria-current={row.active ? 'true' : undefined}
+							aria-label={row.title}
+							aria-selected={selected === row.id}
+							interactive
+							pending={row.pending}
+							role='row'
+							selected={selected === row.id}
+							tabIndex={focused === row.id ? 0 : -1}
+							onClick={(event) => {
+								if ((event.target as HTMLElement).closest('button')) return
+								setFocused(row.id)
+								activateRow(row.id, row.title)
+							}}
+							onFocus={() => setFocused(row.id)}
+							onKeyDown={(event) => {
+								if (event.target !== event.currentTarget) return
+								const currentIndex = rows.findIndex((item) => item.id === row.id)
+								const nextIndex =
+									event.key === 'Home'
+										? 0
+										: event.key === 'End'
+											? rows.length - 1
+											: event.key === 'ArrowDown'
+												? Math.min(currentIndex + 1, rows.length - 1)
+												: event.key === 'ArrowUp'
+													? Math.max(currentIndex - 1, 0)
+													: null
+								if (nextIndex !== null) {
+									event.preventDefault()
+									focusRowAt(nextIndex)
+									return
+								}
+								if (!['Enter', ' '].includes(event.key)) return
 								event.preventDefault()
-								focusRowAt(nextIndex)
-								return
-							}
-							if (!['Enter', ' '].includes(event.key)) return
-							event.preventDefault()
-							activateRow(row.id, row.title)
-						}}
-					>
-						<div className='flex min-w-0 flex-1 items-center' role='gridcell'>
-							<span className='min-w-0 flex-1 truncate' title={row.title}>
-								{row.title}
-							</span>
-							{row.hasAction ? (
-								<span className='shrink-0 opacity-0 group-has-focus-visible/row-shell:opacity-100 group-hover/row-shell:opacity-100'>
-									<Button
-										aria-label='更多操作：含尾部操作'
-										isIconOnly
-										onPress={() => setStatus('已触发：含尾部操作')}
-										size='sm'
-										type='button'
-										variant='ghost'
-									>
-										<EllipsisIcon aria-hidden className='size-4' />
-									</Button>
-								</span>
-							) : null}
-						</div>
-					</RowShell>
+								activateRow(row.id, row.title)
+							}}
+						>
+							<div className='flex min-w-0 flex-1' role='gridcell'>
+								<RowLayout
+									actions={
+										row.hasAction ? (
+											<Button
+												aria-label='更多操作：含尾部操作'
+												isIconOnly
+												onPress={() => setStatus('已触发：含尾部操作')}
+												size='sm'
+												type='button'
+												variant='ghost'
+											>
+												<EllipsisIcon aria-hidden className='size-4' />
+											</Button>
+										) : undefined
+									}
+									primary={
+										<span className='block truncate' title={row.title}>
+											{row.title}
+										</span>
+									}
+								/>
+							</div>
+						</RowShell>
+					</BoardRowSlot>
 				))}
 			</div>
 			<p className='mt-3 text-sm text-muted' role='status'>
@@ -678,61 +689,64 @@ function AvatarPreview() {
 
 function TaskRowFixture({
 	selected,
-	selectionGroupPosition,
+	selectionPosition,
 	title,
 	onSelectedChange,
 }: {
 	selected: boolean
-	selectionGroupPosition?: RowSelectionGroupPosition
+	selectionPosition?: BoardRowSelectionPosition
 	title: string
 	onSelectedChange: (selected: boolean) => void
 }) {
 	const [status, setStatus] = useState('待处理')
 
 	return (
-		<RowShell selected={selected} selectionGroupPosition={selectionGroupPosition}>
-			<span
-				className={`flex size-5 shrink-0 items-center justify-center ${
-					selected
-						? 'opacity-100'
-						: 'opacity-0 group-has-focus-visible/row-shell:opacity-100 group-hover/row-shell:opacity-100'
-				}`}
-				data-slot='row-selection-cell'
-			>
-				<Checkbox
-					aria-label={`选择任务：${title}`}
-					isSelected={selected}
-					onChange={onSelectedChange}
-				>
-					<Checkbox.Content>
-						<Checkbox.Control>
-							<Checkbox.Indicator />
-						</Checkbox.Control>
-					</Checkbox.Content>
-				</Checkbox>
-			</span>
-			<span className='min-w-0 flex-1 truncate font-medium' title={title}>
-				{title}
-			</span>
-			<span className='hidden shrink-0 items-center gap-2 @min-[560px]/task-list:flex'>
-				<Chip size='sm' variant='tertiary'>
-					<Chip.Label>{status}</Chip.Label>
-				</Chip>
-				<span className='flex items-center gap-1 text-xs text-muted'>
-					<CalendarDaysIcon aria-hidden className='size-4' />8 月 30 日
-				</span>
-			</span>
-			<Button
-				aria-label={`切换状态：${title}`}
-				isIconOnly
-				onPress={() => setStatus((value) => (value === '待处理' ? '已完成' : '待处理'))}
-				size='sm'
-				type='button'
-				variant='ghost'
-			>
-				<CheckCircle2Icon aria-hidden className='size-4' />
-			</Button>
-		</RowShell>
+		<BoardRowSlot selectionPosition={selectionPosition}>
+			<RowShell interactive role='row' selected={selected}>
+				<RowLayout
+					actions={
+						<Button
+							aria-label={`切换状态：${title}`}
+							isIconOnly
+							onPress={() => setStatus((value) => (value === '待处理' ? '已完成' : '待处理'))}
+							size='sm'
+							type='button'
+							variant='ghost'
+						>
+							<CheckCircle2Icon aria-hidden className='size-4' />
+						</Button>
+					}
+					primary={
+						<span className='block truncate font-medium' title={title}>
+							{title}
+						</span>
+					}
+					properties={
+						<>
+							<Chip size='sm' variant='tertiary'>
+								<Chip.Label>{status}</Chip.Label>
+							</Chip>
+							<span className='flex items-center gap-1'>
+								<CalendarDaysIcon aria-hidden className='size-4' />8 月 30 日
+							</span>
+						</>
+					}
+					selection={
+						<Checkbox
+							aria-label={`选择任务：${title}`}
+							isSelected={selected}
+							onChange={onSelectedChange}
+						>
+							<Checkbox.Content>
+								<Checkbox.Control>
+									<Checkbox.Indicator />
+								</Checkbox.Control>
+							</Checkbox.Content>
+						</Checkbox>
+					}
+				/>
+			</RowShell>
+		</BoardRowSlot>
 	)
 }
 
@@ -747,19 +761,18 @@ function TaskRowsFixture({
 
 	return items.map((item, index) => {
 		const selected = selectedIds.has(item.id)
-		const joinsPrevious = index > 0 && selectedIds.has(items[index - 1]!.id)
-		const joinsNext = index < items.length - 1 && selectedIds.has(items[index + 1]!.id)
-		let selectionGroupPosition: RowSelectionGroupPosition | undefined
-		if (selected) {
-			if (joinsPrevious) selectionGroupPosition = joinsNext ? 'middle' : 'last'
-			else selectionGroupPosition = joinsNext ? 'first' : 'single'
-		}
+		const selectionPosition = getBoardRowSelectionPosition(
+			item.id,
+			items[index - 1]?.id,
+			items[index + 1]?.id,
+			selectedIds,
+		)
 
 		return (
 			<TaskRowFixture
 				key={item.id}
 				selected={selected}
-				selectionGroupPosition={selectionGroupPosition}
+				selectionPosition={selectionPosition}
 				title={item.title}
 				onSelectedChange={(nextSelected) =>
 					setSelectedIds((current) => {
@@ -812,48 +825,49 @@ function TaskGroupFixture({
 	const toggleExpanded = () => setExpanded((value) => !value)
 
 	return (
-		<div className='flex flex-col gap-0.5'>
-			<div
-				className='flex h-9 min-w-0 items-center gap-2 rounded-md pl-3 pr-1'
-				data-ui-lab-group-header
-				onDoubleClick={toggleExpanded}
-			>
-				<Button
-					aria-controls={contentId}
-					aria-expanded={expanded}
-					aria-label={expanded ? `折叠 ${label}` : `展开 ${label}`}
-					isIconOnly
-					onDoubleClick={(event) => event.stopPropagation()}
-					onPress={toggleExpanded}
-					size='sm'
-					type='button'
-					variant='ghost'
-				>
-					<span className='inline-flex size-3 items-center justify-center'>
-						<TriangleIcon
-							aria-hidden
-							className={`size-1.5 fill-current text-muted ${expanded ? 'rotate-180' : 'rotate-90'}`}
-						/>
-					</span>
-				</Button>
-				<div className='flex min-w-0 flex-1 items-center gap-2 px-1 text-xs font-semibold'>
-					<CircleIcon aria-hidden className='size-4 shrink-0 text-warning-on-surface' />
-					<span className='min-w-0 truncate' title={label}>
-						{label}
-					</span>
-					<span className='shrink-0 tabular-nums text-muted'>{count}</span>
-				</div>
-				<Button
-					aria-label={`在 ${label} 中创建任务`}
-					isIconOnly
-					onDoubleClick={(event) => event.stopPropagation()}
-					onPress={() => setStatus(`已触发：在 ${label} 中创建任务`)}
-					size='sm'
-					type='button'
-					variant='ghost'
-				>
-					<PlusIcon aria-hidden className='size-4' />
-				</Button>
+		<div className='flex flex-col'>
+			<div style={{ height: COLLECTION_SECTION_HEADER_SIZE }}>
+				<BoardSectionHeader
+					count={count}
+					label={label}
+					leading={
+						<>
+							<Button
+								aria-controls={contentId}
+								aria-expanded={expanded}
+								aria-label={expanded ? `折叠 ${label}` : `展开 ${label}`}
+								isIconOnly
+								onDoubleClick={(event) => event.stopPropagation()}
+								onPress={toggleExpanded}
+								size='sm'
+								type='button'
+								variant='ghost'
+							>
+								<span className='inline-flex size-3 items-center justify-center'>
+									<TriangleIcon
+										aria-hidden
+										className={`size-1.5 fill-current text-muted ${expanded ? 'rotate-180' : 'rotate-90'}`}
+									/>
+								</span>
+							</Button>
+							<CircleIcon aria-hidden className='size-4 shrink-0 text-warning-on-surface' />
+						</>
+					}
+					onDoubleClick={toggleExpanded}
+					trailing={
+						<Button
+							aria-label={`在 ${label} 中创建任务`}
+							isIconOnly
+							onDoubleClick={(event) => event.stopPropagation()}
+							onPress={() => setStatus(`已触发：在 ${label} 中创建任务`)}
+							size='sm'
+							type='button'
+							variant='ghost'
+						>
+							<PlusIcon aria-hidden className='size-4' />
+						</Button>
+					}
+				/>
 			</div>
 			<div hidden={!expanded} id={contentId}>
 				{children}
@@ -874,9 +888,11 @@ export function GroupHeaderPreview() {
 			</p>
 			<div className='mt-4'>
 				<TaskGroupFixture label='进行中 · 需要跨团队确认的长中文分组标题' count={12}>
-					<RowShell>
-						<span className='truncate'>分组内第一条任务</span>
-					</RowShell>
+					<BoardRowSlot>
+						<RowShell>
+							<RowLayout primary='分组内第一条任务' />
+						</RowShell>
+					</BoardRowSlot>
 				</TaskGroupFixture>
 			</div>
 		</div>

@@ -13,7 +13,7 @@ import {
 import type { LifecycleEntry, LifecycleMode } from '@/shared/types'
 import { formatShortDate } from '@/shared/lib/date'
 import { cn } from '@/shared/lib/utils'
-import { RowShell } from '@/shared/components/row'
+import { RowLayout, RowShell } from '@/shared/components/row'
 
 import { buildLifecycleCommandSelection } from '../model/buildLifecycleCommandSelection'
 import { LifecycleContextMenu } from './LifecycleContextMenu'
@@ -118,7 +118,7 @@ export function LifecycleRowAdapter({
 				ref={rowRef}
 				aria-label={canOpenDetail ? `打开 ${entry.title}` : entry.title}
 				className={cn(
-					'group/lifecycle-row w-full text-[13px] leading-5 outline-none',
+					'w-full text-[13px] leading-5 outline-none',
 					canOpenDetail ? null : 'cursor-default',
 				)}
 				data-lifecycle-entity={entry.entityType}
@@ -140,59 +140,46 @@ export function LifecycleRowAdapter({
 					reactAriaKeyDown?.(event)
 				}}
 			>
-				<div {...gridCellProps} className='flex min-w-0 flex-1 items-center gap-3'>
-					<span
-						className={cn(
-							'flex size-5 shrink-0 items-center justify-center',
-							rowState.isSelected
-								? 'opacity-100'
-								: 'opacity-0 group-hover/lifecycle-row:opacity-100 group-focus-within/lifecycle-row:opacity-100',
-						)}
-						onClick={(event) => event.stopPropagation()}
-						onKeyDown={(event) => event.stopPropagation()}
-						onPointerDown={(event) => event.stopPropagation()}
-					>
-						<Checkbox
-							aria-label={`选择 ${entry.title}`}
-							isDisabled={isExecuting}
-							isSelected={rowState.isSelected}
-							onChange={actions.onToggleSelected}
-							onClick={(event) => event.stopPropagation()}
-							onKeyDown={(event) => event.stopPropagation()}
-						>
-							<Checkbox.Content>
-								<Checkbox.Control>
-									<Checkbox.Indicator />
-								</Checkbox.Control>
-							</Checkbox.Content>
-						</Checkbox>
-					</span>
-					<LifecycleEntityIcon entityType={entry.entityType} />
-					<span className='min-w-0 flex-1 truncate font-medium'>{entry.title}</span>
-
-					{restoreCommand?.visible ? (
-						<span
-							onClick={(event) => event.stopPropagation()}
-							onKeyDown={(event) => event.stopPropagation()}
-							onPointerDown={(event) => event.stopPropagation()}
-						>
-							<Button
-								aria-description={restoreCommand.disabledReason}
-								isDisabled={isExecuting || !restoreCommand.enabled}
-								size='sm'
-								variant='ghost'
-								onPress={() => void executeRowCommand(restoreCommand)}
+				<div {...gridCellProps} className='min-w-0 flex-1'>
+					<RowLayout
+						selection={
+							<Checkbox
+								aria-label={`选择 ${entry.title}`}
+								isDisabled={isExecuting}
+								isSelected={rowState.isSelected}
+								onChange={actions.onToggleSelected}
 							>
-								<ArchiveRestoreIcon />
-								恢复
-							</Button>
-						</span>
-					) : null}
-					{createdAtValue ? (
-						<span className='hidden shrink-0 text-xs text-muted md:inline'>
-							{mode === 'archive' ? '归档' : '删除'} {formatShortDate(createdAtValue)}
-						</span>
-					) : null}
+								<Checkbox.Content>
+									<Checkbox.Control>
+										<Checkbox.Indicator />
+									</Checkbox.Control>
+								</Checkbox.Content>
+							</Checkbox>
+						}
+						leading={<LifecycleEntityIcon entityType={entry.entityType} />}
+						primary={<span className='block truncate font-medium'>{entry.title}</span>}
+						properties={
+							createdAtValue ? (
+								<span className='text-xs text-muted'>
+									{mode === 'archive' ? '归档' : '删除'} {formatShortDate(createdAtValue)}
+								</span>
+							) : undefined
+						}
+						actions={
+							restoreCommand?.visible ? (
+								<Button
+									aria-description={restoreCommand.disabledReason}
+									isDisabled={isExecuting || !restoreCommand.enabled}
+									onPress={() => void executeRowCommand(restoreCommand)}
+									size='sm'
+									variant='ghost'
+								>
+									<ArchiveRestoreIcon />
+									恢复
+								</Button>
+							) : undefined
+						}
+					/>
 				</div>
 			</RowShell>
 		</LifecycleContextMenu>

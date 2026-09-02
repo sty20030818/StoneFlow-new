@@ -43,9 +43,9 @@ export function ProjectOverviewPage() {
 				pills={scene.toolbarPills}
 				selectedKey={scene.selectedToolbarKey}
 			/>
-			<PageFrame.Body>
+			<PageFrame.CollectionBody>
 				<ProjectBoard {...scene.projectBoardProps} />
-			</PageFrame.Body>
+			</PageFrame.CollectionBody>
 		</PageFrame.Root>
 	)
 }

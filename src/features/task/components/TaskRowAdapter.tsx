@@ -8,7 +8,6 @@ import {
 	type CommandId,
 } from '@/features/command'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
-import { TASK_BOARD_ROW_HEIGHT } from '@/features/task/model/taskBoardModel'
 import { TaskContextMenu } from '@/features/task/components/TaskContextMenu'
 import { buildTaskCommandContext } from '@/features/task/commands/buildTaskCommandContext'
 import type { TaskContextMenuBulkActions } from '@/features/task/components/useTaskContextMenuBulkActions'
@@ -28,7 +27,7 @@ import {
 } from '@/features/metadata-fields'
 import { getSpaceVisual } from '@/features/space'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
-import { RowShell, type RowSelectionGroupPosition } from '@/shared/components/row'
+import { RowLayout, RowShell } from '@/shared/components/row'
 import { ActionTooltip } from '@/shared/components/tooltip'
 import { formatShortDate } from '@/shared/lib/date'
 import { TaskRowCreatedAtCell, TaskRowSelectionCell, TaskRowTitleCell } from './TaskRowCells'
@@ -47,7 +46,6 @@ export type TaskRowAdapterProps = {
 	rowProps?: GridListItemAria['rowProps']
 	gridCellProps?: GridListItemAria['gridCellProps']
 	rowRef?: Ref<HTMLDivElement>
-	selectionGroupPosition?: RowSelectionGroupPosition
 	contextMenuActions?: TaskContextMenuBulkActions
 	onContextMenuOpenChange?: (open: boolean) => void
 	projectBinding?: {
@@ -83,7 +81,6 @@ function taskRowAdapterPropsEqual(prev: TaskRowAdapterProps, next: TaskRowAdapte
 	if (prev.projectBinding !== next.projectBinding) return false
 	if (prev.visibleProperties !== next.visibleProperties) return false
 	if (prev.showSpaceLabel !== next.showSpaceLabel) return false
-	if (prev.selectionGroupPosition !== next.selectionGroupPosition) return false
 	if (prev.rowProps !== next.rowProps) return false
 	if (prev.gridCellProps !== next.gridCellProps) return false
 	if (prev.rowRef !== next.rowRef) return false
@@ -119,7 +116,6 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 	rowProps,
 	gridCellProps,
 	rowRef,
-	selectionGroupPosition,
 	contextMenuActions,
 	onContextMenuOpenChange,
 	projectBinding,
@@ -229,6 +225,13 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 	const showScheduledAt = visiblePropertySet.has('plannedAt')
 	const showUpdatedAt = visiblePropertySet.has('updatedAt')
 	const showCreatedAt = visiblePropertySet.has('createdAt')
+	const hasProperties =
+		showDueAt ||
+		showScheduledAt ||
+		showProject ||
+		(showSpaceLabel && Boolean(spaceButtonVisual.label)) ||
+		showUpdatedAt ||
+		showCreatedAt
 
 	return (
 		<TaskContextMenu
@@ -299,17 +302,15 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 				interactive
 				pending={isPending}
 				selected={isSelected}
-				selectionGroupPosition={selectionGroupPosition}
-				style={{ height: TASK_BOARD_ROW_HEIGHT }}
 				onClick={() =>
 					void commandRuntime
 						.project(COMMAND_IDS.taskOpenDetail, rowCommandContext)
 						?.execute({ source: 'row' })
 				}
 			>
-				<div {...gridCellProps} className='flex min-w-0 flex-1 items-center gap-3'>
-					<div className='flex min-w-0 flex-1 items-center gap-2.5'>
-						<div className='flex shrink-0 items-center gap-1'>
+				<div {...gridCellProps} className='min-w-0 flex-1'>
+					<RowLayout
+						selection={
 							<TaskRowSelectionCell
 								ariaLabel={`选择任务：${task.title}`}
 								checked={isSelected}
@@ -319,115 +320,119 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 								tooltipShortcut={<CommandShortcut commandId={COMMAND_IDS.taskSelect} scope='row' />}
 								onCheckedChange={() => actions.onToggleTaskSelection(task.id)}
 							/>
-							{showPriority ? (
-								<MetadataFieldDropdown
-									ariaLabel={`修改优先级：${task.title}`}
-									buttonAppearance='row-icon'
-									compact
-									disabled={isPending}
-									disabledReason='正在更新任务，暂时无法修改优先级'
-									fieldKey='priority'
-									label='优先级'
-									menuLabel={priorityDropdownProps.menuLabel}
-									options={priorityDropdownProps.options}
-									shortcut={{ commandId: COMMAND_IDS.taskSetPriority, scope: 'row' }}
-									stopPropagation
-									tooltipLabel='修改优先级'
-									value={task.priority}
-									onChange={(priority) => void actions.onUpdateTaskPriority(task, priority)}
-								/>
-							) : null}
-							{showStatus ? (
-								<MetadataFieldDropdown
-									ariaLabel={`修改状态：${task.title}`}
-									buttonAppearance='row-icon'
-									compact
-									disabled={isPending}
-									disabledReason='正在更新任务，暂时无法修改状态'
-									fieldKey='status'
-									label='状态'
-									menuLabel={statusDropdownProps.menuLabel}
-									options={statusDropdownProps.options}
-									shortcut={{ commandId: COMMAND_IDS.taskSetStatus, scope: 'row' }}
-									stopPropagation
-									tooltipLabel='修改状态'
-									value={task.status}
-									onChange={(status) => void actions.onUpdateTaskStatus(task, status)}
-								/>
-							) : null}
-						</div>
-
-						<div className='min-w-0 flex-1'>
-							<TaskRowTitleCell doneLike={isDoneLike} title={task.title} />
-						</div>
-					</div>
-
-					<div className='ml-auto flex shrink-0 items-center gap-2'>
-						<div className='hidden shrink-0 items-center justify-end gap-2 @min-[560px]/task-list:flex'>
-							{showDueAt ? (
-								<MetadataDateDropdown
-									ariaLabel={`修改截止时间：${task.title}`}
-									compact
-									disabled={isPending}
-									disabledReason='正在更新任务，暂时无法修改截止时间'
-									hideWhenEmpty
-									icon={taskDateMetadataIcons.due}
-									label='截止时间'
-									menuAlign='end'
-									shortcut={{ commandId: COMMAND_IDS.taskOpenDateMenu, scope: 'row' }}
-									stopPropagation
-									tooltipLabel='修改截止时间'
-									value={task.dueAt}
-									onChange={(value) => void actions.onUpdateTaskDueDate?.(task, value)}
-								/>
-							) : null}
-							{showScheduledAt ? (
-								<MetadataDateDropdown
-									ariaLabel={`修改计划时间：${task.title}`}
-									compact
-									disabled={isPending}
-									disabledReason='正在更新任务，暂时无法修改计划时间'
-									hideWhenEmpty
-									icon={taskDateMetadataIcons.scheduled}
-									label='计划时间'
-									menuAlign='end'
-									stopPropagation
-									tooltipLabel='修改计划时间'
-									value={task.plannedAt}
-									onChange={(value) => void actions.onUpdateTaskScheduledAt?.(task, value)}
-								/>
-							) : null}
-							{showProject ? (
-								<MetadataPlacementDropdown
-									compact
-									disabled={isPending}
-									disabledReason='正在更新任务，暂时无法修改归属'
-									groups={placementDropdownProps.groups}
-									label='归属'
-									menuAlign='end'
-									menuLabel={placementDropdownProps.menuLabel}
-									shortcutMode='clear-only'
-									shortcut={{ commandId: COMMAND_IDS.taskChangePlacement, scope: 'row' }}
-									stopPropagation
-									value={projectValue}
-									onChange={(value: TaskPlacementTarget) =>
-										projectBinding?.onSelectPlacement?.(task, value)
-									}
-								/>
-							) : null}
-							{/* All scope：Space 以行右侧按钮形式展示（与归属/日期并列） */}
-							{showSpaceLabel && spaceButtonVisual.label ? (
-								<MetadataFieldValue
-									ariaLabel={`所属空间 ${spaceButtonVisual.label}`}
-									compact
-									icon={spaceButtonVisual.icon}
-									label={spaceButtonVisual.label}
-								/>
-							) : null}
-							{showUpdatedAt ? <UpdatedAtCell value={task.updatedAt} /> : null}
-							{showCreatedAt ? <TaskRowCreatedAtCell value={task.createdAt} /> : null}
-						</div>
-					</div>
+						}
+						leading={
+							showPriority || showStatus ? (
+								<>
+									{showPriority ? (
+										<MetadataFieldDropdown
+											ariaLabel={`修改优先级：${task.title}`}
+											buttonAppearance='row-icon'
+											compact
+											disabled={isPending}
+											disabledReason='正在更新任务，暂时无法修改优先级'
+											fieldKey='priority'
+											label='优先级'
+											menuLabel={priorityDropdownProps.menuLabel}
+											options={priorityDropdownProps.options}
+											shortcut={{ commandId: COMMAND_IDS.taskSetPriority, scope: 'row' }}
+											stopPropagation
+											tooltipLabel='修改优先级'
+											value={task.priority}
+											onChange={(priority) => void actions.onUpdateTaskPriority(task, priority)}
+										/>
+									) : null}
+									{showStatus ? (
+										<MetadataFieldDropdown
+											ariaLabel={`修改状态：${task.title}`}
+											buttonAppearance='row-icon'
+											compact
+											disabled={isPending}
+											disabledReason='正在更新任务，暂时无法修改状态'
+											fieldKey='status'
+											label='状态'
+											menuLabel={statusDropdownProps.menuLabel}
+											options={statusDropdownProps.options}
+											shortcut={{ commandId: COMMAND_IDS.taskSetStatus, scope: 'row' }}
+											stopPropagation
+											tooltipLabel='修改状态'
+											value={task.status}
+											onChange={(status) => void actions.onUpdateTaskStatus(task, status)}
+										/>
+									) : null}
+								</>
+							) : undefined
+						}
+						primary={<TaskRowTitleCell doneLike={isDoneLike} title={task.title} />}
+						properties={
+							hasProperties ? (
+								<>
+									{showDueAt ? (
+										<MetadataDateDropdown
+											ariaLabel={`修改截止时间：${task.title}`}
+											compact
+											disabled={isPending}
+											disabledReason='正在更新任务，暂时无法修改截止时间'
+											hideWhenEmpty
+											icon={taskDateMetadataIcons.due}
+											label='截止时间'
+											menuAlign='end'
+											shortcut={{ commandId: COMMAND_IDS.taskOpenDateMenu, scope: 'row' }}
+											stopPropagation
+											tooltipLabel='修改截止时间'
+											value={task.dueAt}
+											onChange={(value) => void actions.onUpdateTaskDueDate?.(task, value)}
+										/>
+									) : null}
+									{showScheduledAt ? (
+										<MetadataDateDropdown
+											ariaLabel={`修改计划时间：${task.title}`}
+											compact
+											disabled={isPending}
+											disabledReason='正在更新任务，暂时无法修改计划时间'
+											hideWhenEmpty
+											icon={taskDateMetadataIcons.scheduled}
+											label='计划时间'
+											menuAlign='end'
+											stopPropagation
+											tooltipLabel='修改计划时间'
+											value={task.plannedAt}
+											onChange={(value) => void actions.onUpdateTaskScheduledAt?.(task, value)}
+										/>
+									) : null}
+									{showProject ? (
+										<MetadataPlacementDropdown
+											compact
+											disabled={isPending}
+											disabledReason='正在更新任务，暂时无法修改归属'
+											groups={placementDropdownProps.groups}
+											label='归属'
+											menuAlign='end'
+											menuLabel={placementDropdownProps.menuLabel}
+											shortcutMode='clear-only'
+											shortcut={{ commandId: COMMAND_IDS.taskChangePlacement, scope: 'row' }}
+											stopPropagation
+											value={projectValue}
+											onChange={(value: TaskPlacementTarget) =>
+												projectBinding?.onSelectPlacement?.(task, value)
+											}
+										/>
+									) : null}
+									{/* All scope：Space 以行右侧按钮形式展示（与归属/日期并列） */}
+									{showSpaceLabel && spaceButtonVisual.label ? (
+										<MetadataFieldValue
+											ariaLabel={`所属空间 ${spaceButtonVisual.label}`}
+											compact
+											icon={spaceButtonVisual.icon}
+											label={spaceButtonVisual.label}
+										/>
+									) : null}
+									{showUpdatedAt ? <UpdatedAtCell value={task.updatedAt} /> : null}
+									{showCreatedAt ? <TaskRowCreatedAtCell value={task.createdAt} /> : null}
+								</>
+							) : undefined
+						}
+					/>
 				</div>
 			</RowShell>
 		</TaskContextMenu>

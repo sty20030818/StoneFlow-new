@@ -164,7 +164,7 @@ function PageFrameBody({ children }: PageFrameBodyProps) {
 	)
 }
 
-function PageFrameVirtualizedBody({ children }: PageFrameBodyProps) {
+function PageFrameCollectionBody({ children }: PageFrameBodyProps) {
 	return <AppScrollArea>{children}</AppScrollArea>
 }
 
@@ -173,5 +173,5 @@ export const PageFrame = {
 	Header: PageFrameHeader,
 	Toolbar: PageFrameToolbar,
 	Body: PageFrameBody,
-	VirtualizedBody: PageFrameVirtualizedBody,
+	CollectionBody: PageFrameCollectionBody,
 }

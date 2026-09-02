@@ -428,12 +428,18 @@ const EXPORTED_COMPONENT_GROUPS = [
 	['src/shared/components/AppScrollArea.tsx', 'shell', ['AppScrollArea']],
 	['src/shared/components/ShortcutTokens.tsx', 'shared-ui', ['ShortcutTokens']],
 	[
+		'src/shared/components/board/BoardLayout.tsx',
+		'collection-rows',
+		['BoardRowSlot', 'BoardSectionHeader'],
+	],
+	[
 		'src/shared/components/board/BoardSectionContextMenu.tsx',
 		'collection-rows',
 		['BoardSectionContextMenu'],
 	],
 	['src/shared/components/create-modal-content.tsx', 'create-dialogs', ['CreateModalContent']],
 	['src/shared/components/page-frame/PageFrame.tsx', 'shell', ['PageFrame']],
+	['src/shared/components/row/RowLayout.tsx', 'collection-rows', ['RowLayout']],
 	['src/shared/components/row/RowShell.tsx', 'collection-rows', ['RowShell']],
 	['src/shared/components/tooltip/ActionTooltip.tsx', 'shared-ui', ['ActionTooltip']],
 	[
@@ -555,7 +561,7 @@ const PRIVATE_LEAF_GROUPS = [
 			'PageFrameToolbar',
 			'PageFrameToolbarChoices',
 			'PageFrameBody',
-			'PageFrameVirtualizedBody',
+			'PageFrameCollectionBody',
 		],
 	],
 	[
@@ -646,6 +652,16 @@ const EXPORTED_COMPONENT_CONSUMERS: Readonly<Record<string, readonly string[]>> 
 	'stoneflow-component-app-scroll-area': ['src/shared/components/page-frame/PageFrame.tsx'],
 	'stoneflow-component-app-version-footer-item': ['src/layout/ShellFooter.tsx'],
 	'stoneflow-component-board-section-context-menu': [
+		'src/features/lifecycle/components/LifecycleBoard.tsx',
+		'src/features/project/components/ProjectBoard.tsx',
+		'src/features/task/components/TaskBoard.tsx',
+	],
+	'stoneflow-component-board-row-slot': [
+		'src/features/lifecycle/components/LifecycleBoard.tsx',
+		'src/features/project/components/ProjectBoard.tsx',
+		'src/features/task/components/TaskBoard.tsx',
+	],
+	'stoneflow-component-board-section-header': [
 		'src/features/lifecycle/components/LifecycleBoard.tsx',
 		'src/features/project/components/ProjectBoard.tsx',
 		'src/features/task/components/TaskBoard.tsx',
@@ -1096,6 +1112,11 @@ const EXPORTED_COMPONENT_CONSUMERS: Readonly<Record<string, readonly string[]>> 
 		'src/features/project/components/ProjectRowAdapter.tsx',
 		'src/features/task/components/TaskRowAdapter.tsx',
 	],
+	'stoneflow-component-row-layout': [
+		'src/features/lifecycle/components/LifecycleRowAdapter.tsx',
+		'src/features/project/components/ProjectRowAdapter.tsx',
+		'src/features/task/components/TaskRowAdapter.tsx',
+	],
 	'stoneflow-settings-navigation': ['src/layout/ShellChrome.tsx'],
 	'stoneflow-component-shell-sidebar-navigation': ['src/layout/ShellSidebar.tsx'],
 	'stoneflow-shell-sidebar-scene': ['src/layout/ShellChrome.tsx'],
@@ -1226,7 +1247,16 @@ const REQUIRED_PRODUCT_SCENE_REGISTRATIONS = [
 			'src/features/task-workspace/components/TaskWorkspace.tsx',
 			'src/layout/ShellLayoutContent.tsx',
 		],
-		['TaskBoard', 'StatusSectionHeader', 'TaskRowAdapter', 'RowShell', 'BulkActionBar'],
+		[
+			'TaskBoard',
+			'StatusSectionHeader',
+			'BoardSectionHeader',
+			'BoardRowSlot',
+			'TaskRowAdapter',
+			'RowShell',
+			'RowLayout',
+			'BulkActionBar',
+		],
 		'covered-in-composition',
 		'由生产公开组件组合覆盖；虚拟化、连续选择与命令运行时不在 Lab 重写。',
 		[

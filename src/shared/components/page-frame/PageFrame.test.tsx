@@ -187,16 +187,16 @@ describe('PageFrame', () => {
 		expect(todo).toHaveFocus()
 	})
 
-	it('虚拟列表主体只提供一个真实滚动 viewport', () => {
+	it('集合主体只提供一个真实滚动 viewport', () => {
 		const { container } = render(
 			<PageFrame.Root>
-				<PageFrame.VirtualizedBody>虚拟列表</PageFrame.VirtualizedBody>
+				<PageFrame.CollectionBody>集合列表</PageFrame.CollectionBody>
 			</PageFrame.Root>,
 		)
 
 		const viewports = container.querySelectorAll('[data-scroll-container="true"]')
 		expect(viewports).toHaveLength(1)
-		expect(screen.getByText('虚拟列表')).toBeInTheDocument()
+		expect(screen.getByText('集合列表')).toBeInTheDocument()
 	})
 
 	it('FilterBar 始终位于 Toolbar 外，空 Draft 不占用纵向间隔', () => {

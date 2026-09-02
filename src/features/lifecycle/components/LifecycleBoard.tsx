@@ -1,4 +1,4 @@
-import { Alert, Button, Chip, Skeleton } from '@heroui/react'
+import { Alert, Button, Skeleton } from '@heroui/react'
 import { ContextMenu, EmptyState } from '@heroui-pro/react'
 import { ArchiveIcon, ChevronRightIcon, TrashIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
@@ -10,7 +10,16 @@ import {
 	type CollectionGridRootState,
 	type GroupedCollectionInteraction,
 } from '@/features/selection'
-import { BoardSectionContextMenu } from '@/shared/components/board'
+import {
+	BoardRowSlot,
+	BoardSectionContextMenu,
+	BoardSectionHeader,
+	COLLECTION_ROW_HEIGHT,
+	COLLECTION_ROW_SIZE,
+	COLLECTION_SECTION_HEADER_HEIGHT,
+	COLLECTION_SECTION_HEADER_SIZE,
+	getBoardRowSelectionPosition,
+} from '@/shared/components/board'
 import type { LifecycleEntry, LifecycleMode } from '@/shared/types'
 
 import type { LifecycleSection, LifecycleSectionKey } from '../model/buildLifecycleSections'
@@ -27,6 +36,7 @@ export type LifecycleBoardProps = {
 	emptyDescription: string
 	emptyActionLabel?: string
 	onEmptyAction?: () => void
+	onRetry: () => void | Promise<unknown>
 	onOpenDetail?: (entry: LifecycleEntry) => void
 }
 
@@ -40,6 +50,7 @@ export function LifecycleBoard({
 	emptyDescription,
 	emptyActionLabel,
 	onEmptyAction,
+	onRetry,
 	onOpenDetail,
 }: LifecycleBoardProps) {
 	if (status === 'idle' || status === 'loading') return <LifecycleBoardLoading />
@@ -52,6 +63,9 @@ export function LifecycleBoard({
 					<Alert.Title>{mode === 'archive' ? '读取归档失败' : '读取回收站失败'}</Alert.Title>
 					<Alert.Description>生命周期数据暂时无法读取，请稍后重试。</Alert.Description>
 				</Alert.Content>
+				<Button onPress={() => void onRetry()} size='sm' type='button' variant='danger-soft'>
+					重试
+				</Button>
 			</Alert>
 		)
 	}
@@ -81,7 +95,7 @@ export function LifecycleBoard({
 	return (
 		<CollectionGridRoot
 			ariaLabel={mode === 'archive' ? '归档列表' : '回收站列表'}
-			className='flex min-h-0 flex-1 flex-col gap-1 outline-none'
+			className='flex min-h-0 flex-1 flex-col outline-none'
 			focusIntent={collection.focusIntent}
 			interaction={collection.interaction}
 			onFocusIntentConsumed={collection.consumeFocusIntent}
@@ -134,37 +148,39 @@ function LifecycleBoardSectionBlock({
 		)
 
 	return (
-		<section className='flex flex-col gap-0.5 pb-1 last:pb-2' data-lifecycle-section={section.key}>
+		<section className='flex flex-col' data-lifecycle-section={section.key}>
 			<ContextMenu open={contextMenuOpen} onOpenChange={setContextMenuOpen}>
 				<ContextMenu.Trigger
-					className='sticky top-0 z-10 flex h-[34px] items-center gap-2 pl-3 pr-1'
+					className='sticky top-0 z-10 block'
 					onDoubleClick={() => collection.setGroupOpen(section.key, !open)}
+					style={{ height: COLLECTION_SECTION_HEADER_SIZE }}
 				>
-					<CollectionGridGroupTrigger groupKey={section.key} rootState={rootState}>
-						{({ triggerRef, onBlur }) => (
-							<Button
-								ref={triggerRef}
-								aria-label={`${open ? '折叠' : '展开'} ${section.label}`}
-								isIconOnly
-								size='sm'
-								variant='ghost'
-								onBlur={onBlur}
-								onPress={() => collection.setGroupOpen(section.key, !open)}
-							>
-								<ChevronRightIcon className={open ? 'size-3.5 rotate-90' : 'size-3.5'} />
-							</Button>
-						)}
-					</CollectionGridGroupTrigger>
-					<LifecycleModeIcon mode={mode} />
-					<span className='min-w-0 truncate text-sm font-semibold'>{section.label}</span>
-					<Chip size='sm' variant='tertiary'>
-						{section.items.length}
-					</Chip>
-					{selectedCount > 0 ? (
-						<Chip color='accent' size='sm' variant='soft'>
-							已选 {selectedCount}
-						</Chip>
-					) : null}
+					<BoardSectionHeader
+						count={section.items.length}
+						label={section.label}
+						leading={
+							<>
+								<CollectionGridGroupTrigger groupKey={section.key} rootState={rootState}>
+									{({ triggerRef, onBlur }) => (
+										<Button
+											ref={triggerRef}
+											aria-expanded={open}
+											aria-label={`${open ? '折叠' : '展开'} ${section.label}`}
+											isIconOnly
+											onBlur={onBlur}
+											onPress={() => collection.setGroupOpen(section.key, !open)}
+											size='sm'
+											variant='ghost'
+										>
+											<ChevronRightIcon className={open ? 'size-3.5 rotate-90' : 'size-3.5'} />
+										</Button>
+									)}
+								</CollectionGridGroupTrigger>
+								<LifecycleModeIcon mode={mode} />
+							</>
+						}
+						selectedCount={selectedCount}
+					/>
 				</ContextMenu.Trigger>
 				<BoardSectionContextMenu
 					onCollapse={() => collection.setGroupOpen(section.key, false)}
@@ -179,39 +195,47 @@ function LifecycleBoardSectionBlock({
 			</ContextMenu>
 
 			{open ? (
-				<div className='flex flex-col gap-0.5' role='presentation'>
-					{section.items.map((entry) => {
+				<div className='flex flex-col' role='presentation'>
+					{section.items.map((entry, index) => {
 						const isSelected = collection.interaction.selectedKeys.has(entry.id)
+						const selectionPosition = getBoardRowSelectionPosition(
+							entry.id,
+							section.items[index - 1]?.id,
+							section.items[index + 1]?.id,
+							collection.interaction.selectedKeys,
+						)
 						return (
-							<CollectionGridRow
-								interaction={collection.interaction}
-								itemKey={entry.id}
-								key={entry.id}
-								rootState={rootState}
-							>
-								{({ rowProps, gridCellProps, rowRef, onContextMenuOpenChange }) => (
-									<LifecycleRowAdapter
-										actions={{
-											onOpenDetail,
-											onToggleSelected: () => collection.interaction.toggleSelection(entry.id),
-										}}
-										contextEntries={
-											isSelected && contextEntries.length > 1 ? contextEntries : undefined
-										}
-										entry={entry}
-										gridCellProps={gridCellProps}
-										mode={mode}
-										onContextMenuOpenChange={onContextMenuOpenChange}
-										rowProps={rowProps}
-										rowRef={rowRef}
-										rowState={{
-											focusSource: rootState.focusedKey === entry.id ? rootState.focusSource : null,
-											isFocused: rootState.focusedKey === entry.id,
-											isSelected,
-										}}
-									/>
-								)}
-							</CollectionGridRow>
+							<BoardRowSlot key={entry.id} selectionPosition={selectionPosition}>
+								<CollectionGridRow
+									interaction={collection.interaction}
+									itemKey={entry.id}
+									rootState={rootState}
+								>
+									{({ rowProps, gridCellProps, rowRef, onContextMenuOpenChange }) => (
+										<LifecycleRowAdapter
+											actions={{
+												onOpenDetail,
+												onToggleSelected: () => collection.interaction.toggleSelection(entry.id),
+											}}
+											contextEntries={
+												isSelected && contextEntries.length > 1 ? contextEntries : undefined
+											}
+											entry={entry}
+											gridCellProps={gridCellProps}
+											mode={mode}
+											onContextMenuOpenChange={onContextMenuOpenChange}
+											rowProps={rowProps}
+											rowRef={rowRef}
+											rowState={{
+												focusSource:
+													rootState.focusedKey === entry.id ? rootState.focusSource : null,
+												isFocused: rootState.focusedKey === entry.id,
+												isSelected,
+											}}
+										/>
+									)}
+								</CollectionGridRow>
+							</BoardRowSlot>
 						)
 					})}
 				</div>
@@ -222,12 +246,24 @@ function LifecycleBoardSectionBlock({
 
 function LifecycleBoardLoading() {
 	return (
-		<div aria-busy='true' aria-label='正在读取生命周期数据' className='flex flex-col gap-2'>
+		<div aria-busy='true' aria-label='正在读取生命周期数据' className='flex flex-col'>
 			{Array.from({ length: 2 }, (_, sectionIndex) => (
-				<div className='flex flex-col gap-1' key={sectionIndex}>
-					<Skeleton animationType='none' className='h-9 w-40' />
+				<div className='flex flex-col' key={sectionIndex}>
+					<div style={{ height: COLLECTION_SECTION_HEADER_SIZE }}>
+						<Skeleton
+							animationType='none'
+							className='w-40'
+							style={{ height: COLLECTION_SECTION_HEADER_HEIGHT }}
+						/>
+					</div>
 					{Array.from({ length: 3 }, (_, rowIndex) => (
-						<Skeleton animationType='none' className='h-11 w-full' key={rowIndex} />
+						<div key={rowIndex} style={{ height: COLLECTION_ROW_SIZE }}>
+							<Skeleton
+								animationType='none'
+								className='w-full'
+								style={{ height: COLLECTION_ROW_HEIGHT }}
+							/>
+						</div>
 					))}
 				</div>
 			))}

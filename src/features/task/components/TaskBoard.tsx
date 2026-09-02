@@ -17,11 +17,6 @@ import { defaultRangeExtractor, useVirtualizer, type Range } from '@tanstack/rea
 import { registerTaskBoardFocusTaskId, registerTaskBoardScrollToTaskId } from './taskBoardScroll'
 import { useScrollAreaViewport } from '@/shared/components/AppScrollArea'
 import {
-	TASK_BOARD_HEADER_HEIGHT,
-	TASK_BOARD_HEADER_SIZE,
-	TASK_BOARD_ITEM_GAP,
-	TASK_BOARD_ROW_HEIGHT,
-	TASK_BOARD_ROW_SIZE,
 	buildTaskBoardExtent,
 	buildTaskBoardItemOffsets,
 	listTaskBoardStickyIndexes,
@@ -37,8 +32,16 @@ import {
 	type CollectionFocusIntent,
 	type CollectionInteraction,
 } from '@/features/selection'
-import { BoardSectionContextMenu } from '@/shared/components/board'
-import type { RowSelectionGroupPosition } from '@/shared/components/row'
+import {
+	BoardRowSlot,
+	BoardSectionContextMenu,
+	BoardSectionHeader,
+	COLLECTION_ROW_HEIGHT,
+	COLLECTION_ROW_SIZE,
+	COLLECTION_SECTION_HEADER_HEIGHT,
+	COLLECTION_SECTION_HEADER_SIZE,
+	getBoardRowSelectionPosition,
+} from '@/shared/components/board'
 import { useDialogStore } from '@/features/shell-dialogs'
 import type { TaskDisplayPropertyKey } from '@/features/display-options'
 import { type TaskPriorityValue } from '@/features/task/model/taskPriority'
@@ -55,16 +58,6 @@ import { ListTodoIcon, PlusIcon, TriangleIcon } from 'lucide-react'
 import { ActionTooltip, OverflowTooltip } from '@/shared/components/tooltip'
 import { cn } from '@/shared/lib/utils'
 
-const TASK_BOARD_SELECTION_GROUP_POSITION_CLASS: Record<RowSelectionGroupPosition, string> = {
-	single: 'rounded-lg',
-	first: 'rounded-none rounded-t-lg',
-	middle: 'rounded-none',
-	last: 'rounded-none rounded-b-lg',
-}
-
-const TASK_BOARD_SECTION_HEADER_CLASS =
-	'relative z-10 flex items-center gap-2 rounded-md bg-default pl-3 pr-1'
-
 export type TaskBoardProps = {
 	tasks: TaskListItem[]
 	flatItems: readonly TaskBoardFlatItem[]
@@ -79,6 +72,7 @@ export type TaskBoardProps = {
 	emptyDescription?: string
 	emptyActionLabel?: string
 	onEmptyAction: () => void
+	onRetry: () => void | Promise<unknown>
 	onSectionOpenChange: (groupKey: string, status: TaskStatus, open: boolean) => void
 	onCollapseAll: () => void
 	onExpandAll: () => void
@@ -90,7 +84,12 @@ export type TaskBoardProps = {
 	onToggleTaskStatus: (task: TaskListItem) => Promise<void>
 	suppressFocusIndicator?: boolean
 	projectOptions?: Array<{ id: string; name: string; spaceId: string }>
-	spaces?: Array<{ id: string; name: string; iconKey?: string; colorKey?: string }>
+	spaces?: Array<{
+		id: string
+		name: string
+		iconKey?: string
+		colorKey?: string
+	}>
 	onSelectPlacement?: (task: TaskListItem, target: TaskPlacementTarget) => void
 	showProjectCellOptions?: boolean
 	showSpaceLabel?: boolean
@@ -108,11 +107,9 @@ export type TaskBoardProps = {
 	loadedCount?: number
 }
 
-export { TASK_BOARD_ROW_SIZE } from '@/features/task/model/taskBoardModel'
-
 /**
  * 任务 Board：状态分区 sticky + 虚拟行。
- * 几何见 taskBoardModel；滚动容器来自 AppScrollArea context。
+ * 几何见 collectionGeometry；滚动容器来自 AppScrollArea context。
  */
 export function TaskBoard({
 	tasks,
@@ -128,6 +125,7 @@ export function TaskBoard({
 	emptyDescription,
 	emptyActionLabel,
 	onEmptyAction,
+	onRetry,
 	onSectionOpenChange,
 	onCollapseAll,
 	onExpandAll,
@@ -284,7 +282,9 @@ export function TaskBoard({
 		getScrollElement: () => scrollViewportRef?.current ?? null,
 		estimateSize: (index) => {
 			if (index < flatItems.length) {
-				return flatItems[index]?.kind === 'header' ? TASK_BOARD_HEADER_SIZE : TASK_BOARD_ROW_SIZE
+				return flatItems[index]?.kind === 'header'
+					? COLLECTION_SECTION_HEADER_SIZE
+					: COLLECTION_ROW_SIZE
 			}
 			return spacerSizeRef.current
 		},
@@ -477,7 +477,7 @@ export function TaskBoard({
 	)
 
 	const renderTaskRow = useCallback(
-		(task: TaskListItem, selectionGroupPosition?: RowSelectionGroupPosition) => {
+		(task: TaskListItem) => {
 			// 未多选时不传 contextTasks，避免每帧 [task] 新数组打穿 memo
 			const contextTasks = selectedTaskIdSet.has(task.id) ? selectedTasks : undefined
 			return (
@@ -498,7 +498,6 @@ export function TaskBoard({
 						isSelected: selectedTaskIdSet.has(task.id),
 						suppressFocusIndicator,
 					}}
-					selectionGroupPosition={selectionGroupPosition}
 					showSpaceLabel={showSpaceLabel}
 					task={task}
 					visibleProperties={visibleProperties}
@@ -534,6 +533,7 @@ export function TaskBoard({
 			!hasNextPage ||
 			!onFetchNextPage ||
 			isFetchingNextPage ||
+			fetchNextPageError ||
 			lastVirtualIndex < 0
 		) {
 			return
@@ -541,7 +541,15 @@ export function TaskBoard({
 		if (lastVirtualIndex >= flatItems.length - 8 || lastVirtualIndex >= flatItems.length) {
 			onFetchNextPage()
 		}
-	}, [flatItems.length, hasNextPage, isFetchingNextPage, lastVirtualIndex, onFetchNextPage, status])
+	}, [
+		fetchNextPageError,
+		flatItems.length,
+		hasNextPage,
+		isFetchingNextPage,
+		lastVirtualIndex,
+		onFetchNextPage,
+		status,
+	])
 
 	const stickyHeaderItem = flatItems[stickyActiveIndex]
 	const stickyHeader = stickyHeaderItem?.kind === 'header' ? stickyHeaderItem : null
@@ -567,6 +575,9 @@ export function TaskBoard({
 					<Alert.Title>读取任务失败</Alert.Title>
 					<Alert.Description>任务数据暂时无法读取，请稍后重试。</Alert.Description>
 				</Alert.Content>
+				<Button onPress={() => void onRetry()} size='sm' type='button' variant='danger-soft'>
+					重试
+				</Button>
 			</Alert>
 		)
 	}
@@ -636,7 +647,7 @@ export function TaskBoard({
 				>
 					<div
 						style={{
-							height: TASK_BOARD_HEADER_HEIGHT,
+							height: COLLECTION_SECTION_HEADER_HEIGHT,
 							overflow: 'hidden',
 							position: 'relative',
 						}}
@@ -670,7 +681,7 @@ export function TaskBoard({
 					: flatItems.map((item, index) => ({
 							index,
 							start: itemOffsets[index] ?? 0,
-							size: item.kind === 'header' ? TASK_BOARD_HEADER_SIZE : TASK_BOARD_ROW_SIZE,
+							size: item.kind === 'header' ? COLLECTION_SECTION_HEADER_SIZE : COLLECTION_ROW_SIZE,
 							key: item.key,
 						}))
 				).map(({ index, start, size, key }) => {
@@ -699,11 +710,17 @@ export function TaskBoard({
 					// 下一个即将顶替的 header 提高层级，保证从下方盖过被顶走的浮层
 					const isIncomingSticky =
 						item?.kind === 'header' && nextStickyIndex === index && stickyStuck
-					const selectionGroupPosition = getTaskBoardSelectionGroupPosition(
-						flatItems,
-						index,
-						selectedTaskIdSet,
-					)
+					const previousItem = flatItems[index - 1]
+					const nextItem = flatItems[index + 1]
+					const selectionPosition =
+						item?.kind === 'row'
+							? getBoardRowSelectionPosition(
+									item.task.id,
+									previousItem?.kind === 'row' ? previousItem.task.id : undefined,
+									nextItem?.kind === 'row' ? nextItem.task.id : undefined,
+									selectedTaskIdSet,
+								)
+							: undefined
 
 					return (
 						<div
@@ -736,23 +753,9 @@ export function TaskBoard({
 							{!item ? null : item.kind === 'header' ? (
 								renderHeader(item, !isHiddenStickySource)
 							) : (
-								<div
-									className={cn(
-										selectionGroupPosition && 'overflow-hidden bg-accent-soft',
-										selectionGroupPosition &&
-											TASK_BOARD_SELECTION_GROUP_POSITION_CLASS[selectionGroupPosition],
-									)}
-									data-task-board-selection-group={selectionGroupPosition}
-									style={{
-										height:
-											TASK_BOARD_ROW_HEIGHT +
-											(selectionGroupPosition === 'first' || selectionGroupPosition === 'middle'
-												? TASK_BOARD_ITEM_GAP
-												: 0),
-									}}
-								>
-									{renderTaskRow(item.task, selectionGroupPosition)}
-								</div>
+								<BoardRowSlot selectionPosition={selectionPosition}>
+									{renderTaskRow(item.task)}
+								</BoardRowSlot>
 							)}
 						</div>
 					)
@@ -786,25 +789,32 @@ export function TaskBoard({
 
 function TaskBoardLoadingState() {
 	return (
-		<div aria-busy='true' className='flex min-h-0 flex-1 flex-col gap-0.5'>
+		<div aria-busy='true' aria-label='正在读取任务' className='flex min-h-0 flex-1 flex-col'>
 			{Array.from({ length: 2 }).map((_, sectionIndex) => (
-				<div className='flex flex-col gap-0.5' key={`board-loading-section-${sectionIndex}`}>
-					<div
-						className='sticky top-0 z-10 flex items-center gap-2 pl-3 pr-1'
-						style={{ height: TASK_BOARD_HEADER_HEIGHT }}
-					>
-						<Skeleton className='size-3' />
-						<Skeleton className='h-3 w-24' />
+				<div className='flex flex-col' key={`board-loading-section-${sectionIndex}`}>
+					<div className='sticky top-0 z-10' style={{ height: COLLECTION_SECTION_HEADER_SIZE }}>
+						<div
+							className='flex items-center gap-2 pl-3 pr-1'
+							style={{ height: COLLECTION_SECTION_HEADER_HEIGHT }}
+						>
+							<Skeleton className='size-3' />
+							<Skeleton className='h-3 w-24' />
+						</div>
 					</div>
-					<div className='flex flex-col gap-0.5'>
+					<div className='flex flex-col'>
 						{Array.from({ length: sectionIndex === 0 ? 4 : 3 }).map((_, rowIndex) => (
 							<div
-								className='flex h-11 min-w-0 items-center gap-3 px-3'
 								key={`board-loading-row-${sectionIndex}-${rowIndex}`}
+								style={{ height: COLLECTION_ROW_SIZE }}
 							>
-								<Skeleton className='size-4 shrink-0' />
-								<Skeleton className='h-3 min-w-0 flex-1' />
-								<Skeleton className='h-3 w-12 shrink-0' />
+								<div
+									className='flex min-w-0 items-center gap-3 px-3'
+									style={{ height: COLLECTION_ROW_HEIGHT }}
+								>
+									<Skeleton className='size-4 shrink-0' />
+									<Skeleton className='h-3 min-w-0 flex-1' />
+									<Skeleton className='h-3 w-12 shrink-0' />
+								</div>
 							</div>
 						))}
 					</div>
@@ -927,25 +937,6 @@ function TaskBoardGridRow({
 	)
 }
 
-function getTaskBoardSelectionGroupPosition(
-	items: readonly TaskBoardFlatItem[],
-	index: number,
-	selectedIdSet: ReadonlySet<string>,
-): RowSelectionGroupPosition | undefined {
-	const item = items[index]
-	if (item?.kind !== 'row' || !selectedIdSet.has(item.task.id)) {
-		return undefined
-	}
-
-	const previous = items[index - 1]
-	const next = items[index + 1]
-	const joinsPrevious = previous?.kind === 'row' && selectedIdSet.has(previous.task.id)
-	const joinsNext = next?.kind === 'row' && selectedIdSet.has(next.task.id)
-
-	if (joinsPrevious) return joinsNext ? 'middle' : 'last'
-	return joinsNext ? 'first' : 'single'
-}
-
 function StatusSectionHeader({
 	status,
 	groupKey,
@@ -1018,94 +1009,86 @@ function StatusSectionHeader({
 		[onSetSectionSelection, sectionIds],
 	)
 
-	// 不用 CSS sticky：虚拟列表的顶替由外层浮层 + pushOffset 负责，这里只保留视觉 surface
-	const headerContent = (
-		<>
-			{status && onOpenChange ? (
-				<ActionTooltip
-					isOpen={toggleTooltipOpen && !contextMenuOpen}
-					label={open ? `折叠 ${label}` : `展开 ${label}`}
-					onOpenChange={(nextOpen) => setToggleTooltipOpen(nextOpen && !contextMenuOpen)}
+	const toggleAction =
+		status && onOpenChange ? (
+			<ActionTooltip
+				isOpen={toggleTooltipOpen && !contextMenuOpen}
+				label={open ? `折叠 ${label}` : `展开 ${label}`}
+				onOpenChange={(nextOpen) => setToggleTooltipOpen(nextOpen && !contextMenuOpen)}
+			>
+				<Button
+					ref={groupTriggerRef}
+					aria-expanded={open}
+					aria-label={open ? `折叠 ${label}` : `展开 ${label}`}
+					data-collection-group-key={groupKey}
+					isIconOnly
+					onBlur={() => onGroupTriggerBlur(groupKey)}
+					onPress={() => {
+						setToggleTooltipOpen(false)
+						onOpenChange(!open)
+					}}
+					size='sm'
+					type='button'
+					variant='ghost'
 				>
-					<Button
-						ref={groupTriggerRef}
-						aria-expanded={open}
-						aria-label={open ? `折叠 ${label}` : `展开 ${label}`}
-						data-collection-group-key={groupKey}
-						isIconOnly
-						onPress={() => {
-							setToggleTooltipOpen(false)
-							onOpenChange(!open)
-						}}
-						onBlur={() => onGroupTriggerBlur(groupKey)}
-						size='sm'
-						type='button'
-						variant='ghost'
-					>
-						<span className='inline-flex size-3 shrink-0 items-center justify-center' data-chevron>
-							<TriangleIcon
-								className={cn('size-1.5 text-muted', open ? 'rotate-180' : 'rotate-90')}
-								fill='currentColor'
-							/>
-						</span>
-					</Button>
-				</ActionTooltip>
-			) : null}
-			<div className='flex min-w-0 flex-1 items-center gap-2 px-1 text-xs font-semibold text-foreground'>
-				{status ? <TaskStatusIndicator status={status} /> : null}
-				{contextMenuOpen ? (
+					<span className='inline-flex size-3 shrink-0 items-center justify-center' data-chevron>
+						<TriangleIcon
+							className={cn('size-1.5 text-muted', open ? 'rotate-180' : 'rotate-90')}
+							fill='currentColor'
+						/>
+					</span>
+				</Button>
+			</ActionTooltip>
+		) : null
+	const createAction = status ? (
+		<ActionTooltip
+			isOpen={createTooltipOpen && !contextMenuOpen}
+			label={`在 ${label} 中创建任务`}
+			onOpenChange={(nextOpen) => setCreateTooltipOpen(nextOpen && !contextMenuOpen)}
+		>
+			<Button
+				aria-label={`在 ${label} 中创建任务`}
+				isIconOnly
+				onPress={() => {
+					setCreateTooltipOpen(false)
+					openTaskCreateDialog({ projectId: createProjectId, status })
+				}}
+				size='sm'
+				type='button'
+				variant='ghost'
+			>
+				<PlusIcon />
+			</Button>
+		</ActionTooltip>
+	) : null
+	const headerContent = (
+		<BoardSectionHeader
+			count={count}
+			label={
+				contextMenuOpen ? (
 					<span className='min-w-0 truncate'>{label}</span>
 				) : (
 					<OverflowTooltip className='min-w-0' content={label}>
 						{label}
 					</OverflowTooltip>
-				)}
-				<Chip className='ml-1' size='sm' variant='tertiary'>
-					{count}
-				</Chip>
-				{selectedCount > 0 ? (
-					<Chip color='accent' size='sm' variant='soft'>
-						已选 {selectedCount}
-					</Chip>
-				) : null}
-			</div>
-			{status ? (
-				<ActionTooltip
-					isOpen={createTooltipOpen && !contextMenuOpen}
-					label={`在 ${label} 中创建任务`}
-					onOpenChange={(nextOpen) => setCreateTooltipOpen(nextOpen && !contextMenuOpen)}
-				>
-					<Button
-						aria-label={`在 ${label} 中创建任务`}
-						isIconOnly
-						onPress={() => {
-							setCreateTooltipOpen(false)
-							openTaskCreateDialog({ projectId: createProjectId, status })
-						}}
-						size='sm'
-						type='button'
-						variant='ghost'
-					>
-						<PlusIcon />
-					</Button>
-				</ActionTooltip>
-			) : (
-				<span className='pr-1' />
-			)}
-		</>
+				)
+			}
+			leading={
+				toggleAction || status ? (
+					<>
+						{toggleAction}
+						{status ? <TaskStatusIndicator status={status} /> : null}
+					</>
+				) : undefined
+			}
+			onFocus={(event) => event.stopPropagation()}
+			selectedCount={selectedCount}
+			trailing={createAction}
+		/>
 	)
 
 	if (!onOpenChange) {
-		return (
-			<div
-				className={TASK_BOARD_SECTION_HEADER_CLASS}
-				data-board-section-header='true'
-				style={{ height: TASK_BOARD_HEADER_HEIGHT }}
-				onFocus={(event) => event.stopPropagation()}
-			>
-				{headerContent}
-			</div>
-		)
+		return headerContent
 	}
 
 	return (
@@ -1121,15 +1104,11 @@ function StatusSectionHeader({
 				open={contextMenuOpen}
 			>
 				<ContextMenu.Trigger
-					className={TASK_BOARD_SECTION_HEADER_CLASS}
-					data-board-section-header='true'
-					style={{ height: TASK_BOARD_HEADER_HEIGHT }}
 					onDoubleClick={() => {
 						setToggleTooltipOpen(false)
 						setCreateTooltipOpen(false)
 						onOpenChange(!open)
 					}}
-					onFocus={(event) => event.stopPropagation()}
 				>
 					{headerContent}
 				</ContextMenu.Trigger>

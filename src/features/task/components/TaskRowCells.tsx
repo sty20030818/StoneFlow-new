@@ -5,14 +5,6 @@ import { ActionTooltip, DisabledActionTooltip, OverflowTooltip } from '@/shared/
 import { formatShortDate } from '@/shared/lib/date'
 import { cn } from '@/shared/lib/utils'
 
-type StopEvent = {
-	stopPropagation: () => void
-}
-
-function stopRowEventPropagation(event: StopEvent) {
-	event.stopPropagation()
-}
-
 export function TaskRowSelectionCell({
 	ariaLabel,
 	checked,
@@ -36,8 +28,6 @@ export function TaskRowSelectionCell({
 			isDisabled={disabled}
 			isSelected={checked}
 			onChange={onCheckedChange}
-			onClick={stopRowEventPropagation}
-			onPointerDownCapture={stopRowEventPropagation}
 		>
 			<Checkbox.Content>
 				<Checkbox.Control>
@@ -45,20 +35,6 @@ export function TaskRowSelectionCell({
 				</Checkbox.Control>
 			</Checkbox.Content>
 		</Checkbox>
-	)
-	const renderCell = (content: ReactNode) => (
-		<span
-			className={cn(
-				'flex size-5 shrink-0 items-center justify-center',
-				checked
-					? 'opacity-100'
-					: 'opacity-0 group-hover/row-shell:opacity-100 group-has-focus-visible/row-shell:opacity-100',
-			)}
-			data-slot='row-selection-cell'
-			onKeyDownCapture={stopRowEventPropagation}
-		>
-			{content}
-		</span>
 	)
 
 	if (disabled) {
@@ -69,15 +45,15 @@ export function TaskRowSelectionCell({
 				reason={disabledReason}
 				shortcut={tooltipShortcut}
 			>
-				{renderCell(checkbox)}
+				{checkbox}
 			</DisabledActionTooltip>
 		)
 	}
 
-	return renderCell(
+	return (
 		<ActionTooltip label={label} shortcut={tooltipShortcut}>
 			{checkbox}
-		</ActionTooltip>,
+		</ActionTooltip>
 	)
 }
 

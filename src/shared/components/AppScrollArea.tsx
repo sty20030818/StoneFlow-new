@@ -8,7 +8,7 @@ import {
 	type RefObject,
 } from 'react'
 
-/** 真实滚动 viewport ref；虚拟列表 / sticky 通过此 context 获取，禁止 querySelector */
+/** 集合页真实滚动 viewport ref；virtualizer / sticky 通过此 context 获取，禁止 querySelector。 */
 const ScrollAreaViewportContext = createContext<RefObject<HTMLDivElement | null> | null>(null)
 
 export function useScrollAreaViewport(): RefObject<HTMLDivElement | null> | null {
@@ -20,8 +20,8 @@ type AppScrollAreaProps = {
 }
 
 /**
- * AppScrollArea：虚拟内容的唯一真实滚动 viewport。
- * 通过 ScrollAreaViewportContext 暴露 viewport ref（TaskBoard virtualizer 使用）。
+ * AppScrollArea：集合内容的唯一真实滚动 viewport。
+ * 通过 ScrollAreaViewportContext 暴露 viewport ref，普通与虚拟集合共用同一 inset/overflow 合同。
  */
 export const AppScrollArea = forwardRef<HTMLDivElement, AppScrollAreaProps>(
 	({ children }, forwardedRef) => {

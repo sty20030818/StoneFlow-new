@@ -43,7 +43,7 @@ export function TaskWorkspace({
 					pills={views}
 					selectedKey={selectedViewKey}
 				/>
-				<PageFrame.VirtualizedBody>{children}</PageFrame.VirtualizedBody>
+				<PageFrame.CollectionBody>{children}</PageFrame.CollectionBody>
 			</PageFrame.Root>
 		</ListFilterUiProvider>
 	)

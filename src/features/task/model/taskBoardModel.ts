@@ -5,16 +5,13 @@
 
 import type { TaskListItem, TaskStatus } from '@/shared/types'
 
+import {
+	COLLECTION_ROW_SIZE,
+	COLLECTION_SECTION_HEADER_SIZE,
+} from '@/shared/components/collectionGeometry'
+
 import { TASK_BOARD_STATUS_ORDER } from './taskBoardOrder'
 import { formatTaskStatusLabel } from './taskStatus'
-
-export const TASK_BOARD_ROW_HEIGHT = 44
-export const TASK_BOARD_HEADER_HEIGHT = 36
-export const TASK_BOARD_ITEM_GAP = 2
-/** 行占位（含 gap） */
-export const TASK_BOARD_ROW_SIZE = TASK_BOARD_ROW_HEIGHT + TASK_BOARD_ITEM_GAP
-/** header 占位（含 gap） */
-export const TASK_BOARD_HEADER_SIZE = TASK_BOARD_HEADER_HEIGHT + TASK_BOARD_ITEM_GAP
 
 export type TaskBoardFlatHeader = {
 	kind: 'header'
@@ -121,7 +118,7 @@ export function buildTaskBoardItemOffsets(flatItems: readonly TaskBoardFlatItem[
 	let offset = 0
 	for (const item of flatItems) {
 		offsets.push(offset)
-		offset += item.kind === 'header' ? TASK_BOARD_HEADER_SIZE : TASK_BOARD_ROW_SIZE
+		offset += item.kind === 'header' ? COLLECTION_SECTION_HEADER_SIZE : COLLECTION_ROW_SIZE
 	}
 	return offsets
 }
@@ -129,7 +126,7 @@ export function buildTaskBoardItemOffsets(flatItems: readonly TaskBoardFlatItem[
 export function measureTaskBoardFlatSize(flatItems: readonly TaskBoardFlatItem[]): number {
 	let size = 0
 	for (const item of flatItems) {
-		size += item.kind === 'header' ? TASK_BOARD_HEADER_SIZE : TASK_BOARD_ROW_SIZE
+		size += item.kind === 'header' ? COLLECTION_SECTION_HEADER_SIZE : COLLECTION_ROW_SIZE
 	}
 	return size
 }
@@ -175,7 +172,7 @@ export function buildTaskBoardExtent({
 	const knownTotal = typeof totalCount === 'number' ? totalCount : null
 	const unloadedRowCount =
 		hasNextPage && knownTotal != null ? Math.max(0, knownTotal - Math.max(0, loadedServerCount)) : 0
-	const spacerSizePx = unloadedRowCount * TASK_BOARD_ROW_SIZE
+	const spacerSizePx = unloadedRowCount * COLLECTION_ROW_SIZE
 	const contentHeightPx = flatSizePx + spacerSizePx
 	return { contentHeightPx, spacerSizePx, unloadedRowCount }
 }
@@ -195,7 +192,7 @@ export function buildTaskBoardStickyPush({
 	stickyIndexes,
 	itemOffsets,
 	scrollTop,
-	headerSize = TASK_BOARD_HEADER_SIZE,
+	headerSize = COLLECTION_SECTION_HEADER_SIZE,
 }: {
 	stickyIndexes: readonly number[]
 	itemOffsets: readonly number[]

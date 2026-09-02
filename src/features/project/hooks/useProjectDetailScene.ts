@@ -91,6 +91,7 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 		source: {
 			items: project ? taskList.items : [],
 			status: project ? taskList.status : 'ready',
+			onRetry: taskList.refetch,
 		},
 		displayPageKey: PROJECT_DETAIL_DISPLAY_PAGE_KEY,
 		display,

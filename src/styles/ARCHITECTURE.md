@@ -1,7 +1,7 @@
 # StoneFlow 视觉样式架构
 
 > 版本：v4
-> 最后更新：2026-09-01
+> 最后更新：2026-09-02
 > 作用：定义 `src/styles` 的现行合同。
 
 ## 1. 一句话心智
@@ -148,9 +148,11 @@ Form、RadioGroup、Toolbar、Surface、Resizable、ScrollShadow 与 Trigger 等
 
 跨 Feature 共享必须通过 deletion test：删除后，复杂行为或产品合同会重新扩散到多个调用方，才值得保留。
 
-- `PageFrame` 统一页头、工具栏、普通/虚拟 Body 与滚动骨架；页级图标操作由真实页面直接组合 HeroUI Button 与 `ActionTooltip`。
+- `PageFrame` 统一页头、工具栏、普通 `Body` 与集合 `CollectionBody`；`CollectionBody` 通过 `AppScrollArea` 提供唯一真实 viewport，页级图标操作由真实页面直接组合 HeroUI Button 与 `ActionTooltip`。
 - `PageFrame.Toolbar` 直接组合 HeroUI `Toolbar`，只保留产品槽位、外部布局与 FilterBar 的区域顺序，不重写工具条焦点模型。
-- `RowShell` 统一行根结构、交互状态组合与选择组语义；Board header 归 Board，TaskBoard 外层选择组与虚拟几何归 TaskBoard，不再导出 class map。
+- `RowShell` 只统一可访问交互根与 active / selected / hover / focus / pending 状态；`RowLayout` 统一 `selection`、`leading`、`primary`、`properties`、`actions` 五槽排版，并在 selection / actions 槽隔离 Row activation 事件。
+- `BoardRowSlot` 是 section 内连续选择形状与 `44px + 2px` Row 占位的唯一 Owner；`BoardSectionHeader` 只统一 `36px` Header anatomy。邻接计算、sticky/absolute positioning、折叠、Context Menu 与领域动作归各 Board。
+- `shared/components/collectionGeometry.ts` 是 Row `44px`、Header `36px`、item gap `2px` 的唯一产品几何事实源；`components.css` 只渲染 `RowShell` 状态皮肤与 `BoardRowSlot` 暴露的连续选择状态，不复制数值或邻接算法。
 - Task Detail 只有一个生产 owner，其 Header/Footer/PageLayout/Section/SaveStatus 与滚动结构均由 task feature 持有。
 - `AppScrollArea` 只封装真实 viewport 与 ref context；滚动由浏览器执行，外观直接复用 HeroUI Styles 的 `scrollbar` utility。
 - `ActionTooltip` 隐藏 React Aria trigger props/ref 合并与快捷键展示行为。

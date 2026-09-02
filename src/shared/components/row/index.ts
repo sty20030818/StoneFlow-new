@@ -1,1 +1,2 @@
-export { RowShell, type RowSelectionGroupPosition } from './RowShell'
+export { RowLayout } from './RowLayout'
+export { RowShell } from './RowShell'

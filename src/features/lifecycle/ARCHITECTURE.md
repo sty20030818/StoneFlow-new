@@ -1,6 +1,6 @@
 # lifecycle · 归档 / 回收站编排
 
-> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-08-19
+> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-09-02
 
 ---
 
@@ -10,7 +10,7 @@
 routes 薄页
   → LifecycleList（薄壳）
   → useLifecycleScene(mode)（查询 / 分组 / 唯一 collection owner）
-  → PageFrame + LifecycleBoard
+  → PageFrame.CollectionBody + LifecycleBoard
 
 写路径
   → api 按 entityType 委托 task / project / space **public**
@@ -73,6 +73,8 @@ src/features/lifecycle/
 | page-frame | 页面组合纯框架；Board 归本域 |
 | layout | badges 用 `useLifecycleEntriesQuery`；**禁**本域 → layout |
 | routes | 极薄：只挂 `LifecycleList mode` |
+
+Archive 与 Trash 通过 `PageFrame.CollectionBody` 共享唯一真实 viewport。`LifecycleBoard` 继续拥有领域 section model、邻接、折叠、Context Menu 与焦点语义；与 Project 的共同知识止于 `BoardRowSlot` 和 `BoardSectionHeader`，不建立参数透传型通用 Board 或 `GroupedBoardSection`。Lifecycle scene 用 `isLoadingError` 区分初始失败，并把当前 query 的真实 `refetch` 接到 Board `onRetry`。
 
 ---
 

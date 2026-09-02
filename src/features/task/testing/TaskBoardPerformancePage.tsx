@@ -290,6 +290,7 @@ export function TaskBoardPerformancePage() {
 										onExpandAll={noop}
 										onFetchNextPage={handleFetchNextPage}
 										onFocusIntentConsumed={noop}
+										onRetry={noop}
 										onSectionOpenChange={noop}
 										onToggleTaskStatus={noopAsync}
 										onUpdateTaskPriority={noopAsync}

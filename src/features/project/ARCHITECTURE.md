@@ -1,6 +1,6 @@
 # project · 项目域
 
-> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-08-19
+> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-09-02
 
 ---
 
@@ -79,10 +79,13 @@ src/features/project/
 | bulk-action | 引擎在 bulk-action；本域贡献 actions/adapter |
 | command | 经 `registerProjectCommands` 注入 handlers |
 | page-frame | 详情页组合纯页面框架；Board 走本域 / task public |
+| shared row / board | Project Adapter 拥有领域内容与动作；共享层只提供 Row 状态壳、五槽排版、连续选择占位、Section Header anatomy 与固定集合几何 |
 | shell-dialogs | 创建对话框状态在壳；本域只出表单内容 |
 | project-overview | 薄 scene；只依赖本域 public |
 | layout | 侧栏/options 数据走 public；**禁**本域 → layout |
 | navigation | 换页 path-only intent；详情存在性校验走本域 public/api |
+
+`ProjectBoard` 继续拥有领域 section model、邻接、折叠、Context Menu 与焦点语义；与 Lifecycle 的共同知识止于 `BoardRowSlot` 和 `BoardSectionHeader`，不建立参数透传型通用 Board 或 `GroupedBoardSection`。Project Overview 的初始查询失败由 scene 用 `isLoadingError` 判断，并把 query owner 的真实 `refetch` 接到 Board `onRetry`。
 
 ---
 

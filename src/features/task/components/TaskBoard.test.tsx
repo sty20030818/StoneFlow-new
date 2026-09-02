@@ -24,7 +24,6 @@ import {
 	TASK_BOARD_STATUS_ORDER,
 	orderTasksByTaskBoardVisualOrder,
 } from '@/features/task/model/taskBoardOrder'
-import type { RowSelectionGroupPosition } from '@/shared/components/row'
 import { AppScrollArea } from '@/shared/components/AppScrollArea'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
 import { renderWithInteractionProviders } from '@/test/TestInteractionProviders'
@@ -40,7 +39,6 @@ vi.mock('@/features/task/components/TaskRowAdapter', () => ({
 		rowRef,
 		rowState,
 		task,
-		selectionGroupPosition,
 		onContextMenuOpenChange,
 	}: {
 		gridCellProps?: React.HTMLAttributes<HTMLDivElement>
@@ -48,7 +46,6 @@ vi.mock('@/features/task/components/TaskRowAdapter', () => ({
 		rowRef?: React.Ref<HTMLDivElement>
 		rowState: { suppressFocusIndicator?: boolean }
 		task: TaskListItem
-		selectionGroupPosition?: RowSelectionGroupPosition
 		onContextMenuOpenChange?: (open: boolean) => void
 	}) => {
 		const ariaRowProps = rowProps ? { ...rowProps, onClick: undefined } : undefined
@@ -58,7 +55,6 @@ vi.mock('@/features/task/components/TaskRowAdapter', () => ({
 				ref={rowRef}
 				aria-label={`打开任务 ${task.title}`}
 				data-suppress-focus-indicator={String(rowState.suppressFocusIndicator ?? false)}
-				data-selection-group-position={selectionGroupPosition}
 				onContextMenu={() => onContextMenuOpenChange?.(true)}
 			>
 				<div {...gridCellProps}>
@@ -76,7 +72,7 @@ vi.mock('@/features/task/components/TaskRowAdapter', () => ({
 }))
 
 describe('TaskBoard', () => {
-	it('状态分组标题使用批准的中性默认表面与圆角', () => {
+	it('状态分组通过公共 BoardSectionHeader hook 渲染批准高度', () => {
 		const { container } = renderTaskBoard(
 			<TaskBoardHarness
 				onEmptyAction={() => undefined}
@@ -92,7 +88,6 @@ describe('TaskBoard', () => {
 		const sectionHeaders = container.querySelectorAll('[data-board-section-header="true"]')
 		expect(sectionHeaders.length).toBeGreaterThan(0)
 		for (const sectionHeader of sectionHeaders) {
-			expect(sectionHeader).toHaveClass('rounded-md', 'bg-default')
 			expect(sectionHeader).toHaveStyle({ height: '36px' })
 		}
 	})
@@ -115,14 +110,53 @@ describe('TaskBoard', () => {
 			/>,
 		)
 
-		expect(screen.getByRole('row', { name: '打开任务 任务 A' }).parentElement).toHaveClass(
-			'bg-accent-soft',
-			'rounded-t-lg',
+		expect(
+			screen.getByRole('row', { name: '打开任务 任务 A' }).closest('[data-board-row-slot]'),
+		).toHaveAttribute('data-selection-group-position', 'first')
+		expect(
+			screen.getByRole('row', { name: '打开任务 任务 B' }).closest('[data-board-row-slot]'),
+		).toHaveAttribute('data-selection-group-position', 'last')
+	})
+
+	it('错误态通过重试操作调用公开 onRetry', () => {
+		const onRetry = vi.fn()
+		renderTaskBoard(
+			<TaskBoardHarness
+				onEmptyAction={() => undefined}
+				onRetry={onRetry}
+				onToggleTaskStatus={async () => undefined}
+				onUpdateTaskPriority={async () => undefined}
+				onUpdateTaskStatus={async () => undefined}
+				pendingTaskId={null}
+				status='error'
+				tasks={[]}
+			/>,
 		)
-		expect(screen.getByRole('row', { name: '打开任务 任务 B' }).parentElement).toHaveClass(
-			'bg-accent-soft',
-			'rounded-b-lg',
+
+		fireEvent.click(screen.getByRole('button', { name: '重试' }))
+		expect(onRetry).toHaveBeenCalledOnce()
+	})
+
+	it('续页失败时停止自动加载，只允许用户原位重试', () => {
+		const onFetchNextPage = vi.fn()
+		renderTaskBoard(
+			<TaskBoardHarness
+				fetchNextPageError='加载下一页失败'
+				hasNextPage
+				onEmptyAction={() => undefined}
+				onFetchNextPage={onFetchNextPage}
+				onToggleTaskStatus={async () => undefined}
+				onUpdateTaskPriority={async () => undefined}
+				onUpdateTaskStatus={async () => undefined}
+				pendingTaskId={null}
+				status='ready'
+				tasks={[createTask({ id: 'task-1', title: '任务 A' })]}
+			/>,
 		)
+
+		expect(onFetchNextPage).not.toHaveBeenCalled()
+		fireEvent.click(screen.getByRole('button', { name: '重试' }))
+		expect(onFetchNextPage).toHaveBeenCalledOnce()
 	})
 
 	it('Grid 提供 row/gridcell，Arrow/Home/End 移动真实 DOM 焦点', async () => {
@@ -417,11 +451,13 @@ type TaskBoardHarnessProps = Omit<
 	| 'onCollapseAll'
 	| 'onExpandAll'
 	| 'onFocusIntentConsumed'
+	| 'onRetry'
 	| 'onSectionOpenChange'
 > & {
 	customSections?: readonly TaskBoardCustomSection[]
 	focusIntent?: CollectionFocusIntent<string, string> | null
 	onFocusIntentConsumed?: (intent: CollectionFocusIntent<string, string>) => void
+	onRetry?: TaskBoardProps['onRetry']
 	openSections?: readonly TaskStatus[]
 	selectedTaskIds?: readonly string[]
 }
@@ -430,6 +466,7 @@ function TaskBoardHarness({
 	customSections,
 	focusIntent = null,
 	onFocusIntentConsumed = () => undefined,
+	onRetry = () => undefined,
 	openSections = TASK_BOARD_STATUS_ORDER,
 	selectedTaskIds = [],
 	...props
@@ -471,6 +508,7 @@ function TaskBoardHarness({
 				onCollapseAll={() => undefined}
 				onExpandAll={() => undefined}
 				onFocusIntentConsumed={onFocusIntentConsumed}
+				onRetry={onRetry}
 				onSectionOpenChange={() => undefined}
 			/>
 			<output data-testid='focused-key'>{collectionInteraction.focusedKey ?? 'none'}</output>

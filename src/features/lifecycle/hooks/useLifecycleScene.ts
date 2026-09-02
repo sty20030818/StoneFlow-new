@@ -36,7 +36,7 @@ export function useLifecycleScene(mode: LifecycleMode) {
 
 	const breadcrumbItems = useMemo(() => resolveBreadcrumb({ route: shellRoute }), [shellRoute])
 
-	const sliceStatus = entriesQuery.isError
+	const sliceStatus = entriesQuery.isLoadingError
 		? 'error'
 		: entriesQuery.isLoading || entriesQuery.isPending
 			? 'loading'
@@ -138,6 +138,7 @@ export function useLifecycleScene(mode: LifecycleMode) {
 		sections,
 		collection: lifecycleCollection,
 		status: sliceStatus,
+		onRetry: entriesQuery.refetch,
 		emptyActionLabel: '返回独立事项',
 		emptyDescription:
 			mode === 'archive'

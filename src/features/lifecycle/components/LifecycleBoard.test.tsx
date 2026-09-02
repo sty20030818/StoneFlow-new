@@ -26,6 +26,10 @@ describe('LifecycleBoard', () => {
 		await waitFor(() => {
 			expect(screen.getByRole('row', { name: '打开 任务 A' })).toBeInTheDocument()
 		})
+		expect(screen.getByRole('button', { name: '折叠 已归档的任务' })).toHaveAttribute(
+			'aria-expanded',
+			'true',
+		)
 	})
 
 	it('右键已选中行时命令目标使用全部已选条目', async () => {
@@ -62,6 +66,41 @@ describe('LifecycleBoard', () => {
 			)
 		})
 	})
+
+	it('连续选择位置通过 BoardRowSlot 公共 hook 暴露', () => {
+		const sections: LifecycleBoardSection[] = [
+			{
+				key: 'task',
+				label: '已归档的任务',
+				items: [
+					createEntry({ id: 'task-1', entityType: 'task', title: '任务 A' }),
+					createEntry({ id: 'task-2', entityType: 'task', title: '任务 B' }),
+				],
+			},
+		]
+		render(
+			<LifecycleBoardHarness
+				defaultSelectedKeys={['task-1', 'task-2']}
+				mode='archive'
+				sections={sections}
+			/>,
+		)
+
+		expect(
+			screen.getByRole('row', { name: '任务 A' }).closest('[data-board-row-slot]'),
+		).toHaveAttribute('data-selection-group-position', 'first')
+		expect(
+			screen.getByRole('row', { name: '任务 B' }).closest('[data-board-row-slot]'),
+		).toHaveAttribute('data-selection-group-position', 'last')
+	})
+
+	it('错误态重试调用公开 onRetry', () => {
+		const onRetry = vi.fn()
+		render(<LifecycleBoardHarness mode='trash' onRetry={onRetry} sections={[]} status='error' />)
+
+		fireEvent.click(screen.getByRole('button', { name: '重试' }))
+		expect(onRetry).toHaveBeenCalledOnce()
+	})
 })
 
 function LifecycleBoardAsyncHarness() {
@@ -92,12 +131,16 @@ function LifecycleBoardHarness({
 	mode,
 	sections,
 	defaultSelectedKeys = [],
+	onRetry = () => undefined,
 	runCommand = vi.fn(),
+	status = 'ready',
 }: {
 	mode: LifecycleMode
 	sections: LifecycleBoardSection[]
 	defaultSelectedKeys?: string[]
+	onRetry?: () => void | Promise<unknown>
 	runCommand?: Command['run']
+	status?: 'idle' | 'loading' | 'ready' | 'error'
 }) {
 	const groups = useMemo(
 		() =>
@@ -128,7 +171,9 @@ function LifecycleBoardHarness({
 				emptyTitle='empty'
 				mode={mode}
 				onOpenDetail={() => undefined}
+				onRetry={onRetry}
 				sections={sections}
+				status={status}
 			/>
 		</CommandRuntimeProvider>
 	)

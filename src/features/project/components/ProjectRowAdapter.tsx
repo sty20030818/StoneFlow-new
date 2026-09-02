@@ -6,8 +6,7 @@ import type { GridListItemAria } from 'react-aria'
 import { useCommandRuntimeContext, type CommandContext, type CommandId } from '@/features/command'
 import type { ProjectOverviewItem } from '@/shared/types'
 import { formatShortDate } from '@/shared/lib/date'
-import { cn } from '@/shared/lib/utils'
-import { RowShell } from '@/shared/components/row'
+import { RowLayout, RowShell } from '@/shared/components/row'
 
 import { buildProjectCommandSelection } from '../model/buildProjectCommandSelection'
 import { ProjectContextMenu } from './ProjectContextMenu'
@@ -81,7 +80,7 @@ export function ProjectRowAdapter({
 				ref={rowRef}
 				aria-label={`打开项目 ${project.name}`}
 				role={ariaRowProps.role ?? 'row'}
-				className='group/project-row w-full text-[13px] leading-5 outline-none'
+				className='w-full text-[13px] leading-5 outline-none'
 				data-project-id={project.id}
 				data-focus-source={rowState.isFocused ? rowState.focusSource : undefined}
 				hovered={rowState.isFocused}
@@ -91,60 +90,45 @@ export function ProjectRowAdapter({
 				pending={busy}
 				selected={rowState.isSelected}
 			>
-				<div {...gridCellProps} className='flex min-w-0 flex-1 items-center gap-3'>
-					<span
-						className={cn(
-							'flex size-5 shrink-0 items-center justify-center',
-							rowState.isSelected
-								? 'opacity-100'
-								: 'opacity-0 group-hover/project-row:opacity-100 group-focus-within/project-row:opacity-100',
-						)}
-						onClick={(event) => event.stopPropagation()}
-						onKeyDown={(event) => event.stopPropagation()}
-						onPointerDown={(event) => event.stopPropagation()}
-					>
-						<Checkbox
-							aria-label={`选择项目 ${project.name}`}
-							isDisabled={busy}
-							isSelected={rowState.isSelected}
-							onChange={actions.onToggleSelected}
-							onClick={(event) => event.stopPropagation()}
-							onKeyDown={(event) => event.stopPropagation()}
-						>
-							<Checkbox.Content>
-								<Checkbox.Control>
-									<Checkbox.Indicator />
-								</Checkbox.Control>
-							</Checkbox.Content>
-						</Checkbox>
-					</span>
-					<FolderIcon className='size-4 shrink-0 text-muted' />
-					<span className='min-w-0 flex-1 truncate font-medium'>{project.name}</span>
-
-					<div
-						className='ml-auto flex shrink-0 items-center opacity-0 group-focus-within/project-row:opacity-100 group-hover/project-row:opacity-100'
-						onClick={(event) => event.stopPropagation()}
-						onKeyDown={(event) => event.stopPropagation()}
-						onPointerDown={(event) => event.stopPropagation()}
-					>
-						<Button
-							isDisabled={busy}
-							size='sm'
-							variant='ghost'
-							onPress={() =>
-								project.completedAt
-									? actions.onReopenProject(project.id)
-									: actions.onCompleteProject(project.id)
-							}
-						>
-							{project.completedAt ? '重开' : '完成'}
-						</Button>
-					</div>
-
-					<div className='hidden shrink-0 items-center gap-3 text-xs text-muted md:flex'>
-						{project.dueAt ? <span>截止 {formatShortDate(project.dueAt)}</span> : null}
-						<span>创建 {formatShortDate(project.createdAt)}</span>
-					</div>
+				<div {...gridCellProps} className='min-w-0 flex-1'>
+					<RowLayout
+						selection={
+							<Checkbox
+								aria-label={`选择项目 ${project.name}`}
+								isDisabled={busy}
+								isSelected={rowState.isSelected}
+								onChange={actions.onToggleSelected}
+							>
+								<Checkbox.Content>
+									<Checkbox.Control>
+										<Checkbox.Indicator />
+									</Checkbox.Control>
+								</Checkbox.Content>
+							</Checkbox>
+						}
+						leading={<FolderIcon className='size-4 shrink-0 text-muted' />}
+						primary={<span className='block truncate font-medium'>{project.name}</span>}
+						properties={
+							<>
+								{project.dueAt ? <span>截止 {formatShortDate(project.dueAt)}</span> : null}
+								<span>创建 {formatShortDate(project.createdAt)}</span>
+							</>
+						}
+						actions={
+							<Button
+								isDisabled={busy}
+								onPress={() =>
+									project.completedAt
+										? actions.onReopenProject(project.id)
+										: actions.onCompleteProject(project.id)
+								}
+								size='sm'
+								variant='ghost'
+							>
+								{project.completedAt ? '重开' : '完成'}
+							</Button>
+						}
+					/>
 				</div>
 			</RowShell>
 		</ProjectContextMenu>

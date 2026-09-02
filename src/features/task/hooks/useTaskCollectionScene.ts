@@ -39,6 +39,7 @@ import { useTaskSelection } from './useTaskSelection'
 type TaskCollectionSource = {
 	items: TaskListItem[]
 	status: NonNullable<TaskBoardProps['status']>
+	onRetry: TaskBoardProps['onRetry']
 }
 
 type PendingTaskDeleteBatch = {
@@ -292,6 +293,7 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 			onEmptyAction: input.onCreateTask,
 			onExpandAll: handleExpandAll,
 			onFocusIntentConsumed: handleFocusIntentConsumed,
+			onRetry: input.source.onRetry,
 			onSectionOpenChange: handleSectionOpenChange,
 			onSelectPlacement: (task, target) => void mutations.updateTaskPlacement(task, target),
 			onToggleTaskStatus: mutations.toggleTaskStatus,
@@ -341,6 +343,7 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 			input.showProjectCellOptions,
 			input.showSpaceLabel,
 			input.source.status,
+			input.source.onRetry,
 			input.spaces,
 			input.totalCount,
 			input.loadedCount,

@@ -20,7 +20,7 @@ export function useTaskQueryData(input: RunTaskQueryInput) {
 	)
 	// 总数必须来自首屏服务端 totalCount；pages 未就绪时为 undefined（禁止 ?? 0 与「零条」混淆）
 	const totalCount = query.data?.pages[0]?.totalCount
-	const status: QueryLoadStatus = query.isError
+	const status: QueryLoadStatus = query.isLoadingError
 		? 'error'
 		: query.isLoading || query.isPending
 			? 'loading'

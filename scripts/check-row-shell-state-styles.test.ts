@@ -24,10 +24,8 @@ test('RowShell 状态表面由共享语义 token 持有', () => {
 	expect(componentCss).toMatch(
 		/\[data-row-shell\]\[data-selected="true"\]\[data-hovered="true"\]\s*\{\s*background:\s*var\(--selection-hover\);\s*\}/,
 	)
-	expect(uiLabCss).toMatch(
-		/\[data-ui-lab-task-rows\] \[data-row-shell\]:not\(\[data-selected="true"\]\):hover\s*\{\s*background:\s*var\(--surface-hover\);\s*\}/,
+	expect(componentCss).toMatch(
+		/\[data-row-shell\]\[data-interactive="true"\]\[data-selected="true"\]:hover\s*\{\s*background:\s*var\(--selection-hover\);\s*\}/,
 	)
-	expect(uiLabCss).toMatch(
-		/\[data-ui-lab-task-rows\] \[data-row-shell\]\[data-selected="true"\]:hover\s*\{\s*background:\s*var\(--selection-hover\);\s*\}/,
-	)
+	expect(uiLabCss).not.toContain('[data-ui-lab-task-rows]')
 })

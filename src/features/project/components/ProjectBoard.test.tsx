@@ -28,7 +28,10 @@ describe('ProjectBoard', () => {
 			/>,
 		)
 
-		expect(screen.getByRole('button', { name: '折叠 进行中项目' })).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: '折叠 进行中项目' })).toHaveAttribute(
+			'aria-expanded',
+			'true',
+		)
 		expect(screen.getByRole('button', { name: '折叠 已完成项目' })).toBeInTheDocument()
 		expect(screen.getByRole('button', { name: '折叠 已归档项目' })).toBeInTheDocument()
 		expect(screen.getByText('已完成项目 A')).toBeInTheDocument()
@@ -51,14 +54,47 @@ describe('ProjectBoard', () => {
 
 		expect(screen.getByRole('checkbox', { name: '选择项目 项目 A' })).toBeChecked()
 	})
+
+	it('连续选择位置通过 BoardRowSlot 公共 hook 暴露', () => {
+		render(
+			<ProjectBoardHarness
+				defaultSelectedProjectIds={['project-1', 'project-2']}
+				items={[
+					createProject({ id: 'project-1', name: '项目 A' }),
+					createProject({ id: 'project-2', name: '项目 B' }),
+				]}
+			/>,
+		)
+
+		expect(
+			screen.getByRole('row', { name: '打开项目 项目 A' }).closest('[data-board-row-slot]'),
+		).toHaveAttribute('data-selection-group-position', 'first')
+		expect(
+			screen.getByRole('row', { name: '打开项目 项目 B' }).closest('[data-board-row-slot]'),
+		).toHaveAttribute('data-selection-group-position', 'last')
+	})
+
+	it('错误态重试调用公开 onRetry', () => {
+		const onRetry = vi.fn()
+		render(<ProjectBoardHarness items={[]} onRetry={onRetry} status='error' />)
+
+		fireEvent.click(screen.getByRole('button', { name: '重试' }))
+		expect(onRetry).toHaveBeenCalledOnce()
+	})
 })
 
 function ProjectBoardHarness({
 	items,
 	focusedProjectId = null,
+	defaultSelectedProjectIds = [],
+	onRetry = () => undefined,
+	status = 'ready',
 }: {
 	items: ProjectOverviewItem[]
 	focusedProjectId?: string | null
+	defaultSelectedProjectIds?: string[]
+	onRetry?: () => void | Promise<unknown>
+	status?: 'idle' | 'loading' | 'ready' | 'error'
 }) {
 	const sections = useMemo(() => buildProjectSections(items), [items])
 	const groups = useMemo(
@@ -72,6 +108,7 @@ function ProjectBoardHarness({
 	const collection = useGroupedCollectionInteraction({
 		groups,
 		defaultOpenGroupKeys: PROJECT_SECTION_ORDER,
+		defaultSelectedKeys: defaultSelectedProjectIds,
 	})
 	const focusKey = collection.interaction.focusKey
 	useEffect(() => {
@@ -87,8 +124,9 @@ function ProjectBoardHarness({
 			onComplete={() => undefined}
 			onOpen={() => undefined}
 			onReopen={() => undefined}
+			onRetry={onRetry}
 			sections={sections}
-			status='ready'
+			status={status}
 		/>
 	)
 }

@@ -499,7 +499,7 @@
 		border-radius: var(--radius-control);
 	}
 
-	/* RowShell 只在这里拥有共享状态皮肤；尺寸、分组形状和虚拟几何留在组件。 */
+	/* RowShell 只在这里拥有共享状态皮肤；连续选中形状由 BoardRowSlot 拥有。 */
 	[data-theme="stoneflow-light"] [data-row-shell] {
 		border: 1px solid transparent;
 		border-radius: var(--radius-surface);
@@ -507,16 +507,10 @@
 		color: var(--foreground);
 	}
 
-	[data-theme="stoneflow-light"] [data-row-shell][data-selection-group-position="first"] {
-		border-radius: var(--radius-surface) var(--radius-surface) 0 0;
-	}
-
-	[data-theme="stoneflow-light"] [data-row-shell][data-selection-group-position="middle"] {
+	[data-theme="stoneflow-light"]
+		[data-board-row-slot][data-selection-group-position]
+		[data-row-shell] {
 		border-radius: 0;
-	}
-
-	[data-theme="stoneflow-light"] [data-row-shell][data-selection-group-position="last"] {
-		border-radius: 0 0 var(--radius-surface) var(--radius-surface);
 	}
 
 	[data-theme="stoneflow-light"] [data-row-shell][data-active="true"]:not([data-selected="true"]) {

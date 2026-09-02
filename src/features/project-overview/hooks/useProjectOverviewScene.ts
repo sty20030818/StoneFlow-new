@@ -92,6 +92,7 @@ export function useProjectOverviewScene() {
 		collection: projectCollection,
 		status: overviewStatus,
 		busyProjectId,
+		onRetry: overview.refetch,
 		emptyActionLabel: '创建项目',
 		emptyDescription:
 			'这里还没有项目，可以先从一个项目开始。点「创建项目」先建起来，后面的任务和节奏就有地方承接了。',

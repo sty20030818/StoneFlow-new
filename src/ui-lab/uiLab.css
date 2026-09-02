@@ -1,18 +1,3 @@
-/* TaskBoard 的分组与普通 Hover 是产品 fixture；共享 Row/List 状态继承生产 recipe。 */
-[data-ui-lab-group-header] {
-	background: var(--default);
-}
-
-@media (hover: hover) {
-	[data-ui-lab-task-rows] [data-row-shell]:not([data-selected="true"]):hover {
-		background: var(--surface-hover);
-	}
-
-	[data-ui-lab-task-rows] [data-row-shell][data-selected="true"]:hover {
-		background: var(--selection-hover);
-	}
-}
-
 /* 搜索菜单以 Popover 自身作为表面，搜索行不再嵌套第二个圆角输入框。 */
 .ui-lab-menu-search,
 .ui-lab-menu-search:is(:focus-within, [data-focus-within="true"]) {

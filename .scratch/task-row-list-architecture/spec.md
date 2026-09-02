@@ -1,7 +1,7 @@
 # StoneFlow Row 与集合列表单轨架构改造
 
-**Status:** ready-for-agent
-**Triage:** ready-for-agent
+**Status:** in-progress
+**Triage:** in-progress
 **日期:** 2026-09-02
 **研究输入:** [StoneFlow 长列表与虚拟化长期选型研究](./virtual-list-research.md)
 
@@ -21,7 +21,7 @@ TaskBoard 还存在独立的滚动语义和性能问题。后端使用约 150 �
 
 | 顺序 | 实施任务 | 主要结果 | 依赖与退出条件 |
 | --- | --- | --- | --- |
-| 01 | 统一 Row、Section Header 与集合滚动契约 | 三类实体使用同一 RowShell + RowLayout + BoardRowSlot + BoardSectionHeader；集合页使用同一 CollectionBody；Project/Lifecycle 只共享窄 Section 壳 | 无前置；全部生产消费者、UI Lab 和测试同步迁移，旧形状同批删除 |
+| 01 | 统一 Row、Section Header 与集合滚动契约 | 三类实体使用同一 RowShell + RowLayout + BoardRowSlot + BoardSectionHeader；集合页使用同一 CollectionBody；Project/Lifecycle 保留各自领域 Section 编排 | 无前置；全部生产消费者、UI Lab 和测试同步迁移，旧形状同批删除 |
 | 02 | 修正 TaskBoard 虚拟化与 React 热路径 | 只虚拟已加载真实项，尾部使用小型 loader sentinel；稳定热路径身份、分页、焦点和 ARIA；删除假高度与死代码 | 依赖 01 的固定几何和真实 Row；聚焦自动化与优化后虚拟基线通过 |
 | 03 | 真实 WebView A/B 与单引擎 hard cut | 使用相同 Row/Header/Data 比较优化后虚拟列表和一次性普通列表候选；只保留胜出引擎并删除候选、旧依赖与临时 harness | 依赖 02；macOS WKWebView 与 Windows WebView2 证据齐全，最终仓库只有一条生产路径 |
 
@@ -34,7 +34,7 @@ TaskBoard 还存在独立的滚动语义和性能问题。后端使用约 150 �
 - 新增 BoardSectionHeader，只提供 36px 高度、低噪声 surface、圆角、间距、label/count/selected-count 和显式 leading/trailing children。sticky/absolute positioning、collapse、double-click、Context Menu、创建动作和焦点恢复继续由各 Board 的 layout/collection 层拥有。
 - Row 高 44px、Header 高 36px、item gap 2px 进入同一个共享产品几何事实源。RowShell、BoardRowSlot、Section Header、TaskBoard estimate/offset/sticky 推导都消费这一事实源，不再同时保留 Tailwind class 数值和虚拟模型数值两份知识；不增加 density、size 或动态高度 variant。
 - PageFrame 的 `VirtualizedBody` clean cut 为 `CollectionBody`，统一 Task Workspace、Project Overview、Archive 与 Trash 的唯一 scroll viewport、horizontal inset、top/bottom inset 和 overflow 合同。普通内容页继续使用 `Body`；不保留旧名称 alias。
-- ProjectBoard 与 LifecycleBoard 不合并成通用 Board。只提取它们当前确实相同的非虚拟 GroupedBoardSection 壳：section wrapper、selection count、select/deselect-all、collapse/expand、Context Menu 和 BoardRowSlot mapping。两边继续拥有领域 section model、icon、文案、状态、row Adapter 与动作。
+- ProjectBoard 与 LifecycleBoard 不合并成通用 Board。迁移共享 Row/Header 后的复核表明，剩余 section wrapper、selection count、折叠、Context Menu 与 row mapping 仍要求调用方理解领域顺序和动作；因此不提取参数透传型 `GroupedBoardSection`。两边只复用 `BoardRowSlot` 与 `BoardSectionHeader`，继续拥有领域 section model、icon、文案、状态、row Adapter 与动作。
 - 三类 Board 的 loading、empty、error 状态保持 HeroUI 原生组件，并统一为可恢复合同。error 必须提供真实 refetch/retry 动作，不能只显示“请稍后重试”；不为这三段相似 JSX 额外建立状态 DSL。
 - UI Lab 现有 Task/Group Header/Row/连续选择样例改为消费生产公开组件，不新建批次、不复制 fixture 视觉实现，也不把 Lab 结果当作真实 Tauri 验收。
 
@@ -116,11 +116,11 @@ TaskBoard 还存在独立的滚动语义和性能问题。后端使用约 150 �
 
 - 使用一个总规格和三个顺序实施任务，不做一次大爆炸 diff，也不拆成三个各自演化的架构规格。任务 01 是共同结构前置，任务 02 是 TaskBoard correctness/performance，任务 03 是证据门与最终 clean cut。
 - RowShell、RowLayout、BoardRowSlot、BoardSectionHeader 各有单一变化原因：交互根、内部槽位排版、相邻 Row 几何、Section Header anatomy。任一组件不得读取领域实体或 layout-engine 状态。
-- RowLayout 使用五个显式 ReactNode slots；不使用共享 Context、Provider、compound state、render-prop callback、CVA variant matrix 或列配置。只有当前三个生产 Adapter 是消费者。
+- RowLayout 使用五个显式 ReactNode slots，并统一 selection / actions 槽与 Row activation 的事件边界；不使用共享 Context、Provider、compound state、render-prop callback、CVA variant matrix 或列配置。只有当前三个生产 Adapter 是消费者。
 - BoardRowSlot 由 Board/Section 提供邻接结果，并成为 selection group position 的唯一 Owner。RowShell 不再持有同一位置属性，TaskBoard 不再保留私有 rounding map。
 - 固定几何属于共享产品 Module，不扩充为第二套 design token 系统。继续复用现有 semantic theme 与 HeroUI recipe，不新增颜色、圆角、density Provider 或一对一 wrapper。
 - HeroUI 继续拥有 Checkbox、Button、Chip、Menu、Focus、Overlay、keyboard 和 accessibility 状态机；StoneFlow 的 Row/Board 只决定产品结构、状态投影与必要几何。
-- GroupedBoardSection 只服务 Project/Lifecycle 两个已确认的非虚拟消费者；TaskBoard 保持专用 orchestrator。若提取后只是参数透传或要求调用方理解内部顺序，应回退为共享 Header + 各域本地 section，而不是保留薄层。
+- Project/Lifecycle 复核后只共享 `BoardRowSlot` 与 `BoardSectionHeader`；剩余 section mechanics 与领域 wiring 同步变化，提取 `GroupedBoardSection` 只会形成参数透传，因此维持各域本地 section。TaskBoard 保持专用 orchestrator。
 - PageFrame.CollectionBody 是全部集合页的唯一 scroll-body public interface；普通内容 PageFrame.Body 保持不变。旧 VirtualizedBody 在同批消费者迁移后删除，不保留 alias。
 - 任务 01 采用 clean cut：三类 Board、UI Lab、performance surface、tests 和文档消费者同时迁移，任何旧 API/CSS 仅在搜索确认 zero consumer 后删除。
 - 任务 02 继续使用当前 cursor API 和 fixed-height fast path，不改变后端 schema、分页协议或领域查询。未加载数据不会产生可滚动像素。
@@ -130,7 +130,7 @@ TaskBoard 还存在独立的滚动语义和性能问题。后端使用约 150 �
 - 任务 03 的 ordinary list 只是 benchmark candidate，不进入长期生产开关。最终决定以相同组件、真实富 Row、两个 WebView 和可复核数据为准。
 - 若 ordinary 胜出，删除无消费者的 `@tanstack/react-virtual` 声明与 lock 记录；若 virtual 胜出，依赖继续精确由现有工具链管理。两种结果都不增加依赖。
 - benchmark surface 有明确退出条件：完成 A/B 并保存证据后删除运行时代码，只在本地工作包保留结论和必要原始结果。
-- authoritative docs 在最终 engine 决定后同步；尤其修正当前关于服务端 spacer、总高度与 VirtualizedBody 的旧合同。不为普通实现细节新建平行 CONTEXT 或 design-system 文档。
+- authoritative docs 在每个 Ticket 完成时同步当前事实：Ticket 01 记录 Row/Header/CollectionBody 与 `44px` / `36px` / `2px` 合同，同时明确保留服务端 spacer、sticky 与虚拟引擎；Ticket 02/03 再按各自落地结果更新分页与最终单引擎合同。不为普通实现细节新建平行 CONTEXT 或 design-system 文档。
 
 ## Testing Decisions
 
@@ -162,8 +162,8 @@ TaskBoard 还存在独立的滚动语义和性能问题。后端使用约 150 �
 
 ## Further Notes
 
-- 本轮 `$to-spec` 只发布这一个 `spec.md`。后续使用项目的 `to-tickets` 流程时，再生成三个顺序实施文件；现在不提前创建 `issues/`。
+- 本工作包已由后续 `to-tickets` 流程生成三个顺序实施文件；`issues/01`、`02`、`03` 分别承载共享合同、TaskBoard 正确性和最终引擎证据门，仍按顺序推进。
 - 现有研究已经区分当前代码事实、官方资料、静态推断与真实 WebView 待验证项。实施代理应复用该研究，不重新从“要不要虚拟化”开始泛化调研。
-- 当前 A2、A3 与 ADR-0002 仍把服务端 spacer/总高度和 VirtualizedBody 写成既定合同；它们是任务 02/03 必须更新的权威真源，不允许代码 hard cut 后留下旧描述。
+- Ticket 01 完成时，A2、A3、ADR-0002 与模块架构必须同步 `CollectionBody` 和共享 Row/Header/几何合同，但仍把服务端 spacer、总高度与 sticky 记录为当前 TaskBoard 事实；Ticket 02/03 只能在对应代码实际落地后更新这些虚拟化表述。
 - 任务 01 可以在同一改造分支内连续完成，但其结构迁移和任务 02 的性能行为修改应保持可审查边界，并分别保留验证证据。
 - 真正的最终选型不是“虚拟化一定高级”或“普通 DOM 一定更原生”，而是哪一条单轨在 StoneFlow 的真实富 Row、cursor API、焦点合同和最低支持 WebView 上成立。

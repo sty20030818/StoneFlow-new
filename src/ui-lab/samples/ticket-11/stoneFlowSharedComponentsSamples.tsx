@@ -13,8 +13,9 @@ import { SpaceEditorDialog } from '@/features/space'
 import { TaskPageState } from '@/features/task'
 import { AppBreadcrumb } from '@/shared/components/AppBreadcrumb'
 import { AppScrollArea } from '@/shared/components/AppScrollArea'
+import { BoardRowSlot, type BoardRowSelectionPosition } from '@/shared/components/board'
 import { PageFrame } from '@/shared/components/page-frame'
-import { RowShell } from '@/shared/components/row'
+import { RowLayout, RowShell } from '@/shared/components/row'
 import { ActionTooltip, DisabledActionTooltip, OverflowTooltip } from '@/shared/components/tooltip'
 
 import type { UiLabReviewUnitInput } from '../../uiLabCatalog'
@@ -109,21 +110,21 @@ export function PageFrameFixture() {
 					</section>
 
 					<section
-						aria-label='PageFrame VirtualizedBody 样本'
+						aria-label='PageFrame CollectionBody 样本'
 						className='h-80 min-w-0 overflow-hidden rounded-lg border border-surface'
 					>
 						<PageFrame.Root>
-							<PageFrame.Header title='VirtualizedBody' />
-							<PageFrame.VirtualizedBody>
+							<PageFrame.Header title='CollectionBody' />
+							<PageFrame.CollectionBody>
 								<p className='sticky top-0 z-10 bg-background py-2 text-sm font-medium'>
 									固定分组标题
 								</p>
 								{items.map((item) => (
 									<p className='border-b border-separator py-3 text-sm' key={item}>
-										{item} · VirtualizedBody 只提供真实 viewport
+										{item} · CollectionBody 只提供真实 viewport
 									</p>
 								))}
-							</PageFrame.VirtualizedBody>
+							</PageFrame.CollectionBody>
 						</PageFrame.Root>
 					</section>
 				</div>
@@ -200,7 +201,16 @@ function AppBreadcrumbFixture() {
 }
 
 function RowShellFixture() {
-	const rows = [
+	const rows: ReadonlyArray<{
+		id: string
+		label: string
+		active?: boolean
+		selected?: boolean
+		hovered?: boolean
+		hoverSource?: 'keyboard'
+		selectionPosition?: BoardRowSelectionPosition
+		pending?: boolean
+	}> = [
 		{ id: 'active', label: 'Active 行', active: true },
 		{
 			id: 'first',
@@ -208,19 +218,19 @@ function RowShellFixture() {
 			selected: true,
 			hovered: true,
 			hoverSource: 'keyboard' as const,
-			selectionGroupPosition: 'first' as const,
+			selectionPosition: 'first',
 		},
 		{
 			id: 'middle',
 			label: '连续选择 · 中间行',
 			selected: true,
-			selectionGroupPosition: 'middle' as const,
+			selectionPosition: 'middle',
 		},
 		{
 			id: 'last',
 			label: '连续选择 · 最后一行',
 			selected: true,
-			selectionGroupPosition: 'last' as const,
+			selectionPosition: 'last',
 		},
 		{ id: 'pending', label: 'Pending 行', pending: true },
 	] as const
@@ -229,22 +239,24 @@ function RowShellFixture() {
 		<Fixture title='RowShell'>
 			<div className='max-w-2xl overflow-hidden rounded-lg border border-surface'>
 				{rows.map((row) => (
-					<RowShell
-						active={'active' in row ? row.active : undefined}
-						hovered={'hovered' in row ? row.hovered : undefined}
-						hoverSource={'hoverSource' in row ? row.hoverSource : undefined}
-						key={row.id}
-						pending={'pending' in row ? row.pending : undefined}
-						selected={'selected' in row ? row.selected : undefined}
-						selectionGroupPosition={
-							'selectionGroupPosition' in row ? row.selectionGroupPosition : undefined
-						}
-					>
-						<span className='min-w-0 flex-1 truncate'>{row.label}</span>
-						<Button aria-label={`${row.label} 更多操作`} isIconOnly size='sm' variant='ghost'>
-							<MoreHorizontalIcon aria-hidden className='size-4' />
-						</Button>
-					</RowShell>
+					<BoardRowSlot key={row.id} selectionPosition={row.selectionPosition}>
+						<RowShell
+							active={row.active}
+							hovered={row.hovered}
+							hoverSource={row.hoverSource}
+							pending={row.pending}
+							selected={row.selected}
+						>
+							<RowLayout
+								actions={
+									<Button aria-label={`${row.label} 更多操作`} isIconOnly size='sm' variant='ghost'>
+										<MoreHorizontalIcon aria-hidden className='size-4' />
+									</Button>
+								}
+								primary={<span className='block truncate'>{row.label}</span>}
+							/>
+						</RowShell>
+					</BoardRowSlot>
 				))}
 			</div>
 			<p className='text-sm text-muted'>
@@ -321,8 +333,8 @@ export const TICKET_11_SAMPLES = [
 		id: 'stoneflow-shared-page-frame-review',
 		name: 'PageFrame · 共享产品合同',
 		category: 'Navigation',
-		description: '使用真实 Root、Header、Toolbar、Body 与 VirtualizedBody 核对页面框架合同。',
-		keywords: ['page frame', 'header', 'toolbar', 'body', 'virtualized'],
+		description: '使用真实 Root、Header、Toolbar、Body 与 CollectionBody 核对页面框架合同。',
+		keywords: ['page frame', 'header', 'toolbar', 'body', 'collection'],
 		source: 'src/shared/components/page-frame/PageFrame.tsx',
 		coverage: 'rendered',
 		Preview: PageFrameFixture,

@@ -24,9 +24,9 @@ export function LifecycleList({ mode }: LifecycleListProps) {
 				pills={scene.toolbarPills}
 				selectedKey={scene.selectedToolbarKey}
 			/>
-			<PageFrame.Body>
+			<PageFrame.CollectionBody>
 				<LifecycleBoard {...scene.lifecycleBoardProps} />
-			</PageFrame.Body>
+			</PageFrame.CollectionBody>
 		</PageFrame.Root>
 	)
 }

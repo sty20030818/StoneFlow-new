@@ -197,14 +197,14 @@ export function useSavedViewWorkspaceScene() {
 	const boardStatus =
 		viewsQuery.isLoading || viewsQuery.isPending || (runnableView && taskRunQuery.isPending)
 			? 'loading'
-			: runnableView && taskRunQuery.isError
+			: runnableView && taskRunQuery.isLoadingError
 				? 'error'
 				: 'ready'
 	useTaskChangedListener(scope, () => {
 		void taskRunQuery.refetch()
 	})
 	const taskCollection = useTaskCollectionScene({
-		source: { items, status: boardStatus },
+		source: { items, status: boardStatus, onRetry: taskRunQuery.refetch },
 		displayPageKey,
 		display,
 		fallbackSubtitle:

@@ -1,4 +1,4 @@
-import { Alert, Button, Chip, Skeleton } from '@heroui/react'
+import { Alert, Button, Skeleton } from '@heroui/react'
 import { ContextMenu, EmptyState } from '@heroui-pro/react'
 import { ArchiveIcon, CheckIcon, ChevronRightIcon, FolderIcon, PlayIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
@@ -10,7 +10,16 @@ import {
 	type CollectionGridRootState,
 	type GroupedCollectionInteraction,
 } from '@/features/selection'
-import { BoardSectionContextMenu } from '@/shared/components/board'
+import {
+	BoardRowSlot,
+	BoardSectionContextMenu,
+	BoardSectionHeader,
+	COLLECTION_ROW_HEIGHT,
+	COLLECTION_ROW_SIZE,
+	COLLECTION_SECTION_HEADER_HEIGHT,
+	COLLECTION_SECTION_HEADER_SIZE,
+	getBoardRowSelectionPosition,
+} from '@/shared/components/board'
 import type { ProjectOverviewItem } from '@/shared/types'
 
 import type { ProjectSection, ProjectSectionKey } from '../model/buildProjectSections'
@@ -25,6 +34,7 @@ export type ProjectBoardProps = {
 	emptyDescription: string
 	emptyActionLabel?: string
 	onEmptyAction?: () => void
+	onRetry: () => void | Promise<unknown>
 	onOpen: (projectId: string) => void
 	onComplete: (projectId: string) => void
 	onReopen: (projectId: string) => void
@@ -40,6 +50,7 @@ export function ProjectBoard({
 	emptyDescription,
 	emptyActionLabel,
 	onEmptyAction,
+	onRetry,
 	onOpen,
 	onComplete,
 	onReopen,
@@ -54,6 +65,9 @@ export function ProjectBoard({
 					<Alert.Title>读取项目失败</Alert.Title>
 					<Alert.Description>项目数据暂时无法读取，请稍后重试。</Alert.Description>
 				</Alert.Content>
+				<Button onPress={() => void onRetry()} size='sm' type='button' variant='danger-soft'>
+					重试
+				</Button>
 			</Alert>
 		)
 	}
@@ -83,7 +97,7 @@ export function ProjectBoard({
 	return (
 		<CollectionGridRoot
 			ariaLabel='项目列表'
-			className='flex min-h-0 flex-1 flex-col gap-1 outline-none'
+			className='flex min-h-0 flex-1 flex-col outline-none'
 			focusIntent={collection.focusIntent}
 			interaction={collection.interaction}
 			onActivate={onOpen}
@@ -143,37 +157,39 @@ function ProjectBoardSection({
 		)
 
 	return (
-		<section className='flex flex-col gap-0.5 pb-1 last:pb-2' data-project-section={section.key}>
+		<section className='flex flex-col' data-project-section={section.key}>
 			<ContextMenu open={contextMenuOpen} onOpenChange={setContextMenuOpen}>
 				<ContextMenu.Trigger
-					className='sticky top-0 z-10 flex h-[34px] items-center gap-2 pl-3 pr-1'
+					className='sticky top-0 z-10 block'
 					onDoubleClick={() => collection.setGroupOpen(section.key, !open)}
+					style={{ height: COLLECTION_SECTION_HEADER_SIZE }}
 				>
-					<CollectionGridGroupTrigger groupKey={section.key} rootState={rootState}>
-						{({ triggerRef, onBlur }) => (
-							<Button
-								ref={triggerRef}
-								aria-label={`${open ? '折叠' : '展开'} ${section.label}`}
-								isIconOnly
-								size='sm'
-								variant='ghost'
-								onBlur={onBlur}
-								onPress={() => collection.setGroupOpen(section.key, !open)}
-							>
-								<ChevronRightIcon className={open ? 'size-3.5 rotate-90' : 'size-3.5'} />
-							</Button>
-						)}
-					</CollectionGridGroupTrigger>
-					<ProjectSectionStatusIcon sectionKey={section.key} />
-					<span className='min-w-0 truncate text-sm font-semibold'>{section.label}</span>
-					<Chip size='sm' variant='tertiary'>
-						{section.items.length}
-					</Chip>
-					{selectedCount > 0 ? (
-						<Chip color='accent' size='sm' variant='soft'>
-							已选 {selectedCount}
-						</Chip>
-					) : null}
+					<BoardSectionHeader
+						count={section.items.length}
+						label={section.label}
+						leading={
+							<>
+								<CollectionGridGroupTrigger groupKey={section.key} rootState={rootState}>
+									{({ triggerRef, onBlur }) => (
+										<Button
+											ref={triggerRef}
+											aria-expanded={open}
+											aria-label={`${open ? '折叠' : '展开'} ${section.label}`}
+											isIconOnly
+											onBlur={onBlur}
+											onPress={() => collection.setGroupOpen(section.key, !open)}
+											size='sm'
+											variant='ghost'
+										>
+											<ChevronRightIcon className={open ? 'size-3.5 rotate-90' : 'size-3.5'} />
+										</Button>
+									)}
+								</CollectionGridGroupTrigger>
+								<ProjectSectionStatusIcon sectionKey={section.key} />
+							</>
+						}
+						selectedCount={selectedCount}
+					/>
 				</ContextMenu.Trigger>
 				<BoardSectionContextMenu
 					onCollapse={() => collection.setGroupOpen(section.key, false)}
@@ -188,42 +204,49 @@ function ProjectBoardSection({
 			</ContextMenu>
 
 			{open ? (
-				<div className='flex flex-col gap-0.5' role='presentation'>
-					{section.items.map((project) => {
+				<div className='flex flex-col' role='presentation'>
+					{section.items.map((project, index) => {
 						const isSelected = collection.interaction.selectedKeys.has(project.id)
+						const selectionPosition = getBoardRowSelectionPosition(
+							project.id,
+							section.items[index - 1]?.id,
+							section.items[index + 1]?.id,
+							collection.interaction.selectedKeys,
+						)
 						return (
-							<CollectionGridRow
-								interaction={collection.interaction}
-								itemKey={project.id}
-								key={project.id}
-								rootState={rootState}
-							>
-								{({ rowProps, gridCellProps, rowRef, onContextMenuOpenChange }) => (
-									<ProjectRowAdapter
-										actions={{
-											onCompleteProject: onComplete,
-											onOpenProject: onOpen,
-											onReopenProject: onReopen,
-											onToggleSelected: () => collection.interaction.toggleSelection(project.id),
-										}}
-										contextProjects={
-											isSelected && contextProjects.length > 1 ? contextProjects : undefined
-										}
-										gridCellProps={gridCellProps}
-										onContextMenuOpenChange={onContextMenuOpenChange}
-										project={project}
-										rowProps={rowProps}
-										rowRef={rowRef}
-										rowState={{
-											isFocused: rootState.focusedKey === project.id,
-											focusSource:
-												rootState.focusedKey === project.id ? rootState.focusSource : null,
-											isPending: busyProjectId === project.id,
-											isSelected,
-										}}
-									/>
-								)}
-							</CollectionGridRow>
+							<BoardRowSlot key={project.id} selectionPosition={selectionPosition}>
+								<CollectionGridRow
+									interaction={collection.interaction}
+									itemKey={project.id}
+									rootState={rootState}
+								>
+									{({ rowProps, gridCellProps, rowRef, onContextMenuOpenChange }) => (
+										<ProjectRowAdapter
+											actions={{
+												onCompleteProject: onComplete,
+												onOpenProject: onOpen,
+												onReopenProject: onReopen,
+												onToggleSelected: () => collection.interaction.toggleSelection(project.id),
+											}}
+											contextProjects={
+												isSelected && contextProjects.length > 1 ? contextProjects : undefined
+											}
+											gridCellProps={gridCellProps}
+											onContextMenuOpenChange={onContextMenuOpenChange}
+											project={project}
+											rowProps={rowProps}
+											rowRef={rowRef}
+											rowState={{
+												isFocused: rootState.focusedKey === project.id,
+												focusSource:
+													rootState.focusedKey === project.id ? rootState.focusSource : null,
+												isPending: busyProjectId === project.id,
+												isSelected,
+											}}
+										/>
+									)}
+								</CollectionGridRow>
+							</BoardRowSlot>
 						)
 					})}
 				</div>
@@ -234,12 +257,24 @@ function ProjectBoardSection({
 
 function ProjectBoardLoading() {
 	return (
-		<div aria-busy='true' aria-label='正在读取项目' className='flex flex-col gap-2'>
+		<div aria-busy='true' aria-label='正在读取项目' className='flex flex-col'>
 			{Array.from({ length: 2 }, (_, sectionIndex) => (
-				<div className='flex flex-col gap-1' key={sectionIndex}>
-					<Skeleton animationType='none' className='h-9 w-40' />
+				<div className='flex flex-col' key={sectionIndex}>
+					<div style={{ height: COLLECTION_SECTION_HEADER_SIZE }}>
+						<Skeleton
+							animationType='none'
+							className='w-40'
+							style={{ height: COLLECTION_SECTION_HEADER_HEIGHT }}
+						/>
+					</div>
 					{Array.from({ length: 3 }, (_, rowIndex) => (
-						<Skeleton animationType='none' className='h-11 w-full' key={rowIndex} />
+						<div key={rowIndex} style={{ height: COLLECTION_ROW_SIZE }}>
+							<Skeleton
+								animationType='none'
+								className='w-full'
+								style={{ height: COLLECTION_ROW_HEIGHT }}
+							/>
+						</div>
 					))}
 				</div>
 			))}

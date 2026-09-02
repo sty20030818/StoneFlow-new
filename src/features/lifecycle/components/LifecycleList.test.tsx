@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { screen } from '@testing-library/react'
+import { fireEvent, screen } from '@testing-library/react'
 
 import {
 	COMMAND_IDS,
@@ -14,6 +14,7 @@ import type { LifecycleEntry, LifecycleMode, Scope } from '@/shared/types'
 import { renderWithRouterContext } from '@/test/renderWithRouter'
 
 const openTaskDetailSpy = vi.fn<(taskId: string) => void>()
+const refetchLifecycleSpy = vi.fn()
 let mockScope: Scope = { type: 'all' }
 let archiveState = createQueryState(createEntries('archive'))
 let trashState = createQueryState(createEntries('trash'))
@@ -30,10 +31,11 @@ vi.mock('@/features/lifecycle/hooks/lifecycle.queries', () => ({
 		return {
 			data: state.items,
 			isError: state.status === 'error',
+			isLoadingError: state.status === 'error',
 			isLoading: state.status === 'loading',
 			isPending: state.status === 'loading',
 			error: state.error,
-			refetch: vi.fn(),
+			refetch: refetchLifecycleSpy,
 		}
 	},
 }))
@@ -51,6 +53,7 @@ describe('LifecycleList', () => {
 		archiveState = createQueryState(createEntries('archive'))
 		trashState = createQueryState(createEntries('trash'))
 		openTaskDetailSpy.mockReset()
+		refetchLifecycleSpy.mockReset()
 	})
 
 	it('Archive 模式保留空间、项目、任务三分区', async () => {
@@ -79,6 +82,8 @@ describe('LifecycleList', () => {
 		await renderLifecycleList('archive')
 
 		expect(screen.getByRole('alert')).toHaveTextContent('读取归档失败')
+		fireEvent.click(screen.getByRole('button', { name: '重试' }))
+		expect(refetchLifecycleSpy).toHaveBeenCalledOnce()
 	})
 })
 

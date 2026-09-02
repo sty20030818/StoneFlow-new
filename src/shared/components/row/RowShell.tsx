@@ -1,8 +1,7 @@
 import type { ComponentProps } from 'react'
 
+import { COLLECTION_ROW_HEIGHT } from '@/shared/components/collectionGeometry'
 import { cn } from '@/shared/lib/utils'
-
-export type RowSelectionGroupPosition = 'single' | 'first' | 'middle' | 'last'
 
 type RowShellProps = ComponentProps<'div'> & {
 	active?: boolean
@@ -11,7 +10,6 @@ type RowShellProps = ComponentProps<'div'> & {
 	hoverSource?: 'pointer' | 'keyboard' | null
 	pending?: boolean
 	interactive?: boolean
-	selectionGroupPosition?: RowSelectionGroupPosition
 }
 
 export function RowShell({
@@ -23,8 +21,8 @@ export function RowShell({
 	hoverSource = null,
 	pending = false,
 	interactive = false,
-	selectionGroupPosition,
 	role,
+	style,
 	tabIndex,
 	...props
 }: RowShellProps) {
@@ -37,13 +35,13 @@ export function RowShell({
 			data-interactive={interactive || undefined}
 			data-pending={pending || undefined}
 			data-selected={selected || undefined}
-			data-selection-group-position={selectionGroupPosition}
 			data-row-shell='true'
 			className={cn(
-				'group/row-shell flex h-11 min-w-0 items-center gap-3 px-3 text-left text-sm leading-5 outline-none',
+				'group/row-shell @container/row flex min-w-0 items-center px-3 text-left text-sm leading-5 outline-none',
 				className,
 			)}
 			role={interactive ? (role ?? 'button') : role}
+			style={{ ...style, height: COLLECTION_ROW_HEIGHT }}
 			tabIndex={interactive ? (tabIndex ?? -1) : tabIndex}
 		>
 			{children}
