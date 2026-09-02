@@ -38,7 +38,8 @@
 
 ## 当前活跃任务
 
-- [任务集合查询与虚拟列表性能重构](./02-开发任务/2026-07-31-task-collection-query-virtualization/SPEC.md)（[PLAN](./02-开发任务/2026-07-31-task-collection-query-virtualization/PLAN.md) · [TASKS](./02-开发任务/2026-07-31-task-collection-query-virtualization/TASKS.md)）— 待手工验收
+- `02-开发任务/` 与 `03-重构任务/` 当前没有正式活跃任务。
+- [统一产品验收](../.scratch/unified-product-acceptance/spec.md) 是当前唯一待执行工作包；真实 Main、Launcher、设备、缩放与签名包结果按实际证据记录，未执行项保持未勾选。
 
 ## 模块文档规则
 

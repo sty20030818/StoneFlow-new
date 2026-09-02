@@ -15,13 +15,13 @@ StoneFlow 曾同时存在 Radix/shadcn primitive、平行 base、纯 class patte
 1. 所有已有用户可达的标准控件、表单、导航、Overlay、反馈和 HeroUI Pro 已提供的高阶表面，统一使用 HeroUI OSS v3 或 HeroUI Pro；不再混用 shadcn/Radix 或建立同名透传 wrapper。
 2. 样式引擎统一为 Tailwind CSS v4 + 一份 StoneFlow semantic theme + 一份集中组件状态 recipe。`src/styles/index.css` 是 renderer 唯一样式入口，`theme.css` 是全局语义值唯一 Owner，`components.css` 是 HeroUI OSS/Pro 公共 BEM 与逐组件核对的 documented ARIA/data attributes 视觉唯一 Owner。旧 token/pattern/adapter 不双轨兼容。
 3. 依赖方向固定为“StoneFlow 产品组件 → 应用用例/领域接口”与“StoneFlow 产品组件 → HeroUI/React Aria → DOM”；领域和应用层不得反向依赖 UI，也不得导入 HeroUI 类型。
-4. HeroUI 管理标准组件结构、行为、键盘交互、Focus、Overlay 语义与可访问性；StoneFlow 管理全部视觉结果，并保留产品语义、业务状态、Tauri 原生窗口几何、Sidebar 已确认三态、Task Detail 基于窗口 `1024px` 断点的 Aside / Sheet 容器合同、TaskBoard 特殊虚拟几何与 Command/selection 产品合同。
+4. HeroUI 管理标准组件结构、行为、键盘交互、Focus、Overlay 语义、可访问性与上游状态 recipe；StoneFlow 管理产品视觉方向、语义 token 和经审计的最小公共差异，并保留产品语义、业务状态、Tauri 原生窗口几何、Sidebar 已确认三态、Task Detail 基于窗口 `1024px` 断点的 Aside / Sheet 容器合同、TaskBoard 特殊虚拟几何与 Command/selection 产品合同。
 5. TaskBoard 的焦点与选择由 React Aria/React Stately 的单一 collection state 拥有，现有 TanStack Virtual 只保留分组、sticky、总高度、增量加载和滚动几何职责。
 6. StoneFlow 不编写或消费 Motion/Framer Motion、CSS/Tailwind 动画与过渡。HeroUI OSS/Pro 包内动效是唯一组件动效来源，并由其处理 reduced motion。
 7. HeroUI Pro 作为私有依赖精确锁版。当前供应链固定使用 CollectUI `hpsetup@4.7.0` 获取 `@heroui-pro/react@1.0.0-beta.8`；本地与 CI 只通过进程环境或 secret store 注入 `HEROUI_KEY`，Key 不得进入源码、lockfile、客户端环境、日志或构建产物。允许安装器复用固定版本缓存，但必须在仓库外完成隔离 frozen install、类型检查与生产构建，并记录解包后的树 SHA-256。
 8. 只允许发布集成 HeroUI Pro 后的 StoneFlow 正常应用产物；不提交、拷贝、再分发或对外提供 Pro 组件源码、模板、私有 CDN 响应或解包资产。
 9. 页面直接使用 HeroUI OSS/Pro Interface，不建立一对一 wrapper、TypeScript token 镜像、第二套 variant runtime 或独立 design-system package。HeroUI 原子控件、集合 Item 与 Overlay chrome slot 的局部 `className` 只允许外部尺寸/位置、overflow、placement 与运行时动态几何；内部布局、字体/图标 metrics 与公共皮肤必须回到集中 recipe。Form、RadioGroup、Surface、Resizable、ScrollShadow 与 Trigger 等结构组件可承载产品布局，但不得重写公共颜色、边框、圆角、阴影或交互状态。
-10. 全局几何使用少量语义角色而非一个万能值：Control `6px`、Surface `8px`、Overlay `12px`、pill 仅用于 Chip/Avatar/状态标记；HeroUI `sm/md/lg` 高度映射为 `28/32/36px`，强调度只由 variant 决定；结构 Surface 使用 `1px` 边框，Row 使用分隔线，阴影只用于浮层或拖拽 elevation。
+10. 全局几何使用少量语义角色而非一个万能值：Control `6px`、Surface `8px`、Overlay `12px`，pill 只用于适合的封闭控件与状态标记，现行适用范围由 A3 与 `src/styles/ARCHITECTURE.md` 维护；HeroUI `sm/md/lg` 高度映射为 `28/32/36px`，强调度只由 variant 决定；结构 Surface 使用 `1px` 边框，Row 使用分隔线，阴影只用于浮层或拖拽 elevation。
 11. 跨 Feature 共享只保留具有真实行为、组合合同或产品语义的深 Module。纯 class 字符串、透传 wrapper 与只有一个实现的假想 Adapter 必须删除；`shared/components/patterns`、旧 `shared/components/base`、旧 token/shadcn adapter 均 hard cut，不保留兼容出口。
 
 ## 后果
