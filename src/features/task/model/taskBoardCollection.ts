@@ -5,6 +5,7 @@ import type { TaskBoardFlatItem } from './taskBoardModel'
 export type TaskBoardCollection = Readonly<{
 	projection: CollectionProjection<string>
 	flatIndexByKey: ReadonlyMap<string, number>
+	rowOrdinalByKey: ReadonlyMap<string, number>
 	rowKeysByGroupKey: ReadonlyMap<string, ReadonlySet<string>>
 }>
 
@@ -20,6 +21,7 @@ export function buildTaskBoardCollection({
 }): TaskBoardCollection {
 	const navigableKeys: string[] = []
 	const flatIndexByKey = new Map<string, number>()
+	const rowOrdinalByKey = new Map<string, number>()
 	const rowKeysByGroupKey = new Map<string, Set<string>>()
 	let currentGroupRowKeys: Set<string> | null = null
 
@@ -36,12 +38,14 @@ export function buildTaskBoardCollection({
 		}
 
 		navigableKeys.push(item.key)
+		rowOrdinalByKey.set(item.key, navigableKeys.length)
 		currentGroupRowKeys?.add(item.key)
 	}
 
 	return {
 		projection: createCollectionProjection(eligibleKeys, navigableKeys),
 		flatIndexByKey,
+		rowOrdinalByKey,
 		rowKeysByGroupKey,
 	}
 }

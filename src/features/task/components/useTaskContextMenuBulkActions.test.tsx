@@ -114,13 +114,24 @@ describe('useTaskContextMenuBulkActions', () => {
 			source: 'context-menu',
 		})
 	})
+
+	it('在依赖未变化时保持动作对象与回调引用稳定', () => {
+		const { result, rerender } = renderTaskContextMenuBulkActions({ calls: [] })
+		const actions = result.current
+
+		rerender()
+
+		expect(result.current).toBe(actions)
+	})
 })
 
 function renderTaskContextMenuBulkActions({ calls }: { calls: BulkActionCall[] }) {
+	const actions = createTestBulkActions(calls)
+
 	return renderHook(() => useTaskContextMenuBulkActions(), {
 		wrapper: ({ children }: PropsWithChildren) => (
 			<DangerConfirmProvider>
-				<BulkActionProvider actions={createTestBulkActions(calls)}>{children}</BulkActionProvider>
+				<BulkActionProvider actions={actions}>{children}</BulkActionProvider>
 			</DangerConfirmProvider>
 		),
 	})

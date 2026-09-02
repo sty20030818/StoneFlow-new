@@ -6,6 +6,10 @@ type CollectionFocusBridgeOptions = {
 	requestScroll: (key: CollectionKey) => void
 }
 
+type CollectionFocusRequestOptions = {
+	ensureVisible?: boolean
+}
+
 type PendingFocusRequest = {
 	id: number
 	intent: CollectionBridgeFocusIntent
@@ -71,19 +75,25 @@ export function createCollectionFocusBridge({ requestScroll }: CollectionFocusBr
 		}
 	}
 
-	function requestFocus(intent: CollectionBridgeFocusIntent) {
+	function requestFocus(
+		intent: CollectionBridgeFocusIntent,
+		{ ensureVisible = false }: CollectionFocusRequestOptions = {},
+	) {
 		const request: PendingFocusRequest = {
 			id: nextRequestId++,
 			intent,
 		}
 		pendingRequest = request
+		if (intent.type === 'item' && ensureVisible) {
+			requestScroll(intent.key)
+		}
 
 		if (focusIntent(intent)) {
 			clearPendingRequest(request)
 			return
 		}
 
-		if (intent.type === 'item') {
+		if (intent.type === 'item' && !ensureVisible) {
 			requestScroll(intent.key)
 		}
 	}

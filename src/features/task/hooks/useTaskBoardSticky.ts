@@ -2,7 +2,7 @@
  * Board 分区 sticky 顶替：scroll 帧写 DOM；index 变才 setState。
  * 换分区时禁止先把旧标题 transform 置 0（会闪）。
  */
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 import { buildTaskBoardStickyPush } from '@/features/task/model/taskBoardModel'
 
@@ -12,12 +12,12 @@ type StickyMeta = {
 }
 
 export function useTaskBoardSticky({
-	scrollViewportRef,
+	scrollViewport,
 	stickyIndexes,
 	itemOffsets,
 	enabled,
 }: {
-	scrollViewportRef: RefObject<HTMLElement | null> | null | undefined
+	scrollViewport: HTMLElement | null | undefined
 	stickyIndexes: readonly number[]
 	itemOffsets: readonly number[]
 	/** 列表 ready 后才绑 scroll */
@@ -61,7 +61,7 @@ export function useTaskBoardSticky({
 		if (!enabled) {
 			return
 		}
-		const scrollEl = scrollViewportRef?.current
+		const scrollEl = scrollViewport
 		const readTop = () => scrollEl?.scrollTop ?? 0
 		let raf = 0
 		const apply = () => {
@@ -105,15 +105,15 @@ export function useTaskBoardSticky({
 			scrollEl.removeEventListener('scroll', onScroll)
 			if (raf !== 0) cancelAnimationFrame(raf)
 		}
-	}, [applyStickyDom, enabled, scrollViewportRef, stickyIndexes, itemOffsets])
+	}, [applyStickyDom, enabled, scrollViewport, stickyIndexes, itemOffsets])
 
 	const stickyHeaderKey = stickyIndexes.length > 0 ? `sticky:${stickyActiveIndex}` : 'sticky:none'
 
 	useLayoutEffect(() => {
 		stickyRenderedIndexRef.current = stickyActiveIndex
-		const scrollTop = scrollViewportRef?.current?.scrollTop ?? 0
+		const scrollTop = scrollViewport?.scrollTop ?? 0
 		applyStickyDom(scrollTop, true)
-	}, [applyStickyDom, stickyActiveIndex, stickyStuck, stickyHeaderKey, scrollViewportRef])
+	}, [applyStickyDom, stickyActiveIndex, stickyStuck, stickyHeaderKey, scrollViewport])
 
 	const nextStickyIndex = (() => {
 		const pos = stickyIndexes.indexOf(stickyActiveIndex)

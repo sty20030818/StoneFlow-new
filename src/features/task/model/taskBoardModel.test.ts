@@ -9,12 +9,13 @@ import {
 } from '@/shared/components/collectionGeometry'
 
 import {
-	buildTaskBoardExtent,
 	buildTaskBoardFlatItems,
 	buildTaskBoardItemOffsets,
 	buildTaskBoardStickyPush,
+	buildTaskBoardVirtualLayout,
 	listTaskBoardStickyIndexes,
 	measureTaskBoardFlatSize,
+	resolveTaskBoardAnchorScrollTop,
 } from './taskBoardModel'
 
 function task(
@@ -65,28 +66,56 @@ describe('taskBoardModel', () => {
 		expect(measureTaskBoardFlatSize(collapsed)).toBeLessThan(measureTaskBoardFlatSize(open))
 	})
 
-	it('extent：已拉完时等于 flat（折叠变矮）', () => {
-		const flat = 2 * COLLECTION_SECTION_HEADER_SIZE + 3 * COLLECTION_ROW_SIZE
-		const extent = buildTaskBoardExtent({
-			flatSizePx: flat,
-			totalCount: 3,
-			loadedServerCount: 3,
-			hasNextPage: false,
+	it('virtual layout：只按已加载 flat 高度并固定追加一行 sentinel', () => {
+		const flatItems = buildTaskBoardFlatItems({
+			tasks: [
+				task({ id: 'a', title: 'A', status: 'todo' }),
+				task({ id: 'b', title: 'B', status: 'doing' }),
+			],
+			openSections: ['todo', 'doing'],
 		})
-		expect(extent.contentHeightPx).toBe(flat)
-		expect(extent.spacerSizePx).toBe(0)
+		const layout = buildTaskBoardVirtualLayout(flatItems)
+
+		expect(layout).toEqual({
+			contentHeightPx: measureTaskBoardFlatSize(flatItems) + COLLECTION_ROW_SIZE,
+			sentinelIndex: flatItems.length,
+			virtualCount: flatItems.length + 1,
+		})
 	})
 
-	it('extent：续拉中为 flat + 未加载行占位', () => {
-		const flat = COLLECTION_SECTION_HEADER_SIZE + 10 * COLLECTION_ROW_SIZE
-		const extent = buildTaskBoardExtent({
-			flatSizePx: flat,
-			totalCount: 100,
-			loadedServerCount: 10,
-			hasNextPage: true,
+	it('append anchor：新页任务插入前方分组后仍保持同一 task 的视口位置', () => {
+		const previous = buildTaskBoardFlatItems({
+			tasks: [
+				task({ id: 'todo-a', title: 'A', status: 'todo' }),
+				task({ id: 'doing-c', title: 'C', status: 'doing' }),
+			],
+			statusOrder: ['todo', 'doing'],
+			openSections: ['todo', 'doing'],
 		})
-		expect(extent.unloadedRowCount).toBe(90)
-		expect(extent.contentHeightPx).toBe(flat + 90 * COLLECTION_ROW_SIZE)
+		const next = buildTaskBoardFlatItems({
+			tasks: [
+				task({ id: 'todo-a', title: 'A', status: 'todo' }),
+				task({ id: 'doing-c', title: 'C', status: 'doing' }),
+				task({ id: 'todo-b', title: 'B', status: 'todo' }),
+			],
+			statusOrder: ['todo', 'doing'],
+			openSections: ['todo', 'doing'],
+		})
+		const nextIndexByKey = new Map(next.map((item, index) => [item.key, index]))
+		const previousOffsets = buildTaskBoardItemOffsets(previous)
+		const nextOffsets = buildTaskBoardItemOffsets(next)
+		const previousIndex = previous.findIndex((item) => item.key === 'doing-c')
+		const anchor = {
+			key: 'doing-c',
+			offsetPx: 11,
+		}
+		const previousScrollTop = previousOffsets[previousIndex]! + anchor.offsetPx
+		const restoredScrollTop = resolveTaskBoardAnchorScrollTop(anchor, nextIndexByKey, nextOffsets)
+
+		expect(restoredScrollTop).toBe(previousScrollTop + COLLECTION_ROW_SIZE)
+		expect(
+			resolveTaskBoardAnchorScrollTop({ key: 'removed', offsetPx: 0 }, nextIndexByKey, nextOffsets),
+		).toBeNull()
 	})
 
 	it('sticky push：下一 header 接近时 pushOffset 为负', () => {

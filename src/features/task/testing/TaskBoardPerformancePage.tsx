@@ -6,7 +6,7 @@ import { useCollectionInteraction } from '@/features/selection'
 import { AppScrollArea } from '@/shared/components/AppScrollArea'
 
 import { TaskBoard } from '../components/TaskBoard'
-import { focusTaskBoardTaskId } from '../components/taskBoardScroll'
+import { focusTaskBoardTaskId } from '../components/taskBoardFocus'
 import { TaskPreviewProvider } from '../detail/model/TaskPreviewProvider'
 import { buildTaskBoardFlatItems } from '../model/taskBoardModel'
 import { TASK_BOARD_STATUS_ORDER } from '../model/taskBoardOrder'
@@ -53,7 +53,7 @@ type KeyboardLongTaskEvidence = {
 type TaskBoardScenarioResult = {
 	fixture: FixtureKey
 	seed: number
-	loadedCount: number
+	loadedTaskCount: number
 	totalCount: number
 	hasNextPage: boolean
 	warmupCount: number
@@ -102,7 +102,7 @@ export function TaskBoardPerformancePage() {
 	const fetchRequestsRef = useRef(0)
 	const duplicateFetchRequestsRef = useRef(0)
 	const fetchInFlightRef = useRef(false)
-	const handleFetchNextPage = useCallback(() => {
+	const handleFetchNextPage = useCallback(async () => {
 		if (fetchInFlightRef.current) {
 			duplicateFetchRequestsRef.current += 1
 			return
@@ -204,7 +204,7 @@ export function TaskBoardPerformancePage() {
 			const nextResult: TaskBoardScenarioResult = {
 				fixture: fixtureKey,
 				seed: fixture.seed,
-				loadedCount: fixture.loadedCount,
+				loadedTaskCount: fixture.tasks.length,
 				totalCount: fixture.totalCount,
 				hasNextPage: fixture.hasNextPage,
 				warmupCount: 1,
@@ -282,13 +282,9 @@ export function TaskBoardPerformancePage() {
 										collectionInteraction={collectionInteraction}
 										flatItems={flatItems}
 										focusIntent={null}
-										hasNextPage={fixture.hasNextPage}
-										isFetchingNextPage={isFetchingNextPage}
-										loadedCount={fixture.loadedCount}
 										onEmptyAction={noop}
 										onCollapseAll={noop}
 										onExpandAll={noop}
-										onFetchNextPage={handleFetchNextPage}
 										onFocusIntentConsumed={noop}
 										onRetry={noop}
 										onSectionOpenChange={noop}
@@ -296,10 +292,25 @@ export function TaskBoardPerformancePage() {
 										onUpdateTaskPriority={noopAsync}
 										onUpdateTaskStatus={noopAsync}
 										pendingTaskId={null}
+										pagination={
+											fixture.hasNextPage
+												? {
+														sourceKey: `performance:${fixtureKey}:${fixture.seed}`,
+														loadedPageCount: 1,
+														state: isFetchingNextPage ? 'loading' : 'idle',
+														fetchNextPage: handleFetchNextPage,
+														totalCount: fixture.totalCount,
+													}
+												: {
+														sourceKey: `performance:${fixtureKey}:${fixture.seed}`,
+														loadedPageCount: 1,
+														state: 'exhausted',
+														totalCount: fixture.totalCount,
+													}
+										}
 										showProjectCellOptions={false}
 										status='ready'
 										tasks={fixture.tasks}
-										totalCount={fixture.totalCount}
 									/>
 								</AppScrollArea>
 							</div>

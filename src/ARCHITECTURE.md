@@ -123,7 +123,7 @@ src/
 
 `shared/components/row` 中，`RowShell` 只拥有 Row 的可访问交互根与 active / selected / hover / focus / pending 状态，`RowLayout` 拥有 `selection`、`leading`、`primary`、`properties`、`actions` 五槽排版，并在 selection / actions 槽隔离 Row activation 事件。`shared/components/board` 中，`BoardRowSlot` 拥有 section 内连续选择形状与 `44px + 2px` Row 占位，`BoardSectionHeader` 拥有 `36px` Header anatomy；邻接计算、sticky/absolute positioning、折叠、Context Menu 与领域动作仍归各 Board。`shared/components/collectionGeometry.ts` 是 Row `44px`、Header `36px`、item gap `2px` 的唯一几何事实源。
 
-`AppScrollArea` 只封装真实 viewport 及其 ref context；浏览器负责滚动行为，HeroUI Styles 的 `scrollbar` utility 负责外观。TaskBoard 当前仍由 task feature 拥有 TanStack Virtual、未加载任务 spacer、分组 sticky 与焦点恢复；移除假 spacer 和虚拟热路径优化属于后续 Ticket 02，不是本轮共享合同的一部分。共享 Interface 不导出视觉 class 字符串或无生产消费者的配置。Task Detail 当前只有一个生产 owner，详情布局留在 task feature，不为吸收样式 token 保留共享 Detail Module。
+`AppScrollArea` 只封装真实 viewport，并通过 Context 直接发布已挂载元素；浏览器负责滚动行为，HeroUI Styles 的 `scrollbar` utility 负责外观。TaskBoard 由 task feature 持有唯一 TanStack Virtual 生产路径：虚拟几何只覆盖已加载的 flat items 与一个固定 sentinel，分组 sticky、`idle / loading / error / exhausted` 分页、append anchor 和按 stable id 恢复焦点也都留在该 owner；`totalCount` 只服务进度与可访问语义，不生成滚动像素。React Aria / React Stately 继续是选择与焦点的唯一事实源。共享 Interface 不导出视觉 class 字符串或无生产消费者的配置。Task Detail 当前只有一个生产 owner，详情布局留在 task feature，不为吸收样式 token 保留共享 Detail Module。
 
 禁止 `shared/components/patterns`、平行 `shared/components/base`、一对一 HeroUI wrapper、TypeScript token 镜像与只转发目录。删除一个共享 Module 后若复杂度不会重新扩散到多个调用方，该 Module 不具备足够 Depth，应删除或并回唯一 Owner。
 

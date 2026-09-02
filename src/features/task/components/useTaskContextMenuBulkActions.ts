@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 
 import {
 	TASK_BULK_ACTION_IDS,
@@ -39,24 +39,27 @@ export function useTaskContextMenuBulkActions(): TaskContextMenuBulkActions {
 		[runBulkAction],
 	)
 
-	return {
-		onSelectDueDate: (tasks, dueAt) =>
-			void runTaskContextMenuBulkAction(tasks, TASK_BULK_ACTION_IDS.setDateSelected, {
-				dueAt,
-			}),
-		onSelectPlacement: (tasks, target) =>
-			void runTaskContextMenuBulkAction(tasks, TASK_BULK_ACTION_IDS.setPlacementSelected, {
-				target,
-			}),
-		onSelectPriority: (tasks, priority) =>
-			void runTaskContextMenuBulkAction(tasks, TASK_BULK_ACTION_IDS.setPrioritySelected, {
-				priority,
-			}),
-		onSelectStatus: (tasks, status) =>
-			void runTaskContextMenuBulkAction(tasks, TASK_BULK_ACTION_IDS.setStatusSelected, {
-				status,
-			}),
-	}
+	return useMemo<TaskContextMenuBulkActions>(
+		() => ({
+			onSelectDueDate: (tasks, dueAt) =>
+				void runTaskContextMenuBulkAction(tasks, TASK_BULK_ACTION_IDS.setDateSelected, {
+					dueAt,
+				}),
+			onSelectPlacement: (tasks, target) =>
+				void runTaskContextMenuBulkAction(tasks, TASK_BULK_ACTION_IDS.setPlacementSelected, {
+					target,
+				}),
+			onSelectPriority: (tasks, priority) =>
+				void runTaskContextMenuBulkAction(tasks, TASK_BULK_ACTION_IDS.setPrioritySelected, {
+					priority,
+				}),
+			onSelectStatus: (tasks, status) =>
+				void runTaskContextMenuBulkAction(tasks, TASK_BULK_ACTION_IDS.setStatusSelected, {
+					status,
+				}),
+		}),
+		[runTaskContextMenuBulkAction],
+	)
 }
 
 function isTaskMoveAction(actionId: BulkActionId) {

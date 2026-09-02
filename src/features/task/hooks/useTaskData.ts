@@ -1,16 +1,74 @@
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
+import { hashKey } from '@tanstack/react-query'
 
 import type { CountTaskQueryInput, RunTaskQueryInput, TaskListItem } from '@/shared/types'
 import type { QueryLoadStatus } from '@/shared/query/queryStatus'
+import type { TaskBoardPagination } from '../components/TaskBoard'
 
 import {
 	flattenTaskListPages,
+	taskQueryInfiniteQueryOptions,
 	useTaskCountQuery,
 	useTaskDetailQuery,
 	useTaskQueryInfiniteQuery,
 } from './task.queries'
 
 const EMPTY_TASK_LIST_ITEMS: TaskListItem[] = []
+
+export function useTaskBoardPagination({
+	sourceKey,
+	loadedPageCount,
+	fetchNextPage: queryFetchNextPage,
+	hasNextPage,
+	isFetchingNextPage,
+	isFetchNextPageError,
+	error,
+	totalCount,
+}: {
+	sourceKey: string
+	loadedPageCount: number
+	fetchNextPage: () => Promise<unknown>
+	hasNextPage: boolean | undefined
+	isFetchingNextPage: boolean
+	isFetchNextPageError: boolean
+	error: unknown
+	totalCount: number | null | undefined
+}): TaskBoardPagination {
+	const fetchNextPage = useCallback(
+		() => (hasNextPage && !isFetchingNextPage ? queryFetchNextPage() : Promise.resolve(undefined)),
+		[hasNextPage, isFetchingNextPage, queryFetchNextPage],
+	)
+	const fetchNextPageError = isFetchNextPageError
+		? error instanceof Error
+			? error.message
+			: '加载更多失败'
+		: null
+
+	return useMemo<TaskBoardPagination>(() => {
+		const progress =
+			typeof totalCount === 'number'
+				? { sourceKey, loadedPageCount, totalCount }
+				: { sourceKey, loadedPageCount }
+		if (!hasNextPage) return { state: 'exhausted', ...progress }
+		if (isFetchingNextPage) return { state: 'loading', fetchNextPage, ...progress }
+		if (fetchNextPageError) {
+			return { state: 'error', error: fetchNextPageError, fetchNextPage, ...progress }
+		}
+		return {
+			state: 'idle',
+			fetchNextPage,
+			...progress,
+		}
+	}, [
+		fetchNextPage,
+		fetchNextPageError,
+		hasNextPage,
+		isFetchingNextPage,
+		loadedPageCount,
+		sourceKey,
+		totalCount,
+	])
+}
 
 export function useTaskQueryData(input: RunTaskQueryInput) {
 	const query = useTaskQueryInfiniteQuery(input)
@@ -25,29 +83,24 @@ export function useTaskQueryData(input: RunTaskQueryInput) {
 		: query.isLoading || query.isPending
 			? 'loading'
 			: 'ready'
+	const pagination = useTaskBoardPagination({
+		sourceKey: hashKey(taskQueryInfiniteQueryOptions(input).queryKey),
+		loadedPageCount: query.data?.pages.length ?? 0,
+		fetchNextPage: query.fetchNextPage,
+		hasNextPage: query.hasNextPage,
+		isFetchingNextPage: query.isFetchingNextPage,
+		isFetchNextPageError: query.isFetchNextPageError,
+		error: query.error,
+		totalCount,
+	})
 
 	return {
 		items,
-		/** 已拉取条数（各页合计），供 Board 算未加载占位 */
-		loadedCount: items.length,
-		/** 未就绪时 undefined；就绪后为 number（可为 0） */
-		totalCount: typeof totalCount === 'number' ? totalCount : undefined,
+		pagination,
 		status,
 		error: query.error instanceof Error ? query.error.message : null,
 		input,
 		refetch: query.refetch,
-		hasNextPage: Boolean(query.hasNextPage),
-		isFetchingNextPage: query.isFetchingNextPage,
-		fetchNextPage: () => {
-			if (query.hasNextPage && !query.isFetchingNextPage) {
-				void query.fetchNextPage()
-			}
-		},
-		fetchNextPageError: query.isFetchNextPageError
-			? query.error instanceof Error
-				? query.error.message
-				: '加载更多失败'
-			: null,
 	}
 }
 

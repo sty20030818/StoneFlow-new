@@ -21,10 +21,10 @@ export { TaskListSceneView } from './components/TaskListSceneView'
 /**
  * 任务集合使用的 Board UI。
  */
-export { TaskBoard, type TaskBoardProps } from './components/TaskBoard'
+export { TaskBoard, type TaskBoardPagination, type TaskBoardProps } from './components/TaskBoard'
 
 /** 详情等跨 feature 入口按 stable task id 恢复虚拟行焦点。 */
-export { focusTaskBoardTaskId } from './components/taskBoardScroll'
+export { focusTaskBoardTaskId } from './components/taskBoardFocus'
 
 /**
  * 壳层「新建任务」对话框内容。
@@ -123,7 +123,7 @@ export { useTaskSelection } from './hooks/useTaskSelection'
 /**
  * 列表数据 facade（Query → items + status）。
  */
-export { useTaskQueryCount, useTaskQueryData } from './hooks/useTaskData'
+export { useTaskBoardPagination, useTaskQueryCount, useTaskQueryData } from './hooks/useTaskData'
 
 /**
  * 任务集合的共享筛选、展示、选择、预览、批量与 Board 编排。

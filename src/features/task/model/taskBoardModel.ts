@@ -141,40 +141,24 @@ export function listTaskBoardStickyIndexes(flatItems: readonly TaskBoardFlatItem
 	return indexes
 }
 
-export type BuildTaskBoardExtentInput = {
-	/** 当前可见 flat 结构总高（折叠已反映） */
-	flatSizePx: number
-	/** 服务端过滤后总数；未知时 null */
-	totalCount: number | null
-	/** 服务端已拉取条数（infinite pages 展平，非折叠可见行） */
-	loadedServerCount: number
-	hasNextPage: boolean
+/** 虚拟范围只描述已加载内容；末尾固定一行由分页 sentinel 使用。 */
+export function buildTaskBoardVirtualLayout(flatItems: readonly TaskBoardFlatItem[]) {
+	return {
+		contentHeightPx: measureTaskBoardFlatSize(flatItems) + COLLECTION_ROW_SIZE,
+		sentinelIndex: flatItems.length,
+		virtualCount: flatItems.length + 1,
+	}
 }
 
-export type TaskBoardExtent = {
-	contentHeightPx: number
-	spacerSizePx: number
-	unloadedRowCount: number
-}
-
-/**
- * 内容总高：
- * - 续拉中：flat + 未加载行占位（拇指相对稳；折叠仍改变 flat）
- * - 已拉完：= flat（折叠立刻变矮、拇指变长）
- */
-export function buildTaskBoardExtent({
-	flatSizePx,
-	totalCount,
-	loadedServerCount,
-	hasNextPage,
-}: BuildTaskBoardExtentInput): TaskBoardExtent {
-	// totalCount 仅在 number 时可信（含 0）；undefined/null = 未就绪，不占位
-	const knownTotal = typeof totalCount === 'number' ? totalCount : null
-	const unloadedRowCount =
-		hasNextPage && knownTotal != null ? Math.max(0, knownTotal - Math.max(0, loadedServerCount)) : 0
-	const spacerSizePx = unloadedRowCount * COLLECTION_ROW_SIZE
-	const contentHeightPx = flatSizePx + spacerSizePx
-	return { contentHeightPx, spacerSizePx, unloadedRowCount }
+/** 分页重排后按稳定 task key 恢复同一视口锚点。 */
+export function resolveTaskBoardAnchorScrollTop(
+	anchor: Readonly<{ key: string; offsetPx: number }>,
+	flatIndexByKey: ReadonlyMap<string, number>,
+	itemOffsets: readonly number[],
+): number | null {
+	const index = flatIndexByKey.get(anchor.key)
+	const start = index === undefined ? undefined : itemOffsets[index]
+	return start === undefined ? null : Math.max(0, start + anchor.offsetPx)
 }
 
 export type TaskBoardStickyLayout = {

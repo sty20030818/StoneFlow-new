@@ -18,7 +18,7 @@ import type { CountTaskQueryInput, RunTaskQueryInput, TaskListItem } from '@/sha
 import { taskKeys } from './task.keys'
 
 /** Default View 查询：key 不含 cursor/limit，分页参数只走 pageParam。 */
-function taskQueryInfiniteQueryOptions(input: RunTaskQueryInput) {
+export function taskQueryInfiniteQueryOptions(input: RunTaskQueryInput) {
 	const keyInput: RunTaskQueryInput = {
 		scope: input.scope,
 		context: input.context,

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
+import { hashKey, useQuery } from '@tanstack/react-query'
 
 import {
 	openProjectDetail,
@@ -16,7 +16,7 @@ import { useEntityDetailController } from '@/features/entity-detail'
 import { projectDetailQueryOptions, useProjectOptions } from '@/features/project'
 import { useDialogStore } from '@/features/shell-dialogs'
 import { useSpaces } from '@/features/space'
-import { useTaskCollectionScene } from '@/features/task'
+import { useTaskBoardPagination, useTaskCollectionScene } from '@/features/task'
 import { getDefaultTaskViews } from '@/features/task-workspace'
 import { useTaskChangedListener } from '@/shared/events'
 import {
@@ -32,7 +32,12 @@ import {
 	useDeleteViewMutation,
 	useUpdateViewMutation,
 } from './view.mutations'
-import { flattenTaskViewPages, useTaskViewRunInfiniteQuery, useViewsQuery } from './view.queries'
+import {
+	flattenTaskViewPages,
+	taskViewRunInfiniteQueryOptions,
+	useTaskViewRunInfiniteQuery,
+	useViewsQuery,
+} from './view.queries'
 
 const EMPTY_VIEWS: View[] = []
 
@@ -181,15 +186,14 @@ export function useSavedViewWorkspaceScene() {
 	const openCreateTask = () => openTaskCreateDialog(workspaceContext.createDraft)
 	useRegisterFilterCommandAdapter({ session: filterSession })
 
-	const taskRunQuery = useTaskViewRunInfiniteQuery(
-		runnableView
-			? {
-					scope,
-					viewId: runnableView.id,
-					...(filterSession.dirty ? { filters: filterSession.temp } : {}),
-				}
-			: null,
-	)
+	const taskRunInput = runnableView
+		? {
+				scope,
+				viewId: runnableView.id,
+				...(filterSession.dirty ? { filters: filterSession.temp } : {}),
+			}
+		: null
+	const taskRunQuery = useTaskViewRunInfiniteQuery(taskRunInput)
 	const items = useMemo(
 		() => flattenTaskViewPages(taskRunQuery.data?.pages),
 		[taskRunQuery.data?.pages],
@@ -202,6 +206,19 @@ export function useSavedViewWorkspaceScene() {
 				: 'ready'
 	useTaskChangedListener(scope, () => {
 		void taskRunQuery.refetch()
+	})
+	const taskTotalCount = taskRunQuery.data?.pages[0]?.totalCount
+	const pagination = useTaskBoardPagination({
+		sourceKey: taskRunInput
+			? hashKey(taskViewRunInfiniteQueryOptions(taskRunInput).queryKey)
+			: 'saved-view:none',
+		loadedPageCount: taskRunQuery.data?.pages.length ?? 0,
+		fetchNextPage: taskRunQuery.fetchNextPage,
+		hasNextPage: taskRunQuery.hasNextPage,
+		isFetchingNextPage: taskRunQuery.isFetchingNextPage,
+		isFetchNextPageError: taskRunQuery.isFetchNextPageError,
+		error: taskRunQuery.error,
+		totalCount: taskTotalCount,
 	})
 	const taskCollection = useTaskCollectionScene({
 		source: { items, status: boardStatus, onRetry: taskRunQuery.refetch },
@@ -225,23 +242,7 @@ export function useSavedViewWorkspaceScene() {
 		showProjectCellOptions: workspaceContext.supportsProject,
 		showSpaceLabel: workspaceContext.showSpaceLabel,
 		createProjectId: workspaceContext.createProjectId,
-		hasNextPage: Boolean(taskRunQuery.hasNextPage),
-		isFetchingNextPage: taskRunQuery.isFetchingNextPage,
-		fetchNextPage: () => {
-			if (taskRunQuery.hasNextPage && !taskRunQuery.isFetchingNextPage) {
-				void taskRunQuery.fetchNextPage()
-			}
-		},
-		fetchNextPageError: taskRunQuery.isFetchNextPageError
-			? taskRunQuery.error instanceof Error
-				? taskRunQuery.error.message
-				: '加载更多失败'
-			: null,
-		totalCount:
-			typeof taskRunQuery.data?.pages[0]?.totalCount === 'number'
-				? taskRunQuery.data.pages[0].totalCount
-				: undefined,
-		loadedCount: items.length,
+		pagination,
 		empty: {
 			emptyActionLabel: '创建任务',
 			emptyDescription: runnableView

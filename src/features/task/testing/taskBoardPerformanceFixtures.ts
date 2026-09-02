@@ -18,7 +18,6 @@ export type TaskBoardPerformanceFixture = {
 	seed: number
 	tasks: TaskListItem[]
 	customSections?: TaskBoardCustomSection[]
-	loadedCount: number
 	totalCount: number
 	hasNextPage: boolean
 }
@@ -58,7 +57,6 @@ export function createGroupedTaskBoardPerformanceFixture(
 		seed: normalizedSeed,
 		tasks,
 		customSections,
-		loadedCount: tasks.length,
 		totalCount: 2_000,
 		hasNextPage: false,
 	}
@@ -81,7 +79,6 @@ export function createPagedTaskBoardPerformanceFixture(
 	return {
 		seed: normalizedSeed,
 		tasks,
-		loadedCount: tasks.length,
 		totalCount: 10_000,
 		hasNextPage: true,
 	}

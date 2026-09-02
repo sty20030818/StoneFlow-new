@@ -5,7 +5,7 @@ afterEach(() => {
 })
 
 describe('collectionFocusBridge', () => {
-	it('已挂载 item 立即聚焦，并避免浏览器接管滚动', () => {
+	it('已挂载 item 默认只以 preventScroll 聚焦', () => {
 		const requestScroll = vi.fn()
 		const bridge = createCollectionFocusBridge({ requestScroll })
 		const item = createFocusableElement()
@@ -16,6 +16,22 @@ describe('collectionFocusBridge', () => {
 
 		expect(focus).toHaveBeenCalledWith({ preventScroll: true })
 		expect(requestScroll).not.toHaveBeenCalled()
+	})
+
+	it('ensureVisible 对已挂载 item 先请求可见区校正再聚焦', () => {
+		const requestScroll = vi.fn()
+		const bridge = createCollectionFocusBridge({ requestScroll })
+		const item = createFocusableElement()
+		const focus = vi.spyOn(item, 'focus')
+		bridge.registerItem('task-a', item)
+
+		bridge.requestFocus({ type: 'item', key: 'task-a' }, { ensureVisible: true })
+
+		expect(requestScroll).toHaveBeenCalledWith('task-a')
+		expect(focus).toHaveBeenCalledWith({ preventScroll: true })
+		expect(requestScroll.mock.invocationCallOrder[0]!).toBeLessThan(
+			focus.mock.invocationCallOrder[0]!,
+		)
 	})
 
 	it('未挂载 item 先请求滚动，注册真实节点后再聚焦', () => {

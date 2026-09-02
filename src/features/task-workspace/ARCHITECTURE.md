@@ -80,7 +80,7 @@ src/features/task-workspace/
 | Filter / Display UI | 调用方注入受控值；本模块不另建真相源 |
 | 任务数据 | 无；由调用方提供 Board |
 
-`CollectionBody` 是任务结果页唯一真实 viewport；TaskBoard 的虚拟 spacer、sticky、分页与焦点仍由 task 域持有。本模块只组合 viewport，不解释或改写虚拟几何。
+`CollectionBody` 是任务结果页唯一真实 viewport；TaskBoard 的 loaded-only 虚拟几何、固定分页 sentinel、sticky、分页状态、append anchor 与 stable-id 焦点恢复仍由 task 域持有。本模块只组合 viewport，不解释或改写虚拟几何，也不把 `totalCount` 转换为滚动高度。
 
 ---
 

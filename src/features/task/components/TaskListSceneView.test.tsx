@@ -137,6 +137,7 @@ function TaskCollectionOwnerHarness() {
 	const [tasks, setTasks] = useState(OWNER_TASKS)
 	const taskPreviewController = useTaskPreviewController()
 	const scene = useTaskCollectionScene({
+		pagination: { sourceKey: 'owner-test', loadedPageCount: 1, state: 'exhausted' },
 		source: { items: tasks, status: 'ready', onRetry: () => undefined },
 		displayPageKey: 'task:all',
 		display: TEST_DISPLAY,

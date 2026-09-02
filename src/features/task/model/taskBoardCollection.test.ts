@@ -33,6 +33,11 @@ describe('taskBoardCollection', () => {
 			['h:doing', 3],
 			['doing-c', 4],
 		])
+		expect([...collection.rowOrdinalByKey]).toEqual([
+			['todo-a', 1],
+			['todo-b', 2],
+			['doing-c', 3],
+		])
 		expect(collection.rowKeysByGroupKey.get('h:todo')).toEqual(new Set(['todo-a', 'todo-b']))
 		expect(collection.rowKeysByGroupKey.get('h:doing')).toEqual(new Set(['doing-c']))
 	})
@@ -54,6 +59,7 @@ describe('taskBoardCollection', () => {
 			eligibleKeys: ELIGIBLE_KEYS,
 			navigableKeys: ['doing-c'],
 		})
+		expect([...next.rowOrdinalByKey]).toEqual([['doing-c', 1]])
 		expect(transition.state).toEqual({
 			selectedKeys: state.selectedKeys,
 			focusedKey: 'doing-c',

@@ -18,7 +18,9 @@
 
 换句话说：当前最优路线不是“原样保留虚拟列表”，也不是“凭体感立刻删掉虚拟列表”，而是**先删除错误的假总高度，再用真实 WebView 证据在一个生产策略上做 clean cut**。
 
-## 当前实现真相
+## Ticket 02 实施前基线（历史证据）
+
+本节记录方案形成时的旧实现，供核对 Ticket 02 删除范围；当前生产契约以模块架构与 Ticket 02 实施结果为准。
 
 ### 依赖与运行时版本
 
@@ -28,10 +30,10 @@
 ### TaskBoard 已经是固定高度快路径
 
 - row 高 44px、header 高 36px、gap 2px，模型手工计算每项 offset 和总高度。[taskBoardModel.ts](../../src/features/task/model/taskBoardModel.ts#L11-L17) [taskBoardModel.ts](../../src/features/task/model/taskBoardModel.ts#L118-L135)
-- TanStack 配置为 `measureElement: undefined`、`overscan: 6`，以稳定 key、固定估算高度和绝对定位渲染。[TaskBoard.tsx](../../src/features/task/components/TaskBoard.tsx#L282-L296)
+- TanStack 当时显式配置 `measureElement: undefined`、`overscan: 6`，以固定估算高度和绝对定位渲染。[TaskBoard.tsx](../../src/features/task/components/TaskBoard.tsx)
 - 因此，当前问题不是“动态高度测量太慢”。反而，后续若引入动态高度，会新增测量、校正和滚动位置稳定性问题。TanStack 官方要求动态列表提供估算并测量真实元素，[Virtualizer API](https://tanstack.com/virtual/latest/docs/api/virtualizer#estimatesize)；React Aria 也明确说明观察动态 item size 内部使用 `ResizeObserver`，可能有性能开销，[React Aria Virtualizer](https://react-aria.adobe.com/Virtualizer#dynamic-item-sizes)。
 
-### 已确认的结构问题：巨大空 spacer
+### 当时已确认的结构问题：巨大空 spacer
 
 - 服务端默认每页只返回 150 条，并通过 cursor 续页。[view service](../../src-tauri/crates/application/src/view/service.rs#L34) [view service](../../src-tauri/crates/application/src/view/service.rs#L395-L427)
 - TaskBoard 将 `totalCount - loadedCount` 乘以 46px，合并成一个尾部 spacer。[taskBoardModel.ts](../../src/features/task/model/taskBoardModel.ts#L147-L180)

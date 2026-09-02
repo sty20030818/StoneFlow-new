@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 import type { TaskPlacementTarget } from '@/features/metadata-fields'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
@@ -14,99 +14,140 @@ import {
  * 统一收口任务列表页的常用动作，避免每个页面重复维护 pending / mutation 编排。
  */
 export function useTaskListController() {
-	const updateTask = useUpdateTaskMutation()
-	const archiveTask = useArchiveTaskMutation()
-	const deleteTask = useDeleteTaskMutation()
+	const { mutateAsync: updateTask } = useUpdateTaskMutation()
+	const { mutateAsync: archiveTask } = useArchiveTaskMutation()
+	const { mutateAsync: deleteTask } = useDeleteTaskMutation()
 	const [pendingTaskId, setPendingTaskId] = useState<string | null>(null)
 
-	async function runTaskAction(taskId: string, runner: () => Promise<unknown>) {
+	const runTaskAction = useCallback(async (taskId: string, runner: () => Promise<unknown>) => {
 		setPendingTaskId(taskId)
 		try {
 			await runner()
 		} finally {
 			setPendingTaskId(null)
 		}
-	}
+	}, [])
 
-	async function updateTaskStatus(task: TaskListItem, status: TaskStatus) {
-		await runTaskAction(task.id, () =>
-			updateTask.mutateAsync({
-				taskId: task.id,
-				status,
-			}),
-		)
-	}
+	const updateTaskStatus = useCallback(
+		async (task: TaskListItem, status: TaskStatus) => {
+			await runTaskAction(task.id, () =>
+				updateTask({
+					taskId: task.id,
+					status,
+				}),
+			)
+		},
+		[runTaskAction, updateTask],
+	)
 
-	async function updateTaskPriority(task: TaskListItem, priority: TaskPriorityValue) {
-		await runTaskAction(task.id, () =>
-			updateTask.mutateAsync({
-				taskId: task.id,
-				priority,
-			}),
-		)
-	}
+	const updateTaskPriority = useCallback(
+		async (task: TaskListItem, priority: TaskPriorityValue) => {
+			await runTaskAction(task.id, () =>
+				updateTask({
+					taskId: task.id,
+					priority,
+				}),
+			)
+		},
+		[runTaskAction, updateTask],
+	)
 
-	async function updateTaskDueDate(task: TaskListItem, dueAt: string | null) {
-		await runTaskAction(task.id, () =>
-			updateTask.mutateAsync({
-				taskId: task.id,
-				dueAt,
-			}),
-		)
-	}
+	const updateTaskDueDate = useCallback(
+		async (task: TaskListItem, dueAt: string | null) => {
+			await runTaskAction(task.id, () =>
+				updateTask({
+					taskId: task.id,
+					dueAt,
+				}),
+			)
+		},
+		[runTaskAction, updateTask],
+	)
 
-	async function updateTaskScheduledAt(task: TaskListItem, plannedAt: string | null) {
-		await runTaskAction(task.id, () =>
-			updateTask.mutateAsync({
-				taskId: task.id,
-				plannedAt,
-			}),
-		)
-	}
+	const updateTaskScheduledAt = useCallback(
+		async (task: TaskListItem, plannedAt: string | null) => {
+			await runTaskAction(task.id, () =>
+				updateTask({
+					taskId: task.id,
+					plannedAt,
+				}),
+			)
+		},
+		[runTaskAction, updateTask],
+	)
 
-	async function updateTaskReminderAt(task: TaskListItem, remindAt: string | null) {
-		await runTaskAction(task.id, () =>
-			updateTask.mutateAsync({
-				taskId: task.id,
-				remindAt,
-			}),
-		)
-	}
+	const updateTaskReminderAt = useCallback(
+		async (task: TaskListItem, remindAt: string | null) => {
+			await runTaskAction(task.id, () =>
+				updateTask({
+					taskId: task.id,
+					remindAt,
+				}),
+			)
+		},
+		[runTaskAction, updateTask],
+	)
 
-	async function updateTaskPlacement(task: TaskListItem, target: TaskPlacementTarget) {
-		await runTaskAction(task.id, () =>
-			updateTask.mutateAsync({
-				taskId: task.id,
-				placement: target,
-			}),
-		)
-	}
+	const updateTaskPlacement = useCallback(
+		async (task: TaskListItem, target: TaskPlacementTarget) => {
+			await runTaskAction(task.id, () =>
+				updateTask({
+					taskId: task.id,
+					placement: target,
+				}),
+			)
+		},
+		[runTaskAction, updateTask],
+	)
 
-	async function toggleTaskStatus(task: TaskListItem) {
-		await updateTaskStatus(
-			task,
-			task.status === 'done' || task.status === 'canceled' ? 'todo' : 'done',
-		)
-	}
+	const toggleTaskStatus = useCallback(
+		async (task: TaskListItem) => {
+			await updateTaskStatus(
+				task,
+				task.status === 'done' || task.status === 'canceled' ? 'todo' : 'done',
+			)
+		},
+		[updateTaskStatus],
+	)
 
-	async function archiveListTask(task: TaskListItem) {
-		await runTaskAction(task.id, () => archiveTask.mutateAsync(task.id))
-	}
+	const archiveListTask = useCallback(
+		async (task: TaskListItem) => {
+			await runTaskAction(task.id, () => archiveTask(task.id))
+		},
+		[archiveTask, runTaskAction],
+	)
 
-	async function deleteListTask(task: TaskListItem) {
-		await runTaskAction(task.id, () => deleteTask.mutateAsync(task.id))
-	}
+	const deleteListTask = useCallback(
+		async (task: TaskListItem) => {
+			await runTaskAction(task.id, () => deleteTask(task.id))
+		},
+		[deleteTask, runTaskAction],
+	)
 
-	return {
-		pendingTaskId,
-		updateTaskStatus,
-		updateTaskPriority,
-		updateTaskDueDate,
-		updateTaskScheduledAt,
-		updateTaskReminderAt,
-		updateTaskPlacement,
-		toggleTaskStatus,
-		archiveListTask,
-		deleteListTask,
-	}
+	return useMemo(
+		() => ({
+			pendingTaskId,
+			updateTaskStatus,
+			updateTaskPriority,
+			updateTaskDueDate,
+			updateTaskScheduledAt,
+			updateTaskReminderAt,
+			updateTaskPlacement,
+			toggleTaskStatus,
+			archiveListTask,
+			deleteListTask,
+		}),
+		[
+			archiveListTask,
+			deleteListTask,
+			pendingTaskId,
+			toggleTaskStatus,
+			updateTaskDueDate,
+			updateTaskPlacement,
+			updateTaskPriority,
+			updateTaskReminderAt,
+			updateTaskScheduledAt,
+			updateTaskStatus,
+		],
+	)
 }

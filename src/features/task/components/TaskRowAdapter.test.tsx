@@ -16,10 +16,16 @@ import {
 } from '@/features/command'
 import { DangerConfirmProvider } from '@/features/danger-confirm'
 import type { TaskPlacementTarget } from '@/features/metadata-fields'
+import { buildTaskCommandContext } from '@/features/task/commands/buildTaskCommandContext'
 import type { TaskListItem } from '@/shared/types'
 
 import { TASK_ROW_SHORTCUT_BINDINGS } from '../shortcuts'
-import { TaskRowAdapter, type TaskRowAdapterProps } from './TaskRowAdapter'
+import {
+	TaskRowAdapter,
+	TaskRowAriaFrameProvider,
+	type TaskRowAdapterProps,
+	type TaskRowAriaFrameProps,
+} from './TaskRowAdapter'
 import type { TaskContextMenuBulkActions } from './useTaskContextMenuBulkActions'
 
 const TEST_SHORTCUT_REGISTRY = new KeybindingRegistry([
@@ -164,7 +170,7 @@ function renderTaskRowAdapter({
 	task = buildTask(),
 	rowState = { isSelected: false, isPending: false, isFocused: false, focusSource: null },
 	projectBinding = createProjectBinding(),
-	actions = buildActions(),
+	actions,
 	contextMenuActions,
 	contextTasks,
 	visibleProperties,
@@ -182,30 +188,36 @@ function renderTaskRowAdapter({
 	contextTasks?: TaskListItem[]
 	visibleProperties?: TaskRowAdapterProps['visibleProperties']
 	showSpaceLabel?: boolean
-	rowProps?: TaskRowAdapterProps['rowProps']
-	gridCellProps?: TaskRowAdapterProps['gridCellProps']
-	rowRef?: TaskRowAdapterProps['rowRef']
+	rowProps?: TaskRowAriaFrameProps['rowProps']
+	gridCellProps?: TaskRowAriaFrameProps['gridCellProps']
+	rowRef?: React.RefObject<HTMLDivElement | null>
 	onCommand?: (commandId: string, context: CommandContext, invocation: CommandInvocation) => void
 } = {}) {
+	const resolvedActions = actions ?? buildActions(onCommand)
 	render(
 		<TestProviders onCommand={onCommand}>
-			<TaskRowAdapter
-				actions={actions}
-				contextMenuActions={contextMenuActions}
-				contextTasks={contextTasks}
-				gridCellProps={gridCellProps}
-				projectBinding={projectBinding}
-				rowProps={rowProps}
-				rowRef={rowRef}
-				rowState={rowState}
-				showSpaceLabel={showSpaceLabel}
-				task={task}
-				visibleProperties={visibleProperties}
-			/>
+			<TaskRowAriaFrameProvider
+				gridCellProps={gridCellProps ?? {}}
+				rowProps={rowProps ?? {}}
+				setRowElement={(element) => {
+					if (rowRef) rowRef.current = element
+				}}
+			>
+				<TaskRowAdapter
+					actions={resolvedActions}
+					contextMenuActions={contextMenuActions}
+					contextTasks={contextTasks}
+					projectBinding={projectBinding}
+					rowState={rowState}
+					showSpaceLabel={showSpaceLabel}
+					task={task}
+					visibleProperties={visibleProperties}
+				/>
+			</TaskRowAriaFrameProvider>
 		</TestProviders>,
 	)
 
-	return { task, rowState, projectBinding, actions }
+	return { task, rowState, projectBinding, actions: resolvedActions }
 }
 
 function buildTask(partial: Partial<TaskListItem> = {}): TaskListItem {
@@ -232,8 +244,39 @@ function buildTask(partial: Partial<TaskListItem> = {}): TaskListItem {
 	}
 }
 
-function buildActions(): TaskRowAdapterProps['actions'] {
+function buildActions(
+	onCommand: (
+		commandId: string,
+		context: CommandContext,
+		invocation: CommandInvocation,
+	) => void = () => undefined,
+): TaskRowAdapterProps['actions'] {
+	const { context, runtime } = createTestCommandRuntime(onCommand)
 	return {
+		onActivateTask: (task, focusSource) => {
+			const target = buildTaskCommandContext({
+				baseContext: context,
+				tasks: [task],
+				targetTaskIds: [task.id],
+				focusedTaskId: task.id,
+				rowTargetId: task.id,
+				rowTargetSource: focusSource === 'keyboard' ? 'focus' : 'hover',
+			})
+			void runtime.project(COMMAND_IDS.taskOpenDetail, target)?.execute({ source: 'row' })
+		},
+		projectContextMenuCommand: (commandId, task, targets, clearSelection) =>
+			runtime.project(
+				commandId,
+				buildTaskCommandContext({
+					baseContext: context,
+					tasks: targets,
+					targetTaskIds: targets.map((target) => target.id),
+					focusedTaskId: task.id,
+					rowTargetId: task.id,
+					rowTargetSource: 'context-menu',
+					clearSelection: clearSelection ? context.selection.clearSelection : undefined,
+				}),
+			),
 		onToggleTaskSelection: vi.fn(),
 		onUpdateTaskPriority: vi.fn().mockResolvedValue(undefined),
 		onUpdateTaskStatus: vi.fn().mockResolvedValue(undefined),
@@ -279,6 +322,19 @@ function TestProviders({
 	children: React.ReactNode
 	onCommand?: (commandId: string, context: CommandContext, invocation: CommandInvocation) => void
 }) {
+	const { context, runtime } = createTestCommandRuntime(onCommand)
+	return (
+		<ShortcutRegistryProvider registry={TEST_SHORTCUT_REGISTRY}>
+			<CommandRuntimeProvider context={context} runtime={runtime}>
+				<DangerConfirmProvider>{children}</DangerConfirmProvider>
+			</CommandRuntimeProvider>
+		</ShortcutRegistryProvider>
+	)
+}
+
+function createTestCommandRuntime(
+	onCommand: (commandId: string, context: CommandContext, invocation: CommandInvocation) => void,
+) {
 	const context = createEmptyCommandContext()
 	const commands: Command[] = [
 		[COMMAND_IDS.taskOpenDetail, '打开任务详情'],
@@ -299,11 +355,5 @@ function TestProviders({
 		registry: new CommandRegistry(commands),
 		getContext: () => context,
 	})
-	return (
-		<ShortcutRegistryProvider registry={TEST_SHORTCUT_REGISTRY}>
-			<CommandRuntimeProvider context={context} runtime={runtime}>
-				<DangerConfirmProvider>{children}</DangerConfirmProvider>
-			</CommandRuntimeProvider>
-		</ShortcutRegistryProvider>
-	)
+	return { context, runtime }
 }

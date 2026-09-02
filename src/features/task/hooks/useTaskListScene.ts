@@ -87,12 +87,7 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 			emptyDescription: config.emptyDescription,
 			emptyTitle: config.emptyTitle,
 		},
-		hasNextPage: taskList.hasNextPage,
-		isFetchingNextPage: taskList.isFetchingNextPage,
-		fetchNextPage: taskList.fetchNextPage,
-		fetchNextPageError: taskList.fetchNextPageError,
-		totalCount: taskList.totalCount,
-		loadedCount: taskList.loadedCount,
+		pagination: taskList.pagination,
 	})
 
 	const filterUiValue = {

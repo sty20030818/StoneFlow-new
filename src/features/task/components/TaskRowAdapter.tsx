@@ -1,15 +1,14 @@
-import { memo, useCallback, useMemo, type Ref } from 'react'
+import { createContext, memo, useCallback, useContext, useMemo, type ReactNode } from 'react'
 import type { GridListItemAria } from 'react-aria'
 
 import {
 	COMMAND_IDS,
 	CommandShortcut,
-	useCommandRuntimeContext,
 	type CommandId,
+	type CommandProjection,
 } from '@/features/command'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { TaskContextMenu } from '@/features/task/components/TaskContextMenu'
-import { buildTaskCommandContext } from '@/features/task/commands/buildTaskCommandContext'
 import type { TaskContextMenuBulkActions } from '@/features/task/components/useTaskContextMenuBulkActions'
 import type { TaskDisplayPropertyKey } from '@/features/display-options'
 import {
@@ -22,7 +21,6 @@ import {
 	MetadataPlacementDropdown,
 	resolveTaskPlacementTarget,
 	taskDateMetadataIcons,
-	type TaskPlacementGroup,
 	type TaskPlacementTarget,
 } from '@/features/metadata-fields'
 import { getSpaceVisual } from '@/features/space'
@@ -43,9 +41,6 @@ export type TaskRowAdapterProps = {
 		focusSource: 'pointer' | 'keyboard' | null
 		suppressFocusIndicator?: boolean
 	}
-	rowProps?: GridListItemAria['rowProps']
-	gridCellProps?: GridListItemAria['gridCellProps']
-	rowRef?: Ref<HTMLDivElement>
 	contextMenuActions?: TaskContextMenuBulkActions
 	onContextMenuOpenChange?: (open: boolean) => void
 	projectBinding?: {
@@ -54,14 +49,18 @@ export type TaskRowAdapterProps = {
 		spaces?: Array<{ id: string; name: string; iconKey?: string; colorKey?: string }>
 		onSelectPlacement?: (task: TaskListItem, target: TaskPlacementTarget) => void
 		showProjectCellOptions?: boolean
-		/** Board 级预计算的 placement groups；有则不再按行 build */
-		placementGroups?: TaskPlacementGroup[]
-		placementMenuLabel?: string
 	}
 	visibleProperties?: readonly TaskDisplayPropertyKey[]
 	/** 跨 Space 列表（所有空间）时固定露出 Space 名，不依赖 display 偏好 */
 	showSpaceLabel?: boolean
 	actions: {
+		onActivateTask: (task: TaskListItem, focusSource: 'pointer' | 'keyboard' | null) => void
+		projectContextMenuCommand: (
+			commandId: CommandId,
+			task: TaskListItem,
+			targets: TaskListItem[],
+			clearSelection: boolean,
+		) => CommandProjection | null
 		onToggleTaskSelection: (taskId: string) => void
 		onUpdateTaskPriority: (task: TaskListItem, priority: TaskPriorityValue) => Promise<void>
 		onUpdateTaskStatus: (task: TaskListItem, status: TaskStatus) => Promise<void>
@@ -72,38 +71,30 @@ export type TaskRowAdapterProps = {
 	}
 }
 
-function taskRowAdapterPropsEqual(prev: TaskRowAdapterProps, next: TaskRowAdapterProps): boolean {
-	// 滚动时父级常新建 rowState / contextTasks 对象；按字段比，避免 memo 失效卡顿
-	if (prev.task !== next.task) return false
-	if (prev.actions !== next.actions) return false
-	if (prev.contextMenuActions !== next.contextMenuActions) return false
-	if (prev.onContextMenuOpenChange !== next.onContextMenuOpenChange) return false
-	if (prev.projectBinding !== next.projectBinding) return false
-	if (prev.visibleProperties !== next.visibleProperties) return false
-	if (prev.showSpaceLabel !== next.showSpaceLabel) return false
-	if (prev.rowProps !== next.rowProps) return false
-	if (prev.gridCellProps !== next.gridCellProps) return false
-	if (prev.rowRef !== next.rowRef) return false
-	const ps = prev.rowState
-	const ns = next.rowState
-	if (
-		ps.isActive !== ns.isActive ||
-		ps.isSelected !== ns.isSelected ||
-		ps.isPending !== ns.isPending ||
-		ps.isFocused !== ns.isFocused ||
-		ps.focusSource !== ns.focusSource ||
-		ps.suppressFocusIndicator !== ns.suppressFocusIndicator
-	) {
-		return false
-	}
-	const pc = prev.contextTasks
-	const nc = next.contextTasks
-	if (pc === nc) return true
-	if (!pc || !nc || pc.length !== nc.length) return false
-	for (let i = 0; i < pc.length; i++) {
-		if (pc[i] !== nc[i]) return false
-	}
-	return true
+export type TaskRowAriaFrameProps = {
+	rowProps: GridListItemAria['rowProps']
+	gridCellProps: GridListItemAria['gridCellProps']
+	setRowElement: (element: HTMLDivElement | null) => void
+}
+
+type TaskRowAriaProps = Pick<TaskRowAriaFrameProps, 'gridCellProps' | 'rowProps'>
+
+const TaskRowAriaPropsContext = createContext<TaskRowAriaProps | null>(null)
+const TaskRowElementContext = createContext<TaskRowAriaFrameProps['setRowElement'] | null>(null)
+
+export function TaskRowAriaFrameProvider({
+	children,
+	gridCellProps,
+	rowProps,
+	setRowElement,
+}: TaskRowAriaFrameProps & { children: ReactNode }) {
+	return (
+		<TaskRowElementContext.Provider value={setRowElement}>
+			<TaskRowAriaPropsContext.Provider value={{ gridCellProps, rowProps }}>
+				{children}
+			</TaskRowAriaPropsContext.Provider>
+		</TaskRowElementContext.Provider>
+	)
 }
 
 /**
@@ -113,9 +104,6 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 	task,
 	contextTasks,
 	rowState,
-	rowProps,
-	gridCellProps,
-	rowRef,
 	contextMenuActions,
 	onContextMenuOpenChange,
 	projectBinding,
@@ -123,16 +111,7 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 	showSpaceLabel = false,
 	actions,
 }: TaskRowAdapterProps) {
-	const {
-		isActive = false,
-		isSelected,
-		isPending,
-		isFocused,
-		focusSource,
-		suppressFocusIndicator,
-	} = rowState
-	const { runtime: commandRuntime, context: commandContext } = useCommandRuntimeContext()
-	const { onClick: _reactAriaPressClick, ...ariaRowProps } = rowProps ?? {}
+	const { isSelected, isPending, focusSource } = rowState
 	const actionTargets = useMemo(
 		() => (contextTasks && contextTasks.length > 0 ? contextTasks : [task]),
 		[contextTasks, task],
@@ -143,46 +122,18 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 	)
 	const showProjectCellOptions =
 		hasProjectOptions && projectBinding?.showProjectCellOptions !== false
-	const rowCommandContext = useMemo(
-		() =>
-			buildTaskCommandContext({
-				baseContext: commandContext,
-				tasks: [task],
-				targetTaskIds: [task.id],
-				focusedTaskId: task.id,
-				rowTargetId: task.id,
-				rowTargetSource: focusSource === 'keyboard' ? 'focus' : 'hover',
-			}),
-		[commandContext, focusSource, task],
-	)
-	const contextMenuCommandContext = useMemo(
-		() =>
-			buildTaskCommandContext({
-				baseContext: commandContext,
-				tasks: actionTargets,
-				targetTaskIds: actionTargets.map((item) => item.id),
-				focusedTaskId: task.id,
-				rowTargetId: task.id,
-				rowTargetSource: 'context-menu',
-				clearSelection: contextTasks ? commandContext.selection.clearSelection : undefined,
-			}),
-		[actionTargets, commandContext, contextTasks, task.id],
-	)
+	const handleActivate = useCallback(() => {
+		actions.onActivateTask(task, focusSource)
+	}, [actions, focusSource, task])
 	const projectContextMenuCommand = useCallback(
-		(commandId: CommandId) => commandRuntime.project(commandId, contextMenuCommandContext),
-		[commandRuntime, contextMenuCommandContext],
+		(commandId: CommandId) =>
+			actions.projectContextMenuCommand(commandId, task, actionTargets, Boolean(contextTasks)),
+		[actionTargets, actions, contextTasks, task],
 	)
 	// Board 级单例 options（非每行工厂）
 	const priorityDropdownProps = getTaskPriorityMetadataDropdownProps()
 	const statusDropdownProps = getTaskStatusMetadataDropdownProps()
 	const placementDropdownProps = useMemo(() => {
-		// 预计算 groups 仅在非空时采用；空数组会导致 findTaskPlacementGroupItem 失败从而隐藏按钮
-		if (projectBinding?.placementGroups && projectBinding.placementGroups.length > 0) {
-			return {
-				menuLabel: projectBinding.placementMenuLabel ?? '移动到项目...',
-				groups: projectBinding.placementGroups,
-			}
-		}
 		const placementSpaces = projectBinding?.spaces?.some((space) => space.id === task.spaceId)
 			? projectBinding.spaces
 			: [{ id: task.spaceId, name: task.spaceName }, ...(projectBinding?.spaces ?? [])]
@@ -287,157 +238,185 @@ export const TaskRowAdapter = memo(function TaskRowAdapter({
 			status={task.status}
 			dueAt={task.dueAt}
 		>
-			<RowShell
-				{...ariaRowProps}
-				ref={rowRef}
-				aria-label={`打开任务 ${task.title}`}
-				className='text-[13px] leading-5'
-				data-focus-suppressed={suppressFocusIndicator || undefined}
-				data-shell-task-card='true'
-				data-task-id={task.id}
-				data-focus-source={isFocused ? focusSource : undefined}
-				active={isActive}
-				hovered={isFocused}
-				hoverSource={focusSource}
-				interactive
-				pending={isPending}
-				selected={isSelected}
-				onClick={() =>
-					void commandRuntime
-						.project(COMMAND_IDS.taskOpenDetail, rowCommandContext)
-						?.execute({ source: 'row' })
-				}
-			>
-				<div {...gridCellProps} className='min-w-0 flex-1'>
-					<RowLayout
-						selection={
-							<TaskRowSelectionCell
-								ariaLabel={`选择任务：${task.title}`}
-								checked={isSelected}
-								disabled={isPending}
-								disabledReason='正在更新任务，暂时无法更改选择'
-								label='选择任务'
-								tooltipShortcut={<CommandShortcut commandId={COMMAND_IDS.taskSelect} scope='row' />}
-								onCheckedChange={() => actions.onToggleTaskSelection(task.id)}
-							/>
-						}
-						leading={
-							showPriority || showStatus ? (
-								<>
-									{showPriority ? (
-										<MetadataFieldDropdown
-											ariaLabel={`修改优先级：${task.title}`}
-											buttonAppearance='row-icon'
-											compact
-											disabled={isPending}
-											disabledReason='正在更新任务，暂时无法修改优先级'
-											fieldKey='priority'
-											label='优先级'
-											menuLabel={priorityDropdownProps.menuLabel}
-											options={priorityDropdownProps.options}
-											shortcut={{ commandId: COMMAND_IDS.taskSetPriority, scope: 'row' }}
-											stopPropagation
-											tooltipLabel='修改优先级'
-											value={task.priority}
-											onChange={(priority) => void actions.onUpdateTaskPriority(task, priority)}
-										/>
-									) : null}
-									{showStatus ? (
-										<MetadataFieldDropdown
-											ariaLabel={`修改状态：${task.title}`}
-											buttonAppearance='row-icon'
-											compact
-											disabled={isPending}
-											disabledReason='正在更新任务，暂时无法修改状态'
-											fieldKey='status'
-											label='状态'
-											menuLabel={statusDropdownProps.menuLabel}
-											options={statusDropdownProps.options}
-											shortcut={{ commandId: COMMAND_IDS.taskSetStatus, scope: 'row' }}
-											stopPropagation
-											tooltipLabel='修改状态'
-											value={task.status}
-											onChange={(status) => void actions.onUpdateTaskStatus(task, status)}
-										/>
-									) : null}
-								</>
-							) : undefined
-						}
-						primary={<TaskRowTitleCell doneLike={isDoneLike} title={task.title} />}
-						properties={
-							hasProperties ? (
-								<>
-									{showDueAt ? (
-										<MetadataDateDropdown
-											ariaLabel={`修改截止时间：${task.title}`}
-											compact
-											disabled={isPending}
-											disabledReason='正在更新任务，暂时无法修改截止时间'
-											hideWhenEmpty
-											icon={taskDateMetadataIcons.due}
-											label='截止时间'
-											menuAlign='end'
-											shortcut={{ commandId: COMMAND_IDS.taskOpenDateMenu, scope: 'row' }}
-											stopPropagation
-											tooltipLabel='修改截止时间'
-											value={task.dueAt}
-											onChange={(value) => void actions.onUpdateTaskDueDate?.(task, value)}
-										/>
-									) : null}
-									{showScheduledAt ? (
-										<MetadataDateDropdown
-											ariaLabel={`修改计划时间：${task.title}`}
-											compact
-											disabled={isPending}
-											disabledReason='正在更新任务，暂时无法修改计划时间'
-											hideWhenEmpty
-											icon={taskDateMetadataIcons.scheduled}
-											label='计划时间'
-											menuAlign='end'
-											stopPropagation
-											tooltipLabel='修改计划时间'
-											value={task.plannedAt}
-											onChange={(value) => void actions.onUpdateTaskScheduledAt?.(task, value)}
-										/>
-									) : null}
-									{showProject ? (
-										<MetadataPlacementDropdown
-											compact
-											disabled={isPending}
-											disabledReason='正在更新任务，暂时无法修改归属'
-											groups={placementDropdownProps.groups}
-											label='归属'
-											menuAlign='end'
-											menuLabel={placementDropdownProps.menuLabel}
-											shortcutMode='clear-only'
-											shortcut={{ commandId: COMMAND_IDS.taskChangePlacement, scope: 'row' }}
-											stopPropagation
-											value={projectValue}
-											onChange={(value: TaskPlacementTarget) =>
-												projectBinding?.onSelectPlacement?.(task, value)
-											}
-										/>
-									) : null}
-									{/* All scope：Space 以行右侧按钮形式展示（与归属/日期并列） */}
-									{showSpaceLabel && spaceButtonVisual.label ? (
-										<MetadataFieldValue
-											ariaLabel={`所属空间 ${spaceButtonVisual.label}`}
-											compact
-											icon={spaceButtonVisual.icon}
-											label={spaceButtonVisual.label}
-										/>
-									) : null}
-									{showUpdatedAt ? <UpdatedAtCell value={task.updatedAt} /> : null}
-									{showCreatedAt ? <TaskRowCreatedAtCell value={task.createdAt} /> : null}
-								</>
-							) : undefined
-						}
-					/>
-				</div>
-			</RowShell>
+			<TaskRowFrame onActivate={handleActivate} rowState={rowState} task={task}>
+				<RowLayout
+					selection={
+						<TaskRowSelectionCell
+							ariaLabel={`选择任务：${task.title}`}
+							checked={isSelected}
+							disabled={isPending}
+							disabledReason='正在更新任务，暂时无法更改选择'
+							label='选择任务'
+							tooltipShortcut={<CommandShortcut commandId={COMMAND_IDS.taskSelect} scope='row' />}
+							onCheckedChange={() => actions.onToggleTaskSelection(task.id)}
+						/>
+					}
+					leading={
+						showPriority || showStatus ? (
+							<>
+								{showPriority ? (
+									<MetadataFieldDropdown
+										ariaLabel={`修改优先级：${task.title}`}
+										buttonAppearance='row-icon'
+										compact
+										disabled={isPending}
+										disabledReason='正在更新任务，暂时无法修改优先级'
+										fieldKey='priority'
+										label='优先级'
+										menuLabel={priorityDropdownProps.menuLabel}
+										options={priorityDropdownProps.options}
+										shortcut={{ commandId: COMMAND_IDS.taskSetPriority, scope: 'row' }}
+										stopPropagation
+										tooltipLabel='修改优先级'
+										value={task.priority}
+										onChange={(priority) => void actions.onUpdateTaskPriority(task, priority)}
+									/>
+								) : null}
+								{showStatus ? (
+									<MetadataFieldDropdown
+										ariaLabel={`修改状态：${task.title}`}
+										buttonAppearance='row-icon'
+										compact
+										disabled={isPending}
+										disabledReason='正在更新任务，暂时无法修改状态'
+										fieldKey='status'
+										label='状态'
+										menuLabel={statusDropdownProps.menuLabel}
+										options={statusDropdownProps.options}
+										shortcut={{ commandId: COMMAND_IDS.taskSetStatus, scope: 'row' }}
+										stopPropagation
+										tooltipLabel='修改状态'
+										value={task.status}
+										onChange={(status) => void actions.onUpdateTaskStatus(task, status)}
+									/>
+								) : null}
+							</>
+						) : undefined
+					}
+					primary={<TaskRowTitleCell doneLike={isDoneLike} title={task.title} />}
+					properties={
+						hasProperties ? (
+							<>
+								{showDueAt ? (
+									<MetadataDateDropdown
+										ariaLabel={`修改截止时间：${task.title}`}
+										compact
+										disabled={isPending}
+										disabledReason='正在更新任务，暂时无法修改截止时间'
+										hideWhenEmpty
+										icon={taskDateMetadataIcons.due}
+										label='截止时间'
+										menuAlign='end'
+										shortcut={{ commandId: COMMAND_IDS.taskOpenDateMenu, scope: 'row' }}
+										stopPropagation
+										tooltipLabel='修改截止时间'
+										value={task.dueAt}
+										onChange={(value) => void actions.onUpdateTaskDueDate?.(task, value)}
+									/>
+								) : null}
+								{showScheduledAt ? (
+									<MetadataDateDropdown
+										ariaLabel={`修改计划时间：${task.title}`}
+										compact
+										disabled={isPending}
+										disabledReason='正在更新任务，暂时无法修改计划时间'
+										hideWhenEmpty
+										icon={taskDateMetadataIcons.scheduled}
+										label='计划时间'
+										menuAlign='end'
+										stopPropagation
+										tooltipLabel='修改计划时间'
+										value={task.plannedAt}
+										onChange={(value) => void actions.onUpdateTaskScheduledAt?.(task, value)}
+									/>
+								) : null}
+								{showProject ? (
+									<MetadataPlacementDropdown
+										compact
+										disabled={isPending}
+										disabledReason='正在更新任务，暂时无法修改归属'
+										groups={placementDropdownProps.groups}
+										label='归属'
+										menuAlign='end'
+										menuLabel={placementDropdownProps.menuLabel}
+										shortcutMode='clear-only'
+										shortcut={{ commandId: COMMAND_IDS.taskChangePlacement, scope: 'row' }}
+										stopPropagation
+										value={projectValue}
+										onChange={(value: TaskPlacementTarget) =>
+											projectBinding?.onSelectPlacement?.(task, value)
+										}
+									/>
+								) : null}
+								{/* All scope：Space 以行右侧按钮形式展示（与归属/日期并列） */}
+								{showSpaceLabel && spaceButtonVisual.label ? (
+									<MetadataFieldValue
+										ariaLabel={`所属空间 ${spaceButtonVisual.label}`}
+										compact
+										icon={spaceButtonVisual.icon}
+										label={spaceButtonVisual.label}
+									/>
+								) : null}
+								{showUpdatedAt ? <UpdatedAtCell value={task.updatedAt} /> : null}
+								{showCreatedAt ? <TaskRowCreatedAtCell value={task.createdAt} /> : null}
+							</>
+						) : undefined
+					}
+				/>
+			</TaskRowFrame>
 		</TaskContextMenu>
 	)
-}, taskRowAdapterPropsEqual)
+})
+
+function TaskRowFrame({
+	children,
+	onActivate,
+	rowState,
+	task,
+}: {
+	children: ReactNode
+	onActivate: () => void
+	rowState: TaskRowAdapterProps['rowState']
+	task: TaskListItem
+}) {
+	const frame = useContext(TaskRowAriaPropsContext)
+	const setRowElement = useContext(TaskRowElementContext)
+	if (!frame || !setRowElement) throw new Error('TaskRowAdapter 缺少 TaskRowAriaFrameProvider')
+	const { gridCellProps, rowProps } = frame
+	const { onClick: _reactAriaPressClick, ...ariaRowProps } = rowProps
+	const {
+		isActive = false,
+		isSelected,
+		isPending,
+		isFocused,
+		focusSource,
+		suppressFocusIndicator,
+	} = rowState
+
+	return (
+		<RowShell
+			{...ariaRowProps}
+			ref={setRowElement}
+			active={isActive}
+			aria-label={`打开任务 ${task.title}`}
+			className='text-[13px] leading-5'
+			data-focus-source={isFocused ? focusSource : undefined}
+			data-focus-suppressed={suppressFocusIndicator || undefined}
+			data-shell-task-card='true'
+			data-task-id={task.id}
+			hoverSource={focusSource}
+			hovered={isFocused}
+			interactive
+			onClick={onActivate}
+			pending={isPending}
+			selected={isSelected}
+		>
+			<div {...gridCellProps} className='min-w-0 flex-1'>
+				{children}
+			</div>
+		</RowShell>
+	)
+}
 
 function UpdatedAtCell({ value }: { value: string | null | undefined }) {
 	if (!value) {

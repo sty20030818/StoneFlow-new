@@ -9,9 +9,9 @@ describe('AppScrollArea', () => {
 		const readContextViewport = vi.fn()
 
 		function ViewportProbe() {
-			const contextRef = useScrollAreaViewport()
+			const contextViewport = useScrollAreaViewport()
 			return (
-				<button onClick={() => readContextViewport(contextRef?.current)} type='button'>
+				<button onClick={() => readContextViewport(contextViewport)} type='button'>
 					读取 viewport
 				</button>
 			)

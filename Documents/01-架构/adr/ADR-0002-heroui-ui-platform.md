@@ -16,7 +16,7 @@ StoneFlow 曾同时存在 Radix/shadcn primitive、平行 base、纯 class patte
 2. 样式引擎统一为 Tailwind CSS v4 + 一份 StoneFlow semantic theme + 一份集中组件状态 recipe。`src/styles/index.css` 是 renderer 唯一样式入口，`theme.css` 是全局语义值唯一 Owner，`components.css` 是 HeroUI OSS/Pro 公共 BEM 与逐组件核对的 documented ARIA/data attributes 视觉唯一 Owner。旧 token/pattern/adapter 不双轨兼容。
 3. 依赖方向固定为“StoneFlow 产品组件 → 应用用例/领域接口”与“StoneFlow 产品组件 → HeroUI/React Aria → DOM”；领域和应用层不得反向依赖 UI，也不得导入 HeroUI 类型。
 4. HeroUI 管理标准组件结构、行为、键盘交互、Focus、Overlay 语义、可访问性与上游状态 recipe；StoneFlow 管理产品视觉方向、语义 token 和经审计的最小公共差异，并保留产品语义、业务状态、Tauri 原生窗口几何、Sidebar 已确认三态、Task Detail 基于窗口 `1024px` 断点的 Aside / Sheet 容器合同，以及 Row、Board、TaskBoard 与 Command/selection 产品合同。
-5. 集合契约按单一变化原因拆分：`RowShell` 是交互状态壳，`RowLayout` 是 `selection` / `leading` / `primary` / `properties` / `actions` 五槽排版并隔离控件槽与 Row activation，`BoardRowSlot` 拥有连续选择与 `44px + 2px` Row 占位，`BoardSectionHeader` 拥有 `36px` anatomy；`44px` / `36px` / `2px` 只有一份共享几何事实源。Task Workspace、Project Overview 与 Lifecycle 页面统一使用 `PageFrame.CollectionBody` 的真实 viewport。TaskBoard 的焦点与选择由 React Aria/React Stately 的单一 collection state 拥有，现有 TanStack Virtual 在 Ticket 01 后仍保留虚拟 spacer、分组 sticky、总高度、增量加载和滚动几何职责；其正确性与热路径调整留给 Ticket 02。
+5. 集合契约按单一变化原因拆分：`RowShell` 是交互状态壳，`RowLayout` 是 `selection` / `leading` / `primary` / `properties` / `actions` 五槽排版并隔离控件槽与 Row activation，`BoardRowSlot` 拥有连续选择与 `44px + 2px` Row 占位，`BoardSectionHeader` 拥有 `36px` anatomy；`44px` / `36px` / `2px` 只有一份共享几何事实源。Task Workspace、Project Overview 与 Lifecycle 页面统一使用 `PageFrame.CollectionBody` 的真实 viewport。TaskBoard 的焦点与选择由 React Aria / React Stately 的单一 collection state 拥有；TanStack Virtual 只保留一条生产路径，其高度只含已加载 flat items 与一个固定 sentinel，`totalCount` 不生成滚动像素。task 域继续拥有分组 sticky、`idle / loading / error / exhausted` 分页、append anchor、stable-id 焦点恢复与可访问进度；分页未结束时使用 `aria-rowcount=-1`，结束后报告当前可导航行数。
 6. StoneFlow 不编写或消费 Motion/Framer Motion、CSS/Tailwind 动画与过渡。HeroUI OSS/Pro 包内动效是唯一组件动效来源，并由其处理 reduced motion。
 7. HeroUI Pro 作为私有依赖精确锁版。当前供应链固定使用 CollectUI `hpsetup@4.7.0` 获取 `@heroui-pro/react@1.0.0-beta.8`；本地与 CI 只通过进程环境或 secret store 注入 `HEROUI_KEY`，Key 不得进入源码、lockfile、客户端环境、日志或构建产物。允许安装器复用固定版本缓存，但必须在仓库外完成隔离 frozen install、类型检查与生产构建，并记录解包后的树 SHA-256。
 8. 只允许发布集成 HeroUI Pro 后的 StoneFlow 正常应用产物；不提交、拷贝、再分发或对外提供 Pro 组件源码、模板、私有 CDN 响应或解包资产。
@@ -48,7 +48,7 @@ StoneFlow 曾同时存在 Radix/shadcn primitive、平行 base、纯 class patte
 - **继续使用 shadcn/Radix：** 无法收敛现有多层 wrapper/pattern/token，也不提供项目所需的完整集合交互能力。
 - **shadcn React Aria + HeroUI 混用：** 会留下两套 React Aria wrapper、token、variant 和 Overlay 约定。
 - **HeroUI + StyleX：** HeroUI 原生样式合同是 Tailwind CSS v4；加入 StyleX 只会增加第二条编译与样式心智模型，不提高最终视觉上限。
-- **HeroUI Pro ListView/DataGrid 直接替换 TaskBoard：** 它们没有承诺当前分组 sticky、折叠、服务端总高度与外部 `scrollToTaskId` 合同。
+- **HeroUI Pro ListView/DataGrid 直接替换 TaskBoard：** 它们没有承诺当前分组 sticky、折叠、loaded-only cursor sentinel、append anchor 与 stable-id 详情焦点恢复合同。
 - **按局部剩余空间动态决定详情容器：** 会让 Sidebar 宽度和拖拽过程隐式改变详情呈现，并增加不必要的尺寸观测与状态分支；固定窗口断点的行为更可预测。
 - **窄窗口自动进入 canonical 完整页：** 断点切换会改写 URL 和浏览历史并中断列表上下文；Sheet 已覆盖窄窗口详情需求，完整页保留为显式操作。
 - **强制零本地 UI 代码：** 会把产品语义、Tauri 几何与虚拟化硬塞进第三方组件，实际上增加脆弱覆盖。

@@ -26,7 +26,7 @@ import {
 import type { Space, TaskListItem } from '@/shared/types'
 import { useEventSubscription } from '@/shared/events'
 
-import type { TaskBoardProps } from '../components/TaskBoard'
+import type { TaskBoardPagination, TaskBoardProps } from '../components/TaskBoard'
 import { useRegisterTaskPreviewSource } from '../detail/model/TaskPreviewProvider'
 import { useTaskPreviewController } from '../detail/model/useTaskPreviewController'
 import { buildTaskCommandSelection } from '../model/buildTaskCommandSelection'
@@ -62,12 +62,7 @@ export type TaskCollectionSceneInput = {
 	showSpaceLabel?: boolean
 	createProjectId?: string | null
 	empty: Pick<TaskBoardProps, 'emptyTitle' | 'emptyDescription' | 'emptyActionLabel'>
-	hasNextPage?: boolean
-	isFetchingNextPage?: boolean
-	fetchNextPage?: () => void
-	fetchNextPageError?: string | null
-	totalCount?: number
-	loadedCount?: number
+	pagination: TaskBoardPagination
 }
 
 /**
@@ -120,6 +115,13 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 	const selection = useTaskSelection(collection.projection)
 	const taskPreviewController = useTaskPreviewController()
 	const mutations = useTaskListController()
+	const updateTaskPlacement = mutations.updateTaskPlacement
+	const handleSelectPlacement = useCallback(
+		(task: TaskListItem, target: Parameters<typeof updateTaskPlacement>[1]) => {
+			void updateTaskPlacement(task, target)
+		},
+		[updateTaskPlacement],
+	)
 	useEventSubscription('task:deleted', (event) => {
 		if (
 			event.type !== 'task:deleted' ||
@@ -295,7 +297,7 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 			onFocusIntentConsumed: handleFocusIntentConsumed,
 			onRetry: input.source.onRetry,
 			onSectionOpenChange: handleSectionOpenChange,
-			onSelectPlacement: (task, target) => void mutations.updateTaskPlacement(task, target),
+			onSelectPlacement: handleSelectPlacement,
 			onToggleTaskStatus: mutations.toggleTaskStatus,
 			onUpdateTaskDueDate: mutations.updateTaskDueDate,
 			onUpdateTaskPriority: mutations.updateTaskPriority,
@@ -313,12 +315,7 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 				taskPreviewController.previewState.lastAnchorReason === 'keyboard',
 			tasks: displayResult.orderedItems,
 			visibleProperties: displayResult.visibleProperties,
-			hasNextPage: input.hasNextPage,
-			isFetchingNextPage: input.isFetchingNextPage,
-			onFetchNextPage: input.fetchNextPage,
-			fetchNextPageError: input.fetchNextPageError,
-			totalCount: input.totalCount,
-			loadedCount: input.loadedCount,
+			pagination: input.pagination,
 		}),
 		[
 			displayResult.orderedItems,
@@ -328,25 +325,21 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 			handleCollapseAll,
 			handleExpandAll,
 			handleFocusIntentConsumed,
+			handleSelectPlacement,
 			handleSectionOpenChange,
 			input.activeTaskId,
 			input.createProjectId,
 			input.empty.emptyActionLabel,
 			input.empty.emptyDescription,
 			input.empty.emptyTitle,
-			input.fetchNextPage,
-			input.fetchNextPageError,
-			input.hasNextPage,
-			input.isFetchingNextPage,
 			input.onCreateTask,
 			input.projectOptions,
+			input.pagination,
 			input.showProjectCellOptions,
 			input.showSpaceLabel,
 			input.source.status,
 			input.source.onRetry,
 			input.spaces,
-			input.totalCount,
-			input.loadedCount,
 			mutations,
 			selection.interaction,
 			taskPreviewController.previewState.lastAnchorReason,

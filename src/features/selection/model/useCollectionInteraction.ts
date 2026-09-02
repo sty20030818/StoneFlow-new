@@ -36,7 +36,10 @@ export type CollectionInteraction<K extends CollectionKey> = {
 	focusedKey: K | null
 	focusKey: (key: K | null) => void
 	toggleSelection: (key?: K | null) => void
-	toggleRangeStep: (direction: -1 | 1) => K | null
+	toggleRangeStep: (
+		direction: -1 | 1,
+		isStepAllowed?: (fromKey: K, toKey: K) => boolean,
+	) => K | null
 	replaceSelection: (keys: Iterable<K>) => void
 	selectEligibleKeys: () => void
 	clearSelection: () => void
@@ -91,9 +94,8 @@ export function useCollectionInteraction<K extends CollectionKey>({
 		const navigableKeySet = new Set(projection.navigableKeys)
 		return new Set(projection.eligibleKeys.filter((key) => !navigableKeySet.has(key)))
 	}, [projection])
-	const listState = useListState<CollectionInteractionItem<K>>({
-		items,
-		children: (item) =>
+	const renderItem = useCallback(
+		(item: CollectionInteractionItem<K>) =>
 			createElement(
 				Item as (
 					props: Omit<ItemProps<CollectionInteractionItem<K>>, 'children'> & {
@@ -103,6 +105,11 @@ export function useCollectionInteraction<K extends CollectionKey>({
 				{ key: item.key, textValue: item.textValue },
 				item.textValue,
 			) as ReactElement<ItemProps<CollectionInteractionItem<K>>>,
+		[],
+	)
+	const listState = useListState<CollectionInteractionItem<K>>({
+		items,
+		children: renderItem,
 		selectionMode: 'multiple',
 		selectionBehavior: 'toggle',
 		disabledKeys,
@@ -152,46 +159,57 @@ export function useCollectionInteraction<K extends CollectionKey>({
 		[],
 	)
 
-	const toggleRangeStep = useCallback((direction: -1 | 1): K | null => {
-		const navigable = projectionRef.current.navigableKeys
-		if (navigable.length === 0) {
-			rangeToggleSessionRef.current = null
-			return null
-		}
+	const toggleRangeStep = useCallback(
+		(direction: -1 | 1, isStepAllowed?: (fromKey: K, toKey: K) => boolean): K | null => {
+			const navigable = projectionRef.current.navigableKeys
+			if (navigable.length === 0) {
+				rangeToggleSessionRef.current = null
+				return null
+			}
 
-		const manager = listStateRef.current.selectionManager
-		const focusedKey = asCollectionKey<K>(manager.focusedKey)
-		const previousSession = rangeToggleSessionRef.current
-		const session =
-			previousSession &&
-			previousSession.lastToggledKey === focusedKey &&
-			navigable.includes(previousSession.lastToggledKey)
-				? previousSession
-				: null
-		const fallbackKey = direction > 0 ? navigable[0] : navigable[navigable.length - 1]
-		const cursorKey =
-			session && session.direction !== direction
-				? session.lastToggledKey
-				: session
-					? getAdjacentKey(navigable, session.lastToggledKey, direction)
-					: focusedKey && navigable.includes(focusedKey)
-						? focusedKey
-						: fallbackKey
+			const manager = listStateRef.current.selectionManager
+			const focusedKey = asCollectionKey<K>(manager.focusedKey)
+			const previousSession = rangeToggleSessionRef.current
+			const session =
+				previousSession &&
+				previousSession.lastToggledKey === focusedKey &&
+				navigable.includes(previousSession.lastToggledKey)
+					? previousSession
+					: null
+			const fallbackKey = direction > 0 ? navigable[0] : navigable[navigable.length - 1]
+			const cursorKey =
+				session && session.direction !== direction
+					? session.lastToggledKey
+					: session
+						? getAdjacentKey(navigable, session.lastToggledKey, direction)
+						: focusedKey && navigable.includes(focusedKey)
+							? focusedKey
+							: fallbackKey
 
-		if (!cursorKey) return null
-		isRangeToggleWriteRef.current = true
-		try {
-			manager.toggleSelection(cursorKey)
-		} finally {
-			isRangeToggleWriteRef.current = false
-		}
-		manager.setFocusedKey(cursorKey)
-		rangeToggleSessionRef.current = {
-			direction,
-			lastToggledKey: cursorKey,
-		}
-		return cursorKey
-	}, [])
+			if (!cursorKey) return null
+			if (
+				focusedKey !== null &&
+				cursorKey !== focusedKey &&
+				isStepAllowed &&
+				!isStepAllowed(focusedKey, cursorKey)
+			) {
+				return null
+			}
+			isRangeToggleWriteRef.current = true
+			try {
+				manager.toggleSelection(cursorKey)
+			} finally {
+				isRangeToggleWriteRef.current = false
+			}
+			manager.setFocusedKey(cursorKey)
+			rangeToggleSessionRef.current = {
+				direction,
+				lastToggledKey: cursorKey,
+			}
+			return cursorKey
+		},
+		[],
+	)
 
 	const selectEligibleKeys = useCallback(() => {
 		rangeToggleSessionRef.current = null

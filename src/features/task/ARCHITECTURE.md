@@ -96,7 +96,7 @@ src/features/task/
 | launcher | 创建内核 / 标签 formatters 复用本域 public |
 | navigation | 命令的 path-only open 策略在本域；列表详情的 Sheet / Aside 容器选择与 canonical 显式导航由 `entity-detail` 拥有 |
 
-`TaskRowAdapter` 只把任务领域内容与动作装入共享 `RowLayout` 五槽；`RowShell` 是交互状态壳，连续选择与固定占位由 `BoardRowSlot` 拥有，分组标题 anatomy 由 `BoardSectionHeader` 提供。`TaskBoard` 继续拥有邻接计算、虚拟 projection、未加载任务 spacer、sticky、分页与焦点恢复，固定 Row / Header / gap 数值只消费共享集合几何。Ticket 01 不改变虚拟引擎；移除假 spacer 与热路径优化属于 Ticket 02。
+`TaskRowAdapter` 只把任务领域内容与动作装入共享 `RowLayout` 五槽；`RowShell` 是交互状态壳，连续选择与固定占位由 `BoardRowSlot` 拥有，分组标题 anatomy 由 `BoardSectionHeader` 提供。`TaskBoard` 拥有邻接计算、唯一虚拟 projection、已加载 flat items + 固定 sentinel 的几何、sticky、`idle / loading / error / exhausted` 分页、append anchor 与 stable-id 焦点恢复，固定 Row / Header / gap 数值只消费共享集合几何。`totalCount` 不参与虚拟高度；分页未结束时 `aria-rowcount=-1`，结束后报告当前可导航行数，并通过可访问 status 报告加载进度。生产不保留全量渲染 fallback，overscan 固定为 6，sticky 与 virtual row 的 `content-visibility` 保持现有合同。
 
 任务正式详情合同：`Space` 只打开只读 Peek；列表点击或 `Enter` 只写入共享 `?task=` 详情意图。窗口 `<1024px` 时详情始终使用 HeroUI Sheet，`>=1024px` 时始终使用非模态 Aside；跨断点只换容器，不改 URL、不关闭、不跳 `TaskPage`。Aside 与 Sheet 复用同一任务详情 query、draft、autosave 和 mutation；Aside 列表 Panel 最小 `352px`，Aside 最小 `320px` / 默认 `360px` / 最大 `440px`。`TaskBoard` 只以自身容器宽度保留一档 `<560px` 紧凑布局，不与窗口或 Sidebar 状态耦合。canonical `TaskPage` 只能由 Header 等显式用户动作在 flush autosave 后打开。任务域不拥有详情呈现偏好、断点 state 或容器分流逻辑。
 

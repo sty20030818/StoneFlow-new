@@ -102,12 +102,7 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 		spaces,
 		showProjectCellOptions: false,
 		createProjectId: projectId,
-		hasNextPage: taskList.hasNextPage,
-		isFetchingNextPage: taskList.isFetchingNextPage,
-		fetchNextPage: taskList.fetchNextPage,
-		fetchNextPageError: taskList.fetchNextPageError,
-		totalCount: taskList.totalCount,
-		loadedCount: taskList.loadedCount,
+		pagination: taskList.pagination,
 		empty: project
 			? {
 					emptyActionLabel: '创建任务',
