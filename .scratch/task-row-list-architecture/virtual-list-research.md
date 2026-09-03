@@ -151,9 +151,9 @@ Tauri 不捆绑统一浏览器：Windows 使用可更新的 WebView2/Chromium，
 
 仓库有一个历史 performance harness，但它不能证明当前体验已通过：
 
-1. harness 以每 50ms 直接写 `scrollTop` 并手工 dispatch `scroll`，不是触控板 momentum 或滚动条 thumb drag。[TaskBoardPerformancePage.tsx](../../src/features/task/testing/TaskBoardPerformancePage.tsx#L337-L350)
-2. 它只把 `>=200ms` 的 entry 记为 long task；W3C Long Tasks API 的标准门槛是 50ms，因此 50–199ms 的明显阻塞会被当前报告过滤掉。[TaskBoardPerformancePage.tsx](../../src/features/task/testing/TaskBoardPerformancePage.tsx#L18-L25) [W3C Long Tasks API](https://www.w3.org/TR/longtasks-1/)
-3. paged fixture 的 `onFetchNextPage` 只把 `inFlight` 设为 true，不追加下一页，也不恢复 false，所以它没有覆盖“页追加后 spacer 移动、连续追页、mount 风暴”。[TaskBoardPerformancePage.tsx](../../src/features/task/testing/TaskBoardPerformancePage.tsx#L99-L113)
+1. harness 以每 50ms 直接写 `scrollTop` 并手工 dispatch `scroll`，不是触控板 momentum 或滚动条 thumb drag。[历史源码（commit `5e0468a5`）](https://github.com/sty20030818/StoneFlow-new/blob/5e0468a57f0e0618ca83afb155e97eebd17e3b4d/src/features/task/testing/TaskBoardPerformancePage.tsx#L337-L350)
+2. 它只把 `>=200ms` 的 entry 记为 long task；W3C Long Tasks API 的标准门槛是 50ms，因此 50–199ms 的明显阻塞会被当前报告过滤掉。[历史源码（commit `5e0468a5`）](https://github.com/sty20030818/StoneFlow-new/blob/5e0468a57f0e0618ca83afb155e97eebd17e3b4d/src/features/task/testing/TaskBoardPerformancePage.tsx#L18-L25) [W3C Long Tasks API](https://www.w3.org/TR/longtasks-1/)
+3. paged fixture 的 `onFetchNextPage` 只把 `inFlight` 设为 true，不追加下一页，也不恢复 false，所以它没有覆盖“页追加后 spacer 移动、连续追页、mount 风暴”。[历史源码（commit `5e0468a5`）](https://github.com/sty20030818/StoneFlow-new/blob/5e0468a57f0e0618ca83afb155e97eebd17e3b4d/src/features/task/testing/TaskBoardPerformancePage.tsx#L99-L113)
 4. 唯一历史记录来自 2026-08-13 的旧 commit；2,000-row 的 5 秒程序滚动实际多次耗时约 6–7 秒，50 次 focus sample 又大多为 null。[historical result](../../Documents/99-素材/03-验证/heroui-refactor/task-board-performance-before.json#L8-L68) [historical result](../../Documents/99-素材/03-验证/heroui-refactor/task-board-performance-before.json#L120-L172)
 5. 既有计划已明确把该基线冻结为历史输入，并注明“不代表当前性能已通过”。[archived plan](../../Documents/98-归档/02-已完成重构/2026-08-12-heroui-ui-interaction-system-refactor/PLAN.md#L516-L525)
 

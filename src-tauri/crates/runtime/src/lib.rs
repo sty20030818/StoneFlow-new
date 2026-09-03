@@ -17,15 +17,11 @@ pub mod update_schedule;
 pub mod window;
 
 pub use window::main::MAIN_WINDOW_LABEL;
-#[cfg(all(target_os = "windows", not(feature = "task-board-benchmark")))]
+#[cfg(target_os = "windows")]
 use window::main::{persist_windows_main_window_state, WINDOWS_MAIN_WINDOW_STATE};
 
 /// 组装主应用 Builder。
 pub fn builder() -> tauri::Builder<tauri::Wry> {
-    #[cfg(feature = "task-board-benchmark")]
-    let builder = tauri::Builder::default();
-
-    #[cfg(not(feature = "task-board-benchmark"))]
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             // 热唤起：只恢复可见性，不改几何、不 center。
@@ -41,7 +37,7 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
         .plugin(tauri_plugin_global_shortcut::Builder::new().build());
 
     // Windows 的官方插件会先恢复位置再恢复物理尺寸，避免跨 DPI 显示器时尺寸换算错误。
-    #[cfg(all(target_os = "windows", not(feature = "task-board-benchmark")))]
+    #[cfg(target_os = "windows")]
     let builder = builder.plugin(
         tauri_plugin_window_state::Builder::new()
             .with_state_flags(WINDOWS_MAIN_WINDOW_STATE)
@@ -51,19 +47,13 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
             .build(),
     );
 
-    #[cfg(all(target_os = "macos", not(feature = "task-board-benchmark")))]
+    #[cfg(target_os = "macos")]
     let builder = builder.plugin(tauri_nspanel::init());
 
-    let builder = builder
+    builder
         .setup(bootstrap::setup_app)
         .on_window_event(|window, event| {
             if window.label() == MAIN_WINDOW_LABEL {
-                #[cfg(feature = "task-board-benchmark")]
-                if matches!(event, WindowEvent::CloseRequested { .. }) {
-                    window.app_handle().exit(0);
-                }
-
-                #[cfg(not(feature = "task-board-benchmark"))]
                 if let WindowEvent::CloseRequested { api, .. } = event {
                     api.prevent_close();
                     let _ = window.hide();
@@ -72,12 +62,8 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
                     persist_windows_main_window_state(window.app_handle());
                 }
             }
-        });
-
-    #[cfg(not(feature = "task-board-benchmark"))]
-    let builder = builder.invoke_handler(commands::handler());
-
-    builder
+        })
+        .invoke_handler(commands::handler())
 }
 
 /// 通过 runtime 边界启动 StoneFlow。
@@ -87,10 +73,6 @@ pub fn run(context: tauri::Context<tauri::Wry>) {
         .build(context)
         .expect("failed to build StoneFlow Tauri application");
 
-    #[cfg(feature = "task-board-benchmark")]
-    app.run(|_, _| {});
-
-    #[cfg(not(feature = "task-board-benchmark"))]
     app.run(|app_handle, event| match event {
         tauri::RunEvent::ExitRequested { ref api, .. } => {
             let should_allow_exit = if let Some(exit_coordinator) =

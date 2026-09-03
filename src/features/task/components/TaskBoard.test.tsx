@@ -23,7 +23,6 @@ import { DangerConfirmProvider } from '@/features/danger-confirm'
 import { useCollectionInteraction, type CollectionFocusIntent } from '@/features/selection'
 import {
 	TaskBoard,
-	TaskBoardOrdinaryCandidate,
 	type TaskBoardPagination,
 	type TaskBoardProps,
 } from '@/features/task/components/TaskBoard'
@@ -76,7 +75,6 @@ vi.mock('@/features/task/components/TaskRowAdapter', async () => {
 					{...ariaRowProps}
 					ref={frame.setRowElement}
 					aria-label={`打开任务 ${task.title}`}
-					data-task-id={task.id}
 					data-suppress-focus-indicator={String(rowState.suppressFocusIndicator ?? false)}
 					onContextMenu={() => onContextMenuOpenChange?.(true)}
 				>
@@ -96,161 +94,6 @@ vi.mock('@/features/task/components/TaskRowAdapter', async () => {
 })
 
 describe('TaskBoard', () => {
-	it('普通列表候选复用相同 Row，并在文档流中挂载全部已加载任务', () => {
-		const tasks = Array.from({ length: 150 }, (_, index) =>
-			createTask({ id: `task-${index}`, title: `任务 ${index}` }),
-		)
-		const fetchNextPage = vi.fn(async () => undefined)
-		const { container } = renderTaskBoard(
-			<TaskBoardHarness
-				BoardComponent={TaskBoardOrdinaryCandidate}
-				onEmptyAction={() => undefined}
-				onToggleTaskStatus={async () => undefined}
-				onUpdateTaskPriority={async () => undefined}
-				onUpdateTaskStatus={async () => undefined}
-				pagination={{
-					sourceKey: 'ordinary-candidate',
-					loadedPageCount: 1,
-					state: 'idle',
-					fetchNextPage,
-				}}
-				pendingTaskId={null}
-				status='ready'
-				tasks={tasks}
-			/>,
-		)
-
-		expect(container.querySelector('[data-task-board-engine="ordinary"]')).toBeInTheDocument()
-		expect(container.querySelectorAll('[data-task-id]')).toHaveLength(tasks.length)
-		expect(fetchNextPage).not.toHaveBeenCalled()
-	})
-
-	it('普通列表候选只在 sentinel 进入 viewport 后请求下一页', async () => {
-		let notifyIntersection: IntersectionObserverCallback | null = null
-		const observer = {
-			disconnect: vi.fn(),
-			observe: vi.fn(),
-			root: null,
-			rootMargin: '0px',
-			scrollMargin: '0px',
-			thresholds: [0],
-			takeRecords: () => [],
-			unobserve: vi.fn(),
-		}
-		vi.stubGlobal(
-			'IntersectionObserver',
-			vi.fn(function (callback: IntersectionObserverCallback) {
-				notifyIntersection = callback
-				return observer
-			}),
-		)
-		const fetchNextPage = vi.fn(async () => undefined)
-
-		try {
-			renderTaskBoard(
-				<AppScrollArea>
-					<TaskBoardHarness
-						BoardComponent={TaskBoardOrdinaryCandidate}
-						onEmptyAction={() => undefined}
-						onToggleTaskStatus={async () => undefined}
-						onUpdateTaskPriority={async () => undefined}
-						onUpdateTaskStatus={async () => undefined}
-						pagination={{
-							sourceKey: 'ordinary-sentinel',
-							loadedPageCount: 1,
-							state: 'idle',
-							fetchNextPage,
-						}}
-						pendingTaskId={null}
-						status='ready'
-						tasks={[createTask({ id: 'task-1', title: '任务 1' })]}
-					/>
-				</AppScrollArea>,
-			)
-
-			await waitFor(() => expect(observer.observe).toHaveBeenCalledOnce())
-			act(() => {
-				notifyIntersection?.(
-					[{ isIntersecting: true } as IntersectionObserverEntry],
-					observer as IntersectionObserver,
-				)
-			})
-			await waitFor(() => expect(fetchNextPage).toHaveBeenCalledOnce())
-		} finally {
-			vi.unstubAllGlobals()
-		}
-	})
-
-	it('普通列表候选不会沿用上一数据源的 sentinel 可见状态', async () => {
-		const callbacks: IntersectionObserverCallback[] = []
-		const observer = {
-			disconnect: vi.fn(),
-			observe: vi.fn(),
-			root: null,
-			rootMargin: '0px',
-			scrollMargin: '0px',
-			thresholds: [0],
-			takeRecords: () => [],
-			unobserve: vi.fn(),
-		}
-		vi.stubGlobal(
-			'IntersectionObserver',
-			vi.fn(function (callback: IntersectionObserverCallback) {
-				callbacks.push(callback)
-				return observer
-			}),
-		)
-		const firstFetch = vi.fn(async () => undefined)
-		const secondFetch = vi.fn(async () => undefined)
-
-		function SourceProbe() {
-			const [secondSource, setSecondSource] = useState(false)
-			return (
-				<>
-					<button onClick={() => setSecondSource(true)} type='button'>
-						切换数据源
-					</button>
-					<AppScrollArea>
-						<TaskBoardHarness
-							BoardComponent={TaskBoardOrdinaryCandidate}
-							onEmptyAction={() => undefined}
-							onToggleTaskStatus={async () => undefined}
-							onUpdateTaskPriority={async () => undefined}
-							onUpdateTaskStatus={async () => undefined}
-							pagination={{
-								sourceKey: secondSource ? 'source-b' : 'source-a',
-								loadedPageCount: 1,
-								state: 'idle',
-								fetchNextPage: secondSource ? secondFetch : firstFetch,
-							}}
-							pendingTaskId={null}
-							status='ready'
-							tasks={[createTask({ id: 'task-1', title: '任务 1' })]}
-						/>
-					</AppScrollArea>
-				</>
-			)
-		}
-
-		try {
-			renderTaskBoard(<SourceProbe />)
-			await waitFor(() => expect(callbacks).toHaveLength(1))
-			act(() => {
-				callbacks[0]?.(
-					[{ isIntersecting: true } as IntersectionObserverEntry],
-					observer as IntersectionObserver,
-				)
-			})
-			await waitFor(() => expect(firstFetch).toHaveBeenCalledOnce())
-
-			fireEvent.click(screen.getByRole('button', { name: '切换数据源' }))
-			await waitFor(() => expect(callbacks).toHaveLength(2))
-			expect(secondFetch).not.toHaveBeenCalled()
-		} finally {
-			vi.unstubAllGlobals()
-		}
-	})
-
 	it('状态分组通过公共 BoardSectionHeader hook 渲染批准高度', () => {
 		const { container } = renderTaskBoard(
 			<TaskBoardHarness
@@ -1216,7 +1059,6 @@ type TaskBoardHarnessProps = Omit<
 	| 'onRetry'
 	| 'onSectionOpenChange'
 > & {
-	BoardComponent?: typeof TaskBoard
 	customSections?: readonly TaskBoardCustomSection[]
 	focusIntent?: CollectionFocusIntent<string, string> | null
 	onFocusIntentConsumed?: (intent: CollectionFocusIntent<string, string>) => void
@@ -1228,7 +1070,6 @@ type TaskBoardHarnessProps = Omit<
 }
 
 function TaskBoardHarness({
-	BoardComponent = TaskBoard,
 	customSections,
 	focusIntent = null,
 	onFocusIntentConsumed = () => undefined,
@@ -1268,7 +1109,7 @@ function TaskBoardHarness({
 
 	return (
 		<>
-			<BoardComponent
+			<TaskBoard
 				{...props}
 				collectionInteraction={collectionInteraction}
 				flatItems={flatItems}

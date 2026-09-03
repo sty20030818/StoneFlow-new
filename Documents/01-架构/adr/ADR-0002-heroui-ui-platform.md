@@ -41,6 +41,7 @@ StoneFlow 曾同时存在 Radix/shadcn primitive、平行 base、纯 class patte
 - 迁移采用 hard cut，Radix/shadcn 兼容层、旧 token 与 class pattern 已在消费者归零后删除。
 - 集中 recipe 与 HeroUI 当前公开 BEM 及 documented ARIA/data attributes 合同存在明确实现耦合；HeroUI 升级必须重新核对代表性状态，不通过 wrapper 假装供应商已经隔离。
 - HeroUI 无法也不应取代 Tauri 平台窗口契约、虚拟列表几何或 StoneFlow 领域命令；这些例外必须保持小而明确，不得成为继续自建通用 UI 的借口。
+- TaskBoard 引擎 hard cut 的当前可复核运行证据仅来自当前 macOS WKWebView：virtual 覆盖 loaded 150 / 300 / 600 / 2,000 / 10,000 与 paged 150→600，ordinary 仅完成 150 / 300 / 600，并在 loaded 2,000 连续两次超过 5 秒绘制门禁；Windows WebView2、两平台最低支持 WebView、原生触控板 fling / 反向滚动 / 滚动条拖拽、真实产品焦点路径与平台 performance trace 尚未验收。ordinary 未达到“双平台 10,000 个富 Row 且交互、内存与 DOM 均可接受”的替换门槛，因此生产继续只保留 TanStack Virtual；该裁决表示 ordinary 未证明可安全替换，不表示它已在全部最低平台被完整证伪。
 - 任务详情不保存呈现偏好，也不建立第二份响应式状态。`?task=` 只表达 active task：Shell controller 的单一 `isCompact` 在窗口 `>=1024px` 时让 HeroUI Pro Resizable 渲染 Aside，列表最小 `352px`，Aside 最小 `320px`、默认 `360px`、最大 `440px`；窗口 `<1024px` 时渲染 Sheet。跨断点只替换容器并保留同一 URL、详情状态与草稿，不自动关闭详情或导航完整页。Sidebar 与详情 open state 独立，窄窗两张模态 Sheet 互斥。TaskBoard 只在自身容器 `<560px` 时进入唯一一档紧凑排版；canonical 完整页只由显式入口打开。
 
 ## 放弃的方案

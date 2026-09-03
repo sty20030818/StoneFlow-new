@@ -127,24 +127,11 @@ export type TaskBoardProps = {
 	pagination: TaskBoardPagination
 }
 
-type TaskBoardImplProps = TaskBoardProps & {
-	isVirtualized: boolean
-}
-
 /**
  * 任务 Board：状态分区 sticky + 虚拟行。
  * 几何见 collectionGeometry；滚动容器来自 AppScrollArea context。
  */
-export function TaskBoard(props: TaskBoardProps) {
-	return <TaskBoardImpl {...props} isVirtualized />
-}
-
-/** Ticket 03 一次性普通列表候选；不进入 task 公共出口，决策后随 benchmark 删除。 */
-export function TaskBoardOrdinaryCandidate(props: TaskBoardProps) {
-	return <TaskBoardImpl {...props} isVirtualized={false} />
-}
-
-function TaskBoardImpl({
+export function TaskBoard({
 	tasks,
 	flatItems,
 	collectionInteraction,
@@ -176,8 +163,7 @@ function TaskBoardImpl({
 	showSpaceLabel = false,
 	visibleProperties,
 	pagination,
-	isVirtualized,
-}: TaskBoardImplProps) {
+}: TaskBoardProps) {
 	const selectedTaskIdSet = collectionInteraction.selectedKeys
 	const focusedTaskId = collectionInteraction.focusedKey
 	const { runtime: commandRuntime, context: commandContext } = useCommandRuntimeContext()
@@ -274,25 +260,19 @@ function TaskBoardImpl({
 		[collectionInteraction.listState.selectionManager, collectionInteraction.selectedKeys],
 	)
 
-	const stickyIndexes = useMemo(
-		() => (isVirtualized ? listTaskBoardStickyIndexes(flatItems) : []),
-		[flatItems, isVirtualized],
-	)
+	const stickyIndexes = useMemo(() => listTaskBoardStickyIndexes(flatItems), [flatItems])
 	const itemOffsets = useMemo(() => buildTaskBoardItemOffsets(flatItems), [flatItems])
-	const virtualLayout = useMemo(
-		() => (isVirtualized ? buildTaskBoardVirtualLayout(flatItems) : null),
-		[flatItems, isVirtualized],
-	)
-	const contentHeightPx = virtualLayout?.contentHeightPx ?? 0
+	const virtualLayout = useMemo(() => buildTaskBoardVirtualLayout(flatItems), [flatItems])
+	const contentHeightPx = virtualLayout.contentHeightPx
 	const sentinelIndex = flatItems.length
-	const virtualCount = virtualLayout?.virtualCount ?? 0
+	const virtualCount = virtualLayout.virtualCount
 
 	const { stickyShellRef, stickyPushLayerRef, stickyActiveIndex, stickyStuck, nextStickyIndex } =
 		useTaskBoardSticky({
 			scrollViewport,
 			stickyIndexes,
 			itemOffsets,
-			enabled: isVirtualized && status === 'ready',
+			enabled: status === 'ready',
 		})
 
 	const rowActions = useMemo(
@@ -367,7 +347,6 @@ function TaskBoardImpl({
 	)
 
 	const virtualizer = useVirtualizer({
-		enabled: isVirtualized,
 		count: virtualCount,
 		getScrollElement,
 		estimateSize,
@@ -445,7 +424,7 @@ function TaskBoardImpl({
 		{
 			'aria-label': '任务列表',
 			disallowTypeAhead: true,
-			isVirtualized,
+			isVirtualized: true,
 			keyboardNavigationBehavior: 'tab',
 			escapeKeyBehavior: 'none',
 			shouldSelectOnPressUp: true,
@@ -653,7 +632,6 @@ function TaskBoardImpl({
 					isFocused={isFocused}
 					isPending={pendingTaskId === task.id}
 					isSelected={selectedTaskIdSet.has(task.id)}
-					isVirtualized={isVirtualized}
 					listState={rowListState}
 					onPointerFocusTask={handlePointerFocusTask}
 					onPointerLeaveTask={handlePointerLeaveTask}
@@ -674,7 +652,6 @@ function TaskBoardImpl({
 			focusedTaskId,
 			handlePointerFocusTask,
 			handlePointerLeaveTask,
-			isVirtualized,
 			pendingTaskId,
 			projectBinding,
 			rowListState,
@@ -696,7 +673,6 @@ function TaskBoardImpl({
 	} | null>(null)
 	const fetchInFlightRef = useRef<Promise<unknown> | null>(null)
 	const captureAppendAnchor = useCallback(() => {
-		if (!isVirtualized) return
 		const viewport = scrollViewport
 		if (!viewport) return
 		const firstVisibleItem = virtualItems.find(
@@ -713,14 +689,7 @@ function TaskBoardImpl({
 			scrollTop: viewport.scrollTop,
 			loadedPageCount: pagination.loadedPageCount,
 		}
-	}, [
-		flatItems,
-		isVirtualized,
-		pagination.loadedPageCount,
-		scrollViewport,
-		sentinelIndex,
-		virtualItems,
-	])
+	}, [flatItems, pagination.loadedPageCount, scrollViewport, sentinelIndex, virtualItems])
 	const requestNextPage = useCallback(() => {
 		if (
 			pagination.state === 'exhausted' ||
@@ -739,38 +708,7 @@ function TaskBoardImpl({
 			})
 			.catch(() => undefined)
 	}, [captureAppendAnchor, pagination])
-	const ordinarySentinelRef = useRef<HTMLDivElement | null>(null)
-	const [ordinarySentinelIntersection, setOrdinarySentinelIntersection] = useState<{
-		sourceKey: string
-		isVisible: boolean
-	} | null>(null)
-	useEffect(() => {
-		const sentinel = ordinarySentinelRef.current
-		if (
-			isVirtualized ||
-			!scrollViewport ||
-			!sentinel ||
-			status !== 'ready' ||
-			typeof IntersectionObserver === 'undefined'
-		) {
-			return
-		}
-
-		const observer = new IntersectionObserver(
-			(entries) =>
-				setOrdinarySentinelIntersection({
-					sourceKey: pagination.sourceKey,
-					isVisible: entries.some((entry) => entry.isIntersecting),
-				}),
-			{ root: scrollViewport },
-		)
-		observer.observe(sentinel)
-		return () => observer.disconnect()
-	}, [isVirtualized, pagination.sourceKey, scrollViewport, status])
-	const sentinelMounted = isVirtualized
-		? virtualItems.some((item) => item.index === sentinelIndex)
-		: ordinarySentinelIntersection?.sourceKey === pagination.sourceKey &&
-			ordinarySentinelIntersection.isVisible
+	const sentinelMounted = virtualItems.some((item) => item.index === sentinelIndex)
 	const sentinelEnteredRef = useRef(false)
 	const resetPaginationSession = useCallback(() => {
 		sentinelEnteredRef.current = false
@@ -795,10 +733,6 @@ function TaskBoardImpl({
 	}, [pagination.state, requestNextPage, resetPaginationSession, sentinelMounted, status])
 
 	useLayoutEffect(() => {
-		if (!isVirtualized) {
-			appendAnchorRef.current = null
-			return
-		}
 		const anchor = appendAnchorRef.current
 		if (!anchor) return
 		if (pagination.loadedPageCount <= anchor.loadedPageCount) {
@@ -819,7 +753,6 @@ function TaskBoardImpl({
 		if (nextScrollTop !== null) viewport.scrollTop = nextScrollTop
 	}, [
 		boardCollection.flatIndexByKey,
-		isVirtualized,
 		itemOffsets,
 		pagination.loadedPageCount,
 		pagination.state,
@@ -913,7 +846,6 @@ function TaskBoardImpl({
 			<span aria-live='polite' className='sr-only' role='status'>
 				{buildTaskBoardPaginationStatus(pagination, tasks.length)}
 			</span>
-			{/* 两个一次性候选共享完整 controller，只让布局方式成为变量。 */}
 			<div
 				{...gridProps}
 				ref={gridRef}
@@ -924,12 +856,11 @@ function TaskBoardImpl({
 				}
 				className='@container/task-list relative w-full outline-none'
 				data-board-root='true'
-				data-task-board-engine={isVirtualized ? 'virtual' : 'ordinary'}
 				onFocusCapture={handleRootFocusCapture}
 				onKeyDownCapture={handleRootKeyDownCapture}
 			>
 				{/* 零高度 sticky 壳（不占文档流高度）+ 定高裁剪层。 */}
-				{isVirtualized && stickyHeader ? (
+				{stickyHeader ? (
 					<div
 						ref={stickyShellRef}
 						aria-hidden={!stickyStuck || undefined}
@@ -961,114 +892,77 @@ function TaskBoardImpl({
 						</div>
 					</div>
 				) : null}
-				{isVirtualized ? (
-					<div
-						className='relative w-full'
-						data-task-board-extent={contentHeightPx}
-						data-task-board-virtual='sections'
-						style={{ height: contentHeightPx, minHeight: contentHeightPx }}
-					>
-						{virtualItems.map(({ index, start, size, key }) => {
-							const item = flatItems[index]
-							if (index === sentinelIndex) {
-								return (
-									<div
-										data-index={index}
-										data-task-board-sentinel='true'
-										data-task-board-sentinel-state={pagination.state}
-										key={String(key)}
-										role='presentation'
-										style={{
-											position: 'absolute',
-											top: 0,
-											left: 0,
-											width: '100%',
-											height: size,
-											transform: `translateY(${start}px)`,
-										}}
-									>
-										<TaskBoardPaginationSentinel
-											pagination={pagination}
-											onFetchNextPage={requestNextPage}
-										/>
-									</div>
-								)
-							}
-							if (!item) return null
-							const isHiddenStickySource = item.kind === 'header' && index === hideListHeaderIndex
-							// 下一个即将顶替的 header 提高层级，保证从下方盖过被顶走的浮层
-							const isIncomingSticky =
-								item.kind === 'header' && nextStickyIndex === index && stickyStuck
-
+				<div
+					className='relative w-full'
+					data-task-board-extent={contentHeightPx}
+					data-task-board-virtual='sections'
+					style={{ height: contentHeightPx, minHeight: contentHeightPx }}
+				>
+					{virtualItems.map(({ index, start, size, key }) => {
+						const item = flatItems[index]
+						if (index === sentinelIndex) {
 							return (
 								<div
-									aria-hidden={isHiddenStickySource || undefined}
 									data-index={index}
-									data-sticky={stickyStuck && index === stickyActiveIndex ? 'true' : undefined}
-									inert={isHiddenStickySource || undefined}
+									data-task-board-sentinel='true'
+									data-task-board-sentinel-state={pagination.state}
 									key={String(key)}
-									role={item.kind === 'header' ? 'presentation' : undefined}
+									role='presentation'
 									style={{
-										// 全部 absolute：scrollHeight 只由外层 height 决定
 										position: 'absolute',
-										transform: `translateY(${start}px)`,
-										opacity: isHiddenStickySource ? 0 : 1,
-										pointerEvents: isHiddenStickySource ? 'none' : undefined,
-										zIndex: isIncomingSticky ? 3 : item.kind === 'header' ? 1 : 0,
 										top: 0,
 										left: 0,
 										width: '100%',
 										height: size,
-										// header 不用 content-visibility，避免吸顶切换时闪一下
-										...(item.kind === 'header'
-											? {}
-											: {
-													contentVisibility: 'auto' as const,
-													containIntrinsicSize: size,
-												}),
+										transform: `translateY(${start}px)`,
 									}}
 								>
-									{renderItemContent(item, index, !isHiddenStickySource)}
+									<TaskBoardPaginationSentinel
+										pagination={pagination}
+										onFetchNextPage={requestNextPage}
+									/>
 								</div>
 							)
-						})}
-					</div>
-				) : (
-					<div className='relative w-full' data-task-board-ordinary='sections'>
-						{flatItems.map((item, index) => (
+						}
+						if (!item) return null
+						const isHiddenStickySource = item.kind === 'header' && index === hideListHeaderIndex
+						// 下一个即将顶替的 header 提高层级，保证从下方盖过被顶走的浮层
+						const isIncomingSticky =
+							item.kind === 'header' && nextStickyIndex === index && stickyStuck
+
+						return (
 							<div
+								aria-hidden={isHiddenStickySource || undefined}
 								data-index={index}
-								key={item.key}
+								data-sticky={stickyStuck && index === stickyActiveIndex ? 'true' : undefined}
+								inert={isHiddenStickySource || undefined}
+								key={String(key)}
 								role={item.kind === 'header' ? 'presentation' : undefined}
 								style={{
-									height:
-										item.kind === 'header' ? COLLECTION_SECTION_HEADER_SIZE : COLLECTION_ROW_SIZE,
+									// 全部 absolute：scrollHeight 只由外层 height 决定
+									position: 'absolute',
+									transform: `translateY(${start}px)`,
+									opacity: isHiddenStickySource ? 0 : 1,
+									pointerEvents: isHiddenStickySource ? 'none' : undefined,
+									zIndex: isIncomingSticky ? 3 : item.kind === 'header' ? 1 : 0,
+									top: 0,
+									left: 0,
+									width: '100%',
+									height: size,
+									// header 不用 content-visibility，避免吸顶切换时闪一下
 									...(item.kind === 'header'
-										? { position: 'sticky' as const, top: 0, zIndex: 2 }
+										? {}
 										: {
 												contentVisibility: 'auto' as const,
-												containIntrinsicSize: COLLECTION_ROW_SIZE,
+												containIntrinsicSize: size,
 											}),
 								}}
 							>
-								{renderItemContent(item, index)}
+								{renderItemContent(item, index, !isHiddenStickySource)}
 							</div>
-						))}
-						<div
-							ref={ordinarySentinelRef}
-							data-index={sentinelIndex}
-							data-task-board-sentinel='true'
-							data-task-board-sentinel-state={pagination.state}
-							role='presentation'
-							style={{ height: COLLECTION_ROW_SIZE }}
-						>
-							<TaskBoardPaginationSentinel
-								onFetchNextPage={requestNextPage}
-								pagination={pagination}
-							/>
-						</div>
-					</div>
-				)}
+						)
+					})}
+				</div>
 			</div>
 		</>
 	)
@@ -1213,7 +1107,6 @@ type TaskBoardGridRowProps = Omit<TaskRowAdapterProps, 'rowState'> & {
 	isFocused: boolean
 	isPending: boolean
 	isSelected: boolean
-	isVirtualized: boolean
 	listState: CollectionInteraction<string>['listState']
 	onPointerFocusTask: (taskId: string) => void
 	onPointerLeaveTask: (taskId: string, restoreRootFocus: boolean) => void
@@ -1228,7 +1121,6 @@ const TaskBoardGridRow = memo(function TaskBoardGridRow({
 	isFocused,
 	isPending,
 	isSelected,
-	isVirtualized,
 	listState,
 	onPointerFocusTask,
 	onPointerLeaveTask,
@@ -1245,7 +1137,7 @@ const TaskBoardGridRow = memo(function TaskBoardGridRow({
 	const { rowProps, gridCellProps } = useGridListItem(
 		{
 			node,
-			isVirtualized,
+			isVirtualized: true,
 			shouldSelectOnPressUp: true,
 		},
 		listState,

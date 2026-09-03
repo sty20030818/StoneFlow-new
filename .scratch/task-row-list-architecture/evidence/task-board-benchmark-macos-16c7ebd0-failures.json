@@ -1,0 +1,32 @@
+{
+	"schemaVersion": 1,
+	"recordSource": "benchmark UI accessibility status observed during the production run",
+	"commit": "16c7ebd00122a73245fd281ae98877656cde556f",
+	"environment": {
+		"device": "MacBook Air (Mac17,3)",
+		"os": "macOS 27.0 (26A5425a)",
+		"webview": "WKWebView / WebKit 22625.1.29.11.26",
+		"minimumSupportedWebView": "未定义（本轮非最低版本证据）",
+		"cpu": "Apple M5，10 核",
+		"physicalMemory": "16 GB",
+		"boardViewport": {
+			"width": 1280,
+			"height": 751
+		}
+	},
+	"scenario": "loaded:2000",
+	"engine": "ordinary",
+	"attempts": [
+		{
+			"ordinal": 1,
+			"result": "discarded",
+			"diagnostic": "等待双帧绘制超过 5000ms（visibility=visible，focus=true），本次结果已丢弃"
+		},
+		{
+			"ordinal": 2,
+			"result": "discarded",
+			"diagnostic": "等待双帧绘制超过 5000ms（visibility=visible，focus=true），本次结果已丢弃"
+		}
+	],
+	"runnerBehavior": "失败尝试按门禁设计不写入成功结果报告"
+}

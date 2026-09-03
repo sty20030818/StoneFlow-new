@@ -57,10 +57,6 @@ version.workspace = true
 name = "app_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
-[features]
-default = []
-task-board-benchmark = ["stoneflow-runtime/task-board-benchmark"]
-
 [build-dependencies]
 tauri-build = { version = "2.6.3", features = [] }
 

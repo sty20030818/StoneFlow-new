@@ -5,17 +5,8 @@ import { spaceKeys } from '@/features/space'
 import { listVisibleSpaces } from '@/features/space'
 import { ShellLayoutSkeleton } from '@/layout/ShellLayoutSkeleton'
 
-import { isTaskBoardBenchmarkEnabled } from './-task-board-benchmark-access'
-
 export const Route = createFileRoute('/')({
 	loader: async ({ context }) => {
-		if (isTaskBoardBenchmarkEnabled()) {
-			throw redirect({
-				to: '/debug/task-board',
-				replace: true,
-			})
-		}
-
 		const spaces = await context.queryClient.ensureQueryData({
 			queryKey: spaceKeys.visible(),
 			queryFn: listVisibleSpaces,
