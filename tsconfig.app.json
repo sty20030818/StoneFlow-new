@@ -4,12 +4,7 @@
 		"target": "esnext",
 		"lib": ["ESNext", "DOM", "DOM.Iterable"],
 		"module": "esnext",
-		"types": [
-			"vite/client",
-			"vitest/globals",
-			"vitest/jsdom",
-			"@testing-library/jest-dom"
-		],
+		"types": ["vite/client", "vitest/globals", "vitest/jsdom"],
 		"skipLibCheck": true,
 		"paths": {
 			"@/*": ["./src/*"]

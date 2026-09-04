@@ -24,45 +24,45 @@
 
 ### 依赖与运行时版本
 
-- 项目声明 `@tanstack/react-virtual ^3.14.10`、React `19.2.8`、`react-aria 3.51.0`、`react-aria-components 1.20.0`、`react-stately 3.49.0`；HeroUI 为 `3.2.4`，HeroUI Pro 为 `1.0.0-beta.8`。[package.json](../../package.json#L33-L60)
-- lock 实际解析为 `@tanstack/react-virtual 3.14.10` + `@tanstack/virtual-core 3.17.8`。[bun.lock](../../bun.lock#L419-L431) 对应 core 的一手实现可见 [TanStack `virtual-core@3.17.8` source](https://github.com/TanStack/virtual/blob/%40tanstack%2Fvirtual-core%403.17.8/packages/virtual-core/src/index.ts)。
+- 项目声明 `@tanstack/react-virtual ^3.14.10`、React `19.2.8`、`react-aria 3.51.0`、`react-aria-components 1.20.0`、`react-stately 3.49.0`；HeroUI 为 `3.2.4`，HeroUI Pro 为 `1.0.0-beta.8`。[package.json](../../../package.json#L33-L60)
+- lock 实际解析为 `@tanstack/react-virtual 3.14.10` + `@tanstack/virtual-core 3.17.8`。[bun.lock](../../../bun.lock#L419-L431) 对应 core 的一手实现可见 [TanStack `virtual-core@3.17.8` source](https://github.com/TanStack/virtual/blob/%40tanstack%2Fvirtual-core%403.17.8/packages/virtual-core/src/index.ts)。
 
 ### TaskBoard 已经是固定高度快路径
 
-- row 高 44px、header 高 36px、gap 2px，模型手工计算每项 offset 和总高度。[taskBoardModel.ts](../../src/features/task/model/taskBoardModel.ts#L11-L17) [taskBoardModel.ts](../../src/features/task/model/taskBoardModel.ts#L118-L135)
-- TanStack 当时显式配置 `measureElement: undefined`、`overscan: 6`，以固定估算高度和绝对定位渲染。[TaskBoard.tsx](../../src/features/task/components/TaskBoard.tsx)
+- row 高 44px、header 高 36px、gap 2px，模型手工计算每项 offset 和总高度。[taskBoardModel.ts](../../../src/features/task/model/taskBoardModel.ts#L11-L17) [taskBoardModel.ts](../../../src/features/task/model/taskBoardModel.ts#L118-L135)
+- TanStack 当时显式配置 `measureElement: undefined`、`overscan: 6`，以固定估算高度和绝对定位渲染。[TaskBoard.tsx](../../../src/features/task/components/TaskBoard.tsx)
 - 因此，当前问题不是“动态高度测量太慢”。反而，后续若引入动态高度，会新增测量、校正和滚动位置稳定性问题。TanStack 官方要求动态列表提供估算并测量真实元素，[Virtualizer API](https://tanstack.com/virtual/latest/docs/api/virtualizer#estimatesize)；React Aria 也明确说明观察动态 item size 内部使用 `ResizeObserver`，可能有性能开销，[React Aria Virtualizer](https://react-aria.adobe.com/Virtualizer#dynamic-item-sizes)。
 
 ### 当时已确认的结构问题：巨大空 spacer
 
-- 服务端默认每页只返回 150 条，并通过 cursor 续页。[view service](../../src-tauri/crates/application/src/view/service.rs#L34) [view service](../../src-tauri/crates/application/src/view/service.rs#L395-L427)
-- TaskBoard 将 `totalCount - loadedCount` 乘以 46px，合并成一个尾部 spacer。[taskBoardModel.ts](../../src/features/task/model/taskBoardModel.ts#L147-L180)
-- 这个 spacer 在 TanStack 中只是**一个超高 item**，渲染时明确只占位、不显示业务 UI；看到它以后才触发下一页请求。[TaskBoard.tsx](../../src/features/task/components/TaskBoard.tsx#L528-L544) [TaskBoard.tsx](../../src/features/task/components/TaskBoard.tsx#L656-L697)
+- 服务端默认每页只返回 150 条，并通过 cursor 续页。[view service](../../../src-tauri/crates/application/src/view/service.rs#L34) [view service](../../../src-tauri/crates/application/src/view/service.rs#L395-L427)
+- TaskBoard 将 `totalCount - loadedCount` 乘以 46px，合并成一个尾部 spacer。[taskBoardModel.ts](../../../src/features/task/model/taskBoardModel.ts#L147-L180)
+- 这个 spacer 在 TanStack 中只是**一个超高 item**，渲染时明确只占位、不显示业务 UI；看到它以后才触发下一页请求。[TaskBoard.tsx](../../../src/features/task/components/TaskBoard.tsx#L528-L544) [TaskBoard.tsx](../../../src/features/task/components/TaskBoard.tsx#L656-L697)
 - 以 10,000 条总量、首屏 150 条为例，未加载区约为 `(10,000 - 150) × 46 = 453,100px` 空白。用户快速拖到底部时可以直接落入这个空 item，但 cursor API 无法直接取“当前滚动深度对应的第 N 页”，只能从现有 cursor 一页页追赶。
 
 **判断：**“快速滑动不跟手”至少包含一个已确认的产品语义问题——滚动条承诺了尚不可访问的位置。至于是否还同时存在 React render、layout/paint 或 WebKit 主线程卡顿，静态代码不能证明，必须另做 profile。
 
 ### sticky 与虚拟化叠了两套机制
 
-- `rangeExtractor` 强制保留当前与下一个 header，这本身是 TanStack 官方允许的 sticky 用法。[TaskBoard.tsx](../../src/features/task/components/TaskBoard.tsx#L260-L280) [TanStack rangeExtractor](https://tanstack.com/virtual/latest/docs/api/virtualizer#rangeextractor)
-- 此外，StoneFlow 又监听 scroll、用 RAF 计算顶替位置、直接写 transform/visibility，并在分区变化时 setState。[useTaskBoardSticky.ts](../../src/features/task/hooks/useTaskBoardSticky.ts#L37-L108)
-- 最终 DOM 还复制了一份零高度 sticky header overlay，并把原 header 设为 `aria-hidden`/`inert`。[TaskBoard.tsx](../../src/features/task/components/TaskBoard.tsx#L586-L655)
+- `rangeExtractor` 强制保留当前与下一个 header，这本身是 TanStack 官方允许的 sticky 用法。[TaskBoard.tsx](../../../src/features/task/components/TaskBoard.tsx#L260-L280) [TanStack rangeExtractor](https://tanstack.com/virtual/latest/docs/api/virtualizer#rangeextractor)
+- 此外，StoneFlow 又监听 scroll、用 RAF 计算顶替位置、直接写 transform/visibility，并在分区变化时 setState。[useTaskBoardSticky.ts](../../../src/features/task/hooks/useTaskBoardSticky.ts#L37-L108)
+- 最终 DOM 还复制了一份零高度 sticky header overlay，并把原 header 设为 `aria-hidden`/`inert`。[TaskBoard.tsx](../../../src/features/task/components/TaskBoard.tsx#L586-L655)
 - TanStack 官方 sticky 示例使用自定义 `rangeExtractor` 保留 active header，并让同一个 active item 使用 `position: sticky`，其余 item 绝对定位；这证明可以先原型验证更短的单实例路径，但不证明 StoneFlow 的分组顶替、ContextMenu 和焦点合同可以未经验收直接照搬。[TanStack sticky example](https://tanstack.com/virtual/latest/docs/framework/react/examples/sticky)
 
 **静态推断，待 profile：**TanStack 的可视范围更新、StoneFlow sticky RAF、富 Row 的 mount/unmount 都发生在滚动期间，可能共同放大卡顿。不能在没有 flame chart 的情况下把责任单独归给 TanStack。
 
 ### Row 本身不是轻量文本节点
 
-`TaskRowAdapter` 包含 ContextMenu、选择控件、多个 metadata dropdown/date/placement 控件、Tooltip 和命令投影；它虽然已经用 `memo` 与自定义 comparator 避免无关更新，但 mount/unmount 仍有实际成本。[TaskRowAdapter.tsx](../../src/features/task/components/TaskRowAdapter.tsx#L77-L115) [TaskRowAdapter.tsx](../../src/features/task/components/TaskRowAdapter.tsx#L233-L383)
+`TaskRowAdapter` 包含 ContextMenu、选择控件、多个 metadata dropdown/date/placement 控件、Tooltip 和命令投影；它虽然已经用 `memo` 与自定义 comparator 避免无关更新，但 mount/unmount 仍有实际成本。[TaskRowAdapter.tsx](../../../src/features/task/components/TaskRowAdapter.tsx#L77-L115) [TaskRowAdapter.tsx](../../../src/features/task/components/TaskRowAdapter.tsx#L233-L383)
 
 这也是不能仅凭“普通 DOM 更简单”就推断 2,000–10,000 个已加载富 Row 一定更快的原因。
 
-另有一个可独立清理的小热点：每个已挂载 Row 都通过 `navigableKeys.indexOf(task.id)` 线性查找 `aria-rowindex`。[TaskBoard.tsx](../../src/features/task/components/TaskBoard.tsx#L859-L893) 它不太可能单独解释滚动体验，但可由 projection 预生成 key→index 映射，避免在滚动挂载路径反复扫描同一数组；是否落地仍应以 profile/基准为准。
+另有一个可独立清理的小热点：每个已挂载 Row 都通过 `navigableKeys.indexOf(task.id)` 线性查找 `aria-rowindex`。[TaskBoard.tsx](../../../src/features/task/components/TaskBoard.tsx#L859-L893) 它不太可能单独解释滚动体验，但可由 projection 预生成 key→index 映射，避免在滚动挂载路径反复扫描同一数组；是否落地仍应以 profile/基准为准。
 
 ### Project/Lifecycle 当前走普通文档流
 
-- `ProjectBoard` 直接 map 全部分组/行，并用原生 CSS `position: sticky` header。[ProjectBoard.tsx](../../src/features/project/components/ProjectBoard.tsx#L83-L110) [ProjectBoard.tsx](../../src/features/project/components/ProjectBoard.tsx#L145-L202)
-- `LifecycleBoard` 是相同类型的普通文档流实现。[LifecycleBoard.tsx](../../src/features/lifecycle/components/LifecycleBoard.tsx#L81-L105) [LifecycleBoard.tsx](../../src/features/lifecycle/components/LifecycleBoard.tsx#L136-L193)
+- `ProjectBoard` 直接 map 全部分组/行，并用原生 CSS `position: sticky` header。[ProjectBoard.tsx](../../../src/features/project/components/ProjectBoard.tsx#L83-L110) [ProjectBoard.tsx](../../../src/features/project/components/ProjectBoard.tsx#L145-L202)
+- `LifecycleBoard` 是相同类型的普通文档流实现。[LifecycleBoard.tsx](../../../src/features/lifecycle/components/LifecycleBoard.tsx#L81-L105) [LifecycleBoard.tsx](../../../src/features/lifecycle/components/LifecycleBoard.tsx#L136-L193)
 - CSS sticky 本来就按最近 scrollport 自动约束位置；这是浏览器原生定位协议。[CSS Positioned Layout Level 3](https://www.w3.org/TR/css-position-3/#sticky-position)
 
 因此三类页面的样式不一致并不神秘：它们目前共享到 RowShell/collection 语义层，但 Board、GroupHeader 和 layout 层并不是同一个组件。修复样式漂移应提炼共享 Row/GroupHeader recipe，而不是为了“同组件”强迫 Project/Lifecycle 一起虚拟化。
@@ -96,7 +96,7 @@ React `<Profiler>` 能给出 subtree 的 `actualDuration`/`baseDuration`，但 p
 
 推荐继续冻结固定高度：
 
-- 当前所有 offset、sticky push、scrollToIndex 都依赖 44/36px 常量；固定高度没有测量误差与滚动校正。[taskBoardModel.ts](../../src/features/task/model/taskBoardModel.ts#L11-L17)
+- 当前所有 offset、sticky push、scrollToIndex 都依赖 44/36px 常量；固定高度没有测量误差与滚动校正。[taskBoardModel.ts](../../../src/features/task/model/taskBoardModel.ts#L11-L17)
 - React Aria 官方说明 variable row 需要合理 `estimatedRowSize`，动态观察使用 ResizeObserver 且可能有额外开销。[React Aria Virtualizer list layout](https://react-aria.adobe.com/Virtualizer#list) [dynamic item sizes](https://react-aria.adobe.com/Virtualizer#dynamic-item-sizes)
 - TanStack 也需要 `measureElement`，当视口上方 item 的真实尺寸与估算不同时还涉及 scroll-position adjustment。[TanStack measureElement](https://tanstack.com/virtual/latest/docs/api/virtualizer#measureelement)
 
@@ -114,9 +114,9 @@ React `<Profiler>` 能给出 subtree 的 `actualDuration`/`baseDuration`，但 p
 
 当 grid 只把部分行放进 DOM 时，WAI-ARIA 要求用 `aria-rowcount` 表达总行数，并在现存行上使用 `aria-rowindex`；如果所有行都在 DOM，用户代理可以自己计算。[WAI-ARIA Grid and Table Properties](https://www.w3.org/WAI/ARIA/apg/practices/grid-and-table-properties/#using-aria-rowcount-and-aria-rowindex)
 
-StoneFlow 当前虚拟路径手工设置 `aria-rowcount`，每行通过 React Aria `useGridListItem({isVirtualized: true})` 再手工设置 row index，并通过 focus bridge 等待 offscreen row mount 后聚焦。[TaskBoard.tsx](../../src/features/task/components/TaskBoard.tsx#L612-L622) [TaskBoard.tsx](../../src/features/task/components/TaskBoard.tsx#L859-L893)
+StoneFlow 当前虚拟路径手工设置 `aria-rowcount`，每行通过 React Aria `useGridListItem({isVirtualized: true})` 再手工设置 row index，并通过 focus bridge 等待 offscreen row mount 后聚焦。[TaskBoard.tsx](../../../src/features/task/components/TaskBoard.tsx#L612-L622) [TaskBoard.tsx](../../../src/features/task/components/TaskBoard.tsx#L859-L893)
 
-这里还有一个已确认的语义缺口：当前 `aria-rowcount` 取的是 `projection.navigableKeys.length`，即已加载、当前可导航的 row 数，而不是服务端已知的 `totalCount`。[TaskBoard.tsx](../../src/features/task/components/TaskBoard.tsx#L612-L622) 在所有分组展开、`totalCount` 表示完整过滤结果的 150/10,000 分页场景下，它会向辅助技术报告 150 行。按 WAI-ARIA 的规则，完整可用总量已知时应报告该总量，未知时才使用 `-1`；若折叠分组会改变“可用行”的定义，则产品还需先明确折叠行是否属于 collection，而不能机械地把服务端任务数填进去。删除假 spacer 后仍应保留这份可访问集合语义，不能把“视觉 scroll extent”与“可访问 collection size”一起删掉。
+这里还有一个已确认的语义缺口：当前 `aria-rowcount` 取的是 `projection.navigableKeys.length`，即已加载、当前可导航的 row 数，而不是服务端已知的 `totalCount`。[TaskBoard.tsx](../../../src/features/task/components/TaskBoard.tsx#L612-L622) 在所有分组展开、`totalCount` 表示完整过滤结果的 150/10,000 分页场景下，它会向辅助技术报告 150 行。按 WAI-ARIA 的规则，完整可用总量已知时应报告该总量，未知时才使用 `-1`；若折叠分组会改变“可用行”的定义，则产品还需先明确折叠行是否属于 collection，而不能机械地把服务端任务数填进去。删除假 spacer 后仍应保留这份可访问集合语义，不能把“视觉 scroll extent”与“可访问 collection size”一起删掉。
 
 取舍如下：
 
@@ -132,7 +132,7 @@ CSSWG 明确把 `content-visibility: auto` 描述为长列表场景下可考虑�
 
 它适合普通列表原型的原因是 StoneFlow Row 已固定高度，可提供稳定 intrinsic size；但要明确：它让浏览器跳过离屏 layout/paint，并不会删除 React 组件实例或 DOM 节点，因此不能等价替代 10,000 个富 Row 的虚拟化。
 
-当前 TaskBoard 已经只 mount 约一个 viewport + overscan，却还给每个虚拟 row 加 `contentVisibility: auto`。[TaskBoard.tsx](../../src/features/task/components/TaskBoard.tsx#L708-L755) 这是“虚拟化上再叠浏览器跳过”的双层优化。其收益没有当前证据，反而需要检查是否造成 WebKit 首帧显现延迟；建议把“删除它”列为 profile 实验，而不是继续默认保留。
+当前 TaskBoard 已经只 mount 约一个 viewport + overscan，却还给每个虚拟 row 加 `contentVisibility: auto`。[TaskBoard.tsx](../../../src/features/task/components/TaskBoard.tsx#L708-L755) 这是“虚拟化上再叠浏览器跳过”的双层优化。其收益没有当前证据，反而需要检查是否造成 WebKit 首帧显现延迟；建议把“删除它”列为 profile 实验，而不是继续默认保留。
 
 ### 6. Tauri/WebView 边界
 
@@ -154,8 +154,8 @@ Tauri 不捆绑统一浏览器：Windows 使用可更新的 WebView2/Chromium，
 1. harness 以每 50ms 直接写 `scrollTop` 并手工 dispatch `scroll`，不是触控板 momentum 或滚动条 thumb drag。[历史源码（commit `5e0468a5`）](https://github.com/sty20030818/StoneFlow-new/blob/5e0468a57f0e0618ca83afb155e97eebd17e3b4d/src/features/task/testing/TaskBoardPerformancePage.tsx#L337-L350)
 2. 它只把 `>=200ms` 的 entry 记为 long task；W3C Long Tasks API 的标准门槛是 50ms，因此 50–199ms 的明显阻塞会被当前报告过滤掉。[历史源码（commit `5e0468a5`）](https://github.com/sty20030818/StoneFlow-new/blob/5e0468a57f0e0618ca83afb155e97eebd17e3b4d/src/features/task/testing/TaskBoardPerformancePage.tsx#L18-L25) [W3C Long Tasks API](https://www.w3.org/TR/longtasks-1/)
 3. paged fixture 的 `onFetchNextPage` 只把 `inFlight` 设为 true，不追加下一页，也不恢复 false，所以它没有覆盖“页追加后 spacer 移动、连续追页、mount 风暴”。[历史源码（commit `5e0468a5`）](https://github.com/sty20030818/StoneFlow-new/blob/5e0468a57f0e0618ca83afb155e97eebd17e3b4d/src/features/task/testing/TaskBoardPerformancePage.tsx#L99-L113)
-4. 唯一历史记录来自 2026-08-13 的旧 commit；2,000-row 的 5 秒程序滚动实际多次耗时约 6–7 秒，50 次 focus sample 又大多为 null。[historical result](../../Documents/99-素材/03-验证/heroui-refactor/task-board-performance-before.json#L8-L68) [historical result](../../Documents/99-素材/03-验证/heroui-refactor/task-board-performance-before.json#L120-L172)
-5. 既有计划已明确把该基线冻结为历史输入，并注明“不代表当前性能已通过”。[archived plan](../../Documents/98-归档/02-已完成重构/2026-08-12-heroui-ui-interaction-system-refactor/PLAN.md#L516-L525)
+4. 唯一历史记录来自 2026-08-13 的旧 commit；2,000-row 的 5 秒程序滚动实际多次耗时约 6–7 秒，50 次 focus sample 又大多为 null。[historical result](../../../Documents/99-素材/03-验证/heroui-refactor/task-board-performance-before.json#L8-L68) [historical result](../../../Documents/99-素材/03-验证/heroui-refactor/task-board-performance-before.json#L120-L172)
+5. 既有计划已明确把该基线冻结为历史输入，并注明“不代表当前性能已通过”。[archived plan](../../../Documents/98-归档/02-已完成重构/2026-08-12-heroui-ui-interaction-system-refactor/PLAN.md#L516-L525)
 
 这些记录是“需要重建证据”的信号，不应被当成当前回归结论。
 

@@ -1,4 +1,12 @@
-import '@testing-library/jest-dom/vitest'
+import * as matchers from '@testing-library/jest-dom/matchers'
+import { expect } from 'vitest'
+
+declare module 'vitest' {
+	// R 由 Vitest 区分同步断言与异步断言的返回类型。
+	interface Matchers<R, T> extends matchers.TestingLibraryMatchers<unknown, R> {}
+}
+
+expect.extend(matchers)
 
 class ResizeObserverMock {
 	observe() {}

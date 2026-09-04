@@ -14,12 +14,13 @@
 - 自动化准备证据：`bun run check`、`bun run build` 与 `git diff --check` 通过；前端 188 个文件共 932 项、脚本 160 项、Rust 233 项通过，7 项 PostgreSQL 集成测试因未提供数据库按既有条件忽略；生产构建不包含 `ui-lab.html`。
 - 本轮影响下方既有验收项 1～6；第 7～9 项没有受到 UI 迁移影响。该记录只证明工程前置完成，所有九项仍按实际设备与环境结果勾选。
 - [UI Lab 全量清单与 HeroUI 原生实现对齐](../archive/ui-lab-native-alignment/spec.md)已完成并归档目录、隔离对照、HeroUI 漂移门禁、十四批人工审查与生产构建边界；生产产物仍只有 Main/Launcher，且没有新增依赖。人工审查中已按明确反馈修改若干生产视觉与局部交互路径，最终差异审计未发现仍待实施的批准项；追加的真实应用验收输入落在既有第 1～6 项，第 7～9 项不受影响，九项均保持未勾选。
+- [Row 与集合列表单轨架构改造](../archive/task-row-list-architecture/spec.md)按用户 2026-09-04 先修 UI Lab 超长测试、然后直接归档的授权完成工程收口，最终只保留 TanStack Virtual。UI Lab 长链路测试按行为拆分并保留原断言、恢复默认 timeout 后，单文件 26 项及连续两轮全量 `bun run test:run` 193 个文件、982 项通过。原始 macOS 实测证据随工作包归档；尚未执行的双平台、最低 WebView、原生交互、平台 trace、原始 React profiling 数据及长时内存/DOM 交接下方第 3 项，不记为通过。
 
 ## 待统一验收
 
 - [ ] 在真实 macOS Tauri Main 与 Launcher 完成冷启动、重启、六色 Accent 切换与跨窗口一致性检查，确认无可见默认色闪烁。
 - [ ] 覆盖主要任务路径、Settings、Sync、Update、About、Changelog、空态、错误与危险操作；检查键盘、Focus-visible、VoiceOver、reduced-motion 和 Launcher 全局快捷键生命周期。
-- [ ] 在真实 macOS WKWebView 与 Windows WebView2 验证主内容、TaskBoard 与详情的滚轮、触控板、scrollbar thumb、PageUp/PageDown、Home/End；复核长列表、折叠、sticky、续页占位及内容长短变化。
+- [ ] 在真实 macOS WKWebView 与 Windows WebView2（分别包含明确的最低支持版本）验证主内容、TaskBoard 与详情的滚轮、原生触控板 fling / 反向 fling、scrollbar thumb drag、PageUp/PageDown、Home/End；复核长列表、折叠、sticky、已加载内容高度、分页追加与失败 retry、真实产品 Context Menu 关闭及详情返回焦点。固定 production build、设备、WebView、viewport、seed、数据量与重复次数，保存两平台 scripting / style / layout / paint / 50ms long tasks 原始 trace、profiling build 的原始 React commit 数据、mounted Row / fetch 次数和长时进程内存/DOM 曲线，并记录人工跟手感；程序化输入不能替代原生输入证据。
 - [ ] 在 Settings 真实验证 NumberField 输入/步进/Enter/focus-exit、八个 CellSwitch 的整行点击与 Space 激活、默认 Space CellSelect 的 Popover/pending/失败反馈；验证 PageFrame Toolbar 的 Tab、左右方向键、Enter 与 Space。
 - [ ] 在真实 Launcher 验证 Calendar Popover 的键盘选择、Escape、外点关闭与窗口边界；在主应用验证 Calendar Modal 的保存、取消、移除、Escape、焦点恢复，以及 Command、ContextMenu 和任务详情入口。
 - [ ] 覆盖 `1024px` Shell/详情分流、`560px` TaskBoard 容器、最小窗口、常见窗口宽度及 `100%`/`125%` 缩放；Windows 设备只记录实际执行过的结果。

@@ -1,9 +1,17 @@
 # StoneFlow Row 与集合列表单轨架构改造
 
-**Status:** in-progress
-**Triage:** in-progress
+**Status:** completed; archived; real-app acceptance transferred
+**Triage:** completed
 **日期:** 2026-09-02
 **研究输入:** [StoneFlow 长列表与虚拟化长期选型研究](./virtual-list-research.md)
+
+## 2026-09-04 归档收口
+
+用户明确授权先修 UI Lab 超长测试，然后直接归档。Row/Header/CollectionBody 统一、TaskBoard 正确性修复及 TanStack Virtual 单轨 hard cut 已落地；UI Lab 长链路测试拆成五条独立行为用例，测试文件原有 318 处 matcher 断言及顺序全部保留，移除单用例 10 秒覆盖并恢复默认 timeout。默认并发的 `bun run test:run` 连续两轮均为 193 个文件、982 项通过，UI Lab 单文件 26 项通过；其余根级门禁通过，详见 Ticket 03。
+
+本工作包按工程实现完成归档，原规格中“双平台证据齐全后才能完成”的归档阻断口径由本次决定替代。Windows WebView2、两平台最低支持 WebView、原生触控板 fling / 反向 fling / scrollbar thumb drag、真实产品 Context Menu 与详情返回焦点、平台 trace、原始 React profiling 数据及长时内存/DOM 尚未完成，统一交接至[统一产品验收](../../unified-product-acceptance/spec.md)，不记为已通过，也不恢复双引擎。
+
+下文保留原始方案与验收设计；归档后发现的新问题另建工作包，不重新打开本包。
 
 ## Problem Statement
 

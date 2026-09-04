@@ -17,6 +17,16 @@ function expandComponentInfo() {
 	fireEvent.click(screen.getByRole('button', { name: '组件信息' }))
 }
 
+function renderCategoryWorkbench() {
+	render(<UiLabApp />)
+	expandReviewDirectory()
+	fireEvent.click(screen.getByRole('button', { name: '按分类' }))
+	return {
+		preview: screen.getByRole('region', { name: '当前样例预览' }),
+		search: screen.getByRole('searchbox', { name: '搜索目录' }),
+	}
+}
+
 describe('UiLabApp', () => {
 	beforeEach(() => {
 		act(() => toast.clear())
@@ -768,7 +778,7 @@ describe('UiLabApp', () => {
 		expect(screen.getByTitle('Upstream · InlineSelect Candidate 隔离对照')).toBeInTheDocument()
 	})
 
-	it('通过同一工作台完成双视图、批次、分类、搜索、单预览与键盘路径', async () => {
+	it('工作台默认折叠并支持批次、分类与目录搜索', () => {
 		render(<UiLabApp />)
 
 		const preview = screen.getByRole('region', { name: '当前样例预览' })
@@ -882,6 +892,10 @@ describe('UiLabApp', () => {
 		expect(within(preview).queryByRole('button', { name: '新建任务' })).not.toBeInTheDocument()
 		fireEvent.click(within(preview).getByRole('radio', { name: '窄容器' }))
 		expect(within(preview).getByText('当前条件：窄容器')).toBeInTheDocument()
+	})
+
+	it('表单与导航样例保持编辑、保存重试及单预览', () => {
+		const { preview, search } = renderCategoryWorkbench()
 
 		fireEvent.click(screen.getByRole('button', { name: 'Fields' }))
 		expect(
@@ -986,6 +1000,10 @@ describe('UiLabApp', () => {
 		expect(within(preview).getByText('当前选择第 3 页')).toBeInTheDocument()
 		expect(nextPage).toBeDisabled()
 		expect(within(preview).queryByRole('tab', { name: '概览' })).not.toBeInTheDocument()
+	})
+
+	it('切换浮层与反馈样例时清理旧状态并保留恢复焦点', async () => {
+		const { preview, search } = renderCategoryWorkbench()
 
 		fireEvent.click(screen.getByRole('button', { name: 'Overlays' }))
 		for (const sampleName of [
@@ -1092,6 +1110,10 @@ describe('UiLabApp', () => {
 		expect(within(preview).getByRole('status')).toHaveTextContent('搜索已恢复')
 		expect(launcherErrorControl).toHaveFocus()
 		expect(within(preview).getByText(/原生窗口激活、全局快捷键/)).toBeInTheDocument()
+	})
+
+	it('集合样例保持键盘、连续选择、折叠与真实应用筛选', async () => {
+		const { preview, search } = renderCategoryWorkbench()
 
 		fireEvent.click(screen.getByRole('button', { name: 'Collections' }))
 		for (const sampleName of [
@@ -1218,6 +1240,10 @@ describe('UiLabApp', () => {
 		fireEvent.click(screen.getByRole('button', { name: 'Actions' }))
 		expect(screen.getByRole('button', { name: '全部' })).toHaveAttribute('aria-pressed', 'true')
 		expect(within(preview).getByRole('heading', { name: 'StoneFlow Button' })).toBeInTheDocument()
+	})
+
+	it('键盘切换 HeroUI 视图并操作已采用预览', () => {
+		const { preview } = renderCategoryWorkbench()
 
 		const heroUIView = screen.getByRole('button', { name: 'HeroUI' })
 		act(() => heroUIView.focus())
@@ -1236,6 +1262,12 @@ describe('UiLabApp', () => {
 		})
 		fireEvent.change(adoptedSearch, { target: { value: '日期' } })
 		expect(within(preview).getByText('当前查询：日期')).toBeInTheDocument()
+	})
+
+	it('HeroUI 组件总账支持查询、覆盖信息与批次切换', () => {
+		const { preview, search } = renderCategoryWorkbench()
+		fireEvent.click(screen.getByRole('button', { name: 'HeroUI' }))
+		fireEvent.click(screen.getByRole('button', { name: 'HeroUI SearchField' }))
 
 		for (const ledgerQuery of [
 			'HeroUI ColorSwatchPicker',
@@ -1269,6 +1301,12 @@ describe('UiLabApp', () => {
 		for (const categoryName of ['已采用', '替换候选', '探索中']) {
 			expect(screen.getByRole('button', { name: categoryName })).toBeInTheDocument()
 		}
+	})
+
+	it('HeroUI 已采用目录与 Tooltip 保持唯一隔离对照', () => {
+		renderCategoryWorkbench()
+		fireEvent.click(screen.getByRole('button', { name: 'HeroUI' }))
+
 		for (const sampleName of [
 			'HeroUI Button',
 			'HeroUI Input',
@@ -1285,6 +1323,11 @@ describe('UiLabApp', () => {
 		expect(document.querySelector('[data-native-comparison="tooltip"]')).toBeInTheDocument()
 		expect(document.querySelectorAll('[data-native-comparison]')).toHaveLength(1)
 		expect(screen.getByTitle('Upstream · Tooltip 隔离对照')).toBeInTheDocument()
+	})
+
+	it('切换 HeroUI 候选分类时卸载 Modal 并显示未渲染占位', () => {
+		const { preview } = renderCategoryWorkbench()
+		fireEvent.click(screen.getByRole('button', { name: 'HeroUI' }))
 
 		fireEvent.click(screen.getByRole('button', { name: 'HeroUI Modal' }))
 		fireEvent.click(within(preview).getByRole('button', { name: '打开 Modal' }))
@@ -1296,6 +1339,15 @@ describe('UiLabApp', () => {
 		expect(screen.getByRole('heading', { name: 'HeroUI Autocomplete' })).toBeInTheDocument()
 		expect(within(preview).getByText('未在 UI Lab 渲染')).toBeInTheDocument()
 		expect(screen.getByText('候选（尚未批准）')).toBeInTheDocument()
+	})
+
+	it('HeroUI 搜索切换卸载已采用预览且探索分类清空查询', () => {
+		const { preview, search } = renderCategoryWorkbench()
+		fireEvent.click(screen.getByRole('button', { name: 'HeroUI' }))
+		fireEvent.click(screen.getByRole('button', { name: 'HeroUI SearchField' }))
+		fireEvent.change(within(preview).getByRole('searchbox', { name: '搜索任务与项目' }), {
+			target: { value: '日期' },
+		})
 
 		fireEvent.change(search, { target: { value: 'DatePicker' } })
 		fireEvent.click(screen.getByRole('button', { name: 'HeroUI DatePicker' }))
@@ -1309,5 +1361,5 @@ describe('UiLabApp', () => {
 		fireEvent.click(screen.getByRole('button', { name: 'HeroUI Accordion' }))
 		expect(within(preview).getByText(/当前无产品消费者/)).toBeInTheDocument()
 		expect(screen.getByText('Upstream · 无覆盖')).toBeInTheDocument()
-	}, 10_000)
+	})
 })

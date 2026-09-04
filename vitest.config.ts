@@ -30,11 +30,9 @@ export default defineConfig({
 	},
 	test: {
 		globals: true,
-		clearMocks: true,
 		restoreMocks: true,
 		projects: [
 			{
-				extends: true,
 				test: {
 					name: 'unit',
 					environment: 'node',
@@ -44,7 +42,6 @@ export default defineConfig({
 				},
 			},
 			{
-				extends: true,
 				test: {
 					name: 'dom',
 					environment: 'jsdom',
