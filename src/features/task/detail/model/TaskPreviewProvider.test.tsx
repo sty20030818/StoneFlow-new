@@ -5,7 +5,11 @@ import { describe, expect, it, vi } from 'vitest'
 import type { TaskListItem } from '@/shared/types'
 
 import { indexTasksById } from '../../model/taskCollectionIndex'
-import { TaskPreviewProvider, useRegisterTaskPreviewSource } from './TaskPreviewProvider'
+import {
+	TaskPreviewProvider,
+	useRegisterTaskPreviewSource,
+	useTaskPreviewContext,
+} from './TaskPreviewProvider'
 import { useTaskPreviewController as useTaskPreviewControllerModel } from './useTaskPreviewController'
 
 vi.mock('@/features/task/api/taskLinks', () => ({
@@ -13,6 +17,58 @@ vi.mock('@/features/task/api/taskLinks', () => ({
 }))
 
 describe('TaskPreviewProvider', () => {
+	it('每次渲染重建等价 task index 时注册会收敛，任务版本变化仍会发布', async () => {
+		const onRender = vi.fn()
+
+		function Harness({ task }: { task: TaskListItem }) {
+			onRender()
+			if (onRender.mock.calls.length > 20) {
+				throw new Error('Maximum update depth exceeded in TaskPreviewProvider registration')
+			}
+
+			const context = useTaskPreviewContext()
+			useRegisterTaskPreviewSource({
+				taskById: new Map([[task.id, task]]),
+				focusedTaskId: task.id,
+				activeTaskId: null,
+			})
+
+			return (
+				<output data-testid='registered-task-title'>
+					{context.source?.taskById.get(task.id)?.title ?? 'none'}
+				</output>
+			)
+		}
+
+		const task = createTask({ id: 'task-a', title: '任务 A' })
+		const { rerender } = render(
+			<TaskPreviewProvider>
+				<Harness task={task} />
+			</TaskPreviewProvider>,
+		)
+
+		await waitFor(() =>
+			expect(screen.getByTestId('registered-task-title')).toHaveTextContent('任务 A'),
+		)
+
+		const updatedTask = createTask({
+			id: task.id,
+			title: '任务 A（已更新）',
+			updatedAt: '2026-05-16T00:00:00Z',
+		})
+		rerender(
+			<TaskPreviewProvider>
+				<Harness task={updatedTask} />
+			</TaskPreviewProvider>,
+		)
+
+		await waitFor(() =>
+			expect(screen.getByTestId('registered-task-title')).toHaveTextContent('任务 A（已更新）'),
+		)
+		expect(onRender).toHaveBeenCalled()
+		expect(onRender.mock.calls.length).toBeLessThan(20)
+	})
+
 	it('重复打开同一个任务时关闭预览', () => {
 		function Harness() {
 			const controller = useTaskPreviewControllerModel()

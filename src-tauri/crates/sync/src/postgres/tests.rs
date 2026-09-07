@@ -11,7 +11,10 @@ use serde_json::json;
 use sqlx::Row;
 
 use super::test_support::{base_database_url, drop_schema, open_isolated_cloud};
-use super::{connect_ready, download_after, download_full, ensure_ready, health, upload_operation};
+use super::{
+    adopt_legacy, connect_ready, download_after, download_full, ensure_ready, health,
+    upload_operation,
+};
 use crate::{
     EntityIdentity, EntityPatch, SyncEntityKind, SyncError, SyncMutation, SyncOperation, Tombstone,
 };
@@ -204,6 +207,128 @@ async fn health_should_report_schema_and_seq() {
         let probe = health(&mut conn).await.expect("health2");
         assert_eq!(probe.latest_server_seq, Some(1));
         assert_eq!(probe.remote_instance_id, instance_id);
+    }
+    drop_schema(&base, &schema).await;
+}
+
+#[tokio::test]
+#[ignore = "需要 STONEFLOW_SYNC_DATABASE_URL 或 DATABASE_URL"]
+async fn legacy_adoption_should_not_clean_a_v2_remote() {
+    if !require_pg() {
+        return;
+    }
+    let (config, schema, base) = open_isolated_cloud().await.expect("cloud");
+    {
+        let mut conn = connect_ready(&config).await.expect("connect");
+        sqlx::query(
+            r#"
+            INSERT INTO sync_entity_state(
+                entity_type, entity_id, generation, fields_json,
+                field_versions_json, lifecycle_state, lifecycle_seq, updated_seq
+            ) VALUES
+                ('task', 'task-legacy', 1, '{}', '{}', 'active', 0, 1),
+                ('task', 'task-legacy', 2, '{}', '{}', 'active', 0, 2)
+            "#,
+        )
+        .execute(&mut conn)
+        .await
+        .expect("two generations should insert");
+        drop(conn);
+
+        adopt_legacy(&config, 0)
+            .await
+            .expect("existing remote should be readable");
+
+        let mut conn = super::connect(&config).await.expect("reconnect");
+        let count: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM sync_entity_state WHERE entity_id = 'task-legacy'",
+        )
+        .fetch_one(&mut conn)
+        .await
+        .expect("generations should remain readable");
+        assert_eq!(count, 2);
+    }
+    drop_schema(&base, &schema).await;
+}
+
+#[tokio::test]
+#[ignore = "需要 STONEFLOW_SYNC_DATABASE_URL 或 DATABASE_URL"]
+async fn legacy_adoption_should_migrate_v1_after_cursor_check() {
+    if !require_pg() {
+        return;
+    }
+    let (config, schema, base) = open_isolated_cloud().await.expect("cloud");
+    {
+        let mut conn = connect_ready(&config).await.expect("connect");
+        sqlx::query("ALTER TABLE sync_schema DROP COLUMN instance_id")
+            .execute(&mut conn)
+            .await
+            .expect("drop identity column");
+        sqlx::query("UPDATE sync_schema SET version = 1 WHERE name = 'stoneflow'")
+            .execute(&mut conn)
+            .await
+            .expect("restore v1 marker");
+        drop(conn);
+
+        let probe = adopt_legacy(&config, 0)
+            .await
+            .expect("compatible v1 remote should be adopted");
+        assert_eq!(probe.schema_version, Some(2));
+        assert_eq!(probe.latest_server_seq, None);
+        assert!(!probe.remote_instance_id.is_empty());
+    }
+    drop_schema(&base, &schema).await;
+}
+
+#[tokio::test]
+#[ignore = "需要 STONEFLOW_SYNC_DATABASE_URL 或 DATABASE_URL"]
+async fn legacy_adoption_should_not_migrate_a_remote_behind_the_local_cursor() {
+    if !require_pg() {
+        return;
+    }
+    let (config, schema, base) = open_isolated_cloud().await.expect("cloud");
+    {
+        let mut conn = connect_ready(&config).await.expect("connect");
+        upload_operation(&mut conn, &operation("op", patch(&[("t", json!(1))])))
+            .await
+            .expect("upload");
+        sqlx::query("ALTER TABLE sync_schema DROP COLUMN instance_id")
+            .execute(&mut conn)
+            .await
+            .expect("drop identity column");
+        sqlx::query("UPDATE sync_schema SET version = 1 WHERE name = 'stoneflow'")
+            .execute(&mut conn)
+            .await
+            .expect("restore v1 marker");
+        drop(conn);
+
+        let error = adopt_legacy(&config, 2)
+            .await
+            .expect_err("remote behind local cursor must be rejected");
+        assert!(matches!(error, SyncError::Validation { .. }));
+
+        let mut conn = super::connect(&config).await.expect("reconnect");
+        let version: i64 =
+            sqlx::query_scalar("SELECT version FROM sync_schema WHERE name = 'stoneflow'")
+                .fetch_one(&mut conn)
+                .await
+                .expect("version should remain readable");
+        let has_identity_column: bool = sqlx::query_scalar(
+            r#"
+            SELECT EXISTS (
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_schema = current_schema()
+                  AND table_name = 'sync_schema'
+                  AND column_name = 'instance_id'
+            )
+            "#,
+        )
+        .fetch_one(&mut conn)
+        .await
+        .expect("identity column state should remain readable");
+        assert_eq!(version, 1);
+        assert!(!has_identity_column);
     }
     drop_schema(&base, &schema).await;
 }

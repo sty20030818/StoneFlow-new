@@ -1,6 +1,10 @@
 import { Alert, Button } from '@heroui/react'
 import { useSharedSyncStatus } from '@/features/sync'
-import { formatReplicaState, formatSyncStatus } from '@/features/sync'
+import {
+	formatReplicaState,
+	formatSyncStatus,
+	isSyncReplicaRecoveryRequired,
+} from '@/features/sync'
 import {
 	selectReadyChipVisible,
 	selectUpdateSnapshot,
@@ -30,7 +34,7 @@ export function SystemStatusChip() {
 	const { displayedStatus, message, runNow, running, statusPayload } = useSharedSyncStatus()
 
 	const replicaState = statusPayload?.replicaState ?? 'uninitialized'
-	const blocked = replicaState === 'baseline_required' || replicaState === 'diverged'
+	const blocked = isSyncReplicaRecoveryRequired(replicaState)
 	const syncAttention =
 		displayedStatus === 'error' || displayedStatus === 'needs_attention' || blocked
 

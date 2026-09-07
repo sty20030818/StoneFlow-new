@@ -44,7 +44,28 @@ export function areSameTaskPreviewSource(
 			next &&
 			current.focusedTaskId === next.focusedTaskId &&
 			current.activeTaskId === next.activeTaskId &&
-			current.taskById === next.taskById,
+			areSameTaskIndex(current.taskById, next.taskById),
 		)
 	)
+}
+
+function areSameTaskIndex(
+	current: TaskPreviewSource['taskById'],
+	next: TaskPreviewSource['taskById'],
+) {
+	if (current === next) {
+		return true
+	}
+
+	if (current.size !== next.size) {
+		return false
+	}
+
+	for (const [taskId, task] of current) {
+		if (next.get(taskId) !== task) {
+			return false
+		}
+	}
+
+	return true
 }

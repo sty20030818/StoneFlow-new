@@ -53,6 +53,88 @@ describe('SyncConfigDialog', () => {
 		expect(screen.queryByRole('button', { name: '保存配置' })).not.toBeInTheDocument()
 	})
 
+	it('环境配置存在旧游标时可显式沿用当前远端且不接收连接串', async () => {
+		const onAdoptLegacyRemote = vi.fn(async () => undefined)
+		const onClose = vi.fn()
+		render(
+			<DialogHarness
+				configSource='environment'
+				legacyRemoteAdoptionRequired
+				legacyRemoteReason='本机保留了旧同步位置，但还没有远端身份。'
+				onAdoptLegacyRemote={onAdoptLegacyRemote}
+				onClose={onClose}
+				onSave={vi.fn(async () => undefined)}
+			/>,
+		)
+
+		expect(screen.getByRole('dialog', { name: '确认沿用当前远端' })).toHaveTextContent(
+			'不会清空本机数据、同步位置或待上传变更',
+		)
+		expect(screen.getByText('postgresql://db.example.com:5432/sf')).toBeVisible()
+		expect(screen.queryByText(/user:secret|sslmode=/)).not.toBeInTheDocument()
+		expect(screen.queryByRole('textbox', { name: '同步数据库连接' })).not.toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: '确认沿用当前远端' }))
+
+		await waitFor(() => {
+			expect(onAdoptLegacyRemote).toHaveBeenCalledWith()
+			expect(onClose).toHaveBeenCalledTimes(1)
+		})
+	})
+
+	it('沿用当前远端进行中阻止重复提交，失败后可原位重试', async () => {
+		let resolveRetry: (() => void) | undefined
+		const retryPending = new Promise<void>((resolve) => {
+			resolveRetry = resolve
+		})
+		const onAdoptLegacyRemote = vi
+			.fn<() => Promise<void>>()
+			.mockRejectedValueOnce(new Error('远端序号落后'))
+			.mockImplementationOnce(() => retryPending)
+		render(
+			<DialogHarness
+				configSource='system_keychain'
+				legacyRemoteAdoptionRequired
+				legacyRemoteReason='需要确认旧同步位置。'
+				onAdoptLegacyRemote={onAdoptLegacyRemote}
+				onClose={vi.fn()}
+				onSave={vi.fn(async () => undefined)}
+			/>,
+		)
+
+		const adoptButton = screen.getByRole('button', { name: '确认沿用当前远端' })
+		fireEvent.click(adoptButton)
+		expect(await screen.findByRole('alert')).toHaveTextContent('远端序号落后')
+
+		fireEvent.click(adoptButton)
+		await waitFor(() => expect(onAdoptLegacyRemote).toHaveBeenCalledTimes(2))
+		expect(adoptButton).toBeDisabled()
+		fireEvent.click(adoptButton)
+		expect(onAdoptLegacyRemote).toHaveBeenCalledTimes(2)
+
+		resolveRetry?.()
+		await waitFor(() =>
+			expect(screen.queryByRole('dialog', { name: '确认沿用当前远端' })).not.toBeInTheDocument(),
+		)
+	})
+
+	it('钥匙串配置可退出沿用流程并改用其他远端', () => {
+		render(
+			<DialogHarness
+				configSource='system_keychain'
+				legacyRemoteAdoptionRequired
+				legacyRemoteReason='需要确认旧同步位置。'
+				onClose={vi.fn()}
+				onSave={vi.fn(async () => undefined)}
+			/>,
+		)
+
+		fireEvent.click(screen.getByRole('button', { name: '改用其他远端' }))
+
+		expect(screen.getByRole('textbox', { name: '同步数据库连接' })).toBeVisible()
+		expect(screen.getByRole('button', { name: '保存配置' })).toBeVisible()
+		expect(screen.queryByRole('button', { name: '确认沿用当前远端' })).not.toBeInTheDocument()
+	})
+
 	it('保存失败时在弹窗内显示 Alert、保留输入，并通过原位主按钮再次保存', async () => {
 		const onClose = vi.fn()
 		let resolveRetry: (() => void) | undefined
@@ -139,11 +221,19 @@ describe('SyncConfigDialog', () => {
 
 function DialogHarness({
 	configSource,
+	legacyRemoteAdoptionRequired = false,
+	legacyRemoteReason = null,
+	onAdoptLegacyRemote = vi.fn(async () => undefined),
+	redactedRemoteUrl = 'postgresql://db.example.com:5432/sf',
 	onClose,
 	onSave,
 	onRebind = vi.fn(async () => undefined),
 }: {
 	configSource: SyncConfigSource
+	legacyRemoteAdoptionRequired?: boolean
+	legacyRemoteReason?: string | null
+	onAdoptLegacyRemote?: () => Promise<void>
+	redactedRemoteUrl?: string | null
 	onClose: () => void
 	onSave: (input: { databaseUrl: string }) => Promise<void>
 	onRebind?: (input: { databaseUrl: string }) => Promise<void>
@@ -161,6 +251,10 @@ function DialogHarness({
 			<SyncConfigDialog
 				configSource={configSource}
 				databaseUrl={databaseUrl}
+				legacyRemoteAdoptionRequired={legacyRemoteAdoptionRequired}
+				legacyRemoteReason={legacyRemoteReason}
+				onAdoptLegacyRemote={onAdoptLegacyRemote}
+				redactedRemoteUrl={redactedRemoteUrl}
 				onClose={handleClose}
 				onDatabaseUrlChange={setDatabaseUrl}
 				onRebind={onRebind}

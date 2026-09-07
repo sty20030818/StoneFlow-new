@@ -38,7 +38,7 @@ pub(super) async fn expected_remote_identity_for_io(
     let snapshot = read_remote_binding(database.connection()).await?;
     if snapshot.remote_instance_id.is_none() && snapshot.server_seq.is_some() {
         return Err(AppError::conflict(
-            "本机存在无法确认来源的旧同步游标；请显式重新绑定远端后再同步。",
+            "本机保留了旧同步位置，但还没有远端身份；请先确认沿用当前已配置远端。",
         ));
     }
     Ok(snapshot.remote_instance_id)
@@ -64,6 +64,52 @@ pub(super) async fn ensure_remote_binding(
         )
         .await?;
     }
+    transaction.commit().await?;
+    Ok(())
+}
+
+/// 用户确认沿用当前配置远端后，为旧 cursor 原子补齐实例身份。
+///
+/// 该路径不清理 cursor、outbox 或业务表；远端序号落后时保持 fail closed。
+pub(super) async fn adopt_legacy_remote_identity(
+    database: &DatabaseRuntimeState,
+    remote_instance_id: &str,
+    remote_latest_server_seq: i64,
+) -> Result<(), AppError> {
+    if remote_instance_id.trim().is_empty() {
+        return Err(AppError::validation("云端实例身份为空，拒绝沿用"));
+    }
+    if remote_latest_server_seq < 0 {
+        return Err(AppError::validation("云端最新同步序号无效，拒绝沿用"));
+    }
+
+    let transaction = database.connection().begin().await?;
+    let snapshot = read_remote_binding(&transaction).await?;
+    let local_cursor = snapshot
+        .server_seq
+        .ok_or_else(|| AppError::conflict("当前本机没有待确认的旧同步游标，无需沿用远端"))?;
+    if local_cursor < 0 {
+        return Err(AppError::validation("本机同步游标无效，拒绝沿用远端"));
+    }
+    if remote_latest_server_seq < local_cursor {
+        return Err(AppError::conflict(format!(
+            "当前远端最新序号 {remote_latest_server_seq} 落后于本机同步游标 {local_cursor}，拒绝沿用"
+        )));
+    }
+
+    match snapshot.remote_instance_id.as_deref() {
+        Some(bound) if bound == remote_instance_id => {}
+        Some(_) => return Err(binding_conflict()),
+        None => {
+            write_remote_identity(
+                &transaction,
+                remote_instance_id,
+                &stoneflow_domain::now_utc().to_rfc3339(),
+            )
+            .await?;
+        }
+    }
+
     transaction.commit().await?;
     Ok(())
 }
@@ -157,7 +203,7 @@ fn classify_binding(
         Some(bound) if bound == remote_instance_id => Ok(RemoteBindingState::Bound),
         Some(_) => Err(binding_conflict()),
         None if snapshot.server_seq.is_some() => Err(AppError::conflict(
-            "本机存在无法确认来源的旧同步游标；请显式重新绑定远端后再同步。",
+            "本机保留了旧同步位置，但还没有远端身份；请先确认沿用当前已配置远端。",
         )),
         None => Ok(RemoteBindingState::Unbound),
     }
@@ -199,8 +245,8 @@ mod tests {
     use stoneflow_test_support::TestDatabase;
 
     use super::{
-        ensure_remote_binding, expected_remote_identity_for_io, read_remote_binding,
-        verify_remote_binding, RemoteBindingState, REMOTE_INSTANCE_ID_SCOPE,
+        adopt_legacy_remote_identity, ensure_remote_binding, expected_remote_identity_for_io,
+        read_remote_binding, verify_remote_binding, RemoteBindingState, REMOTE_INSTANCE_ID_SCOPE,
         SERVER_SEQ_CURSOR_SCOPE,
     };
     use crate::app::error::AppError;
@@ -274,6 +320,157 @@ mod tests {
             .try_get("", "n")
             .expect("identity count should parse");
         assert_eq!(identity_count, 0);
+    }
+
+    #[tokio::test]
+    async fn explicit_legacy_adoption_should_only_add_identity_and_allow_pending_outbox() {
+        let database = TestDatabase::bootstrap_in_memory()
+            .await
+            .expect("test database should bootstrap");
+        database
+            .connection()
+            .execute_raw(Statement::from_sql_and_values(
+                DatabaseBackend::Sqlite,
+                "INSERT INTO sync_cursors(scope, cursor, updated_at) VALUES (?, '42', 'now')",
+                [SERVER_SEQ_CURSOR_SCOPE.into()],
+            ))
+            .await
+            .expect("legacy cursor should insert");
+        database
+            .connection()
+            .execute_raw(Statement::from_string(
+                DatabaseBackend::Sqlite,
+                r#"
+				INSERT INTO outbox(
+					id, operation_id, entity_type, entity_id, generation,
+					operation_type, payload_json, created_at, available_at
+				) VALUES ('outbox-1', 'operation-1', 'task', 'task-1', 1, 'patch', '{}', 'now', 'now')
+				"#,
+            ))
+            .await
+            .expect("pending outbox should insert");
+        let spaces_before: i64 = database
+            .connection()
+            .query_one_raw(Statement::from_string(
+                DatabaseBackend::Sqlite,
+                "SELECT COUNT(*) AS n FROM spaces",
+            ))
+            .await
+            .expect("space count should load")
+            .expect("space count should exist")
+            .try_get("", "n")
+            .expect("space count should parse");
+
+        adopt_legacy_remote_identity(&database, "remote-a", 45)
+            .await
+            .expect("explicit adoption should bind current remote");
+        adopt_legacy_remote_identity(&database, "remote-a", 45)
+            .await
+            .expect("same identity adoption should be idempotent");
+
+        let snapshot = read_remote_binding(database.connection())
+            .await
+            .expect("binding should load");
+        let outbox_count: i64 = database
+            .connection()
+            .query_one_raw(Statement::from_string(
+                DatabaseBackend::Sqlite,
+                "SELECT COUNT(*) AS n FROM outbox",
+            ))
+            .await
+            .expect("outbox count should load")
+            .expect("outbox count should exist")
+            .try_get("", "n")
+            .expect("outbox count should parse");
+        let spaces_after: i64 = database
+            .connection()
+            .query_one_raw(Statement::from_string(
+                DatabaseBackend::Sqlite,
+                "SELECT COUNT(*) AS n FROM spaces",
+            ))
+            .await
+            .expect("space count should load")
+            .expect("space count should exist")
+            .try_get("", "n")
+            .expect("space count should parse");
+
+        assert_eq!(snapshot.remote_instance_id.as_deref(), Some("remote-a"));
+        assert_eq!(snapshot.server_seq, Some(42));
+        assert_eq!(outbox_count, 1);
+        assert_eq!(spaces_after, spaces_before);
+    }
+
+    #[tokio::test]
+    async fn explicit_legacy_adoption_should_reject_missing_or_ahead_cursor_without_writing_identity(
+    ) {
+        let database = TestDatabase::bootstrap_in_memory()
+            .await
+            .expect("test database should bootstrap");
+
+        let missing = adopt_legacy_remote_identity(&database, "remote-a", 10)
+            .await
+            .expect_err("adoption requires a legacy cursor");
+        assert!(matches!(missing, AppError::Conflict(_)));
+        let invalid_remote = adopt_legacy_remote_identity(&database, "remote-a", -1)
+            .await
+            .expect_err("a negative remote head must be rejected");
+        assert!(matches!(invalid_remote, AppError::Validation(_)));
+
+        database
+            .connection()
+            .execute_raw(Statement::from_sql_and_values(
+                DatabaseBackend::Sqlite,
+                "INSERT INTO sync_cursors(scope, cursor, updated_at) VALUES (?, '42', 'now')",
+                [SERVER_SEQ_CURSOR_SCOPE.into()],
+            ))
+            .await
+            .expect("legacy cursor should insert");
+        let ahead = adopt_legacy_remote_identity(&database, "remote-a", 41)
+            .await
+            .expect_err("remote behind the local cursor must be rejected");
+        let snapshot = read_remote_binding(database.connection())
+            .await
+            .expect("binding should load");
+
+        assert!(matches!(ahead, AppError::Conflict(_)));
+        assert_eq!(snapshot.remote_instance_id, None);
+        assert_eq!(snapshot.server_seq, Some(42));
+    }
+
+    #[tokio::test]
+    async fn explicit_legacy_adoption_should_reject_another_existing_identity_without_mutation() {
+        let database = TestDatabase::bootstrap_in_memory()
+            .await
+            .expect("test database should bootstrap");
+        database
+            .connection()
+            .execute_raw(Statement::from_sql_and_values(
+                DatabaseBackend::Sqlite,
+                "INSERT INTO sync_cursors(scope, cursor, updated_at) VALUES (?, '42', 'now')",
+                [SERVER_SEQ_CURSOR_SCOPE.into()],
+            ))
+            .await
+            .expect("cursor should insert");
+        database
+            .connection()
+            .execute_raw(Statement::from_sql_and_values(
+                DatabaseBackend::Sqlite,
+                "INSERT INTO sync_cursors(scope, cursor, updated_at) VALUES (?, 'remote-a', 'now')",
+                [REMOTE_INSTANCE_ID_SCOPE.into()],
+            ))
+            .await
+            .expect("identity should insert");
+
+        let error = adopt_legacy_remote_identity(&database, "remote-b", 45)
+            .await
+            .expect_err("another identity must be rejected");
+        let snapshot = read_remote_binding(database.connection())
+            .await
+            .expect("binding should load");
+
+        assert!(matches!(error, AppError::Conflict(_)));
+        assert_eq!(snapshot.remote_instance_id.as_deref(), Some("remote-a"));
+        assert_eq!(snapshot.server_seq, Some(42));
     }
 
     #[tokio::test]

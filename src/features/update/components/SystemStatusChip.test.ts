@@ -8,6 +8,8 @@ import { resolveActiveChip, SystemStatusChip } from './SystemStatusChip'
 vi.mock('@/features/sync', () => ({
 	formatReplicaState: (value: string) => value,
 	formatSyncStatus: (value: string) => value,
+	isSyncReplicaRecoveryRequired: (value: string) =>
+		value === 'legacy_binding_required' || value === 'diverged',
 	useSharedSyncStatus: () => ({
 		displayedStatus: 'idle',
 		message: null,

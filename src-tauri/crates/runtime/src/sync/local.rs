@@ -42,8 +42,11 @@ pub async fn inspect_local_replica(
         && !has_non_empty_cursor(&remote_instance_id)
     {
         (
-            SyncReplicaState::Diverged,
-            Some("本机存在无法确认来源的旧同步游标；请显式重新绑定远端后再同步。".to_owned()),
+            SyncReplicaState::LegacyBindingRequired,
+            Some(
+                "本机保留了旧同步位置，但还没有远端身份；请确认沿用当前已配置远端后再同步。"
+                    .to_owned(),
+            ),
         )
     } else if has_remote_config && looks_empty_replica {
         (SyncReplicaState::Ready, None)
@@ -69,6 +72,13 @@ pub async fn inspect_local_replica(
         reason,
         last_restore_at: last_restore_at.and_then(|record| record.cursor),
     })
+}
+
+pub(super) async fn has_pending_outbox(database: &DatabaseRuntimeState) -> Result<bool, AppError> {
+    Ok(read_local_replica_counts(database.connection())
+        .await?
+        .pending_outbox_count
+        > 0)
 }
 
 /// 本地同步诊断只通过应用持有的 SQLite 连接读取，避免 sync crate 重开数据库。
@@ -223,7 +233,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn legacy_cursor_without_remote_identity_should_be_diverged() {
+    async fn legacy_cursor_without_remote_identity_should_require_explicit_adoption() {
         let database = TestDatabase::bootstrap_in_memory()
             .await
             .expect("test database should bootstrap");
@@ -241,7 +251,7 @@ mod tests {
             .await
             .expect("replica state should load");
 
-        assert_eq!(snapshot.state, SyncReplicaState::Diverged);
+        assert_eq!(snapshot.state, SyncReplicaState::LegacyBindingRequired);
         assert!(snapshot.reason.is_some());
     }
 }

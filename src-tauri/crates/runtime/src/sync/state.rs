@@ -52,6 +52,15 @@ impl SyncRuntimeState {
             enabled: has_remote_config,
             status: match guard.credential_state {
                 SyncCredentialState::Unavailable => SyncStatusKind::NeedsAttention,
+                SyncCredentialState::Available
+                    if has_remote_config
+                        && matches!(
+                            guard.replica_state,
+                            SyncReplicaState::LegacyBindingRequired | SyncReplicaState::Diverged
+                        ) =>
+                {
+                    SyncStatusKind::NeedsAttention
+                }
                 SyncCredentialState::Available if has_remote_config => guard.status,
                 SyncCredentialState::Missing | SyncCredentialState::Available => {
                     SyncStatusKind::Disabled
@@ -615,6 +624,30 @@ mod tests {
         assert_eq!(
             payload.last_restore_at.as_deref(),
             Some("2026-06-28T00:00:00Z")
+        );
+    }
+
+    #[tokio::test]
+    async fn legacy_binding_required_should_not_report_synced() {
+        let state = SyncRuntimeState::default();
+        state
+            .set_remote_config(Some(SyncRemoteConfig {
+                database_url: "postgresql://user:token@db.example.com:5432/sf".to_owned(),
+            }))
+            .await;
+        state
+            .set_replica_state(
+                SyncReplicaState::LegacyBindingRequired,
+                Some("needs confirmation".to_owned()),
+                None,
+            )
+            .await;
+
+        let payload = state.snapshot().await;
+        assert_eq!(payload.status, SyncStatusKind::NeedsAttention);
+        assert_eq!(
+            payload.replica_state,
+            SyncReplicaState::LegacyBindingRequired
         );
     }
 

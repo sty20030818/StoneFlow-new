@@ -8,14 +8,14 @@ use crate::app::error::AppError;
 
 use super::{
     binding::{
-        ensure_remote_binding, expected_remote_identity_for_io, verify_remote_binding,
-        RemoteBindingState, SERVER_SEQ_CURSOR_SCOPE,
+        adopt_legacy_remote_identity, ensure_remote_binding, expected_remote_identity_for_io,
+        read_remote_binding, verify_remote_binding, RemoteBindingState, SERVER_SEQ_CURSOR_SCOPE,
     },
     config::{
         ensure_remote_config_writable, load_remote_config, load_sync_policy, save_remote_config,
         save_sync_policy, validate_remote_config,
     },
-    local::{inspect_local_replica, read_local_diagnostics},
+    local::{has_pending_outbox, inspect_local_replica, read_local_diagnostics},
     state::{SyncRunMode, SyncRuntimeState},
     types::{
         ConfigureSyncInput, RebindSyncInput, SyncDiagnosticsCountsPayload, SyncDiagnosticsPayload,
@@ -68,7 +68,18 @@ pub async fn initialize_state(
     }
     let (policy, next_sync_at) = load_sync_policy(database).await?;
     sync_state.set_policy(policy, next_sync_at).await;
+    restore_pending_sync_state(sync_state, database).await?;
     refresh_local_replica_state(sync_state, database).await?;
+    Ok(())
+}
+
+async fn restore_pending_sync_state(
+    sync_state: &SyncRuntimeState,
+    database: &DatabaseRuntimeState,
+) -> Result<(), AppError> {
+    if has_pending_outbox(database).await? {
+        sync_state.mark_dirty().await;
+    }
     Ok(())
 }
 
@@ -159,6 +170,43 @@ pub async fn configure_sync(
     sync_state.mark_dirty().await;
     refresh_local_replica_state(sync_state, database).await?;
     Ok(sync_state.snapshot().await)
+}
+
+/// 用户显式确认沿用运行态当前配置的远端，只为旧同步游标补齐远端身份。
+pub async fn adopt_legacy_sync_remote(
+    app_handle: &tauri::AppHandle,
+    database: &DatabaseRuntimeState,
+    sync_state: &SyncRuntimeState,
+) -> Result<(), AppError> {
+    let _guard = sync_state.lock_execution().await;
+    let remote_config = sync_state
+        .remote_config()
+        .await
+        .ok_or_else(|| AppError::validation("云同步尚未配置远端，无法沿用"))?;
+    let binding = read_remote_binding(database.connection()).await?;
+    let local_cursor = binding
+        .server_seq
+        .ok_or_else(|| AppError::conflict("当前本机没有待确认的旧同步游标，无需沿用远端"))?;
+    if local_cursor < 0 {
+        return Err(AppError::validation("本机同步游标无效，拒绝沿用远端"));
+    }
+    let probe = stoneflow_sync::adopt_legacy_remote(
+        &to_cloud_config(&remote_config, binding.remote_instance_id.as_deref()),
+        local_cursor,
+    )
+    .await
+    .map_err(map_sync_error)?;
+
+    adopt_legacy_remote_identity(
+        database,
+        &probe.remote_instance_id,
+        probe.latest_server_seq.unwrap_or(0),
+    )
+    .await?;
+    refresh_local_replica_state(sync_state, database).await?;
+    sync_state.mark_dirty().await;
+    emit_sync_status_changed(app_handle, "legacy_remote_adopted");
+    Ok(())
 }
 
 /// 用户明确确认后重新绑定远端；pending outbox 会在写钥匙串和重置本地副本前阻断。
@@ -623,6 +671,9 @@ async fn ensure_sync_allowed(
             let _ = database;
             Ok(())
         }
+        SyncReplicaState::LegacyBindingRequired => Err(AppError::validation(
+            "本机保留了旧同步位置，但尚未绑定远端身份；请先确认沿用当前已配置远端。",
+        )),
         SyncReplicaState::Diverged => Err(AppError::validation(
             "当前设备的本地副本状态异常，已暂停普通同步，请先完成诊断或恢复。",
         )),
@@ -824,11 +875,13 @@ async fn resolve_bootstrap_plan(
 
 #[cfg(test)]
 mod tests {
+    use sea_orm::{ConnectionTrait, DatabaseBackend, Statement};
     use stoneflow_test_support::TestDatabase;
 
     use super::{
         completed_round_event, configure_sync, get_sync_status, rebind_workspace_changed_payload,
-        sync_status_changed_payload, workspace_changed_payload, SyncRoundOutcome,
+        restore_pending_sync_state, sync_status_changed_payload, workspace_changed_payload,
+        SyncRoundOutcome,
     };
     use crate::sync::{
         state::SyncRuntimeState,
@@ -871,6 +924,35 @@ mod tests {
         assert_eq!(payload.status, SyncStatusKind::Disabled);
         assert_eq!(payload.last_error_mode, None);
         assert_eq!(payload.replica_state, SyncReplicaState::Uninitialized);
+    }
+
+    #[tokio::test]
+    async fn startup_should_restore_offline_pending_from_persisted_outbox() {
+        let database = TestDatabase::bootstrap_in_memory()
+            .await
+            .expect("test database should bootstrap");
+        let sync_state = configured_state().await;
+        database
+            .connection()
+            .execute_raw(Statement::from_string(
+                DatabaseBackend::Sqlite,
+                r#"
+				INSERT INTO outbox(
+					id, operation_id, entity_type, entity_id, generation,
+					operation_type, payload_json, created_at, available_at
+				) VALUES ('outbox-1', 'operation-1', 'task', 'task-1', 1, 'patch', '{}', 'now', 'now')
+				"#,
+            ))
+            .await
+            .expect("pending outbox should insert");
+
+        restore_pending_sync_state(&sync_state, &database)
+            .await
+            .expect("pending state should restore");
+
+        let snapshot = sync_state.snapshot().await;
+        assert_eq!(snapshot.status, SyncStatusKind::OfflinePending);
+        assert!(snapshot.dirty_since.is_some());
     }
 
     #[test]

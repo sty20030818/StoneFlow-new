@@ -88,6 +88,16 @@ pub async fn ensure_ready(conn: &mut PgConnection) -> Result<(), SyncError> {
         .await
         .map_err(|error| SyncError::schema(format!("开始 云端 schema 事务失败: {error}")))?;
 
+    ensure_ready_in_transaction(&mut transaction).await?;
+    transaction
+        .commit()
+        .await
+        .map_err(|error| SyncError::schema(format!("提交 云端 schema 事务失败: {error}")))
+}
+
+pub(super) async fn ensure_ready_in_transaction(
+    transaction: &mut PgConnection,
+) -> Result<(), SyncError> {
     transaction
         .execute(SYNC_SCHEMA_STATEMENT)
         .await
@@ -202,11 +212,7 @@ pub async fn ensure_ready(conn: &mut PgConnection) -> Result<(), SyncError> {
         )
         .await
         .map_err(|error| SyncError::schema(format!("清理旧 generation 投影失败: {error}")))?;
-
-    transaction
-        .commit()
-        .await
-        .map_err(|error| SyncError::schema(format!("提交 云端 schema 事务失败: {error}")))
+    Ok(())
 }
 
 pub(super) async fn read_instance_id(conn: &mut PgConnection) -> Result<String, SyncError> {
@@ -219,4 +225,11 @@ pub(super) async fn read_instance_id(conn: &mut PgConnection) -> Result<String, 
         return Err(SyncError::schema("云端实例身份为空，拒绝继续同步"));
     }
     Ok(instance_id)
+}
+
+pub(super) async fn read_schema_version(conn: &mut PgConnection) -> Result<i64, SyncError> {
+    sqlx::query_scalar("SELECT version FROM sync_schema WHERE name = 'stoneflow'")
+        .fetch_one(conn)
+        .await
+        .map_err(|error| map_sqlx_error("读取 协议版本", error))
 }

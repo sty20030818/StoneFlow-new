@@ -14,9 +14,9 @@ mod state;
 mod types;
 
 pub use engine::{
-    configure_sync, flush_before_exit, get_sync_diagnostics, get_sync_status, initialize_state,
-    note_local_write, rebind_sync, run_sync, trigger_resume_sync, trigger_startup_sync,
-    update_sync_policy,
+    adopt_legacy_sync_remote, configure_sync, flush_before_exit, get_sync_diagnostics,
+    get_sync_status, initialize_state, note_local_write, rebind_sync, run_sync,
+    trigger_resume_sync, trigger_startup_sync, update_sync_policy,
 };
 pub use policy::{SyncPolicy, SyncPolicyMode};
 pub use scheduler::start_scheduler;

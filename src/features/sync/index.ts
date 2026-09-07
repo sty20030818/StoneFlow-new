@@ -24,6 +24,7 @@ export {
 	getSyncStatus,
 	getSyncDiagnostics,
 	configureSync,
+	adoptLegacySyncRemote,
 	rebindSync,
 	updateSyncPolicy,
 	runSync,
@@ -36,6 +37,7 @@ export {
 	getSyncReplicaTone,
 	formatSyncStatus,
 	formatReplicaState,
+	isSyncReplicaRecoveryRequired,
 } from './model/syncStatusPresentation'
 
 // ── Provider ────────────────────────────────────────────────────────────────

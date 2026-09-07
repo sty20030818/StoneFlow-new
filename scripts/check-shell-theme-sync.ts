@@ -30,7 +30,11 @@ function requireBefore(source: string, first: string, second: string, owner: str
 
 function requireBackground(source: string, selector: string, color: string) {
 	const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-	const pattern = new RegExp(`${escapedSelector}\\s*\\{[^}]*background:\\s*${color}\\s*;`, 'is')
+	const escapedColor = color.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+	const pattern = new RegExp(
+		`${escapedSelector}\\s*\\{[^}]*background:\\s*${escapedColor}\\s*;`,
+		'is',
+	)
 	if (!pattern.test(source)) throw new Error(`${selector} 未同步首帧背景：${color}`)
 }
 
@@ -54,6 +58,7 @@ export function requireStyleImports(source: string) {
 export function checkShellThemeSync(repositoryRoot = resolve(import.meta.dir, '..')) {
 	const styleEntry = read(repositoryRoot, 'src/styles/index.css')
 	const themeCss = read(repositoryRoot, 'src/styles/theme.css')
+	const componentCss = read(repositoryRoot, 'src/styles/components.css')
 	const indexHtml = read(repositoryRoot, 'index.html')
 	const launcherHtml = read(repositoryRoot, 'launcher.html')
 	const mainEntry = read(repositoryRoot, 'src/main.tsx')
@@ -109,6 +114,11 @@ export function checkShellThemeSync(repositoryRoot = resolve(import.meta.dir, '.
 	requireText(shellSkeleton, 'bg-surface-secondary', 'ShellLayoutSkeleton shell')
 	requireText(shellSkeleton, 'bg-background', 'ShellLayoutSkeleton main')
 	requireText(shellSkeleton, 'border-surface', 'ShellLayoutSkeleton border')
+	requireBackground(
+		componentCss,
+		'[data-theme="stoneflow-light"] .sidebar',
+		'var(--surface-secondary)',
+	)
 
 	for (const [owner, source] of [
 		['src/main.tsx', mainEntry],

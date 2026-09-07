@@ -3,14 +3,14 @@
 use sqlx::{PgConnection, Row};
 
 use super::error_map::map_sqlx_error;
-use super::schema::{read_instance_id, PROTOCOL_SCHEMA_VERSION};
+use super::schema::{read_instance_id, read_schema_version};
 use crate::{RemoteSyncDiagnosticsOutput, SyncDiagnosticsCountsOutput, SyncError, SyncProbeOutput};
 
 pub async fn health(conn: &mut PgConnection) -> Result<SyncProbeOutput, SyncError> {
     Ok(SyncProbeOutput {
         remote_instance_id: read_instance_id(conn).await?,
         latest_server_seq: read_latest_server_seq(conn).await?,
-        schema_version: Some(PROTOCOL_SCHEMA_VERSION),
+        schema_version: Some(read_schema_version(conn).await?),
     })
 }
 
@@ -22,7 +22,9 @@ pub async fn diagnose(conn: &mut PgConnection) -> Result<RemoteSyncDiagnosticsOu
     })
 }
 
-async fn read_latest_server_seq(conn: &mut PgConnection) -> Result<Option<i64>, SyncError> {
+pub(super) async fn read_latest_server_seq(
+    conn: &mut PgConnection,
+) -> Result<Option<i64>, SyncError> {
     let value: Option<i64> = sqlx::query_scalar("SELECT MAX(server_seq) FROM sync_change_log")
         .fetch_one(&mut *conn)
         .await

@@ -285,7 +285,7 @@
 
 	[data-theme="stoneflow-light"] .sidebar {
 		border-color: var(--separator);
-		background: var(--default);
+		background: var(--surface-secondary);
 	}
 
 	[data-theme="stoneflow-light"]

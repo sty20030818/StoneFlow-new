@@ -14,10 +14,12 @@ import { listen } from '@tauri-apps/api/event'
 import { SettingsIcon } from 'lucide-react'
 
 import {
+	adoptLegacySyncRemote,
 	configureSync,
 	formatReplicaState,
 	getSyncDiagnostics,
 	getSyncStatus,
+	isSyncReplicaRecoveryRequired,
 	rebindSync,
 	runSync,
 	SyncConfigDialog,
@@ -244,6 +246,22 @@ export function SettingsSyncPanel() {
 		return persistSyncConfig(rebindSync, input)
 	}
 
+	async function handleAdoptLegacyRemote() {
+		setSyncSaving(true)
+		setSyncStatusMessage(null)
+		setSyncDiagnosticsMessage(null)
+		try {
+			await adoptLegacySyncRemote()
+			if (mountedRef.current) {
+				await refreshSyncStatus({ silent: true, syncUrlDraft: false })
+			}
+		} finally {
+			if (mountedRef.current) {
+				setSyncSaving(false)
+			}
+		}
+	}
+
 	async function handleRunSync() {
 		setSyncRunning(true)
 		setSyncStatusMessage(null)
@@ -306,6 +324,7 @@ export function SettingsSyncPanel() {
 	const syncActionBusy = syncBusy || syncDiagnosing
 
 	const replicaState: SyncReplicaState = syncStatus?.replicaState ?? 'uninitialized'
+	const replicaRecoveryRequired = isSyncReplicaRecoveryRequired(replicaState)
 	const policyMode: SyncPolicyMode = syncStatus?.policyMode ?? 'interval'
 	const displayedSyncStatus: SyncStatus = syncRunning
 		? 'syncing'
@@ -325,11 +344,20 @@ export function SettingsSyncPanel() {
 		syncRunning,
 		syncSaving,
 	})
-	const syncNowDisabled = syncActionBusy || !syncStatus?.hasRemoteConfig
-	const syncNowDisabledReason = syncActionBusy ? '正在处理同步操作，请稍候' : '请先配置同步数据库'
-	const diagnosticsDisabled = syncBusy || syncDiagnosing || !syncStatus?.hasRemoteConfig
+	const syncNowDisabled = syncActionBusy || !syncStatus?.hasRemoteConfig || replicaRecoveryRequired
+	const syncNowDisabledReason = syncActionBusy
+		? '正在处理同步操作，请稍候'
+		: replicaRecoveryRequired
+			? (syncStatus?.replicaReason ?? formatReplicaState(replicaState))
+			: '请先配置同步数据库'
+	const diagnosticsDisabled =
+		syncBusy || syncDiagnosing || !syncStatus?.hasRemoteConfig || replicaRecoveryRequired
 	const diagnosticsDisabledReason =
-		syncBusy || syncDiagnosing ? '正在处理同步操作，请稍候' : '请先配置同步数据库'
+		syncBusy || syncDiagnosing
+			? '正在处理同步操作，请稍候'
+			: replicaRecoveryRequired
+				? (syncStatus?.replicaReason ?? formatReplicaState(replicaState))
+				: '请先配置同步数据库'
 
 	const configureButton = (
 		<Button
@@ -648,6 +676,10 @@ export function SettingsSyncPanel() {
 				<SyncConfigDialog
 					configSource={syncStatus?.configSource ?? 'system_keychain'}
 					databaseUrl={databaseUrl}
+					legacyRemoteAdoptionRequired={replicaState === 'legacy_binding_required'}
+					legacyRemoteReason={syncStatus?.replicaReason ?? null}
+					redactedRemoteUrl={syncStatus?.remoteUrl ?? null}
+					onAdoptLegacyRemote={handleAdoptLegacyRemote}
 					onClose={() => setSyncConfigDialogOpen(false)}
 					onDatabaseUrlChange={setDatabaseUrl}
 					onRebind={handleRebindSyncConfig}

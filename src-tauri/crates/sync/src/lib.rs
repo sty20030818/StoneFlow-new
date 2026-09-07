@@ -57,6 +57,14 @@ pub async fn health(config: &SyncCloudConfig) -> Result<SyncProbeOutput, SyncErr
     Ok(probe)
 }
 
+/// 用户明确确认后沿用旧远端；先校验远端游标，兼容 v1 时再迁移协议。
+pub async fn adopt_legacy_remote(
+    config: &SyncCloudConfig,
+    minimum_server_seq: i64,
+) -> Result<SyncProbeOutput, SyncError> {
+    postgres::adopt_legacy(config, minimum_server_seq).await
+}
+
 /// 云端只读诊断。
 pub async fn diagnose_cloud(
     config: &SyncCloudConfig,

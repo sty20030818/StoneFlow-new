@@ -303,6 +303,26 @@ export function getSyncStatusCopy({
 		}
 	}
 
+	if (replicaState === 'legacy_binding_required') {
+		const reason = replicaReason ?? '本机保留了旧同步位置，但还没有当前远端的实例身份。'
+		return {
+			title: '需要确认当前同步远端',
+			summary: `${reason} 请在同步配置中确认沿用当前远端；确认只会补齐身份，不会清空本机数据、同步位置或待上传变更。`,
+			statusDescription: reason,
+			variant: 'warning' as const,
+		}
+	}
+
+	if (replicaState === 'diverged') {
+		const reason = replicaReason ?? '本机副本与当前远端无法安全衔接，普通同步已暂停。'
+		return {
+			title: '同步状态异常',
+			summary: reason,
+			statusDescription: reason,
+			variant: 'danger' as const,
+		}
+	}
+
 	switch (status) {
 		case 'synced':
 			return {

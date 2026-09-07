@@ -29,6 +29,16 @@ pub async fn configure_sync(
 }
 
 #[tauri::command]
+pub async fn adopt_legacy_sync_remote(
+    app_handle: tauri::AppHandle,
+    state: State<'_, AppState>,
+) -> Result<(), AppError> {
+    sync::adopt_legacy_sync_remote(&app_handle, &state.database, &state.sync).await?;
+    sync::trigger_startup_sync(&app_handle);
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn rebind_sync(
     app_handle: tauri::AppHandle,
     input: RebindSyncInput,

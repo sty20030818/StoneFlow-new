@@ -24,6 +24,7 @@ const getSyncStatusSpy = vi.fn<() => Promise<unknown>>()
 const getSyncDiagnosticsSpy = vi.fn<() => Promise<unknown>>()
 const configureSyncSpy = vi.fn<(input: { databaseUrl: string }) => Promise<unknown>>()
 const rebindSyncSpy = vi.fn<(input: { databaseUrl: string }) => Promise<unknown>>()
+const adoptLegacySyncRemoteSpy = vi.fn<() => Promise<void>>()
 const runSyncSpy = vi.fn<() => Promise<unknown>>()
 const updateSyncPolicySpy =
 	vi.fn<
@@ -70,6 +71,7 @@ vi.mock('@/features/sync', async (importOriginal) => {
 		getSyncDiagnostics: () => getSyncDiagnosticsSpy(),
 		configureSync: (input: { databaseUrl: string }) => configureSyncSpy(input),
 		rebindSync: (input: { databaseUrl: string }) => rebindSyncSpy(input),
+		adoptLegacySyncRemote: () => adoptLegacySyncRemoteSpy(),
 		runSync: () => runSyncSpy(),
 		updateSyncPolicy: (input: {
 			mode: 'interval' | 'on_write' | 'manual'
@@ -166,6 +168,8 @@ describe('SettingsPage', () => {
 		})
 		configureSyncSpy.mockReset()
 		rebindSyncSpy.mockReset()
+		adoptLegacySyncRemoteSpy.mockReset()
+		adoptLegacySyncRemoteSpy.mockResolvedValue(undefined)
 		configureSyncSpy.mockResolvedValue(
 			createSyncStatusPayload({
 				enabled: true,
@@ -699,6 +703,50 @@ describe('SettingsPage', () => {
 		expect(screen.getByText('.env.local 是唯一配置来源')).toBeInTheDocument()
 		expect(screen.queryByLabelText('同步数据库连接')).not.toBeInTheDocument()
 		expect(screen.queryByRole('button', { name: '保存配置' })).not.toBeInTheDocument()
+	})
+
+	it('开发配置的旧同步位置可在配置弹窗中显式沿用当前远端', async () => {
+		getSyncStatusSpy.mockResolvedValue(
+			createSyncStatusPayload({
+				enabled: true,
+				status: 'needs_attention',
+				hasRemoteConfig: true,
+				configSource: 'environment',
+				remoteUrl: 'postgresql://db.example.com:5432/sf',
+				replicaState: 'legacy_binding_required',
+				replicaReason: '本机保留了旧同步位置，但还没有远端身份。',
+			}),
+		)
+
+		mockSettingsSection = 'sync'
+		await renderSettingsPage()
+		expect(screen.getByRole('button', { name: '立即同步' })).toBeDisabled()
+		fireEvent.click(screen.getByRole('button', { name: '详情与诊断' }))
+		expect(screen.getByRole('button', { name: '刷新诊断' })).toBeDisabled()
+		openSyncConfigDialog()
+		fireEvent.click(screen.getByRole('button', { name: '确认沿用当前远端' }))
+
+		await waitFor(() => expect(adoptLegacySyncRemoteSpy).toHaveBeenCalledTimes(1))
+	})
+
+	it('非 legacy 的异常副本禁用普通同步且不显示沿用入口', async () => {
+		getSyncStatusSpy.mockResolvedValue(
+			createSyncStatusPayload({
+				enabled: true,
+				status: 'needs_attention',
+				hasRemoteConfig: true,
+				remoteUrl: 'postgresql://db.example.com:5432/sf',
+				replicaState: 'diverged',
+				replicaReason: '本机副本与云端历史无法安全衔接。',
+			}),
+		)
+
+		mockSettingsSection = 'sync'
+		await renderSettingsPage()
+		expect(screen.getAllByText('本机副本与云端历史无法安全衔接。').length).toBeGreaterThan(0)
+		expect(screen.getByRole('button', { name: '立即同步' })).toBeDisabled()
+		openSyncConfigDialog()
+		expect(screen.queryByRole('button', { name: '确认沿用当前远端' })).not.toBeInTheDocument()
 	})
 
 	it('后台状态刷新时不应覆盖正在编辑的同步配置草稿', async () => {

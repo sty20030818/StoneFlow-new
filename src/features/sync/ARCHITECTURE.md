@@ -45,7 +45,7 @@ src/features/sync/
 
 | 类       | 符号                                                                                                  |
 | -------- | ----------------------------------------------------------------------------------------------------- |
-| API      | `getSyncStatus` · `getSyncDiagnostics` · `configureSync` · `rebindSync` · `updateSyncPolicy` · `runSync` |
+| API      | `getSyncStatus` · `getSyncDiagnostics` · `configureSync` · `adoptLegacySyncRemote` · `rebindSync` · `updateSyncPolicy` · `runSync` |
 | 类型     | `SyncStatus` · `SyncReplicaState` · `SyncPolicyMode` · `SyncDatabaseConfigInput` · 状态/诊断 payload     |
 | 展示     | `getSyncStatusTone` · `formatSyncStatus` · `formatReplicaState` 等                                    |
 | Provider | `SyncStatusProvider` · `useSharedSyncStatus`                                                          |
@@ -80,7 +80,7 @@ src/features/sync/
 | Tauri 推送       | **事件** `stoneflow://sync/status-changed`          |
 | 同步凭据         | **Debug** 根目录 `.env.local`；**Release** 系统钥匙串 |
 | 远端地址展示     | **派生**：只保留 scheme / host / port / path；authority 与全部 query 丢弃 |
-| 配置表单         | `SyncConfigDialog`：Release 先验证连接与 identity；Debug 只读说明 |
+| 配置表单         | `SyncConfigDialog`：Release 先验证连接与 identity；Debug 通常只读；两种来源在 `legacy_binding_required` 时均可确认沿用当前远端 |
 | 页脚文案         | **派生** `deriveSyncFooterView`（无独立 store）     |
 
 ---
@@ -88,7 +88,8 @@ src/features/sync/
 ## 7. 配置与重新绑定合同
 
 - `configureSync` 是普通配置入口：连接候选 Postgres、读取远端稳定 identity，并与本机绑定核对。不同 identity、来源不可证明的旧 cursor，或本机与未绑定远端同时已有数据时返回 `Conflict`，不会上传 Outbox、复用旧 cursor 或清空本机。
-- `SyncConfigDialog` 只把上述 `configureSync` 的 `Conflict` 转成“确认重新绑定”步骤；其它连接、鉴权、数据库或钥匙串错误保持普通失败，可原位修改和重试。
+- `adoptLegacySyncRemote` 只处理 `legacy_binding_required`：它没有 URL 输入或输出，在同一远端事务的 `REPEATABLE READ` 快照内先只读检查协议版本、`latest_server_seq` 与 identity；任何校验失败都不提交远端写入，只有序号不落后且兼容的 v1 才复用正式 schema 迁移，v2 不改 schema。随后在单个 SQLite 事务内补写 identity。同一 identity 可幂等重试，Outbox 不阻断，cursor、业务数据与其它协议元数据全部保留。确认前普通同步 fail closed；确认后状态先转为待同步，再触发后台完整同步。
+- `SyncConfigDialog` 在 `legacy_binding_required` 时只展示状态载荷中的脱敏地址与沿用当前远端确认；其它状态下才编辑连接串，并把 `configureSync` 的 `Conflict` 转成“确认重新绑定”步骤。连接、鉴权、数据库或钥匙串错误保持普通失败，可原位修改和重试。
 - `rebindSync` 是用户明确确认后的危险入口。后端在同一个本地写边界内再次检查 Outbox；仍有待上传变更时拒绝。非空远端以其完整 baseline 替换本机同步副本，空远端保留本机业务并建立新的 origin baseline。
 - rebind 提交后 runtime 立即发送 `stoneflow://workspace/changed`（`reason: rebind`，覆盖五个同步领域）；普通连续同步也在每个成功 round 提交后立即发送自己的事件。后续 round 失败不会吞掉前一轮已提交变化。
 - 业务 Query 失效仍由 `@/features/workspace` 消费事件完成，`sync` feature 不直接操作业务缓存。

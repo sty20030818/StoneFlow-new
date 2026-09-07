@@ -10,6 +10,36 @@ import {
 } from './CommandSelectionProvider'
 
 describe('CommandSelectionProvider', () => {
+	it('真实订阅者每次渲染产生等价 selection 时注册会收敛', () => {
+		const clearSelection = vi.fn()
+		const onRender = vi.fn()
+
+		function ShellConsumer() {
+			onRender()
+			if (onRender.mock.calls.length > 20) {
+				throw new Error('Maximum update depth exceeded in CommandSelectionProvider registration')
+			}
+
+			const selection = useCommandSelectionContext()
+			return (
+				<>
+					<SelectionRegistrar selection={{ ...createTaskSelection([]), clearSelection }} />
+					<output data-testid='shell-selection-source'>{selection.source}</output>
+				</>
+			)
+		}
+
+		render(
+			<CommandSelectionProvider>
+				<ShellConsumer />
+			</CommandSelectionProvider>,
+		)
+
+		expect(screen.getByTestId('shell-selection-source')).toHaveTextContent('none')
+		expect(onRender).toHaveBeenCalled()
+		expect(onRender.mock.calls.length).toBeLessThan(20)
+	})
+
 	it('默认返回空 selection', () => {
 		const { result } = renderHook(() => useCommandSelectionContext(), {
 			wrapper: CommandSelectionProvider,
@@ -68,6 +98,41 @@ describe('CommandSelectionProvider', () => {
 		expect(screen.getByTestId('selection-json').textContent).toContain('"ids":["task-b","task-c"]')
 		fireEvent.click(screen.getByRole('button', { name: '执行当前选择' }))
 		expect(onExecute).toHaveBeenCalledWith(['task-b', 'task-c'])
+	})
+
+	it('相同 ids 下实体内容或清除动作变化仍会发布新 snapshot', () => {
+		const clearSelectionA = vi.fn()
+		const clearSelectionB = vi.fn()
+
+		function Harness({ title, clearSelection }: { title: string; clearSelection: () => void }) {
+			const entity = {
+				id: 'task-a',
+				type: 'task' as const,
+				title,
+			}
+			const selection: CommandSelectionContext = {
+				...createTaskSelection(['task-a']),
+				entities: [entity],
+				primaryEntity: entity,
+				clearSelection,
+			}
+
+			return (
+				<CommandSelectionProvider>
+					<SelectionRegistrar selection={selection} />
+					<SelectionProbe />
+					<ClearSelectionProbe />
+				</CommandSelectionProvider>
+			)
+		}
+
+		const { rerender } = render(<Harness clearSelection={clearSelectionA} title='任务 A' />)
+		rerender(<Harness clearSelection={clearSelectionB} title='任务 A（已更新）' />)
+
+		expect(screen.getByTestId('selection-json').textContent).toContain('"title":"任务 A（已更新）"')
+		fireEvent.click(screen.getByRole('button', { name: '清除当前选择' }))
+		expect(clearSelectionA).not.toHaveBeenCalled()
+		expect(clearSelectionB).toHaveBeenCalledOnce()
 	})
 
 	it('注册空 selection 后恢复空状态', () => {
@@ -144,6 +209,11 @@ function SelectionRegistrar({ selection }: { selection: CommandSelectionContext 
 function ExecutionProbe({ onExecute }: { onExecute: (ids: string[]) => void }) {
 	const selection = useCommandSelectionContext()
 	return <button onClick={() => onExecute([...selection.ids])}>执行当前选择</button>
+}
+
+function ClearSelectionProbe() {
+	const selection = useCommandSelectionContext()
+	return <button onClick={() => selection.clearSelection?.()}>清除当前选择</button>
 }
 
 function SelectionProbe() {

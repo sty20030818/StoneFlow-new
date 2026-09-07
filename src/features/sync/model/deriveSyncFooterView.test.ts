@@ -34,7 +34,7 @@ describe('deriveSyncFooterView', () => {
 		expect(view.title).toContain('设置')
 	})
 
-	it('阻塞 replica：文案用 replica 状态，动作禁用', () => {
+	it('缺少基线仍允许通过普通同步建立基线', () => {
 		const view = deriveSyncFooterView({
 			displayedStatus: 'error',
 			loading: false,
@@ -47,7 +47,25 @@ describe('deriveSyncFooterView', () => {
 			},
 		})
 		expect(view.label).toBe('缺少基线')
+		expect(view.actionDisabled).toBe(false)
+		expect(view.tone.color).toBe('warning')
+	})
+
+	it('旧同步位置待确认时使用明确文案并阻断普通同步', () => {
+		const view = deriveSyncFooterView({
+			displayedStatus: 'needs_attention',
+			loading: false,
+			running: false,
+			message: null,
+			statusPayload: {
+				credentialState: 'available',
+				hasRemoteConfig: true,
+				replicaState: 'legacy_binding_required',
+			},
+		})
+		expect(view.label).toBe('待确认远端')
 		expect(view.actionDisabled).toBe(true)
+		expect(view.tone.color).toBe('warning')
 	})
 
 	it('running：busy + 同步中 label on action', () => {

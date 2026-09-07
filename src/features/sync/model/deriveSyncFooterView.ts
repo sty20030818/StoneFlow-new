@@ -11,7 +11,9 @@ import type {
 import {
 	formatReplicaState,
 	formatSyncStatus,
+	getSyncReplicaTone,
 	getSyncStatusTone,
+	isSyncReplicaRecoveryRequired,
 	type SyncStatusTone,
 } from '@/features/sync/model/syncStatusPresentation'
 
@@ -41,16 +43,19 @@ export function deriveSyncFooterView(input: SyncFooterViewInput): SyncFooterView
 	const hasRemoteConfig = input.statusPayload?.hasRemoteConfig ?? false
 	const credentialState: SyncCredentialState = input.statusPayload?.credentialState ?? 'missing'
 	const replicaState: SyncReplicaState = input.statusPayload?.replicaState ?? 'uninitialized'
-	const blocked = replicaState === 'baseline_required' || replicaState === 'diverged'
+	const blocked = isSyncReplicaRecoveryRequired(replicaState)
+	const showReplicaState = blocked || replicaState === 'baseline_required'
 	const busy = input.running || input.displayedStatus === 'syncing'
-	const tone = getSyncStatusTone(input.displayedStatus)
+	const tone = showReplicaState
+		? getSyncReplicaTone(replicaState)
+		: getSyncStatusTone(input.displayedStatus)
 
 	const label =
 		credentialState === 'unavailable'
 			? '凭据异常'
 			: !hasRemoteConfig
 				? '未配置'
-				: blocked
+				: showReplicaState
 					? formatReplicaState(replicaState)
 					: input.displayedStatus === 'synced'
 						? '已同步'
@@ -62,7 +67,7 @@ export function deriveSyncFooterView(input: SyncFooterViewInput): SyncFooterView
 			? '无法访问同步凭据，请到设置中处理'
 			: !hasRemoteConfig
 				? '同步未配置远端，请到设置中配置'
-				: blocked
+				: showReplicaState
 					? formatReplicaState(replicaState)
 					: formatSyncStatus(input.displayedStatus)
 

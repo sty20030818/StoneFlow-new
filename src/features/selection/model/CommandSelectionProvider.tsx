@@ -15,7 +15,6 @@ import {
 	createEmptyCommandSelectionContext,
 	type CommandSelectionContext,
 } from '@/features/command'
-import { useLatestRef } from '@/shared/lib/useLatestRef'
 
 type CommandSelectionSnapshotReader = () => CommandSelectionContext
 
@@ -85,35 +84,36 @@ export function useCommandSelectionContext() {
 /**
  * 注册当前 collection 的只读命令投影。
  *
- * reader 必须在 owner 未变化时返回同一个快照对象；Provider 只订阅读取，
- * 不复制或持有 selection，从而避免形成第二份可写选择状态。
+ * 注册边界会缓存语义等价的快照，允许 owner 重建只读容器，同时保证
+ * useSyncExternalStore 在实际 selection 未变化时读到稳定引用。
  */
 export function useRegisterCommandSelection(readSelection: CommandSelectionSnapshotReader) {
 	const actions = useContext(CommandSelectionActionsContext)
 	const tokenRef = useRef(Symbol('command-selection-registration'))
-	const readerRef = useLatestRef(readSelection)
 	const listenersRef = useRef(new Set<() => void>())
 
-	const currentSnapshot = readSelection()
-	const sourceRef = useRef<CommandSelectionSource | null>(null)
-	if (!sourceRef.current) {
-		sourceRef.current = {
-			getSnapshot: () => readerRef.current(),
-			subscribe: (listener) => {
-				listenersRef.current.add(listener)
-				return () => {
-					listenersRef.current.delete(listener)
-				}
-			},
-		}
-	}
-	const source = sourceRef.current
+	const nextSnapshot = readSelection()
+	const snapshotRef = useRef(nextSnapshot)
+	const [source] = useState<CommandSelectionSource>(() => ({
+		getSnapshot: () => snapshotRef.current,
+		subscribe: (listener) => {
+			listenersRef.current.add(listener)
+			return () => {
+				listenersRef.current.delete(listener)
+			}
+		},
+	}))
 
 	useLayoutEffect(() => {
+		if (areSameCommandSelection(snapshotRef.current, nextSnapshot)) {
+			return
+		}
+
+		snapshotRef.current = nextSnapshot
 		for (const listener of listenersRef.current) {
 			listener()
 		}
-	}, [currentSnapshot])
+	}, [nextSnapshot])
 
 	useEffect(() => {
 		if (!actions) {
@@ -127,4 +127,64 @@ export function useRegisterCommandSelection(readSelection: CommandSelectionSnaps
 			actions.clearSelectionRegistration(token)
 		}
 	}, [actions, source])
+}
+
+function areSameCommandSelection(current: CommandSelectionContext, next: CommandSelectionContext) {
+	return (
+		current === next ||
+		(current.type === next.type &&
+			areSameValues(current.ids, next.ids) &&
+			areSameEntities(current.entities, next.entities) &&
+			areSameEntity(current.primaryEntity, next.primaryEntity) &&
+			current.clearSelection === next.clearSelection &&
+			current.focusedId === next.focusedId &&
+			current.focusedType === next.focusedType &&
+			current.source === next.source &&
+			current.hasSelection === next.hasSelection &&
+			current.isSingleSelection === next.isSingleSelection &&
+			current.isMultiSelection === next.isMultiSelection)
+	)
+}
+
+function areSameValues<T>(current: readonly T[], next: readonly T[]) {
+	return (
+		current === next ||
+		(current.length === next.length && current.every((value, index) => value === next[index]))
+	)
+}
+
+function areSameEntities(
+	current: CommandSelectionContext['entities'],
+	next: CommandSelectionContext['entities'],
+) {
+	return (
+		current === next ||
+		(current.length === next.length &&
+			current.every((entity, index) => areSameEntity(entity, next[index])))
+	)
+}
+
+function areSameEntity(
+	current: CommandSelectionContext['primaryEntity'],
+	next: CommandSelectionContext['primaryEntity'],
+) {
+	return (
+		current === next ||
+		Boolean(
+			current &&
+			next &&
+			current.id === next.id &&
+			current.type === next.type &&
+			current.title === next.title &&
+			current.subtitle === next.subtitle &&
+			current.spaceId === next.spaceId &&
+			current.projectId === next.projectId &&
+			current.dueAt === next.dueAt &&
+			current.status === next.status &&
+			current.priority === next.priority &&
+			current.lifecycleMode === next.lifecycleMode &&
+			current.lifecycleEntityType === next.lifecycleEntityType &&
+			current.projectStatus === next.projectStatus,
+		)
+	)
 }
