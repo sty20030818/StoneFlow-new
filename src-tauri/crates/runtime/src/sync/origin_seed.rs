@@ -11,9 +11,7 @@ use uuid::Uuid;
 
 use crate::app::error::AppError;
 
-const SERVER_SEQ_CURSOR_SCOPE: &str = "sync:last_pulled_server_seq";
-const ORIGIN_SEED_SCOPE: &str = "sync:origin_seed_done";
-const LAST_RESTORE_AT_SCOPE: &str = "sync:last_restore_at";
+use super::binding::{LAST_RESTORE_AT_SCOPE, ORIGIN_SEED_SCOPE, SERVER_SEQ_CURSOR_SCOPE};
 
 /// 换绑空云端 / 云端被清空时：清掉本机同步位置与「已灌库」标记，允许再次 origin seed。
 /// 不删业务数据、不删 device_id；仅清理历史 origin-seed 待传条目以免重复灌库。

@@ -10,7 +10,7 @@
 
 ## Public
 
-- `AboutDialog`
+- `AboutDialogHost`（首次打开后 lazy mount `AboutDialog`）
 - `AppVersionFooterItem`
 
 外模块只从 `@/features/app-info` 导入；不得深路径访问配置或 Tauri API。
@@ -20,4 +20,4 @@
 | 位置 | 挂载 |
 |---|---|
 | `layout/ShellFooter.tsx` | `AppVersionFooterItem` |
-| `layout/overlays/ShellOverlays.tsx` | `AboutDialog` |
+| `layout/overlays/ShellOverlays.tsx` | `AboutDialogHost` |

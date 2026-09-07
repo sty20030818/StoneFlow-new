@@ -15,6 +15,7 @@ import type { TaskListItem } from '@/shared/types'
 
 type UseTaskRowCommandShortcutsOptions = {
 	tasks: TaskListItem[]
+	taskById: ReadonlyMap<string, TaskListItem>
 	focusedTaskId: string | null
 	selectedTaskIds: ReadonlySet<string>
 	ownsEventTarget: (target: EventTarget | null) => boolean
@@ -35,6 +36,7 @@ const TASK_DOMAIN_ROW_COMMAND_IDS = new Set<CommandId>([
 /** 只负责 row 快捷键匹配与目标投影；执行始终进入壳层唯一 Runtime。 */
 export function useTaskRowCommandShortcuts({
 	tasks,
+	taskById,
 	focusedTaskId,
 	selectedTaskIds,
 	ownsEventTarget,
@@ -50,7 +52,6 @@ export function useTaskRowCommandShortcuts({
 				.filter((binding) => TASK_DOMAIN_ROW_COMMAND_IDS.has(binding.commandId)),
 		[shortcutRegistry],
 	)
-	const taskById = useMemo(() => new Map(tasks.map((task) => [task.id, task])), [tasks])
 	const selectedIds = useMemo(
 		() => tasks.filter((task) => selectedTaskIds.has(task.id)).map((task) => task.id),
 		[selectedTaskIds, tasks],
@@ -64,14 +65,14 @@ export function useTaskRowCommandShortcuts({
 		() =>
 			buildTaskCommandContext({
 				baseContext: context,
-				tasks,
+				taskById,
 				targetTaskIds: targetIds,
 				focusedTaskId: focusedTargetId,
 				rowTargetId: focusedTargetId ?? (targetIds.length === 1 ? targetIds[0] : null),
 				rowTargetSource: 'focus',
 				clearSelection: selectedIds.length > 0 ? onClearTaskSelection : undefined,
 			}),
-		[context, focusedTargetId, onClearTaskSelection, selectedIds.length, targetIds, tasks],
+		[context, focusedTargetId, onClearTaskSelection, selectedIds.length, targetIds, taskById],
 	)
 
 	useShortcutDispatcher(SHORTCUT_DISPATCH_PRIORITY.row, (event) => {

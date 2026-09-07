@@ -56,8 +56,29 @@ fn strip_unsupported_pg_params(url: &str) -> String {
 /// 连接并确保 schema 就绪。
 pub async fn connect_ready(config: &SyncCloudConfig) -> Result<PgConnection, SyncError> {
     let mut conn = connect(config).await?;
+    if let Some(expected) = config.expected_instance_id.as_deref() {
+        verify_expected_identity(&mut conn, expected).await?;
+    }
     ensure_ready(&mut conn).await?;
+    if let Some(expected) = config.expected_instance_id.as_deref() {
+        verify_expected_identity(&mut conn, expected).await?;
+    }
     Ok(conn)
+}
+
+async fn verify_expected_identity(
+    conn: &mut PgConnection,
+    expected: &str,
+) -> Result<(), SyncError> {
+    let actual = schema::read_instance_id(conn)
+        .await
+        .map_err(|_| SyncError::validation("远端实例身份不可确认，已拒绝继续读写"))?;
+    if actual != expected {
+        return Err(SyncError::validation(
+            "远端实例在同步过程中发生变化，已拒绝继续读写",
+        ));
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -109,7 +130,10 @@ pub mod test_support {
 
         let separator = if base.contains('?') { '&' } else { '?' };
         let database_url = format!("{base}{separator}options=-csearch_path%3D{schema}");
-        let config = SyncCloudConfig { database_url };
+        let config = SyncCloudConfig {
+            database_url,
+            expected_instance_id: None,
+        };
         let mut conn = super::connect(&config).await?;
         ensure_ready(&mut conn).await?;
         drop(conn);

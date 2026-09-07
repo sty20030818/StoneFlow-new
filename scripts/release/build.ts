@@ -1,5 +1,6 @@
 import type { ReleaseChannel } from './types'
 import { expandHomePath } from './paths'
+import { assertHeroUiReleaseAuth } from './verify-heroui-pro'
 
 export interface BuildCommand {
 	readonly argv: readonly string[]
@@ -41,6 +42,7 @@ export async function buildReleaseApp(
 	}
 
 	const sourceEnv = input.env ?? process.env
+	assertHeroUiReleaseAuth(sourceEnv)
 	const env: NodeJS.ProcessEnv = { ...sourceEnv }
 	const controlledKeys = new Set(['TAURI_CONFIG', 'CARGO_TARGET_DIR', 'PWD', 'INIT_CWD'])
 	for (const name of Object.keys(env)) {
@@ -57,5 +59,13 @@ export async function buildReleaseApp(
 	if (signingPrivateKey) env.TAURI_SIGNING_PRIVATE_KEY = signingPrivateKey
 
 	await runner({ argv: ['bun', 'install', '--frozen-lockfile'], cwd: input.sourceRoot, env })
-	await runner({ argv: buildArgv, cwd: input.sourceRoot, env })
+	const postInstallEnv = { ...env }
+	delete postInstallEnv.HEROUI_AUTH_TOKEN
+	await runner({ argv: ['bun', 'audit'], cwd: input.sourceRoot, env: postInstallEnv })
+	await runner({
+		argv: ['bun', 'run', 'scripts/release/verify-heroui-pro.ts'],
+		cwd: input.sourceRoot,
+		env: postInstallEnv,
+	})
+	await runner({ argv: buildArgv, cwd: input.sourceRoot, env: postInstallEnv })
 }

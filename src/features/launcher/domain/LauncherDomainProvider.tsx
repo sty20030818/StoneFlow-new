@@ -20,7 +20,10 @@ import { useLauncherTransientUi } from './useLauncherTransientUi'
 import { createLauncherInitialState, launcherDomainReducer } from './launcherDomainReducer'
 import { useLauncherSession } from '../session/SessionProvider'
 import { getLauncherResultKey } from '../model/types'
-import { createCollectionFocusBridge, useCollectionInteraction } from '@/features/selection'
+import {
+	createCollectionFocusBridge,
+	useCollectionInteraction,
+} from '@/features/selection/contract'
 
 const LauncherDomainContext = createContext<LauncherContextValue | null>(null)
 

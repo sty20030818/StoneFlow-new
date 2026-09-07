@@ -693,9 +693,9 @@ describe('UiLabApp', () => {
 		await waitFor(() =>
 			expect(screen.queryByRole('dialog', { name: '配置云端副本' })).not.toBeInTheDocument(),
 		)
-		const successToast = await screen.findByRole('alertdialog', { name: '配置已保存' })
+		const successToast = await screen.findByRole('alertdialog', { name: '配置已验证' })
 		expect(successToast).toBeVisible()
-		expect(successToast).toHaveTextContent('正在后台验证连接。')
+		expect(successToast).toHaveTextContent('已绑定远端，正在后台执行同步。')
 		await waitFor(() => expect(openButton).toHaveFocus())
 
 		const failureButton = screen.getByRole('button', { name: '打开并模拟保存失败' })
@@ -720,7 +720,7 @@ describe('UiLabApp', () => {
 		await waitFor(() =>
 			expect(screen.queryByRole('dialog', { name: '配置云端副本' })).not.toBeInTheDocument(),
 		)
-		expect(await screen.findByRole('alertdialog', { name: '配置已保存' })).toBeVisible()
+		expect(await screen.findByRole('alertdialog', { name: '配置已验证' })).toBeVisible()
 		await waitFor(() => expect(failureButton).toHaveFocus())
 		expect(document.querySelector('[data-slot="modal-backdrop"]')).toBeNull()
 	})

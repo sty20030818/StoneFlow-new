@@ -1,6 +1,6 @@
 # task · 任务域
 
-> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-09-02
+> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-09-07
 
 ---
 
@@ -29,7 +29,7 @@
   → shortcuts/useTaskRowCommandShortcuts（只做按键匹配与目标投影）
 ```
 
-跨模块只使用稳定入口：完整 facade 走 `@/features/task`，placement 纯契约走 `@/features/task/contract`，文案与指示器走 `@/features/task/presentation`。
+跨模块只使用稳定入口：完整 facade 走 `@/features/task`，IO 窄入口走 `@/features/task/api`，placement 纯契约走 `@/features/task/contract`，文案与指示器走 `@/features/task/presentation`。
 **禁止** `features/task` → `@/layout/**`。
 
 ---
@@ -42,7 +42,7 @@ src/features/task/
 ├── index.ts                 # 主 public
 ├── contract.ts              # placement 窄契约（避主 barrel 环）
 ├── presentation.ts          # 文案与纯展示指示器窄契约
-├── api/                     # IO only（唯一 invoke）
+├── api/                     # IO only（唯一 invoke）；index.ts 是跨 feature 窄入口
 ├── hooks/
 │   ├── task.keys|queries|mutations
 	│   ├── useTaskListController · useTaskSelection · useTaskData · filter
@@ -98,7 +98,7 @@ src/features/task/
 
 `TaskRowAdapter` 只把任务领域内容与动作装入共享 `RowLayout` 五槽；`RowShell` 是交互状态壳，连续选择与固定占位由 `BoardRowSlot` 拥有，分组标题 anatomy 由 `BoardSectionHeader` 提供。`TaskBoard` 拥有邻接计算、唯一虚拟 projection、已加载 flat items + 固定 sentinel 的几何、sticky、`idle / loading / error / exhausted` 分页、append anchor 与 stable-id 焦点恢复，固定 Row / Header / gap 数值只消费共享集合几何。`totalCount` 不参与虚拟高度；分页未结束时 `aria-rowcount=-1`，结束后报告当前可导航行数，并通过可访问 status 报告加载进度。生产不保留全量渲染 fallback，overscan 固定为 6，sticky 与 virtual row 的 `content-visibility` 保持现有合同。
 
-任务正式详情合同：`Space` 只打开只读 Peek；列表点击或 `Enter` 只写入共享 `?task=` 详情意图。窗口 `<1024px` 时详情始终使用 HeroUI Sheet，`>=1024px` 时始终使用非模态 Aside；跨断点只换容器，不改 URL、不关闭、不跳 `TaskPage`。Aside 与 Sheet 复用同一任务详情 query、draft、autosave 和 mutation；Aside 列表 Panel 最小 `352px`，Aside 最小 `320px` / 默认 `360px` / 最大 `440px`。`TaskBoard` 只以自身容器宽度保留一档 `<560px` 紧凑布局，不与窗口或 Sidebar 状态耦合。canonical `TaskPage` 只能由 Header 等显式用户动作在 flush autosave 后打开。任务域不拥有详情呈现偏好、断点 state 或容器分流逻辑。
+任务正式详情合同：`Space` 只打开只读 Peek；列表点击或 `Enter` 只写入共享 `?task=` 详情意图。窗口 `<1024px` 时详情始终使用 HeroUI Sheet，`>=1024px` 时始终使用非模态 Aside；跨断点只换容器，不改 URL、不关闭、不跳 `TaskPage`。Aside 与 Sheet 复用同一任务详情 query、draft、autosave 和 mutation；dirty draft 由任务详情 view model 注册统一 Router blocker，切换 Row、关闭、Sheet dismiss、Back 与 canonical 导航都必须先成功 flush，失败时保留 URL、当前任务、草稿和错误。不可阻止的宿主卸载不是主要保存机制。Aside 列表 Panel 最小 `352px`，Aside 最小 `320px` / 默认 `360px` / 最大 `440px`。`TaskBoard` 只以自身容器宽度保留一档 `<560px` 紧凑布局，不与窗口或 Sidebar 状态耦合。任务域不拥有详情呈现偏好、断点 state 或容器分流逻辑。
 
 ---
 

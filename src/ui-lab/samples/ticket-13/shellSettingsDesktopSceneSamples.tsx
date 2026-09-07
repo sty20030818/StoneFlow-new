@@ -78,6 +78,7 @@ function SettingsSyncSceneFixture() {
 				databaseUrl={databaseUrl}
 				onClose={() => setOpen(false)}
 				onDatabaseUrlChange={setDatabaseUrl}
+				onRebind={async () => undefined}
 				onSave={async () => {
 					if (shouldFail) {
 						setShouldFail(false)

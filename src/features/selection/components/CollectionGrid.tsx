@@ -177,6 +177,8 @@ export function CollectionGridRoot<
 			ref={rootRef}
 			aria-rowcount={interaction.projection.navigableKeys.length}
 			className={cn('outline-none', className)}
+			data-collection-grid-root='true'
+			data-focus-source={focusSource ?? undefined}
 			onFocusCapture={handleFocusCapture}
 			onKeyDownCapture={handleKeyDownCapture}
 			onPointerDownCapture={markPointerInteraction}

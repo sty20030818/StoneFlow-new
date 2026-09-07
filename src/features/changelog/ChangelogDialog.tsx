@@ -8,17 +8,19 @@ import { ChangelogRelease } from './ChangelogRelease'
 import type { ChangelogChannel } from './contract'
 import { useChangelog } from './useChangelog'
 
+export type ChangelogDialogProps = {
+	open: boolean
+	channel: ChangelogChannel
+	focusVersion?: string | null
+	onOpenChange: (open: boolean) => void
+}
+
 export function ChangelogDialog({
 	open,
 	channel,
 	focusVersion,
 	onOpenChange,
-}: {
-	open: boolean
-	channel: ChangelogChannel
-	focusVersion?: string | null
-	onOpenChange: (open: boolean) => void
-}) {
+}: ChangelogDialogProps) {
 	const { releases, isLoading } = useChangelog(open ? { kind: 'history', channel } : null)
 	const targetRef = useRef<HTMLDivElement>(null)
 	const descriptionId = useId()

@@ -11,6 +11,7 @@ export type SyncReplicaState = 'uninitialized' | 'ready' | 'baseline_required' |
 export type SyncPolicyMode = 'interval' | 'on_write' | 'manual'
 export type SyncCredentialState = 'missing' | 'available' | 'unavailable'
 export type SyncConfigSource = 'environment' | 'system_keychain'
+export type SyncDatabaseConfigInput = { databaseUrl: string }
 
 export type SyncStatusPayload = {
 	enabled: boolean
@@ -47,11 +48,13 @@ export type SyncDiagnosticsPayload = {
 	remoteHost: string | null
 	local: {
 		deviceId: string | null
+		remoteInstanceId: string | null
 		lastPulledServerSeq: number | null
 		pendingMutationCount: number
 		counts: SyncDiagnosticsCountsPayload
 	}
 	remote: {
+		remoteInstanceId: string
 		latestServerSeq: number | null
 		counts: SyncDiagnosticsCountsPayload
 	}
@@ -74,8 +77,15 @@ export function getSyncDiagnostics() {
 /**
  * 保存同步数据库连接（Postgres / Neon 连接串）。
  */
-export function configureSync(input: { databaseUrl: string }) {
+export function configureSync(input: SyncDatabaseConfigInput) {
 	return invoke<SyncStatusPayload>('configure_sync', { input })
+}
+
+/**
+ * 用户确认后切换到另一个远端实例；本机有待上传变更时后端会拒绝。
+ */
+export function rebindSync(input: SyncDatabaseConfigInput) {
+	return invoke<SyncStatusPayload>('rebind_sync', { input })
 }
 
 /**

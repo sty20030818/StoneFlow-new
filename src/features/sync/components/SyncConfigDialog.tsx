@@ -1,7 +1,7 @@
 import { Alert, Button, Label, Modal, TextArea, TextField, toast } from '@heroui/react'
 import { useEffect, useId, useRef, useState } from 'react'
 
-import type { SyncConfigSource } from '@/features/sync/api/sync'
+import type { SyncConfigSource, SyncDatabaseConfigInput } from '@/features/sync/api/sync'
 import { normalizeTauriError } from '@/shared/lib/normalize-tauri-error'
 
 type SyncConfigDialogProps = {
@@ -11,7 +11,8 @@ type SyncConfigDialogProps = {
 	/** 仅表示「正在保存本弹窗」，不要绑全局同步中（否则会误禁用） */
 	saving?: boolean
 	onClose: () => void
-	onSave: (input: { databaseUrl: string }) => Promise<void>
+	onSave: (input: SyncDatabaseConfigInput) => Promise<void>
+	onRebind: (input: SyncDatabaseConfigInput) => Promise<void>
 	onDatabaseUrlChange: (value: string) => void
 }
 
@@ -22,10 +23,12 @@ export function SyncConfigDialog({
 	saving: savingExternal = false,
 	onClose,
 	onSave,
+	onRebind,
 	onDatabaseUrlChange,
 }: SyncConfigDialogProps) {
 	const [saving, setSaving] = useState(false)
 	const [error, setError] = useState<string | null>(null)
+	const [rebindRequired, setRebindRequired] = useState(false)
 	const successToastIdRef = useRef<string | null>(null)
 	const descriptionId = useId()
 	const configIncomplete = databaseUrl.trim().length === 0
@@ -36,6 +39,7 @@ export function SyncConfigDialog({
 		if (!open) {
 			setSaving(false)
 			setError(null)
+			setRebindRequired(false)
 		}
 	}, [open])
 
@@ -50,13 +54,31 @@ export function SyncConfigDialog({
 		setSaving(true)
 		try {
 			await onSave({ databaseUrl: databaseUrl.trim() })
-			// 保存成功立刻关窗，不把后续状态刷新绑在弹窗上。
-			successToastIdRef.current = toast.success('配置已保存', {
-				description: '正在后台验证连接。',
+			successToastIdRef.current = toast.success('配置已验证', {
+				description: '已绑定远端，正在后台执行同步。',
 			})
 			onClose()
 		} catch (saveError) {
+			setRebindRequired(isConflictError(saveError))
 			setError(normalizeTauriError(saveError, '同步配置保存失败'))
+		} finally {
+			setSaving(false)
+		}
+	}
+
+	async function handleRebind() {
+		if (busy || configIncomplete || !rebindRequired) return
+
+		setError(null)
+		setSaving(true)
+		try {
+			await onRebind({ databaseUrl: databaseUrl.trim() })
+			successToastIdRef.current = toast.success('远端已重新绑定', {
+				description: '正在后台执行同步。',
+			})
+			onClose()
+		} catch (rebindError) {
+			setError(normalizeTauriError(rebindError, '重新绑定远端失败'))
 		} finally {
 			setSaving(false)
 		}
@@ -86,7 +108,7 @@ export function SyncConfigDialog({
 						<p className='text-sm leading-6 text-muted' id={descriptionId}>
 							{environmentManaged
 								? '开发构建只读取项目根目录 .env.local，不会写入系统钥匙串。'
-								: '粘贴 Neon 或自建 Postgres 连接串。保存只写本机配置，不会立刻连库；连通性请用「立即同步」或诊断验证。'}
+								: '粘贴 Neon 或自建 Postgres 连接串。保存时会验证连接并确认远端实例身份。'}
 						</p>
 					</Modal.Header>
 
@@ -114,6 +136,7 @@ export function SyncConfigDialog({
 										data-code-field='true'
 										onChange={(event) => {
 											setError(null)
+											setRebindRequired(false)
 											onDatabaseUrlChange(event.currentTarget.value)
 										}}
 										placeholder={
@@ -124,14 +147,18 @@ export function SyncConfigDialog({
 									/>
 								</TextField>
 								<p className='my-2 text-xs leading-5 text-muted'>
-									完整连接串保存在系统钥匙串；界面只展示脱敏地址。更换时粘贴新串覆盖即可。
+									完整连接串保存在系统钥匙串；界面只展示脱敏地址。若新串指向不同远端，会要求再次确认重新绑定。
 								</p>
 								{error ? (
 									<Alert role='alert' status='danger'>
 										<Alert.Indicator />
 										<Alert.Content>
-											<Alert.Title>保存失败</Alert.Title>
-											<Alert.Description>{error}。输入已保留，请检查后再次保存。</Alert.Description>
+											<Alert.Title>{rebindRequired ? '需要确认重新绑定' : '保存失败'}</Alert.Title>
+											<Alert.Description>
+												{rebindRequired
+													? `${error}。确认后：非空远端会替换本机已同步工作副本；空远端会保留本机内容并建立新基线。本机仍有待上传变更时会拒绝执行。`
+													: `${error}。输入已保留，请检查后再次保存。`}
+											</Alert.Description>
 										</Alert.Content>
 									</Alert>
 								) : null}
@@ -147,10 +174,10 @@ export function SyncConfigDialog({
 							<Button
 								isDisabled={busy || configIncomplete}
 								isPending={busy}
-								onPress={() => void handleSave()}
+								onPress={() => void (rebindRequired ? handleRebind() : handleSave())}
 								type='button'
 							>
-								保存配置
+								{rebindRequired ? '确认重新绑定' : '保存配置'}
 							</Button>
 						) : null}
 					</Modal.Footer>
@@ -158,4 +185,8 @@ export function SyncConfigDialog({
 			</Modal.Container>
 		</Modal.Backdrop>
 	)
+}
+
+function isConflictError(error: unknown): boolean {
+	return Boolean(error && typeof error === 'object' && 'type' in error && error.type === 'Conflict')
 }

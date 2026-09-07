@@ -1,5 +1,8 @@
 import type { KeyboardEvent, RefObject } from 'react'
-import type { CollectionInteraction, createCollectionFocusBridge } from '@/features/selection'
+import type {
+	CollectionInteraction,
+	createCollectionFocusBridge,
+} from '@/features/selection/contract'
 
 import type {
 	LauncherFocusTarget,

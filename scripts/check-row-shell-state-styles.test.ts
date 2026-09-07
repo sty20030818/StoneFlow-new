@@ -27,5 +27,11 @@ test('RowShell 状态表面由共享语义 token 持有', () => {
 	expect(componentCss).toMatch(
 		/\[data-row-shell\]\[data-interactive="true"\]\[data-selected="true"\]:hover\s*\{\s*background:\s*var\(--selection-hover\);\s*\}/,
 	)
+	expect(componentCss).toContain(
+		':is([data-board-root], [data-collection-grid-root])[data-focus-source="keyboard"]',
+	)
+	expect(componentCss).toContain('[data-row-layout-slot="selection"]')
+	expect(componentCss).toContain('[data-row-layout-slot="actions"]')
+	expect(componentCss).toContain(':hover:not(:focus-within)')
 	expect(uiLabCss).not.toContain('[data-ui-lab-task-rows]')
 })

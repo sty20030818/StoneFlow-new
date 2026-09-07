@@ -1,27 +1,25 @@
-import type { TaskListItem } from '@/shared/types'
-
 import type { TaskPreviewSource } from './taskPreviewTypes'
 
 export function resolvePreviewTarget({
-	taskIds,
+	taskById,
 	hoveredTaskId,
 	focusedTaskId,
 	activeTaskId,
 }: {
-	taskIds: string[]
+	taskById: TaskPreviewSource['taskById']
 	hoveredTaskId: string | null
 	focusedTaskId: string | null
 	activeTaskId: string | null
 }) {
-	if (hasValidTask(taskIds, hoveredTaskId)) {
+	if (hasValidTask(taskById, hoveredTaskId)) {
 		return hoveredTaskId
 	}
 
-	if (hasValidTask(taskIds, focusedTaskId)) {
+	if (hasValidTask(taskById, focusedTaskId)) {
 		return focusedTaskId
 	}
 
-	if (hasValidTask(taskIds, activeTaskId)) {
+	if (hasValidTask(taskById, activeTaskId)) {
 		return activeTaskId
 	}
 
@@ -29,43 +27,24 @@ export function resolvePreviewTarget({
 }
 
 export function hasValidTask(
-	taskIds: string[] | TaskListItem[],
+	taskById: TaskPreviewSource['taskById'] | null | undefined,
 	taskId: string | null | undefined,
 ) {
-	if (!taskId) {
-		return false
-	}
-
-	if (taskIds.length === 0) {
-		return false
-	}
-
-	if (typeof taskIds[0] === 'string') {
-		return (taskIds as string[]).includes(taskId)
-	}
-
-	return (taskIds as TaskListItem[]).some((task) => task.id === taskId)
+	return Boolean(taskId && taskById?.has(taskId))
 }
 
 export function areSameTaskPreviewSource(
 	current: TaskPreviewSource | null,
 	next: TaskPreviewSource | null,
 ) {
-	if (current === next) {
-		return true
-	}
-
-	if (!current || !next) {
-		return false
-	}
-
-	if (
-		current.focusedTaskId !== next.focusedTaskId ||
-		current.activeTaskId !== next.activeTaskId ||
-		current.tasks.length !== next.tasks.length
-	) {
-		return false
-	}
-
-	return current.tasks.every((task, index) => task.id === next.tasks[index]?.id)
+	return (
+		current === next ||
+		Boolean(
+			current &&
+			next &&
+			current.focusedTaskId === next.focusedTaskId &&
+			current.activeTaskId === next.activeTaskId &&
+			current.taskById === next.taskById,
+		)
+	)
 }

@@ -24,10 +24,19 @@ export type CollectionInteractionItem<K extends CollectionKey> = {
 }
 
 export type UseCollectionInteractionOptions<K extends CollectionKey> = {
-	eligibleKeys: readonly K[]
-	navigableKeys: readonly K[]
 	defaultSelectedKeys?: readonly K[]
-}
+} & (
+	| {
+			projection: CollectionProjection<K>
+			eligibleKeys?: never
+			navigableKeys?: never
+	  }
+	| {
+			projection?: never
+			eligibleKeys: readonly K[]
+			navigableKeys: readonly K[]
+	  }
+)
 
 export type CollectionInteraction<K extends CollectionKey> = {
 	listState: ListState<CollectionInteractionItem<K>>
@@ -50,15 +59,20 @@ export type CollectionInteraction<K extends CollectionKey> = {
  * 集合唯一交互 owner。React Stately 管理标准 collection/focus，选择始终受控为显式 Set。
  * Shift 手势会话只记录方向与最后切换项，不复制 selection/focus 真相。
  */
-export function useCollectionInteraction<K extends CollectionKey>({
-	eligibleKeys,
-	navigableKeys,
-	defaultSelectedKeys = [],
-}: UseCollectionInteractionOptions<K>): CollectionInteraction<K> {
-	const projection = useMemo(
-		() => createCollectionProjection(eligibleKeys, navigableKeys),
-		[eligibleKeys, navigableKeys],
-	)
+export function useCollectionInteraction<K extends CollectionKey>(
+	options: UseCollectionInteractionOptions<K>,
+): CollectionInteraction<K> {
+	const { defaultSelectedKeys = [] } = options
+	const providedProjection = options.projection
+	const eligibleKeys = options.eligibleKeys
+	const navigableKeys = options.navigableKeys
+	const projection = useMemo(() => {
+		if (providedProjection) return providedProjection
+		if (!eligibleKeys || !navigableKeys) {
+			throw new Error('Collection interaction 缺少 projection 或 keys')
+		}
+		return createCollectionProjection(eligibleKeys, navigableKeys)
+	}, [eligibleKeys, navigableKeys, providedProjection])
 	const projectionRef = useRef(projection)
 	projectionRef.current = projection
 	const rangeToggleProjectionRef = useRef(projection)
@@ -69,7 +83,7 @@ export function useCollectionInteraction<K extends CollectionKey>({
 	const isRangeToggleWriteRef = useRef(false)
 
 	const [selectedKeys, setSelectedKeys] = useState<Set<K>>(() =>
-		intersectKeys(defaultSelectedKeys, projection.eligibleKeys),
+		intersectKeys(defaultSelectedKeys, projection),
 	)
 	const selectedKeysRef = useRef(selectedKeys)
 	selectedKeysRef.current = selectedKeys
@@ -81,7 +95,7 @@ export function useCollectionInteraction<K extends CollectionKey>({
 		const nextKeys =
 			selection === 'all'
 				? materializeEligibleSelection(projectionRef.current.eligibleKeys)
-				: intersectKeys(toCollectionKeys<K>(selection), projectionRef.current.eligibleKeys)
+				: intersectKeys(toCollectionKeys<K>(selection), projectionRef.current)
 		selectedKeysRef.current = nextKeys
 		setSelectedKeys(nextKeys)
 	}, [])
@@ -91,8 +105,9 @@ export function useCollectionInteraction<K extends CollectionKey>({
 		[projection.eligibleKeys],
 	)
 	const disabledKeys = useMemo(() => {
-		const navigableKeySet = new Set(projection.navigableKeys)
-		return new Set(projection.eligibleKeys.filter((key) => !navigableKeySet.has(key)))
+		return new Set(
+			projection.eligibleKeys.filter((key) => !projection.navigableIndexByKey.has(key)),
+		)
 	}, [projection])
 	const renderItem = useCallback(
 		(item: CollectionInteractionItem<K>) =>
@@ -131,7 +146,7 @@ export function useCollectionInteraction<K extends CollectionKey>({
 			rangeToggleSessionRef.current = null
 		}
 		rangeToggleProjectionRef.current = projection
-		const nextSelectedKeys = intersectKeys(selectedKeysRef.current, projection.eligibleKeys)
+		const nextSelectedKeys = intersectKeys(selectedKeysRef.current, projection)
 		if (!setsEqual(selectedKeysRef.current, nextSelectedKeys)) {
 			selectedKeysRef.current = nextSelectedKeys
 			setSelectedKeys(nextSelectedKeys)
@@ -139,14 +154,14 @@ export function useCollectionInteraction<K extends CollectionKey>({
 	}, [projection])
 
 	const focusKey = useCallback((key: K | null) => {
-		if (key !== null && !projectionRef.current.navigableKeys.includes(key)) return
+		if (key !== null && !projectionRef.current.navigableIndexByKey.has(key)) return
 		rangeToggleSessionRef.current = null
 		listStateRef.current.selectionManager.setFocusedKey(key)
 	}, [])
 
 	const toggleSelection = useCallback((key?: K | null) => {
 		const target = key ?? asCollectionKey<K>(listStateRef.current.selectionManager.focusedKey)
-		if (!target || !projectionRef.current.eligibleKeys.includes(target)) return
+		if (!target || !projectionRef.current.eligibleIndexByKey.has(target)) return
 		rangeToggleSessionRef.current = null
 		listStateRef.current.selectionManager.toggleSelection(target)
 	}, [])
@@ -161,7 +176,8 @@ export function useCollectionInteraction<K extends CollectionKey>({
 
 	const toggleRangeStep = useCallback(
 		(direction: -1 | 1, isStepAllowed?: (fromKey: K, toKey: K) => boolean): K | null => {
-			const navigable = projectionRef.current.navigableKeys
+			const currentProjection = projectionRef.current
+			const navigable = currentProjection.navigableKeys
 			if (navigable.length === 0) {
 				rangeToggleSessionRef.current = null
 				return null
@@ -173,7 +189,7 @@ export function useCollectionInteraction<K extends CollectionKey>({
 			const session =
 				previousSession &&
 				previousSession.lastToggledKey === focusedKey &&
-				navigable.includes(previousSession.lastToggledKey)
+				currentProjection.navigableIndexByKey.has(previousSession.lastToggledKey)
 					? previousSession
 					: null
 			const fallbackKey = direction > 0 ? navigable[0] : navigable[navigable.length - 1]
@@ -181,8 +197,8 @@ export function useCollectionInteraction<K extends CollectionKey>({
 				session && session.direction !== direction
 					? session.lastToggledKey
 					: session
-						? getAdjacentKey(navigable, session.lastToggledKey, direction)
-						: focusedKey && navigable.includes(focusedKey)
+						? getAdjacentKey(currentProjection, session.lastToggledKey, direction)
+						: focusedKey && currentProjection.navigableIndexByKey.has(focusedKey)
 							? focusedKey
 							: fallbackKey
 
@@ -221,7 +237,7 @@ export function useCollectionInteraction<K extends CollectionKey>({
 	const replaceSelection = useCallback((keys: Iterable<K>) => {
 		rangeToggleSessionRef.current = null
 		listStateRef.current.selectionManager.setSelectedKeys(
-			intersectKeys(keys, projectionRef.current.eligibleKeys),
+			intersectKeys(keys, projectionRef.current),
 		)
 	}, [])
 
@@ -246,20 +262,25 @@ export function useCollectionInteraction<K extends CollectionKey>({
 }
 
 function getAdjacentKey<K extends CollectionKey>(
-	keys: readonly K[],
+	projection: CollectionProjection<K>,
 	key: K,
 	direction: -1 | 1,
 ): K | null {
-	const index = keys.indexOf(key)
-	return index === -1 ? null : (keys[index + direction] ?? null)
+	const index = projection.navigableIndexByKey.get(key)
+	return index === undefined ? null : (projection.navigableKeys[index + direction] ?? null)
 }
 
 function intersectKeys<K extends CollectionKey>(
 	keys: Iterable<K>,
-	eligibleKeys: readonly K[],
+	projection: CollectionProjection<K>,
 ): Set<K> {
-	const source = new Set(keys)
-	return new Set(eligibleKeys.filter((key) => source.has(key)))
+	const eligibleKeys = [...keys].filter((key) => projection.eligibleIndexByKey.has(key))
+	eligibleKeys.sort(
+		(left, right) =>
+			(projection.eligibleIndexByKey.get(left) ?? 0) -
+			(projection.eligibleIndexByKey.get(right) ?? 0),
+	)
+	return new Set(eligibleKeys)
 }
 
 function setsEqual<K>(left: ReadonlySet<K>, right: ReadonlySet<K>) {

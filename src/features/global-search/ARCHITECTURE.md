@@ -1,7 +1,7 @@
 # global-search · 全局搜索
 
 > 作用：描述 **当前已落地** 的 `src/features/global-search` 边界
-> 最后更新：2026-07-18
+> 最后更新：2026-09-07
 
 ---
 
@@ -28,7 +28,7 @@
 src/features/global-search/
 ├── ARCHITECTURE.md
 ├── index.ts
-├── api/searchEntities.ts
+├── api/                  # index.ts 为跨 feature IO 窄入口
 ├── hooks/                # searchKeys · useSearchEntitiesQuery
 ├── model/
 │   ├── useGlobalSearch.ts
@@ -45,7 +45,7 @@ src/features/global-search/
 
 | 类 | 符号 |
 |----|------|
-| API | `searchEntities` |
+| API | `searchEntities`（`@/features/global-search/api`；不加载 Header UI） |
 | 组合 | `useGlobalSearch` |
 | 聚焦 | `useSearchFocusIntentStore` |
 | 导航 | `resolveProjectSearchTargetPath` |
@@ -56,8 +56,8 @@ src/features/global-search/
 ## 4. 禁止依赖
 
 - **不得** `import` `@/layout/**`
-- **不得** 外模块深路径 import
-- 结果展示可依赖 `task` public（状态/优先级图标与文案），不拉取任务列表逻辑
+- **不得** 外模块深路径 import；仅使用主入口或登记的 `./api`
+- 结果展示依赖 `task/presentation`（状态/优先级图标与文案），不加载任务详情与列表逻辑
 - 不在本域注册命令或处理路由装配
 
 ---

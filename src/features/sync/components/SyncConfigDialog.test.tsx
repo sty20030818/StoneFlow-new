@@ -34,9 +34,9 @@ describe('SyncConfigDialog', () => {
 			expect(onClose).toHaveBeenCalledTimes(1)
 			expect(screen.queryByRole('dialog', { name: '配置云端副本' })).not.toBeInTheDocument()
 		})
-		const successToast = await screen.findByRole('alertdialog', { name: '配置已保存' })
+		const successToast = await screen.findByRole('alertdialog', { name: '配置已验证' })
 		expect(successToast).toBeVisible()
-		expect(successToast).toHaveTextContent('正在后台验证连接。')
+		expect(successToast).toHaveTextContent('已绑定远端，正在后台执行同步。')
 	})
 
 	it('环境配置只展示说明，不暴露凭据写入', () => {
@@ -97,8 +97,43 @@ describe('SyncConfigDialog', () => {
 			expect(onClose).toHaveBeenCalledTimes(1)
 			expect(screen.queryByRole('dialog', { name: '配置云端副本' })).not.toBeInTheDocument()
 		})
-		expect(await screen.findByRole('alertdialog', { name: '配置已保存' })).toBeVisible()
+		expect(await screen.findByRole('alertdialog', { name: '配置已验证' })).toBeVisible()
 		expect(screen.queryByRole('alertdialog', { name: '保存失败' })).not.toBeInTheDocument()
+	})
+
+	it('远端实例冲突时要求显式确认，并在有 pending outbox 时保留输入与弹窗', async () => {
+		const onClose = vi.fn()
+		const onSave = vi.fn().mockRejectedValue({
+			type: 'Conflict',
+			message: '同步远端实例与本机游标绑定不一致',
+		})
+		const onRebind = vi.fn().mockRejectedValue(new Error('本机仍有 2 条待上传变更'))
+		render(
+			<DialogHarness
+				configSource='system_keychain'
+				onClose={onClose}
+				onRebind={onRebind}
+				onSave={onSave}
+			/>,
+		)
+
+		const databaseUrl = screen.getByRole('textbox', { name: '同步数据库连接' })
+		fireEvent.change(databaseUrl, {
+			target: { value: 'postgresql://user:secret@other.example.com/sf' },
+		})
+		fireEvent.click(screen.getByRole('button', { name: '保存配置' }))
+
+		const dialog = screen.getByRole('dialog', { name: '配置云端副本' })
+		const rebindButton = await within(dialog).findByRole('button', { name: '确认重新绑定' })
+		expect(within(dialog).getByRole('alert')).toHaveTextContent('非空远端会替换本机已同步工作副本')
+		expect(within(dialog).getByRole('alert')).toHaveTextContent('本机仍有待上传变更时会拒绝执行')
+
+		fireEvent.click(rebindButton)
+		await waitFor(() => expect(onRebind).toHaveBeenCalledTimes(1))
+		expect(await within(dialog).findByText(/本机仍有 2 条待上传变更/)).toBeVisible()
+		expect(databaseUrl).toHaveValue('postgresql://user:secret@other.example.com/sf')
+		expect(onClose).not.toHaveBeenCalled()
+		expect(rebindButton).toBeEnabled()
 	})
 })
 
@@ -106,10 +141,12 @@ function DialogHarness({
 	configSource,
 	onClose,
 	onSave,
+	onRebind = vi.fn(async () => undefined),
 }: {
 	configSource: SyncConfigSource
 	onClose: () => void
 	onSave: (input: { databaseUrl: string }) => Promise<void>
+	onRebind?: (input: { databaseUrl: string }) => Promise<void>
 }) {
 	const [databaseUrl, setDatabaseUrl] = useState('')
 	const [open, setOpen] = useState(true)
@@ -126,6 +163,7 @@ function DialogHarness({
 				databaseUrl={databaseUrl}
 				onClose={handleClose}
 				onDatabaseUrlChange={setDatabaseUrl}
+				onRebind={onRebind}
 				onSave={onSave}
 				open={open}
 			/>

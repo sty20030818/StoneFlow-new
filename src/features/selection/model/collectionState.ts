@@ -13,7 +13,9 @@ export type CollectionState<K extends CollectionKey = CollectionKey> = Readonly<
 
 export type CollectionProjection<K extends CollectionKey = CollectionKey> = Readonly<{
 	eligibleKeys: readonly K[]
+	eligibleIndexByKey: ReadonlyMap<K, number>
 	navigableKeys: readonly K[]
+	navigableIndexByKey: ReadonlyMap<K, number>
 }>
 
 export type CollectionEntryTarget<K extends CollectionKey = CollectionKey> =
@@ -45,13 +47,17 @@ export function createCollectionProjection<K extends CollectionKey>(
 	eligibleKeys: readonly K[],
 	navigableKeys: readonly K[],
 ): CollectionProjection<K> {
-	assertUniqueKeys(eligibleKeys, 'eligibleKeys')
-	assertUniqueKeys(navigableKeys, 'navigableKeys')
-	assertOrderedSubset(eligibleKeys, navigableKeys)
+	const nextEligibleKeys = [...eligibleKeys]
+	const nextNavigableKeys = [...navigableKeys]
+	const eligibleIndexByKey = createUniqueKeyIndex(nextEligibleKeys, 'eligibleKeys')
+	const navigableIndexByKey = createUniqueKeyIndex(nextNavigableKeys, 'navigableKeys')
+	assertOrderedSubset(nextEligibleKeys, nextNavigableKeys)
 
 	return {
-		eligibleKeys: [...eligibleKeys],
-		navigableKeys: [...navigableKeys],
+		eligibleKeys: nextEligibleKeys,
+		eligibleIndexByKey,
+		navigableKeys: nextNavigableKeys,
+		navigableIndexByKey,
 	}
 }
 
@@ -68,17 +74,15 @@ export function reconcileCollectionProjection<K extends CollectionKey>(
 	next: CollectionProjection<K>,
 	reason: CollectionProjectionChangeReason,
 ): CollectionTransition<K> {
-	const nextEligibleKeySet = new Set(next.eligibleKeys)
 	if (reason === 'incremental-load') {
-		assertIncrementalProjection(previous.eligibleKeys, nextEligibleKeySet)
+		assertIncrementalProjection(previous.eligibleKeys, next.eligibleIndexByKey)
 	}
 
-	const selectedKeys = intersectKeys(state.selectedKeys, nextEligibleKeySet)
-	const nextNavigableKeySet = new Set(next.navigableKeys)
+	const selectedKeys = intersectKeys(state.selectedKeys, next.eligibleIndexByKey)
 	const focusedKey =
-		state.focusedKey === null || nextNavigableKeySet.has(state.focusedKey)
+		state.focusedKey === null || next.navigableIndexByKey.has(state.focusedKey)
 			? state.focusedKey
-			: findAdjacentKey(state.focusedKey, previous.navigableKeys, next.navigableKeys)
+			: findAdjacentKey(state.focusedKey, previous, next)
 	const nextState =
 		selectedKeys === state.selectedKeys && focusedKey === state.focusedKey
 			? state
@@ -112,11 +116,7 @@ export function reconcileCollapsedGroup<
 		return { state, focusIntent: null }
 	}
 
-	const reentryKey = findKeyAfterCollapsedGroup(
-		previous.navigableKeys,
-		next.navigableKeys,
-		input.collapsedKeys,
-	)
+	const reentryKey = findKeyAfterCollapsedGroup(previous, next, input.collapsedKeys)
 	const reentry = toEntryTarget(reentryKey)
 
 	return {
@@ -131,14 +131,15 @@ export function reconcileCollapsedGroup<
 		},
 	}
 }
-function assertUniqueKeys<K extends CollectionKey>(keys: readonly K[], name: string) {
-	const seenKeys = new Set<K>()
-	for (const key of keys) {
-		if (seenKeys.has(key)) {
+function createUniqueKeyIndex<K extends CollectionKey>(keys: readonly K[], name: string) {
+	const indexByKey = new Map<K, number>()
+	for (const [index, key] of keys.entries()) {
+		if (indexByKey.has(key)) {
 			throw new Error(`${name} 包含重复 key：${key}`)
 		}
-		seenKeys.add(key)
+		indexByKey.set(key, index)
 	}
+	return indexByKey
 }
 
 function assertOrderedSubset<K extends CollectionKey>(
@@ -159,10 +160,10 @@ function assertOrderedSubset<K extends CollectionKey>(
 
 function assertIncrementalProjection<K extends CollectionKey>(
 	previousEligibleKeys: readonly K[],
-	nextEligibleKeySet: ReadonlySet<K>,
+	nextEligibleIndexByKey: ReadonlyMap<K, number>,
 ) {
 	for (const key of previousEligibleKeys) {
-		if (!nextEligibleKeySet.has(key)) {
+		if (!nextEligibleIndexByKey.has(key)) {
 			throw new Error('incremental-load 不得移除已有 eligible key')
 		}
 	}
@@ -170,11 +171,11 @@ function assertIncrementalProjection<K extends CollectionKey>(
 
 function intersectKeys<K extends CollectionKey>(
 	selectedKeys: ReadonlySet<K>,
-	eligibleKeys: ReadonlySet<K>,
+	eligibleIndexByKey: ReadonlyMap<K, number>,
 ): ReadonlySet<K> {
 	for (const key of selectedKeys) {
-		if (!eligibleKeys.has(key)) {
-			return new Set([...selectedKeys].filter((selectedKey) => eligibleKeys.has(selectedKey)))
+		if (!eligibleIndexByKey.has(key)) {
+			return new Set([...selectedKeys].filter((selectedKey) => eligibleIndexByKey.has(selectedKey)))
 		}
 	}
 	return selectedKeys
@@ -182,49 +183,47 @@ function intersectKeys<K extends CollectionKey>(
 
 function findAdjacentKey<K extends CollectionKey>(
 	focusedKey: K,
-	previousNavigableKeys: readonly K[],
-	nextNavigableKeys: readonly K[],
+	previous: CollectionProjection<K>,
+	next: CollectionProjection<K>,
 ): K | null {
-	const nextNavigableKeySet = new Set(nextNavigableKeys)
-	const focusedIndex = previousNavigableKeys.indexOf(focusedKey)
-	if (focusedIndex === -1) {
-		return nextNavigableKeys[0] ?? null
+	const focusedIndex = previous.navigableIndexByKey.get(focusedKey)
+	if (focusedIndex === undefined) {
+		return next.navigableKeys[0] ?? null
 	}
 
-	for (let index = focusedIndex + 1; index < previousNavigableKeys.length; index += 1) {
-		const key = previousNavigableKeys[index]
-		if (key !== undefined && nextNavigableKeySet.has(key)) {
+	for (let index = focusedIndex + 1; index < previous.navigableKeys.length; index += 1) {
+		const key = previous.navigableKeys[index]
+		if (key !== undefined && next.navigableIndexByKey.has(key)) {
 			return key
 		}
 	}
 
 	for (let index = focusedIndex - 1; index >= 0; index -= 1) {
-		const key = previousNavigableKeys[index]
-		if (key !== undefined && nextNavigableKeySet.has(key)) {
+		const key = previous.navigableKeys[index]
+		if (key !== undefined && next.navigableIndexByKey.has(key)) {
 			return key
 		}
 	}
 
-	return nextNavigableKeys[0] ?? null
+	return next.navigableKeys[0] ?? null
 }
 
 function findKeyAfterCollapsedGroup<K extends CollectionKey>(
-	previousNavigableKeys: readonly K[],
-	nextNavigableKeys: readonly K[],
+	previous: CollectionProjection<K>,
+	next: CollectionProjection<K>,
 	collapsedKeys: ReadonlySet<K>,
 ): K | null {
 	let lastCollapsedIndex = -1
-	for (let index = 0; index < previousNavigableKeys.length; index += 1) {
-		const key = previousNavigableKeys[index]
-		if (key !== undefined && collapsedKeys.has(key)) {
+	for (const key of collapsedKeys) {
+		const index = previous.navigableIndexByKey.get(key)
+		if (index !== undefined && index > lastCollapsedIndex) {
 			lastCollapsedIndex = index
 		}
 	}
 
-	const nextNavigableKeySet = new Set(nextNavigableKeys)
-	for (let index = lastCollapsedIndex + 1; index < previousNavigableKeys.length; index += 1) {
-		const key = previousNavigableKeys[index]
-		if (key !== undefined && nextNavigableKeySet.has(key)) {
+	for (let index = lastCollapsedIndex + 1; index < previous.navigableKeys.length; index += 1) {
+		const key = previous.navigableKeys[index]
+		if (key !== undefined && next.navigableIndexByKey.has(key)) {
 			return key
 		}
 	}

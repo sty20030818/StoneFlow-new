@@ -1,9 +1,10 @@
 import { act, render, screen, waitFor } from '@testing-library/react'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { TaskListItem } from '@/shared/types'
 
+import { indexTasksById } from '../../model/taskCollectionIndex'
 import { TaskPreviewProvider, useRegisterTaskPreviewSource } from './TaskPreviewProvider'
 import { useTaskPreviewController as useTaskPreviewControllerModel } from './useTaskPreviewController'
 
@@ -15,9 +16,10 @@ describe('TaskPreviewProvider', () => {
 	it('重复打开同一个任务时关闭预览', () => {
 		function Harness() {
 			const controller = useTaskPreviewControllerModel()
-			const task = createTask({ id: 'task-a', title: '任务 A' })
+			const task = useMemo(() => createTask({ id: 'task-a', title: '任务 A' }), [])
+			const taskById = useMemo(() => indexTasksById([task]), [task])
 			useRegisterTaskPreviewSource({
-				tasks: [task],
+				taskById,
 				focusedTaskId: task.id,
 				activeTaskId: null,
 			})
@@ -55,8 +57,9 @@ describe('TaskPreviewProvider', () => {
 	it('预览打开后 source 暂时为空时保留最近一次可渲染任务', async () => {
 		function Harness({ tasks }: { tasks: TaskListItem[] }) {
 			const controller = useTaskPreviewControllerModel()
+			const taskById = useMemo(() => indexTasksById(tasks), [tasks])
 			useRegisterTaskPreviewSource({
-				tasks,
+				taskById,
 				focusedTaskId: tasks[0]?.id ?? null,
 				activeTaskId: null,
 			})

@@ -3,7 +3,7 @@
  *
  * Collection 交互 / 命令选中注册。壳装配 Provider，列表页注册只读 selection 投影。
  *
- * 外模块：`import { … } from '@/features/selection'`
+ * 外模块使用主 facade；只需要 collection 内核时使用 `@/features/selection/contract`。
  * 禁止：`@/features/selection/model|components/…`
  */
 

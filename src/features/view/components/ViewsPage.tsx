@@ -1,5 +1,5 @@
 import { Button, Input, Skeleton } from '@heroui/react'
-import { EmptyState } from '@heroui-pro/react'
+import { EmptyState, ListView } from '@heroui-pro/react'
 import { AlertCircleIcon, BookmarkIcon, PlusIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
@@ -107,34 +107,35 @@ function SavedViewLibraryContent({ scene }: { scene: LibraryScene }) {
 	}
 
 	return (
-		<div aria-label='保存视图列表' className='grid gap-1' role='list'>
-			{scene.views.map((view) => (
-				<div
-					className='flex h-11 items-center gap-1 rounded-large border border-transparent px-1 hover:border-default hover:bg-default/40'
-					key={view.id}
-					role='listitem'
-				>
-					<Button
-						className='min-w-0 flex-1'
-						onPress={() => scene.openView(view)}
-						size='sm'
-						type='button'
-						variant='ghost'
-					>
-						<span className='flex min-w-0 flex-1 items-center gap-3 text-left'>
-							<BookmarkIcon aria-hidden='true' className='size-4 shrink-0 text-muted' />
-							<span className='min-w-0 flex-1 truncate font-medium'>{view.name}</span>
-							<span className='shrink-0 text-xs text-muted'>{describeView(view)}</span>
-						</span>
-					</Button>
-					<ViewActionsMenu
-						activeView={view}
-						onDelete={(target) => void scene.deleteView(target)}
-						onEdit={view.definitionError ? undefined : scene.editor.openEdit}
-					/>
-				</div>
-			))}
-		</div>
+		<ListView
+			aria-label='保存视图列表'
+			items={scene.views}
+			onAction={(key) => {
+				const view = scene.views.find((candidate) => candidate.id === key)
+				if (view) scene.openView(view)
+			}}
+			selectionMode='none'
+			variant='secondary'
+		>
+			{(view) => (
+				<ListView.Item id={view.id} textValue={`${view.name} ${describeView(view)}`}>
+					<ListView.ItemContent>
+						<BookmarkIcon aria-hidden='true' />
+						<ListView.Title className='min-w-0 flex-1'>{view.name}</ListView.Title>
+						<ListView.Description className='mt-0 shrink-0'>
+							{describeView(view)}
+						</ListView.Description>
+					</ListView.ItemContent>
+					<ListView.ItemAction>
+						<ViewActionsMenu
+							activeView={view}
+							onDelete={(target) => void scene.deleteView(target)}
+							onEdit={view.definitionError ? undefined : scene.editor.openEdit}
+						/>
+					</ListView.ItemAction>
+				</ListView.Item>
+			)}
+		</ListView>
 	)
 }
 

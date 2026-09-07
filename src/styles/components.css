@@ -550,6 +550,48 @@
 			[data-row-shell][data-interactive="true"][data-selected="true"]:hover {
 			background: var(--selection-hover);
 		}
+
+		/* 键盘接管集合后，静止指针不能继续给另一行制造 hover 反馈。 */
+		[data-theme="stoneflow-light"]
+			:is([data-board-root], [data-collection-grid-root])[data-focus-source="keyboard"]
+			[data-row-shell][data-interactive="true"]:hover:not(:focus-within):not(
+				[data-hovered="true"],
+				[data-active="true"],
+				[data-selected="true"]
+			) {
+			background: transparent;
+		}
+
+		[data-theme="stoneflow-light"]
+			:is([data-board-root], [data-collection-grid-root])[data-focus-source="keyboard"]
+			[data-row-shell][data-interactive="true"][data-active="true"]:hover:not(:focus-within):not(
+				[data-hovered="true"],
+				[data-selected="true"]
+			) {
+			background: var(--surface-active);
+		}
+
+		[data-theme="stoneflow-light"]
+			:is([data-board-root], [data-collection-grid-root])[data-focus-source="keyboard"]
+			[data-row-shell][data-interactive="true"][data-selected="true"]:hover:not(:focus-within):not(
+				[data-hovered="true"]
+			) {
+			background: var(--selection);
+		}
+
+		[data-theme="stoneflow-light"]
+			:is([data-board-root], [data-collection-grid-root])[data-focus-source="keyboard"]
+			[data-row-shell]:hover:not(:focus-within):not([data-hovered="true"])
+			[data-row-layout-slot="actions"] {
+			opacity: 0;
+		}
+
+		[data-theme="stoneflow-light"]
+			:is([data-board-root], [data-collection-grid-root])[data-focus-source="keyboard"]
+			[data-row-shell]:hover:not(:focus-within):not([data-hovered="true"], [data-selected="true"])
+			[data-row-layout-slot="selection"] {
+			opacity: 0;
+		}
 	}
 
 	[data-theme="stoneflow-light"]

@@ -6,6 +6,7 @@ import path from 'node:path'
 import { buildReleaseApp, type BuildCommand } from './build'
 
 const tempDirs: string[] = []
+const HEROUI_AUTH_TOKEN = 'fixture-heroui-token'
 
 afterEach(async () => {
 	await Promise.all(tempDirs.splice(0).map((directory) => rm(directory, { recursive: true })))
@@ -32,6 +33,7 @@ describe('buildReleaseApp', () => {
 				sourceRoot: '/snapshot',
 				targetDir: '/run/target',
 				env: {
+					HEROUI_AUTH_TOKEN,
 					KEEP: 'yes',
 					Tauri_Config: '{"plugins":{"updater":{"pubkey":"wrong"}}}',
 					cargo_target_dir: '/shared/target',
@@ -44,11 +46,14 @@ describe('buildReleaseApp', () => {
 
 		expect(captured.commands.map(({ argv }) => argv)).toEqual([
 			['bun', 'install', '--frozen-lockfile'],
+			['bun', 'audit'],
+			['bun', 'run', 'scripts/release/verify-heroui-pro.ts'],
 			['bun', 'run', 'tauri', 'build'],
 		])
-		for (const command of captured.commands) {
+		for (const [index, command] of captured.commands.entries()) {
 			expect(command.cwd).toBe('/snapshot')
 			expect(command.env).toEqual({
+				...(index === 0 ? { HEROUI_AUTH_TOKEN } : {}),
 				KEEP: 'yes',
 				CARGO_TARGET_DIR: '/run/target',
 				PWD: '/snapshot',
@@ -72,12 +77,12 @@ describe('buildReleaseApp', () => {
 				version: '0.1.4-beta.4',
 				sourceRoot,
 				targetDir: path.join(sourceRoot, 'target'),
-				env: {},
+				env: { HEROUI_AUTH_TOKEN },
 			},
 			captured.runner,
 		)
 
-		expect(captured.commands[1]?.argv).toEqual([
+		expect(captured.commands[3]?.argv).toEqual([
 			'bun',
 			'run',
 			'tauri',
@@ -97,12 +102,12 @@ describe('buildReleaseApp', () => {
 				version: '0.1.4-beta.4',
 				sourceRoot: '/snapshot',
 				targetDir: '/run/target',
-				env: {},
+				env: { HEROUI_AUTH_TOKEN },
 			},
 			captured.runner,
 		)
 
-		expect(captured.commands[1]?.argv).toEqual([
+		expect(captured.commands[3]?.argv).toEqual([
 			'bun',
 			'run',
 			'tauri',
@@ -117,6 +122,7 @@ describe('buildReleaseApp', () => {
 	test('展开签名私钥路径并保持调用方环境不变', async () => {
 		const captured = captureCommand()
 		const env = {
+			HEROUI_AUTH_TOKEN,
 			TAURI_SIGNING_PRIVATE_KEY_PATH: '~/.tauri/stoneflow.key',
 			TAURI_SIGNING_PRIVATE_KEY_PASSWORD: 'secret',
 			KEEP: 'yes',
@@ -133,13 +139,33 @@ describe('buildReleaseApp', () => {
 			captured.runner,
 		)
 
-		expect(captured.commands[1]?.env).toEqual({
-			...env,
+		expect(captured.commands[3]?.env).toEqual({
+			KEEP: 'yes',
+			TAURI_SIGNING_PRIVATE_KEY_PATH: '~/.tauri/stoneflow.key',
+			TAURI_SIGNING_PRIVATE_KEY_PASSWORD: 'secret',
 			CARGO_TARGET_DIR: '/run/target',
 			PWD: '/snapshot',
 			INIT_CWD: '/snapshot',
 			TAURI_SIGNING_PRIVATE_KEY: path.join(homedir(), '.tauri/stoneflow.key'),
 		})
 		expect(env).not.toHaveProperty('TAURI_SIGNING_PRIVATE_KEY')
+	})
+
+	test('缺少 HeroUI CI 凭据时在 install 前停止', async () => {
+		const captured = captureCommand()
+		await expect(
+			buildReleaseApp(
+				{
+					channel: 'stable',
+					platformKey: 'darwin-aarch64',
+					version: '0.1.4',
+					sourceRoot: '/snapshot',
+					targetDir: '/run/target',
+					env: {},
+				},
+				captured.runner,
+			),
+		).rejects.toThrow('HEROUI_AUTH_TOKEN')
+		expect(captured.commands).toHaveLength(0)
 	})
 })

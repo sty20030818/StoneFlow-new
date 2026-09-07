@@ -1,6 +1,6 @@
 # space · 空间域
 
-> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-07-19
+> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-09-07
 
 ---
 
@@ -26,7 +26,7 @@ Space 实体
   → 所有空间任务列表展示（→ task）
 ```
 
-跨模块 **只** `import { … } from '@/features/space'`。
+跨模块使用主入口；只消费图标色纯展示时使用 `@/features/space/presentation`，避免加载 hooks、mutation 与编辑表单。
 **禁止** `features/space` → `@/layout/**`。
 
 ---
@@ -37,6 +37,7 @@ Space 实体
 src/features/space/
 ├── ARCHITECTURE.md
 ├── index.ts                 # 主 public
+├── presentation.ts          # 图标色窄展示契约
 ├── api/spaces.ts            # list / CRUD / setActiveScope
 ├── hooks/                   # keys · queries · mutations · useSpaces
 ├── model/spaceVisuals.ts
@@ -55,7 +56,7 @@ src/features/space/
 | 数据 | `useSpaces` · `useVisibleSpacesQuery` · `spaceKeys` |
 | Mutations | create / update / setDefault / archive / delete |
 | IO | `listVisibleSpaces` · `deleteSpace` · `restoreSpace` · `setActiveScope` |
-| 视觉 | `getSpaceVisual` · `SpaceVisualDefinition` |
+| 视觉 | `getSpaceVisual` · `SpaceVisualDefinition`（`./presentation`） |
 | UI | `SpaceEditorDialog` |
 
 新增导出前确认已有外消费者。导出符合 CONVENTIONS TSDoc L1。

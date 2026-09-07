@@ -31,6 +31,7 @@ import { useRegisterTaskPreviewSource } from '../detail/model/TaskPreviewProvide
 import { useTaskPreviewController } from '../detail/model/useTaskPreviewController'
 import { buildTaskCommandSelection } from '../model/buildTaskCommandSelection'
 import { buildTaskBoardCollection } from '../model/taskBoardCollection'
+import { indexTasksById } from '../model/taskCollectionIndex'
 import { buildTaskBoardFlatItems } from '../model/taskBoardModel'
 import { TASK_BOARD_STATUS_ORDER } from '../model/taskBoardOrder'
 import { useTaskListController } from './useTaskListController'
@@ -75,6 +76,7 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 	const setOpenSections = useShellPreferenceStore((state) => state.setProjectTaskBoardOpenSections)
 	const [focusIntent, setFocusIntent] = useState<CollectionFocusIntent<string, string> | null>(null)
 	const pendingDeleteBatchRef = useRef<PendingTaskDeleteBatch | null>(null)
+	const taskById = useMemo(() => indexTasksById(input.source.items), [input.source.items])
 
 	const displayResult = useMemo(
 		() =>
@@ -125,7 +127,7 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 	useEventSubscription('task:deleted', (event) => {
 		if (
 			event.type !== 'task:deleted' ||
-			!collection.projection.eligibleKeys.includes(event.payload.taskId)
+			!collection.projection.eligibleIndexByKey.has(event.payload.taskId)
 		) {
 			return
 		}
@@ -147,7 +149,7 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 		if (
 			!pendingBatch ||
 			![...pendingBatch.taskIds].every(
-				(taskId) => !collection.projection.eligibleKeys.includes(taskId),
+				(taskId) => !collection.projection.eligibleIndexByKey.has(taskId),
 			)
 		) {
 			return
@@ -261,29 +263,31 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 		() =>
 			buildTaskCommandSelection({
 				selectedIds: selection.selectionSnapshot.ids,
-				tasks: input.source.items,
+				taskById,
 				fallbackSubtitle: input.fallbackSubtitle,
 				focusedTaskId: selection.interaction.focusedKey,
 				clearSelection: selection.interaction.clearSelection,
 			}),
 		[
 			input.fallbackSubtitle,
-			input.source.items,
 			selection.interaction.clearSelection,
 			selection.interaction.focusedKey,
 			selection.selectionSnapshot.ids,
+			taskById,
 		],
 	)
 	const readCommandSelection = useCallback(() => commandSelection, [commandSelection])
 	useRegisterCommandSelection(readCommandSelection)
 	useRegisterTaskPreviewSource({
-		tasks: input.source.items,
+		taskById,
 		focusedTaskId: selection.interaction.focusedKey,
 		activeTaskId: input.activeTaskId,
 	})
 	const boardProps = useMemo(
 		(): TaskBoardProps => ({
 			activeTaskId: input.activeTaskId,
+			boardCollection: collection,
+			taskById,
 			collectionInteraction: selection.interaction,
 			createProjectId: input.createProjectId ?? null,
 			emptyActionLabel: input.empty.emptyActionLabel,
@@ -318,6 +322,7 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 			pagination: input.pagination,
 		}),
 		[
+			collection,
 			displayResult.orderedItems,
 			displayResult.visibleProperties,
 			flatItems,
@@ -342,6 +347,7 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 			input.spaces,
 			mutations,
 			selection.interaction,
+			taskById,
 			taskPreviewController.previewState.lastAnchorReason,
 			taskPreviewController.previewState.open,
 		],

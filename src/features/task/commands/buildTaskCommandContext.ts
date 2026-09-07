@@ -6,7 +6,7 @@ type TaskRowTargetSource = Exclude<CommandRowTargetContext['source'], 'none'>
 
 type BuildTaskCommandContextInput = {
 	baseContext: CommandContext
-	tasks: readonly TaskListItem[]
+	taskById: ReadonlyMap<string, TaskListItem>
 	targetTaskIds: readonly string[]
 	focusedTaskId?: string | null
 	rowTargetId?: string | null
@@ -17,21 +17,20 @@ type BuildTaskCommandContextInput = {
 /** 在壳命令 context 上只投影本次任务目标，不创建第二 Runtime。 */
 export function buildTaskCommandContext({
 	baseContext,
-	tasks,
+	taskById,
 	targetTaskIds,
 	focusedTaskId = null,
 	rowTargetId = null,
 	rowTargetSource,
 	clearSelection,
 }: BuildTaskCommandContextInput): CommandContext {
-	const taskIds = new Set(tasks.map((task) => task.id))
-	const resolvedRowTargetId = rowTargetId && taskIds.has(rowTargetId) ? rowTargetId : null
+	const resolvedRowTargetId = rowTargetId && taskById.has(rowTargetId) ? rowTargetId : null
 
 	return {
 		...baseContext,
 		selection: buildTaskCommandSelection({
 			selectedIds: targetTaskIds,
-			tasks,
+			taskById,
 			fallbackSubtitle: '独立事项',
 			focusedTaskId,
 			clearSelection,

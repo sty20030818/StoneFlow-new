@@ -1,15 +1,16 @@
 import type { TaskListItem } from '@/shared/types'
 
 import { buildTaskCommandSelection } from './buildTaskCommandSelection'
+import { indexTasksById } from './taskCollectionIndex'
 
 describe('buildTaskCommandSelection', () => {
 	it('按 selectedIds 顺序构建纯数据 selection，并剔除不可见任务', () => {
 		const selection = buildTaskCommandSelection({
 			selectedIds: ['task-b', 'missing', 'task-a'],
-			tasks: [
+			taskById: indexTasksById([
 				createTask({ id: 'task-a', title: '任务 A', projectName: null }),
 				createTask({ id: 'task-b', title: '任务 B', projectName: '项目 B' }),
-			],
+			]),
 			fallbackSubtitle: '独立事项',
 			focusedTaskId: 'task-a',
 		})
@@ -48,9 +49,9 @@ describe('buildTaskCommandSelection', () => {
 	it('fallbackSubtitle 为函数时优先用于副标题（所有空间露出 Space）', () => {
 		const selection = buildTaskCommandSelection({
 			selectedIds: ['task-a'],
-			tasks: [
+			taskById: indexTasksById([
 				createTask({ id: 'task-a', title: '任务 A', projectName: '项目 X', spaceName: '工作' }),
-			],
+			]),
 			fallbackSubtitle: (task) =>
 				task.projectName ? `${task.spaceName} · ${task.projectName}` : task.spaceName,
 		})
@@ -61,7 +62,7 @@ describe('buildTaskCommandSelection', () => {
 	it('没有有效任务时返回空 selection', () => {
 		const selection = buildTaskCommandSelection({
 			selectedIds: ['missing'],
-			tasks: [createTask({ id: 'task-a' })],
+			taskById: indexTasksById([createTask({ id: 'task-a' })]),
 			fallbackSubtitle: '独立事项',
 			focusedTaskId: 'task-a',
 		})

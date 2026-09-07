@@ -35,7 +35,13 @@ const FEATURES = [
 	'shell-dialogs',
 ] as const
 
-const STABLE_SUFFIXES = ['contract', 'page', 'presentation', 'shortcut-contribution'] as const
+const STABLE_SUFFIXES = [
+	'api',
+	'contract',
+	'page',
+	'presentation',
+	'shortcut-contribution',
+] as const
 const LEGACY_UI_DEPENDENCIES = new Set([
 	'class-variance-authority',
 	'cmdk',
@@ -969,7 +975,7 @@ export function formatBoundaryViolations(violations: readonly BoundaryViolation[
 		.map((violation) => {
 			const detail =
 				violation.ruleId === 'feature-deep-import' && violation.feature
-					? `合法入口: @/features/${violation.feature} | …/contract | …/page | …/presentation | …/shortcut-contribution`
+					? `合法入口: @/features/${violation.feature} | …/api | …/contract | …/page | …/presentation | …/shortcut-contribution`
 					: violation.detail
 			return `${violation.path}:${violation.line} [${violation.ruleId}] ${violation.excerpt}\n  → ${detail}`
 		})
@@ -985,7 +991,7 @@ if (import.meta.main) {
 		process.exitCode = 1
 	} else {
 		console.log(
-			`Feature boundaries OK (${FEATURES.length} features; entries: . | contract | page | presentation | shortcut-contribution; HeroUI visual ownership and terminal repository contract OK).`,
+			`Feature boundaries OK (${FEATURES.length} features; entries: . | api | contract | page | presentation | shortcut-contribution; HeroUI visual ownership and terminal repository contract OK).`,
 		)
 	}
 }

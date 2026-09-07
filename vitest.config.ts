@@ -31,6 +31,8 @@ export default defineConfig({
 	test: {
 		globals: true,
 		restoreMocks: true,
+		// UI Lab 的 jsdom 场景与全仓并跑时会争抢 CPU；限制 worker 比放宽单测 timeout 更稳定。
+		maxWorkers: 4,
 		projects: [
 			{
 				test: {

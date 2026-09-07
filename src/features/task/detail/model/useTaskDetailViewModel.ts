@@ -7,6 +7,7 @@ import type { TaskDetail } from '@/shared/types'
 import { createTaskDetailDraft, type TaskDetailDraft } from './taskDetailDraft'
 import { useTaskAutosaveAdapter } from './useTaskAutosaveAdapter'
 import { useTaskDetailController } from './useTaskDetailController'
+import { useTaskDetailNavigationBlocker } from './useTaskDetailNavigationBlocker'
 
 type UseTaskDetailViewModelOptions = {
 	taskId: string
@@ -31,8 +32,8 @@ export function useTaskDetailViewModel({ taskId, onClose }: UseTaskDetailViewMod
 		disabled: !autosaveTask || Boolean(autosaveTask.deletedAt),
 	})
 	const { flushNow, isDirty, reset } = autosave
+	useTaskDetailNavigationBlocker({ flushNow, isDirty })
 	const lastTaskIdRef = useRef(taskId)
-	const flushRef = useRef(flushNow)
 	const [isArchiveBusy, setArchiveBusy] = useState(false)
 	const [isDeleteBusy, setDeleteBusy] = useState(false)
 	const scope = detail.task
@@ -42,32 +43,20 @@ export function useTaskDetailViewModel({ taskId, onClose }: UseTaskDetailViewMod
 	const { spaces } = useSpaces()
 
 	useEffect(() => {
-		flushRef.current = flushNow
-	}, [flushNow])
-
-	useEffect(() => {
 		if (!detail.task) {
 			return
 		}
 
-		if (lastTaskIdRef.current === detail.task.id) {
-			if (!isDirty) {
-				reset(baseDraft)
-			}
+		if (lastTaskIdRef.current !== detail.task.id) {
+			lastTaskIdRef.current = detail.task.id
+			reset(baseDraft)
 			return
 		}
 
-		void flushRef.current().finally(() => {
-			lastTaskIdRef.current = detail.task?.id ?? taskId
+		if (!isDirty) {
 			reset(baseDraft)
-		})
-	}, [baseDraft, detail.task, isDirty, reset, taskId])
-
-	useEffect(() => {
-		return () => {
-			void flushRef.current()
 		}
-	}, [])
+	}, [baseDraft, detail.task, isDirty, reset])
 
 	const archiveOrRestore = async () => {
 		setArchiveBusy(true)

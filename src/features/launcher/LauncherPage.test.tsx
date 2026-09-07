@@ -139,6 +139,16 @@ describe('LauncherPage', () => {
 		})
 	})
 
+	it('只在用户展开后挂载高级字段', async () => {
+		render(<LauncherPage />)
+		await screen.findByTestId('launcher-recent-tasks-section')
+		expect(screen.queryByTestId('launcher-advanced-meta-bar')).not.toBeInTheDocument()
+
+		fireEvent.click(screen.getByRole('button', { name: '更多参数' }))
+
+		expect(await screen.findByTestId('launcher-advanced-meta-bar')).toBeInTheDocument()
+	})
+
 	it('每次准备呈现前重新读取本机 Accent', async () => {
 		let preparedHandler: PreparedSessionHandler = unregisteredPreparedHandler
 		listenMock.mockImplementation(async (event, handler) => {

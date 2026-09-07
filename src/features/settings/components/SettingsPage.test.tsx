@@ -23,6 +23,7 @@ const setDefaultSpaceSpy = vi.fn<(spaceId: string) => Promise<Space>>()
 const getSyncStatusSpy = vi.fn<() => Promise<unknown>>()
 const getSyncDiagnosticsSpy = vi.fn<() => Promise<unknown>>()
 const configureSyncSpy = vi.fn<(input: { databaseUrl: string }) => Promise<unknown>>()
+const rebindSyncSpy = vi.fn<(input: { databaseUrl: string }) => Promise<unknown>>()
 const runSyncSpy = vi.fn<() => Promise<unknown>>()
 const updateSyncPolicySpy =
 	vi.fn<
@@ -68,6 +69,7 @@ vi.mock('@/features/sync', async (importOriginal) => {
 		getSyncStatus: () => getSyncStatusSpy(),
 		getSyncDiagnostics: () => getSyncDiagnosticsSpy(),
 		configureSync: (input: { databaseUrl: string }) => configureSyncSpy(input),
+		rebindSync: (input: { databaseUrl: string }) => rebindSyncSpy(input),
 		runSync: () => runSyncSpy(),
 		updateSyncPolicy: (input: {
 			mode: 'interval' | 'on_write' | 'manual'
@@ -133,7 +135,7 @@ describe('SettingsPage', () => {
 		)
 		getSyncDiagnosticsSpy.mockReset()
 		getSyncDiagnosticsSpy.mockResolvedValue({
-			remoteHost: 'postgresql://user:***@db.example.com:5432/sf',
+			remoteHost: 'postgresql://db.example.com:5432/sf',
 			local: {
 				deviceId: 'device-1',
 				lastPulledServerSeq: 12,
@@ -163,6 +165,7 @@ describe('SettingsPage', () => {
 			},
 		})
 		configureSyncSpy.mockReset()
+		rebindSyncSpy.mockReset()
 		configureSyncSpy.mockResolvedValue(
 			createSyncStatusPayload({
 				enabled: true,
@@ -174,10 +177,17 @@ describe('SettingsPage', () => {
 				dirtySince: null,
 				pendingResync: false,
 				hasRemoteConfig: true,
-				remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
+				remoteUrl: 'postgresql://db.example.com:5432/sf',
 				replicaState: 'ready',
 				replicaReason: null,
 				lastRestoreAt: null,
+			}),
+		)
+		rebindSyncSpy.mockResolvedValue(
+			createSyncStatusPayload({
+				enabled: true,
+				status: 'offline_pending',
+				hasRemoteConfig: true,
 			}),
 		)
 		runSyncSpy.mockReset()
@@ -192,7 +202,7 @@ describe('SettingsPage', () => {
 				dirtySince: null,
 				pendingResync: false,
 				hasRemoteConfig: true,
-				remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
+				remoteUrl: 'postgresql://db.example.com:5432/sf',
 				replicaState: 'ready',
 				replicaReason: null,
 				lastRestoreAt: null,
@@ -210,7 +220,7 @@ describe('SettingsPage', () => {
 				dirtySince: null,
 				pendingResync: false,
 				hasRemoteConfig: true,
-				remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
+				remoteUrl: 'postgresql://db.example.com:5432/sf',
 				replicaState: 'ready',
 				replicaReason: null,
 				lastRestoreAt: null,
@@ -522,9 +532,9 @@ describe('SettingsPage', () => {
 		await waitFor(() =>
 			expect(screen.queryByRole('dialog', { name: '配置云端副本' })).not.toBeInTheDocument(),
 		)
-		const successToast = await screen.findByRole('alertdialog', { name: '配置已保存' })
+		const successToast = await screen.findByRole('alertdialog', { name: '配置已验证' })
 		expect(successToast).toBeVisible()
-		expect(successToast).toHaveTextContent('正在后台验证连接。')
+		expect(successToast).toHaveTextContent('已绑定远端，正在后台执行同步。')
 		openSyncConfigDialog()
 		await waitFor(() => {
 			expect(screen.getByLabelText('同步数据库连接')).toHaveValue('')
@@ -561,7 +571,7 @@ describe('SettingsPage', () => {
 			expect(screen.queryByRole('dialog', { name: '配置云端副本' })).not.toBeInTheDocument(),
 		)
 		expect(configureSyncSpy).toHaveBeenCalledTimes(2)
-		expect(await screen.findByRole('alertdialog', { name: '配置已保存' })).toBeVisible()
+		expect(await screen.findByRole('alertdialog', { name: '配置已验证' })).toBeVisible()
 	})
 
 	it('离开设置页后取消同步配置的延迟刷新', async () => {
@@ -646,7 +656,7 @@ describe('SettingsPage', () => {
 				dirtySince: null,
 				pendingResync: false,
 				hasRemoteConfig: true,
-				remoteUrl: 'postgresql://user:***@saved.example.com:5432/sf',
+				remoteUrl: 'postgresql://saved.example.com:5432/sf',
 				replicaState: 'ready',
 				replicaReason: null,
 				lastRestoreAt: null,
@@ -712,7 +722,7 @@ describe('SettingsPage', () => {
 					dirtySince: null,
 					pendingResync: false,
 					hasRemoteConfig: true,
-					remoteUrl: 'postgresql://user:***@saved.example.com:5432/sf',
+					remoteUrl: 'postgresql://saved.example.com:5432/sf',
 					replicaState: 'ready',
 					replicaReason: null,
 					lastRestoreAt: null,
@@ -729,7 +739,7 @@ describe('SettingsPage', () => {
 					dirtySince: null,
 					pendingResync: false,
 					hasRemoteConfig: true,
-					remoteUrl: 'postgresql://user:***@saved.example.com:5432/sf',
+					remoteUrl: 'postgresql://saved.example.com:5432/sf',
 					replicaState: 'ready',
 					replicaReason: null,
 					lastRestoreAt: null,
@@ -802,7 +812,7 @@ describe('SettingsPage', () => {
 				dirtySince: null,
 				pendingResync: false,
 				hasRemoteConfig: true,
-				remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
+				remoteUrl: 'postgresql://db.example.com:5432/sf',
 				replicaState: 'ready',
 				replicaReason: null,
 				lastRestoreAt: null,
@@ -831,7 +841,7 @@ describe('SettingsPage', () => {
 				dirtySince: null,
 				pendingResync: false,
 				hasRemoteConfig: true,
-				remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
+				remoteUrl: 'postgresql://db.example.com:5432/sf',
 				replicaState: 'ready',
 				replicaReason: null,
 				lastRestoreAt: null,
@@ -850,7 +860,7 @@ describe('SettingsPage', () => {
 				dirtySince: null,
 				pendingResync: false,
 				hasRemoteConfig: true,
-				remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
+				remoteUrl: 'postgresql://db.example.com:5432/sf',
 				replicaState: 'ready',
 				replicaReason: null,
 				lastRestoreAt: null,
@@ -994,7 +1004,7 @@ describe('SettingsPage', () => {
 				dirtySince: null,
 				pendingResync: false,
 				hasRemoteConfig: true,
-				remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
+				remoteUrl: 'postgresql://db.example.com:5432/sf',
 				replicaState: 'baseline_required',
 				replicaReason:
 					'当前设备已有本地数据，但缺少 server_seq cursor。为避免把未知本地副本误覆盖，暂不自动同步；请先完成同步基线迁移。',
@@ -1023,7 +1033,7 @@ describe('SettingsPage', () => {
 				dirtySince: null,
 				pendingResync: false,
 				hasRemoteConfig: true,
-				remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
+				remoteUrl: 'postgresql://db.example.com:5432/sf',
 				replicaState: 'ready',
 				replicaReason: null,
 				lastRestoreAt: '2026-06-28T00:00:00Z',
@@ -1039,7 +1049,7 @@ describe('SettingsPage', () => {
 		await waitFor(() => {
 			expect(getSyncDiagnosticsSpy).toHaveBeenCalledTimes(1)
 			expect(screen.getByText('同步诊断')).toBeInTheDocument()
-			expect(screen.getByText('postgresql://user:***@db.example.com:5432/sf')).toBeInTheDocument()
+			expect(screen.getByText('postgresql://db.example.com:5432/sf')).toBeInTheDocument()
 			expect(screen.getAllByText('总计 88 条主数据')).toHaveLength(2)
 			expect(screen.getAllByText('1 条').length).toBeGreaterThanOrEqual(1)
 		})
@@ -1085,7 +1095,7 @@ function createReadyIntervalSyncStatus(intervalMinutes = 15) {
 		dirtySince: null,
 		pendingResync: false,
 		hasRemoteConfig: true,
-		remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
+		remoteUrl: 'postgresql://db.example.com:5432/sf',
 		replicaState: 'ready',
 		replicaReason: null,
 		lastRestoreAt: null,

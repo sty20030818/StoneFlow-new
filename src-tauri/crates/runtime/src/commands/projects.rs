@@ -138,11 +138,15 @@ pub async fn permanently_delete_project(
 
 #[cfg(test)]
 mod tests {
+    use sea_orm::ConnectionTrait;
     use stoneflow_application::activity::GetEntityActivitiesInput;
     use stoneflow_application::project::{CreateProjectInput, ProjectIdInput};
+    use stoneflow_application::task::{
+        CreateTaskInput, CreateTaskPlacementInput, TaskIdInput, TaskWritePlacementKind,
+    };
     use stoneflow_domain::WorkStatus;
     use stoneflow_storage::repositories::{OutboxRepository, SpaceRepository};
-    use stoneflow_storage::{build_activity_service, build_project_service};
+    use stoneflow_storage::{build_activity_service, build_project_service, build_task_service};
     use stoneflow_test_support::TestDatabase;
 
     use crate::app::error::AppError;
@@ -268,5 +272,78 @@ mod tests {
             })
             .await
             .expect("permanently delete project should succeed");
+    }
+
+    #[tokio::test]
+    async fn restore_project_should_not_restore_task_taken_over_by_later_operation() {
+        let database = TestDatabase::bootstrap_in_memory()
+            .await
+            .expect("test database should bootstrap");
+        let space = SpaceRepository::new(database.connection().clone())
+            .list_visible()
+            .await
+            .expect("list visible spaces should succeed")
+            .remove(0);
+        let project_service = build_project_service(database.connection().clone());
+        let project = project_service
+            .create_project(CreateProjectInput {
+                space_id: space.id.clone(),
+                name: "级联恢复项目".to_owned(),
+                description: None,
+                status: None,
+                priority: None,
+                planned_at: None,
+                due_at: None,
+                remind_at: None,
+            })
+            .await
+            .expect("project should create");
+        let task_service = build_task_service(database.connection().clone());
+        let task = task_service
+            .create_task(CreateTaskInput {
+                space_id: Some(space.id),
+                placement: CreateTaskPlacementInput {
+                    kind: TaskWritePlacementKind::Project,
+                    project_id: Some(project.id.clone()),
+                },
+                title: "后续操作接管的任务".to_owned(),
+                note: None,
+                status: None,
+                priority: None,
+                due_at: None,
+                planned_at: None,
+                remind_at: None,
+            })
+            .await
+            .expect("task should create");
+
+        project_service
+            .archive_project(ProjectIdInput {
+                project_id: project.id.clone(),
+            })
+            .await
+            .expect("project should archive");
+        database
+            .connection()
+            .execute_unprepared(&format!(
+                "UPDATE tasks SET archived_by_operation_id = 'later-operation' WHERE id = '{}'",
+                task.id
+            ))
+            .await
+            .expect("later operation marker should update");
+
+        let restored_project = project_service
+            .restore_project(ProjectIdInput {
+                project_id: project.id,
+            })
+            .await
+            .expect("project should restore");
+        let restored_task = task_service
+            .get_task_detail(TaskIdInput { task_id: task.id })
+            .await
+            .expect("task should remain readable");
+
+        assert!(restored_project.archived_at.is_none());
+        assert!(restored_task.archived_at.is_some());
     }
 }

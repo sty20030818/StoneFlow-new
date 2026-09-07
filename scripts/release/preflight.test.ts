@@ -267,18 +267,30 @@ async function withFixture(
 	const fixture = await createFixture(options)
 	const previousGlobalConfig = process.env.GIT_CONFIG_GLOBAL
 	const previousNoSystem = process.env.GIT_CONFIG_NOSYSTEM
+	const previousHeroUiAuthToken = process.env.HEROUI_AUTH_TOKEN
 	process.env.GIT_CONFIG_GLOBAL = fixture.globalConfig
 	process.env.GIT_CONFIG_NOSYSTEM = '1'
+	process.env.HEROUI_AUTH_TOKEN = 'fixture-heroui-token'
 	try {
 		await run(fixture)
 	} finally {
 		restoreEnv('GIT_CONFIG_GLOBAL', previousGlobalConfig)
 		restoreEnv('GIT_CONFIG_NOSYSTEM', previousNoSystem)
+		restoreEnv('HEROUI_AUTH_TOKEN', previousHeroUiAuthToken)
 		await rm(fixture.root, { recursive: true, force: true })
 	}
 }
 
 describe('release preflight', () => {
+	test('缺少 HeroUI CI 凭据时在 Git 与远端检查前阻断', async () => {
+		await withFixture(async (fixture) => {
+			delete process.env.HEROUI_AUTH_TOKEN
+			await expect(runReleasePreflight({ repoRoot: fixture.publisher })).rejects.toThrow(
+				'HEROUI_AUTH_TOKEN',
+			)
+		})
+	})
+
 	test('有效 Stable checkout 生成固定 commit 与 ledger lease 的 claim', async () => {
 		await withFixture(async (fixture) => {
 			const snapshot = await runReleasePreflight({

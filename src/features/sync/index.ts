@@ -13,6 +13,7 @@ export type {
 	SyncStatus,
 	SyncCredentialState,
 	SyncConfigSource,
+	SyncDatabaseConfigInput,
 	SyncReplicaState,
 	SyncPolicyMode,
 	SyncStatusPayload,
@@ -23,6 +24,7 @@ export {
 	getSyncStatus,
 	getSyncDiagnostics,
 	configureSync,
+	rebindSync,
 	updateSyncPolicy,
 	runSync,
 } from './api/sync'

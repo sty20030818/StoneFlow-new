@@ -2,7 +2,7 @@
  * space 域对外公共面（`@/features/space`）。
  *
  * @remarks
- * 外模块只能：`import { … } from '@/features/space'`。
+ * 外模块使用主 facade；只需要空间视觉时使用 `@/features/space/presentation`。
  * 禁止深路径进 api/hooks/model/components。
  * Space 实体 + 视觉 + 编辑 UI；setActiveScope 仅同步 Rust（URL 仍是 scope 真相）。
  * 命令打开意图在 `@/features/command`（takePendingCommandOpenIntent）。

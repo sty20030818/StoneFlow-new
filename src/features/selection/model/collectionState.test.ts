@@ -14,9 +14,22 @@ describe('collectionState', () => {
 		const navigableKeys = ['task-a', 'task-c']
 		const projection = createCollectionProjection(eligibleKeys, navigableKeys)
 
-		expect(projection).toEqual({ eligibleKeys, navigableKeys })
+		expect(projection).toMatchObject({ eligibleKeys, navigableKeys })
 		expect(projection.eligibleKeys).not.toBe(eligibleKeys)
 		expect(projection.navigableKeys).not.toBe(navigableKeys)
+		expect(projection.eligibleIndexByKey).toEqual(
+			new Map([
+				['task-a', 0],
+				['task-b', 1],
+				['task-c', 2],
+			]),
+		)
+		expect(projection.navigableIndexByKey).toEqual(
+			new Map([
+				['task-a', 0],
+				['task-c', 1],
+			]),
+		)
 		expect(() => createCollectionProjection(['task-a', 'task-a'], ['task-a'])).toThrow(
 			'eligibleKeys 包含重复 key：task-a',
 		)

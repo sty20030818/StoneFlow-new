@@ -3,7 +3,7 @@ import { CheckIcon } from 'lucide-react'
 
 import { formatStatusLabel } from '../../model/launcherFormatters'
 import type { LauncherStatus } from '../../model/types'
-import { TaskStatusIndicator } from '@/features/task'
+import { TaskStatusIndicator } from '@/features/task/presentation'
 
 const STATUS_OPTIONS: LauncherStatus[] = ['todo', 'doing', 'done']
 

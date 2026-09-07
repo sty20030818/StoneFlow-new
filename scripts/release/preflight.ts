@@ -15,6 +15,7 @@ import {
 } from './git'
 import { resolveReleasePlan } from './release-plan'
 import { RELEASE_TAG_SCHEMA, type ReleaseChannel, type ReleasePlan } from './types'
+import { assertHeroUiReleaseAuth } from './verify-heroui-pro'
 
 const STABLE_VERSION_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/
 const COMMIT_SHA_PATTERN = /^[0-9a-f]{40}$/i
@@ -22,6 +23,7 @@ const COMMIT_SHA_PATTERN = /^[0-9a-f]{40}$/i
 export interface ReleasePreflightInput {
 	readonly repoRoot: string
 	readonly remoteName?: string
+	readonly env?: NodeJS.ProcessEnv
 }
 
 export interface ReleasePreflightSnapshot {
@@ -258,7 +260,9 @@ async function collectReleasePreflight({
 export async function runReleasePreflight({
 	repoRoot,
 	remoteName = 'origin',
+	env = process.env,
 }: ReleasePreflightInput): Promise<ReleasePreflightSnapshot> {
+	assertHeroUiReleaseAuth(env)
 	const remoteEndpoint = await resolveReleaseRemoteEndpoint({ cwd: repoRoot, remoteName })
 	return collectReleasePreflight({ repoRoot, remoteName, remoteEndpoint })
 }

@@ -22,9 +22,10 @@ use super::{engine::map_sync_error, types::SyncRemoteConfig};
 const PUSH_OPERATION_LIMIT: u64 = 100;
 
 /// 推送当前本地 Outbox。远端 operation 成功后才删除对应本地记录。
-pub async fn push_pending_outbox(
+pub(super) async fn push_pending_outbox(
     database: &DatabaseRuntimeState,
     remote: &SyncRemoteConfig,
+    remote_instance_id: &str,
 ) -> Result<usize, AppError> {
     let started_at = Instant::now();
     let outbox = OutboxRepository::new(database.connection().clone());
@@ -37,7 +38,7 @@ pub async fn push_pending_outbox(
         if groups.is_empty() {
             break;
         }
-        ensure_default_space_is_remote(database, remote, &device_id).await?;
+        ensure_default_space_is_remote(database, remote, remote_instance_id, &device_id).await?;
         let operations = groups
             .iter()
             .map(|group| to_sync_operation(&device_id, group))
@@ -45,6 +46,7 @@ pub async fn push_pending_outbox(
         stoneflow_sync::upload_operations(
             &stoneflow_sync::SyncCloudConfig {
                 database_url: remote.database_url.clone(),
+                expected_instance_id: Some(remote_instance_id.to_owned()),
             },
             &operations,
         )
@@ -73,6 +75,7 @@ pub async fn push_pending_outbox(
 async fn ensure_default_space_is_remote(
     database: &DatabaseRuntimeState,
     remote: &SyncRemoteConfig,
+    remote_instance_id: &str,
     device_id: &str,
 ) -> Result<(), AppError> {
     if !super::cursor_pull::local_has_user_content_for_plan(database).await? {
@@ -126,6 +129,7 @@ async fn ensure_default_space_is_remote(
     stoneflow_sync::upload_operations(
         &stoneflow_sync::SyncCloudConfig {
             database_url: remote.database_url.clone(),
+            expected_instance_id: Some(remote_instance_id.to_owned()),
         },
         &[operation],
     )

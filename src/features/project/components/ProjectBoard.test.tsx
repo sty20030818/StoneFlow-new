@@ -53,6 +53,10 @@ describe('ProjectBoard', () => {
 		fireEvent.keyDown(firstRow, { key: 'ArrowDown', shiftKey: true })
 
 		expect(screen.getByRole('checkbox', { name: '选择项目 项目 A' })).toBeChecked()
+		const grid = screen.getByRole('grid', { name: '项目列表' })
+		expect(grid).toHaveAttribute('data-focus-source', 'keyboard')
+		fireEvent.pointerDown(firstRow)
+		expect(grid).toHaveAttribute('data-focus-source', 'pointer')
 	})
 
 	it('连续选择位置通过 BoardRowSlot 公共 hook 暴露', () => {

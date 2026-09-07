@@ -5,13 +5,14 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite",
-		"build": "tsc -b && vite build",
+		"build": "tsc -b && vite build && bun run check:bundle",
 		"tauri": "tauri",
 		"typecheck": "tsc -b",
 		"lint": "oxlint",
 		"lint:fix": "oxlint --fix",
 		"lint:boundaries": "bun run scripts/check-feature-boundaries.ts",
 		"check:animations": "bun run scripts/check-no-first-party-animation.ts",
+		"check:bundle": "bun run scripts/check-bundle-budget.ts",
 		"format": "oxfmt",
 		"format:check": "oxfmt --check",
 		"clean": "bun run scripts/clean.ts",
@@ -85,6 +86,9 @@
 		"typescript": "^7.0.2",
 		"vite": "^8.2.2",
 		"vitest": "^5.0.0"
+	},
+	"overrides": {
+		"tar": "7.5.22"
 	},
 	"trustedDependencies": [
 		"@heroui-pro/react"

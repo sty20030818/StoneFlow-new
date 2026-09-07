@@ -18,10 +18,12 @@ import {
 	formatReplicaState,
 	getSyncDiagnostics,
 	getSyncStatus,
+	rebindSync,
 	runSync,
 	SyncConfigDialog,
 	updateSyncPolicy,
 	type SyncDiagnosticsPayload,
+	type SyncDatabaseConfigInput,
 	type SyncPolicyMode,
 	type SyncReplicaState,
 	type SyncStatus,
@@ -204,14 +206,15 @@ export function SettingsSyncPanel() {
 		}
 	}
 
-	async function handleSaveSyncConfig(input: { databaseUrl: string }) {
-		// 保存只写本机；后端会再调度一轮后台完整同步（验证连通 + 空云端灌库）。
-		// 禁止在此 await 同步，否则弹窗会卡在连库上。
+	async function persistSyncConfig(
+		action: (input: SyncDatabaseConfigInput) => Promise<SyncStatusPayload>,
+		input: SyncDatabaseConfigInput,
+	) {
 		setSyncSaving(true)
 		setSyncStatusMessage(null)
 		setSyncDiagnosticsMessage(null)
 		try {
-			const payload = await configureSync(input)
+			const payload = await action(input)
 			if (!mountedRef.current) {
 				return
 			}
@@ -231,6 +234,14 @@ export function SettingsSyncPanel() {
 				setSyncSaving(false)
 			}
 		}
+	}
+
+	function handleSaveSyncConfig(input: SyncDatabaseConfigInput) {
+		return persistSyncConfig(configureSync, input)
+	}
+
+	function handleRebindSyncConfig(input: SyncDatabaseConfigInput) {
+		return persistSyncConfig(rebindSync, input)
 	}
 
 	async function handleRunSync() {
@@ -639,6 +650,7 @@ export function SettingsSyncPanel() {
 					databaseUrl={databaseUrl}
 					onClose={() => setSyncConfigDialogOpen(false)}
 					onDatabaseUrlChange={setDatabaseUrl}
+					onRebind={handleRebindSyncConfig}
 					onSave={handleSaveSyncConfig}
 					open={syncConfigDialogOpen}
 					saving={syncSaving}

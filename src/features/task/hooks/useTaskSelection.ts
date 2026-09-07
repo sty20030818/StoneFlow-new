@@ -16,10 +16,7 @@ type TaskSelectionSnapshot = Readonly<{
  * task 域对 collection interaction 的只读投影；不拥有第二份选择或焦点状态。
  */
 export function useTaskSelection(projection: CollectionProjection<string>) {
-	const interaction = useCollectionInteraction({
-		eligibleKeys: projection.eligibleKeys,
-		navigableKeys: projection.navigableKeys,
-	})
+	const interaction = useCollectionInteraction({ projection })
 	const selectionSnapshot = useMemo<TaskSelectionSnapshot>(() => {
 		const ids = interaction.projection.eligibleKeys.filter((key) =>
 			interaction.selectedKeys.has(key),

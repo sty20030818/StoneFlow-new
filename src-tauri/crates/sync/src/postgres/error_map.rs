@@ -3,7 +3,35 @@ use sqlx::Error as SqlxError;
 use crate::SyncError;
 
 pub fn map_connect_error(error: SqlxError) -> SyncError {
-    map_sqlx_error("连接同步数据库", error)
+    let lower = error.to_string().to_ascii_lowercase();
+    if is_auth_error(&error, &lower) {
+        return SyncError::authentication("同步数据库拒绝了凭据，请检查用户名与密码");
+    }
+    if matches!(&error, SqlxError::Configuration(_))
+        || lower.contains("invalid") && lower.contains("url")
+        || lower.contains("empty host")
+    {
+        return SyncError::validation("同步数据库连接参数无效");
+    }
+    SyncError::remote_database("无法连接同步数据库，请检查主机、网络与 TLS 配置")
+}
+
+#[cfg(test)]
+mod tests {
+    use sqlx::Error as SqlxError;
+
+    use super::map_connect_error;
+
+    #[test]
+    fn connect_error_should_not_echo_a_url_from_the_driver() {
+        let driver_error = std::io::Error::other(
+            "invalid URL postgresql://user:synthetic-password@example.invalid/db",
+        );
+        let mapped = map_connect_error(SqlxError::Configuration(Box::new(driver_error)));
+
+        assert!(!mapped.to_string().contains("synthetic-password"));
+        assert!(!mapped.to_string().contains("user"));
+    }
 }
 
 pub fn map_sqlx_error(action: &str, error: SqlxError) -> SyncError {

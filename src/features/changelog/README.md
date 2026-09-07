@@ -6,21 +6,21 @@
 
 ## 公开入口
 
-- `ChangelogDialog`：按渠道展示完整发布历史，可定位指定版本。
+- `ChangelogDialogHost`：接收渠道与打开意图，首次打开后 lazy mount 完整历史 Dialog；可定位指定版本。
 - `ChangelogRelease`：渲染单个已解析版本。
 - `useChangelog`、`ChangelogQuery`：查询完整历史或版本区间。
 
 ## 最小使用示例
 
 ```tsx
-<ChangelogDialog
+<ChangelogDialogHost
 	open={open}
 	channel='stable'
 	onOpenChange={setOpen}
 />
 ```
 
-跨模块只从 `@/features/changelog` 导入。发布脚本只复用无 React、无 I/O 的 `contract.ts`。
+跨模块只从 `@/features/changelog` 导入 Host；关闭且从未打开时不会加载 Markdown 展示图。发布脚本只复用无 React、无 I/O 的 `contract.ts`。
 
 ## 源码位置
 

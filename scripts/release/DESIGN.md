@@ -24,15 +24,25 @@
 
 预检在构建和任何远端写入前完成：
 
-1. 发布 remote 必须解析为唯一 push endpoint；每次从该 endpoint 刷新隔离的 Tag、ledger 与公开 branch 快照。
-2. 拒绝 shallow repository、dirty/untracked 内容以及 `assume-unchanged`、`skip-worktree` 隐藏修改；工作区 clean 只作为操作门禁，不作为发布元数据来源。
-3. `HEAD` 必须解析为完整 commit，且新 claim 能从共享 remote 的公开 branch 或 Tag 历史到达。
-4. `package.json`、`tauri.conf.json` 与根 Changelog 都从 `releaseCommit` 的原始 Git blob 读取，不经过 working-tree clean/smudge filter；非法 UTF-8 直接拒绝。两份版本配置必须一致且为 Stable SemVer，Changelog 必须通过统一契约并包含目标版本。新 claim 还必须保留全部 schema-1 Tag 对应版本，防止已认领但尚未镜像的版本永久丢失。
-5. 待发布 commit 必须包含渠道旧 frontier；Beta 还必须包含配置版本对应的 Stable 基线。
+1. 运行环境必须提供非空且非纯空白的 `HEROUI_AUTH_TOKEN`；该门在解析 Git remote 或执行任何远端检查前运行。
+2. 发布 remote 必须解析为唯一 push endpoint；每次从该 endpoint 刷新隔离的 Tag、ledger 与公开 branch 快照。
+3. 拒绝 shallow repository、dirty/untracked 内容以及 `assume-unchanged`、`skip-worktree` 隐藏修改；工作区 clean 只作为操作门禁，不作为发布元数据来源。
+4. `HEAD` 必须解析为完整 commit，且新 claim 能从共享 remote 的公开 branch 或 Tag 历史到达。
+5. `package.json`、`tauri.conf.json` 与根 Changelog 都从 `releaseCommit` 的原始 Git blob 读取，不经过 working-tree clean/smudge filter；非法 UTF-8 直接拒绝。两份版本配置必须一致且为 Stable SemVer，Changelog 必须通过统一契约并包含目标版本。新 claim 还必须保留全部 schema-1 Tag 对应版本，防止已认领但尚未镜像的版本永久丢失。
+6. 待发布 commit 必须包含渠道旧 frontier；Beta 还必须包含配置版本对应的 Stable 基线。
 
 构建后会重新执行预检，并比较 commit、版本配置摘要、Changelog 摘要、remote refs 和发布计划。任一漂移都会在 claim 前中止。
 
-初次预检通过后，实际构建不会继续读取可编辑 checkout。全部 release Git 子进程按大小写不敏感规则移除危险 Git 环境并使用空 hooks 目录；构建 clone 另使用空 global/system config、attributes 与 template，阻断本机 hook/filter 注入。脚本核对快照 `HEAD` 与工作区没有额外输入，移除继承的 `TAURI_CONFIG`，执行 `bun install --frozen-lockfile`，并把 `CARGO_TARGET_DIR` 与 staged 输出都限制在该 run 内。即使 checkout 在构建期间被修改后恢复，产物输入仍是固定 commit。
+初次预检通过后，实际构建不会继续读取可编辑 checkout。全部 release Git 子进程按大小写不敏感规则移除危险 Git 环境并使用空 hooks 目录；构建 clone 另使用空 global/system config、attributes 与 template，阻断本机 hook/filter 注入。脚本核对快照 `HEAD` 与工作区没有额外输入，移除继承的 `TAURI_CONFIG`，并把 `CARGO_TARGET_DIR` 与 staged 输出都限制在该 run 内。即使 checkout 在构建期间被修改后恢复，产物输入仍是固定 commit。
+
+构建入口在启动第一个子进程前再次验证 `HEROUI_AUTH_TOKEN`，保护脱离主发布入口的直接调用；脚本只判断是否非空，不打印 token 值，并在 frozen install 完成后从其余子进程环境移除。随后在隔离快照中固定执行：
+
+1. `bun install --frozen-lockfile`，registry、认证、网络或 lockfile 不一致均直接失败；
+2. `bun audit`，审计命令失败即停止；
+3. `scripts/release/verify-heroui-pro.ts`，校验已安装 `@heroui-pro/react` 的包名与版本满足声明范围，`.`、`./list-view`、`./sheet` 的 import entry 位于包内、非空且可实际加载；
+4. 前三步全部成功后才执行 Tauri build。
+
+任一步失败都不会继续后续命令，也不会进入 Git/R2 写入阶段。
 
 ## 4. Git 原子 claim
 
@@ -97,7 +107,7 @@ stoneflow/
 ```text
 预检并规划
 → 读取并验证既有 platform record
-→ record 不存在时创建固定 commit 快照，隔离构建、收集和校验本平台产物
+→ record 不存在时创建固定 commit 快照，依次 frozen install、audit、HeroUI Pro 校验、Tauri build，再收集和校验本平台产物
 → 重做预检，确认 checkout 与 remote 候选未漂移
 → 只读确认远端 Changelog 历史与已撤回状态兼容
 → atomic claim Tag + channel ledger，或验证既有 Tag
@@ -113,7 +123,7 @@ Git 与 R2 没有跨系统事务。Pointer-last 是客户端安全边界：任�
 
 | 失败点 | 恢复方式 |
 |---|---|
-| 预检或构建失败 | 无远端写入；修复后重跑 |
+| 凭据预检、registry 安装、依赖审计、HeroUI Pro 校验或 Tauri build 失败 | 无远端写入；修复后重跑 |
 | Tag/ledger 被并发者抢占 | atomic push 不留半套 refs；同步远端，在后继 commit 重新规划，不盲目递增 |
 | claim 成功但响应丢失 | 重读并验证远端 Tag 与 ledger；身份精确成立则恢复 |
 | Tag 已建立，R2 未完成 | 保持同 commit 重跑，复用同 Tag；不可移动旧 Tag |
@@ -130,7 +140,7 @@ Git 与 R2 没有跨系统事务。Pointer-last 是客户端安全边界：任�
 
 ## 8. `--no-upload`
 
-`--no-upload` 执行相同的 Git 只读预检、版本规划、Tauri 构建、签名和产物收集，然后停止：
+`--no-upload` 要求相同的 HeroUI Pro 凭据，并执行相同的 Git 只读预检、版本规划、frozen 安装、依赖审计、HeroUI Pro 产物校验、Tauri 构建、签名和产物收集，然后停止：
 
 - 不创建 Tag；
 - 不推进渠道 ledger；

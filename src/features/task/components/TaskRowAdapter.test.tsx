@@ -17,6 +17,7 @@ import {
 import { DangerConfirmProvider } from '@/features/danger-confirm'
 import type { TaskPlacementTarget } from '@/features/metadata-fields'
 import { buildTaskCommandContext } from '@/features/task/commands/buildTaskCommandContext'
+import { indexTasksById } from '@/features/task/model/taskCollectionIndex'
 import type { TaskListItem } from '@/shared/types'
 
 import { TASK_ROW_SHORTCUT_BINDINGS } from '../shortcuts'
@@ -256,7 +257,7 @@ function buildActions(
 		onActivateTask: (task, focusSource) => {
 			const target = buildTaskCommandContext({
 				baseContext: context,
-				tasks: [task],
+				taskById: indexTasksById([task]),
 				targetTaskIds: [task.id],
 				focusedTaskId: task.id,
 				rowTargetId: task.id,
@@ -269,7 +270,7 @@ function buildActions(
 				commandId,
 				buildTaskCommandContext({
 					baseContext: context,
-					tasks: targets,
+					taskById: indexTasksById(targets),
 					targetTaskIds: targets.map((target) => target.id),
 					focusedTaskId: task.id,
 					rowTargetId: task.id,

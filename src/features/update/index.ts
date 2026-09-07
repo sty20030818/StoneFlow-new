@@ -7,7 +7,7 @@
 
 export { useManualUpdateCheck } from './hooks/useManualUpdateCheck'
 export { useUpdateEvents } from './hooks/useUpdateEvents'
-export { UpdateDialog } from './components/UpdateDialog'
+export { UpdateDialogHost } from './components/UpdateDialogHost'
 export { SystemStatusChip } from './components/SystemStatusChip'
 export { UpdateStatusFooterItem } from './components/UpdateStatusFooterItem'
 export { UpdateSettingsSection } from './components/UpdateSettingsSection'

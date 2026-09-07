@@ -3,7 +3,7 @@ import type { TaskListItem } from '@/shared/types'
 
 type BuildTaskCommandSelectionInput = {
 	selectedIds: readonly string[]
-	tasks: readonly TaskListItem[]
+	taskById: ReadonlyMap<string, TaskListItem>
 	fallbackSubtitle: string | ((task: TaskListItem) => string)
 	focusedTaskId?: string | null
 	clearSelection?: () => void
@@ -12,12 +12,11 @@ type BuildTaskCommandSelectionInput = {
 /** 将列表多选映射为命令菜单消费的 selection 上下文。 */
 export function buildTaskCommandSelection({
 	selectedIds,
-	tasks,
+	taskById,
 	fallbackSubtitle,
 	focusedTaskId = null,
 	clearSelection,
 }: BuildTaskCommandSelectionInput): CommandSelectionContext {
-	const taskById = new Map(tasks.map((task) => [task.id, task]))
 	const entities = selectedIds.flatMap((taskId) => {
 		const task = taskById.get(taskId)
 		if (!task) {

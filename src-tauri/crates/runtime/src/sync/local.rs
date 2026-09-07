@@ -5,11 +5,12 @@ use sea_orm::{ConnectionTrait, DbBackend, Statement};
 use crate::app::error::AppError;
 use stoneflow_storage::{database::DatabaseRuntimeState, repositories::SyncRepository};
 
-use super::types::{SyncDiagnosticsCountsPayload, SyncLocalDiagnosticsPayload, SyncReplicaState};
+use super::{
+    binding::{LAST_RESTORE_AT_SCOPE, REMOTE_INSTANCE_ID_SCOPE, SERVER_SEQ_CURSOR_SCOPE},
+    types::{SyncDiagnosticsCountsPayload, SyncLocalDiagnosticsPayload, SyncReplicaState},
+};
 
 const DEVICE_ID_SCOPE: &str = "sync:device_id";
-const SERVER_SEQ_CURSOR_SCOPE: &str = "sync:last_pulled_server_seq";
-const LAST_RESTORE_AT_SCOPE: &str = "sync:last_restore_at";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LocalReplicaSnapshot {
@@ -26,15 +27,25 @@ pub async fn inspect_local_replica(
     let counts = read_local_replica_counts(database.connection()).await?;
     let device_id = repository.get_cursor(DEVICE_ID_SCOPE).await?;
     let server_seq_cursor = repository.get_cursor(SERVER_SEQ_CURSOR_SCOPE).await?;
+    let remote_instance_id = repository.get_cursor(REMOTE_INSTANCE_ID_SCOPE).await?;
     let last_restore_at = repository.get_cursor(LAST_RESTORE_AT_SCOPE).await?;
 
-    let has_sync_metadata =
-        has_non_empty_cursor(&device_id) || has_non_empty_cursor(&server_seq_cursor);
+    let has_sync_metadata = has_non_empty_cursor(&device_id)
+        || has_non_empty_cursor(&server_seq_cursor)
+        || has_non_empty_cursor(&remote_instance_id);
     let looks_empty_replica = counts.has_no_user_content() && counts.pending_outbox_count == 0;
     let has_restore_marker = has_non_empty_cursor(&last_restore_at);
     let has_server_seq_cursor = has_non_empty_cursor(&server_seq_cursor);
 
-    let (state, reason) = if has_remote_config && looks_empty_replica {
+    let (state, reason) = if has_remote_config
+        && has_server_seq_cursor
+        && !has_non_empty_cursor(&remote_instance_id)
+    {
+        (
+            SyncReplicaState::Diverged,
+            Some("本机存在无法确认来源的旧同步游标；请显式重新绑定远端后再同步。".to_owned()),
+        )
+    } else if has_remote_config && looks_empty_replica {
         (SyncReplicaState::Ready, None)
     } else if has_remote_config && !has_server_seq_cursor && !has_restore_marker {
         (
@@ -69,6 +80,11 @@ pub async fn read_local_diagnostics(
         .find_device()
         .await?
         .map(|device| device.device_id);
+    let remote_instance_id = repository
+        .get_cursor(REMOTE_INSTANCE_ID_SCOPE)
+        .await?
+        .and_then(|cursor| cursor.cursor)
+        .filter(|value| !value.trim().is_empty());
     let last_pulled_server_seq = repository
         .get_cursor(SERVER_SEQ_CURSOR_SCOPE)
         .await?
@@ -106,6 +122,7 @@ pub async fn read_local_diagnostics(
 
     Ok(SyncLocalDiagnosticsPayload {
         device_id,
+        remote_instance_id,
         last_pulled_server_seq,
         pending_mutation_count,
         counts: SyncDiagnosticsCountsPayload {
@@ -186,9 +203,11 @@ fn has_non_empty_cursor(
 
 #[cfg(test)]
 mod tests {
+    use sea_orm::{ConnectionTrait, DatabaseBackend, Statement};
     use stoneflow_test_support::TestDatabase;
 
-    use super::read_local_diagnostics;
+    use super::{inspect_local_replica, read_local_diagnostics};
+    use crate::sync::{binding::SERVER_SEQ_CURSOR_SCOPE, types::SyncReplicaState};
 
     #[tokio::test]
     async fn local_diagnostics_should_read_outbox_state() {
@@ -201,5 +220,28 @@ mod tests {
             .expect("local diagnostics should read tables");
 
         assert_eq!(output.pending_mutation_count, 0);
+    }
+
+    #[tokio::test]
+    async fn legacy_cursor_without_remote_identity_should_be_diverged() {
+        let database = TestDatabase::bootstrap_in_memory()
+            .await
+            .expect("test database should bootstrap");
+        database
+            .connection()
+            .execute_raw(Statement::from_sql_and_values(
+                DatabaseBackend::Sqlite,
+                "INSERT INTO sync_cursors(scope, cursor, updated_at) VALUES (?, '7', 'now')",
+                [SERVER_SEQ_CURSOR_SCOPE.into()],
+            ))
+            .await
+            .expect("legacy cursor should insert");
+
+        let snapshot = inspect_local_replica(&database, true)
+            .await
+            .expect("replica state should load");
+
+        assert_eq!(snapshot.state, SyncReplicaState::Diverged);
+        assert!(snapshot.reason.is_some());
     }
 }

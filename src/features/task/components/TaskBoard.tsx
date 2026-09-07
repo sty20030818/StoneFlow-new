@@ -51,7 +51,7 @@ import {
 	TaskRowAriaFrameProvider,
 	type TaskRowAdapterProps,
 } from '@/features/task/components/TaskRowAdapter'
-import { buildTaskBoardCollection } from '@/features/task/model/taskBoardCollection'
+import type { TaskBoardCollection } from '@/features/task/model/taskBoardCollection'
 import { TaskStatusIndicator } from '@/features/task/model/indicators/TaskStatusIndicator'
 import { useTaskContextMenuBulkActions } from '@/features/task/components/useTaskContextMenuBulkActions'
 import { useTaskRowCommandShortcuts } from '@/features/task/shortcuts/useTaskRowCommandShortcuts'
@@ -90,7 +90,9 @@ const TASK_BOARD_PAGINATION_SENTINEL_KEY = 'task-board-pagination-sentinel'
 
 export type TaskBoardProps = {
 	tasks: TaskListItem[]
+	taskById: ReadonlyMap<string, TaskListItem>
 	flatItems: readonly TaskBoardFlatItem[]
+	boardCollection: TaskBoardCollection
 	collectionInteraction: CollectionInteraction<string>
 	focusIntent: CollectionFocusIntent<string, string> | null
 	onFocusIntentConsumed: (intent: CollectionFocusIntent<string, string>) => void
@@ -133,7 +135,9 @@ export type TaskBoardProps = {
  */
 export function TaskBoard({
 	tasks,
+	taskById,
 	flatItems,
+	boardCollection,
 	collectionInteraction,
 	focusIntent,
 	onFocusIntentConsumed,
@@ -176,14 +180,14 @@ export function TaskBoard({
 	const commandSnapshotRef = useLatestRef({
 		runtime: commandRuntime,
 		context: commandContext,
-		tasks,
+		taskById,
 	})
 	const activateTask = useCallback(
 		(task: TaskListItem, source: 'pointer' | 'keyboard' | null) => {
-			const { runtime, context } = commandSnapshotRef.current
+			const { runtime, context, taskById: currentTaskById } = commandSnapshotRef.current
 			const target = buildTaskCommandContext({
 				baseContext: context,
-				tasks: [task],
+				taskById: currentTaskById,
 				targetTaskIds: [task.id],
 				focusedTaskId: task.id,
 				rowTargetId: task.id,
@@ -200,12 +204,12 @@ export function TaskBoard({
 			targets: TaskListItem[],
 			clearSelection: boolean,
 		) => {
-			const { runtime, context } = commandSnapshotRef.current
+			const { runtime, context, taskById: currentTaskById } = commandSnapshotRef.current
 			return runtime.project(
 				commandId,
 				buildTaskCommandContext({
 					baseContext: context,
-					tasks: targets,
+					taskById: currentTaskById,
 					targetTaskIds: targets.map((item) => item.id),
 					focusedTaskId: task.id,
 					rowTargetId: task.id,
@@ -233,14 +237,6 @@ export function TaskBoard({
 	const selectedTasks = useMemo(
 		() => tasks.filter((task) => selectedTaskIdSet.has(task.id)),
 		[selectedTaskIdSet, tasks],
-	)
-	const boardCollection = useMemo(
-		() =>
-			buildTaskBoardCollection({
-				eligibleKeys: collectionInteraction.projection.eligibleKeys,
-				flatItems,
-			}),
-		[collectionInteraction.projection.eligibleKeys, flatItems],
 	)
 	const setSectionSelection = useCallback(
 		(taskIds: readonly string[], selected: boolean) => {
@@ -388,27 +384,28 @@ export function TaskBoard({
 	)
 	const focusCollectionStateKey = collectionInteraction.focusKey
 	const navigableTaskKeys = collectionInteraction.projection.navigableKeys
+	const navigableTaskIndex = collectionInteraction.projection.navigableIndexByKey
 	const focusCollectionKey = useCallback(
 		(key: string) => {
-			if (!navigableTaskKeys.includes(key)) return
+			if (!navigableTaskIndex.has(key)) return
 			markKeyboardInteraction()
 			focusCollectionStateKey(key)
 			requestVisibleFocus({ type: 'item', key })
 		},
-		[focusCollectionStateKey, markKeyboardInteraction, navigableTaskKeys, requestVisibleFocus],
+		[focusCollectionStateKey, markKeyboardInteraction, navigableTaskIndex, requestVisibleFocus],
 	)
 	const gridRef = useRef<HTMLDivElement | null>(null)
 	const emptyActionRef = useRef<HTMLButtonElement | null>(null)
 	const focusTaskBoardTarget = useCallback(
 		(key: string) => {
-			if (navigableTaskKeys.includes(key)) {
+			if (navigableTaskIndex.has(key)) {
 				focusCollectionKey(key)
 				return
 			}
 			const fallbackTarget = gridRef.current ?? emptyActionRef.current
 			fallbackTarget?.focus({ preventScroll: true })
 		},
-		[focusCollectionKey, navigableTaskKeys],
+		[focusCollectionKey, navigableTaskIndex],
 	)
 	const groupReentryRef = useRef<{
 		groupKey: string
@@ -446,10 +443,10 @@ export function TaskBoard({
 	)
 	const executeCollectionCommand = useCallback(
 		(commandId: CommandId, taskId: string) => {
-			const { runtime, context, tasks: currentTasks } = commandSnapshotRef.current
+			const { runtime, context, taskById: currentTaskById } = commandSnapshotRef.current
 			const target = buildTaskCommandContext({
 				baseContext: context,
-				tasks: currentTasks,
+				taskById: currentTaskById,
 				targetTaskIds: [taskId],
 				focusedTaskId: taskId,
 				rowTargetId: taskId,
@@ -501,6 +498,7 @@ export function TaskBoard({
 	})
 	useTaskRowCommandShortcuts({
 		tasks,
+		taskById,
 		focusedTaskId,
 		selectedTaskIds: selectedTaskIdSet,
 		ownsEventTarget: (target) =>
@@ -823,6 +821,7 @@ export function TaskBoard({
 				}
 				className='@container/task-list relative w-full outline-none'
 				data-board-root='true'
+				data-focus-source={focusSource ?? undefined}
 				onFocusCapture={handleRootFocusCapture}
 				onKeyDownCapture={handleRootKeyDownCapture}
 				onPointerDownCapture={markPointerInteraction}

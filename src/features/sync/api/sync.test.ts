@@ -4,6 +4,7 @@ import {
 	configureSync,
 	getSyncDiagnostics,
 	getSyncStatus,
+	rebindSync,
 	runSync,
 	updateSyncPolicy,
 } from '@/features/sync/api/sync'
@@ -52,7 +53,7 @@ describe('sync api', () => {
 			dirtySince: null,
 			pendingResync: false,
 			hasRemoteConfig: true,
-			remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
+			remoteUrl: 'postgresql://db.example.com:5432/sf',
 			replicaState: 'ready',
 			replicaReason: null,
 			lastRestoreAt: null,
@@ -71,9 +72,10 @@ describe('sync api', () => {
 
 	it('读取同步诊断时调用 get_sync_diagnostics', async () => {
 		mockedInvoke.mockResolvedValue({
-			remoteHost: 'postgresql://user:***@db.example.com:5432/sf',
+			remoteHost: 'postgresql://db.example.com:5432/sf',
 			local: {
 				deviceId: 'device-1',
+				remoteInstanceId: 'remote-instance-1',
 				lastPulledServerSeq: 12,
 				lastRestoreAt: '2026-06-28T00:00:00Z',
 				pendingMutationCount: 1,
@@ -88,6 +90,7 @@ describe('sync api', () => {
 				},
 			},
 			remote: {
+				remoteInstanceId: 'remote-instance-1',
 				latestServerSeq: 15,
 				counts: {
 					spaces: 2,
@@ -106,6 +109,20 @@ describe('sync api', () => {
 		expect(mockedInvoke).toHaveBeenCalledWith('get_sync_diagnostics')
 	})
 
+	it('显式重新绑定时调用独立 rebind_sync 命令', async () => {
+		mockedInvoke.mockResolvedValue({ enabled: true, status: 'offline_pending' })
+
+		await rebindSync({
+			databaseUrl: 'postgresql://user:secret@db.example.com:5432/sf',
+		})
+
+		expect(mockedInvoke).toHaveBeenCalledWith('rebind_sync', {
+			input: {
+				databaseUrl: 'postgresql://user:secret@db.example.com:5432/sf',
+			},
+		})
+	})
+
 	it('手动同步时调用 run_sync', async () => {
 		mockedInvoke.mockResolvedValue({
 			enabled: true,
@@ -117,7 +134,7 @@ describe('sync api', () => {
 			dirtySince: null,
 			pendingResync: false,
 			hasRemoteConfig: true,
-			remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
+			remoteUrl: 'postgresql://db.example.com:5432/sf',
 			replicaState: 'ready',
 			replicaReason: null,
 			lastRestoreAt: null,
@@ -139,7 +156,7 @@ describe('sync api', () => {
 			dirtySince: null,
 			pendingResync: false,
 			hasRemoteConfig: true,
-			remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
+			remoteUrl: 'postgresql://db.example.com:5432/sf',
 			replicaState: 'ready',
 			replicaReason: null,
 			lastRestoreAt: null,

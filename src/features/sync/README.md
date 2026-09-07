@@ -4,9 +4,11 @@
 
 ## 公开入口
 
-- `getSyncStatus`、`configureSync`、`updateSyncPolicy`、`runSync`
+- `getSyncStatus`、`getSyncDiagnostics`、`configureSync`、`rebindSync`、`updateSyncPolicy`、`runSync`
 - `SyncStatusProvider`、`useSharedSyncStatus`
 - `SyncFooterStatusItem`、`SyncConfigDialog`
+
+普通配置会验证 Postgres 的稳定实例 identity，并与本机 cursor 绑定核对；不一致时必须在同一对话框明确确认 `rebindSync`。有待上传 Outbox 时后端拒绝重新绑定。界面和状态只接收 scheme / host / port / path 组成的安全地址，不接收 authority 或 query。
 
 ## 最小使用示例
 

@@ -22,10 +22,8 @@ describe('taskBoardCollection', () => {
 	it('从 flatItems 派生唯一 projection、全部 flat index 与 header 分组', () => {
 		const collection = buildCollection(TASKS, ['todo', 'doing'])
 
-		expect(collection.projection).toEqual({
-			eligibleKeys: ['todo-a', 'todo-b', 'doing-c'],
-			navigableKeys: ['todo-a', 'todo-b', 'doing-c'],
-		})
+		expect(collection.projection.eligibleKeys).toEqual(['todo-a', 'todo-b', 'doing-c'])
+		expect(collection.projection.navigableKeys).toEqual(['todo-a', 'todo-b', 'doing-c'])
 		expect([...collection.flatIndexByKey]).toEqual([
 			['h:todo', 0],
 			['todo-a', 1],
@@ -55,10 +53,8 @@ describe('taskBoardCollection', () => {
 			collapsedKeys: previous.rowKeysByGroupKey.get('h:todo') ?? new Set(),
 		})
 
-		expect(next.projection).toEqual({
-			eligibleKeys: ELIGIBLE_KEYS,
-			navigableKeys: ['doing-c'],
-		})
+		expect(next.projection.eligibleKeys).toEqual(ELIGIBLE_KEYS)
+		expect(next.projection.navigableKeys).toEqual(['doing-c'])
 		expect([...next.rowOrdinalByKey]).toEqual([['doing-c', 1]])
 		expect(transition.state).toEqual({
 			selectedKeys: state.selectedKeys,

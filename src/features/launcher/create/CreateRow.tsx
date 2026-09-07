@@ -2,8 +2,7 @@ import { Button } from '@heroui/react'
 import { PlusIcon } from 'lucide-react'
 
 import { useLauncher } from '../domain/LauncherDomainProvider'
-import { PriorityIcon } from '@/features/task'
-import { TaskStatusIndicator } from '@/features/task'
+import { PriorityIcon, TaskStatusIndicator } from '@/features/task/presentation'
 import { OverflowTooltip } from '@/shared/components/tooltip'
 
 /** 钉在 Results 上方的新建动作；交互与语义由 HeroUI Button 承担。 */

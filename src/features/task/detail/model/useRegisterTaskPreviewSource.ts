@@ -12,11 +12,11 @@ export function useRegisterTaskPreviewSource(source: TaskPreviewSource) {
 	const { registerSource, clearSourceRegistration } = useTaskPreviewContext()
 	const [token] = useState(() => Symbol('task-preview-source'))
 
-	const { tasks, focusedTaskId, activeTaskId } = source
+	const { taskById, focusedTaskId, activeTaskId } = source
 
 	useEffect(() => {
-		registerSource(token, { tasks, focusedTaskId, activeTaskId })
-	}, [registerSource, tasks, focusedTaskId, activeTaskId, token])
+		registerSource(token, { taskById, focusedTaskId, activeTaskId })
+	}, [registerSource, taskById, focusedTaskId, activeTaskId, token])
 
 	useEffect(() => {
 		return () => {

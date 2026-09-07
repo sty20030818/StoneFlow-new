@@ -119,8 +119,8 @@ export function useTaskPreviewStore(): TaskPreviewContextValue {
 				if (
 					!current.open ||
 					current.isPointerInsidePreview ||
-					hasValidTask(source?.tasks ?? [], current.hoveredTaskId) ||
-					hasValidTask(source?.tasks ?? [], source?.focusedTaskId ?? null)
+					hasValidTask(source?.taskById, current.hoveredTaskId) ||
+					hasValidTask(source?.taskById, source?.focusedTaskId ?? null)
 				) {
 					return {
 						...current,
@@ -191,7 +191,7 @@ export function useTaskPreviewStore(): TaskPreviewContextValue {
 	const registerSource = useCallback((token: symbol, nextSource: TaskPreviewSource) => {
 		activeSourceTokenRef.current = token
 		setSource((current) => (areSameTaskPreviewSource(current, nextSource) ? current : nextSource))
-		if (nextSource.tasks.length > 0) {
+		if (nextSource.taskById.size > 0) {
 			setSourceSnapshot((current) =>
 				areSameTaskPreviewSource(current, nextSource) ? current : nextSource,
 			)
@@ -222,12 +222,12 @@ export function useTaskPreviewStore(): TaskPreviewContextValue {
 			return
 		}
 
-		const tasks = source?.tasks ?? []
-		if (tasks.length === 0) {
+		const taskById = source?.taskById
+		if (!taskById || taskById.size === 0) {
 			return
 		}
 
-		if (state.targetTaskId && !hasValidTask(tasks, state.targetTaskId)) {
+		if (state.targetTaskId && !hasValidTask(taskById, state.targetTaskId)) {
 			closePreview()
 			return
 		}
@@ -236,7 +236,7 @@ export function useTaskPreviewStore(): TaskPreviewContextValue {
 			activeTaskId: source?.activeTaskId ?? null,
 			focusedTaskId: source?.focusedTaskId ?? null,
 			hoveredTaskId: state.hoveredTaskId,
-			taskIds: tasks.map((task) => task.id),
+			taskById,
 		})
 
 		if (nextTarget) {

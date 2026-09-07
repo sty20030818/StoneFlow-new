@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 
 import type { LauncherAction } from './launcherDomainTypes'
-import type { CollectionInteraction } from '@/features/selection'
+import type { CollectionInteraction } from '@/features/selection/contract'
 import type {
 	LauncherFocusTarget,
 	LauncherPlacement,

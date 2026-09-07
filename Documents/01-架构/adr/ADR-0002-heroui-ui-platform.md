@@ -18,7 +18,7 @@ StoneFlow 曾同时存在 Radix/shadcn primitive、平行 base、纯 class patte
 4. HeroUI 管理标准组件结构、行为、键盘交互、Focus、Overlay 语义、可访问性与上游状态 recipe；StoneFlow 管理产品视觉方向、语义 token 和经审计的最小公共差异，并保留产品语义、业务状态、Tauri 原生窗口几何、Sidebar 已确认三态、Task Detail 基于窗口 `1024px` 断点的 Aside / Sheet 容器合同，以及 Row、Board、TaskBoard 与 Command/selection 产品合同。
 5. 集合契约按单一变化原因拆分：`RowShell` 是交互状态壳，`RowLayout` 是 `selection` / `leading` / `primary` / `properties` / `actions` 五槽排版并隔离控件槽与 Row activation，`BoardRowSlot` 拥有连续选择与 `44px + 2px` Row 占位，`BoardSectionHeader` 拥有 `36px` anatomy；`44px` / `36px` / `2px` 只有一份共享几何事实源。Task Workspace、Project Overview 与 Lifecycle 页面统一使用 `PageFrame.CollectionBody` 的真实 viewport。TaskBoard 的焦点与选择由 React Aria / React Stately 的单一 collection state 拥有；TanStack Virtual 只保留一条生产路径，其高度只含已加载 flat items 与一个固定 sentinel，`totalCount` 不生成滚动像素。task 域继续拥有分组 sticky、`idle / loading / error / exhausted` 分页、append anchor、stable-id 焦点恢复与可访问进度；分页未结束时使用 `aria-rowcount=-1`，结束后报告当前可导航行数。
 6. StoneFlow 不编写或消费 Motion/Framer Motion、CSS/Tailwind 动画与过渡。HeroUI OSS/Pro 包内动效是唯一组件动效来源，并由其处理 reduced motion。
-7. HeroUI Pro 作为私有依赖精确锁版。当前供应链固定使用 CollectUI `hpsetup@4.7.0` 获取 `@heroui-pro/react@1.0.0-beta.8`；本地与 CI 只通过进程环境或 secret store 注入 `HEROUI_KEY`，Key 不得进入源码、lockfile、客户端环境、日志或构建产物。允许安装器复用固定版本缓存，但必须在仓库外完成隔离 frozen install、类型检查与生产构建，并记录解包后的树 SHA-256。
+7. HeroUI Pro 作为私有依赖受控获取。根 manifest 使用 caret 范围，`bun.lock` 固定当前解析版本；Bun 允许官方 HeroUI Pro postinstall。本地开发通过官方 CLI 登录并把凭据保存在仓库外，CI 与正式发布只从 secret store 注入专用 `HEROUI_AUTH_TOKEN`，不得进入源码、lockfile、renderer、日志或构建产物。正式发布在 frozen install 前 fail closed 检查凭据，只把 token 交给安装子进程，并在安装后核对包名、版本满足声明范围以及 `.`, `./list-view`, `./sheet` 必需 exports 可加载。供应商未提供可验证的私有 archive 不可变 digest，因此 lockfile 不被描述为完整私有产物证明；传递依赖安全修复使用根 package-manager override 并由 lockfile 与 dependency audit 验证。
 8. 只允许发布集成 HeroUI Pro 后的 StoneFlow 正常应用产物；不提交、拷贝、再分发或对外提供 Pro 组件源码、模板、私有 CDN 响应或解包资产。
 9. 页面直接使用 HeroUI OSS/Pro Interface，不建立一对一 wrapper、TypeScript token 镜像、第二套 variant runtime 或独立 design-system package。HeroUI 原子控件、集合 Item 与 Overlay chrome slot 的局部 `className` 只允许外部尺寸/位置、overflow、placement 与运行时动态几何；内部布局、字体/图标 metrics 与公共皮肤必须回到集中 recipe。Form、RadioGroup、Surface、Resizable、ScrollShadow 与 Trigger 等结构组件可承载产品布局，但不得重写公共颜色、边框、圆角、阴影或交互状态。
 10. 全局几何使用少量语义角色而非一个万能值：Control `6px`、Surface `8px`、Overlay `12px`，pill 只用于适合的封闭控件与状态标记，现行适用范围由 A3 与 `src/styles/ARCHITECTURE.md` 维护；HeroUI `sm/md/lg` 高度映射为 `28/32/36px`，强调度只由 variant 决定；结构 Surface 使用 `1px` 边框，Row 使用分隔线，阴影只用于浮层或拖拽 elevation。
@@ -36,8 +36,8 @@ StoneFlow 曾同时存在 Radix/shadcn primitive、平行 base、纯 class patte
 
 ### 成本与约束
 
-- HeroUI Pro 当前仍为 beta，且 CollectUI `hpsetup` 是额外的第三方供应链；必须同时固定安装器与组件包版本，以隔离 frozen install、生产构建和树 SHA-256 验证已取得产物。缓存与源站都不可用时仍会阻断新环境安装，这是已接受的供应链可用性风险。
-- CollectUI Key 可用与包完整性不构成 HeroUI 官方 license、seat、entitlement 或 Updates Window 的验证，本 ADR 不作这些声明。
+- HeroUI Pro 当前仍为 beta，私有产物下载依赖 HeroUI 服务、有效 entitlement 与构建机凭据；源站、凭据或授权不可用时会阻断新环境安装，这是已接受的供应链可用性风险。
+- 已安装包的版本与 exports 校验只能证明本机构建输入满足 StoneFlow 的可观察合同，不能证明供应商私有 archive 的逐字节不可变性，也不替代 license、seat、entitlement 或 Updates Window 判断。
 - 迁移采用 hard cut，Radix/shadcn 兼容层、旧 token 与 class pattern 已在消费者归零后删除。
 - 集中 recipe 与 HeroUI 当前公开 BEM 及 documented ARIA/data attributes 合同存在明确实现耦合；HeroUI 升级必须重新核对代表性状态，不通过 wrapper 假装供应商已经隔离。
 - HeroUI 无法也不应取代 Tauri 平台窗口契约、虚拟列表几何或 StoneFlow 领域命令；这些例外必须保持小而明确，不得成为继续自建通用 UI 的借口。

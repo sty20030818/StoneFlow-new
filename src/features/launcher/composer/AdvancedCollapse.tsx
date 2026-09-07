@@ -1,5 +1,10 @@
+import { lazy, Suspense } from 'react'
+
 import { useLauncher } from '../domain/LauncherDomainProvider'
-import { AdvancedMetaBar } from './AdvancedMetaBar'
+
+const AdvancedMetaBar = lazy(() =>
+	import('./AdvancedMetaBar').then((module) => ({ default: module.AdvancedMetaBar })),
+)
 
 /**
  * Advanced 壳内折叠：外窗高度不变，只占用 Results 份额。
@@ -10,7 +15,9 @@ export function AdvancedCollapse() {
 
 	return (
 		<div data-testid='launcher-advanced-collapse'>
-			<AdvancedMetaBar />
+			<Suspense fallback={null}>
+				<AdvancedMetaBar />
+			</Suspense>
 		</div>
 	)
 }

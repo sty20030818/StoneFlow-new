@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 
 import type { View } from '@/shared/types'
@@ -110,7 +110,7 @@ describe('Saved View pages', () => {
 		useWorkspaceSceneMock.mockReturnValue(buildWorkspaceScene())
 	})
 
-	it('根页只管理保存视图的搜索、打开与创建', () => {
+	it('根页通过标准 ListView 管理搜索、鼠标/键盘打开与创建', async () => {
 		const scene = useLibrarySceneMock()
 		useLibrarySceneMock.mockReturnValue(scene)
 		render(<ViewsPage />)
@@ -120,12 +120,32 @@ describe('Saved View pages', () => {
 		})
 		expect(scene.setSearch).toHaveBeenCalledWith('重点')
 
-		fireEvent.click(screen.getByRole('button', { name: /重点任务/ }))
+		const list = screen.getByRole('grid', { name: '保存视图列表' })
+		const row = screen.getByRole('row', { name: /重点任务/ })
+		expect(list).toContainElement(row)
+		fireEvent.click(row)
 		expect(scene.openView).toHaveBeenCalledWith(savedView)
+		scene.openView.mockClear()
+		act(() => row.focus())
+		fireEvent.keyDown(row, { key: 'Enter' })
+		fireEvent.keyUp(row, { key: 'Enter' })
+		await waitFor(() => expect(scene.openView).toHaveBeenCalledWith(savedView))
 
 		fireEvent.click(screen.getByRole('button', { name: '新建保存视图' }))
 		expect(editor.openCreate).toHaveBeenCalledOnce()
 		expect(screen.queryByText('系统视图')).not.toBeInTheDocument()
+	})
+
+	it('行内菜单隔离 Row action，并保留编辑与删除入口', async () => {
+		const scene = useLibrarySceneMock()
+		useLibrarySceneMock.mockReturnValue(scene)
+		render(<ViewsPage />)
+
+		fireEvent.click(screen.getByRole('button', { name: '视图操作' }))
+		expect(scene.openView).not.toHaveBeenCalled()
+		fireEvent.click(await screen.findByRole('menuitem', { name: '编辑保存视图' }))
+		expect(editor.openEdit).toHaveBeenCalledWith(savedView)
+		expect(scene.openView).not.toHaveBeenCalled()
 	})
 
 	it('详情页把保存视图交给唯一 TaskWorkspace，并保留任务与视图操作', async () => {

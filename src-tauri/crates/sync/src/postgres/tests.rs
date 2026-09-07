@@ -193,15 +193,69 @@ async fn health_should_report_schema_and_seq() {
     {
         let mut conn = connect_ready(&config).await.expect("connect");
         let probe = health(&mut conn).await.expect("health");
-        assert_eq!(probe.schema_version, Some(1));
+        assert_eq!(probe.schema_version, Some(2));
         assert_eq!(probe.latest_server_seq, None);
+        assert!(!probe.remote_instance_id.is_empty());
+        let instance_id = probe.remote_instance_id;
 
         upload_operation(&mut conn, &operation("op", patch(&[("t", json!(1))])))
             .await
             .expect("upload");
         let probe = health(&mut conn).await.expect("health2");
         assert_eq!(probe.latest_server_seq, Some(1));
+        assert_eq!(probe.remote_instance_id, instance_id);
     }
+    drop_schema(&base, &schema).await;
+}
+
+#[tokio::test]
+#[ignore = "需要 STONEFLOW_SYNC_DATABASE_URL 或 DATABASE_URL"]
+async fn ensure_ready_should_migrate_v1_and_keep_generated_identity_stable() {
+    if !require_pg() {
+        return;
+    }
+    let (config, schema, base) = open_isolated_cloud().await.expect("cloud");
+    {
+        let mut conn = connect_ready(&config).await.expect("connect");
+        sqlx::query("ALTER TABLE sync_schema DROP COLUMN instance_id")
+            .execute(&mut conn)
+            .await
+            .expect("drop identity column");
+        sqlx::query("UPDATE sync_schema SET version = 1 WHERE name = 'stoneflow'")
+            .execute(&mut conn)
+            .await
+            .expect("restore v1 marker");
+
+        ensure_ready(&mut conn).await.expect("migrate v1");
+        let first = health(&mut conn).await.expect("first health");
+        ensure_ready(&mut conn).await.expect("repeat ensure");
+        let second = health(&mut conn).await.expect("second health");
+
+        assert_eq!(first.schema_version, Some(2));
+        assert!(!first.remote_instance_id.is_empty());
+        assert_eq!(second.remote_instance_id, first.remote_instance_id);
+    }
+    drop_schema(&base, &schema).await;
+}
+
+#[tokio::test]
+#[ignore = "需要 STONEFLOW_SYNC_DATABASE_URL 或 DATABASE_URL"]
+async fn facade_should_reject_a_connection_whose_instance_identity_changed() {
+    if !require_pg() {
+        return;
+    }
+    let (mut config, schema, base) = open_isolated_cloud().await.expect("cloud");
+    let actual = crate::health(&config)
+        .await
+        .expect("initial health should succeed")
+        .remote_instance_id;
+    config.expected_instance_id = Some(format!("different-{actual}"));
+
+    let error = crate::health(&config)
+        .await
+        .expect_err("mismatched identity must fail closed");
+
+    assert!(matches!(error, SyncError::Validation { .. }));
     drop_schema(&base, &schema).await;
 }
 

@@ -4,6 +4,7 @@ use stoneflow_domain::now_utc;
 #[cfg(not(debug_assertions))]
 use stoneflow_platform::SyncTokenStore;
 use stoneflow_storage::{database::DatabaseRuntimeState, repositories::SettingsRepository};
+use url::{Host, Url};
 
 use crate::app::error::AppError;
 
@@ -21,7 +22,7 @@ pub async fn load_remote_config() -> Result<Option<SyncRemoteConfig>, AppError> 
     let Some(database_url) = read_sync_secret().await?.and_then(normalize_database_url) else {
         return Ok(None);
     };
-    if !looks_like_postgres_url(&database_url) {
+    if parse_postgres_url(&database_url).is_err() {
         return Ok(None);
     }
     Ok(Some(SyncRemoteConfig { database_url }))
@@ -96,15 +97,30 @@ pub async fn save_remote_config(_database_url: String) -> Result<SyncRemoteConfi
 /// 写入并返回标准化后的云端副本配置。
 #[cfg(not(debug_assertions))]
 pub async fn save_remote_config(database_url: String) -> Result<SyncRemoteConfig, AppError> {
+    let config = validate_remote_config(database_url)?;
+
+    write_sync_secret(config.database_url.clone()).await?;
+    Ok(config)
+}
+
+/// 在任何网络访问前拒绝 Debug 构建的 UI 凭据写入。
+#[cfg(debug_assertions)]
+pub fn ensure_remote_config_writable() -> Result<(), AppError> {
+    Err(AppError::validation(
+        "开发模式不保存同步连接串，请在项目根目录 .env.local 设置 STONEFLOW_SYNC_DATABASE_URL",
+    ))
+}
+
+#[cfg(not(debug_assertions))]
+pub const fn ensure_remote_config_writable() -> Result<(), AppError> {
+    Ok(())
+}
+
+/// 标准化并结构化校验 Postgres URL；不会持久化凭据。
+pub fn validate_remote_config(database_url: String) -> Result<SyncRemoteConfig, AppError> {
     let database_url = normalize_database_url(database_url)
         .ok_or_else(|| AppError::validation("请填写有效的同步数据库连接串"))?;
-    if !looks_like_postgres_url(&database_url) {
-        return Err(AppError::validation(
-            "连接串应以 postgresql:// 或 postgres:// 开头（Neon / 自建 Postgres）",
-        ));
-    }
-
-    write_sync_secret(database_url.clone()).await?;
+    parse_postgres_url(&database_url)?;
     Ok(SyncRemoteConfig { database_url })
 }
 
@@ -122,25 +138,44 @@ pub(super) fn normalize_database_url(url: impl Into<String>) -> Option<String> {
     (!url.is_empty()).then_some(url)
 }
 
-fn looks_like_postgres_url(url: &str) -> bool {
-    let lower = url.to_ascii_lowercase();
-    lower.starts_with("postgresql://") || lower.starts_with("postgres://")
+fn parse_postgres_url(database_url: &str) -> Result<Url, AppError> {
+    let parsed = Url::parse(database_url)
+        .map_err(|_| AppError::validation("请填写有效的同步数据库连接串"))?;
+    if !matches!(parsed.scheme(), "postgresql" | "postgres") {
+        return Err(AppError::validation(
+            "连接串应以 postgresql:// 或 postgres:// 开头（Neon / 自建 Postgres）",
+        ));
+    }
+    if parsed.host().is_none() {
+        return Err(AppError::validation("同步数据库连接串缺少主机地址"));
+    }
+    Ok(parsed)
 }
 
-/// 日志与 UI 展示：去掉用户密码。
-pub fn redact_database_url(url: &str) -> String {
-    // postgresql://user:pass@host:port/db → postgresql://user:***@host:port/db
-    if let Some(scheme_end) = url.find("://") {
-        let scheme = &url[..scheme_end + 3];
-        let rest = &url[scheme_end + 3..];
-        if let Some(at) = rest.rfind('@') {
-            let userinfo = &rest[..at];
-            let host_and_path = &rest[at + 1..];
-            let user = userinfo.split(':').next().unwrap_or(userinfo);
-            return format!("{scheme}{user}:***@{host_and_path}");
-        }
+/// 日志与 UI 展示：只保留结构化解析后的安全位置字段，绝不回退原始输入。
+pub fn redact_database_url(database_url: &str) -> String {
+    let Ok(parsed) = parse_postgres_url(database_url) else {
+        return "postgresql://[invalid]".to_owned();
+    };
+    let Some(host) = parsed.host() else {
+        return "postgresql://[invalid]".to_owned();
+    };
+
+    let host = match host {
+        Host::Domain(value) => value.to_owned(),
+        Host::Ipv4(value) => value.to_string(),
+        Host::Ipv6(value) => format!("[{value}]"),
+    };
+    let mut safe = format!("{}://{host}", parsed.scheme());
+    if let Some(port) = parsed.port() {
+        safe.push(':');
+        safe.push_str(&port.to_string());
     }
-    url.to_owned()
+    safe.push_str(parsed.path());
+
+    // Query value 没有可证明的非敏感合同；即使 key 看似安全，也可能被用户或供应商
+    // 填入凭据。展示边界因此完全丢弃 query，只保留定位远端所需的结构字段。
+    safe
 }
 
 #[cfg(debug_assertions)]
@@ -181,18 +216,56 @@ async fn write_sync_secret(secret: String) -> Result<(), AppError> {
 
 #[cfg(test)]
 mod tests {
-    use super::{normalize_database_url, redact_database_url};
+    use super::{normalize_database_url, redact_database_url, validate_remote_config};
 
     #[test]
-    fn redact_database_url_should_hide_password() {
+    fn redact_database_url_should_only_keep_safe_location_fields() {
         assert_eq!(
             redact_database_url("postgresql://root:s3cret@47.0.0.1:5432/narrative"),
-            "postgresql://root:***@47.0.0.1:5432/narrative"
+            "postgresql://47.0.0.1:5432/narrative"
         );
         assert_eq!(
             redact_database_url("postgres://localhost/db"),
             "postgres://localhost/db"
         );
+    }
+
+    #[test]
+    fn redact_database_url_should_hide_query_and_percent_encoded_passwords() {
+        let safe = redact_database_url(
+            "postgresql://user:p%40ss%2Fword@db.example.com/app?password=query%2Fsecret&sslmode=require&options=-c%20password%3Dhidden",
+        );
+
+        assert_eq!(safe, "postgresql://db.example.com/app");
+        assert!(!safe.contains("user"));
+        assert!(!safe.contains("secret"));
+        assert!(!safe.contains("password"));
+        assert!(!safe.contains("%40"));
+    }
+
+    #[test]
+    fn redact_database_url_should_drop_values_even_for_known_query_keys() {
+        let safe = redact_database_url(
+            "postgresql://db.example.com/app?sslmode=synthetic-secret&channel_binding=another-secret&target_session_attrs=third-secret",
+        );
+
+        assert_eq!(safe, "postgresql://db.example.com/app");
+        assert!(!safe.contains("secret"));
+    }
+
+    #[test]
+    fn redact_database_url_should_never_return_unparseable_input() {
+        assert_eq!(
+            redact_database_url("not-a-url-with-secret"),
+            "postgresql://[invalid]"
+        );
+    }
+
+    #[test]
+    fn validate_remote_config_should_require_a_postgres_host() {
+        assert!(validate_remote_config("https://example.com/db".to_owned()).is_err());
+        assert!(validate_remote_config("postgresql:///db".to_owned()).is_err());
+        assert!(validate_remote_config("postgresql://db.example.com/db".to_owned()).is_ok());
     }
 
     #[test]

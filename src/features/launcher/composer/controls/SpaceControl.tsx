@@ -3,7 +3,7 @@ import { Button, Dropdown } from '@heroui/react'
 import { CheckIcon } from 'lucide-react'
 
 import type { LauncherSpaceSummary } from '../../model/types'
-import { getSpaceVisual } from '@/features/space'
+import { getSpaceVisual } from '@/features/space/presentation'
 import { ActionTooltip, OverflowTooltip } from '@/shared/components/tooltip'
 
 type SpaceControlProps = {

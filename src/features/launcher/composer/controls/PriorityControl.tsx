@@ -3,8 +3,7 @@ import { Button, Dropdown } from '@heroui/react'
 import { CheckIcon } from 'lucide-react'
 
 import type { LauncherPriority } from '../../model/types'
-import { TASK_PRIORITY_OPTIONS } from '@/features/task'
-import { PriorityIcon } from '@/features/task'
+import { PriorityIcon, TASK_PRIORITY_OPTIONS } from '@/features/task/presentation'
 import { ActionTooltip, DisabledActionTooltip } from '@/shared/components/tooltip'
 
 type PriorityControlProps = {

@@ -15,6 +15,7 @@ import {
 } from '@/features/command'
 import type { TaskListItem } from '@/shared/types'
 
+import { indexTasksById } from '../model/taskCollectionIndex'
 import { TASK_ROW_SHORTCUT_BINDINGS } from './taskRowShortcutBindings'
 import { useTaskRowCommandShortcuts } from './useTaskRowCommandShortcuts'
 
@@ -120,6 +121,7 @@ function renderHarness({
 		const collectionRowRef = useRef<HTMLDivElement>(null)
 		useTaskRowCommandShortcuts({
 			tasks,
+			taskById: indexTasksById(tasks),
 			focusedTaskId: 'task-b',
 			selectedTaskIds: new Set(selectedTaskIds),
 			ownsEventTarget: (target) => target === collectionRowRef.current,

@@ -1,6 +1,6 @@
 # launcher · 独立窗 Launcher
 
-> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-08-25
+> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-09-07
 
 ---
 
@@ -48,6 +48,8 @@ src/features/launcher/
 
 界面直接组合 HeroUI；Launcher 不维护第二套 base / pattern 表面。
 关闭：`SessionProvider.requestClose` → `launcher_close_session`。
+
+跨 feature 只消费窄入口：collection 交互走 `selection/contract`，任务展示走 `task/presentation`，空间视觉走 `space/presentation`，创建与搜索 IO 走各自 `api`。不得为了复用一个符号导入 Main 的宽 facade；高级字段只在展开后 lazy load，Calendar 不进入 Launcher 初始依赖图。
 
 ---
 

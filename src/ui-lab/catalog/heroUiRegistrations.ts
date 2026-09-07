@@ -361,7 +361,7 @@ const PRO_PRODUCTION_USAGE = [
 	['src/features/task/detail/components/TaskActivityTimeline.tsx', ['Timeline']],
 	['src/features/task/detail/components/TaskPageState.tsx', ['EmptyState']],
 	['src/features/view/components/SavedViewPage.tsx', ['EmptyState']],
-	['src/features/view/components/ViewsPage.tsx', ['EmptyState']],
+	['src/features/view/components/ViewsPage.tsx', ['EmptyState', 'ListView']],
 	['src/layout/ShellChrome.tsx', ['Sheet', 'Sidebar']],
 	['src/layout/ShellLayoutContent.tsx', ['Sidebar']],
 	['src/layout/ShellMain.tsx', ['ContextMenu']],

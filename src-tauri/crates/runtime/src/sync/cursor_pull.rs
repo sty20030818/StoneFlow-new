@@ -12,7 +12,10 @@
 use std::collections::BTreeMap;
 use std::time::Instant;
 
-use sea_orm::{ConnectionTrait, DatabaseBackend, DatabaseTransaction, Statement, TransactionTrait};
+use sea_orm::{
+    ConnectionTrait, DatabaseBackend, DatabaseTransaction, SqliteTransactionMode, Statement,
+    TransactionOptions, TransactionTrait,
+};
 use serde_json::{json, Value};
 use stoneflow_storage::database::DatabaseRuntimeState;
 use stoneflow_sync::{
@@ -22,18 +25,23 @@ use stoneflow_sync::{
 
 use crate::app::error::AppError;
 
-use super::{engine::map_sync_error, types::SyncRemoteConfig as RuntimeRemoteConfig};
-
-const SERVER_SEQ_CURSOR_SCOPE: &str = "sync:last_pulled_server_seq";
-const LAST_RESTORE_AT_SCOPE: &str = "sync:last_restore_at";
+use super::{
+    binding::{
+        write_bound_cursor, write_remote_identity, LAST_RESTORE_AT_SCOPE, ORIGIN_SEED_SCOPE,
+        REMOTE_INSTANCE_ID_SCOPE, SERVER_SEQ_CURSOR_SCOPE,
+    },
+    engine::map_sync_error,
+    types::SyncRemoteConfig as RuntimeRemoteConfig,
+};
 
 /// 拉取远端变更并将每一页原子物化到本地。
-pub async fn pull_remote_changes(
+pub(super) async fn pull_remote_changes(
     database: &DatabaseRuntimeState,
     remote: &RuntimeRemoteConfig,
+    remote_instance_id: &str,
 ) -> Result<usize, AppError> {
     let started_at = Instant::now();
-    let remote = to_cloud_config(remote);
+    let remote = to_cloud_config(remote, remote_instance_id);
     let Some(cursor) = read_cursor(database).await? else {
         let baseline = stoneflow_sync::download_full(&remote)
             .await
@@ -43,13 +51,13 @@ pub async fn pull_remote_changes(
         if local_has_user_content(database).await? {
             let seq = baseline.cursor.server_seq;
             let entities = baseline.entities.len();
-            adopt_remote_cursor_keep_local(database, seq).await?;
+            adopt_remote_cursor_keep_local(database, remote_instance_id, seq).await?;
             log::info!("同步:本机优先落位 序号={seq} 远端实体={entities}");
             return Ok(0);
         }
         let seq = baseline.cursor.server_seq;
         let entities = baseline.entities.len();
-        apply_baseline(database, baseline).await?;
+        apply_baseline(database, remote_instance_id, baseline).await?;
         log::info!("同步:全量基线 序号={seq} 实体={entities}");
         return Ok(0);
     };
@@ -67,7 +75,7 @@ pub async fn pull_remote_changes(
                     .await
                     .map_err(map_sync_error)?;
                 let seq = baseline.cursor.server_seq;
-                apply_baseline(database, baseline).await?;
+                apply_baseline(database, remote_instance_id, baseline).await?;
                 log::info!("同步:位置过期改全量 序号={seq}");
                 return Ok(applied);
             }
@@ -80,7 +88,7 @@ pub async fn pull_remote_changes(
             .last()
             .map(|change| change.server_seq)
             .ok_or_else(|| AppError::internal("非空 pull page 缺少末尾 sequence"))?;
-        apply_page(database, &changes, after).await?;
+        apply_page(database, remote_instance_id, &changes, after).await?;
         applied += changes.len();
     }
     if applied > 0 {
@@ -98,6 +106,89 @@ pub(super) async fn local_has_user_content_for_plan(
     database: &DatabaseRuntimeState,
 ) -> Result<bool, AppError> {
     local_has_user_content(database).await
+}
+
+/// 显式重绑使用 IMMEDIATE 事务，把 pending 检查、本地重置和身份落盘串成一个写边界。
+pub(super) async fn begin_explicit_rebind(
+    database: &DatabaseRuntimeState,
+) -> Result<DatabaseTransaction, AppError> {
+    database
+        .connection()
+        .begin_with_options(TransactionOptions {
+            sqlite_transaction_mode: Some(SqliteTransactionMode::Immediate),
+            ..Default::default()
+        })
+        .await
+        .map_err(Into::into)
+}
+
+pub(super) async fn preflight_explicit_rebind(
+    database: &DatabaseRuntimeState,
+) -> Result<(), AppError> {
+    ensure_no_pending_outbox(database.connection()).await
+}
+
+pub(super) async fn ensure_explicit_rebind_allowed(
+    transaction: &DatabaseTransaction,
+) -> Result<(), AppError> {
+    ensure_no_pending_outbox(transaction).await
+}
+
+async fn ensure_no_pending_outbox(connection: &impl ConnectionTrait) -> Result<(), AppError> {
+    let row = connection
+        .query_one_raw(statement("SELECT COUNT(*) AS n FROM outbox", vec![]))
+        .await?
+        .ok_or_else(|| AppError::database("检查待上传变更时缺少结果行"))?;
+    let pending: i64 = row.try_get("", "n")?;
+    if pending > 0 {
+        return Err(AppError::conflict(format!(
+            "本机仍有 {pending} 条待上传变更，不能重新绑定远端；请先同步到当前远端或处理这些变更。"
+        )));
+    }
+    Ok(())
+}
+
+/// 用户确认后的本地重绑：非空远端替换本地副本，空远端保留本机业务并等待 origin seed。
+pub(super) async fn apply_explicit_rebind(
+    transaction: &DatabaseTransaction,
+    remote_instance_id: &str,
+    baseline: Baseline,
+) -> Result<(), AppError> {
+    let remote_has_content = !baseline.entities.is_empty() || !baseline.tombstones.is_empty();
+    clear_remote_owned_metadata(transaction).await?;
+
+    if remote_has_content {
+        apply_baseline_in_transaction(transaction, remote_instance_id, baseline).await?;
+    } else {
+        let updated_at = stoneflow_domain::now_utc().to_rfc3339();
+        write_remote_identity(transaction, remote_instance_id, &updated_at).await?;
+    }
+    Ok(())
+}
+
+async fn clear_remote_owned_metadata(transaction: &DatabaseTransaction) -> Result<(), AppError> {
+    for table in [
+        "applied_operations",
+        "sync_changes",
+        "sync_protocol_entities",
+        "tombstones",
+    ] {
+        transaction
+            .execute_raw(statement(&format!("DELETE FROM {table}"), vec![]))
+            .await?;
+    }
+    transaction
+        .execute_raw(statement(
+            "DELETE FROM sync_cursors WHERE scope IN (?, ?, ?, ?)",
+            vec![
+                SERVER_SEQ_CURSOR_SCOPE.into(),
+                REMOTE_INSTANCE_ID_SCOPE.into(),
+                ORIGIN_SEED_SCOPE.into(),
+                LAST_RESTORE_AT_SCOPE.into(),
+            ],
+        ))
+        .await?;
+    Ok(())
 }
 
 async fn local_has_user_content(database: &DatabaseRuntimeState) -> Result<bool, AppError> {
@@ -131,12 +222,13 @@ async fn local_has_user_content(database: &DatabaseRuntimeState) -> Result<bool,
 /// 本机优先：落 cursor，并把业务表投影成完整协议文档（不 wipe 业务表）。
 async fn adopt_remote_cursor_keep_local(
     database: &DatabaseRuntimeState,
+    remote_instance_id: &str,
     server_seq: i64,
 ) -> Result<(), AppError> {
     let transaction = database.connection().begin().await?;
     let restored_at = stoneflow_domain::now_utc().to_rfc3339();
     seed_local_protocol_from_business(&transaction, server_seq).await?;
-    write_cursor(&transaction, server_seq, &restored_at).await?;
+    write_bound_cursor(&transaction, remote_instance_id, server_seq, &restored_at).await?;
     write_setting(
         &transaction,
         LAST_RESTORE_AT_SCOPE,
@@ -566,52 +658,69 @@ fn parse_json_value(raw: &str) -> Result<Value, AppError> {
 
 async fn apply_baseline(
     database: &DatabaseRuntimeState,
+    remote_instance_id: &str,
     baseline: Baseline,
 ) -> Result<(), AppError> {
     let transaction = database.connection().begin().await?;
+    apply_baseline_in_transaction(&transaction, remote_instance_id, baseline).await?;
+    transaction.commit().await?;
+    Ok(())
+}
+
+async fn apply_baseline_in_transaction(
+    transaction: &DatabaseTransaction,
+    remote_instance_id: &str,
+    baseline: Baseline,
+) -> Result<(), AppError> {
     // 全量基线以云端为准：清空本机业务（含空壳默认 Space），避免新机叠出两个「个人」。
-    reset_replica(&transaction).await?;
+    reset_replica(transaction).await?;
     let mut entities = baseline.entities;
     entities.sort_by_key(|snapshot| entity_rank(snapshot.entity.entity_type));
     for snapshot in entities {
         persist_replica(
-            &transaction,
+            transaction,
             &ReplicaEntity {
                 snapshot: Some(snapshot.clone()),
                 tombstone: None,
             },
         )
         .await?;
-        materialize_document(&transaction, &snapshot, "baseline").await?;
+        materialize_document(transaction, &snapshot, "baseline").await?;
     }
     for tombstone in baseline.tombstones {
         persist_replica(
-            &transaction,
+            transaction,
             &ReplicaEntity {
                 snapshot: None,
                 tombstone: Some(tombstone.clone()),
             },
         )
         .await?;
-        materialize_tombstone(&transaction, &tombstone).await?;
+        materialize_tombstone(transaction, &tombstone).await?;
     }
     // is_default 不进协议：在物化结果上为本机指一个默认 Space。
-    ensure_local_default_space(&transaction).await?;
-    write_cursor(&transaction, baseline.cursor.server_seq, "baseline").await?;
+    ensure_local_default_space(transaction).await?;
+    write_bound_cursor(
+        transaction,
+        remote_instance_id,
+        baseline.cursor.server_seq,
+        "baseline",
+    )
+    .await?;
     let restored_at = stoneflow_domain::now_utc().to_rfc3339();
     write_setting(
-        &transaction,
+        transaction,
         LAST_RESTORE_AT_SCOPE,
         &restored_at,
         &restored_at,
     )
     .await?;
-    transaction.commit().await?;
     Ok(())
 }
 
 async fn apply_page(
     database: &DatabaseRuntimeState,
+    remote_instance_id: &str,
     changes: &[SequencedMutation],
     cursor: i64,
 ) -> Result<(), AppError> {
@@ -644,7 +753,13 @@ async fn apply_page(
     let Some(last_change) = changes.last() else {
         return Err(AppError::internal("pull page 不能为空"));
     };
-    write_cursor(&transaction, cursor, &last_change.committed_at).await?;
+    write_bound_cursor(
+        &transaction,
+        remote_instance_id,
+        cursor,
+        &last_change.committed_at,
+    )
+    .await?;
     transaction.commit().await?;
     Ok(())
 }
@@ -1341,21 +1456,6 @@ async fn ensure_local_default_space(transaction: &DatabaseTransaction) -> Result
     Ok(())
 }
 
-async fn write_cursor(
-    transaction: &DatabaseTransaction,
-    cursor: i64,
-    updated_at: &str,
-) -> Result<(), AppError> {
-    write_setting(
-        transaction,
-        SERVER_SEQ_CURSOR_SCOPE,
-        &cursor.to_string(),
-        updated_at,
-    )
-    .await?;
-    Ok(())
-}
-
 async fn write_setting(
     transaction: &DatabaseTransaction,
     scope: &str,
@@ -1526,8 +1626,180 @@ fn view_values(snapshot: &EntitySnapshot) -> Result<Vec<sea_orm::Value>, AppErro
     ])
 }
 
-fn to_cloud_config(remote: &RuntimeRemoteConfig) -> SyncCloudConfig {
+fn to_cloud_config(remote: &RuntimeRemoteConfig, remote_instance_id: &str) -> SyncCloudConfig {
     SyncCloudConfig {
         database_url: remote.database_url.clone(),
+        expected_instance_id: Some(remote_instance_id.to_owned()),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use sea_orm::{ConnectionTrait, DatabaseBackend, Statement};
+    use stoneflow_sync::{Baseline, EntityIdentity, SyncCursor, SyncEntityKind, Tombstone};
+    use stoneflow_test_support::TestDatabase;
+
+    use super::{apply_explicit_rebind, begin_explicit_rebind, ensure_explicit_rebind_allowed};
+    use crate::{
+        app::error::AppError,
+        sync::binding::{ensure_remote_binding, read_remote_binding, SERVER_SEQ_CURSOR_SCOPE},
+    };
+
+    #[tokio::test]
+    async fn explicit_rebind_should_refuse_when_outbox_has_pending_changes() {
+        let database = TestDatabase::bootstrap_in_memory()
+            .await
+            .expect("test database should bootstrap");
+        database
+            .connection()
+            .execute_raw(Statement::from_sql_and_values(
+                DatabaseBackend::Sqlite,
+                r#"
+                INSERT INTO outbox(
+                    id, operation_id, entity_type, entity_id, generation,
+                    operation_type, payload_json, created_at, available_at
+                ) VALUES ('outbox-1', 'operation-1', 'task', 'task-1', 1, 'patch', '{}', 'now', 'now')
+                "#,
+                [],
+            ))
+            .await
+            .expect("pending outbox should insert");
+
+        let transaction = begin_explicit_rebind(&database)
+            .await
+            .expect("rebind transaction should begin");
+        let error = ensure_explicit_rebind_allowed(&transaction)
+            .await
+            .expect_err("pending outbox must block rebind");
+
+        assert!(matches!(error, AppError::Conflict(_)));
+        transaction
+            .rollback()
+            .await
+            .expect("transaction should roll back");
+    }
+
+    #[tokio::test]
+    async fn explicit_rebind_to_empty_remote_should_replace_binding_and_keep_local_content() {
+        let database = TestDatabase::bootstrap_in_memory()
+            .await
+            .expect("test database should bootstrap");
+        ensure_remote_binding(&database, "remote-a")
+            .await
+            .expect("initial binding should persist");
+        database
+            .connection()
+            .execute_raw(Statement::from_sql_and_values(
+                DatabaseBackend::Sqlite,
+                "INSERT INTO sync_cursors(scope, cursor, updated_at) VALUES (?, '12', 'now')",
+                [SERVER_SEQ_CURSOR_SCOPE.into()],
+            ))
+            .await
+            .expect("cursor should insert");
+        let spaces_before: i64 = scalar_count(&database, "spaces").await;
+
+        let transaction = begin_explicit_rebind(&database)
+            .await
+            .expect("rebind transaction should begin");
+        ensure_explicit_rebind_allowed(&transaction)
+            .await
+            .expect("empty outbox should allow rebind");
+        apply_explicit_rebind(
+            &transaction,
+            "remote-b",
+            Baseline {
+                cursor: SyncCursor { server_seq: 0 },
+                entities: vec![],
+                tombstones: vec![],
+            },
+        )
+        .await
+        .expect("empty remote should rebind");
+        transaction.commit().await.expect("rebind should commit");
+
+        let binding = read_remote_binding(database.connection())
+            .await
+            .expect("binding should load");
+        assert_eq!(binding.remote_instance_id.as_deref(), Some("remote-b"));
+        assert_eq!(binding.server_seq, None);
+        assert_eq!(scalar_count(&database, "spaces").await, spaces_before);
+    }
+
+    #[tokio::test]
+    async fn explicit_rebind_to_nonempty_remote_should_replace_local_replica() {
+        let database = TestDatabase::bootstrap_in_memory()
+            .await
+            .expect("test database should bootstrap");
+        ensure_remote_binding(&database, "remote-a")
+            .await
+            .expect("initial binding should persist");
+        database
+            .connection()
+            .execute_raw(Statement::from_string(
+                DatabaseBackend::Sqlite,
+                r#"
+                INSERT INTO views(
+                    id, name, entity_kind, scope_json, filters_json, sort_json,
+                    group_by_json, position, generation, created_at, updated_at
+                ) VALUES (
+                    'local-view', 'Local', 'task', '{}', '[]', '[]',
+                    NULL, 0, 1, 'now', 'now'
+                )
+                "#,
+            ))
+            .await
+            .expect("local view should insert");
+
+        let transaction = begin_explicit_rebind(&database)
+            .await
+            .expect("rebind transaction should begin");
+        ensure_explicit_rebind_allowed(&transaction)
+            .await
+            .expect("empty outbox should allow rebind");
+        apply_explicit_rebind(
+            &transaction,
+            "remote-b",
+            Baseline {
+                cursor: SyncCursor { server_seq: 9 },
+                entities: vec![],
+                tombstones: vec![Tombstone {
+                    entity: EntityIdentity {
+                        entity_type: SyncEntityKind::View,
+                        entity_id: "remote-deleted-view".to_owned(),
+                        generation: 1,
+                    },
+                    deletion_seq: 9,
+                    deleted_at: "now".to_owned(),
+                }],
+            },
+        )
+        .await
+        .expect("nonempty remote should replace the local replica");
+        transaction.commit().await.expect("rebind should commit");
+
+        let binding = read_remote_binding(database.connection())
+            .await
+            .expect("binding should load");
+        assert_eq!(binding.remote_instance_id.as_deref(), Some("remote-b"));
+        assert_eq!(binding.server_seq, Some(9));
+        assert_eq!(scalar_count(&database, "views").await, 0);
+        assert_eq!(scalar_count(&database, "tombstones").await, 1);
+    }
+
+    async fn scalar_count(
+        database: &stoneflow_storage::database::DatabaseRuntimeState,
+        table: &str,
+    ) -> i64 {
+        database
+            .connection()
+            .query_one_raw(Statement::from_string(
+                DatabaseBackend::Sqlite,
+                format!("SELECT COUNT(*) AS n FROM {table}"),
+            ))
+            .await
+            .expect("count query should succeed")
+            .expect("count row should exist")
+            .try_get("", "n")
+            .expect("count should parse")
     }
 }

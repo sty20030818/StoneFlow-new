@@ -2,7 +2,7 @@
  * task 域对外公共面（`@/features/task`）。
  *
  * @remarks
- * 外模块只能：`import { … } from '@/features/task'`（placement 可用 `./contract`）。
+ * 外模块使用主 facade；IO、placement 与纯展示分别可用 `./api`、`./contract`、`./presentation`。
  * 禁止深路径进 components/api/hooks/model/detail。
  * 宜导出 facade、稳定标签、已有外消费者的 api/query；禁止预防性撑大 public。
  */

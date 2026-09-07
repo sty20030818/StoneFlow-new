@@ -53,7 +53,7 @@ export function useCollectionKeyboardAdapter<K extends CollectionKey>({
 				return
 			}
 
-			if (!isOwnedTarget(event, resolveRowKey, interaction.projection.eligibleKeys)) {
+			if (!isOwnedTarget(event, resolveRowKey, interaction.projection.eligibleIndexByKey)) {
 				return
 			}
 
@@ -74,7 +74,7 @@ export function useCollectionKeyboardAdapter<K extends CollectionKey>({
 				const isRangeStep = event.shiftKey && typeof navigation === 'number'
 				const nextKey = isRangeStep
 					? interaction.toggleRangeStep(navigation)
-					: resolveNavigationKey(interaction.projection.navigableKeys, currentKey, navigation)
+					: resolveNavigationKey(interaction.projection, currentKey, navigation)
 				if (nextKey === null) return
 				if (!isRangeStep) interaction.focusKey(nextKey)
 				if (nextKey === currentKey && !isRangeStep) return
@@ -119,7 +119,7 @@ export function useCollectionKeyboardAdapter<K extends CollectionKey>({
 function isOwnedTarget<K extends CollectionKey>(
 	event: ReactKeyboardEvent<HTMLElement>,
 	resolveRowKey: (target: HTMLElement) => K | null,
-	eligibleKeys: readonly K[],
+	eligibleIndexByKey: ReadonlyMap<K, number>,
 ): boolean {
 	if (!(event.target instanceof HTMLElement)) {
 		return false
@@ -129,7 +129,7 @@ function isOwnedTarget<K extends CollectionKey>(
 	}
 
 	const rowKey = resolveRowKey(event.target)
-	return rowKey !== null && eligibleKeys.includes(rowKey)
+	return rowKey !== null && eligibleIndexByKey.has(rowKey)
 }
 
 type Navigation = -1 | 1 | 'first' | 'last'
@@ -151,18 +151,20 @@ function resolveNavigation(event: ReactKeyboardEvent<HTMLElement>): Navigation |
 }
 
 function resolveNavigationKey<K extends CollectionKey>(
-	navigableKeys: readonly K[],
+	projection: CollectionProjection<K>,
 	currentKey: K | null,
 	navigation: Navigation,
 ): K | null {
+	const navigableKeys = projection.navigableKeys
 	if (navigableKeys.length === 0) {
 		return null
 	}
 	if (navigation === 'first') return navigableKeys[0] ?? null
 	if (navigation === 'last') return navigableKeys.at(-1) ?? null
 
-	const currentIndex = currentKey === null ? -1 : navigableKeys.indexOf(currentKey)
-	if (currentIndex === -1) {
+	const currentIndex =
+		currentKey === null ? undefined : projection.navigableIndexByKey.get(currentKey)
+	if (currentIndex === undefined) {
 		return navigation === 1 ? (navigableKeys[0] ?? null) : (navigableKeys.at(-1) ?? null)
 	}
 

@@ -72,6 +72,7 @@ use serde::Serialize;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RemoteSyncDiagnosticsOutput {
+    pub remote_instance_id: String,
     pub latest_server_seq: Option<i64>,
     pub counts: SyncDiagnosticsCountsOutput,
 }
@@ -91,6 +92,7 @@ pub struct SyncDiagnosticsCountsOutput {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SyncProbeOutput {
+    pub remote_instance_id: String,
     pub latest_server_seq: Option<i64>,
     pub schema_version: Option<i64>,
 }

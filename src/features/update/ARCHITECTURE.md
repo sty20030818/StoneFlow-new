@@ -1,7 +1,7 @@
 # update · 应用更新
 
 > 描述 `src/features/update` 当前稳定边界。更新生命周期由后端会话负责，前端模块只投影快照并提供用户操作。
-> 最后更新：2026-08-20
+> 最后更新：2026-09-07
 
 ## 职责
 
@@ -79,7 +79,7 @@ changelog 不得反向读取更新设置或更新会话。壳层需要打开完�
 | 位置 | 装配内容 |
 | --- | --- |
 | `layout/ShellLayoutContent.tsx` | 单例 `useUpdateEvents` |
-| `layout/overlays/ShellOverlays.tsx` | `UpdateDialog`、`SystemStatusChip` |
+| `layout/overlays/ShellOverlays.tsx` | 常驻 `SystemStatusChip`；`UpdateDialogHost` 只订阅轻量开关，并在首次打开后 lazy mount `UpdateDialog` |
 | `layout/ShellFooter.tsx` | `UpdateStatusFooterItem` |
 | `features/settings` | `UpdateSettingsSection` |
 | 头像菜单、关于窗口 | `useManualUpdateCheck` |

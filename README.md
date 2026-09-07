@@ -10,10 +10,15 @@ StoneFlow 用于把想到或收到的事情快速转成可管理的任务，并�
 
 ## 快速开始
 
+StoneFlow 使用私有依赖 HeroUI Pro。新开发机先通过官方 CLI 登录，凭据由 CLI 保存在仓库外；不要把 token 写入 `.env`、源码、lockfile 或日志。
+
 ```bash
+bunx heroui-pro@latest login
 bun install
 bun run dev
 ```
+
+CI 与正式发布使用专用 `HEROUI_AUTH_TOKEN`。发布脚本会在安装前检查凭据，只把它交给 frozen install，并在安装后从其余子进程环境移除；随后验证实际安装的包版本满足声明范围且必需入口可加载。不要把个人 token 用于自动化。
 
 常用校验：
 

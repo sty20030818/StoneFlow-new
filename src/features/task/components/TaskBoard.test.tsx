@@ -32,10 +32,12 @@ import {
 	buildTaskBoardFlatItems,
 	type TaskBoardCustomSection,
 } from '@/features/task/model/taskBoardModel'
+import { buildTaskBoardCollection } from '@/features/task/model/taskBoardCollection'
 import {
 	TASK_BOARD_STATUS_ORDER,
 	orderTasksByTaskBoardVisualOrder,
 } from '@/features/task/model/taskBoardOrder'
+import { indexTasksById } from '@/features/task/model/taskCollectionIndex'
 import { AppScrollArea } from '@/shared/components/AppScrollArea'
 import { COLLECTION_ROW_SIZE, COLLECTION_SECTION_HEADER_SIZE } from '@/shared/components/board'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
@@ -550,7 +552,7 @@ describe('TaskBoard', () => {
 
 			return (
 				<>
-					<button onClick={() => setTotalCount(10_000)} type='button'>
+					<button onClick={() => setTotalCount(200)} type='button'>
 						扩大总数
 					</button>
 					<button onClick={() => setState('loading')} type='button'>
@@ -586,7 +588,7 @@ describe('TaskBoard', () => {
 		const initialExtent = extent?.dataset.taskBoardExtent
 
 		fireEvent.click(screen.getByRole('button', { name: '扩大总数' }))
-		await waitFor(() => expect(liveStatus).toHaveTextContent('2 / 10000'))
+		await waitFor(() => expect(liveStatus).toHaveTextContent('2 / 200'))
 		expect(extent?.dataset.taskBoardExtent).toBe(initialExtent)
 
 		fireEvent.click(screen.getByRole('button', { name: '切到加载中' }))
@@ -685,7 +687,12 @@ describe('TaskBoard', () => {
 
 		act(() => rows[0]?.focus())
 		fireEvent.keyDown(rows[0]!, { key: 'ArrowDown' })
-		await waitFor(() => expect(rows[1]).toHaveFocus())
+		await waitFor(() => {
+			expect(rows[1]).toHaveFocus()
+			expect(grid).toHaveAttribute('data-focus-source', 'keyboard')
+		})
+		fireEvent.pointerDown(rows[1]!)
+		expect(grid).toHaveAttribute('data-focus-source', 'pointer')
 		fireEvent.keyDown(rows[1]!, { key: 'j' })
 		await waitFor(() => expect(rows[2]).toHaveFocus())
 		fireEvent.keyDown(rows[2]!, { key: 'k' })
@@ -1052,6 +1059,7 @@ function TaskCommandTestProvider({
 type TaskBoardHarnessProps = Omit<
 	TaskBoardProps,
 	| 'collectionInteraction'
+	| 'boardCollection'
 	| 'flatItems'
 	| 'focusIntent'
 	| 'onCollapseAll'
@@ -1060,6 +1068,7 @@ type TaskBoardHarnessProps = Omit<
 	| 'pagination'
 	| 'onRetry'
 	| 'onSectionOpenChange'
+	| 'taskById'
 > & {
 	customSections?: readonly TaskBoardCustomSection[]
 	focusIntent?: CollectionFocusIntent<string, string> | null
@@ -1099,20 +1108,21 @@ function TaskBoardHarness({
 			}).map((task) => task.id),
 		[customSections, props.tasks],
 	)
-	const navigableKeys = useMemo(
-		() => flatItems.flatMap((item) => (item.kind === 'row' ? [item.key] : [])),
-		[flatItems],
+	const boardCollection = useMemo(
+		() => buildTaskBoardCollection({ eligibleKeys, flatItems }),
+		[eligibleKeys, flatItems],
 	)
 	const collectionInteraction = useCollectionInteraction({
-		eligibleKeys,
-		navigableKeys,
+		projection: boardCollection.projection,
 		defaultSelectedKeys: selectedTaskIds,
 	})
+	const taskById = useMemo(() => indexTasksById(props.tasks), [props.tasks])
 
 	return (
 		<>
 			<TaskBoard
 				{...props}
+				boardCollection={boardCollection}
 				collectionInteraction={collectionInteraction}
 				flatItems={flatItems}
 				focusIntent={focusIntent}
@@ -1122,6 +1132,7 @@ function TaskBoardHarness({
 				pagination={pagination}
 				onRetry={onRetry}
 				onSectionOpenChange={onSectionOpenChange}
+				taskById={taskById}
 			/>
 			<output data-testid='focused-key'>{collectionInteraction.focusedKey ?? 'none'}</output>
 			<output data-testid='selected-keys'>

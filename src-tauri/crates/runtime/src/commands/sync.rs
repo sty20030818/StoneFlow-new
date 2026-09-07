@@ -6,7 +6,8 @@ use crate::{
     app::error::AppError,
     app::state::AppState,
     sync::{
-        self, ConfigureSyncInput, SyncDiagnosticsPayload, SyncStatusPayload, UpdateSyncPolicyInput,
+        self, ConfigureSyncInput, RebindSyncInput, SyncDiagnosticsPayload, SyncStatusPayload,
+        UpdateSyncPolicyInput,
     },
 };
 
@@ -21,8 +22,19 @@ pub async fn configure_sync(
     input: ConfigureSyncInput,
     state: State<'_, AppState>,
 ) -> Result<SyncStatusPayload, AppError> {
-    // 先快速写本机配置（不连远端）；再后台跑一轮完整同步做验证/灌库。
+    // 保存前已验证并绑定实例；后台继续完成灌库或增量同步。
     let payload = sync::configure_sync(&state.database, &state.sync, input).await?;
+    sync::trigger_startup_sync(&app_handle);
+    Ok(payload)
+}
+
+#[tauri::command]
+pub async fn rebind_sync(
+    app_handle: tauri::AppHandle,
+    input: RebindSyncInput,
+    state: State<'_, AppState>,
+) -> Result<SyncStatusPayload, AppError> {
+    let payload = sync::rebind_sync(&app_handle, &state.database, &state.sync, input).await?;
     sync::trigger_startup_sync(&app_handle);
     Ok(payload)
 }

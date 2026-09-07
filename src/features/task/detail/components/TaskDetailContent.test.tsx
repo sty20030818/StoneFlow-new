@@ -71,6 +71,10 @@ vi.mock('../model/useTaskAutosaveAdapter', () => ({
 	useTaskAutosaveAdapter: () => mockAutosave.value,
 }))
 
+vi.mock('../model/useTaskDetailNavigationBlocker', () => ({
+	useTaskDetailNavigationBlocker: () => undefined,
+}))
+
 vi.mock('@/features/project', () => ({
 	useProjectOptions: () => [
 		{

@@ -11,7 +11,7 @@ import {
 	formatTaskStatusLabel,
 	PriorityIcon,
 	TaskStatusIndicator,
-} from '@/features/task'
+} from '@/features/task/presentation'
 import { FolderIcon, SearchIcon } from 'lucide-react'
 
 type GlobalSearchResultsProps = {

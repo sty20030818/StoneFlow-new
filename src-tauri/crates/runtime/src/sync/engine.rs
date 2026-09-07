@@ -7,11 +7,18 @@ use tokio::sync::OwnedMutexGuard;
 use crate::app::error::AppError;
 
 use super::{
-    config::{load_remote_config, load_sync_policy, save_remote_config, save_sync_policy},
+    binding::{
+        ensure_remote_binding, expected_remote_identity_for_io, verify_remote_binding,
+        RemoteBindingState, SERVER_SEQ_CURSOR_SCOPE,
+    },
+    config::{
+        ensure_remote_config_writable, load_remote_config, load_sync_policy, save_remote_config,
+        save_sync_policy, validate_remote_config,
+    },
     local::{inspect_local_replica, read_local_diagnostics},
     state::{SyncRunMode, SyncRuntimeState},
     types::{
-        ConfigureSyncInput, SyncDiagnosticsCountsPayload, SyncDiagnosticsPayload,
+        ConfigureSyncInput, RebindSyncInput, SyncDiagnosticsCountsPayload, SyncDiagnosticsPayload,
         SyncRemoteDiagnosticsPayload, SyncReplicaState, SyncStatusPayload, UpdateSyncPolicyInput,
     },
 };
@@ -20,7 +27,6 @@ use stoneflow_sync::{SyncCloudConfig, SyncError, SyncErrorKind};
 
 const WORKSPACE_CHANGED_EVENT: &str = "stoneflow://workspace/changed";
 const SYNC_STATUS_CHANGED_EVENT: &str = "stoneflow://sync/status-changed";
-const SERVER_SEQ_CURSOR_SCOPE: &str = "sync:last_pulled_server_seq";
 const SYNC_WORKSPACE_DOMAINS: &[&str] = &["tasks", "projects", "spaces", "lifecycle", "views"];
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -101,14 +107,19 @@ pub async fn get_sync_diagnostics(
     let redacted = super::config::redact_database_url(&remote_config.database_url);
 
     let local = read_local_diagnostics(&database).await?;
-    let remote = stoneflow_sync::diagnose_cloud(&to_cloud_config(&remote_config))
-        .await
-        .map_err(map_sync_error)?;
+    let expected_instance_id = expected_remote_identity_for_io(&database).await?;
+    let remote = stoneflow_sync::diagnose_cloud(&to_cloud_config(
+        &remote_config,
+        expected_instance_id.as_deref(),
+    ))
+    .await
+    .map_err(map_sync_error)?;
 
     Ok(SyncDiagnosticsPayload {
         remote_host: Some(redacted),
         local,
         remote: SyncRemoteDiagnosticsPayload {
+            remote_instance_id: remote.remote_instance_id,
             latest_server_seq: remote.latest_server_seq,
             counts: SyncDiagnosticsCountsPayload {
                 spaces: remote.counts.spaces,
@@ -123,24 +134,70 @@ pub async fn get_sync_diagnostics(
     })
 }
 
-/// 保存远端配置并刷新运行态缓存。
-///
-/// 只写本机配置，不在这里连库；调用方应随后触发一轮后台同步做验证与灌库。
-/// 保存后状态为「待同步」，避免「未连上就显示已同步」。
+/// 验证并保存远端配置；若候选实例与本地绑定不一致则 fail closed。
 pub async fn configure_sync(
     database: &DatabaseRuntimeState,
     sync_state: &SyncRuntimeState,
     input: ConfigureSyncInput,
 ) -> Result<SyncStatusPayload, AppError> {
+    ensure_remote_config_writable()?;
+    let candidate = validate_remote_config(input.database_url.clone())?;
+    let _guard = sync_state.lock_execution().await;
+    let probe = stoneflow_sync::health(&to_cloud_config(&candidate, None))
+        .await
+        .map_err(map_sync_error)?;
+    verify_candidate_binding(database, &probe).await?;
+
     let config = save_remote_config(input.database_url).await?;
+    ensure_remote_binding(database, &probe.remote_instance_id).await?;
     log::info!(
-        "同步:配置已保存 {}",
+        "同步:配置已验证并绑定 {}",
         super::config::redact_database_url(&config.database_url)
     );
     sync_state.set_remote_config(Some(config)).await;
     // 新配置尚未对当前云端验证：标 dirty，UI 显示待同步而非已同步。
     sync_state.mark_dirty().await;
     refresh_local_replica_state(sync_state, database).await?;
+    Ok(sync_state.snapshot().await)
+}
+
+/// 用户明确确认后重新绑定远端；pending outbox 会在写钥匙串和重置本地副本前阻断。
+pub async fn rebind_sync(
+    app_handle: &tauri::AppHandle,
+    database: &DatabaseRuntimeState,
+    sync_state: &SyncRuntimeState,
+    input: RebindSyncInput,
+) -> Result<SyncStatusPayload, AppError> {
+    ensure_remote_config_writable()?;
+    let candidate = validate_remote_config(input.database_url.clone())?;
+    let _guard = sync_state.lock_execution().await;
+    super::cursor_pull::preflight_explicit_rebind(database).await?;
+    let probe = stoneflow_sync::health(&to_cloud_config(&candidate, None))
+        .await
+        .map_err(map_sync_error)?;
+    let baseline = stoneflow_sync::download_full(&to_cloud_config(
+        &candidate,
+        Some(&probe.remote_instance_id),
+    ))
+    .await
+    .map_err(map_sync_error)?;
+
+    let transaction = super::cursor_pull::begin_explicit_rebind(database).await?;
+    super::cursor_pull::ensure_explicit_rebind_allowed(&transaction).await?;
+    let config = save_remote_config(input.database_url).await?;
+    super::cursor_pull::apply_explicit_rebind(&transaction, &probe.remote_instance_id, baseline)
+        .await?;
+    transaction.commit().await?;
+
+    log::info!(
+        "同步:已显式重新绑定 {}",
+        super::config::redact_database_url(&config.database_url)
+    );
+    sync_state.set_remote_config(Some(config)).await;
+    sync_state.mark_dirty().await;
+    refresh_local_replica_state(sync_state, database).await?;
+    // rebind 自身已经提交并可能替换全部业务投影，不能依赖后续 cursor 未必前进的同步轮失效 UI。
+    emit_workspace_changed(app_handle, rebind_workspace_changed_payload())?;
     Ok(sync_state.snapshot().await)
 }
 
@@ -283,20 +340,32 @@ async fn run_sync_loop(
 ) -> Result<(), AppError> {
     let sync_state = sync_state_from_app(app_handle)?;
     let mut next_mode = initial_mode;
-    let mut changed_domains = Vec::new();
 
     loop {
-        let outcome = run_sync_round(app_handle, &sync_state, next_mode).await?;
-        append_unique_domains(&mut changed_domains, outcome.changed_domains);
+        let event = completed_round_event(
+            next_mode,
+            run_sync_round(app_handle, &sync_state, next_mode).await,
+        )?;
+        emit_workspace_changed(app_handle, event)?;
 
         let Some(pending_mode) = sync_state.take_pending_mode().await else {
-            emit_workspace_changed(app_handle, next_mode, Some(changed_domains))?;
             break;
         };
         next_mode = pending_mode;
     }
 
     Ok(())
+}
+
+fn completed_round_event(
+    mode: SyncRunMode,
+    result: Result<SyncRoundOutcome, AppError>,
+) -> Result<WorkspaceChangedPayload, AppError> {
+    let outcome = result?;
+    Ok(workspace_changed_payload(
+        mode,
+        Some(outcome.changed_domains),
+    ))
 }
 
 fn workspace_changed_payload(
@@ -308,6 +377,14 @@ fn workspace_changed_payload(
         // 事件 reason 保持稳定英文，便于前端/测试契约；日志用 mode_label 中文。
         reason: mode_reason(mode),
         changed_domains,
+    }
+}
+
+fn rebind_workspace_changed_payload() -> WorkspaceChangedPayload {
+    WorkspaceChangedPayload {
+        source: "sync",
+        reason: "rebind",
+        changed_domains: Some(SYNC_WORKSPACE_DOMAINS.to_vec()),
     }
 }
 
@@ -401,14 +478,10 @@ async fn read_local_server_seq_cursor(
 
 fn emit_workspace_changed(
     app_handle: &tauri::AppHandle,
-    mode: SyncRunMode,
-    changed_domains: Option<Vec<&'static str>>,
+    payload: WorkspaceChangedPayload,
 ) -> Result<(), AppError> {
     app_handle
-        .emit(
-            WORKSPACE_CHANGED_EVENT,
-            workspace_changed_payload(mode, changed_domains),
-        )
+        .emit(WORKSPACE_CHANGED_EVENT, payload)
         .map_err(|error| AppError::internal(error.to_string()))
 }
 
@@ -468,7 +541,10 @@ async fn run_sync_round(
             let message = failure.error.to_string();
             let needs_attention = matches!(
                 &failure.error,
-                AppError::Validation(_) | AppError::Internal(_) | AppError::Initialization(_)
+                AppError::Validation(_)
+                    | AppError::Conflict(_)
+                    | AppError::Internal(_)
+                    | AppError::Initialization(_)
             );
             sync_state
                 .fail_run(failure.failed_mode, message.clone(), needs_attention)
@@ -576,9 +652,13 @@ fn sync_execution_enabled() -> bool {
     true
 }
 
-fn to_cloud_config(remote: &crate::sync::types::SyncRemoteConfig) -> SyncCloudConfig {
+fn to_cloud_config(
+    remote: &crate::sync::types::SyncRemoteConfig,
+    expected_instance_id: Option<&str>,
+) -> SyncCloudConfig {
     SyncCloudConfig {
         database_url: remote.database_url.clone(),
+        expected_instance_id: expected_instance_id.map(str::to_owned),
     }
 }
 
@@ -601,7 +681,16 @@ async fn run_sync_worker(
     mode: SyncRunMode,
 ) -> Result<(), AppError> {
     let database = database_state_from_app(app_handle)?;
-    let plan = resolve_bootstrap_plan(&database, remote_config).await?;
+    let expected_instance_id = expected_remote_identity_for_io(&database).await?;
+    let probe = stoneflow_sync::health(&to_cloud_config(
+        remote_config,
+        expected_instance_id.as_deref(),
+    ))
+    .await
+    .map_err(map_sync_error)?;
+    verify_candidate_binding(&database, &probe).await?;
+    ensure_remote_binding(&database, &probe.remote_instance_id).await?;
+    let plan = resolve_bootstrap_plan(&database, remote_config, &probe).await?;
     if !matches!(plan, super::bootstrap_plan::BootstrapPlan::Incremental) {
         log::info!("同步:引导 {}", plan.label());
     }
@@ -614,23 +703,56 @@ async fn run_sync_worker(
             if plan.needs_origin_seed() {
                 super::origin_seed::seed_origin_outbox_if_needed(&database).await?;
             }
-            super::outbox_push::push_pending_outbox(&database, remote_config)
-                .await
-                .map(|_| ())
-        }
-        SyncRunMode::Pull => super::cursor_pull::pull_remote_changes(&database, remote_config)
+            super::outbox_push::push_pending_outbox(
+                &database,
+                remote_config,
+                &probe.remote_instance_id,
+            )
             .await
-            .map(|_| ()),
+            .map(|_| ())
+        }
+        SyncRunMode::Pull => super::cursor_pull::pull_remote_changes(
+            &database,
+            remote_config,
+            &probe.remote_instance_id,
+        )
+        .await
+        .map(|_| ()),
         SyncRunMode::Sync => {
             if plan.needs_origin_seed() {
                 super::origin_seed::seed_origin_outbox_if_needed(&database).await?;
             }
-            super::outbox_push::push_pending_outbox(&database, remote_config).await?;
-            super::cursor_pull::pull_remote_changes(&database, remote_config)
-                .await
-                .map(|_| ())
+            super::outbox_push::push_pending_outbox(
+                &database,
+                remote_config,
+                &probe.remote_instance_id,
+            )
+            .await?;
+            super::cursor_pull::pull_remote_changes(
+                &database,
+                remote_config,
+                &probe.remote_instance_id,
+            )
+            .await
+            .map(|_| ())
         }
     }
+}
+
+async fn verify_candidate_binding(
+    database: &DatabaseRuntimeState,
+    probe: &stoneflow_sync::SyncProbeOutput,
+) -> Result<RemoteBindingState, AppError> {
+    let binding = verify_remote_binding(database, &probe.remote_instance_id).await?;
+    if matches!(binding, RemoteBindingState::Unbound)
+        && probe.latest_server_seq.is_some()
+        && super::cursor_pull::local_has_user_content_for_plan(database).await?
+    {
+        return Err(AppError::conflict(
+            "本机与候选远端都已有数据；为避免静默混合，请确认重新绑定（非空远端将作为本机新基线）。",
+        ));
+    }
+    Ok(binding)
 }
 
 /// 分类当前同步引导计划。
@@ -640,6 +762,7 @@ async fn run_sync_worker(
 async fn resolve_bootstrap_plan(
     database: &DatabaseRuntimeState,
     remote_config: &crate::sync::types::SyncRemoteConfig,
+    probe: &stoneflow_sync::SyncProbeOutput,
 ) -> Result<super::bootstrap_plan::BootstrapPlan, AppError> {
     use super::bootstrap_plan::{classify, LocalContent, LocalCursor, RemoteContent};
 
@@ -649,13 +772,10 @@ async fn resolve_bootstrap_plan(
     } else {
         LocalContent::Empty
     };
-    let cloud = to_cloud_config(remote_config);
+    let cloud = to_cloud_config(remote_config, Some(&probe.remote_instance_id));
 
     // 日常增量：只查云端头序号，不拉全量投影。
     if let Some(local_seq) = local_cursor_value {
-        let probe = stoneflow_sync::health(&cloud)
-            .await
-            .map_err(map_sync_error)?;
         let remote_max = probe.latest_server_seq.unwrap_or(0);
 
         if matches!(local, LocalContent::HasData) && remote_max == 0 {
@@ -707,11 +827,12 @@ mod tests {
     use stoneflow_test_support::TestDatabase;
 
     use super::{
-        configure_sync, get_sync_status, sync_status_changed_payload, workspace_changed_payload,
+        completed_round_event, configure_sync, get_sync_status, rebind_workspace_changed_payload,
+        sync_status_changed_payload, workspace_changed_payload, SyncRoundOutcome,
     };
     use crate::sync::{
         state::SyncRuntimeState,
-        types::{ConfigureSyncInput, SyncReplicaState, SyncStatusKind},
+        types::{ConfigureSyncInput, SyncRemoteConfig, SyncReplicaState, SyncStatusKind},
     };
 
     #[tokio::test]
@@ -762,11 +883,91 @@ mod tests {
     }
 
     #[test]
+    fn rebind_workspace_changed_payload_should_invalidate_every_synced_domain() {
+        let payload = rebind_workspace_changed_payload();
+
+        assert_eq!(payload.source, "sync");
+        assert_eq!(payload.reason, "rebind");
+        assert_eq!(
+            payload.changed_domains,
+            Some(vec!["tasks", "projects", "spaces", "lifecycle", "views"])
+        );
+    }
+
+    #[test]
     fn sync_status_changed_payload_should_describe_sync_source() {
         let payload = sync_status_changed_payload("dirty");
 
         assert_eq!(payload.source, "sync");
         assert_eq!(payload.reason, "dirty");
+    }
+
+    #[tokio::test]
+    async fn successful_round_event_should_survive_a_later_round_failure() {
+        let sync_state = configured_state().await;
+        sync_state.start_run(super::SyncRunMode::Pull).await;
+        sync_state.complete_run(super::SyncRunMode::Pull).await;
+        let mut events = Vec::new();
+        events.push(
+            completed_round_event(
+                super::SyncRunMode::Pull,
+                Ok(SyncRoundOutcome {
+                    changed_domains: vec!["tasks"],
+                }),
+            )
+            .expect("first round should produce an event"),
+        );
+        let later = completed_round_event(
+            super::SyncRunMode::Sync,
+            Err(crate::app::error::AppError::database("later failure")),
+        );
+        sync_state.start_run(super::SyncRunMode::Sync).await;
+        sync_state
+            .fail_run(super::SyncRunMode::Sync, "later failure".to_owned(), true)
+            .await;
+        let snapshot = sync_state.snapshot().await;
+
+        assert!(later.is_err());
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].reason, "pull");
+        assert_eq!(snapshot.status, SyncStatusKind::NeedsAttention);
+        assert_eq!(snapshot.last_error_mode, Some(super::SyncRunMode::Sync));
+    }
+
+    #[tokio::test]
+    async fn consecutive_successful_rounds_should_each_produce_an_event() {
+        let sync_state = configured_state().await;
+        let events = [super::SyncRunMode::Push, super::SyncRunMode::Sync]
+            .into_iter()
+            .map(|mode| {
+                completed_round_event(
+                    mode,
+                    Ok(SyncRoundOutcome {
+                        changed_domains: vec!["projects"],
+                    }),
+                )
+                .expect("successful round should produce an event")
+            })
+            .collect::<Vec<_>>();
+        sync_state.start_run(super::SyncRunMode::Push).await;
+        sync_state.complete_run(super::SyncRunMode::Push).await;
+        sync_state.start_run(super::SyncRunMode::Sync).await;
+        sync_state.complete_run(super::SyncRunMode::Sync).await;
+
+        assert_eq!(events.len(), 2);
+        assert_eq!(events[0].reason, "push");
+        assert_eq!(events[1].reason, "sync");
+        assert_eq!(sync_state.snapshot().await.status, SyncStatusKind::Synced);
+    }
+
+    async fn configured_state() -> SyncRuntimeState {
+        let sync_state = SyncRuntimeState::default();
+        sync_state
+            .set_remote_config(Some(SyncRemoteConfig {
+                database_url: "postgresql://example.invalid/stoneflow".to_owned(),
+            }))
+            .await;
+        sync_state
     }
 
     #[test]

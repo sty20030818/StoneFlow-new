@@ -1,7 +1,6 @@
-//! Lifecycle 用例：归档 / 回收站列表与生命周期编排。
+//! Lifecycle 用例：统一读取归档与回收站列表。
 //!
-//! 完整业务编排留给 后续；本模块仅保留可编译的端口与空列表 stub，
-//! 避免旧 soft-delete 路径继续耦合新 schema。
+//! Task、Project 与 Space 的写路径由各实体 application service 持有。
 
 pub mod executor;
 pub mod service;

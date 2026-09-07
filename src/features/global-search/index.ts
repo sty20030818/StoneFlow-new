@@ -2,7 +2,7 @@
  * global-search 对外公共面（`@/features/global-search`）。
  *
  * @remarks
- * 外模块只能：`import { … } from '@/features/global-search'`。
+ * 外模块使用主 facade；只需要搜索 IO 时使用 `@/features/global-search/api`。
  * 禁止深路径进 api/model/components/hooks。
  * 全局搜索输入、查询、结果导航与焦点 intent。
  */

@@ -53,7 +53,7 @@ export default defineConfig({
 	build: {
 		target: process.env.TAURI_ENV_PLATFORM == 'windows' ? 'chrome105' : 'safari13',
 		sourcemap: !!process.env.TAURI_ENV_DEBUG,
-		// 壳层共享图会把重型 node_modules 捆进同一 chunk；按官方建议拆 vendor，避免单文件 >500kB。
+		// 只固定已确认的跨入口共享图，其余依赖交给 Rolldown 按真实入口切分。
 		rolldownOptions: {
 			input: {
 				main: fileURLToPath(new URL('./index.html', import.meta.url)),
@@ -76,11 +76,6 @@ export default defineConfig({
 							name: 'vendor-form',
 							test: /node_modules[\\/](react-hook-form|zod|@hookform)([\\/]|$)/,
 							priority: 25,
-						},
-						{
-							name: 'vendor',
-							test: /node_modules/,
-							priority: 10,
 						},
 					],
 				},

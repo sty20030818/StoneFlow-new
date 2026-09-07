@@ -17,12 +17,6 @@ export function TaskDetailHeader(props: TaskDetailHeaderProps) {
 	const { autosave, onClose, taskId } = props
 	const entityDetailController = useEntityDetailController()
 
-	const handleOpenPage = async () => {
-		if (await autosave.flushNow()) {
-			void entityDetailController.openPage({ kind: 'task', id: taskId })
-		}
-	}
-
 	return (
 		<header className='flex h-12 shrink-0 items-center justify-between gap-2 px-3'>
 			<div className='min-w-0 flex flex-1 items-center gap-2'>
@@ -32,7 +26,7 @@ export function TaskDetailHeader(props: TaskDetailHeaderProps) {
 			<div className='flex shrink-0 items-center gap-1'>
 				<Button
 					aria-label='在完整页面中打开任务'
-					onPress={() => void handleOpenPage()}
+					onPress={() => entityDetailController.openPage({ kind: 'task', id: taskId })}
 					size='sm'
 					variant='ghost'
 				>

@@ -27,7 +27,8 @@ changelog 不负责：
 | `api.ts` | `get_changelog` IPC | 只返回远端文本或空结果 |
 | `useChangelog.ts` | 查询、请求合并、缓存和回退 | 不创建全局 store |
 | `ChangelogRelease.tsx` | 单版本分类与撤回状态展示 | 只消费已解析 release |
-| `ChangelogDialog.tsx` | 按渠道展示历史并定位版本 | 渠道和开关由调用方显式传入 |
+| `ChangelogDialogHost.tsx` | 订阅显式开关，首次打开后 lazy mount 完整 Dialog | 不读取 update 状态 |
+| `ChangelogDialog.tsx` | 按渠道展示历史并定位版本 | 渠道和开关由调用方显式传入，不由公共 barrel eager 导出 |
 | `ChangelogMarkdown.tsx` | 标准 Markdown/GFM 展示 | 不执行原始 HTML，隐藏水平分隔线 |
 | `index.ts` | React 公共入口 | 显式导出，禁止 `export *` |
 
@@ -48,7 +49,7 @@ ChangelogDialog / ChangelogRelease
 @/features/changelog -X-> scripts/release
 ```
 
-layout 负责完整历史弹窗的打开意图，并把配置渠道作为参数传入。update 只查询 staged 更新对应的版本区间。发布脚本只能复用纯 `contract.ts`，不能读取 React 状态决定发布结果。
+layout 负责完整历史弹窗的打开意图，并把配置渠道作为参数传入 `ChangelogDialogHost`。Host 关闭时不加载 Markdown 解析图；update 只查询 staged 更新对应的版本区间。发布脚本只能复用纯 `contract.ts`，不能读取 React 状态决定发布结果。
 
 ## 状态与内容所有权
 

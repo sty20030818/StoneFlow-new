@@ -10,7 +10,7 @@ import type {
 } from '../model/types'
 import { interleaveTaskProjectResults } from '../model/interleaveResults'
 
-import { formatTaskPriorityLabel } from '@/features/task'
+import { formatTaskPriorityLabel } from '@/features/task/presentation'
 
 const RECENT_TASK_LIMIT = 5
 const RECENT_PROJECT_LIMIT = 5

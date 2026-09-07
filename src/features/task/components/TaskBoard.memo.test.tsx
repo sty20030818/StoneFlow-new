@@ -15,8 +15,10 @@ import type { TaskDisplayPropertyKey } from '@/features/display-options'
 import { useCollectionInteraction } from '@/features/selection'
 import { TaskBoard, type TaskBoardPagination } from '@/features/task/components/TaskBoard'
 import type { TaskRowAdapterProps } from '@/features/task/components/TaskRowAdapter'
+import { buildTaskBoardCollection } from '@/features/task/model/taskBoardCollection'
 import { buildTaskBoardFlatItems } from '@/features/task/model/taskBoardModel'
 import { TASK_BOARD_STATUS_ORDER } from '@/features/task/model/taskBoardOrder'
+import { indexTasksById } from '@/features/task/model/taskCollectionIndex'
 import type { TaskListItem } from '@/shared/types'
 import { renderWithInteractionProviders } from '@/test/TestInteractionProviders'
 
@@ -61,11 +63,13 @@ const BASE_TASK: TaskListItem = {
 	updatedAt: '2026-06-28T11:00:00.000Z',
 }
 const TASKS: TaskListItem[] = [BASE_TASK, { ...BASE_TASK, id: 'task-2', title: '任务 B' }]
+const TASK_BY_ID = indexTasksById(TASKS)
 const TASK_IDS = TASKS.map((task) => task.id)
 const FLAT_ITEMS = buildTaskBoardFlatItems({
 	tasks: TASKS,
 	openSections: TASK_BOARD_STATUS_ORDER,
 })
+const BOARD_COLLECTION = buildTaskBoardCollection({ eligibleKeys: TASK_IDS, flatItems: FLAT_ITEMS })
 const PAGINATION: TaskBoardPagination = {
 	sourceKey: 'memo-test',
 	loadedPageCount: 1,
@@ -167,8 +171,7 @@ function ParentStateHarness() {
 		[commandRevision],
 	)
 	const collectionInteraction = useCollectionInteraction({
-		eligibleKeys: TASK_IDS,
-		navigableKeys: TASK_IDS,
+		projection: BOARD_COLLECTION.projection,
 	})
 
 	return (
@@ -183,6 +186,7 @@ function ParentStateHarness() {
 			<output data-testid='command-revision'>{commandRevision}</output>
 			<CommandRuntimeProvider context={commandContext} runtime={MEMO_TEST_COMMAND_RUNTIME}>
 				<TaskBoard
+					boardCollection={BOARD_COLLECTION}
 					collectionInteraction={collectionInteraction}
 					flatItems={FLAT_ITEMS}
 					focusIntent={null}
@@ -201,6 +205,7 @@ function ParentStateHarness() {
 					projectOptions={PROJECT_OPTIONS}
 					spaces={SPACES}
 					status='ready'
+					taskById={TASK_BY_ID}
 					tasks={TASKS}
 					visibleProperties={VISIBLE_PROPERTIES}
 				/>

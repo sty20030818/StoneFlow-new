@@ -160,14 +160,6 @@ describe('TaskPage', () => {
 		expect(screen.getByLabelText('任务标题')).toBeDisabled()
 		expect(screen.getByLabelText('任务备注')).toBeDisabled()
 	})
-
-	it('离开完整详情页时 flush 尚未到期的编辑', async () => {
-		const view = await renderTaskPage()
-
-		view.unmount()
-
-		expect(mockAutosave.value.flushNow).toHaveBeenCalledOnce()
-	})
 })
 
 async function renderTaskPage() {

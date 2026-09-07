@@ -1,7 +1,7 @@
 # entity-detail · 实体详情导航
 
 > 作用：描述 `src/features/entity-detail` 的稳定职责与本轮定稿容器合同
-> 最后更新：2026-08-16
+> 最后更新：2026-09-07
 
 ---
 
@@ -89,4 +89,5 @@ src/features/entity-detail/
 - 窗口 `<1024px` 时详情始终呈现为 HeroUI Sheet，`>=1024px` 时始终呈现为 Main surface 内的 HeroUI Pro Resizable Aside。跨断点只替换容器，不改 URL、不关闭 active task、不触发 canonical 导航或历史兼容逻辑。
 - Aside 限制为最小 `320px`、默认 `360px`、最大 `440px`；列表 Panel 最小 `352px`。Sheet 和 Aside 复用同一详情 view model、草稿、autosave 与 scroll snapshot，不复制业务状态。
 - canonical 完整页只由 Aside/Sheet Header 或其他明确用户动作打开；打开前 flush 草稿，宽度变化永远不自动进入或退出完整页。
+- `task` 详情 view model 在 dirty 时注册唯一 Router blocker；因此关闭、切换、Sheet dismiss、Back 与完整页导航共用同一“flush 成功后离开”合同。本域不复制保存分支。
 - 本域只消费 Shell controller 已派生的 `isCompact` 完成容器选择，不增加详情呈现偏好、媒体查询监听或响应式 store。

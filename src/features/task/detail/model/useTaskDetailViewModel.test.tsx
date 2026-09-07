@@ -32,6 +32,10 @@ vi.mock('./useTaskAutosaveAdapter', () => ({
 	},
 }))
 
+vi.mock('./useTaskDetailNavigationBlocker', () => ({
+	useTaskDetailNavigationBlocker: () => undefined,
+}))
+
 vi.mock('@/features/project', () => ({
 	useProjectOptions: () => [],
 }))
@@ -82,7 +86,7 @@ describe('useTaskDetailViewModel', () => {
 		)
 	})
 
-	it('切换任务时先 flush 当前 draft 再 reset 新任务', async () => {
+	it('路由守卫放行后切换任务并 reset 新任务', async () => {
 		const { rerender } = renderViewModel()
 		vi.mocked(autosaveAdapter.value.flushNow).mockClear()
 		vi.mocked(autosaveAdapter.value.reset).mockClear()
@@ -94,16 +98,12 @@ describe('useTaskDetailViewModel', () => {
 		}
 		rerender({ taskId: 'task-2' })
 
-		expect(autosaveAdapter.value.flushNow).toHaveBeenCalledTimes(1)
 		await waitFor(() => {
 			expect(autosaveAdapter.value.reset).toHaveBeenCalledWith(
 				expect.objectContaining({ id: 'task-2', title: '任务 B' }),
 			)
 		})
-		expect(vi.mocked(autosaveAdapter.value.flushNow).mock.invocationCallOrder[0]).toBeLessThan(
-			vi.mocked(autosaveAdapter.value.reset).mock.invocationCallOrder[0] ??
-				Number.POSITIVE_INFINITY,
-		)
+		expect(autosaveAdapter.value.flushNow).not.toHaveBeenCalled()
 	})
 
 	it('保存失败时不执行归档或删除', async () => {

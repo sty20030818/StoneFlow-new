@@ -1,8 +1,7 @@
 import { Button } from '@heroui/react'
 import type { KeyboardEventHandler, Ref } from 'react'
 
-import { PriorityIcon } from '@/features/task'
-import { TaskStatusIndicator } from '@/features/task'
+import { PriorityIcon, TaskStatusIndicator } from '@/features/task/presentation'
 import type { LauncherTaskItem } from '../../model/types'
 import { OverflowTooltip } from '@/shared/components/tooltip'
 

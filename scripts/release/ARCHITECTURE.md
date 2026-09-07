@@ -5,7 +5,7 @@
 `scripts/release` 负责把一个已提交、可从共享 remote 到达的 Git commit 发布为当前平台可安装的 StoneFlow 版本：
 
 - 以远端 annotated Tag 固定 `version → commit` 身份，以渠道 ledger 仲裁并发；
-- 校验版本配置、Changelog、Git 历史、签名产物与远端对象；
+- 校验版本配置、Changelog、Git 历史、依赖供应链、签名产物与远端对象；
 - 发布内容寻址产物和不可变 platform record；
 - CAS 更新全局 Changelog 镜像，最后推进当前渠道、当前平台的 updater Pointer。
 
@@ -16,11 +16,12 @@
 | 模块 | 唯一职责 |
 |---|---|
 | `release.ts` | 薄编排入口，固定发布顺序与 `--no-upload` 边界 |
-| `preflight.ts` | 工作区门禁，并从 `releaseCommit` 原始 blob 读取版本、公钥、Changelog 后校验候选 |
+| `preflight.ts` | 在任何 Git/远端检查前验证 HeroUI Pro 凭据，再执行工作区门禁并从 `releaseCommit` 原始 blob 读取版本、公钥、Changelog 后校验候选 |
 | `release-plan.ts` | 仅根据远端 Tag、渠道 ledger 与配置版本计算 claim/reuse 计划 |
 | `git.ts` | 刷新隔离 refs、校验 annotated Tag/ancestry、原子 claim Tag + ledger |
 | `workspace.ts` | 从 `releaseCommit` 创建一次性 detached clone，并封装成功/失败清理边界 |
-| `build.ts` | 在固定快照中 frozen 安装依赖并按渠道、平台调用 Tauri 构建 |
+| `build.ts` | 在固定快照中依次执行 frozen 安装、依赖审计、HeroUI Pro 产物校验，再按渠道、平台调用 Tauri 构建 |
+| `verify-heroui-pro.ts` | 验证发布凭据非空，并校验已安装 `@heroui-pro/react` 的版本、必需 exports 与实际可加载性 |
 | `artifacts.ts` | 精确选择、验签、摘要并暂存当前平台产物 |
 | `signature.ts`、`src-tauri/crates/release-verifier` | 使用客户端同族 minisign 算法校验将要发布的精确产物与签名字节 |
 | `manifest.ts` | 构造 platform record 与单平台 `latest.json` |
@@ -54,7 +55,8 @@
 6. artifact 和 platform record 只能创建或验证相同内容，不能覆盖；record 在全部引用产物可公开验证后才写入。
 7. Pointer 只在 record、Changelog 和公开读取验证完成后推进，只能向更高 SemVer 前进。
 8. 签名保存在 record 与 Pointer payload 中；R2 不发布独立 `.sig` sidecar。
-9. 发布元数据与构建 source 都必须来自 `releaseCommit`；release Git 子进程不执行继承 hooks 或危险环境，构建不继承外部 filter/config/`TAURI_CONFIG`，依赖、Cargo target 和 staged 输出不得复用可编辑 checkout 或其它 run。
-10. 旧全局 allocator、共享 platform map、版本级全局 manifest 与可变下载别名不属于活动协议，不保留兼容读写。
+9. 发布入口必须在任何 Git/远端检查前取得非空 `HEROUI_AUTH_TOKEN`；构建入口在启动子进程前重复校验。凭据只通过运行环境注入给 frozen install，安装完成后即从后续 audit、校验与 Tauri build 环境移除，不写入仓库，也不得输出其值。
+10. 发布元数据与构建 source 都必须来自 `releaseCommit`；release Git 子进程不执行继承 hooks 或危险环境，构建不继承外部 filter/config/`TAURI_CONFIG`，依赖、Cargo target 和 staged 输出不得复用可编辑 checkout 或其它 run。隔离构建必须依次通过 `bun install --frozen-lockfile`、`bun audit`、HeroUI Pro 安装产物校验，才能执行 Tauri build；registry、audit 或校验失败均 fail closed。
+11. 旧全局 allocator、共享 platform map、版本级全局 manifest 与可变下载别名不属于活动协议，不保留兼容读写。
 
 完整流程与恢复规则见 [DESIGN.md](./DESIGN.md)。

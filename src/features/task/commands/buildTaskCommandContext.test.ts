@@ -1,6 +1,7 @@
 import { createEmptyCommandContext } from '@/features/command'
 import type { TaskListItem } from '@/shared/types'
 
+import { indexTasksById } from '../model/taskCollectionIndex'
 import { buildTaskCommandContext } from './buildTaskCommandContext'
 
 describe('buildTaskCommandContext', () => {
@@ -12,7 +13,7 @@ describe('buildTaskCommandContext', () => {
 		const clearSelection = vi.fn()
 		const target = buildTaskCommandContext({
 			baseContext,
-			tasks: [createTask('task-a'), createTask('task-b')],
+			taskById: indexTasksById([createTask('task-a'), createTask('task-b')]),
 			targetTaskIds: ['task-b', 'task-a'],
 			focusedTaskId: 'task-a',
 			rowTargetId: 'task-a',
@@ -40,7 +41,7 @@ describe('buildTaskCommandContext', () => {
 	it('过滤不可见目标，不伪造 row target', () => {
 		const target = buildTaskCommandContext({
 			baseContext: createEmptyCommandContext(),
-			tasks: [createTask('task-a')],
+			taskById: indexTasksById([createTask('task-a')]),
 			targetTaskIds: ['missing'],
 			rowTargetId: 'missing',
 			rowTargetSource: 'focus',

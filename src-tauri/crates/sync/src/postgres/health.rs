@@ -3,11 +3,12 @@
 use sqlx::{PgConnection, Row};
 
 use super::error_map::map_sqlx_error;
-use super::schema::PROTOCOL_SCHEMA_VERSION;
+use super::schema::{read_instance_id, PROTOCOL_SCHEMA_VERSION};
 use crate::{RemoteSyncDiagnosticsOutput, SyncDiagnosticsCountsOutput, SyncError, SyncProbeOutput};
 
 pub async fn health(conn: &mut PgConnection) -> Result<SyncProbeOutput, SyncError> {
     Ok(SyncProbeOutput {
+        remote_instance_id: read_instance_id(conn).await?,
         latest_server_seq: read_latest_server_seq(conn).await?,
         schema_version: Some(PROTOCOL_SCHEMA_VERSION),
     })
@@ -15,6 +16,7 @@ pub async fn health(conn: &mut PgConnection) -> Result<SyncProbeOutput, SyncErro
 
 pub async fn diagnose(conn: &mut PgConnection) -> Result<RemoteSyncDiagnosticsOutput, SyncError> {
     Ok(RemoteSyncDiagnosticsOutput {
+        remote_instance_id: read_instance_id(conn).await?,
         latest_server_seq: read_latest_server_seq(conn).await?,
         counts: read_counts(conn).await?,
     })

@@ -2,7 +2,7 @@
 
 > 作用：描述 `src/layout` 的稳定职责与本轮定稿装配边界
 > 总览：`src/ARCHITECTURE.md`
-> 最后更新：2026-08-21
+> 最后更新：2026-09-07
 
 ---
 
@@ -13,7 +13,7 @@
 当前负责：
 
 1. **工作区壳层**骨架与跨 feature **装配**（Provider、命令/批量接线、Chrome）
-2. **Overlays 挂载**；页面框架在 `shared/components/page-frame`
+2. **Overlays 挂载**；必须常驻的 controller / store owner 保持 eager，About、Changelog、Create、Update 等低频 presentation 按首次打开 lazy load；页面框架在 `shared/components/page-frame`
 3. **ShellContext**：只读 `scope / shellRoute / currentSpaceId / activeSection`
 
 ```txt
@@ -50,6 +50,8 @@ src/layout/
 ├── overlays/ · header/ · sidebar/
 └── …
 ```
+
+`ShellOverlays` 只订阅轻量 open intent，并挂各 feature 的 lazy host；创建表单集中在按需加载的 `ShellCreationOverlays`。关闭状态不得提前实例化 Markdown 解析、完整更新对话框或创建表单图，也不为所有 Dialog 建立通用 loader abstraction。
 
 **设置模式侧栏** 在 `features/settings`（`SettingsSidebar` + `SETTINGS_NAV_GROUPS`），壳只挂载。
 

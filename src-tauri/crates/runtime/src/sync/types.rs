@@ -89,6 +89,7 @@ pub struct SyncDiagnosticsCountsPayload {
 #[serde(rename_all = "camelCase")]
 pub struct SyncLocalDiagnosticsPayload {
     pub device_id: Option<String>,
+    pub remote_instance_id: Option<String>,
     pub last_pulled_server_seq: Option<i64>,
     pub pending_mutation_count: i64,
     pub counts: SyncDiagnosticsCountsPayload,
@@ -98,6 +99,7 @@ pub struct SyncLocalDiagnosticsPayload {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SyncRemoteDiagnosticsPayload {
+    pub remote_instance_id: String,
     pub latest_server_seq: Option<i64>,
     pub counts: SyncDiagnosticsCountsPayload,
 }
@@ -116,6 +118,13 @@ pub struct SyncDiagnosticsPayload {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ConfigureSyncInput {
+    pub database_url: String,
+}
+
+/// 用户明确确认切换远端时提交的配置。
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RebindSyncInput {
     pub database_url: String,
 }
 

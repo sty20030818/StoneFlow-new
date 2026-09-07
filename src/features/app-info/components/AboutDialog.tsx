@@ -9,7 +9,7 @@ import { openAppInfoUrl } from '../api/appInfo'
 import { useAppVersion } from '../hooks/useAppVersion'
 import { appInfoLinks, isConfiguredAppInfoUrl } from '../model/appInfoLinks'
 
-type AboutDialogProps = {
+export type AboutDialogProps = {
 	open: boolean
 	onOpenChange: (open: boolean) => void
 	onOpenChangelog: () => void

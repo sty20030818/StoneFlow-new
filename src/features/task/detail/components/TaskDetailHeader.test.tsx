@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AutosaveController } from '@/shared/autosave'
@@ -20,29 +20,16 @@ describe('TaskDetailHeader', () => {
 		openPage.mockReset()
 	})
 
-	it('打开独立页面前 flush，并保留可访问的关闭入口', async () => {
+	it('请求打开独立页面并保留可访问的关闭入口', () => {
 		const onClose = vi.fn()
 		renderHeader(onClose)
 
 		fireEvent.click(screen.getByRole('button', { name: '在完整页面中打开任务' }))
-
-		await waitFor(() => {
-			expect(flushNow).toHaveBeenCalledOnce()
-			expect(openPage).toHaveBeenCalledWith({ kind: 'task', id: 'task-a' })
-		})
+		expect(openPage).toHaveBeenCalledWith({ kind: 'task', id: 'task-a' })
+		expect(flushNow).not.toHaveBeenCalled()
 
 		fireEvent.click(screen.getByRole('button', { name: '关闭任务详情' }))
 		expect(onClose).toHaveBeenCalledOnce()
-	})
-
-	it('自动保存失败时不打开独立页面', async () => {
-		flushNow.mockResolvedValue(false)
-		renderHeader()
-
-		fireEvent.click(screen.getByRole('button', { name: '在完整页面中打开任务' }))
-
-		await waitFor(() => expect(flushNow).toHaveBeenCalledOnce())
-		expect(openPage).not.toHaveBeenCalled()
 	})
 
 	it.each([

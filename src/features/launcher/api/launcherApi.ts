@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core'
 
-import { searchEntities } from '@/features/global-search'
+import { searchEntities } from '@/features/global-search/api'
 import { mapLauncherToTaskInput } from './mapLauncherToTaskInput'
 import { mapSearchEntitiesToLauncher } from './mapSearchEntitiesToLauncher'
 import type {
@@ -10,7 +10,7 @@ import type {
 	LauncherRecentData,
 	LauncherSearchResponse,
 } from '../model/types'
-import { createTask } from '@/features/task'
+import { createTask } from '@/features/task/api'
 
 export type LauncherInput = {
 	spaceId: string | null

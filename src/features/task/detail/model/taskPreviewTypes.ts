@@ -4,7 +4,7 @@ export type TaskPreviewAnchorReason = 'keyboard' | 'pointer'
 export type TaskPreviewCloseDelayState = 'idle' | 'pending'
 
 export type TaskPreviewSource = {
-	tasks: TaskListItem[]
+	taskById: ReadonlyMap<string, TaskListItem>
 	focusedTaskId: string | null
 	activeTaskId: string | null
 }

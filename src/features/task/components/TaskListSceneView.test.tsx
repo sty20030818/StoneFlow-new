@@ -88,6 +88,19 @@ describe('TaskListSceneView', () => {
 		fireEvent.click(screen.getByRole('button', { name: '鼠标预览待执行 A' }))
 		expect(screen.getByTestId('owner-suppressed-focus')).toHaveTextContent('false')
 	})
+
+	it('对日常任务集合复用同一份 collection projection', () => {
+		const count = 24
+		const tasks = Array.from({ length: count }, (_, index) =>
+			createTask({ id: `task-${index}`, title: `任务 ${index}` }),
+		)
+
+		renderTaskCollectionProjection(tasks)
+
+		const probe = screen.getByTestId('collection-projection-identity')
+		expect(probe).toHaveAttribute('data-same-projection', 'true')
+		expect(probe).toHaveAttribute('data-eligible-size', String(count))
+	})
 })
 
 const TEST_DISPLAY = {
@@ -130,6 +143,41 @@ function renderTaskCollectionOwner() {
 				<TaskCollectionOwnerHarness />
 			</TaskPreviewProvider>
 		</CommandSelectionProvider>,
+	)
+}
+
+function renderTaskCollectionProjection(tasks: TaskListItem[]) {
+	return render(
+		<CommandSelectionProvider>
+			<TaskPreviewProvider>
+				<TaskCollectionProjectionHarness tasks={tasks} />
+			</TaskPreviewProvider>
+		</CommandSelectionProvider>,
+	)
+}
+
+function TaskCollectionProjectionHarness({ tasks }: { tasks: TaskListItem[] }) {
+	const scene = useTaskCollectionScene({
+		pagination: { sourceKey: 'projection-test', loadedPageCount: 1, state: 'exhausted' },
+		source: { items: tasks, status: 'ready', onRetry: () => undefined },
+		displayPageKey: 'task:all',
+		display: TEST_DISPLAY,
+		fallbackSubtitle: '无项目',
+		activeTaskId: null,
+		onCreateTask: () => undefined,
+		projectOptions: [],
+		spaces: [],
+		showProjectCellOptions: false,
+		empty: {},
+	})
+	const { boardCollection, collectionInteraction } = scene.boardProps
+
+	return (
+		<output
+			data-eligible-size={boardCollection.projection.eligibleIndexByKey.size}
+			data-same-projection={String(boardCollection.projection === collectionInteraction.projection)}
+			data-testid='collection-projection-identity'
+		/>
 	)
 }
 
