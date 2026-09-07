@@ -37,10 +37,11 @@ import {
 	BoardRowSlot,
 	BoardSectionContextMenu,
 	BoardSectionHeader,
+	COLLECTION_ITEM_GAP,
 	COLLECTION_ROW_HEIGHT,
-	COLLECTION_ROW_SIZE,
+	COLLECTION_ROW_STRIDE,
 	COLLECTION_SECTION_HEADER_HEIGHT,
-	COLLECTION_SECTION_HEADER_SIZE,
+	COLLECTION_SECTION_HEADER_STRIDE,
 	getBoardRowSelectionPosition,
 } from '@/shared/components/board'
 import { useDialogStore } from '@/features/shell-dialogs'
@@ -252,10 +253,12 @@ export function TaskBoard({
 
 	const stickyIndexes = useMemo(() => listTaskBoardStickyIndexes(flatItems), [flatItems])
 	const itemOffsets = useMemo(() => buildTaskBoardItemOffsets(flatItems), [flatItems])
-	const virtualLayout = useMemo(() => buildTaskBoardVirtualLayout(flatItems), [flatItems])
-	const contentHeightPx = virtualLayout.contentHeightPx
-	const sentinelIndex = flatItems.length
-	const virtualCount = virtualLayout.virtualCount
+	const includePaginationSentinel = pagination.state !== 'exhausted'
+	const virtualLayout = useMemo(
+		() => buildTaskBoardVirtualLayout(flatItems, includePaginationSentinel),
+		[flatItems, includePaginationSentinel],
+	)
+	const { contentHeightPx, sentinelIndex, virtualCount } = virtualLayout
 
 	const { stickyShellRef, stickyPushLayerRef, stickyActiveIndex, stickyStuck, nextStickyIndex } =
 		useTaskBoardSticky({
@@ -323,13 +326,18 @@ export function TaskBoard({
 	)
 	const getScrollElement = useCallback(() => scrollViewport, [scrollViewport])
 	const estimateSize = useCallback(
-		(index: number) =>
-			index === sentinelIndex
-				? COLLECTION_ROW_SIZE
-				: flatItems[index]?.kind === 'header'
-					? COLLECTION_SECTION_HEADER_SIZE
-					: COLLECTION_ROW_SIZE,
-		[flatItems, sentinelIndex],
+		(index: number) => {
+			if (index === sentinelIndex) return COLLECTION_ROW_HEIGHT
+
+			const hasFollowingItem = index < virtualCount - 1
+			if (flatItems[index]?.kind === 'header') {
+				return hasFollowingItem
+					? COLLECTION_SECTION_HEADER_STRIDE
+					: COLLECTION_SECTION_HEADER_HEIGHT
+			}
+			return hasFollowingItem ? COLLECTION_ROW_STRIDE : COLLECTION_ROW_HEIGHT
+		},
+		[flatItems, sentinelIndex, virtualCount],
 	)
 	const getItemKey = useCallback(
 		(index: number) => flatItems[index]?.key ?? TASK_BOARD_PAGINATION_SENTINEL_KEY,
@@ -353,15 +361,15 @@ export function TaskBoard({
 			const item = index === undefined ? undefined : flatItems[index]
 			if (!viewport || start === undefined || !item) return
 			const end =
-				start + (item.kind === 'header' ? COLLECTION_SECTION_HEADER_SIZE : COLLECTION_ROW_SIZE)
-			const viewportStart = viewport.scrollTop + COLLECTION_SECTION_HEADER_SIZE
+				start + (item.kind === 'header' ? COLLECTION_SECTION_HEADER_HEIGHT : COLLECTION_ROW_HEIGHT)
+			const viewportStart = viewport.scrollTop + COLLECTION_SECTION_HEADER_STRIDE
 			const viewportEnd = viewport.scrollTop + viewport.clientHeight
 			if (start >= viewportStart && end <= viewportEnd) return
 			viewport.scrollTo({
 				top: Math.max(
 					0,
 					start < viewportStart
-						? start - COLLECTION_SECTION_HEADER_SIZE
+						? start - COLLECTION_SECTION_HEADER_STRIDE
 						: end - viewport.clientHeight,
 				),
 			})
@@ -992,10 +1000,19 @@ function buildTaskBoardPaginationStatus(pagination: TaskBoardPagination, loadedT
 
 function TaskBoardLoadingState() {
 	return (
-		<div aria-busy='true' aria-label='正在读取任务' className='flex min-h-0 flex-1 flex-col'>
+		<div
+			aria-busy='true'
+			aria-label='正在读取任务'
+			className='flex min-h-0 flex-1 flex-col'
+			style={{ gap: COLLECTION_ITEM_GAP }}
+		>
 			{Array.from({ length: 2 }).map((_, sectionIndex) => (
-				<div className='flex flex-col' key={`board-loading-section-${sectionIndex}`}>
-					<div className='sticky top-0 z-10' style={{ height: COLLECTION_SECTION_HEADER_SIZE }}>
+				<div
+					className='flex flex-col'
+					key={`board-loading-section-${sectionIndex}`}
+					style={{ gap: COLLECTION_ITEM_GAP }}
+				>
+					<div className='sticky top-0 z-10' style={{ height: COLLECTION_SECTION_HEADER_HEIGHT }}>
 						<div
 							className='flex items-center gap-2 pl-3 pr-1'
 							style={{ height: COLLECTION_SECTION_HEADER_HEIGHT }}
@@ -1004,11 +1021,11 @@ function TaskBoardLoadingState() {
 							<Skeleton className='h-3 w-24' />
 						</div>
 					</div>
-					<div className='flex flex-col'>
+					<div className='flex flex-col' style={{ gap: COLLECTION_ITEM_GAP }}>
 						{Array.from({ length: sectionIndex === 0 ? 4 : 3 }).map((_, rowIndex) => (
 							<div
 								key={`board-loading-row-${sectionIndex}-${rowIndex}`}
-								style={{ height: COLLECTION_ROW_SIZE }}
+								style={{ height: COLLECTION_ROW_HEIGHT }}
 							>
 								<div
 									className='flex min-w-0 items-center gap-3 px-3'

@@ -14,10 +14,9 @@ import {
 	BoardRowSlot,
 	BoardSectionContextMenu,
 	BoardSectionHeader,
+	COLLECTION_ITEM_GAP,
 	COLLECTION_ROW_HEIGHT,
-	COLLECTION_ROW_SIZE,
 	COLLECTION_SECTION_HEADER_HEIGHT,
-	COLLECTION_SECTION_HEADER_SIZE,
 	getBoardRowSelectionPosition,
 } from '@/shared/components/board'
 import type { ProjectOverviewItem } from '@/shared/types'
@@ -102,6 +101,7 @@ export function ProjectBoard({
 			interaction={collection.interaction}
 			onActivate={onOpen}
 			onFocusIntentConsumed={collection.consumeFocusIntent}
+			style={{ gap: COLLECTION_ITEM_GAP }}
 		>
 			{(rootState) => (
 				<>
@@ -157,12 +157,16 @@ function ProjectBoardSection({
 		)
 
 	return (
-		<section className='flex flex-col' data-project-section={section.key}>
+		<section
+			className='flex flex-col'
+			data-project-section={section.key}
+			style={{ gap: COLLECTION_ITEM_GAP }}
+		>
 			<ContextMenu open={contextMenuOpen} onOpenChange={setContextMenuOpen}>
 				<ContextMenu.Trigger
 					className='sticky top-0 z-10 block'
 					onDoubleClick={() => collection.setGroupOpen(section.key, !open)}
-					style={{ height: COLLECTION_SECTION_HEADER_SIZE }}
+					style={{ height: COLLECTION_SECTION_HEADER_HEIGHT }}
 				>
 					<BoardSectionHeader
 						count={section.items.length}
@@ -204,7 +208,7 @@ function ProjectBoardSection({
 			</ContextMenu>
 
 			{open ? (
-				<div className='flex flex-col' role='presentation'>
+				<div className='flex flex-col' role='presentation' style={{ gap: COLLECTION_ITEM_GAP }}>
 					{section.items.map((project, index) => {
 						const isSelected = collection.interaction.selectedKeys.has(project.id)
 						const selectionPosition = getBoardRowSelectionPosition(
@@ -257,10 +261,15 @@ function ProjectBoardSection({
 
 function ProjectBoardLoading() {
 	return (
-		<div aria-busy='true' aria-label='正在读取项目' className='flex flex-col'>
+		<div
+			aria-busy='true'
+			aria-label='正在读取项目'
+			className='flex flex-col'
+			style={{ gap: COLLECTION_ITEM_GAP }}
+		>
 			{Array.from({ length: 2 }, (_, sectionIndex) => (
-				<div className='flex flex-col' key={sectionIndex}>
-					<div style={{ height: COLLECTION_SECTION_HEADER_SIZE }}>
+				<div className='flex flex-col' key={sectionIndex} style={{ gap: COLLECTION_ITEM_GAP }}>
+					<div style={{ height: COLLECTION_SECTION_HEADER_HEIGHT }}>
 						<Skeleton
 							animationType='none'
 							className='w-40'
@@ -268,7 +277,7 @@ function ProjectBoardLoading() {
 						/>
 					</div>
 					{Array.from({ length: 3 }, (_, rowIndex) => (
-						<div key={rowIndex} style={{ height: COLLECTION_ROW_SIZE }}>
+						<div key={rowIndex} style={{ height: COLLECTION_ROW_HEIGHT }}>
 							<Skeleton
 								animationType='none'
 								className='w-full'

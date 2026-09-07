@@ -13,7 +13,11 @@ import { SpaceEditorDialog } from '@/features/space'
 import { TaskPageState } from '@/features/task'
 import { AppBreadcrumb } from '@/shared/components/AppBreadcrumb'
 import { AppScrollArea } from '@/shared/components/AppScrollArea'
-import { BoardRowSlot, type BoardRowSelectionPosition } from '@/shared/components/board'
+import {
+	BoardRowSlot,
+	COLLECTION_ITEM_GAP,
+	type BoardRowSelectionPosition,
+} from '@/shared/components/board'
 import { PageFrame } from '@/shared/components/page-frame'
 import { RowLayout, RowShell } from '@/shared/components/row'
 import { ActionTooltip, DisabledActionTooltip, OverflowTooltip } from '@/shared/components/tooltip'
@@ -235,7 +239,10 @@ function RowShellFixture() {
 
 	return (
 		<Fixture title='RowShell'>
-			<div className='max-w-2xl overflow-hidden rounded-lg border border-surface'>
+			<div
+				className='flex max-w-2xl flex-col overflow-hidden rounded-lg border border-surface'
+				style={{ gap: COLLECTION_ITEM_GAP }}
+			>
 				{rows.map((row) => (
 					<BoardRowSlot key={row.id} selectionPosition={row.selectionPosition}>
 						<RowShell

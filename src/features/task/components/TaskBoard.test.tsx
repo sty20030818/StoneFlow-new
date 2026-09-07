@@ -39,7 +39,13 @@ import {
 } from '@/features/task/model/taskBoardOrder'
 import { indexTasksById } from '@/features/task/model/taskCollectionIndex'
 import { AppScrollArea } from '@/shared/components/AppScrollArea'
-import { COLLECTION_ROW_SIZE, COLLECTION_SECTION_HEADER_SIZE } from '@/shared/components/board'
+import {
+	COLLECTION_ITEM_GAP,
+	COLLECTION_ROW_HEIGHT,
+	COLLECTION_ROW_STRIDE,
+	COLLECTION_SECTION_HEADER_HEIGHT,
+	COLLECTION_SECTION_HEADER_STRIDE,
+} from '@/shared/components/board'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
 import { renderWithInteractionProviders } from '@/test/TestInteractionProviders'
 
@@ -522,7 +528,9 @@ describe('TaskBoard', () => {
 			await waitFor(() => expect(screen.getByTestId('anchor-task-count')).toHaveTextContent('41'))
 			expect(viewport.scrollTop).toBe(previousScrollTop)
 			await act(async () => resolvePage?.())
-			await waitFor(() => expect(viewport.scrollTop).toBe(previousScrollTop + COLLECTION_ROW_SIZE))
+			await waitFor(() =>
+				expect(viewport.scrollTop).toBe(previousScrollTop + COLLECTION_ROW_STRIDE),
+			)
 			expect(onFetchNextPage).toHaveBeenCalledOnce()
 		} finally {
 			if (originalScrollTo) {
@@ -586,6 +594,11 @@ describe('TaskBoard', () => {
 		expect(container.querySelectorAll('[data-task-board-sentinel]')).toHaveLength(1)
 		const extent = container.querySelector<HTMLElement>('[data-task-board-extent]')
 		const initialExtent = extent?.dataset.taskBoardExtent
+		const flatContentHeight =
+			2 * COLLECTION_SECTION_HEADER_HEIGHT + 2 * COLLECTION_ROW_HEIGHT + 3 * COLLECTION_ITEM_GAP
+		expect(Number(initialExtent)).toBe(
+			flatContentHeight + COLLECTION_ITEM_GAP + COLLECTION_ROW_HEIGHT,
+		)
 
 		fireEvent.click(screen.getByRole('button', { name: '扩大总数' }))
 		await waitFor(() => expect(liveStatus).toHaveTextContent('2 / 200'))
@@ -602,7 +615,13 @@ describe('TaskBoard', () => {
 		fireEvent.click(screen.getByRole('button', { name: '切到已完成' }))
 		await waitFor(() => expect(grid).toHaveAttribute('aria-rowcount', '2'))
 		expect(liveStatus).toHaveTextContent('已加载全部 2 个任务')
-		expect(container.querySelectorAll('[data-task-board-sentinel]')).toHaveLength(1)
+		expect(container.querySelectorAll('[data-task-board-sentinel]')).toHaveLength(0)
+		expect(Number(extent?.dataset.taskBoardExtent)).toBe(flatContentHeight)
+		await waitFor(() =>
+			expect(
+				screen.getByRole('row', { name: '打开任务 任务 A' }).closest('[data-index]'),
+			).toHaveStyle({ height: `${COLLECTION_ROW_HEIGHT}px` }),
+		)
 		expect(screen.queryByText('已加载全部任务')).not.toBeInTheDocument()
 	})
 
@@ -860,7 +879,7 @@ describe('TaskBoard', () => {
 			)
 			expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: expect.any(Number) }))
 
-			viewport.scrollTop += COLLECTION_ROW_SIZE / 2
+			viewport.scrollTop += COLLECTION_ROW_STRIDE / 2
 			fireEvent.scroll(viewport)
 			const viewportEnd = viewport.scrollTop + viewport.clientHeight
 			const partialRowIndex = [...document.querySelectorAll<HTMLElement>('[data-index]')]
@@ -872,7 +891,7 @@ describe('TaskBoard', () => {
 						item?.kind === 'row' &&
 						start !== undefined &&
 						start < viewportEnd &&
-						start + COLLECTION_ROW_SIZE > viewportEnd
+						start + COLLECTION_ROW_STRIDE > viewportEnd
 					)
 				})
 			if (partialRowIndex === undefined) throw new Error('未挂载底部部分可见 row')
@@ -887,7 +906,7 @@ describe('TaskBoard', () => {
 
 			const stickyHeader = document.querySelector<HTMLElement>('[data-task-board-sticky-header]')
 			await waitFor(() => expect(stickyHeader).not.toHaveAttribute('aria-hidden'))
-			const viewportStart = viewport.scrollTop + COLLECTION_SECTION_HEADER_SIZE
+			const viewportStart = viewport.scrollTop + COLLECTION_SECTION_HEADER_STRIDE
 			const overscanIndex = [...document.querySelectorAll<HTMLElement>('[data-index]')]
 				.map((element) => Number(element.dataset.index))
 				.filter((index) => {
@@ -896,7 +915,7 @@ describe('TaskBoard', () => {
 					return (
 						item?.kind === 'row' &&
 						start !== undefined &&
-						start + COLLECTION_ROW_SIZE <= viewportStart
+						start + COLLECTION_ROW_STRIDE <= viewportStart
 					)
 				})
 				.sort((left, right) => right - left)[0]
@@ -917,7 +936,7 @@ describe('TaskBoard', () => {
 			})
 
 			expect(scrollTo).toHaveBeenCalledWith({
-				top: Math.max(0, overscanStart - COLLECTION_SECTION_HEADER_SIZE),
+				top: Math.max(0, overscanStart - COLLECTION_SECTION_HEADER_STRIDE),
 			})
 			await waitFor(() =>
 				expect(

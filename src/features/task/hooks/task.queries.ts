@@ -6,6 +6,7 @@
 
 import {
 	infiniteQueryOptions,
+	keepPreviousData,
 	queryOptions,
 	useInfiniteQuery,
 	useQuery,
@@ -34,6 +35,7 @@ export function taskQueryInfiniteQueryOptions(input: RunTaskQueryInput) {
 			}),
 		initialPageParam: null as string | null,
 		getNextPageParam: (lastPage) => lastPage.nextCursor,
+		placeholderData: keepPreviousData,
 	})
 }
 

@@ -19,7 +19,10 @@ import type { CollectionFocusIntent, CollectionKey } from '../model/collectionSt
 import type { CollectionInteraction } from '../model/useCollectionInteraction'
 import { useCollectionKeyboardAdapter } from '../shortcuts/useCollectionKeyboardAdapter'
 
-type CollectionGridRootProps<K extends CollectionKey, G extends CollectionKey = CollectionKey> = {
+type CollectionGridRootProps<
+	K extends CollectionKey,
+	G extends CollectionKey = CollectionKey,
+> = Pick<HTMLAttributes<HTMLDivElement>, 'className' | 'style'> & {
 	interaction: CollectionInteraction<K>
 	ariaLabel: string
 	focusIntent?: CollectionFocusIntent<K, G> | null
@@ -27,7 +30,6 @@ type CollectionGridRootProps<K extends CollectionKey, G extends CollectionKey = 
 	onPreview?: (key: K) => void
 	onActivate?: (key: K) => void
 	children: (state: CollectionGridRootState<K>) => ReactNode
-	className?: string
 }
 
 export type CollectionGridRootState<K extends CollectionKey> = {
@@ -51,6 +53,7 @@ export function CollectionGridRoot<
 	onActivate,
 	children,
 	className,
+	style,
 }: CollectionGridRootProps<K, G>) {
 	const [focusSource, setFocusSource] = useState<'pointer' | 'keyboard' | null>(null)
 	const rootRef = useRef<HTMLDivElement | null>(null)
@@ -182,6 +185,7 @@ export function CollectionGridRoot<
 			onFocusCapture={handleFocusCapture}
 			onKeyDownCapture={handleKeyDownCapture}
 			onPointerDownCapture={markPointerInteraction}
+			style={style}
 		>
 			{children(state)}
 		</div>

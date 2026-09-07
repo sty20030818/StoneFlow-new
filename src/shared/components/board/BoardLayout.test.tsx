@@ -3,6 +3,8 @@ import { render, screen } from '@testing-library/react'
 import {
 	BoardRowSlot,
 	BoardSectionHeader,
+	COLLECTION_ITEM_GAP,
+	COLLECTION_ROW_HEIGHT,
 	getBoardRowSelectionPosition,
 } from '@/shared/components/board'
 
@@ -29,9 +31,11 @@ describe('BoardLayout', () => {
 			'进行中',
 		)
 		expect(screen.getByText('已选 1')).toBeInTheDocument()
-		expect(container.querySelector('[data-board-row-slot="true"]')).toHaveAttribute(
-			'data-selection-group-position',
-			'first',
-		)
+		const rowSlot = container.querySelector<HTMLElement>('[data-board-row-slot="true"]')
+		expect(rowSlot).toHaveAttribute('data-selection-group-position', 'first')
+		expect(rowSlot).toHaveStyle({ height: `${COLLECTION_ROW_HEIGHT}px` })
+		expect(rowSlot?.firstElementChild).toHaveStyle({
+			height: `${COLLECTION_ROW_HEIGHT + COLLECTION_ITEM_GAP}px`,
+		})
 	})
 })

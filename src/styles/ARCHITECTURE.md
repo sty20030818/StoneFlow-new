@@ -151,8 +151,8 @@ Form、RadioGroup、Toolbar、Surface、Resizable、ScrollShadow 与 Trigger 等
 - `PageFrame` 统一页头、工具栏、普通 `Body` 与集合 `CollectionBody`；`CollectionBody` 通过 `AppScrollArea` 提供唯一真实 viewport，页级图标操作由真实页面直接组合 HeroUI Button 与 `ActionTooltip`。
 - `PageFrame.Toolbar` 直接组合 HeroUI `Toolbar`，只保留产品槽位、外部布局与 FilterBar 的区域顺序，不重写工具条焦点模型。
 - `RowShell` 只统一可访问交互根与 active / selected / hover / focus / pending 状态；`RowLayout` 统一 `selection`、`leading`、`primary`、`properties`、`actions` 五槽排版，并在 selection / actions 槽隔离 Row activation 事件。
-- `BoardRowSlot` 是 section 内连续选择形状与 `44px + 2px` Row 占位的唯一 Owner；`BoardSectionHeader` 只统一 `36px` Header anatomy。邻接计算、sticky/absolute positioning、折叠、Context Menu 与领域动作归各 Board。
-- `shared/components/collectionGeometry.ts` 是 Row `44px`、Header `36px`、item gap `2px` 的唯一产品几何事实源；`components.css` 只渲染 `RowShell` 状态皮肤与 `BoardRowSlot` 暴露的连续选择状态，不复制数值或邻接算法。
+- `BoardRowSlot` 是 section 内连续选择形状与 `44px` 可见 Row 壳的唯一 Owner；`BoardSectionHeader` 只统一 `36px` Header anatomy。相邻 item 的 `2px` gap、邻接计算、sticky/absolute positioning、折叠、Context Menu 与领域动作归各 Board。
+- `shared/components/collectionGeometry.ts` 是 Row `44px`、Header `36px`、item gap `2px` 及其 stride 的唯一产品几何事实源；stride 只推进存在后继 item 的起点，终项不携带尾 gap。`components.css` 只渲染 `RowShell` 状态皮肤与 `BoardRowSlot` 暴露的连续选择状态，不复制数值或邻接算法。
 - Task Detail 只有一个生产 owner，其 Header/Footer/PageLayout/Section/SaveStatus 与滚动结构均由 task feature 持有。
 - `AppScrollArea` 只封装真实 viewport 与 ref context；滚动由浏览器执行，外观直接复用 HeroUI Styles 的 `scrollbar` utility。
 - `ActionTooltip` 隐藏 React Aria trigger props/ref 合并与快捷键展示行为。

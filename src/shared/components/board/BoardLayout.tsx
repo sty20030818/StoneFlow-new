@@ -4,7 +4,6 @@ import type { ComponentProps, ReactNode } from 'react'
 import {
 	COLLECTION_ITEM_GAP,
 	COLLECTION_ROW_HEIGHT,
-	COLLECTION_ROW_SIZE,
 	COLLECTION_SECTION_HEADER_HEIGHT,
 } from '@/shared/components/collectionGeometry'
 import { cn } from '@/shared/lib/utils'
@@ -47,7 +46,7 @@ export function BoardRowSlot({
 			data-board-row-slot='true'
 			data-selection-group-position={selectionPosition}
 			role='presentation'
-			style={{ height: COLLECTION_ROW_SIZE }}
+			style={{ height: COLLECTION_ROW_HEIGHT }}
 		>
 			<div
 				style={{

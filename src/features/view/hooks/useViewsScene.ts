@@ -214,7 +214,7 @@ export function useSavedViewWorkspaceScene() {
 			: 'saved-view:none',
 		loadedPageCount: taskRunQuery.data?.pages.length ?? 0,
 		fetchNextPage: taskRunQuery.fetchNextPage,
-		hasNextPage: taskRunQuery.hasNextPage,
+		hasNextPage: taskRunQuery.isPlaceholderData ? false : taskRunQuery.hasNextPage,
 		isFetchingNextPage: taskRunQuery.isFetchingNextPage,
 		isFetchNextPageError: taskRunQuery.isFetchNextPageError,
 		error: taskRunQuery.error,

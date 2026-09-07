@@ -10,6 +10,7 @@ import {
 	type Command,
 } from '@/features/command'
 import { useGroupedCollectionInteraction } from '@/features/selection'
+import { COLLECTION_ITEM_GAP, COLLECTION_ROW_HEIGHT } from '@/shared/components/board'
 import type { LifecycleEntry, LifecycleMode } from '@/shared/types'
 import { renderWithInteractionProviders as render } from '@/test/TestInteractionProviders'
 
@@ -86,12 +87,15 @@ describe('LifecycleBoard', () => {
 			/>,
 		)
 
-		expect(
-			screen.getByRole('row', { name: '任务 A' }).closest('[data-board-row-slot]'),
-		).toHaveAttribute('data-selection-group-position', 'first')
-		expect(
-			screen.getByRole('row', { name: '任务 B' }).closest('[data-board-row-slot]'),
-		).toHaveAttribute('data-selection-group-position', 'last')
+		const firstSlot = screen.getByRole('row', { name: '任务 A' }).closest('[data-board-row-slot]')
+		const lastSlot = screen.getByRole('row', { name: '任务 B' }).closest('[data-board-row-slot]')
+		expect(firstSlot).toHaveAttribute('data-selection-group-position', 'first')
+		expect(lastSlot).toHaveAttribute('data-selection-group-position', 'last')
+		expect(lastSlot).toHaveStyle({ height: `${COLLECTION_ROW_HEIGHT}px` })
+		expect(firstSlot?.parentElement).toHaveStyle({ gap: `${COLLECTION_ITEM_GAP}px` })
+		expect(firstSlot?.closest('[data-lifecycle-section]')).toHaveStyle({
+			gap: `${COLLECTION_ITEM_GAP}px`,
+		})
 	})
 
 	it('错误态重试调用公开 onRetry', () => {

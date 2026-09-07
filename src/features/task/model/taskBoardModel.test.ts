@@ -2,10 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import type { TaskListItem } from '@/shared/types'
 import {
+	COLLECTION_ITEM_GAP,
 	COLLECTION_ROW_HEIGHT,
-	COLLECTION_ROW_SIZE,
+	COLLECTION_ROW_STRIDE,
 	COLLECTION_SECTION_HEADER_HEIGHT,
-	COLLECTION_SECTION_HEADER_SIZE,
+	COLLECTION_SECTION_HEADER_STRIDE,
 } from '@/shared/components/collectionGeometry'
 
 import {
@@ -66,7 +67,7 @@ describe('taskBoardModel', () => {
 		expect(measureTaskBoardFlatSize(collapsed)).toBeLessThan(measureTaskBoardFlatSize(open))
 	})
 
-	it('virtual layout：只按已加载 flat 高度并固定追加一行 sentinel', () => {
+	it('virtual layout：只在分页未结束时追加一行 sentinel', () => {
 		const flatItems = buildTaskBoardFlatItems({
 			tasks: [
 				task({ id: 'a', title: 'A', status: 'todo' }),
@@ -74,13 +75,31 @@ describe('taskBoardModel', () => {
 			],
 			openSections: ['todo', 'doing'],
 		})
-		const layout = buildTaskBoardVirtualLayout(flatItems)
+		const paginatedLayout = buildTaskBoardVirtualLayout(flatItems, true)
+		const exhaustedLayout = buildTaskBoardVirtualLayout(flatItems, false)
+		const flatContentHeight =
+			flatItems.reduce(
+				(size, item) =>
+					size +
+					(item.kind === 'header' ? COLLECTION_SECTION_HEADER_HEIGHT : COLLECTION_ROW_HEIGHT),
+				0,
+			) +
+			(flatItems.length - 1) * COLLECTION_ITEM_GAP
 
-		expect(layout).toEqual({
-			contentHeightPx: measureTaskBoardFlatSize(flatItems) + COLLECTION_ROW_SIZE,
+		expect(measureTaskBoardFlatSize(flatItems)).toBe(flatContentHeight)
+
+		expect(paginatedLayout).toEqual({
+			contentHeightPx: flatContentHeight + COLLECTION_ITEM_GAP + COLLECTION_ROW_HEIGHT,
 			sentinelIndex: flatItems.length,
 			virtualCount: flatItems.length + 1,
 		})
+		expect(exhaustedLayout).toEqual({
+			contentHeightPx: flatContentHeight,
+			sentinelIndex: flatItems.length,
+			virtualCount: flatItems.length,
+		})
+		expect(buildTaskBoardVirtualLayout([], false).contentHeightPx).toBe(0)
+		expect(buildTaskBoardVirtualLayout([], true).contentHeightPx).toBe(COLLECTION_ROW_HEIGHT)
 	})
 
 	it('append anchor：新页任务插入前方分组后仍保持同一 task 的视口位置', () => {
@@ -112,7 +131,7 @@ describe('taskBoardModel', () => {
 		const previousScrollTop = previousOffsets[previousIndex]! + anchor.offsetPx
 		const restoredScrollTop = resolveTaskBoardAnchorScrollTop(anchor, nextIndexByKey, nextOffsets)
 
-		expect(restoredScrollTop).toBe(previousScrollTop + COLLECTION_ROW_SIZE)
+		expect(restoredScrollTop).toBe(previousScrollTop + COLLECTION_ROW_STRIDE)
 		expect(
 			resolveTaskBoardAnchorScrollTop({ key: 'removed', offsetPx: 0 }, nextIndexByKey, nextOffsets),
 		).toBeNull()
@@ -136,7 +155,7 @@ describe('taskBoardModel', () => {
 		const layout = buildTaskBoardStickyPush({
 			stickyIndexes: sticky,
 			itemOffsets: offsets,
-			scrollTop: secondStart - COLLECTION_SECTION_HEADER_SIZE / 2,
+			scrollTop: secondStart - COLLECTION_SECTION_HEADER_STRIDE / 2,
 		})
 		expect(layout).not.toBeNull()
 		expect(layout!.pushOffset).toBeLessThan(0)

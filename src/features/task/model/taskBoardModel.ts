@@ -6,8 +6,11 @@
 import type { TaskListItem, TaskStatus } from '@/shared/types'
 
 import {
-	COLLECTION_ROW_SIZE,
-	COLLECTION_SECTION_HEADER_SIZE,
+	COLLECTION_ITEM_GAP,
+	COLLECTION_ROW_HEIGHT,
+	COLLECTION_ROW_STRIDE,
+	COLLECTION_SECTION_HEADER_HEIGHT,
+	COLLECTION_SECTION_HEADER_STRIDE,
 } from '@/shared/components/collectionGeometry'
 
 import { TASK_BOARD_STATUS_ORDER } from './taskBoardOrder'
@@ -118,15 +121,16 @@ export function buildTaskBoardItemOffsets(flatItems: readonly TaskBoardFlatItem[
 	let offset = 0
 	for (const item of flatItems) {
 		offsets.push(offset)
-		offset += item.kind === 'header' ? COLLECTION_SECTION_HEADER_SIZE : COLLECTION_ROW_SIZE
+		offset += item.kind === 'header' ? COLLECTION_SECTION_HEADER_STRIDE : COLLECTION_ROW_STRIDE
 	}
 	return offsets
 }
 
 export function measureTaskBoardFlatSize(flatItems: readonly TaskBoardFlatItem[]): number {
 	let size = 0
-	for (const item of flatItems) {
-		size += item.kind === 'header' ? COLLECTION_SECTION_HEADER_SIZE : COLLECTION_ROW_SIZE
+	for (const [index, item] of flatItems.entries()) {
+		size += item.kind === 'header' ? COLLECTION_SECTION_HEADER_HEIGHT : COLLECTION_ROW_HEIGHT
+		if (index < flatItems.length - 1) size += COLLECTION_ITEM_GAP
 	}
 	return size
 }
@@ -141,12 +145,19 @@ export function listTaskBoardStickyIndexes(flatItems: readonly TaskBoardFlatItem
 	return indexes
 }
 
-/** 虚拟范围只描述已加载内容；末尾固定一行由分页 sentinel 使用。 */
-export function buildTaskBoardVirtualLayout(flatItems: readonly TaskBoardFlatItem[]) {
+/** 虚拟范围只描述已加载内容；仍可续页时才保留分页 sentinel。 */
+export function buildTaskBoardVirtualLayout(
+	flatItems: readonly TaskBoardFlatItem[],
+	includePaginationSentinel: boolean,
+) {
+	const flatSize = measureTaskBoardFlatSize(flatItems)
 	return {
-		contentHeightPx: measureTaskBoardFlatSize(flatItems) + COLLECTION_ROW_SIZE,
+		contentHeightPx:
+			flatSize +
+			(includePaginationSentinel && flatItems.length > 0 ? COLLECTION_ITEM_GAP : 0) +
+			(includePaginationSentinel ? COLLECTION_ROW_HEIGHT : 0),
 		sentinelIndex: flatItems.length,
-		virtualCount: flatItems.length + 1,
+		virtualCount: flatItems.length + (includePaginationSentinel ? 1 : 0),
 	}
 }
 
@@ -176,7 +187,7 @@ export function buildTaskBoardStickyPush({
 	stickyIndexes,
 	itemOffsets,
 	scrollTop,
-	headerSize = COLLECTION_SECTION_HEADER_SIZE,
+	headerSize = COLLECTION_SECTION_HEADER_STRIDE,
 }: {
 	stickyIndexes: readonly number[]
 	itemOffsets: readonly number[]

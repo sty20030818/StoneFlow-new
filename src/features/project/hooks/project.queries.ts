@@ -1,4 +1,4 @@
-import { queryOptions, useQuery, useSuspenseQuery } from '@tanstack/react-query'
+import { keepPreviousData, queryOptions, useQuery, useSuspenseQuery } from '@tanstack/react-query'
 
 import { getProjectDetail, listProjectOverview, listSidebarProjects } from '../api/projects'
 import type { ProjectOption, ProjectOverviewViewKey } from '../model/types'
@@ -10,6 +10,7 @@ export function useProjectOverviewQuery(scope: Scope, viewKey: ProjectOverviewVi
 	return useQuery({
 		queryKey: projectKeys.overview(scope, viewKey),
 		queryFn: () => listProjectOverview(scope, viewKey),
+		placeholderData: keepPreviousData,
 	})
 }
 

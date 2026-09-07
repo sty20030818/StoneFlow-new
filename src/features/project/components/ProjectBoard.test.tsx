@@ -2,6 +2,7 @@ import { fireEvent, screen } from '@testing-library/react'
 import { useEffect, useMemo } from 'react'
 
 import { useGroupedCollectionInteraction } from '@/features/selection'
+import { COLLECTION_ITEM_GAP, COLLECTION_ROW_HEIGHT } from '@/shared/components/board'
 import type { ProjectOverviewItem } from '@/shared/types'
 import { renderWithInteractionProviders as render } from '@/test/TestInteractionProviders'
 
@@ -70,12 +71,19 @@ describe('ProjectBoard', () => {
 			/>,
 		)
 
-		expect(
-			screen.getByRole('row', { name: '打开项目 项目 A' }).closest('[data-board-row-slot]'),
-		).toHaveAttribute('data-selection-group-position', 'first')
-		expect(
-			screen.getByRole('row', { name: '打开项目 项目 B' }).closest('[data-board-row-slot]'),
-		).toHaveAttribute('data-selection-group-position', 'last')
+		const firstSlot = screen
+			.getByRole('row', { name: '打开项目 项目 A' })
+			.closest('[data-board-row-slot]')
+		const lastSlot = screen
+			.getByRole('row', { name: '打开项目 项目 B' })
+			.closest('[data-board-row-slot]')
+		expect(firstSlot).toHaveAttribute('data-selection-group-position', 'first')
+		expect(lastSlot).toHaveAttribute('data-selection-group-position', 'last')
+		expect(lastSlot).toHaveStyle({ height: `${COLLECTION_ROW_HEIGHT}px` })
+		expect(firstSlot?.parentElement).toHaveStyle({ gap: `${COLLECTION_ITEM_GAP}px` })
+		expect(firstSlot?.closest('[data-project-section]')).toHaveStyle({
+			gap: `${COLLECTION_ITEM_GAP}px`,
+		})
 	})
 
 	it('指针 hover 只走 CSS，不接管 collection 焦点', () => {

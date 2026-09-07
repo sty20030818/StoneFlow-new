@@ -39,7 +39,8 @@ import {
 import {
 	BoardRowSlot,
 	BoardSectionHeader,
-	COLLECTION_SECTION_HEADER_SIZE,
+	COLLECTION_ITEM_GAP,
+	COLLECTION_SECTION_HEADER_HEIGHT,
 	getBoardRowSelectionPosition,
 	type BoardRowSelectionPosition,
 } from '@/shared/components/board'
@@ -85,8 +86,9 @@ function RowShellPreview() {
 			<div
 				ref={listRef}
 				aria-label='RowShell 状态'
-				className='mt-4 overflow-hidden rounded-lg border border-surface'
+				className='mt-4 flex flex-col overflow-hidden rounded-lg border border-surface'
 				role='grid'
+				style={{ gap: COLLECTION_ITEM_GAP }}
 			>
 				{rows.map((row) => (
 					<BoardRowSlot key={row.id} selectionPosition={selected === row.id ? 'single' : undefined}>
@@ -759,32 +761,36 @@ function TaskRowsFixture({
 }) {
 	const [selectedIds, setSelectedIds] = useState(() => new Set(defaultSelectedIds))
 
-	return items.map((item, index) => {
-		const selected = selectedIds.has(item.id)
-		const selectionPosition = getBoardRowSelectionPosition(
-			item.id,
-			items[index - 1]?.id,
-			items[index + 1]?.id,
-			selectedIds,
-		)
+	return (
+		<div className='flex flex-col' style={{ gap: COLLECTION_ITEM_GAP }}>
+			{items.map((item, index) => {
+				const selected = selectedIds.has(item.id)
+				const selectionPosition = getBoardRowSelectionPosition(
+					item.id,
+					items[index - 1]?.id,
+					items[index + 1]?.id,
+					selectedIds,
+				)
 
-		return (
-			<TaskRowFixture
-				key={item.id}
-				selected={selected}
-				selectionPosition={selectionPosition}
-				title={item.title}
-				onSelectedChange={(nextSelected) =>
-					setSelectedIds((current) => {
-						const next = new Set(current)
-						if (nextSelected) next.add(item.id)
-						else next.delete(item.id)
-						return next
-					})
-				}
-			/>
-		)
-	})
+				return (
+					<TaskRowFixture
+						key={item.id}
+						selected={selected}
+						selectionPosition={selectionPosition}
+						title={item.title}
+						onSelectedChange={(nextSelected) =>
+							setSelectedIds((current) => {
+								const next = new Set(current)
+								if (nextSelected) next.add(item.id)
+								else next.delete(item.id)
+								return next
+							})
+						}
+					/>
+				)
+			})}
+		</div>
+	)
 }
 
 export function TaskRowPreview() {
@@ -826,7 +832,7 @@ function TaskGroupFixture({
 
 	return (
 		<div className='flex flex-col'>
-			<div style={{ height: COLLECTION_SECTION_HEADER_SIZE }}>
+			<div style={{ height: COLLECTION_SECTION_HEADER_HEIGHT }}>
 				<BoardSectionHeader
 					count={count}
 					label={label}
@@ -869,7 +875,7 @@ function TaskGroupFixture({
 					}
 				/>
 			</div>
-			<div hidden={!expanded} id={contentId}>
+			<div hidden={!expanded} id={contentId} style={{ marginTop: COLLECTION_ITEM_GAP }}>
 				{children}
 			</div>
 			<span className='sr-only' role='status'>

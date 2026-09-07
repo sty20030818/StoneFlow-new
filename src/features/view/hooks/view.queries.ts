@@ -1,4 +1,9 @@
-import { infiniteQueryOptions, useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import {
+	infiniteQueryOptions,
+	keepPreviousData,
+	useInfiniteQuery,
+	useQuery,
+} from '@tanstack/react-query'
 
 import { listViews, runTaskView } from '../api/views'
 import type { RunTaskViewInput, RunTaskViewResult, Scope, TaskListItem } from '@/shared/types'
@@ -28,6 +33,7 @@ export function taskViewRunInfiniteQueryOptions(input: RunTaskViewInput) {
 			}),
 		initialPageParam: null as string | null,
 		getNextPageParam: (lastPage) => lastPage.nextCursor,
+		placeholderData: keepPreviousData,
 	})
 }
 

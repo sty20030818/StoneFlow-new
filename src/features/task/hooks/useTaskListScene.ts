@@ -58,7 +58,6 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 	)
 
 	const taskList = useTaskQueryData(queryInput)
-	const taskSourceItems = taskList.status === 'loading' ? [] : taskList.items
 	const breadcrumbItems = useMemo(() => resolveBreadcrumb({ route: shellRoute }), [shellRoute])
 	const openCreate = useCallback(() => {
 		openTaskCreateDialog(config.createDraft)
@@ -72,7 +71,7 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 	}, [config.fallbackSubtitle, isAllScope])
 
 	const taskCollection = useTaskCollectionScene({
-		source: { items: taskSourceItems, status: taskList.status, onRetry: taskList.refetch },
+		source: { items: taskList.items, status: taskList.status, onRetry: taskList.refetch },
 		displayPageKey: config.displayPageKey,
 		display,
 		fallbackSubtitle,
