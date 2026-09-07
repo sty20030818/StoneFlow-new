@@ -550,23 +550,6 @@
 			[data-row-shell][data-interactive="true"][data-selected="true"]:hover {
 			background: var(--selection-hover);
 		}
-
-		/* 键盘移动焦点后，不让停留的鼠标继续伪造另一条 hover。 */
-		[data-theme="stoneflow-light"]
-			[data-row-shell][data-interactive="true"][data-hover-source="keyboard"]:not(
-				[data-active="true"],
-				[data-hovered="true"],
-				[data-selected="true"]
-			):hover {
-			background: transparent;
-		}
-
-		[data-theme="stoneflow-light"]
-			[data-row-shell][data-interactive="true"][data-hover-source="keyboard"][data-selected="true"]:not(
-				[data-hovered="true"]
-			):hover {
-			background: var(--selection);
-		}
 	}
 
 	[data-theme="stoneflow-light"]

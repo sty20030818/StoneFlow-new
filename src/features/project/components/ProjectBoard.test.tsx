@@ -74,6 +74,16 @@ describe('ProjectBoard', () => {
 		).toHaveAttribute('data-selection-group-position', 'last')
 	})
 
+	it('指针 hover 只走 CSS，不接管 collection 焦点', () => {
+		render(<ProjectBoardHarness items={[createProject({ id: 'project-1', name: '项目 A' })]} />)
+
+		const row = screen.getByRole('row', { name: '打开项目 项目 A' })
+		fireEvent.pointerMove(row)
+
+		expect(row).not.toHaveFocus()
+		expect(row).not.toHaveAttribute('data-hovered')
+	})
+
 	it('错误态重试调用公开 onRetry', () => {
 		const onRetry = vi.fn()
 		render(<ProjectBoardHarness items={[]} onRetry={onRetry} status='error' />)

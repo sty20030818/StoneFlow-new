@@ -404,8 +404,7 @@ function TaskRowFrame({
 			data-focus-suppressed={suppressFocusIndicator || undefined}
 			data-shell-task-card='true'
 			data-task-id={task.id}
-			hoverSource={focusSource}
-			hovered={isFocused}
+			hovered={isFocused && focusSource === 'keyboard'}
 			interactive
 			onClick={onActivate}
 			pending={isPending}

@@ -123,8 +123,7 @@ export function LifecycleRowAdapter({
 				)}
 				data-lifecycle-entity={entry.entityType}
 				data-focus-source={rowState.isFocused ? rowState.focusSource : undefined}
-				hovered={rowState.isFocused}
-				hoverSource={rowState.focusSource}
+				hovered={rowState.isFocused && rowState.focusSource === 'keyboard'}
 				interactive={canOpenDetail}
 				pending={isExecuting}
 				role={ariaRowProps.role ?? 'row'}

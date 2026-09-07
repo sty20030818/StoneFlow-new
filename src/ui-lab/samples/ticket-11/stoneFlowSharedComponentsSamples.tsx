@@ -207,7 +207,6 @@ function RowShellFixture() {
 		active?: boolean
 		selected?: boolean
 		hovered?: boolean
-		hoverSource?: 'keyboard'
 		selectionPosition?: BoardRowSelectionPosition
 		pending?: boolean
 	}> = [
@@ -217,7 +216,6 @@ function RowShellFixture() {
 			label: '连续选择 · 第一行',
 			selected: true,
 			hovered: true,
-			hoverSource: 'keyboard' as const,
 			selectionPosition: 'first',
 		},
 		{
@@ -243,7 +241,6 @@ function RowShellFixture() {
 						<RowShell
 							active={row.active}
 							hovered={row.hovered}
-							hoverSource={row.hoverSource}
 							pending={row.pending}
 							selected={row.selected}
 						>

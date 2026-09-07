@@ -134,6 +134,26 @@ describe('TaskBoard memo', () => {
 		await waitFor(() => expect(firstRow).toHaveAttribute('data-selected', 'true'))
 		expect(taskRowAdapterRenderCounts.get('task-2')).toBe(secondRenderCount)
 	})
+
+	it('指针 hover 只走 CSS，不接管焦点或重渲染 Row Adapter', () => {
+		renderWithInteractionProviders(
+			<DangerConfirmProvider>
+				<BulkActionProvider actions={[]}>
+					<ParentStateHarness />
+				</BulkActionProvider>
+			</DangerConfirmProvider>,
+		)
+
+		const firstRow = screen.getByRole('row', { name: '打开任务 任务 A' })
+		const firstRenderCount = taskRowAdapterRenderCounts.get('task-1')
+		const secondRenderCount = taskRowAdapterRenderCounts.get('task-2')
+
+		fireEvent.pointerMove(firstRow)
+
+		expect(firstRow).not.toHaveFocus()
+		expect(taskRowAdapterRenderCounts.get('task-1')).toBe(firstRenderCount)
+		expect(taskRowAdapterRenderCounts.get('task-2')).toBe(secondRenderCount)
+	})
 })
 
 function ParentStateHarness() {

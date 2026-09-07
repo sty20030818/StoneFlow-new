@@ -111,6 +111,7 @@ describe('TaskBoard', () => {
 		expect(sectionHeaders.length).toBeGreaterThan(0)
 		for (const sectionHeader of sectionHeaders) {
 			expect(sectionHeader).toHaveStyle({ height: '36px' })
+			expect(sectionHeader.parentElement).toHaveClass('block', 'w-full')
 		}
 	})
 
@@ -600,6 +601,7 @@ describe('TaskBoard', () => {
 		await waitFor(() => expect(grid).toHaveAttribute('aria-rowcount', '2'))
 		expect(liveStatus).toHaveTextContent('已加载全部 2 个任务')
 		expect(container.querySelectorAll('[data-task-board-sentinel]')).toHaveLength(1)
+		expect(screen.queryByText('已加载全部任务')).not.toBeInTheDocument()
 	})
 
 	it('aria-rowindex 只按当前可导航任务连续编号，折叠分组后立即重排', async () => {
@@ -975,7 +977,7 @@ describe('TaskBoard', () => {
 			/>,
 		)
 
-		fireEvent.pointerMove(screen.getByRole('row', { name: '打开任务 任务 C' }))
+		act(() => screen.getByRole('row', { name: '打开任务 任务 C' }).focus())
 		await waitFor(() => expect(screen.getByTestId('focused-key')).toHaveTextContent('task-3'))
 
 		const visibleHeader = screen

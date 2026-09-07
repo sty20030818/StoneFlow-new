@@ -168,14 +168,8 @@ export function TaskBoard({
 	const focusedTaskId = collectionInteraction.focusedKey
 	const { runtime: commandRuntime, context: commandContext } = useCommandRuntimeContext()
 	const [focusSource, setFocusSource] = useState<'pointer' | 'keyboard' | null>(null)
-	const focusSnapshotRef = useLatestRef({ source: focusSource, taskId: focusedTaskId })
-	const markKeyboardInteraction = useCallback(() => {
-		focusSnapshotRef.current = {
-			source: 'keyboard',
-			taskId: focusSnapshotRef.current.taskId,
-		}
-		setFocusSource('keyboard')
-	}, [focusSnapshotRef])
+	const markKeyboardInteraction = useCallback(() => setFocusSource('keyboard'), [])
+	const markPointerInteraction = useCallback(() => setFocusSource('pointer'), [])
 	const contextMenuActions = useTaskContextMenuBulkActions()
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 	const scrollViewport = useScrollAreaViewport()
@@ -588,29 +582,6 @@ export function TaskBoard({
 			groupReentryRef.current = null
 		}
 	}, [])
-	const handlePointerFocusTask = useCallback(
-		(taskId: string) => {
-			const snapshot = focusSnapshotRef.current
-			if (snapshot.source === 'pointer' && snapshot.taskId === taskId) return
-			focusSnapshotRef.current = { source: 'pointer', taskId }
-			setFocusSource('pointer')
-			focusCollectionStateKey(taskId)
-			focusBridge.requestFocus({ type: 'item', key: taskId })
-		},
-		[focusBridge, focusCollectionStateKey, focusSnapshotRef],
-	)
-	const handlePointerLeaveTask = useCallback(
-		(taskId: string, restoreRootFocus: boolean) => {
-			const snapshot = focusSnapshotRef.current
-			if (snapshot.source !== 'pointer' || snapshot.taskId !== taskId) return
-			focusSnapshotRef.current = { source: null, taskId: null }
-			focusCollectionStateKey(null)
-			if (restoreRootFocus) gridRef.current?.focus({ preventScroll: true })
-			setFocusSource(null)
-		},
-		[focusCollectionStateKey, focusSnapshotRef],
-	)
-
 	const renderTaskRow = useCallback(
 		(task: TaskListItem) => {
 			// 未多选时不传 contextTasks，避免每帧 [task] 新数组打穿 memo
@@ -633,8 +604,6 @@ export function TaskBoard({
 					isPending={pendingTaskId === task.id}
 					isSelected={selectedTaskIdSet.has(task.id)}
 					listState={rowListState}
-					onPointerFocusTask={handlePointerFocusTask}
-					onPointerLeaveTask={handlePointerLeaveTask}
 					projectBinding={projectBinding}
 					showSpaceLabel={showSpaceLabel}
 					suppressFocusIndicator={suppressFocusIndicator}
@@ -650,8 +619,6 @@ export function TaskBoard({
 			focusBridge,
 			focusSource,
 			focusedTaskId,
-			handlePointerFocusTask,
-			handlePointerLeaveTask,
 			pendingTaskId,
 			projectBinding,
 			rowListState,
@@ -858,6 +825,7 @@ export function TaskBoard({
 				data-board-root='true'
 				onFocusCapture={handleRootFocusCapture}
 				onKeyDownCapture={handleRootKeyDownCapture}
+				onPointerDownCapture={markPointerInteraction}
 			>
 				{/* 零高度 sticky 壳（不占文档流高度）+ 定高裁剪层。 */}
 				{stickyHeader ? (
@@ -1002,11 +970,7 @@ function TaskBoardPaginationSentinel({
 				</div>
 			)
 		case 'exhausted':
-			return (
-				<div className='flex h-full items-center justify-center text-xs text-muted'>
-					已加载全部任务
-				</div>
-			)
+			return null
 	}
 }
 
@@ -1108,8 +1072,6 @@ type TaskBoardGridRowProps = Omit<TaskRowAdapterProps, 'rowState'> & {
 	isPending: boolean
 	isSelected: boolean
 	listState: CollectionInteraction<string>['listState']
-	onPointerFocusTask: (taskId: string) => void
-	onPointerLeaveTask: (taskId: string, restoreRootFocus: boolean) => void
 	suppressFocusIndicator: boolean
 }
 
@@ -1122,8 +1084,6 @@ const TaskBoardGridRow = memo(function TaskBoardGridRow({
 	isPending,
 	isSelected,
 	listState,
-	onPointerFocusTask,
-	onPointerLeaveTask,
 	suppressFocusIndicator,
 	task,
 	...props
@@ -1179,14 +1139,7 @@ const TaskBoardGridRow = memo(function TaskBoardGridRow({
 		}),
 		[focusSource, isActive, isFocused, isPending, isSelected, suppressFocusIndicator],
 	)
-	const ariaRowProps = mergeProps(rowProps, {
-		'aria-rowindex': ariaRowIndex,
-		onPointerMove: () => onPointerFocusTask(task.id),
-		onPointerLeave: () => {
-			const row = rowRef.current
-			onPointerLeaveTask(task.id, row !== null && row === document.activeElement)
-		},
-	})
+	const ariaRowProps = mergeProps(rowProps, { 'aria-rowindex': ariaRowIndex })
 
 	return (
 		<TaskRowAriaFrameProvider
@@ -1371,6 +1324,7 @@ function StatusSectionHeader({
 				open={contextMenuOpen}
 			>
 				<ContextMenu.Trigger
+					className='block w-full'
 					onDoubleClick={() => {
 						setToggleTooltipOpen(false)
 						setCreateTooltipOpen(false)

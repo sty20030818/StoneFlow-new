@@ -83,8 +83,7 @@ export function ProjectRowAdapter({
 				className='w-full text-[13px] leading-5 outline-none'
 				data-project-id={project.id}
 				data-focus-source={rowState.isFocused ? rowState.focusSource : undefined}
-				hovered={rowState.isFocused}
-				hoverSource={rowState.focusSource}
+				hovered={rowState.isFocused && rowState.focusSource === 'keyboard'}
 				interactive
 				onClick={() => actions.onOpenProject(project.id)}
 				pending={busy}

@@ -10,7 +10,7 @@ import {
 	type ReactNode,
 	type Ref,
 } from 'react'
-import { mergeProps, useGridList, useGridListItem, type GridListItemAria } from 'react-aria'
+import { useGridList, useGridListItem, type GridListItemAria } from 'react-aria'
 
 import { cn } from '@/shared/lib/utils'
 
@@ -34,8 +34,6 @@ export type CollectionGridRootState<K extends CollectionKey> = {
 	focusedKey: K | null
 	focusSource: 'pointer' | 'keyboard' | null
 	focusBridge: ReturnType<typeof createCollectionFocusBridge>
-	onPointerFocus: (key: K) => void
-	onPointerLeave: (key: K, restoreRootFocus: boolean) => void
 	onContextMenuOpenChange: (key: K, open: boolean) => void
 	onGroupTriggerBlur: (groupKey: CollectionKey) => void
 }
@@ -76,6 +74,7 @@ export function CollectionGridRoot<
 		rootRef,
 	)
 	const markKeyboardInteraction = useCallback(() => setFocusSource('keyboard'), [])
+	const markPointerInteraction = useCallback(() => setFocusSource('pointer'), [])
 	const keyboard = useCollectionKeyboardAdapter({
 		interaction,
 		resolveRowKey: focusBridge.getItemKey as (target: HTMLElement) => K | null,
@@ -102,24 +101,6 @@ export function CollectionGridRoot<
 		onFocusIntentConsumed?.(focusIntent)
 	}, [focusBridge, focusIntent, onFocusIntentConsumed])
 
-	const onPointerFocus = useCallback(
-		(key: K) => {
-			if (focusSource === 'pointer' && interaction.focusedKey === key) return
-			setFocusSource('pointer')
-			interaction.focusKey(key)
-			focusBridge.requestFocus({ type: 'item', key })
-		},
-		[focusBridge, focusSource, interaction],
-	)
-	const onPointerLeave = useCallback(
-		(key: K, restoreRootFocus: boolean) => {
-			if (focusSource !== 'pointer' || interaction.focusedKey !== key) return
-			interaction.focusKey(null)
-			if (restoreRootFocus) rootRef.current?.focus({ preventScroll: true })
-			setFocusSource(null)
-		},
-		[focusSource, interaction],
-	)
 	const onContextMenuOpenChange = useCallback(
 		(key: K, open: boolean) => {
 			if (open) {
@@ -184,20 +165,10 @@ export function CollectionGridRoot<
 			focusedKey: interaction.focusedKey,
 			focusSource,
 			focusBridge,
-			onPointerFocus,
-			onPointerLeave,
 			onContextMenuOpenChange,
 			onGroupTriggerBlur,
 		}),
-		[
-			focusBridge,
-			focusSource,
-			interaction.focusedKey,
-			onContextMenuOpenChange,
-			onGroupTriggerBlur,
-			onPointerFocus,
-			onPointerLeave,
-		],
+		[focusBridge, focusSource, interaction.focusedKey, onContextMenuOpenChange, onGroupTriggerBlur],
 	)
 
 	return (
@@ -208,6 +179,7 @@ export function CollectionGridRoot<
 			className={cn('outline-none', className)}
 			onFocusCapture={handleFocusCapture}
 			onKeyDownCapture={handleKeyDownCapture}
+			onPointerDownCapture={markPointerInteraction}
 		>
 			{children(state)}
 		</div>
@@ -292,11 +264,7 @@ export function CollectionGridRow<K extends CollectionKey>({
 	useEffect(() => () => unregisterRef.current?.(), [])
 
 	return children({
-		rowProps: mergeProps(rowProps, {
-			onPointerMove: () => rootState.onPointerFocus(itemKey),
-			onPointerLeave: () =>
-				rootState.onPointerLeave(itemKey, rowRef.current === document.activeElement),
-		}),
+		rowProps,
 		gridCellProps,
 		rowRef: setRowRef,
 		onContextMenuOpenChange: (open) => rootState.onContextMenuOpenChange(itemKey, open),
