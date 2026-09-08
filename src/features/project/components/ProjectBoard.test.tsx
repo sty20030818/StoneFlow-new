@@ -4,7 +4,10 @@ import { useEffect, useMemo } from 'react'
 import { useGroupedCollectionInteraction } from '@/features/selection'
 import { COLLECTION_ITEM_GAP, COLLECTION_ROW_HEIGHT } from '@/shared/components/board'
 import type { ProjectOverviewItem } from '@/shared/types'
-import { renderWithInteractionProviders as render } from '@/test/TestInteractionProviders'
+import {
+	TestInteractionProviders,
+	renderWithInteractionProviders as render,
+} from '@/test/TestInteractionProviders'
 
 import { buildProjectSections, PROJECT_SECTION_ORDER } from '../model/buildProjectSections'
 import { ProjectBoard } from './ProjectBoard'
@@ -96,9 +99,21 @@ describe('ProjectBoard', () => {
 		expect(row).not.toHaveAttribute('data-hovered')
 	})
 
-	it('错误态重试调用公开 onRetry', () => {
+	it('首屏读取留白，失败后仍可重试', () => {
 		const onRetry = vi.fn()
-		render(<ProjectBoardHarness items={[]} onRetry={onRetry} status='error' />)
+		const { rerender } = render(
+			<ProjectBoardHarness items={[]} onRetry={onRetry} status='loading' />,
+		)
+		const loadingRegion = screen.getByLabelText('正在读取项目')
+		expect(loadingRegion).toHaveAttribute('aria-busy', 'true')
+		expect(loadingRegion).toBeEmptyDOMElement()
+
+		rerender(
+			<TestInteractionProviders>
+				<ProjectBoardHarness items={[]} onRetry={onRetry} status='error' />
+			</TestInteractionProviders>,
+		)
+		expect(screen.queryByLabelText('正在读取项目')).not.toBeInTheDocument()
 
 		fireEvent.click(screen.getByRole('button', { name: '重试' }))
 		expect(onRetry).toHaveBeenCalledOnce()

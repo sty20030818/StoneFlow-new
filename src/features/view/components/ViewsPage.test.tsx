@@ -150,8 +150,16 @@ describe('Saved View pages', () => {
 
 	it('详情页把保存视图交给唯一 TaskWorkspace，并保留任务与视图操作', async () => {
 		const scene = useWorkspaceSceneMock()
+		useWorkspaceSceneMock.mockReturnValue({ ...scene, activeView: null, viewStatus: 'loading' })
+		const { rerender } = render(<SavedViewPage />)
+		const loadingRegion = screen.getByLabelText('正在加载保存视图')
+		expect(loadingRegion).toBeEmptyDOMElement()
+		expect(loadingRegion).toHaveAttribute('aria-busy', 'true')
+		expect(screen.getByRole('navigation')).toBeInTheDocument()
+
 		useWorkspaceSceneMock.mockReturnValue(scene)
-		render(<SavedViewPage />)
+		rerender(<SavedViewPage />)
+		expect(screen.queryByLabelText('正在加载保存视图')).not.toBeInTheDocument()
 
 		expect(screen.getByRole('region', { name: '任务工作区' })).toBeInTheDocument()
 		expect(screen.getByText('写阶段总结')).toBeInTheDocument()

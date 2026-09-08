@@ -489,7 +489,7 @@ const PRIVATE_LEAF_GROUPS = [
 	[
 		'src/features/lifecycle/components/LifecycleBoard.tsx',
 		'LifecycleBoard',
-		['LifecycleBoardSectionBlock', 'LifecycleBoardLoading', 'LifecycleModeIcon'],
+		['LifecycleBoardSectionBlock', 'LifecycleModeIcon'],
 	],
 	[
 		'src/features/lifecycle/components/LifecycleRowAdapter.tsx',
@@ -509,12 +509,12 @@ const PRIVATE_LEAF_GROUPS = [
 	[
 		'src/features/project/components/ProjectBoard.tsx',
 		'ProjectBoard',
-		['ProjectBoardSection', 'ProjectBoardLoading', 'ProjectSectionStatusIcon'],
+		['ProjectBoardSection', 'ProjectSectionStatusIcon'],
 	],
 	[
 		'src/features/task/components/TaskBoard.tsx',
 		'TaskBoard',
-		['TaskBoardLoadingState', 'TaskBoardEmptyState', 'TaskBoardGridRow', 'StatusSectionHeader'],
+		['TaskBoardEmptyState', 'TaskBoardGridRow', 'StatusSectionHeader'],
 	],
 	['src/features/task/components/TaskRowAdapter.tsx', 'TaskRowAdapter', ['UpdatedAtCell']],
 	[

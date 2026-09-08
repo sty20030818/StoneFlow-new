@@ -21,12 +21,16 @@ describe('LifecycleBoard', () => {
 	it('异步加载到首批 section 后保持默认展开', async () => {
 		render(<LifecycleBoardAsyncHarness />)
 
+		const loadingRegion = screen.getByLabelText('正在读取生命周期数据')
+		expect(loadingRegion).toHaveAttribute('aria-busy', 'true')
+		expect(loadingRegion).toBeEmptyDOMElement()
 		expect(screen.queryByRole('row', { name: '打开 任务 A' })).not.toBeInTheDocument()
 		fireEvent.click(screen.getByRole('button', { name: '加载数据' }))
 
 		await waitFor(() => {
 			expect(screen.getByRole('row', { name: '打开 任务 A' })).toBeInTheDocument()
 		})
+		expect(screen.queryByLabelText('正在读取生命周期数据')).not.toBeInTheDocument()
 		expect(screen.getByRole('button', { name: '折叠 已归档的任务' })).toHaveAttribute(
 			'aria-expanded',
 			'true',
@@ -126,7 +130,11 @@ function LifecycleBoardAsyncHarness() {
 			>
 				加载数据
 			</button>
-			<LifecycleBoardHarness mode='archive' sections={sections} />
+			<LifecycleBoardHarness
+				mode='archive'
+				sections={sections}
+				status={sections.length === 0 ? 'loading' : 'ready'}
+			/>
 		</div>
 	)
 }

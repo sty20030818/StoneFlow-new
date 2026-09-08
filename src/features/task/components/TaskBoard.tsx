@@ -12,7 +12,7 @@ import {
 	type Ref,
 } from 'react'
 import { mergeProps, useGridList, useGridListItem } from 'react-aria'
-import { Alert, Button, Chip, Skeleton } from '@heroui/react'
+import { Alert, Button, Chip } from '@heroui/react'
 import { ContextMenu, EmptyState } from '@heroui-pro/react'
 import { defaultRangeExtractor, useVirtualizer, type Range } from '@tanstack/react-virtual'
 import { registerTaskBoardFocusTaskId } from './taskBoardFocus'
@@ -37,7 +37,6 @@ import {
 	BoardRowSlot,
 	BoardSectionContextMenu,
 	BoardSectionHeader,
-	COLLECTION_ITEM_GAP,
 	COLLECTION_ROW_HEIGHT,
 	COLLECTION_ROW_STRIDE,
 	COLLECTION_SECTION_HEADER_HEIGHT,
@@ -743,7 +742,9 @@ export function TaskBoard({
 	}, [focusTaskBoardTarget])
 
 	if (status === 'idle' || status === 'loading') {
-		return <TaskBoardLoadingState />
+		return (
+			<div aria-busy='true' aria-label='正在读取任务' className='min-h-0 flex-1' role='region' />
+		)
 	}
 
 	if (status === 'error') {
@@ -996,52 +997,6 @@ function buildTaskBoardPaginationStatus(pagination: TaskBoardPagination, loadedT
 		case 'exhausted':
 			return `已加载全部 ${loadedTaskCount} 个任务`
 	}
-}
-
-function TaskBoardLoadingState() {
-	return (
-		<div
-			aria-busy='true'
-			aria-label='正在读取任务'
-			className='flex min-h-0 flex-1 flex-col'
-			style={{ gap: COLLECTION_ITEM_GAP }}
-		>
-			{Array.from({ length: 2 }).map((_, sectionIndex) => (
-				<div
-					className='flex flex-col'
-					key={`board-loading-section-${sectionIndex}`}
-					style={{ gap: COLLECTION_ITEM_GAP }}
-				>
-					<div className='sticky top-0 z-10' style={{ height: COLLECTION_SECTION_HEADER_HEIGHT }}>
-						<div
-							className='flex items-center gap-2 pl-3 pr-1'
-							style={{ height: COLLECTION_SECTION_HEADER_HEIGHT }}
-						>
-							<Skeleton className='size-3' />
-							<Skeleton className='h-3 w-24' />
-						</div>
-					</div>
-					<div className='flex flex-col' style={{ gap: COLLECTION_ITEM_GAP }}>
-						{Array.from({ length: sectionIndex === 0 ? 4 : 3 }).map((_, rowIndex) => (
-							<div
-								key={`board-loading-row-${sectionIndex}-${rowIndex}`}
-								style={{ height: COLLECTION_ROW_HEIGHT }}
-							>
-								<div
-									className='flex min-w-0 items-center gap-3 px-3'
-									style={{ height: COLLECTION_ROW_HEIGHT }}
-								>
-									<Skeleton className='size-4 shrink-0' />
-									<Skeleton className='h-3 min-w-0 flex-1' />
-									<Skeleton className='h-3 w-12 shrink-0' />
-								</div>
-							</div>
-						))}
-					</div>
-				</div>
-			))}
-		</div>
-	)
 }
 
 function TaskBoardEmptyState({

@@ -345,8 +345,12 @@ describe('TaskBoard', () => {
 		}
 
 		renderTaskBoard(<ReadyProbe />)
+		const loadingRegion = screen.getByLabelText('正在读取任务')
+		expect(loadingRegion).toHaveAttribute('aria-busy', 'true')
+		expect(loadingRegion).toBeEmptyDOMElement()
 		expect(fetchNextPage).not.toHaveBeenCalled()
 		fireEvent.click(screen.getByRole('button', { name: '完成首屏读取' }))
+		expect(screen.queryByLabelText('正在读取任务')).not.toBeInTheDocument()
 		await waitFor(() => expect(fetchNextPage).toHaveBeenCalledOnce())
 
 		fireEvent.click(screen.getByRole('button', { name: '开始新查询' }))

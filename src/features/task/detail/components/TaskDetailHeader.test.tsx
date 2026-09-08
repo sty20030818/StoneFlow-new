@@ -23,6 +23,9 @@ describe('TaskDetailHeader', () => {
 	it('请求打开独立页面并保留可访问的关闭入口', () => {
 		const onClose = vi.fn()
 		renderHeader(onClose)
+		expect(screen.getByRole('heading', { name: '任务详情' }).closest('header')).toHaveStyle({
+			height: '44px',
+		})
 
 		fireEvent.click(screen.getByRole('button', { name: '在完整页面中打开任务' }))
 		expect(openPage).toHaveBeenCalledWith({ kind: 'task', id: 'task-a' })

@@ -3,6 +3,7 @@ import { SquareArrowOutUpRightIcon, XIcon } from 'lucide-react'
 
 import { useEntityDetailController } from '@/features/entity-detail'
 import type { AutosaveController } from '@/shared/autosave'
+import { PAGE_HEADER_HEIGHT } from '@/shared/components/page-frame'
 
 import type { TaskDetailDraft } from '../model/taskDetailDraft'
 import { TaskAutosaveStatus } from './TaskAutosaveStatus'
@@ -18,7 +19,10 @@ export function TaskDetailHeader(props: TaskDetailHeaderProps) {
 	const entityDetailController = useEntityDetailController()
 
 	return (
-		<header className='flex h-12 shrink-0 items-center justify-between gap-2 px-3'>
+		<header
+			className='flex shrink-0 items-center justify-between gap-2 px-3'
+			style={{ height: PAGE_HEADER_HEIGHT }}
+		>
 			<div className='min-w-0 flex flex-1 items-center gap-2'>
 				<h2 className='shrink-0 text-xs font-medium text-muted'>任务详情</h2>
 				<TaskAutosaveStatus error={autosave.error} status={autosave.status} />

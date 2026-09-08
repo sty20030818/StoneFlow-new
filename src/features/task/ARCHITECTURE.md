@@ -104,4 +104,6 @@ src/features/task/
 
 ## 5. 变更纪律
 
+集合首屏读取遵循 [A3 界面系统](../../../Documents/01-架构/A3-界面系统.md) 的留白与加载语义合同，不恢复 Board 骨架。
+
 改定稿目录或 public 时更新本文件。`bun run check`。

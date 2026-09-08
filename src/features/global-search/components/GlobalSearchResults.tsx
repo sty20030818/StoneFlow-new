@@ -50,7 +50,15 @@ export function GlobalSearchResults({
 			id='global-search-results'
 			variant='secondary'
 		>
-			<div className='max-h-96 overflow-y-auto p-2' ref={rootRef}>
+			<div
+				className='max-h-96 overflow-y-auto p-2'
+				onFocusCapture={(event) => {
+					const index =
+						event.target.closest<HTMLElement>('[data-search-index]')?.dataset.searchIndex
+					if (index !== undefined) onHighlightIndex(Number(index))
+				}}
+				ref={rootRef}
+			>
 				{errorMessage && !hasResults ? (
 					<SearchPanelState label={errorMessage} tone='danger' />
 				) : !hasResults ? (
@@ -62,7 +70,7 @@ export function GlobalSearchResults({
 						{taskItems.length > 0 ? (
 							<section className='space-y-1'>
 								<SearchGroupHeading title='任务' />
-								<ListView aria-label='任务搜索结果' selectionMode='none' variant='primary'>
+								<ListView aria-label='任务搜索结果' selectionMode='none' variant='secondary'>
 									{taskItems.map(({ index, item }) => (
 										<SearchTaskResultRow
 											isActive={highlightedIndex === index}
@@ -80,7 +88,7 @@ export function GlobalSearchResults({
 						{projectItems.length > 0 ? (
 							<section className='space-y-1'>
 								<SearchGroupHeading title='项目' />
-								<ListView aria-label='项目搜索结果' selectionMode='none' variant='primary'>
+								<ListView aria-label='项目搜索结果' selectionMode='none' variant='secondary'>
 									{projectItems.map(({ index, item }) => (
 										<SearchProjectResultRow
 											isActive={highlightedIndex === index}
@@ -216,25 +224,19 @@ function SearchProjectResultRow({
 }
 
 function SearchGroupHeading({ title }: { title: string }) {
-	return (
-		<div className='px-1 text-[10.5px] font-medium tracking-[0.06em] text-muted uppercase'>
-			{title}
-		</div>
-	)
+	return <div className='px-2.5 text-xs font-medium text-muted'>{title}</div>
 }
 
 function SearchPanelState({ label, tone = 'muted' }: { label: string; tone?: 'muted' | 'danger' }) {
 	return (
-		<Surface variant='tertiary'>
-			<div
-				className={cn(
-					'flex items-center gap-2 px-3 py-2.5 text-[12px]',
-					tone === 'danger' ? 'text-danger-on-surface' : 'text-muted',
-				)}
-			>
-				<SearchIcon className='size-3.5 shrink-0' />
-				<span>{label}</span>
-			</div>
-		</Surface>
+		<div
+			className={cn(
+				'flex items-center gap-2 px-2.5 py-2.5 text-xs',
+				tone === 'danger' ? 'text-danger-on-surface' : 'text-muted',
+			)}
+		>
+			<SearchIcon className='size-3.5 shrink-0' />
+			<span>{label}</span>
+		</div>
 	)
 }

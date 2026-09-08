@@ -22,4 +22,5 @@ useRememberCurrentShellRoute.ts
 - 业务侧只 `from '@/app/navigation'`
 - 禁止第二套 path 规则
 - 运行时：`shellRouteFromMatch`；字符串 parse 仅 memory/历史
+- 壳层位置与记忆同取已提交 route context 的 `shellLocation`，与该 match 的 scope/params 同代投影；不读取导航开始就提前变化的 live location，保证面包屑、页面与记忆共同切换。
 - memory **v3**：只记 rememberable 白名单内的 canonical 工作区 path；非法 payload / path 丢弃并回退 fallback

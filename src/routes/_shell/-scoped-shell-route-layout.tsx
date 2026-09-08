@@ -1,4 +1,4 @@
-import { Outlet, useLocation, useParams } from '@tanstack/react-router'
+import { Outlet, useParams, type ParsedLocation } from '@tanstack/react-router'
 import { useMemo } from 'react'
 
 import { shellRouteFromMatch } from '@/app/navigation'
@@ -7,13 +7,14 @@ import type { Scope } from '@/shared/types'
 
 type ScopedShellRouteLayoutProps = {
 	scope: Scope
+	location: ParsedLocation
 }
 
 /**
- * 工作区壳：scope 来自 $scopeKey layout；ShellRoute 由 match 投影。
+ * scope 和 location 来自已提交的 route context，与 params 同步切换。
+ * 直接读取 useLocation 会在新页面就绪前把旧页面的面包屑切走。
  */
-export function ScopedShellRouteLayout({ scope }: ScopedShellRouteLayoutProps) {
-	const location = useLocation()
+export function ScopedShellRouteLayout({ scope, location }: ScopedShellRouteLayoutProps) {
 	const params = useParams({ strict: false })
 	const shellRoute = useMemo(
 		() =>

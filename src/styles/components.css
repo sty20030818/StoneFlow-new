@@ -14,7 +14,7 @@
 	}
 
 	/* Tooltip.Trigger 与按钮复合时不能覆盖按钮的 flex 对齐语义。 */
-	[data-theme="stoneflow-light"] :is(.button, .toggle-button).tooltip__trigger {
+	[data-theme="stoneflow-light"] :is(.button, .toggle-button, .close-button).tooltip__trigger {
 		display: inline-flex;
 	}
 
@@ -412,6 +412,20 @@
 		border-radius: var(--radius-pill);
 	}
 
+	/* Header 搜索保持平白底；只给键盘焦点贴边提示，不叠加字段阴影与外扩 ring。 */
+	[data-theme="stoneflow-light"] [data-sf-search-root="true"] .search-field__group {
+		box-shadow: none;
+	}
+
+	@media (forced-colors: none) {
+		[data-theme="stoneflow-light"]
+			[data-sf-search-root="true"]
+			.search-field__group[data-focus-visible="true"] {
+			outline: 2px solid var(--focus);
+			outline-offset: -2px;
+		}
+	}
+
 	/* 全局搜索不是 Popover state machine，但视觉语义仍是浮层。 */
 	[data-theme="stoneflow-light"] [data-global-search-results="true"] {
 		border: var(--border-width) solid var(--border);
@@ -419,6 +433,17 @@
 		background: var(--overlay);
 		color: var(--overlay-foreground);
 		box-shadow: var(--overlay-shadow);
+	}
+
+	/* Hover 与方向键共同更新 current；旧指针位置不能留下第二条高亮。 */
+	[data-theme="stoneflow-light"] [data-global-search-results="true"] .list-view__item {
+		background: transparent;
+	}
+
+	[data-theme="stoneflow-light"]
+		[data-global-search-results="true"]
+		.list-view__item[aria-current="true"] {
+		background: var(--surface-active);
 	}
 
 	[data-theme="stoneflow-light"] .surface[data-native-window-surface="true"] {
@@ -641,6 +666,14 @@
 		/* 只接管真实 DOM 焦点，避免 React Aria 的复合组件状态给外壳重复画框。 */
 		[data-theme="stoneflow-light"] :focus-visible {
 			box-shadow: none;
+			outline: 2px solid Highlight;
+			outline-offset: -2px;
+		}
+
+		/* 搜索方向键保留输入焦点；强制颜色抹平底色时，current 仍需可辨识。 */
+		[data-theme="stoneflow-light"]
+			[data-global-search-results="true"]
+			.list-view__item[aria-current="true"] {
 			outline: 2px solid Highlight;
 			outline-offset: -2px;
 		}

@@ -165,32 +165,52 @@ describe('GlobalSearchInput', () => {
 		expect(onOpenProject).toHaveBeenCalledWith(expect.objectContaining({ id: 'project-1' }))
 	})
 
-	it('方向键切换时会把高亮结果滚动到可视区域', async () => {
+	it('鼠标与方向键共用当前结果，跨分组移动后能打开对应项目', async () => {
+		const onOpenTask = vi.fn()
+		const onOpenProject = vi.fn()
 		mockedSearchEntities.mockResolvedValue({
 			tasks: [
 				createTaskResult({ id: 'task-1', title: '任务 A' }),
 				createTaskResult({ id: 'task-2', title: '任务 B' }),
 			],
-			projects: [],
+			projects: [createProjectResult({ id: 'project-1', name: '项目 A' })],
 			completedTasks: [],
 			completedProjects: [],
 		})
 
-		renderSearch()
+		renderSearch({ onOpenTask, onOpenProject })
 		const input = screen.getByLabelText('全局搜索')
+		act(() => input.focus())
 		fireEvent.change(input, { target: { value: '任务' } })
 		await flushSearch(1)
-		const [firstRow, secondRow] = screen.getAllByRole('row')
+		const [firstRow, secondRow, projectRow] = screen.getAllByRole('row')
 		expect(firstRow).toHaveAttribute('aria-current', 'true')
 		expect(secondRow).not.toHaveAttribute('aria-current')
+
+		fireEvent.pointerEnter(secondRow!, { pointerType: 'mouse' })
+		expect(firstRow).not.toHaveAttribute('aria-current')
+		expect(secondRow).toHaveAttribute('aria-current', 'true')
 
 		fireEvent.keyDown(input, { key: 'ArrowDown' })
 
 		expect(HTMLElement.prototype.scrollIntoView).toHaveBeenCalled()
-		await waitFor(() => {
-			expect(firstRow).not.toHaveAttribute('aria-current')
-			expect(secondRow).toHaveAttribute('aria-current', 'true')
-		})
+		expect(firstRow).not.toHaveAttribute('aria-current')
+		expect(secondRow).not.toHaveAttribute('aria-current')
+		expect(projectRow).toHaveAttribute('aria-current', 'true')
+		expect(input).toHaveFocus()
+
+		act(() => firstRow!.focus())
+		expect(firstRow).toHaveAttribute('aria-current', 'true')
+		expect(projectRow).not.toHaveAttribute('aria-current')
+		act(() => input.focus())
+		fireEvent.keyDown(input, { key: 'ArrowUp' })
+		expect(projectRow).toHaveAttribute('aria-current', 'true')
+
+		fireEvent.keyDown(input, { key: 'Enter' })
+		expect(onOpenTask).not.toHaveBeenCalled()
+		expect(onOpenProject).toHaveBeenCalledWith(expect.objectContaining({ id: 'project-1' }))
+		expect(input).toHaveValue('')
+		expect(screen.queryByRole('grid', { name: '项目搜索结果' })).not.toBeInTheDocument()
 	})
 })
 

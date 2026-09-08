@@ -11,6 +11,8 @@ import {
 
 import { AppScrollArea } from '@/shared/components/AppScrollArea'
 
+export const PAGE_HEADER_HEIGHT = 44
+
 type PageFrameHeaderProps = {
 	breadcrumb?: ReactNode
 	title?: string
@@ -51,7 +53,10 @@ function PageFrameRoot({ children }: PageFrameSlotProps) {
 function PageFrameHeader({ breadcrumb, title, actions }: PageFrameHeaderProps) {
 	return (
 		<div className='shrink-0'>
-			<header className='flex h-11 items-center justify-between gap-3 px-2'>
+			<header
+				className='flex items-center justify-between gap-3 px-2'
+				style={{ height: PAGE_HEADER_HEIGHT }}
+			>
 				<div className='min-w-0 flex-1'>
 					{breadcrumb ?? (
 						<h1 className='truncate text-sm font-semibold leading-5 text-foreground'>{title}</h1>

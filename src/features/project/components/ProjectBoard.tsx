@@ -1,4 +1,4 @@
-import { Alert, Button, Skeleton } from '@heroui/react'
+import { Alert, Button } from '@heroui/react'
 import { ContextMenu, EmptyState } from '@heroui-pro/react'
 import { ArchiveIcon, CheckIcon, ChevronRightIcon, FolderIcon, PlayIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
@@ -15,7 +15,6 @@ import {
 	BoardSectionContextMenu,
 	BoardSectionHeader,
 	COLLECTION_ITEM_GAP,
-	COLLECTION_ROW_HEIGHT,
 	COLLECTION_SECTION_HEADER_HEIGHT,
 	getBoardRowSelectionPosition,
 } from '@/shared/components/board'
@@ -54,7 +53,11 @@ export function ProjectBoard({
 	onComplete,
 	onReopen,
 }: ProjectBoardProps) {
-	if (status === 'idle' || status === 'loading') return <ProjectBoardLoading />
+	if (status === 'idle' || status === 'loading') {
+		return (
+			<div aria-busy='true' aria-label='正在读取项目' className='min-h-0 flex-1' role='region' />
+		)
+	}
 
 	if (status === 'error') {
 		return (
@@ -256,38 +259,6 @@ function ProjectBoardSection({
 				</div>
 			) : null}
 		</section>
-	)
-}
-
-function ProjectBoardLoading() {
-	return (
-		<div
-			aria-busy='true'
-			aria-label='正在读取项目'
-			className='flex flex-col'
-			style={{ gap: COLLECTION_ITEM_GAP }}
-		>
-			{Array.from({ length: 2 }, (_, sectionIndex) => (
-				<div className='flex flex-col' key={sectionIndex} style={{ gap: COLLECTION_ITEM_GAP }}>
-					<div style={{ height: COLLECTION_SECTION_HEADER_HEIGHT }}>
-						<Skeleton
-							animationType='none'
-							className='w-40'
-							style={{ height: COLLECTION_SECTION_HEADER_HEIGHT }}
-						/>
-					</div>
-					{Array.from({ length: 3 }, (_, rowIndex) => (
-						<div key={rowIndex} style={{ height: COLLECTION_ROW_HEIGHT }}>
-							<Skeleton
-								animationType='none'
-								className='w-full'
-								style={{ height: COLLECTION_ROW_HEIGHT }}
-							/>
-						</div>
-					))}
-				</div>
-			))}
-		</div>
 	)
 }
 

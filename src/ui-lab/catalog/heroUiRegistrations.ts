@@ -218,7 +218,7 @@ const OSS_PRODUCTION_USAGE = [
 	['src/features/launcher/results/ContinuousToast.tsx', ['Alert', 'Chip']],
 	['src/features/launcher/results/adapters/ProjectResultRowAdapter.tsx', ['Button']],
 	['src/features/launcher/results/adapters/TaskResultRowAdapter.tsx', ['Button']],
-	['src/features/lifecycle/components/LifecycleBoard.tsx', ['Alert', 'Button', 'Skeleton']],
+	['src/features/lifecycle/components/LifecycleBoard.tsx', ['Alert', 'Button']],
 	['src/features/lifecycle/components/LifecycleRowAdapter.tsx', ['Button', 'Checkbox']],
 	['src/features/metadata-fields/components/CustomDateDialog.tsx', ['Button', 'Calendar', 'Modal']],
 	['src/features/metadata-fields/components/MetadataFieldButton.tsx', ['Button']],
@@ -227,7 +227,7 @@ const OSS_PRODUCTION_USAGE = [
 	['src/features/metadata-fields/components/MetadataFieldValue.tsx', ['Chip']],
 	['src/features/metadata-fields/components/MetadataPlacementDropdown.tsx', ['Dropdown']],
 	['src/features/metadata-fields/components/MetadataPlacementGroupList.tsx', ['Dropdown']],
-	['src/features/project/components/ProjectBoard.tsx', ['Alert', 'Button', 'Skeleton']],
+	['src/features/project/components/ProjectBoard.tsx', ['Alert', 'Button']],
 	[
 		'src/features/project/components/ProjectCreateContent.tsx',
 		['Alert', 'Button', 'FieldError', 'Form', 'Input', 'Switch', 'TextArea', 'TextField'],
@@ -269,7 +269,7 @@ const OSS_PRODUCTION_USAGE = [
 		['Alert', 'Button', 'FieldError', 'Label', 'Modal', 'TextArea', 'TextField', 'toast'],
 	],
 	['src/features/sync/components/SyncFooterStatusItem.tsx', ['Button', 'Spinner']],
-	['src/features/task/components/TaskBoard.tsx', ['Alert', 'Button', 'Chip', 'Skeleton']],
+	['src/features/task/components/TaskBoard.tsx', ['Alert', 'Button', 'Chip']],
 	['src/features/task/components/TaskContextMenu.tsx', ['Header']],
 	[
 		'src/features/task/components/TaskCreateContent.tsx',
@@ -310,7 +310,7 @@ const OSS_PRODUCTION_USAGE = [
 	['src/features/update/hooks/useManualUpdateCheck.ts', ['toast']],
 	['src/features/update/hooks/useUpdateEvents.ts', ['toast']],
 	['src/features/update/hooks/useUpdateInstallActions.ts', ['toast']],
-	['src/features/view/components/SavedViewPage.tsx', ['Button', 'Skeleton']],
+	['src/features/view/components/SavedViewPage.tsx', ['Button']],
 	['src/features/view/components/ViewActionsMenu.tsx', ['Button', 'Dropdown']],
 	[
 		'src/features/view/components/ViewEditorDialog.tsx',

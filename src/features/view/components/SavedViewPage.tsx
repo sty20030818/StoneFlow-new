@@ -1,4 +1,4 @@
-import { Button, Skeleton } from '@heroui/react'
+import { Button } from '@heroui/react'
 import { EmptyState } from '@heroui-pro/react'
 import { AlertCircleIcon, ArrowLeftIcon, BookmarkXIcon, PlusIcon } from 'lucide-react'
 
@@ -80,11 +80,12 @@ function SavedViewPageState({ scene }: { scene: WorkspaceScene }) {
 			<PageFrame.Header breadcrumb={<AppBreadcrumb items={scene.breadcrumbItems} />} />
 			<PageFrame.Body>
 				{scene.viewStatus === 'loading' ? (
-					<div aria-label='正在加载保存视图' className='grid gap-2'>
-						<Skeleton className='h-9' />
-						<Skeleton className='h-11' />
-						<Skeleton className='h-11' />
-					</div>
+					<div
+						aria-busy='true'
+						aria-label='正在加载保存视图'
+						className='min-h-0 flex-1'
+						role='region'
+					/>
 				) : (
 					<EmptyState className='mx-auto my-auto max-w-md'>
 						<EmptyState.Header>

@@ -26,7 +26,8 @@ describe('PageFrame', () => {
 
 		expect(screen.getByRole('heading', { name: '页面标题' })).toBeInTheDocument()
 		const pageAction = screen.getByRole('button', { name: '页级操作' })
-		expect(pageAction.closest('header')).toHaveClass('h-11', 'px-2')
+		expect(pageAction.closest('header')).toHaveStyle({ height: '44px' })
+		expect(pageAction.closest('header')).toHaveClass('px-2')
 		const pill = screen.getByRole('radio', { name: '进行中' })
 		const inactivePill = screen.getByRole('radio', { name: '待执行' })
 		const toolbar = screen.getByRole('toolbar', { name: '页面工具栏' })

@@ -176,7 +176,7 @@ export function GlobalSearchInput({ onOpenTask, onOpenProject }: GlobalSearchInp
 				}}
 				onClear={clearSearch}
 				value={query}
-				variant='secondary'
+				variant='primary'
 			>
 				<SearchField.Group className='w-full'>
 					<SearchField.SearchIcon />
@@ -196,9 +196,7 @@ export function GlobalSearchInput({ onOpenTask, onOpenProject }: GlobalSearchInp
 
 					{shouldShowClearHint ? (
 						<CommandActionTooltip commandId={COMMAND_IDS.close} label='清空并关闭搜索'>
-							<SearchField.ClearButton aria-label='清空并关闭搜索' className='mr-1 shrink-0'>
-								<CommandShortcut commandId={COMMAND_IDS.close} />
-							</SearchField.ClearButton>
+							<SearchField.ClearButton aria-label='清空并关闭搜索' className='mr-1 shrink-0' />
 						</CommandActionTooltip>
 					) : (
 						<span className='mr-2.5 shrink-0' aria-hidden>
