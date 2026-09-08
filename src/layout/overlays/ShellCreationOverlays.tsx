@@ -6,8 +6,9 @@ import { ProjectCreateContent } from '@/features/project'
 import type { CustomDateDialogState } from '@/features/shell-dialogs'
 import { CustomDateDialog } from '@/features/metadata-fields'
 import { TaskCreateContent } from '@/features/task'
+import type { CreateModalHeaderProps } from '@/shared/components/create-modal-content'
 import type { Scope, Space, TaskPlacement, TaskStatus } from '@/shared/types'
-import { CreateDialogShell } from '@/layout/CreateDialogShell'
+import { CreateDialogHeader, CreateDialogShell } from '@/layout/CreateDialogShell'
 
 type TaskCreateDraft = {
 	projectId?: string | null
@@ -18,7 +19,6 @@ type TaskCreateDraft = {
 export type ShellCreationOverlaysProps = {
 	createDialogType: 'task' | 'project' | null
 	shouldDelayTaskCreateDialog: boolean
-	selectedSpaceId: string | null
 	defaultCreateSpaceId: string | null
 	taskCreatePresentation: 'default' | 'fullscreen'
 	taskCreateDraft: TaskCreateDraft
@@ -27,7 +27,6 @@ export type ShellCreationOverlaysProps = {
 	projectsLoading: boolean
 	currentScope: Scope
 	customDateDialog: CustomDateDialogState | null
-	setSelectedSpaceId: (id: string | null) => void
 	closeTaskCreateDialog: () => void
 	closeProjectCreateDialog: () => void
 	toggleTaskCreatePresentation: () => void
@@ -37,7 +36,6 @@ export type ShellCreationOverlaysProps = {
 export function ShellCreationOverlays({
 	createDialogType,
 	shouldDelayTaskCreateDialog,
-	selectedSpaceId,
 	defaultCreateSpaceId,
 	taskCreatePresentation,
 	taskCreateDraft,
@@ -46,54 +44,65 @@ export function ShellCreationOverlays({
 	projectsLoading,
 	currentScope,
 	customDateDialog,
-	setSelectedSpaceId,
 	closeTaskCreateDialog,
 	closeProjectCreateDialog,
 	toggleTaskCreatePresentation,
 	closeCustomDateDialog,
 }: ShellCreationOverlaysProps) {
 	const navigate = useNavigate({ from: '/' })
+	const isTaskCreate = createDialogType === 'task'
+	const title = isTaskCreate ? '新建任务' : '新建项目'
+	const closeCreateDialog = isTaskCreate ? closeTaskCreateDialog : closeProjectCreateDialog
+	const fullscreen = isTaskCreate && taskCreatePresentation === 'fullscreen'
+	const renderHeader = (props: CreateModalHeaderProps) => (
+		<CreateDialogHeader
+			{...props}
+			fullscreen={fullscreen}
+			onClose={closeCreateDialog}
+			onToggleFullscreen={isTaskCreate ? toggleTaskCreatePresentation : undefined}
+			spaces={spaces}
+			title={title}
+		/>
+	)
 
 	return (
 		<>
 			{createDialogType && !shouldDelayTaskCreateDialog ? (
 				<CreateDialogShell
 					description={
-						createDialogType === 'task'
+						isTaskCreate
 							? '创建新任务，设置标题、描述、状态、优先级与归属。'
 							: '在目标 Space 中创建新项目，填写名称与说明。'
 					}
-					fullscreen={createDialogType === 'task' && taskCreatePresentation === 'fullscreen'}
-					onClose={createDialogType === 'task' ? closeTaskCreateDialog : closeProjectCreateDialog}
-					onSelectSpace={setSelectedSpaceId}
-					onToggleFullscreen={toggleTaskCreatePresentation}
+					fullscreen={fullscreen}
+					onClose={closeCreateDialog}
 					open
-					selectedSpaceId={selectedSpaceId ?? defaultCreateSpaceId}
-					showFullscreenToggle={createDialogType === 'task'}
-					spaces={spaces}
-					title={createDialogType === 'task' ? '新建任务' : '新建项目'}
+					title={title}
 				>
-					{createDialogType === 'task' ? (
+					{isTaskCreate ? (
 						<TaskCreateContent
 							currentScope={currentScope}
 							initialPlacement={taskCreateDraft.placement ?? null}
 							initialProjectId={taskCreateDraft.projectId ?? null}
+							initialSpaceId={defaultCreateSpaceId}
 							initialStatus={taskCreateDraft.status ?? 'todo'}
 							onClose={closeTaskCreateDialog}
 							projects={projectOptions}
 							projectsLoading={projectsLoading}
-							selectedSpaceId={selectedSpaceId ?? defaultCreateSpaceId}
+							renderHeader={renderHeader}
 							spaces={spaces}
 						/>
 					) : (
 						<ProjectCreateContent
+							spaces={spaces}
+							initialSpaceId={defaultCreateSpaceId}
 							onClose={closeProjectCreateDialog}
 							onCreated={(project) => {
 								void navigate({
 									to: openCanonicalProjectDetail(project.id, project.spaceId) as never,
 								})
 							}}
-							selectedSpaceId={selectedSpaceId}
+							renderHeader={renderHeader}
 						/>
 					)}
 				</CreateDialogShell>

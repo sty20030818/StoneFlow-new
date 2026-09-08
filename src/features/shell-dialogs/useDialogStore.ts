@@ -143,6 +143,7 @@ export const useDialogStore = create<DialogState>((set) => ({
 			createDialogType: null,
 			taskCreateDraft: { ...defaultTaskDraft },
 			taskCreatePresentation: 'default',
+			customDateDialog: null,
 		}),
 	toggleTaskCreatePresentation: () =>
 		set((state) => ({
@@ -166,6 +167,7 @@ export const useDialogStore = create<DialogState>((set) => ({
 		set({
 			createDialogType: null,
 			taskCreatePresentation: 'default',
+			customDateDialog: null,
 		}),
 	openCustomDateDialog: (customDateDialog) => {
 		set({
@@ -173,9 +175,6 @@ export const useDialogStore = create<DialogState>((set) => ({
 			commandMenuMode: 'default',
 			commandSelectionOverride: null,
 			isShortcutHelpOpen: false,
-			createDialogType: null,
-			taskCreateDraft: { ...defaultTaskDraft },
-			taskCreatePresentation: 'default',
 			customDateDialog,
 		})
 	},

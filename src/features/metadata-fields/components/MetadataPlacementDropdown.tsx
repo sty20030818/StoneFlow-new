@@ -16,7 +16,7 @@ import {
 import { ShortcutDigitSelectLayer } from '@/shared/components/shortcut-menu'
 import { ActionTooltip, DisabledActionTooltip } from '@/shared/components/tooltip'
 
-import { MetadataFieldButton } from './MetadataFieldButton'
+import { MetadataFieldButton, type MetadataFieldButtonAppearance } from './MetadataFieldButton'
 import type { MetadataCommandShortcut } from './MetadataFieldDropdown'
 import { MetadataPlacementGroupList } from './MetadataPlacementGroupList'
 
@@ -28,7 +28,7 @@ type MetadataPlacementDropdownProps = {
 	buttonIcon?: ReactNode
 	buttonLabel?: ReactNode
 	compact?: boolean
-	buttonAppearance?: 'default' | 'row-icon'
+	buttonAppearance?: MetadataFieldButtonAppearance
 	disabled?: boolean
 	disabledReason?: ReactNode
 	drawerOwnedOverlay?: boolean

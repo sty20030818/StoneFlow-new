@@ -53,6 +53,10 @@ export function registerShellChromeCommands(
 		},
 		closeCurrentLayer: (ctx) => {
 			const dialogState = useDialogStore.getState()
+			if (dialogState.customDateDialog) {
+				dialogState.closeCustomDateDialog()
+				return
+			}
 			if (dialogState.createDialogType === 'task') {
 				dialogState.closeTaskCreateDialog()
 				return

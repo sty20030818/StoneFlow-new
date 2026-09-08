@@ -1,8 +1,5 @@
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
-import {
-	placementDraftFromTarget,
-	targetFromPlacementDraft,
-} from '@/features/task/model/taskPlacement'
+import { targetFromPlacementDraft } from '@/features/task/model/taskPlacement'
 import type { TaskPlacement } from '@/shared/types'
 import type { TaskStatus } from '@/shared/types'
 import type { ProjectOption } from '@/features/project'
@@ -32,6 +29,7 @@ export function StatusMetaAction({
 
 	return (
 		<MetadataFieldDropdown
+			buttonAppearance='outline'
 			disabled={disabled}
 			fieldKey='status'
 			label='状态'
@@ -59,6 +57,7 @@ export function PriorityMetaAction({
 
 	return (
 		<MetadataFieldDropdown
+			buttonAppearance='outline'
 			disabled={disabled}
 			fieldKey='priority'
 			label='优先级'
@@ -71,7 +70,7 @@ export function PriorityMetaAction({
 }
 
 /**
- * 归属元数据下拉 — grouped local placement。
+ * 创建归属下拉允许跨 Space 选择，完整目标交给表单统一更新。
  */
 export function PlacementMetaAction({
 	disabled,
@@ -88,10 +87,10 @@ export function PlacementMetaAction({
 	projectId: string
 	spaces: Array<{ id: string; name: string }>
 	projects: ProjectOption[]
-	onPlacementChange: (placement: TaskPlacement, projectId: string | null) => void
+	onPlacementChange: (target: TaskPlacementTarget) => void
 }) {
 	const groupedDropdownProps = createTaskPlacementGroupedDropdownProps({
-		mode: 'local',
+		mode: 'global',
 		currentSpaceId: spaceId,
 		spaces,
 		projects,
@@ -101,6 +100,7 @@ export function PlacementMetaAction({
 
 	return (
 		<MetadataPlacementDropdown
+			buttonAppearance='outline'
 			buttonIcon={needsProjectSelection ? <FolderIcon className='size-3.5' /> : undefined}
 			buttonLabel={needsProjectSelection ? '选择项目' : undefined}
 			disabled={disabled}
@@ -109,10 +109,7 @@ export function PlacementMetaAction({
 			label='归属'
 			menuLabel={groupedDropdownProps.menuLabel}
 			value={value}
-			onChange={(nextValue: TaskPlacementTarget) => {
-				const next = placementDraftFromTarget(nextValue)
-				onPlacementChange(next.placement, next.projectId)
-			}}
+			onChange={onPlacementChange}
 		/>
 	)
 }

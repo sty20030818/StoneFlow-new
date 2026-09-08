@@ -24,6 +24,8 @@ StoneFlow 曾同时存在 Radix/shadcn primitive、平行 base、纯 class patte
 10. 全局几何使用少量语义角色而非一个万能值：Control `6px`、Surface `8px`、Overlay `12px`，pill 只用于适合的封闭控件与状态标记，现行适用范围由 A3 与 `src/styles/ARCHITECTURE.md` 维护；HeroUI `sm/md/lg` 高度映射为 `28/32/36px`，强调度只由 variant 决定；结构 Surface 使用 `1px` 边框，Row 使用分隔线，阴影只用于浮层或拖拽 elevation。
 11. 跨 Feature 共享只保留具有真实行为、组合合同或产品语义的深 Module。纯 class 字符串、透传 wrapper 与只有一个实现的假想 Adapter 必须删除；`shared/components/patterns`、旧 `shared/components/base`、旧 token/shadcn adapter 均 hard cut，不保留兼容出口。
 
+创建工作面补充决定：应用内 Task / Project 创建是共享的窄产品语义，容器采用 `24px` 圆角，内边距与分区间隔统一 spacing `3`（`12px`），Header 分隔符与属性间隔为 spacing `1.5`（`6px`），标题与描述全交互态透明无 ring（强制颜色保留系统焦点）。由现有 `components.css` 的创建专属 hook 表达，不改变普通 Overlay `12px` 或其他表单皮肤，也不新增通用 appearance 参数；创建属性使用 HeroUI 原生 outline。Header 通过组合槽直接读写领域表单归属，自定义日期叠加在创建会话上；不建立第二份表单、焦点或日期状态机。
+
 ## 后果
 
 ### 正向影响

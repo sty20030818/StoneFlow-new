@@ -46,35 +46,42 @@ describe('CommandActionTooltip', () => {
 		expect(screen.queryByLabelText(/^按|^依次按/)).not.toBeInTheDocument()
 	})
 
-	it('禁用控件仍可聚焦，并展示同一命令的快捷键', async () => {
-		const registry = new KeybindingRegistry([
-			{
-				allowInEditable: true,
-				commandId: COMMAND_IDS.saveOrSubmit,
-				display: 'primary',
-				preventDefault: true,
-				scope: 'global',
-				sequence: [{ key: 'f' }],
-			},
-		])
+	it.each([undefined, -1] as const)(
+		'禁用控件支持 tabIndex=%s，hover 仍展示命令快捷键',
+		async (tabIndex) => {
+			const registry = new KeybindingRegistry([
+				{
+					allowInEditable: true,
+					commandId: COMMAND_IDS.saveOrSubmit,
+					display: 'primary',
+					preventDefault: true,
+					scope: 'global',
+					sequence: [{ key: 'f' }],
+				},
+			])
 
-		renderTooltip(
-			registry,
-			<DisabledCommandActionTooltip commandId={COMMAND_IDS.saveOrSubmit} label='创建任务'>
-				<button disabled type='button'>
-					创建任务
-				</button>
-			</DisabledCommandActionTooltip>,
-		)
+			renderTooltip(
+				registry,
+				<DisabledCommandActionTooltip
+					commandId={COMMAND_IDS.saveOrSubmit}
+					label='创建任务'
+					tabIndex={tabIndex}
+				>
+					<button disabled type='button'>
+						创建任务
+					</button>
+				</DisabledCommandActionTooltip>,
+			)
 
-		const trigger = document.querySelector('[data-slot="disabled-command-action-tooltip-trigger"]')
-		expect(trigger).toHaveAttribute('tabindex', '0')
-		expect(trigger).toHaveAttribute('aria-disabled', 'true')
-		fireEvent.pointerMove(trigger!, { pointerType: 'mouse' })
-		fireEvent.pointerEnter(trigger!, { pointerType: 'mouse' })
-		expect(await screen.findByRole('tooltip')).toHaveTextContent('创建任务F')
-		expect(screen.getByLabelText('按 F')).toBeInTheDocument()
-	})
+			const trigger = screen.getByRole('group', { name: '创建任务' })
+			expect(trigger).toHaveAttribute('tabindex', String(tabIndex ?? 0))
+			expect(trigger).toHaveAttribute('aria-disabled', 'true')
+			fireEvent.pointerMove(trigger, { pointerType: 'mouse' })
+			fireEvent.pointerEnter(trigger, { pointerType: 'mouse' })
+			expect(await screen.findByRole('tooltip')).toHaveTextContent('创建任务F')
+			expect(screen.getByLabelText('按 F')).toBeInTheDocument()
+		},
+	)
 })
 
 function renderTooltip(registry: KeybindingRegistry, ui: React.ReactNode) {

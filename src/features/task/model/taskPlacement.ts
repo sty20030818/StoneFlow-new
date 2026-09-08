@@ -28,15 +28,3 @@ export function targetFromPlacementDraft(
 		projectId: placement === 'project' ? projectId : null,
 	})
 }
-
-/** 菜单 Target → 创建草稿字段。 */
-export function placementDraftFromTarget(target: TaskPlacementTarget): {
-	placement: TaskPlacement
-	projectId: string | null
-} {
-	if (target.kind === 'project') {
-		return { placement: 'project', projectId: target.projectId }
-	}
-
-	return { placement: 'standalone', projectId: null }
-}

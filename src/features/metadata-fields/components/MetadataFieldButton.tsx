@@ -7,6 +7,8 @@ type StopEvent = {
 	stopPropagation: () => void
 }
 
+export type MetadataFieldButtonAppearance = 'default' | 'outline' | 'row-icon'
+
 type MetadataFieldButtonProps = {
 	icon?: ReactNode
 	label: ReactNode
@@ -14,7 +16,7 @@ type MetadataFieldButtonProps = {
 	ariaLabel?: string
 	stopPropagation?: boolean
 	compact?: boolean
-	appearance?: 'default' | 'row-icon'
+	appearance?: MetadataFieldButtonAppearance
 	disabled?: boolean
 	suppressOverflowTooltip?: boolean
 }
@@ -73,7 +75,7 @@ export const MetadataFieldButton = forwardRef<HTMLButtonElement, MetadataFieldBu
 				ref={ref}
 				size='sm'
 				type='button'
-				variant='ghost'
+				variant={appearance === 'outline' ? 'outline' : 'ghost'}
 			>
 				<span className='flex min-w-0 items-center gap-2 text-left'>
 					{icon}

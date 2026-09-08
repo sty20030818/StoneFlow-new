@@ -14,6 +14,9 @@ import { registerShellChromeCommands } from '@/layout/command-bridge/registerShe
 const shortcutRegistry = new KeybindingRegistry(DEFAULT_KEYBINDINGS)
 
 describe('Shell Escape priority', () => {
+	beforeEach(() => useDialogStore.setState(useDialogStore.getInitialState()))
+	afterEach(() => useDialogStore.setState(useDialogStore.getInitialState()))
+
 	it('Menu、Dialog、Sheet 已消费的 Escape 不进入 Shell 关层命令', () => {
 		vi.useFakeTimers()
 		const onTrigger = vi.fn()
@@ -60,6 +63,29 @@ describe('Shell Escape priority', () => {
 		harness.closeCurrentLayer(harness.context)
 
 		expect(useDialogStore.getState().createDialogType).toBeNull()
+		expect([
+			harness.closeEntityDrawer.mock.calls.length,
+			harness.closePreview.mock.calls.length,
+			harness.clearSelection.mock.calls.length,
+			harness.goBack.mock.calls.length,
+		]).toEqual([0, 0, 0, 0])
+	})
+
+	it('日期 Overlay 挂载前的 Escape 只关闭日期，不关闭其下的创建会话', () => {
+		const harness = createCloseHarness({ detail: true, preview: true, selection: true })
+		useDialogStore.getState().openTaskCreateDialog({ projectId: 'project-loading' }, 'fullscreen')
+		useDialogStore.getState().openCustomDateDialog({
+			label: '截止时间',
+			value: null,
+			hasExistingValue: false,
+			onSubmit: null,
+		})
+
+		harness.closeCurrentLayer(harness.context)
+
+		expect(useDialogStore.getState().customDateDialog).toBeNull()
+		expect(useDialogStore.getState().createDialogType).toBe('task')
+		expect(useDialogStore.getState().taskCreatePresentation).toBe('fullscreen')
 		expect([
 			harness.closeEntityDrawer.mock.calls.length,
 			harness.closePreview.mock.calls.length,

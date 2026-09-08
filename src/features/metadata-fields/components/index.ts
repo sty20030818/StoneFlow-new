@@ -1,5 +1,5 @@
 export { MetadataFieldDropdown } from './MetadataFieldDropdown'
-export { MetadataDateDropdown } from './MetadataDateDropdown'
+export { MetadataDateDropdown, MetadataDateSubmenu } from './MetadataDateDropdown'
 export { MetadataFieldValue } from './MetadataFieldValue'
 export { CustomDateDialog } from './CustomDateDialog'
 export { MetadataPlacementDropdown } from './MetadataPlacementDropdown'

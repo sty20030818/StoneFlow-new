@@ -223,6 +223,7 @@ const OSS_PRODUCTION_USAGE = [
 	['src/features/metadata-fields/components/CustomDateDialog.tsx', ['Button', 'Calendar', 'Modal']],
 	['src/features/metadata-fields/components/MetadataFieldButton.tsx', ['Button']],
 	['src/features/metadata-fields/components/MetadataFieldDropdown.tsx', ['Dropdown']],
+	['src/features/metadata-fields/components/MetadataDateDropdown.tsx', ['Dropdown']],
 	['src/features/metadata-fields/components/MetadataFieldMenuItem.tsx', ['Dropdown', 'Kbd']],
 	['src/features/metadata-fields/components/MetadataFieldValue.tsx', ['Chip']],
 	['src/features/metadata-fields/components/MetadataPlacementDropdown.tsx', ['Dropdown']],
@@ -230,7 +231,7 @@ const OSS_PRODUCTION_USAGE = [
 	['src/features/project/components/ProjectBoard.tsx', ['Alert', 'Button']],
 	[
 		'src/features/project/components/ProjectCreateContent.tsx',
-		['Alert', 'Button', 'FieldError', 'Form', 'Input', 'Switch', 'TextArea', 'TextField'],
+		['Button', 'FieldError', 'Form', 'Input', 'Switch', 'TextArea', 'TextField'],
 	],
 	['src/features/project/components/ProjectPage.tsx', ['Button', 'Dropdown']],
 	['src/features/project/components/ProjectRowAdapter.tsx', ['Button', 'Checkbox']],
@@ -271,6 +272,8 @@ const OSS_PRODUCTION_USAGE = [
 	['src/features/sync/components/SyncFooterStatusItem.tsx', ['Button', 'Spinner']],
 	['src/features/task/components/TaskBoard.tsx', ['Alert', 'Button', 'Chip']],
 	['src/features/task/components/TaskContextMenu.tsx', ['Header']],
+	['src/features/task/components/TaskCreateDateProperties.tsx', ['Button', 'Dropdown']],
+	['src/ui-lab/samples/createDialogSamples.tsx', ['Button']],
 	[
 		'src/features/task/components/TaskCreateContent.tsx',
 		['Button', 'FieldError', 'Form', 'Input', 'Switch', 'TextArea', 'TextField'],
@@ -328,7 +331,7 @@ const OSS_PRODUCTION_USAGE = [
 	['src/routes/_shell/route.tsx', ['Button']],
 	['src/shared/components/AppBreadcrumb.tsx', ['Breadcrumbs']],
 	['src/shared/components/ShortcutTokens.tsx', ['Kbd']],
-	['src/shared/components/create-modal-content.tsx', ['ScrollShadow']],
+	['src/shared/components/create-modal-content.tsx', ['Button', 'ScrollShadow']],
 	[
 		'src/shared/components/page-frame/PageFrame.tsx',
 		['ScrollShadow', 'Separator', 'Surface', 'ToggleButton', 'ToggleButtonGroup', 'Toolbar'],

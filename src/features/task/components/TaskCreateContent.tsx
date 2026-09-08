@@ -5,7 +5,7 @@ import { Button, FieldError, Form, Input, Switch, TextArea, TextField } from '@h
 
 import { useEntityDetailController } from '@/features/entity-detail'
 import { COMMAND_IDS, CommandActionTooltip, DisabledCommandActionTooltip } from '@/features/command'
-import { MetadataDateDropdown, taskDateMetadataIcons } from '@/features/metadata-fields'
+import { TaskCreateDateProperties } from './TaskCreateDateProperties'
 import type { ProjectOption } from '@/features/project'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { useCreateTaskMutation } from '@/features/task/hooks'
@@ -17,7 +17,12 @@ import {
 import { useSubmitTargetFromForm, type SubmitIntent } from '@/features/submit'
 import { normalizeSubmitError, useZodForm } from '@/shared/form'
 import type { Scope, Space, TaskPlacement, TaskStatus } from '@/shared/types'
-import { CreateModalContent } from '@/shared/components/create-modal-content'
+import {
+	CreateModalContent,
+	useCreateDescriptionSize,
+	useCreateSessionActive,
+	type CreateModalHeaderProps,
+} from '@/shared/components/create-modal-content'
 import {
 	buildTaskCreateDefaultValues,
 	taskCreateSchema,
@@ -29,7 +34,8 @@ type TaskCreateContentProps = {
 	spaces: Space[]
 	initialPlacement: TaskPlacement | null
 	initialProjectId: string | null
-	selectedSpaceId: string | null
+	initialSpaceId: string | null
+	renderHeader: (props: CreateModalHeaderProps) => React.ReactNode
 	initialStatus: TaskStatus
 	onClose: () => void
 	projects: ProjectOption[]
@@ -45,7 +51,8 @@ export function TaskCreateContent({
 	spaces,
 	initialPlacement,
 	initialProjectId,
-	selectedSpaceId,
+	initialSpaceId,
+	renderHeader,
 	initialStatus,
 	onClose,
 	projects,
@@ -60,12 +67,12 @@ export function TaskCreateContent({
 			spaces,
 			initialPlacement,
 			initialProjectId,
-			selectedSpaceId,
+			initialSpaceId,
 			initialStatus,
 			projects,
 		}),
 	})
-	const { field: titleField, fieldState: titleFieldState } = useController({
+	const { field: titleField } = useController({
 		control: form.control,
 		name: 'title',
 	})
@@ -77,6 +84,7 @@ export function TaskCreateContent({
 		control: form.control,
 		name: 'priority',
 	})
+	const descriptionRef = useCreateDescriptionSize(noteField.value)
 	const { field: spaceIdField } = useController({ control: form.control, name: 'spaceId' })
 	const { field: placementField } = useController({
 		control: form.control,
@@ -104,6 +112,8 @@ export function TaskCreateContent({
 	const [errorMessage, setErrorMessage] = useState<string | null>(null)
 	const [createdCount, setCreatedCount] = useState(0)
 	const titleInputRef = useRef<HTMLInputElement>(null)
+	const submittingRef = useRef(false)
+	const sessionActive = useCreateSessionActive()
 	const isSubmitting = submitState === 'submitting'
 
 	const priority = priorityField.value as TaskPriorityValue
@@ -115,7 +125,9 @@ export function TaskCreateContent({
 	const plannedAt = plannedAtField.value
 	const remindAt = remindAtField.value
 	const hasPlacementTarget =
-		placement === 'project' ? projectId.trim().length > 0 : spaceId.trim().length > 0
+		spaces.some((space) => space.id === spaceId) &&
+		(placement === 'standalone' ||
+			projects.some((project) => project.id === projectId && project.spaceId === spaceId))
 	const canSubmit = !isSubmitting && titleField.value.trim().length > 0 && hasPlacementTarget
 	const placementError =
 		form.formState.errors.projectId?.message ?? form.formState.errors.spaceId?.message ?? null
@@ -135,19 +147,20 @@ export function TaskCreateContent({
 
 	const submitTask = useCallback(
 		async (intent: SubmitIntent = 'default') => {
-			const isValid = await form.trigger()
-			if (!isValid) {
-				return
-			}
-
-			const values = form.getValues()
-			const effectiveIntent = intent === 'default' && values.createMore ? 'continue' : intent
-
-			setSubmitState('submitting')
-			setErrorMessage(null)
-
+			if (submittingRef.current) return
+			submittingRef.current = true
 			try {
+				if (!(await form.trigger()) || !sessionActive.current) return
+				if (!hasPlacementTarget) {
+					form.setError('spaceId', { message: '创建归属已不可用，请重新选择空间或项目。' })
+					return
+				}
+				const values = form.getValues()
+				const effectiveIntent = intent === 'default' && values.createMore ? 'continue' : intent
+				setSubmitState('submitting')
+				setErrorMessage(null)
 				const createdTask = await createTask.mutateAsync(toTaskCreateInput(values))
+				if (!sessionActive.current) return
 
 				if (effectiveIntent === 'continue') {
 					resetFieldsOnly()
@@ -162,11 +175,14 @@ export function TaskCreateContent({
 					openTaskPage({ kind: 'task', id: createdTask.id })
 				}
 			} catch (error) {
+				if (!sessionActive.current) return
 				setSubmitState('error')
 				setErrorMessage(normalizeSubmitError(error, '创建任务失败'))
+			} finally {
+				submittingRef.current = false
 			}
 		},
-		[createTask, form, onClose, openTaskPage, resetFieldsOnly],
+		[createTask, form, hasPlacementTarget, onClose, openTaskPage, resetFieldsOnly, sessionActive],
 	)
 
 	useSubmitTargetFromForm({
@@ -195,6 +211,17 @@ export function TaskCreateContent({
 
 	return (
 		<FormProvider {...form}>
+			{renderHeader({
+				selectedSpaceId: spaceId,
+				disabled: isSubmitting,
+				onSelectSpace: (nextSpaceId) => {
+					spaceIdField.onChange(nextSpaceId)
+					if (nextSpaceId !== spaceId) {
+						placementField.onChange('standalone')
+						projectIdField.onChange('')
+					}
+				},
+			})}
 			<Form
 				aria-label='创建任务'
 				className='flex min-h-0 flex-1 flex-col'
@@ -209,8 +236,8 @@ export function TaskCreateContent({
 						<TextField
 							aria-label='任务标题'
 							fullWidth
-							isInvalid={titleFieldState.invalid}
 							isRequired
+							isReadOnly={isSubmitting}
 							name={titleField.name}
 							value={titleField.value}
 							onChange={titleField.onChange}
@@ -222,9 +249,7 @@ export function TaskCreateContent({
 								data-field-role='create-title'
 								onBlur={titleField.onBlur}
 								placeholder='任务标题'
-								variant='secondary'
 							/>
-							<FieldError>{titleFieldState.error?.message}</FieldError>
 						</TextField>
 					</CreateModalContent.Title>
 
@@ -233,83 +258,61 @@ export function TaskCreateContent({
 							aria-label='任务描述'
 							fullWidth
 							isInvalid={noteFieldState.invalid}
+							isReadOnly={isSubmitting}
 							name={noteField.name}
 							value={noteField.value}
 							onChange={noteField.onChange}
 						>
 							<TextArea
+								ref={descriptionRef}
 								aria-label='任务描述'
-								className='min-h-20 resize-none'
+								data-field-role='create-description'
 								onBlur={noteField.onBlur}
 								placeholder='添加描述…'
-								variant='secondary'
 							/>
 							<FieldError>{noteFieldState.error?.message}</FieldError>
 						</TextField>
 					</CreateModalContent.Body>
 
-					<CreateModalContent.Metadata error={metadataError}>
+					<CreateModalContent.Metadata>
 						<StatusMetaAction
-							disabled={false}
+							disabled={isSubmitting}
 							status={status}
 							onStatusChange={statusField.onChange}
 						/>
 						<PriorityMetaAction
-							disabled={false}
+							disabled={isSubmitting}
 							priority={priority}
 							onPriorityChange={priorityField.onChange}
 						/>
 						<PlacementMetaAction
-							disabled={projectsLoading}
+							disabled={isSubmitting || projectsLoading}
 							placement={placement}
 							spaceId={spaceId}
 							projectId={projectId}
 							projects={projects}
 							spaces={spaces.map((space) => ({ id: space.id, name: space.name }))}
-							onPlacementChange={(newPlacement, newProjectId) => {
-								placementField.onChange(newPlacement)
-								projectIdField.onChange(newProjectId ?? '')
-								if (newPlacement === 'project' && newProjectId) {
-									const targetProject = projects.find((project) => project.id === newProjectId)
-									if (targetProject) {
-										spaceIdField.onChange(targetProject.spaceId)
-									}
-									return
-								}
-
-								form.setValue('spaceId', spaceId, {
-									shouldDirty: true,
-									shouldValidate: true,
-								})
+							onPlacementChange={(target) => {
+								spaceIdField.onChange(target.spaceId)
+								placementField.onChange(target.kind)
+								projectIdField.onChange(target.kind === 'project' ? target.projectId : '')
 							}}
 						/>
-						<MetadataDateDropdown
-							icon={taskDateMetadataIcons.due}
-							label='截止时间'
-							value={dueAt}
-							onChange={dueAtField.onChange}
-						/>
-						<MetadataDateDropdown
-							icon={taskDateMetadataIcons.scheduled}
-							label='计划时间'
-							value={plannedAt}
-							onChange={plannedAtField.onChange}
-						/>
-						<MetadataDateDropdown
-							icon={taskDateMetadataIcons.reminder}
-							label='提醒时间'
-							value={remindAt}
-							onChange={remindAtField.onChange}
+						<TaskCreateDateProperties
+							dueAt={dueAt}
+							plannedAt={plannedAt}
+							remindAt={remindAt}
+							disabled={isSubmitting}
+							onDueAtChange={dueAtField.onChange}
+							onPlannedAtChange={plannedAtField.onChange}
+							onRemindAtChange={remindAtField.onChange}
 						/>
 					</CreateModalContent.Metadata>
 
 					<CreateModalContent.Footer>
-						<p
-							aria-live='polite'
-							className='min-w-0 flex-1 truncate text-[11px] font-medium tabular-nums text-muted'
-						>
-							{createdCount > 0 ? `已创建 ${createdCount} 条任务` : '\u00A0'}
-						</p>
+						<CreateModalContent.Feedback error={metadataError}>
+							{createdCount > 0 ? `已创建 ${createdCount} 条任务` : null}
+						</CreateModalContent.Feedback>
 
 						<div className='flex shrink-0 items-center gap-3'>
 							<Switch
@@ -330,7 +333,11 @@ export function TaskCreateContent({
 									{submitButton}
 								</CommandActionTooltip>
 							) : (
-								<DisabledCommandActionTooltip commandId={COMMAND_IDS.saveOrSubmit} label='创建任务'>
+								<DisabledCommandActionTooltip
+									commandId={COMMAND_IDS.saveOrSubmit}
+									label='创建任务'
+									tabIndex={-1}
+								>
 									{submitButton}
 								</DisabledCommandActionTooltip>
 							)}

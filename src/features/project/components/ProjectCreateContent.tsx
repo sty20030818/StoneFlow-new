@@ -1,13 +1,19 @@
 import { useCallback, useRef, useState } from 'react'
 import { FormProvider, useController } from 'react-hook-form'
-import { Alert, Button, FieldError, Form, Input, Switch, TextArea, TextField } from '@heroui/react'
+import { Button, FieldError, Form, Input, Switch, TextArea, TextField } from '@heroui/react'
 
 import { useCreateProjectMutation } from '../hooks/project.mutations'
 import type { ProjectDetail } from '../model/types'
 import { COMMAND_IDS, CommandActionTooltip, DisabledCommandActionTooltip } from '@/features/command'
 import { useSubmitTargetFromForm, type SubmitIntent } from '@/features/submit'
 import { normalizeSubmitError, useZodForm } from '@/shared/form'
-import { CreateModalContent } from '@/shared/components/create-modal-content'
+import type { Space } from '@/shared/types'
+import {
+	CreateModalContent,
+	useCreateDescriptionSize,
+	useCreateSessionActive,
+	type CreateModalHeaderProps,
+} from '@/shared/components/create-modal-content'
 import {
 	buildProjectCreateDefaultValues,
 	projectCreateSchema,
@@ -15,7 +21,9 @@ import {
 } from './ProjectCreateContent.form'
 
 type ProjectCreateContentProps = {
-	selectedSpaceId: string | null
+	initialSpaceId: string | null
+	spaces: Space[]
+	renderHeader: (props: CreateModalHeaderProps) => React.ReactNode
 	onClose: () => void
 	onCreated: (project: ProjectDetail) => void
 }
@@ -25,15 +33,18 @@ type ProjectCreateContentProps = {
  * 壳层（Dialog + Header）由 CreateDialogShell 统一提供。
  */
 export function ProjectCreateContent({
-	selectedSpaceId,
+	initialSpaceId,
+	spaces,
+	renderHeader,
 	onClose,
 	onCreated,
 }: ProjectCreateContentProps) {
 	const createProject = useCreateProjectMutation()
 	const form = useZodForm({
 		schema: projectCreateSchema,
-		defaultValues: buildProjectCreateDefaultValues(),
+		defaultValues: buildProjectCreateDefaultValues(initialSpaceId),
 	})
+	const { field: spaceIdField } = useController({ control: form.control, name: 'spaceId' })
 	const { field: nameField, fieldState: nameFieldState } = useController({
 		control: form.control,
 		name: 'name',
@@ -46,36 +57,40 @@ export function ProjectCreateContent({
 		control: form.control,
 		name: 'createMore',
 	})
+	const descriptionRef = useCreateDescriptionSize(descriptionField.value)
 	const [submitState, setSubmitState] = useState<'idle' | 'submitting' | 'error'>('idle')
 	const [errorMessage, setErrorMessage] = useState<string | null>(null)
 	const [createdCount, setCreatedCount] = useState(0)
 	const titleInputRef = useRef<HTMLInputElement>(null)
+	const submittingRef = useRef(false)
+	const sessionActive = useCreateSessionActive()
 	const isSubmitting = submitState === 'submitting'
 
 	const resetFieldsOnly = useCallback(() => {
-		form.reset(buildProjectCreateDefaultValues())
+		form.reset(buildProjectCreateDefaultValues(form.getValues('spaceId')))
 		setSubmitState('idle')
 		setErrorMessage(null)
 	}, [form])
 
-	const canSubmit = !isSubmitting && Boolean(selectedSpaceId) && nameField.value.trim().length > 0
+	const hasSpace = spaces.some((space) => space.id === spaceIdField.value)
+	const canSubmit = !isSubmitting && hasSpace && nameField.value.trim().length > 0
 
 	const submitProject = useCallback(
 		async (intent: SubmitIntent = 'default') => {
-			const isValid = await form.trigger()
-			if (!selectedSpaceId || !isValid) {
-				return
-			}
-
-			const values = form.getValues()
-			const effectiveIntent = intent === 'default' && values.createMore ? 'continue' : intent
-
-			setSubmitState('submitting')
-			setErrorMessage(null)
+			if (submittingRef.current) return
+			submittingRef.current = true
 			try {
-				const project = await createProject.mutateAsync(
-					toProjectCreateInput(values, selectedSpaceId),
-				)
+				if (!(await form.trigger()) || !sessionActive.current) return
+				if (!hasSpace) {
+					form.setError('spaceId', { message: '创建空间已不可用，请重新选择。' })
+					return
+				}
+				const values = form.getValues()
+				const effectiveIntent = intent === 'default' && values.createMore ? 'continue' : intent
+				setSubmitState('submitting')
+				setErrorMessage(null)
+				const project = await createProject.mutateAsync(toProjectCreateInput(values))
+				if (!sessionActive.current) return
 
 				if (effectiveIntent === 'continue') {
 					resetFieldsOnly()
@@ -88,11 +103,14 @@ export function ProjectCreateContent({
 				onClose()
 				onCreated(project)
 			} catch (error) {
+				if (!sessionActive.current) return
 				setSubmitState('error')
 				setErrorMessage(normalizeSubmitError(error, '项目创建失败'))
+			} finally {
+				submittingRef.current = false
 			}
 		},
-		[createProject, form, onClose, onCreated, resetFieldsOnly, selectedSpaceId],
+		[createProject, form, hasSpace, onClose, onCreated, resetFieldsOnly, sessionActive],
 	)
 
 	useSubmitTargetFromForm({
@@ -121,6 +139,11 @@ export function ProjectCreateContent({
 
 	return (
 		<FormProvider {...form}>
+			{renderHeader({
+				selectedSpaceId: spaceIdField.value,
+				onSelectSpace: spaceIdField.onChange,
+				disabled: isSubmitting,
+			})}
 			<Form
 				aria-label='创建项目'
 				className='flex min-h-0 flex-1 flex-col'
@@ -137,6 +160,7 @@ export function ProjectCreateContent({
 							fullWidth
 							isInvalid={nameFieldState.invalid}
 							isRequired
+							isReadOnly={isSubmitting}
 							name={nameField.name}
 							value={nameField.value}
 							onChange={nameField.onChange}
@@ -148,7 +172,6 @@ export function ProjectCreateContent({
 								data-field-role='create-title'
 								onBlur={nameField.onBlur}
 								placeholder='项目名称'
-								variant='secondary'
 							/>
 							<FieldError>{nameFieldState.error?.message}</FieldError>
 						</TextField>
@@ -159,40 +182,30 @@ export function ProjectCreateContent({
 							aria-label='项目说明'
 							fullWidth
 							isInvalid={descriptionFieldState.invalid}
+							isReadOnly={isSubmitting}
 							name={descriptionField.name}
 							value={descriptionField.value}
 							onChange={descriptionField.onChange}
 						>
 							<TextArea
+								ref={descriptionRef}
 								aria-label='项目说明'
-								className='min-h-20 resize-none'
+								data-field-role='create-description'
 								onBlur={descriptionField.onBlur}
 								placeholder='添加项目说明…'
-								variant='secondary'
 							/>
 							<FieldError>{descriptionFieldState.error?.message}</FieldError>
 						</TextField>
-						{submitState === 'error' ? (
-							<Alert role='alert' status='danger'>
-								<Alert.Indicator />
-								<Alert.Content>
-									<Alert.Title>项目创建失败</Alert.Title>
-									<Alert.Description>{errorMessage}</Alert.Description>
-								</Alert.Content>
-							</Alert>
-						) : null}
 					</CreateModalContent.Body>
 
 					<CreateModalContent.Footer>
-						<span aria-hidden />
+						<CreateModalContent.Feedback
+							error={errorMessage ?? form.formState.errors.spaceId?.message}
+						>
+							{createdCount > 0 ? `已创建 ${createdCount} 个项目` : null}
+						</CreateModalContent.Feedback>
 
 						<div className='flex items-center gap-3'>
-							<p
-								aria-live='polite'
-								className='min-w-30 text-right text-[11px] font-medium tabular-nums text-muted'
-							>
-								{createdCount > 0 ? `已创建 ${createdCount} 个项目` : '\u00A0'}
-							</p>
 							<Switch
 								isDisabled={isSubmitting}
 								isSelected={createMoreField.value}
@@ -211,7 +224,11 @@ export function ProjectCreateContent({
 									{submitButton}
 								</CommandActionTooltip>
 							) : (
-								<DisabledCommandActionTooltip commandId={COMMAND_IDS.saveOrSubmit} label='创建项目'>
+								<DisabledCommandActionTooltip
+									commandId={COMMAND_IDS.saveOrSubmit}
+									label='创建项目'
+									tabIndex={-1}
+								>
 									{submitButton}
 								</DisabledCommandActionTooltip>
 							)}

@@ -74,6 +74,7 @@ type DisabledCommandActionTooltipProps = TooltipRootControlProps & {
 	commandId: CommandId
 	label: string
 	scope?: KeybindingScope
+	tabIndex?: 0 | -1
 }
 
 /**
@@ -116,10 +117,11 @@ const CommandActionTooltip = React.forwardRef<HTMLElement, CommandActionTooltipP
 	},
 )
 
-/** 让原生 disabled 控件仍可 hover / focus，同时复用同一命令提示内容。 */
+/** 保留 disabled 控件的悬停提示；无需键盘解释入口的场景用 tabIndex=-1 跳过包装层。 */
 function DisabledCommandActionTooltip({
 	children,
 	label,
+	tabIndex = 0,
 	...tooltipProps
 }: DisabledCommandActionTooltipProps) {
 	return (
@@ -130,7 +132,7 @@ function DisabledCommandActionTooltip({
 				className='inline-flex max-w-full cursor-not-allowed'
 				data-slot='disabled-command-action-tooltip-trigger'
 				role='group'
-				tabIndex={0}
+				tabIndex={tabIndex}
 			>
 				{children}
 			</span>

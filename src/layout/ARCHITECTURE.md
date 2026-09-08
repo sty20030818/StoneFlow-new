@@ -2,7 +2,7 @@
 
 > 作用：描述 `src/layout` 的稳定职责与本轮定稿装配边界
 > 总览：`src/ARCHITECTURE.md`
-> 最后更新：2026-09-07
+> 最后更新：2026-09-08
 
 ---
 
@@ -52,6 +52,14 @@ src/layout/
 ```
 
 `ShellOverlays` 只订阅轻量 open intent，并挂各 feature 的 lazy host；创建表单集中在按需加载的 `ShellCreationOverlays`。关闭状态不得提前实例化 Markdown 解析、完整更新对话框或创建表单图，也不为所有 Dialog 建立通用 loader abstraction。
+
+**创建归属与组合：** Shell 只提供打开意图、初始化 Space 与任务放大状态，不保存创建会话内的归属副本。Task / Project 各自的 RHF 表单是会话归属、输入与提交的唯一事实源；`ShellCreationOverlays` 通过 `renderHeader` 组合槽提供 `CreateDialogHeader`，由领域表单直接传入当前 Space、选择动作与 pending 状态。`CreateDialogShell` 只持有 Modal 容器、可访问标题和关闭行为，Header 不通过 effect、Portal 或另一份 store 同步表单；领域仍不得反向导入 Layout。
+
+创建提交只允许当前仍挂载的表单处理成功反馈、关闭与导航。用户关闭后，已发出的写入仍按原合同完成，但迟到的结果不能关闭后来打开的创建窗口；Task / Project 复用 `useCreateSessionActive` 维护这一生命周期边界，不增加持久化会话或草稿状态。
+
+创建壳不拦截 Tab，焦点首尾回绕由 React Aria 的 FocusScope 处理；其他按键隔离与 Escape 优先级保持。内层表单框架不额外裁切，避免属性按钮的焦点边在内容起点被切掉。
+
+UI Lab 仅 `createDialogSamples` 样例可直接消费 `ShellCreationOverlays` 和 `useShellCreateDialogState` 两个既有装配入口，用隔离的内存 Query / Router / IPC 验收真实创建组合，避免复制静态外壳。该例外由精确 source → target 门禁限定，不开放其他 Layout 导入；检测到原生 Tauri 环境时样例拒绝运行。
 
 **设置模式侧栏** 在 `features/settings`（`SettingsSidebar` + `SETTINGS_NAV_GROUPS`），壳只挂载。
 

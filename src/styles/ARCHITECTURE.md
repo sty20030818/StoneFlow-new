@@ -1,7 +1,7 @@
 # StoneFlow 视觉样式架构
 
 > 版本：v4
-> 最后更新：2026-09-02
+> 最后更新：2026-09-08
 > 作用：定义 `src/styles` 的现行合同。
 
 ## 1. 一句话心智
@@ -110,7 +110,10 @@ HeroUI OSS/Pro 的锁定版本是默认实现，负责组件结构、Hover、Pre
 - `Input`、`Textarea`、`SearchField`、`NumberField`、`InputGroup`、`Select`、`Autocomplete` 与 `CellSwitch` 的外壳移除硬边框；primary 使用 HeroUI Light 轻阴影，secondary 保持无阴影填充面，focus / invalid 继续由上游 ring 与 outline 表达。
 - `Alert` 使用 1px 轻边界而非卡片阴影；accent、success、warning 与 danger 状态统一使用对应 soft surface 与同色边界，其中 Alert accent 固定表达 Info，不随用户 Accent 预设漂移。
 - 标题、代码和数字输入只通过稳定语义 hook 统一内容层级，不向 Feature 暴露可配置皮肤。
+- 普通键盘焦点宽度统一来自 `theme.css` 的 `--focus-ring-width: 1px`；扩展 HeroUI `focus-ring` / `focus-field-ring` 共同 utility，Pro 已编译 CSS 与本地焦点边在集中 recipe 消费同一 token。Invalid 保留原规则，forced-colors 下宽度为 2px 并保留系统 Highlight；既有 Row / 详情 1px 边不再减细。UI Lab 不以私有 inline 焦点样式覆盖真实上游表现。
+- 创建场景是明确的窄例外：`data-create-dialog` 使用 `24px` 圆角和 spacing `3`（`12px`）内边距，`data-create-dialog-header` 与共享分区使用同一纵向间隔；Header 分隔符两侧与属性间隔为 spacing `1.5`（`6px`）。`create-title` / `create-description` 编辑字段左侧额外缩进 `4px`、描述空态 `60px`，默认、hover、focus 下透明、无边框/阴影/ring，圆角为零以免裁切贴边光标，强制颜色保留 Highlight。创建属性沿用原生 outline variant，其他字段的上游 focus/invalid recipe 和普通 Overlay `12px` 不变。
 - 原生 host 合同只保留内容高度、Windows 窗体命中区、拖拽期间关闭 Sidebar transition、compact 导航 Sheet 的系统按钮避让、路由回退链接及 Launcher 嵌入提示所需的窄 recipe。
+- 创建窗口的定位留白与高度限制只读取 `.modal__container[data-create-dialog-container]` 的 `--create-dialog-block-gap: clamp(1rem, 14dvh, 8rem)`；上下对称留白，描述到上限后内部滚动。放大状态只填满同一可用高度，不再另写 `70dvh`。
 - `GlobalSearchResults` 与 Launcher 原生窗 Surface 是两个窄表面例外：上游无对应边界 recipe，稳定 hook 只补齐各自缺失的边界、圆角或阴影，不扩张为通用 Surface 皮肤。
 
 它不负责：
@@ -157,6 +160,7 @@ Form、RadioGroup、Toolbar、Surface、Resizable、ScrollShadow 与 Trigger 等
 - `AppScrollArea` 只封装真实 viewport 与 ref context；滚动由浏览器执行，外观直接复用 HeroUI Styles 的 `scrollbar` utility。
 - `ActionTooltip` 隐藏 React Aria trigger props/ref 合并与快捷键展示行为。
 - `SettingsToggleRow` 是 settings 内八个真实消费者共享的产品组合，直接使用 Pro `CellSwitch`；默认 Space 的 Pro `CellSelect` 只有一个消费者，保持内联组合。
+- `CreateDialogShell` / `CreateDialogHeader` 负责创建容器与 Header 组合，领域 RHF 持有唯一归属；`CreateModalContent` 统一标题、单一描述 viewport、属性、底栏及可访问反馈。描述尺寸只采用一条基于真实 scrollHeight 的测量路径，并响应宽度变化；不同时保留 textarea 自滚动或 CSS 自动尺寸兼容双轨。
 
 禁止：
 

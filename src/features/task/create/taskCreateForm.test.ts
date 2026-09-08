@@ -32,13 +32,13 @@ const spaces: Space[] = [
 ]
 
 describe('taskCreateForm', () => {
-	it('All scope 无 selectedSpaceId 时预填默认 Space，仍是具体 spaceId', () => {
+	it('All scope 未指定初始 Space 时预填默认 Space，仍是具体 spaceId', () => {
 		const values = buildTaskCreateDefaultValues({
 			currentScope: { type: 'all' },
 			spaces,
 			initialPlacement: 'standalone',
 			initialProjectId: null,
-			selectedSpaceId: null,
+			initialSpaceId: null,
 			initialStatus: 'todo',
 			projects: [],
 		})
@@ -53,7 +53,7 @@ describe('taskCreateForm', () => {
 			spaces,
 			initialPlacement: 'standalone',
 			initialProjectId: null,
-			selectedSpaceId: 'space-work',
+			initialSpaceId: 'space-work',
 			initialStatus: 'todo',
 			projects: [],
 		})

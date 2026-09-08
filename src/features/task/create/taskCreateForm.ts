@@ -46,7 +46,7 @@ export function buildTaskCreateDefaultValues(input: {
 	spaces: Space[]
 	initialPlacement: TaskPlacement | null
 	initialProjectId: string | null
-	selectedSpaceId: string | null
+	initialSpaceId: string | null
 	initialStatus: TaskStatus
 	projects: Array<{ id: string; spaceId: string }>
 }): TaskCreateFormValues {
@@ -54,8 +54,8 @@ export function buildTaskCreateDefaultValues(input: {
 	const initialProject =
 		input.projects.find((project) => project.id === input.initialProjectId) ?? null
 	const resolvedInitialSpaceId =
-		input.selectedSpaceId ??
 		initialProject?.spaceId ??
+		input.initialSpaceId ??
 		getInitialSpaceId(input.currentScope, defaultSpaceId)
 	const resolvedInitialPlacement: TaskPlacement = input.initialProjectId
 		? 'project'

@@ -873,11 +873,16 @@ function scanUiLabImports(file: BoundarySource, imports: readonly ImportReferenc
 		const isShared = target === 'src/shared' || target.startsWith('src/shared/')
 		const isAliasFeature = reference.path.startsWith('@/features/') && isKnownFeatureTarget(target)
 		const isStyleEntry = file.path === 'src/ui-lab/main.tsx' && target === 'src/styles/index.css'
+		const isCreateDialogComposition =
+			file.path === 'src/ui-lab/samples/createDialogSamples.tsx' &&
+			(target === 'src/layout/overlays/ShellCreationOverlays' ||
+				target === 'src/layout/model/useShellCreateDialogState')
 		if (
 			isLabInternal ||
 			isShared ||
 			isAliasFeature ||
 			isStyleEntry ||
+			isCreateDialogComposition ||
 			isPublicFeatureTarget(target)
 		)
 			continue

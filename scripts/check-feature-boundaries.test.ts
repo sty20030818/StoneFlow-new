@@ -240,6 +240,35 @@ void ShellChrome
 		expect(violations.filter(({ ruleId }) => ruleId === 'ui-lab-private-import')).toHaveLength(3)
 	})
 
+	test('创建样例仅允许两个审计装配入口，不放开其他来源或 Layout 私有模块', () => {
+		const sources = [
+			{
+				path: 'src/ui-lab/samples/createDialogSamples.tsx',
+				source: `
+import { ShellCreationOverlays } from '@/layout/overlays/ShellCreationOverlays'
+import { useShellCreateDialogState } from '@/layout/model/useShellCreateDialogState'
+import { ShellChrome } from '@/layout/ShellChrome'
+`,
+			},
+			{
+				path: 'src/ui-lab/samples/OtherSample.tsx',
+				source: `
+import { ShellCreationOverlays } from '@/layout/overlays/ShellCreationOverlays'
+import { useShellCreateDialogState } from '@/layout/model/useShellCreateDialogState'
+`,
+			},
+		]
+		const violations = scanFeatureBoundarySources(sources).filter(
+			({ ruleId }) => ruleId === 'ui-lab-private-import',
+		)
+
+		expect(violations.map(({ path, detail }) => ({ path, detail }))).toEqual([
+			{ path: sources[0].path, detail: '@/layout/ShellChrome' },
+			{ path: sources[1].path, detail: '@/layout/overlays/ShellCreationOverlays' },
+			{ path: sources[1].path, detail: '@/layout/model/useShellCreateDialogState' },
+		])
+	})
+
 	test('识别 named import、dot part 与静态视觉越权', () => {
 		const violations = scanFeatureBoundarySources([
 			{

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 
 import type { Scope } from '@/shared/types'
 import type { Space } from '@/shared/types'
@@ -13,7 +13,7 @@ import type { ProjectOption } from '@/features/project'
 
 /**
  * 创建任务/项目弹窗相关状态。
- * selectedSpaceId 是弹窗内本地选择；打开时默认落到 currentScope / default space。
+ * 只提供打开意图与初始化 Space；会话内归属由领域创建表单持有。
  */
 export function useShellCreateDialogState({
 	currentScope,
@@ -38,9 +38,6 @@ export function useShellCreateDialogState({
 	const closeCustomDateDialog = useDialogStore((state) => state.closeCustomDateDialog)
 	const toggleTaskCreatePresentation = useDialogStore((state) => state.toggleTaskCreatePresentation)
 
-	/** 创建弹窗 Header 当前选中的 Space（本地 UI 态，非 URL） */
-	const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null)
-
 	const defaultCreateSpaceId = useMemo(
 		() =>
 			currentScope.type === 'space'
@@ -48,14 +45,6 @@ export function useShellCreateDialogState({
 				: (spaces.find((space) => space.isDefault)?.id ?? spaces[0]?.id ?? null),
 		[currentScope, spaces],
 	)
-
-	useEffect(() => {
-		if (!createDialogType) {
-			setSelectedSpaceId(null)
-			return
-		}
-		setSelectedSpaceId((current) => current ?? defaultCreateSpaceId)
-	}, [createDialogType, defaultCreateSpaceId])
 
 	const hasResolvedTaskDraftProject =
 		Boolean(taskCreateDraft.projectId) &&
@@ -73,8 +62,6 @@ export function useShellCreateDialogState({
 		customDateDialog,
 		taskCreateDraft,
 		taskCreatePresentation,
-		selectedSpaceId,
-		setSelectedSpaceId,
 		defaultCreateSpaceId,
 		shouldDelayTaskCreateDialog,
 		openTaskCreateDialog,

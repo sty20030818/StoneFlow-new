@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { act, fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 
 import { SubmitRegistryProvider, useSubmitRegistryActions } from '@/features/submit'
 import { renderWithInteractionProviders as render } from '@/test/TestInteractionProviders'
@@ -19,7 +19,7 @@ describe('ProjectCreateContent', () => {
 		createProjectMock.mockResolvedValue({ id: 'project-created' })
 	})
 
-	it('名称为空时禁用创建，但仍展示创建快捷键', async () => {
+	it('名称为空时 Tab 跳过禁用创建，悬停仍展示创建快捷键', async () => {
 		renderProjectCreate()
 
 		const button = screen.getByRole('button', { name: '创建项目' })
@@ -28,8 +28,10 @@ describe('ProjectCreateContent', () => {
 			'[data-slot="disabled-command-action-tooltip-trigger"]',
 		)
 		expect(trigger).not.toBeNull()
-		fireEvent.keyDown(document, { key: 'Tab' })
-		act(() => trigger!.focus())
+		expect(trigger).toHaveAttribute('tabindex', '-1')
+		expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+		fireEvent.pointerMove(trigger!, { pointerType: 'mouse' })
+		fireEvent.pointerEnter(trigger!, { pointerType: 'mouse' })
 
 		const tooltip = await screen.findByRole('tooltip')
 		expect(tooltip).toHaveTextContent('创建项目')
@@ -91,7 +93,26 @@ function renderProjectCreate({
 } = {}) {
 	return render(
 		<SubmitRegistryProvider>
-			<ProjectCreateContent onClose={vi.fn()} onCreated={onCreated} selectedSpaceId='space-a' />
+			<ProjectCreateContent
+				onClose={vi.fn()}
+				onCreated={onCreated}
+				initialSpaceId='space-a'
+				renderHeader={() => null}
+				spaces={[
+					{
+						id: 'space-a',
+						name: '工作',
+						iconKey: 'folder',
+						colorKey: 'blue',
+						isDefault: true,
+						position: 0,
+						archivedAt: null,
+						deletedAt: null,
+						createdAt: '2026-09-08T00:00:00.000Z',
+						updatedAt: '2026-09-08T00:00:00.000Z',
+					},
+				]}
+			/>
 			{withActions ? <SubmitActionProbe /> : null}
 		</SubmitRegistryProvider>,
 	)

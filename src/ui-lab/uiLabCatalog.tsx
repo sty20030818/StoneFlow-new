@@ -19,6 +19,7 @@ import { TICKET_11_SAMPLES } from './samples/ticket-11/stoneFlowSharedComponents
 import { TICKET_12_SAMPLES } from './samples/ticket-12/taskCollectionCompositionSamples'
 import { TICKET_13_SAMPLES } from './samples/ticket-13/shellSettingsDesktopSceneSamples'
 import { TICKET_14_SAMPLES } from './samples/ticket-14/candidateStyleArchitectureSamples'
+import { CREATE_DIALOG_SAMPLES } from './samples/createDialogSamples'
 
 export type UiLabViewId = 'stoneflow' | 'heroui'
 export type UiLabCoverage =
@@ -47,6 +48,7 @@ export type UiLabReviewBatchId =
 	| 'batch-12'
 	| 'batch-13'
 	| 'batch-14'
+	| 'batch-15'
 
 export type UiLabReviewEntry = {
 	sampleId: string
@@ -168,6 +170,7 @@ const UI_LAB_REVIEW_UNITS: readonly UiLabReviewUnitInput[] = [
 	...TICKET_12_SAMPLES,
 	...TICKET_13_SAMPLES,
 	...TICKET_14_SAMPLES,
+	...CREATE_DIALOG_SAMPLES,
 	{
 		id: 'stoneflow-main-launcher-real-app',
 		name: 'Main / Launcher 原生窗口验收',
@@ -640,6 +643,18 @@ export const UI_LAB_REVIEW_BATCHES: readonly UiLabReviewBatch[] = [
 			sampleId: id,
 			role: 'target' as const,
 			status: 'done' as const,
+		})),
+	},
+	{
+		id: 'batch-15',
+		label: '第十五批',
+		title: '创建弹窗真实组合',
+		objective:
+			'核对任务与项目创建的编辑工作面、Space 归属、日期渐进展示、失败恢复与一次性创建更多。',
+		entries: CREATE_DIALOG_SAMPLES.map(({ id }) => ({
+			sampleId: id,
+			role: 'target' as const,
+			status: 'pending' as const,
 		})),
 	},
 ]

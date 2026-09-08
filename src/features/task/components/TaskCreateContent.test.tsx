@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 
 import { SubmitRegistryProvider, useSubmitRegistryActions } from '@/features/submit'
 import { renderWithInteractionProviders as render } from '@/test/TestInteractionProviders'
@@ -28,6 +28,31 @@ describe('TaskCreateContent', () => {
 
 		expect(screen.getByRole('button', { name: '创建任务' })).toBeDisabled()
 		expect(createTaskMock).not.toHaveBeenCalled()
+	})
+
+	it('输入后清空标题不显示实时错误，空标题仍不可创建', async () => {
+		renderTaskCreate()
+		const title = screen.getByRole('textbox', { name: '任务标题' })
+		await act(async () => {
+			fireEvent.change(title, { target: { value: '字' } })
+		})
+		await act(async () => {
+			fireEvent.change(title, { target: { value: '' } })
+			fireEvent.blur(title)
+		})
+
+		expect(screen.queryByText('请输入任务标题')).not.toBeInTheDocument()
+		expect(title).not.toHaveAttribute('aria-invalid', 'true')
+		expect(screen.getByRole('button', { name: '创建任务' })).toBeDisabled()
+		await act(async () => {
+			fireEvent.submit(screen.getByRole('form', { name: '创建任务' }))
+		})
+		expect(createTaskMock).not.toHaveBeenCalled()
+
+		fireEvent.change(title, { target: { value: '继续填写' } })
+		fireEvent.click(screen.getByRole('button', { name: '创建任务' }))
+		await waitFor(() => expect(createTaskMock).toHaveBeenCalledOnce())
+		expect(createTaskMock).toHaveBeenCalledWith(expect.objectContaining({ title: '继续填写' }))
 	})
 
 	it('创建更多会提交当前草稿、清空文本并回到下一条', async () => {
@@ -106,7 +131,8 @@ function renderTaskCreate({
 					{ id: 'project-b', spaceId: 'space-b', name: '项目 B' },
 				]}
 				projectsLoading={false}
-				selectedSpaceId='space-a'
+				initialSpaceId='space-a'
+				renderHeader={() => null}
 				spaces={[
 					{
 						id: 'space-a',

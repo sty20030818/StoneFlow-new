@@ -16,28 +16,36 @@ describe('metadata-fields', () => {
 		useDialogStore.setState({ customDateDialog: null })
 	})
 
-	it('generic dropdown 用菜单语义与数字键提交唯一值', async () => {
-		const onChange = vi.fn()
-		render(
-			<MetadataFieldDropdown
-				fieldKey='priority'
-				label='优先级'
-				options={[
-					{ value: 0, label: '无优先级', isEmptyValue: true },
-					{ value: 2, label: '中' },
-				]}
-				value={0}
-				onChange={onChange}
-			/>,
-		)
+	it.each(['default', 'outline', 'row-icon'] as const)(
+		'generic dropdown 的 %s 外观保留原生样式、菜单语义与数字键提交',
+		async (buttonAppearance) => {
+			const onChange = vi.fn()
+			render(
+				<MetadataFieldDropdown
+					buttonAppearance={buttonAppearance}
+					fieldKey='priority'
+					label='优先级'
+					options={[
+						{ value: 0, label: '无优先级', isEmptyValue: true },
+						{ value: 2, label: '中' },
+					]}
+					value={0}
+					onChange={onChange}
+				/>,
+			)
 
-		fireEvent.click(screen.getByRole('button', { name: '优先级' }))
-		expect(await screen.findByText('设置优先级为...')).toBeInTheDocument()
-		fireEvent.keyDown(window, { key: '1' })
+			const trigger = screen.getByRole('button', { name: '优先级' })
+			expect(trigger).toHaveClass(
+				buttonAppearance === 'outline' ? 'button--outline' : 'button--ghost',
+			)
+			fireEvent.click(trigger)
+			expect(await screen.findByText('设置优先级为...')).toBeInTheDocument()
+			fireEvent.keyDown(window, { key: '1' })
 
-		expect(onChange).toHaveBeenCalledWith(2)
-		await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument())
-	})
+			expect(onChange).toHaveBeenCalledWith(2)
+			await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument())
+		},
+	)
 
 	it('禁用字段保留上下文名称，并向键盘用户说明原因', async () => {
 		render(

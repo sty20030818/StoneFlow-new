@@ -201,7 +201,7 @@ const EXPORTED_COMPONENT_GROUPS = [
 	[
 		'src/features/metadata-fields/components/MetadataDateDropdown.tsx',
 		'task-detail',
-		['MetadataDateDropdown'],
+		['MetadataDateDropdown', 'MetadataDateSubmenu'],
 	],
 	[
 		'src/features/metadata-fields/components/MetadataFieldButton.tsx',
@@ -211,7 +211,7 @@ const EXPORTED_COMPONENT_GROUPS = [
 	[
 		'src/features/metadata-fields/components/MetadataFieldDropdown.tsx',
 		'task-detail',
-		['MetadataFieldDropdown'],
+		['MetadataFieldDropdown', 'MetadataFieldMenu'],
 	],
 	[
 		'src/features/metadata-fields/components/MetadataFieldMenuItem.tsx',
@@ -309,6 +309,11 @@ const EXPORTED_COMPONENT_GROUPS = [
 	['src/features/task/components/TaskContextMenu.tsx', 'task-board', ['TaskContextMenu']],
 	['src/features/task/components/TaskCreateContent.tsx', 'create-dialogs', ['TaskCreateContent']],
 	[
+		'src/features/task/components/TaskCreateDateProperties.tsx',
+		'create-dialogs',
+		['TaskCreateDateProperties'],
+	],
+	[
 		'src/features/task/components/TaskCreateMetaActions.tsx',
 		'create-dialogs',
 		['StatusMetaAction', 'PriorityMetaAction', 'PlacementMetaAction'],
@@ -400,7 +405,11 @@ const EXPORTED_COMPONENT_GROUPS = [
 	['src/features/view/components/ViewEditorDialog.tsx', 'collection-pages', ['ViewEditorDialog']],
 	['src/features/view/components/ViewsPage.tsx', 'collection-pages', ['ViewsPage']],
 	['src/layout/AppLayout.tsx', 'shell', ['AppLayout']],
-	['src/layout/CreateDialogShell.tsx', 'create-dialogs', ['CreateDialogShell']],
+	[
+		'src/layout/CreateDialogShell.tsx',
+		'create-dialogs',
+		['CreateDialogShell', 'CreateDialogHeader'],
+	],
 	['src/layout/ShellBulkActionBoundary.tsx', 'shell', ['ShellBulkActionBoundary']],
 	['src/layout/ShellChrome.tsx', 'shell', ['ShellChrome']],
 	['src/layout/ShellFooter.tsx', 'shell', ['ShellFooter']],
@@ -542,7 +551,7 @@ const PRIVATE_LEAF_GROUPS = [
 		'ViewsPage',
 		['SavedViewLibraryContent', 'LibraryEmptyState'],
 	],
-	['src/layout/CreateDialogShell.tsx', 'CreateDialogShell', ['CreateDialogSpaceSelector']],
+	['src/layout/CreateDialogShell.tsx', 'CreateDialogHeader', ['CreateDialogSpaceSelector']],
 	['src/layout/header/HistoryDropdown.tsx', 'HistoryDropdown', ['HistoryEntryItem']],
 	['src/layout/header/UserAppMenu.tsx', 'UserAppMenu', ['MenuCommandShortcut']],
 	['src/layout/sidebar/SidebarNavRow.tsx', 'SidebarNavRow', ['SidebarNavRowLayout']],
@@ -550,7 +559,7 @@ const PRIVATE_LEAF_GROUPS = [
 	[
 		'src/shared/components/create-modal-content.tsx',
 		'CreateModalContent',
-		['Root', 'Title', 'Body', 'Metadata', 'Footer'],
+		['Root', 'Title', 'Body', 'Metadata', 'Footer', 'Feedback'],
 	],
 	[
 		'src/shared/components/page-frame/PageFrame.tsx',
@@ -725,13 +734,14 @@ const EXPORTED_COMPONENT_CONSUMERS: Readonly<Record<string, readonly string[]>> 
 		'src/layout/sidebar/SidebarNavRow.tsx',
 	],
 	'stoneflow-component-continuous-toast': ['src/features/launcher/chrome/LauncherPanel.tsx'],
-	'stoneflow-component-create-dialog-shell': ['src/layout/overlays/ShellOverlays.tsx'],
+	'stoneflow-component-create-dialog-header': ['src/layout/overlays/ShellCreationOverlays.tsx'],
+	'stoneflow-component-create-dialog-shell': ['src/layout/overlays/ShellCreationOverlays.tsx'],
 	'stoneflow-component-create-modal-content': [
 		'src/features/project/components/ProjectCreateContent.tsx',
 		'src/features/task/components/TaskCreateContent.tsx',
 	],
 	'stoneflow-component-create-row': ['src/features/launcher/chrome/LauncherPanel.tsx'],
-	'stoneflow-component-custom-date-dialog': ['src/layout/overlays/ShellOverlays.tsx'],
+	'stoneflow-component-custom-date-dialog': ['src/layout/overlays/ShellCreationOverlays.tsx'],
 	'stoneflow-component-danger-confirm-dialog': [
 		'src/features/danger-confirm/runtime/DangerConfirmProvider.tsx',
 	],
@@ -795,9 +805,12 @@ const EXPORTED_COMPONENT_CONSUMERS: Readonly<Record<string, readonly string[]>> 
 	'stoneflow-component-main-nav-sidebar-menu-item': ['src/layout/ShellSidebar.tsx'],
 	'stoneflow-component-menu-shortcut': ['src/features/task/components/TaskContextMenu.tsx'],
 	'stoneflow-component-metadata-date-dropdown': [
-		'src/features/task/components/TaskCreateContent.tsx',
+		'src/features/task/components/TaskCreateDateProperties.tsx',
 		'src/features/task/components/TaskRowAdapter.tsx',
 		'src/features/task/detail/components/TaskPropertiesSection.tsx',
+	],
+	'stoneflow-component-metadata-date-submenu': [
+		'src/features/task/components/TaskCreateDateProperties.tsx',
 	],
 	'stoneflow-component-metadata-field-button': [
 		'src/features/metadata-fields/components/MetadataFieldDropdown.tsx',
@@ -808,6 +821,10 @@ const EXPORTED_COMPONENT_CONSUMERS: Readonly<Record<string, readonly string[]>> 
 		'src/features/task/components/TaskCreateMetaActions.tsx',
 		'src/features/task/components/TaskRowAdapter.tsx',
 		'src/features/task/detail/components/TaskPropertiesSection.tsx',
+	],
+	'stoneflow-component-metadata-field-menu': [
+		'src/features/metadata-fields/components/MetadataFieldDropdown.tsx',
+		'src/features/metadata-fields/components/MetadataDateDropdown.tsx',
 	],
 	'stoneflow-component-metadata-field-menu-item': [
 		'src/features/metadata-fields/components/MetadataFieldDropdown.tsx',
@@ -872,7 +889,7 @@ const EXPORTED_COMPONENT_CONSUMERS: Readonly<Record<string, readonly string[]>> 
 	'stoneflow-component-project-context-menu': [
 		'src/features/project/components/ProjectRowAdapter.tsx',
 	],
-	'stoneflow-component-project-create-content': ['src/layout/overlays/ShellOverlays.tsx'],
+	'stoneflow-component-project-create-content': ['src/layout/overlays/ShellCreationOverlays.tsx'],
 	'stoneflow-component-project-nav-menu-item': ['src/layout/ShellSidebar.tsx'],
 	'stoneflow-component-project-overview-page': [
 		'src/routes/_shell/-workspace-project-overview.tsx',
@@ -1006,7 +1023,10 @@ const EXPORTED_COMPONENT_CONSUMERS: Readonly<Record<string, readonly string[]>> 
 		'src/features/task/detail/components/TaskPage.tsx',
 	],
 	'stoneflow-component-task-context-menu': ['src/features/task/components/TaskRowAdapter.tsx'],
-	'stoneflow-component-task-create-content': ['src/layout/overlays/ShellOverlays.tsx'],
+	'stoneflow-component-task-create-content': ['src/layout/overlays/ShellCreationOverlays.tsx'],
+	'stoneflow-component-task-create-date-properties': [
+		'src/features/task/components/TaskCreateContent.tsx',
+	],
 	'stoneflow-component-task-detail-content': [
 		'src/features/entity-detail/components/EntityDetailDrawerHost.tsx',
 	],

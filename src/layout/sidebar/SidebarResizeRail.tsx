@@ -83,7 +83,7 @@ export function SidebarResizeRail({ controller }: SidebarResizeRailProps) {
 			aria-valuemin={SIDEBAR_WIDTH_MIN}
 			aria-valuenow={controller.liveWidth}
 			aria-valuetext={valueText}
-			className='group absolute inset-y-0 -right-2 z-20 w-4 touch-none select-none outline-none focus-visible:ring-2 focus-visible:ring-focus'
+			className='group absolute inset-y-0 -right-2 z-20 w-4 touch-none select-none outline-none focus-visible:focus-ring'
 			data-resizing={controller.isResizing ? 'true' : undefined}
 			data-sidebar-mode={controller.mode}
 			data-slot='sidebar-resize-rail'

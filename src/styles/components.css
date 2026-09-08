@@ -13,6 +13,19 @@
 		line-height: 1.25rem;
 	}
 
+	/* Pro 发布的是已编译 CSS；这些焦点 recipe 同样消费全局宽度，不改颜色或交互状态。 */
+	[data-theme="stoneflow-light"] .cell-select .cell-select__trigger:focus-visible:not(:focus),
+	[data-theme="stoneflow-light"] .cell-select .cell-select__trigger[data-focus-visible="true"],
+	[data-theme="stoneflow-light"] .cell-switch .cell-switch__trigger[data-focus-visible="true"],
+	[data-theme="stoneflow-light"]
+		.sheet__close-trigger:is(:focus-visible, [data-focus-visible="true"]),
+	[data-theme="stoneflow-light"] .resizable__handle:focus-visible:not(:focus),
+	[data-theme="stoneflow-light"] .resizable__handle[data-focus-visible="true"],
+	[data-theme="stoneflow-light"]
+		.sidebar__menu-action:is(:focus-visible, [data-focus-visible="true"]) {
+		@apply ring-[length:var(--focus-ring-width)];
+	}
+
 	/* Tooltip.Trigger 与按钮复合时不能覆盖按钮的 flex 对齐语义。 */
 	[data-theme="stoneflow-light"] :is(.button, .toggle-button, .close-button).tooltip__trigger {
 		display: inline-flex;
@@ -167,6 +180,55 @@
 		font-weight: 600;
 	}
 
+	/* 创建场景是连续编辑工作面；不影响普通字段或详情编辑的焦点 recipe。 */
+	[data-theme="stoneflow-light"]
+		:is(.input[data-field-role="create-title"], .textarea[data-field-role="create-description"]) {
+		border: 0;
+		background: transparent;
+		box-shadow: none;
+		outline: none;
+		padding-inline: 0;
+		padding-inline-start: var(--spacing);
+		caret-color: currentColor;
+		/* 透明编辑区不需要圆角，避免 overflow 裁切贴边的原生光标。 */
+		border-radius: 0;
+	}
+
+	[data-theme="stoneflow-light"] .textarea[data-field-role="create-description"] {
+		min-height: 3.75rem;
+		padding-block: 0;
+		font-weight: 400;
+		resize: none;
+		overflow: hidden;
+	}
+
+	[data-theme="stoneflow-light"] .modal__container[data-create-dialog-container] {
+		--create-dialog-block-gap: clamp(1rem, 14dvh, 8rem);
+		padding: var(--create-dialog-block-gap) 1rem;
+	}
+
+	[data-theme="stoneflow-light"] .modal__dialog[data-create-dialog] {
+		border-radius: 24px;
+		padding: calc(var(--spacing) * 3);
+		max-height: calc(100dvh - 2 * var(--create-dialog-block-gap));
+	}
+
+	[data-theme="stoneflow-light"] .modal__header[data-create-dialog-header] {
+		flex-shrink: 0;
+		padding-bottom: calc(var(--spacing) * 3);
+	}
+
+	@media (forced-colors: active) {
+		[data-theme="stoneflow-light"]
+			:is(
+				.input[data-field-role="create-title"],
+				.textarea[data-field-role="create-description"]
+			):focus-visible {
+			outline: 2px solid Highlight;
+			outline-offset: -2px;
+		}
+	}
+
 	[data-theme="stoneflow-light"] .input[data-field-role="detail-title"] {
 		height: 2.75rem;
 		min-height: 2.75rem;
@@ -268,7 +330,7 @@
 		.breadcrumbs
 		.breadcrumbs__link:not([data-current="true"]):is(:focus-visible, [data-focus-visible="true"]) {
 		box-shadow: none;
-		outline: 2px solid var(--focus);
+		outline: var(--focus-ring-width) solid var(--focus);
 		outline-offset: 2px;
 	}
 
@@ -344,7 +406,7 @@
 	[data-theme="stoneflow-light"]
 		.sidebar__menu-item:is(:focus-visible, [data-focus-visible="true"])
 		.sidebar__menu-item-content {
-		box-shadow: inset 0 0 0 2px var(--focus);
+		box-shadow: inset 0 0 0 var(--focus-ring-width) var(--focus);
 		outline: none;
 	}
 
@@ -357,6 +419,10 @@
 		min-height: 2.25rem;
 		gap: 0.5rem;
 		padding: 0.5rem 0.625rem;
+	}
+
+	[data-theme="stoneflow-light"] .list-view__item:is(:focus-visible, [data-focus-visible="true"]) {
+		box-shadow: inset 0 0 0 var(--focus-ring-width) var(--focus);
 	}
 
 	@media (hover: hover) {
@@ -386,7 +452,7 @@
 	/* 无可聚焦子项时 TabPanel 本身会进入 Tab 序；用圆角表面焦点代替全局直角框。 */
 	[data-theme="stoneflow-light"] .tabs__panel:is(:focus-visible, [data-focus-visible="true"]) {
 		border-radius: var(--radius-surface);
-		box-shadow: inset 0 0 0 2px var(--focus);
+		box-shadow: inset 0 0 0 var(--focus-ring-width) var(--focus);
 		outline: none;
 	}
 
@@ -421,8 +487,8 @@
 		[data-theme="stoneflow-light"]
 			[data-sf-search-root="true"]
 			.search-field__group[data-focus-visible="true"] {
-			outline: 2px solid var(--focus);
-			outline-offset: -2px;
+			outline: var(--focus-ring-width) solid var(--focus);
+			outline-offset: calc(-1 * var(--focus-ring-width));
 		}
 	}
 

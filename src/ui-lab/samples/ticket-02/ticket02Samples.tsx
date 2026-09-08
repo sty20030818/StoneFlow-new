@@ -417,15 +417,7 @@ function LinkActionPreview() {
 			</header>
 
 			<nav aria-label='链接状态示例'>
-				<Link
-					className='text-sm'
-					href='#link-preview-target'
-					style={({ isFocusVisible }) => ({
-						boxShadow: isFocusVisible ? 'none' : undefined,
-						outline: isFocusVisible ? '2px solid var(--focus)' : undefined,
-						outlineOffset: isFocusVisible ? 2 : undefined,
-					})}
-				>
+				<Link className='text-sm' href='#link-preview-target'>
 					前往检查说明
 				</Link>
 			</nav>

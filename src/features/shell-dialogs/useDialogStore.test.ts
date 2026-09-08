@@ -2,17 +2,7 @@ import { useDialogStore } from '@/features/shell-dialogs'
 
 describe('useDialogStore', () => {
 	beforeEach(() => {
-		useDialogStore.setState({
-			isCommandOpen: false,
-			isShortcutHelpOpen: false,
-			createDialogType: null,
-			taskCreateDraft: {
-				projectId: null,
-				status: 'todo',
-				placement: undefined,
-			},
-			taskCreatePresentation: 'default',
-		})
+		useDialogStore.setState(useDialogStore.getInitialState())
 	})
 
 	it('c 打开默认 task create，v 打开 fullscreen task create', () => {
@@ -76,4 +66,67 @@ describe('useDialogStore', () => {
 		useDialogStore.getState().toggleShortcutHelp()
 		expect(useDialogStore.getState().isShortcutHelpOpen).toBe(true)
 	})
+
+	it('自定义日期叠加在创建窗口上，取消后保留创建入口与放大状态', () => {
+		const draft = { projectId: 'project-travel', status: 'doing' as const }
+		const onSubmit = vi.fn()
+		useDialogStore.getState().openTaskCreateDialog(draft, 'fullscreen')
+		useDialogStore.getState().openCustomDateDialog({
+			label: '截止时间',
+			value: null,
+			hasExistingValue: false,
+			onSubmit,
+		})
+
+		expect(useDialogStore.getState()).toMatchObject({
+			createDialogType: 'task',
+			taskCreateDraft: draft,
+			taskCreatePresentation: 'fullscreen',
+			customDateDialog: { onSubmit },
+		})
+		useDialogStore.getState().closeCustomDateDialog()
+		expect(useDialogStore.getState()).toMatchObject({
+			createDialogType: 'task',
+			taskCreateDraft: draft,
+			taskCreatePresentation: 'fullscreen',
+			customDateDialog: null,
+		})
+		expect(onSubmit).not.toHaveBeenCalled()
+	})
+
+	it.each(['task', 'project'] as const)('关闭 %s 创建时同时清除其上层日期窗口', (kind) => {
+		const state = useDialogStore.getState()
+		if (kind === 'task') state.openTaskCreateDialog()
+		else state.openProjectCreateDialog()
+		state.openCustomDateDialog({
+			label: '截止时间',
+			value: null,
+			hasExistingValue: false,
+			onSubmit: vi.fn(),
+		})
+
+		if (kind === 'task') state.closeTaskCreateDialog()
+		else state.closeProjectCreateDialog()
+
+		expect(useDialogStore.getState().createDialogType).toBeNull()
+		expect(useDialogStore.getState().customDateDialog).toBeNull()
+	})
+
+	it.each(['openCommand', 'openShortcutHelp'] as const)(
+		'%s 仍替换创建及其上层日期窗口',
+		(openOverlay) => {
+			const state = useDialogStore.getState()
+			state.openTaskCreateDialog()
+			state.openCustomDateDialog({
+				label: '截止时间',
+				value: null,
+				hasExistingValue: false,
+				onSubmit: null,
+			})
+			state[openOverlay]()
+
+			expect(useDialogStore.getState().createDialogType).toBeNull()
+			expect(useDialogStore.getState().customDateDialog).toBeNull()
+		},
+	)
 })

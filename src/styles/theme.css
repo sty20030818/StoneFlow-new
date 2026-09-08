@@ -10,7 +10,8 @@
 	--border-width: 1px;
 	--field-border-width: 1px;
 	--disabled-opacity: 0.52;
-	/* HeroUI 的 2px 键盘焦点边贴住控件，避免 2px 外间距把它放大成厚重光环。 */
+	/* 焦点边统一为贴边细线；宽度由下方共享 utility 交给 HeroUI recipe。 */
+	--focus-ring-width: 1px;
 	--ring-offset-width: 0px;
 	--cursor-interactive: pointer;
 	--cursor-disabled: not-allowed;
@@ -197,4 +198,19 @@
 	--color-info-soft: var(--info-soft);
 	--color-info-soft-foreground: var(--info-soft-foreground);
 	--color-info-soft-hover: var(--info-soft-hover);
+}
+
+/* HeroUI 暴露环的间距但未暴露宽度；扩展共同 utility，不重写各控件焦点状态。 */
+@utility focus-ring {
+	@apply ring-[length:var(--focus-ring-width,2px)];
+}
+
+@utility focus-field-ring {
+	@apply ring-[length:var(--focus-ring-width,2px)];
+}
+
+@media (forced-colors: active) {
+	[data-theme="stoneflow-light"] {
+		--focus-ring-width: 2px;
+	}
 }

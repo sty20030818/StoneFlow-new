@@ -1,36 +1,93 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 
-import { Kbd } from '@heroui/react'
+import { Button, Kbd } from '@heroui/react'
 
 import { ActionTooltip, DisabledActionTooltip, OverflowTooltip } from '.'
 
 describe('shared tooltip patterns', () => {
-	it('ActionTooltip 对鼠标等待 500ms，但键盘 focus 立即打开', async () => {
+	it('ActionTooltip 仅鼠标 hover 自动显示，Tab 聚焦不打开且关闭已有提示', () => {
 		vi.useFakeTimers()
 		try {
 			render(
 				<ActionTooltip label='延迟策略'>
-					<button type='button'>延迟策略</button>
+					<Button type='button'>延迟策略</Button>
 				</ActionTooltip>,
 			)
 
 			const trigger = screen.getByRole('button', { name: '延迟策略' })
 			fireEvent.pointerMove(trigger, { pointerType: 'mouse' })
 			fireEvent.pointerEnter(trigger, { pointerType: 'mouse' })
+			act(() => vi.advanceTimersByTime(250))
+			fireEvent.keyDown(trigger, { key: 'Tab' })
+			act(() => vi.advanceTimersByTime(500))
+			expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+
+			fireEvent.pointerLeave(trigger, { pointerType: 'mouse' })
+			fireEvent.pointerEnter(trigger, { pointerType: 'mouse' })
 			act(() => vi.advanceTimersByTime(499))
 			expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
 
 			act(() => vi.advanceTimersByTime(1))
 			expect(screen.getByRole('tooltip')).toBeInTheDocument()
+			fireEvent.pointerLeave(trigger, { pointerType: 'mouse' })
+			expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+
+			fireEvent.keyDown(document, { key: 'Tab' })
+			act(() => trigger.focus())
+			expect(trigger).toHaveFocus()
+			expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+			act(() => vi.advanceTimersByTime(500))
+			expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+
+			fireEvent.pointerMove(trigger, { pointerType: 'mouse' })
+			fireEvent.pointerEnter(trigger, { pointerType: 'mouse' })
+			act(() => vi.advanceTimersByTime(500))
+			expect(screen.getByRole('tooltip')).toBeInTheDocument()
+			fireEvent.keyDown(trigger, { key: 'Tab' })
+			expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+
+			fireEvent.pointerLeave(trigger, { pointerType: 'mouse' })
+			fireEvent.pointerMove(trigger, { pointerType: 'mouse' })
+			fireEvent.pointerEnter(trigger, { pointerType: 'mouse' })
+			act(() => vi.advanceTimersByTime(500))
+			expect(screen.getByRole('tooltip')).toBeInTheDocument()
+			fireEvent.keyDown(trigger, { key: 'Escape' })
+			expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
 		} finally {
+			cleanup()
+			act(() => vi.runOnlyPendingTimers())
 			vi.useRealTimers()
 		}
+	})
 
-		const trigger = screen.getByRole('button', { name: '延迟策略' })
-		act(() => trigger.blur())
-		fireEvent.keyDown(document, { key: 'Tab' })
-		act(() => trigger.focus())
-		expect(await screen.findByRole('tooltip')).toBeInTheDocument()
+	it('ActionTooltip 从触发器移入提示保持显示，离开提示后按延迟关闭', () => {
+		vi.useFakeTimers()
+		try {
+			render(
+				<ActionTooltip closeDelay={200} delay={0} label='悬停提示'>
+					<Button type='button'>触发提示</Button>
+				</ActionTooltip>,
+			)
+			const trigger = screen.getByRole('button', { name: '触发提示' })
+			fireEvent.pointerMove(trigger, { pointerType: 'mouse' })
+			fireEvent.pointerEnter(trigger, { pointerType: 'mouse' })
+			const tooltip = screen.getByRole('tooltip')
+
+			fireEvent.pointerLeave(trigger, { pointerType: 'mouse' })
+			fireEvent.pointerEnter(tooltip, { pointerType: 'mouse' })
+			act(() => vi.advanceTimersByTime(200))
+			expect(tooltip).toBeInTheDocument()
+
+			fireEvent.pointerLeave(tooltip, { pointerType: 'mouse' })
+			act(() => vi.advanceTimersByTime(199))
+			expect(tooltip).toBeInTheDocument()
+			act(() => vi.advanceTimersByTime(1))
+			expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+		} finally {
+			cleanup()
+			act(() => vi.runOnlyPendingTimers())
+			vi.useRealTimers()
+		}
 	})
 
 	it('ActionTooltip 组合动作文案和快捷键提示', async () => {
@@ -73,6 +130,34 @@ describe('shared tooltip patterns', () => {
 		)
 
 		expect(screen.getByText('今天')).not.toHaveAttribute('tabindex')
+	})
+
+	it('ActionTooltip 不消费 Tab，仍允许子按钮自己的键盘处理消费事件', () => {
+		const onParentKeyDown = vi.fn()
+		const onButtonKeyDown = vi.fn()
+		render(
+			<div onKeyDown={onParentKeyDown}>
+				<ActionTooltip label='创建任务'>
+					<Button
+						onKeyDown={(event) => {
+							onButtonKeyDown(event.key)
+							if (event.key === 'ArrowDown') event.stopPropagation()
+						}}
+					>
+						创建任务
+					</Button>
+				</ActionTooltip>
+			</div>,
+		)
+		const trigger = screen.getByRole('button', { name: '创建任务' })
+		fireEvent.keyDown(trigger, { key: 'Tab' })
+		expect(onParentKeyDown).toHaveBeenCalledOnce()
+		onParentKeyDown.mockClear()
+
+		fireEvent.keyDown(trigger, { key: 'ArrowDown' })
+
+		expect(onButtonKeyDown.mock.calls).toEqual([['Tab'], ['ArrowDown']])
+		expect(onParentKeyDown).not.toHaveBeenCalled()
 	})
 
 	it('DisabledActionTooltip 分离可见文案与无障碍名称，并展示快捷键和禁用原因', async () => {

@@ -216,8 +216,6 @@ export function ShellLayoutContent({
 							setIsAboutOpen(false)
 							openChangelog()
 						}}
-						selectedSpaceId={createDialog.selectedSpaceId}
-						setSelectedSpaceId={createDialog.setSelectedSpaceId}
 						shouldDelayTaskCreateDialog={createDialog.shouldDelayTaskCreateDialog}
 						spaces={chrome.spaces}
 						taskCreateDraft={createDialog.taskCreateDraft}

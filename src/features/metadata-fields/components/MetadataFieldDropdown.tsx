@@ -1,6 +1,6 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useContext, useMemo, useState, type ReactNode } from 'react'
 import { Dropdown } from '@heroui/react'
-import { Header } from 'react-aria-components'
+import { Header, RootMenuTriggerStateContext } from 'react-aria-components'
 
 import { CommandShortcut, type CommandId, type KeybindingScope } from '@/features/command'
 import {
@@ -14,7 +14,7 @@ import {
 import { buildDigitShortcutMap, ShortcutDigitSelectLayer } from '@/shared/components/shortcut-menu'
 import { ActionTooltip, DisabledActionTooltip } from '@/shared/components/tooltip'
 
-import { MetadataFieldButton } from './MetadataFieldButton'
+import { MetadataFieldButton, type MetadataFieldButtonAppearance } from './MetadataFieldButton'
 import { MetadataFieldMenuItem } from './MetadataFieldMenuItem'
 
 export type MetadataFieldKey =
@@ -47,7 +47,7 @@ type MetadataFieldDropdownProps<TValue> = {
 	buttonLabel?: ReactNode
 	buttonIcon?: ReactNode
 	compact?: boolean
-	buttonAppearance?: 'default' | 'row-icon'
+	buttonAppearance?: MetadataFieldButtonAppearance
 	disabled?: boolean
 	disabledReason?: ReactNode
 	drawerOwnedOverlay?: boolean
@@ -85,13 +85,6 @@ export function MetadataFieldDropdown<TValue>({
 }: MetadataFieldDropdownProps<TValue>) {
 	const [menuOpen, setMenuOpen] = useState(false)
 	const currentOption = options.find((option) => isValueEqual(option.value, value)) ?? options[0]
-	const selectedValues = values ?? [value]
-	const shortcutItems = useMemo(
-		() => buildMetadataShortcutItems(options, shortcutMode),
-		[options, shortcutMode],
-	)
-	const digitShortcutMap = useMemo(() => buildDigitShortcutMap(shortcutItems), [shortcutItems])
-	const resolvedMenuLabel = menuLabel ?? buildMetadataMenuLabel(fieldKey, label)
 
 	if (!currentOption) {
 		return null
@@ -147,63 +140,120 @@ export function MetadataFieldDropdown<TValue>({
 				offset={6}
 				placement={resolveMenuPlacement(menuAlign)}
 			>
-				<ShortcutDigitSelectLayer
-					items={shortcutItems}
-					onSelect={(item) => {
-						onChange(item.value)
-						setMenuOpen(false)
-					}}
+				<MetadataFieldMenu
+					fieldKey={fieldKey}
+					label={label}
+					value={value}
+					values={values}
+					options={options}
+					menuLabel={menuLabel}
+					shortcut={shortcut}
+					shortcutMode={shortcutMode}
+					isValueEqual={isValueEqual}
+					stopPropagation={stopPropagation}
+					onSelectCustomOption={onSelectCustomOption}
+					onChange={onChange}
 				/>
-				<Dropdown.Menu aria-label={resolvedMenuLabel}>
-					<Dropdown.Section>
-						<Header className='flex items-center gap-2 px-2 py-1.5 text-[12px] font-medium text-muted'>
-							<span className='min-w-0 flex-1 truncate'>{resolvedMenuLabel}</span>
-							{shortcut ? (
-								<CommandShortcut commandId={shortcut.commandId} scope={shortcut.scope} />
-							) : null}
-						</Header>
-						{options.map((option, index) => {
-							const shortcutDigit =
-								digitShortcutMap.find((entry) => isValueEqual(entry.item.value, option.value))
-									?.digit ?? ''
-
-							return (
-								<MetadataFieldMenuItem
-									disabled={option.disabled}
-									digit={
-										shortcutMode === 'clear-only'
-											? option.isEmptyValue
-												? shortcutDigit
-												: ''
-											: shortcutDigit
-									}
-									icon={option.icon}
-									id={option.key ?? String(option.value)}
-									indicator={getMetadataFieldIndicator({
-										optionValue: option.value,
-										selectedValues,
-										isValueEqual,
-									})}
-									key={option.key ?? String(option.value)}
-									label={option.label}
-									stopPropagation={stopPropagation}
-									trailing={option.trailing}
-									value={option.value}
-									onSelect={(nextValue) => {
-										if (option.action === 'openCustomDateDialog') {
-											onSelectCustomOption?.(option.key ?? String(index))
-											return
-										}
-
-										onChange(nextValue)
-									}}
-								/>
-							)
-						})}
-					</Dropdown.Section>
-				</Dropdown.Menu>
 			</Dropdown.Popover>
 		</Dropdown>
+	)
+}
+
+export function MetadataFieldMenu<TValue>({
+	fieldKey,
+	label,
+	value,
+	values,
+	options,
+	menuLabel,
+	shortcut,
+	shortcutMode = 'default',
+	isValueEqual = defaultMetadataValueComparator,
+	stopPropagation,
+	onSelectCustomOption,
+	onChange,
+}: Pick<
+	MetadataFieldDropdownProps<TValue>,
+	| 'fieldKey'
+	| 'label'
+	| 'value'
+	| 'values'
+	| 'options'
+	| 'menuLabel'
+	| 'shortcut'
+	| 'shortcutMode'
+	| 'isValueEqual'
+	| 'stopPropagation'
+	| 'onSelectCustomOption'
+	| 'onChange'
+>) {
+	const menuState = useContext(RootMenuTriggerStateContext)
+	const selectedValues = values ?? [value]
+	const shortcutItems = useMemo(
+		() => buildMetadataShortcutItems(options, shortcutMode),
+		[options, shortcutMode],
+	)
+	const digitShortcutMap = useMemo(() => buildDigitShortcutMap(shortcutItems), [shortcutItems])
+	const resolvedMenuLabel = menuLabel ?? buildMetadataMenuLabel(fieldKey, label)
+
+	return (
+		<>
+			<ShortcutDigitSelectLayer
+				items={shortcutItems}
+				onSelect={(item) => {
+					onChange(item.value)
+					menuState?.close()
+				}}
+			/>
+			<Dropdown.Menu aria-label={resolvedMenuLabel}>
+				<Dropdown.Section>
+					<Header className='flex items-center gap-2 px-2 py-1.5 text-[12px] font-medium text-muted'>
+						<span className='min-w-0 flex-1 truncate'>{resolvedMenuLabel}</span>
+						{shortcut ? (
+							<CommandShortcut commandId={shortcut.commandId} scope={shortcut.scope} />
+						) : null}
+					</Header>
+					{options.map((option, index) => {
+						const shortcutDigit =
+							digitShortcutMap.find((entry) => isValueEqual(entry.item.value, option.value))
+								?.digit ?? ''
+
+						return (
+							<MetadataFieldMenuItem
+								disabled={option.disabled}
+								digit={
+									shortcutMode === 'clear-only'
+										? option.isEmptyValue
+											? shortcutDigit
+											: ''
+										: shortcutDigit
+								}
+								icon={option.icon}
+								id={option.key ?? String(option.value)}
+								indicator={getMetadataFieldIndicator({
+									optionValue: option.value,
+									selectedValues,
+									isValueEqual,
+								})}
+								key={option.key ?? String(option.value)}
+								label={option.label}
+								stopPropagation={stopPropagation}
+								trailing={option.trailing}
+								value={option.value}
+								onSelect={(nextValue) => {
+									if (option.action === 'openCustomDateDialog') {
+										onSelectCustomOption?.(option.key ?? String(index))
+										return
+									}
+
+									onChange(nextValue)
+								}}
+							/>
+						)
+					})}
+				</Dropdown.Section>
+			</Dropdown.Menu>
+		</>
 	)
 }
 
