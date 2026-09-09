@@ -58,7 +58,7 @@ export function ShellLayoutSkeleton({
 			className='relative flex h-full min-h-0 flex-col overflow-hidden bg-surface-secondary'
 			data-slot='shell-layout-skeleton'
 		>
-			<div className='h-11 shrink-0 bg-surface-secondary' />
+			<div className='h-11 shrink-0 bg-surface-secondary' data-tauri-drag-region />
 
 			<div
 				className='grid min-h-0 min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)] overflow-hidden bg-surface-secondary'

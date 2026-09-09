@@ -2,7 +2,7 @@
 
 > 作用：描述 `src/layout` 的稳定职责与本轮定稿装配边界
 > 总览：`src/ARCHITECTURE.md`
-> 最后更新：2026-09-08
+> 最后更新：2026-09-09
 
 ---
 
@@ -66,6 +66,8 @@ UI Lab 仅 `createDialogSamples` 样例可直接消费 `ShellCreationOverlays` �
 **分区 / spaceId 真相：** 直接读 `shellRoute` + `scope`（`ShellRouteLayout`），**无**可写 nav store 镜像。
 
 **壳层几何：** `ShellChrome` 是 Header、Sidebar、Main region 与 Footer 的唯一 Frame owner。Frame 为桌面 Main region 提供尾侧 `8px` gutter；`Sidebar.Main` 只提供唯一 `<main>` landmark 与 HeroUI inset surface，并清零上游默认外边距。compact Main region 不保留 gutter。Header、开屏骨架和 `index.html` 静态首帧必须同步同一高度合同。
+
+**窗口拖动：** 静态首帧与 React 加载 / 错误骨架的顶部直接声明 Tauri drag region，不等待业务数据。就绪后由 `ShellHeader` 唯一挂载 `useWindowBackdropDrag`：仅原生环境、左键直接命中 Modal / AlertDialog / Command / Sheet 的 backdrop 且坐标处于真实 Header 盒内时，调用 Tauri `startDragging`。嵌套菜单将背景遮罩设为 inert 后，浏览器会把外点命中到 body；仅 Header 同样处于 inert 子树时接管该目标，不依赖 Popover 的测试标记或样式猜测。在 window 捕获阶段消费 pointerdown 与 click，使其不进入 React Aria 的外点关闭；不提升背景 Header、不移除 inert、不增加可聚焦元素，也不接管弹窗 Header、Sheet 正文或表单控件。普通区域的外点关闭、Tab / Escape 与已有标题栏拖动保持；原生失败记录错误，浏览器环境不拦截。此路径仍依赖 WebView 处理事件，不保证 JS 阻塞时可拖动。
 
 **任务详情装配：** `ShellMain` 挂载唯一 `EntityDetailDrawerHost`，列表打开动作只产生共享 `?task=` 意图。Shell controller 只派生一份 `isCompact`：`<1024px` 使用 HeroUI Sheet，`>=1024px` 在 Main surface 内使用 HeroUI Pro Resizable Aside。跨断点只替换容器，保留同一 URL、active task、草稿与滚动上下文，不关闭详情、不导航、不进入完整页。Aside 几何为列表最小 `352px`、Aside 最小 `320px` / 默认 `360px` / 最大 `440px`；layout 只负责容器装配与窄窗两张 Sheet 互斥，不拥有任务 query、草稿或 mutation。canonical 完整页只由用户显式动作打开。
 

@@ -18,6 +18,7 @@ describe('ShellLayoutSkeleton', () => {
 		expect(document.getElementById('sf-boot-shell')).not.toBeInTheDocument()
 		expect(root).toHaveAttribute('aria-busy', 'true')
 		expect(root?.firstElementChild).toHaveClass('h-11')
+		expect(root?.firstElementChild).toHaveAttribute('data-tauri-drag-region')
 		expect(sidebar).toHaveStyle({ '--sidebar-width': '330px' })
 	})
 
@@ -34,5 +35,8 @@ describe('ShellLayoutSkeleton', () => {
 		const sidebar = container.querySelector('[data-slot="shell-layout-skeleton-sidebar"]')
 		expect(sidebar).toHaveStyle({ '--sidebar-width': '48px' })
 		expect(screen.getByLabelText('空间加载失败')).toHaveAttribute('aria-busy', 'true')
+		expect(screen.getByLabelText('空间加载失败').firstElementChild).toHaveAttribute(
+			'data-tauri-drag-region',
+		)
 	})
 })

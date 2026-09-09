@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { startTransition, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { Button, Tooltip } from '@heroui/react'
 
@@ -8,6 +8,7 @@ import type { ShellRouteHistoryEntry } from '@/app/navigation'
 import { HistoryDropdown } from '@/layout/header/HistoryDropdown'
 import { NavBackForward } from '@/layout/header/NavBackForward'
 import { UserAppMenu } from '@/layout/header/UserAppMenu'
+import { useWindowBackdropDrag } from '@/layout/header/useWindowBackdropDrag'
 import type { ShellSectionKey } from '@/layout/types'
 import type { ShellSidebarController } from '@/layout/model/useShellSidebarController'
 import { GlobalSearchInput } from '@/features/global-search'
@@ -100,6 +101,8 @@ export function ShellHeader({
 	spaces,
 	sidebar,
 }: ShellHeaderProps) {
+	const headerRef = useRef<HTMLElement>(null)
+	useWindowBackdropDrag(headerRef)
 	const navigate = useNavigate({ from: '/' })
 	const [isMaximized, setIsMaximized] = useState(false)
 	const isMac = useMemo(() => /Mac|iPhone|iPad|iPod/i.test(window.navigator.userAgent), [])
@@ -241,6 +244,7 @@ export function ShellHeader({
 		<>
 			<div className='relative'>
 				<header
+					ref={headerRef}
 					className={cn(
 						'relative z-30 flex h-11 shrink-0 flex-nowrap items-center gap-3 bg-surface-secondary pr-0',
 						// 左条整块 <640 不渲染时，为刘海/窗口区补左侧内边，避免主带贴边
