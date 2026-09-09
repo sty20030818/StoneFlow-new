@@ -180,7 +180,7 @@
 		font-weight: 600;
 	}
 
-	/* 创建场景是连续编辑工作面；不影响普通字段或详情编辑的焦点 recipe。 */
+	/* 创建场景是连续编辑工作面；不影响普通表单字段的焦点 recipe。 */
 	[data-theme="stoneflow-light"]
 		:is(.input[data-field-role="create-title"], .textarea[data-field-role="create-description"]) {
 		border: 0;
@@ -222,7 +222,9 @@
 		[data-theme="stoneflow-light"]
 			:is(
 				.input[data-field-role="create-title"],
-				.textarea[data-field-role="create-description"]
+				.textarea[data-field-role="create-description"],
+				.input[data-field-role="detail-title"],
+				.textarea[data-field-role="detail-note"]
 			):focus-visible {
 			outline: 2px solid Highlight;
 			outline-offset: -2px;
@@ -240,28 +242,12 @@
 	[data-theme="stoneflow-light"]
 		:is(.input[data-field-role="detail-title"], .textarea[data-field-role="detail-note"]) {
 		border-color: transparent;
+		/* 与创建编辑区一致，移除会裁切贴边原生光标的圆角。 */
+		border-radius: 0;
 		background: transparent;
 		box-shadow: none;
+		outline: none;
 		padding-inline: 0;
-	}
-
-	[data-theme="stoneflow-light"]
-		:is(.input[data-field-role="detail-title"], .textarea[data-field-role="detail-note"]):is(
-			:hover,
-			[data-hovered="true"],
-			:focus,
-			[data-focused="true"]
-		) {
-		background: transparent;
-	}
-
-	[data-theme="stoneflow-light"]
-		:is(.input[data-field-role="detail-title"], .textarea[data-field-role="detail-note"]):is(
-			:focus-visible,
-			[data-focus-visible="true"]
-		) {
-		border-color: var(--focus-subtle);
-		box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--focus-subtle) 28%, transparent);
 	}
 
 	/* Invalid 优先于 Focus，避免 Danger ring 内仍保留 Accent 字段边框。 */
