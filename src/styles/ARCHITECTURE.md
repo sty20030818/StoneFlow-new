@@ -104,6 +104,7 @@ HeroUI OSS/Pro 的锁定版本是默认实现，负责组件结构、Hover、Pre
 - `NumberField`、`ColorSwatchPicker`、`CellSwitch`、`CellSelect`、`Calendar`、`Toolbar` 与 `ActionBar` 直接使用上游结构和状态 recipe；其中 NumberField 与 CellSwitch 只共享已批准的无硬框字段外壳，Calendar 只恢复日期单元的真圆语义，ColorSwatchPicker 只恢复 circle variant 的真圆语义，ActionBar 只恢复固定操作 pill 的真圆语义；
 
 - 28/32/36px 工作台控件密度和紧凑集合行；
+- `RadioButtonGroup` 整卡选项使用 Surface 圆角、12px 内边距与 1px 选中边，焦点仍读取统一宽度；指示器预留独立空间。设置开关通过唯一 `SettingsToggleRow` 的稳定 hook 自适应多行高度、移除组内字段阴影，保留 CellSwitch 原生交互。
 - 次级选择的中性表面，避免 Accent 大面积铺色；
 - Card 与 Overlay 的统一轻边界；Surface 保持 HeroUI 上游的无边界语义；
 - `RowShell` 的 selected/current/focus-suppressed/context-menu-open 等稳定共享状态；普通 hover、current、selected 与 selected + hover 分别使用固定的 `surface-hover`、`surface-active`、`selection` 与 `selection-hover`，不随 Accent 预设漂移；键盘焦点恢复期间不得让 stale pointer hover 抢回 current 视觉。

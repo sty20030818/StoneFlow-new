@@ -32,7 +32,7 @@ function renderPanel(section: SettingsSectionKey) {
 			return (
 				<SettingsStack>
 					<SettingsSection
-						description='控制 StoneFlow 如何检查和安装更新。更新包从 release.sty20030818.space 的 Cloudflare R2 分发。'
+						description='选择检查方式与更新渠道。安装和重启始终由你确认。'
 						title='应用更新'
 					>
 						<UpdateSettingsSection />
@@ -84,7 +84,7 @@ export function SettingsPage() {
 				}
 			/>
 			<PageFrame.Body>
-				<div className='mx-auto flex w-full max-w-5xl min-w-0 flex-1 flex-col'>
+				<div className='mx-auto flex w-full max-w-3xl min-w-0 flex-1 flex-col px-4 py-4'>
 					{renderPanel(section)}
 				</div>
 			</PageFrame.Body>

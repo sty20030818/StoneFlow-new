@@ -113,8 +113,23 @@ export function UpdateSettingsSection() {
 		)
 	}
 
+	if (!settings) {
+		return (
+			<Alert role='alert' status='danger'>
+				<Alert.Indicator />
+				<Alert.Content>
+					<Alert.Title>无法读取更新设置</Alert.Title>
+					<Alert.Description>{error}</Alert.Description>
+				</Alert.Content>
+				<Button onPress={() => void loadSettings()} size='sm' variant='outline'>
+					重试
+				</Button>
+			</Alert>
+		)
+	}
+
 	return (
-		<div className='space-y-5'>
+		<div className='flex min-w-0 flex-col gap-5'>
 			{error ? (
 				<Alert role='alert' status='danger'>
 					<Alert.Indicator />
@@ -128,20 +143,20 @@ export function UpdateSettingsSection() {
 			<UpdateCheckModeOptions
 				disabled={saving}
 				onChange={(mode) => void handleCheckModeChange(mode)}
-				value={settings?.checkMode}
+				value={settings.checkMode}
 			/>
 
 			<UpdateChannelOptions
 				disabled={saving}
 				onChange={(channel) => void handleChannelChange(channel)}
-				value={settings?.channel}
+				value={settings.channel}
 			/>
 
-			{settings?.checkMode !== 'manual' ? (
+			{settings.checkMode !== 'manual' ? (
 				<UpdateIntervalOptions
 					disabled={saving}
 					onChange={(intervalSecs) => void handleIntervalChange(intervalSecs)}
-					value={settings?.checkIntervalSecs}
+					value={settings.checkIntervalSecs}
 				/>
 			) : null}
 

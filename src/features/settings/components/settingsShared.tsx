@@ -1,9 +1,9 @@
-import type { ReactNode } from 'react'
-import { Card, Surface } from '@heroui/react'
+import { useId, type ReactNode } from 'react'
+import { Card } from '@heroui/react'
 import { CellSwitch } from '@heroui-pro/react'
 
 export function SettingsStack({ children }: { children: ReactNode }) {
-	return <div className='flex w-full min-w-0 flex-col gap-3'>{children}</div>
+	return <div className='flex w-full min-w-0 flex-col gap-6'>{children}</div>
 }
 
 export function SettingsSection({
@@ -15,19 +15,16 @@ export function SettingsSection({
 	description: string
 	children: ReactNode
 }) {
+	const headingId = useId()
 	return (
-		<section className='min-w-0'>
-			<Card>
-				<Card.Header>
-					<div className='grid gap-1'>
-						<Card.Title>{title}</Card.Title>
-						<Card.Description className='max-w-3xl'>{description}</Card.Description>
-					</div>
-				</Card.Header>
-				<Card.Content>
-					<div className='min-w-0'>{children}</div>
-				</Card.Content>
-			</Card>
+		<section aria-labelledby={headingId} className='grid min-w-0 gap-3'>
+			<div className='grid gap-1'>
+				<h2 className='text-sm font-semibold text-foreground' id={headingId}>
+					{title}
+				</h2>
+				<p className='text-xs leading-5 text-muted'>{description}</p>
+			</div>
+			{children}
 		</section>
 	)
 }
@@ -37,19 +34,23 @@ export function SettingsToggleRow({
 	description,
 	isSelected,
 	isDisabled,
+	isPending,
 	onChange,
 }: {
 	label: string
 	description: string
 	isSelected: boolean
 	isDisabled?: boolean
+	isPending?: boolean
 	onChange: (isSelected: boolean) => void
 }) {
 	return (
 		<CellSwitch
 			aria-label={label}
 			className='w-full'
+			data-settings-toggle-row
 			isDisabled={isDisabled}
+			isReadOnly={isPending}
 			isSelected={isSelected}
 			onChange={onChange}
 		>
@@ -76,16 +77,28 @@ export function SettingInfoRow({
 	value: ReactNode
 }) {
 	return (
-		<Surface variant='tertiary'>
-			<div className='p-3'>
-				<p className='text-sm font-medium text-foreground'>{label}</p>
-				<div className='mt-1 text-sm text-foreground'>{value}</div>
-				<p className='mt-1 text-xs leading-5 text-muted'>{description}</p>
-			</div>
-		</Surface>
+		<div className='grid min-w-0 gap-1 py-3'>
+			<dt className='text-xs font-medium text-muted'>{label}</dt>
+			<dd className='text-sm text-foreground tabular-nums'>{value}</dd>
+			<dd className='text-xs leading-5 text-muted'>{description}</dd>
+		</div>
 	)
 }
 
-export function SettingsPreferenceGroup({ children }: { children: ReactNode }) {
-	return <div className='divide-y divide-separator'>{children}</div>
+export function SettingsPreferenceGroup({
+	children,
+	isPending,
+}: {
+	children: ReactNode
+	isPending?: boolean
+}) {
+	return (
+		<Card>
+			<Card.Content>
+				<div aria-busy={isPending || undefined} className='divide-y divide-separator'>
+					{children}
+				</div>
+			</Card.Content>
+		</Card>
+	)
 }

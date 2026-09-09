@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
-import { Alert, Button, ListBox, Radio, RadioGroup } from '@heroui/react'
-import { CellSelect } from '@heroui-pro/react'
+import { Alert, Button, ListBox } from '@heroui/react'
+import { CellSelect, RadioButtonGroup } from '@heroui-pro/react'
 
 import { SettingsSection, SettingsStack } from '../settingsShared'
 import { ACCENT_PRESETS, readAccentPreference, setAccentPreference } from '@/features/appearance'
@@ -40,44 +40,43 @@ export function SettingsGeneralPanel() {
 
 	return (
 		<SettingsStack>
-			<SettingsSection
-				description='选择界面的强调色。只影响主要操作、选中状态、链接与焦点，并保存在这台设备上。'
-				title='主题色'
-			>
-				<RadioGroup
+			<SettingsSection description='用于主要操作、链接与焦点。仅保存在这台设备上。' title='主题色'>
+				<RadioButtonGroup
 					aria-label='主题色'
-					className='grid gap-2 sm:grid-cols-2 lg:grid-cols-3'
+					className='grid-cols-1 sm:grid-cols-3'
+					layout='grid'
 					name='appearance-accent'
 					onChange={(value) => setAccent(setAccentPreference(value))}
 					value={accent}
 					variant='secondary'
 				>
 					{ACCENT_PRESETS.map((preset) => (
-						<Radio data-accent-preview={preset.id} key={preset.id} value={preset.id}>
-							<Radio.Content>
-								<span aria-hidden className='size-3.5 shrink-0 rounded-full bg-accent-base' />
-								<span className='min-w-0 flex-1 truncate'>{preset.label}</span>
-								<Radio.Control>
-									<Radio.Indicator />
-								</Radio.Control>
-							</Radio.Content>
-						</Radio>
+						<RadioButtonGroup.Item key={preset.id} value={preset.id}>
+							<RadioButtonGroup.Indicator />
+							<RadioButtonGroup.ItemContent>
+								<span className='flex items-center gap-2'>
+									<span
+										aria-hidden
+										className='size-4 shrink-0 rounded-full bg-accent-base'
+										data-accent-preview={preset.id}
+									/>
+									<span className='text-sm font-medium text-foreground'>{preset.label}</span>
+								</span>
+							</RadioButtonGroup.ItemContent>
+						</RadioButtonGroup.Item>
 					))}
-				</RadioGroup>
+				</RadioButtonGroup>
 			</SettingsSection>
 
-			<SettingsSection
-				description='默认空间会影响全局新建和兜底恢复时的优先落点，建议把最常用的空间放在这里。'
-				title='默认空间'
-			>
+			<SettingsSection description='全局新建或原位置不可用时，优先使用这个空间。' title='默认空间'>
 				{spaceStatus === 'error' ? (
 					<Alert role='alert' status='danger'>
 						<Alert.Indicator />
 						<Alert.Content>
-							<Alert.Title>无法读取 Space</Alert.Title>
+							<Alert.Title>无法读取空间</Alert.Title>
 							<Alert.Description>{spaceError ?? 'Space 列表加载失败。'}</Alert.Description>
 						</Alert.Content>
-						<Button onPress={() => void refetchSpaces()} size='sm' type='button' variant='danger'>
+						<Button onPress={() => void refetchSpaces()} size='sm' type='button' variant='outline'>
 							重试
 						</Button>
 					</Alert>
@@ -111,16 +110,10 @@ export function SettingsGeneralPanel() {
 								<Alert.Indicator />
 								<Alert.Content>
 									<Alert.Title>当前没有可用空间</Alert.Title>
-									<Alert.Description>
-										当前还没有可用空间，所以暂时不能设置默认项。等空间准备好之后，再回来这里调整就可以了。
-									</Alert.Description>
+									<Alert.Description>创建空间后，可以在这里设置默认项。</Alert.Description>
 								</Alert.Content>
 							</Alert>
-						) : (
-							<p className='text-xs leading-5 text-muted'>
-								当前默认项：{defaultSpace?.name ?? '未设置'}
-							</p>
-						)}
+						) : null}
 					</div>
 				)}
 				{error ? (

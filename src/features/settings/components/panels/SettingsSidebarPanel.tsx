@@ -154,7 +154,7 @@ export function SettingsSidebarPanel() {
 					onPress={() => void loadSidebarSettings().catch(() => undefined)}
 					size='sm'
 					type='button'
-					variant='danger'
+					variant='outline'
 				>
 					重试
 				</Button>
@@ -168,18 +168,16 @@ export function SettingsSidebarPanel() {
 
 	return (
 		<SettingsStack>
-			<SettingsSection
-				description='控制侧边栏主导航里哪些入口显示。至少保留一个主入口，避免侧边栏失去基本导航能力。'
-				title='主导航'
-			>
-				<SettingsPreferenceGroup>
+			<SettingsSection description='选择常用入口，至少保留一项。' title='主导航'>
+				<SettingsPreferenceGroup isPending={pendingSections.mainItems}>
 					{MAIN_ITEM_OPTIONS.map((item) => {
 						const checked = sidebarSettings.mainItems[item.key].visible
-						const disabled = pendingSections.mainItems || (checked && visibleMainItemCount === 1)
+						const disabled = checked && visibleMainItemCount === 1
 						return (
 							<SettingsToggleRow
 								description={item.description}
 								isDisabled={disabled}
+								isPending={pendingSections.mainItems}
 								isSelected={checked}
 								key={item.key}
 								label={item.label}
@@ -199,27 +197,20 @@ export function SettingsSidebarPanel() {
 				) : null}
 			</SettingsSection>
 
-			<SettingsSection
-				description='控制底部辅助入口是否显示，方便决定归档和回收站要不要常驻侧边栏。'
-				title='辅助入口'
-			>
-				<SettingsPreferenceGroup>
+			<SettingsSection description='选择底部常驻入口，至少保留一项。' title='辅助入口'>
+				<SettingsPreferenceGroup isPending={pendingSections.footerItems}>
 					<SettingsToggleRow
 						description='显示归档入口，方便集中查看暂时收起的内容。'
-						isDisabled={
-							pendingSections.footerItems ||
-							(sidebarSettings.footerItems.archive.visible && visibleFooterItemCount === 1)
-						}
+						isDisabled={sidebarSettings.footerItems.archive.visible && visibleFooterItemCount === 1}
+						isPending={pendingSections.footerItems}
 						isSelected={sidebarSettings.footerItems.archive.visible}
 						label='归档'
 						onChange={(nextChecked) => handleFooterItemVisibilityChange('archive', nextChecked)}
 					/>
 					<SettingsToggleRow
 						description='显示回收站入口，方便恢复或彻底删除内容。'
-						isDisabled={
-							pendingSections.footerItems ||
-							(sidebarSettings.footerItems.trash.visible && visibleFooterItemCount === 1)
-						}
+						isDisabled={sidebarSettings.footerItems.trash.visible && visibleFooterItemCount === 1}
+						isPending={pendingSections.footerItems}
 						isSelected={sidebarSettings.footerItems.trash.visible}
 						label='回收站'
 						onChange={(nextChecked) => handleFooterItemVisibilityChange('trash', nextChecked)}
@@ -236,28 +227,25 @@ export function SettingsSidebarPanel() {
 				) : null}
 			</SettingsSection>
 
-			<SettingsSection
-				description='控制项目分区在侧边栏里的呈现方式，只保留真正会影响日常导航的几项。'
-				title='项目分区'
-			>
-				<SettingsPreferenceGroup>
+			<SettingsSection description='调整项目列表的显示内容。' title='项目分区'>
+				<SettingsPreferenceGroup isPending={pendingSections.projectSection}>
 					<SettingsToggleRow
 						description='决定侧边栏中是否展示项目分区。'
-						isDisabled={pendingSections.projectSection}
+						isPending={pendingSections.projectSection}
 						isSelected={sidebarSettings.projectSection.visible}
 						label='显示项目分区'
 						onChange={(nextChecked) => handleProjectSectionChange('visible', nextChecked)}
 					/>
 					<SettingsToggleRow
 						description='控制项目分区里是否包含已完成项目。'
-						isDisabled={pendingSections.projectSection}
+						isPending={pendingSections.projectSection}
 						isSelected={sidebarSettings.projectSection.showCompleted}
 						label='显示已完成项目'
 						onChange={(nextChecked) => handleProjectSectionChange('showCompleted', nextChecked)}
 					/>
 					<SettingsToggleRow
 						description='控制项目列表是否显示任务数量徽标。'
-						isDisabled={pendingSections.projectSection}
+						isPending={pendingSections.projectSection}
 						isSelected={sidebarSettings.projectSection.showCounts}
 						label='显示数量'
 						onChange={(nextChecked) => handleProjectSectionChange('showCounts', nextChecked)}

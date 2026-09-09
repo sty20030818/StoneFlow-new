@@ -1,12 +1,5 @@
-import {
-	Chip,
-	Description,
-	Label,
-	Radio,
-	RadioGroup,
-	ToggleButton,
-	ToggleButtonGroup,
-} from '@heroui/react'
+import { Chip, Description, Label, ToggleButton, ToggleButtonGroup } from '@heroui/react'
+import { RadioButtonGroup } from '@heroui-pro/react'
 
 import type { CheckIntervalSecs, UpdateChannel, UpdateCheckMode } from '../api/updates'
 
@@ -18,18 +11,17 @@ export const CHECK_MODE_OPTIONS: Array<{
 	{
 		value: 'manual',
 		label: '手动检查',
-		description: '不自动检查。仅在你点击「检查更新」时查询。',
+		description: '只在你点击「检查更新」时查询。',
 	},
 	{
 		value: 'notifyOnly',
 		label: '仅提醒',
-		description: '启动后及定期自动检查。发现更新时弹窗提醒，由你决定是否下载。',
+		description: '自动检查并提醒，由你决定是否下载。',
 	},
 	{
 		value: 'autoDownload',
 		label: '自动下载',
-		description:
-			'自动检查并在后台静默下载（不会自动安装/自动重启）。下载完成后底部悬浮栏提示，由你决定何时重启生效。',
+		description: '自动检查并后台下载，不会自动安装或重启。',
 	},
 ]
 
@@ -39,11 +31,11 @@ export const CHANNEL_OPTIONS: Array<{
 	description: string
 	badge?: string
 }> = [
-	{ value: 'stable', label: '正式版', description: '只接收经过测试的稳定版本，推荐日常使用。' },
+	{ value: 'stable', label: '正式版', description: '稳定版本，适合日常使用。' },
 	{
 		value: 'beta',
 		label: '测试版',
-		description: '接收最新的测试版本，可能包含实验性功能和未修复的问题。',
+		description: '提前体验新功能，可能存在未修复的问题。',
 		badge: 'Beta',
 	},
 ]
@@ -61,34 +53,30 @@ export function UpdateCheckModeOptions({
 	disabled,
 	onChange,
 }: {
-	value: UpdateCheckMode | undefined
+	value: UpdateCheckMode
 	disabled: boolean
 	onChange: (mode: UpdateCheckMode) => void
 }) {
 	return (
-		<RadioGroup
-			className='gap-3'
+		<RadioButtonGroup
+			className='grid-cols-1 md:grid-cols-3'
 			isDisabled={disabled}
+			layout='grid'
 			name='update-check-mode'
 			onChange={(nextValue) => onChange(nextValue as UpdateCheckMode)}
 			value={value}
-			variant='secondary'
 		>
-			<Label>更新检查方式</Label>
-			{CHECK_MODE_OPTIONS.map((option) => {
-				return (
-					<Radio key={option.value} value={option.value}>
-						<Radio.Content>
-							<Radio.Control>
-								<Radio.Indicator />
-							</Radio.Control>
-							{option.label}
-						</Radio.Content>
+			<Label className='col-span-full'>更新检查方式</Label>
+			{CHECK_MODE_OPTIONS.map((option) => (
+				<RadioButtonGroup.Item key={option.value} value={option.value}>
+					<RadioButtonGroup.Indicator />
+					<RadioButtonGroup.ItemContent>
+						<span className='text-sm font-medium text-foreground'>{option.label}</span>
 						<Description>{option.description}</Description>
-					</Radio>
-				)
-			})}
-		</RadioGroup>
+					</RadioButtonGroup.ItemContent>
+				</RadioButtonGroup.Item>
+			))}
+		</RadioButtonGroup>
 	)
 }
 
@@ -97,27 +85,25 @@ export function UpdateChannelOptions({
 	disabled,
 	onChange,
 }: {
-	value: UpdateChannel | undefined
+	value: UpdateChannel
 	disabled: boolean
 	onChange: (channel: UpdateChannel) => void
 }) {
 	return (
-		<RadioGroup
-			className='grid gap-3 md:grid-cols-2'
+		<RadioButtonGroup
+			className='grid-cols-1 md:grid-cols-2'
 			isDisabled={disabled}
+			layout='grid'
 			name='update-channel'
 			onChange={(nextValue) => onChange(nextValue as UpdateChannel)}
 			value={value}
-			variant='secondary'
 		>
-			<Label className='md:col-span-2'>更新渠道</Label>
+			<Label className='col-span-full'>更新渠道</Label>
 			{CHANNEL_OPTIONS.map((option) => (
-				<Radio key={option.value} value={option.value}>
-					<Radio.Content>
-						<Radio.Control>
-							<Radio.Indicator />
-						</Radio.Control>
-						<span className='flex items-center gap-2'>
+				<RadioButtonGroup.Item key={option.value} value={option.value}>
+					<RadioButtonGroup.Indicator />
+					<RadioButtonGroup.ItemContent>
+						<span className='flex items-center gap-2 text-sm font-medium text-foreground'>
 							{option.label}
 							{option.badge ? (
 								<Chip color='warning' size='sm' variant='soft'>
@@ -125,11 +111,11 @@ export function UpdateChannelOptions({
 								</Chip>
 							) : null}
 						</span>
-					</Radio.Content>
-					<Description>{option.description}</Description>
-				</Radio>
+						<Description>{option.description}</Description>
+					</RadioButtonGroup.ItemContent>
+				</RadioButtonGroup.Item>
 			))}
-		</RadioGroup>
+		</RadioButtonGroup>
 	)
 }
 
@@ -138,7 +124,7 @@ export function UpdateIntervalOptions({
 	disabled,
 	onChange,
 }: {
-	value: number | undefined
+	value: number
 	disabled: boolean
 	onChange: (intervalSecs: CheckIntervalSecs) => void
 }) {
@@ -158,7 +144,7 @@ export function UpdateIntervalOptions({
 					const option = INTERVAL_OPTIONS.find((item) => String(item.value) === selected)
 					if (option) onChange(option.value)
 				}}
-				selectedKeys={value === undefined ? [] : [String(value)]}
+				selectedKeys={[String(value)]}
 				selectionMode='single'
 				size='sm'
 			>

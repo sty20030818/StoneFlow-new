@@ -1,6 +1,6 @@
 # settings · 设置
 
-> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-08-25
+> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-09-09
 
 ---
 
@@ -25,6 +25,12 @@
 **禁止** navigation / 壳深路径进 api|model|components。
 
 Settings 页面与 panels 直接组合 HeroUI Form、Card 与标准控件；`settingsShared` 只负责设置分区的产品结构，不是视觉 wrapper。八个 Sidebar 开关通过 `SettingsToggleRow` 复用同一产品接口，内部直接组合 Pro `CellSwitch`；默认 Space 只有一个消费者，在 General panel 内直接组合 Pro `CellSelect`。同步间隔使用 OSS `NumberField`。这些组合保持受控，由现有 mutation 与 canonical 返回值拥有业务真相，不复制 HeroUI 状态机或保留 OSS fallback。Sync / Update 的系统状态和动作只消费各自 public，不复制其状态机或反馈实现。
+
+`SettingsSection` 只提供标题、说明与可访问分区，不强制包 Card；相关设置组按需使用单层白色 Card，默认空间这样的单个下拉控件直接放在分区内，不另包 Card。主题色、同步方式和更新选项直接采用 Pro `RadioButtonGroup` 整卡选择；侧边栏仍是独立开关，不把多选伪装成单选卡。同步概览的指标与折叠诊断使用语义化数据行，不再嵌套 Surface 或指标 Card。
+
+Sidebar 开关保存期间按组进入 `isReadOnly` / `aria-busy`，保留文字亮度、键盘焦点和已确认值，由原生只读交互阻止重复写入；保存完成后解除，失败时保留原值并显示错误。`isDisabled` 只用于最后一个导航入口不能关闭等业务不可用状态，不再把短暂保存映射为整组灰显。
+
+首次同步状态读取失败显式报错并提供重试，不将未知状态显示为未配置；当前操作错误不藏在折叠诊断里。待同步数量只有读取诊断后才展示，未读取时不冒充零，读取后明确标为诊断快照，而不是实时计数。
 
 ---
 

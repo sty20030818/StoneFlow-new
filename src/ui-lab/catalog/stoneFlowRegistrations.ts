@@ -272,7 +272,7 @@ const EXPORTED_COMPONENT_GROUPS = [
 		'src/features/settings/components/panels/SettingsSyncPanel.presentation.tsx',
 		'settings-sync',
 		[
-			'SyncMetricCard',
+			'SyncMetric',
 			'SyncTimestampValue',
 			'SyncCursorValue',
 			'SyncCountsSummaryValue',
@@ -1002,7 +1002,7 @@ const EXPORTED_COMPONENT_CONSUMERS: Readonly<Record<string, readonly string[]>> 
 		'src/features/settings/components/panels/SettingsSyncPanel.tsx',
 	],
 	'stoneflow-component-sync-footer-status-item': ['src/layout/ShellFooter.tsx'],
-	'stoneflow-component-sync-metric-card': [
+	'stoneflow-component-sync-metric': [
 		'src/features/settings/components/panels/SettingsSyncPanel.tsx',
 	],
 	'stoneflow-component-sync-replica-badge': [

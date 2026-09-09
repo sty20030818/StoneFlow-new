@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Card, Chip } from '@heroui/react'
+import { Chip } from '@heroui/react'
 
 import {
 	formatReplicaState,
@@ -14,14 +14,12 @@ import {
 } from '@/features/sync'
 import { cn } from '@/shared/lib/utils'
 
-export function SyncMetricCard({ label, value }: { label: string; value: ReactNode }) {
+export function SyncMetric({ label, value }: { label: string; value: ReactNode }) {
 	return (
-		<Card variant='tertiary'>
-			<Card.Content>
-				<p className='text-[11px] font-medium text-muted'>{label}</p>
-				<div className='mt-1 text-sm text-foreground'>{value}</div>
-			</Card.Content>
-		</Card>
+		<div className='grid min-w-0 content-start gap-1'>
+			<dt className='text-xs text-muted'>{label}</dt>
+			<dd className='text-sm text-foreground tabular-nums'>{value}</dd>
+		</div>
 	)
 }
 
@@ -239,8 +237,6 @@ export function getSyncStatusCopy({
 		return {
 			title: '正在读取同步状态',
 			summary: '正在读取本机保存的云同步状态与远端配置，完成后会显示最近一次同步结果。',
-			statusDescription: '正在读取当前同步状态。',
-			variant: 'warning' as const,
 		}
 	}
 
@@ -248,8 +244,6 @@ export function getSyncStatusCopy({
 		return {
 			title: '正在保存同步配置',
 			summary: '正在保存同步数据库连接。保存成功后会立即刷新状态，并清空当前连接串输入。',
-			statusDescription: '正在保存新的云端副本配置。',
-			variant: 'warning' as const,
 		}
 	}
 
@@ -259,8 +253,6 @@ export function getSyncStatusCopy({
 			summary: pendingResync
 				? '当前正在执行完整同步；运行期间又有新写入，结束后还会自动补跑一轮。'
 				: '当前正在执行完整同步。同步期间本地业务仍然继续只读写本地数据库。',
-			statusDescription: '正在执行完整同步。',
-			variant: 'warning' as const,
 		}
 	}
 
@@ -269,8 +261,6 @@ export function getSyncStatusCopy({
 		return {
 			title: '同步凭据不可用',
 			summary: `无法访问 ${sourceLabel} 中的同步数据库连接。请修复凭据访问后重新打开应用；本地数据不会受影响。`,
-			statusDescription: `无法访问 ${sourceLabel} 中的同步凭据。`,
-			variant: 'danger' as const,
 		}
 	}
 
@@ -280,15 +270,11 @@ export function getSyncStatusCopy({
 				title: '尚未配置开发同步',
 				summary:
 					'在项目根目录 .env.local 设置 STONEFLOW_SYNC_DATABASE_URL 后重启开发应用；连接串不会写入系统钥匙串。',
-				statusDescription: '开发构建尚未读取到 .env.local 中的同步连接串。',
-				variant: 'default' as const,
 			}
 		}
 		return {
 			title: '尚未启用云同步',
 			summary: '当前还没有保存可用的同步数据库连接。完成配置前，所有数据只会保留在本地数据库。',
-			statusDescription: '未配置云端副本，本机只保留本地数据。',
-			variant: 'default' as const,
 		}
 	}
 
@@ -298,8 +284,6 @@ export function getSyncStatusCopy({
 			summary:
 				replicaReason ??
 				'本机已有数据，但还没有同步序号。点「建立基线并同步」：会把本机数据上传到云端副本，并在不覆盖本机数据的前提下建立同步位置。',
-			statusDescription: '首次绑定云端副本后，请点一次「建立基线并同步」。',
-			variant: 'warning' as const,
 		}
 	}
 
@@ -308,8 +292,6 @@ export function getSyncStatusCopy({
 		return {
 			title: '需要确认当前同步远端',
 			summary: `${reason} 请在同步配置中确认沿用当前远端；确认只会补齐身份，不会清空本机数据、同步位置或待上传变更。`,
-			statusDescription: reason,
-			variant: 'warning' as const,
 		}
 	}
 
@@ -318,8 +300,6 @@ export function getSyncStatusCopy({
 		return {
 			title: '同步状态异常',
 			summary: reason,
-			statusDescription: reason,
-			variant: 'danger' as const,
 		}
 	}
 
@@ -329,8 +309,6 @@ export function getSyncStatusCopy({
 				title: '同步状态正常',
 				summary:
 					'当前没有待处理同步动作。本地一旦产生新的写入，会先变成待同步，再由后台异步执行完整同步。',
-				statusDescription: '当前没有待处理的同步轮次。',
-				variant: 'success' as const,
 			}
 		case 'offline_pending':
 			return {
@@ -338,39 +316,27 @@ export function getSyncStatusCopy({
 				summary: dirtySince
 					? `本地已经产生新变更，最早一笔待同步写入开始于 ${formatSyncRelativeTime(dirtySince)}。你可以直接点“立即同步”，也可以等后台自动补跑完整对齐轮次。`
 					: '本地已经产生新变更，正在等待下一轮完整对齐同步。你可以直接点“立即同步”，也可以等后台自动补跑。',
-				statusDescription: dirtySince
-					? `本地已有新写入，已等待 ${formatSyncRelativeTime(dirtySince)}。`
-					: '本地已有新写入，等待下一轮完整对齐同步。',
-				variant: 'warning' as const,
 			}
 		case 'syncing':
 			return {
 				title: '正在同步',
 				summary: '同步引擎正在对齐本地和远端数据。这个过程失败时不会影响当前本地写入结果。',
-				statusDescription: '正在同步本地和远端数据。',
-				variant: 'warning' as const,
 			}
 		case 'error':
 			return {
 				title: '同步需要处理',
 				summary:
 					'上一轮同步失败了。先检查连接串、网络和云端 Postgres 状态，修正后再触发下一轮同步。',
-				statusDescription: '上一轮同步失败，等待人工处理或下一次重试。',
-				variant: 'danger' as const,
 			}
 		case 'needs_attention':
 			return {
 				title: '同步需要处理',
 				summary: '同步遇到无法自动处理的问题，需要检查配置、数据状态或冲突信息。',
-				statusDescription: '同步需要人工处理。',
-				variant: 'danger' as const,
 			}
 		default:
 			return {
 				title: '同步概览',
 				summary: '当前同步状态已更新。',
-				statusDescription: '当前同步状态已更新。',
-				variant: 'default' as const,
 			}
 	}
 }

@@ -18,6 +18,8 @@
 	[data-theme="stoneflow-light"] .cell-select .cell-select__trigger[data-focus-visible="true"],
 	[data-theme="stoneflow-light"] .cell-switch .cell-switch__trigger[data-focus-visible="true"],
 	[data-theme="stoneflow-light"]
+		.radio-button-group__item:is(:focus-visible, [data-focus-visible="true"]),
+	[data-theme="stoneflow-light"]
 		.sheet__close-trigger:is(:focus-visible, [data-focus-visible="true"]),
 	[data-theme="stoneflow-light"] .resizable__handle:focus-visible:not(:focus),
 	[data-theme="stoneflow-light"] .resizable__handle[data-focus-visible="true"],
@@ -152,6 +154,43 @@
 			.cell-switch__trigger--default
 		) {
 		--field-shadow: var(--field-primary-shadow);
+	}
+
+	/* 设置开关是分组卡片内的多行行项，不再叠一层字段阴影或裁切说明。 */
+	[data-theme="stoneflow-light"] .cell-switch[data-settings-toggle-row] .cell-switch__trigger {
+		--field-shadow: 0 0 0 transparent;
+		height: auto;
+		min-height: var(--control-height-lg);
+		padding-block: calc(var(--spacing) * 3);
+	}
+
+	/* 整卡选择共用 Surface 几何，保留 HeroUI 原生单选与焦点语义。 */
+	[data-theme="stoneflow-light"] .radio-button-group {
+		--radio-button-group-item-radius: var(--radius-surface);
+		gap: calc(var(--spacing) * 3);
+	}
+
+	[data-theme="stoneflow-light"] .radio-button-group__item {
+		padding: calc(var(--spacing) * 3);
+	}
+
+	[data-theme="stoneflow-light"] .radio-button-group__item-content {
+		padding-inline-end: calc(var(--spacing) * 6);
+	}
+
+	[data-theme="stoneflow-light"] .radio-button-group__item-content .description {
+		margin-block-start: var(--spacing);
+		font-size: 0.75rem;
+		line-height: 1.25rem;
+	}
+
+	[data-theme="stoneflow-light"] .radio-button-group__indicator {
+		inset-inline-end: calc(var(--spacing) * 3);
+	}
+
+	[data-theme="stoneflow-light"]
+		.radio-button-group__item[data-selected="true"]:not([data-focus-visible="true"]) {
+		@apply ring-[length:var(--border-width)];
 	}
 
 	[data-theme="stoneflow-light"]
@@ -715,6 +754,13 @@
 	}
 
 	@media (forced-colors: active) {
+		/* 整卡单选的真实 input 不可见，由可见标签承接系统焦点。 */
+		[data-theme="stoneflow-light"] .radio-button-group__item[data-focus-visible="true"] {
+			box-shadow: none;
+			outline: 2px solid Highlight;
+			outline-offset: 2px;
+		}
+
 		/* 只接管真实 DOM 焦点，避免 React Aria 的复合组件状态给外壳重复画框。 */
 		[data-theme="stoneflow-light"] :focus-visible {
 			box-shadow: none;

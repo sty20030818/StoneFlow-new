@@ -377,29 +377,61 @@ describe('SettingsPage', () => {
 		expect(setItemVisibilitySpy).not.toHaveBeenCalled()
 	})
 
-	it('CellSwitch mutation pending 时禁用同组开关，完成后恢复', async () => {
+	it.each([
+		{
+			group: '主导航',
+			labels: ['所有任务', '视图', '项目总览'],
+			mutation: setItemVisibilitySpy,
+		},
+		{
+			group: '辅助入口',
+			labels: ['归档', '回收站'],
+			mutation: setItemVisibilitySpy,
+		},
+		{
+			group: '项目分区',
+			labels: ['显示项目分区', '显示已完成项目', '显示数量'],
+			mutation: setProjectSectionConfigSpy,
+		},
+	])('$group 保存时只读而非禁用，保留焦点并阻止同组重复写入', async ({ labels, mutation }) => {
 		const deferred = createDeferred<void>()
-		setItemVisibilitySpy.mockReturnValueOnce(deferred.promise)
+		mutation.mockReturnValueOnce(deferred.promise)
 		mockSettingsSection = 'sidebar'
 		await renderSettingsPage()
 
-		fireEvent.click(getToggleByLabel('所有任务'))
+		const firstToggle = getToggleByLabel(labels[0]!)
+		act(() => firstToggle.focus())
+		fireEvent.click(firstToggle)
 
 		await waitFor(() => {
-			expect(setItemVisibilitySpy).toHaveBeenCalledTimes(1)
-			for (const label of ['所有任务', '视图', '项目总览']) {
-				expect(getToggleByLabel(label)).toBeDisabled()
+			expect(mutation).toHaveBeenCalledTimes(1)
+			for (const label of labels) {
+				const toggle = getToggleByLabel(label)
+				expect(toggle).toBeEnabled()
+				expect(toggle).toHaveAttribute('aria-readonly', 'true')
+				expect(toggle.closest('[aria-busy]')).toHaveAttribute('aria-busy', 'true')
+				expect(toggle.closest('[data-disabled]')).toBeNull()
+				expect(toggle).toBeChecked()
 			}
 		})
+		expect(firstToggle).toHaveFocus()
 
-		expect(setItemVisibilitySpy).toHaveBeenCalledTimes(1)
+		for (const label of labels) {
+			fireEvent.click(getToggleByLabel(label))
+		}
+		expect(mutation).toHaveBeenCalledTimes(1)
 
 		act(() => deferred.resolve(undefined))
 		await waitFor(() => {
-			for (const label of ['所有任务', '视图', '项目总览']) {
-				expect(getToggleByLabel(label)).toBeEnabled()
+			for (const label of labels) {
+				const toggle = getToggleByLabel(label)
+				expect(toggle).toBeEnabled()
+				expect(toggle).not.toHaveAttribute('aria-readonly', 'true')
+				expect(toggle.closest('[aria-busy="true"]')).toBeNull()
 			}
 		})
+		fireEvent.click(getToggleByLabel(labels[1]!))
+		await waitFor(() => expect(mutation).toHaveBeenCalledTimes(2))
 	})
 
 	it('CellSwitch mutation 失败时保留 canonical 值并展示分组错误', async () => {
@@ -414,6 +446,8 @@ describe('SettingsPage', () => {
 			expect(screen.getByRole('alert')).toHaveTextContent('主导航写入失败')
 			expect(toggle).toBeChecked()
 			expect(toggle).toBeEnabled()
+			expect(toggle).not.toHaveAttribute('aria-readonly', 'true')
+			expect(toggle.closest('[aria-busy="true"]')).toBeNull()
 		})
 	})
 
@@ -435,7 +469,6 @@ describe('SettingsPage', () => {
 			expect(setDefaultSpaceSpy).toHaveBeenCalledTimes(1)
 			expect(setDefaultSpaceSpy).toHaveBeenCalledWith('space-2')
 			expect(trigger).toHaveTextContent('生活')
-			expect(screen.getByText('当前默认项：生活')).toBeInTheDocument()
 		})
 	})
 
@@ -814,7 +847,27 @@ describe('SettingsPage', () => {
 		setIntervalSpy.mockRestore()
 	})
 
-	it('同步状态事件刷新失败时展示错误', async () => {
+	it('首次同步状态读取失败时直接展示重试入口，恢复后才能操作同步', async () => {
+		getSyncStatusSpy
+			.mockRejectedValueOnce(new Error('同步状态读取失败'))
+			.mockResolvedValue(createReadyIntervalSyncStatus())
+		mockSettingsSection = 'sync'
+		await renderSettingsPage()
+
+		expect(await screen.findByRole('alert')).toHaveTextContent('同步状态读取失败')
+		expect(screen.queryByText('云端副本未配置')).not.toBeInTheDocument()
+		expect(screen.queryByRole('button', { name: '立即同步' })).not.toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: '重试' }))
+
+		await waitFor(() => {
+			expect(getSyncStatusSpy).toHaveBeenCalledTimes(2)
+			expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+			expect(screen.getByText('云端副本已配置')).toBeVisible()
+			expect(screen.getByRole('button', { name: '立即同步' })).toBeEnabled()
+		})
+	})
+
+	it('同步状态事件刷新失败时无需展开诊断即可看到错误', async () => {
 		let syncStatusChangedHandler: TauriEvent.EventCallback<unknown> = () => undefined
 		mockedListen.mockImplementation(async (_eventName, handler) => {
 			syncStatusChangedHandler = handler
@@ -844,8 +897,13 @@ describe('SettingsPage', () => {
 		await waitFor(() => {
 			expect(getSyncStatusSpy).toHaveBeenCalledTimes(2)
 		})
-		openSyncDetails()
-		expect(await screen.findByRole('alert')).toHaveTextContent('事件刷新失败')
+		expect(screen.getByRole('button', { name: '详情与诊断' })).toHaveAttribute(
+			'aria-expanded',
+			'false',
+		)
+		const error = await screen.findByRole('alert')
+		expect(error).toHaveTextContent('事件刷新失败')
+		expect(error).toBeVisible()
 	})
 
 	it('点击立即同步时调用 runSync', async () => {
@@ -874,6 +932,52 @@ describe('SettingsPage', () => {
 
 		await waitFor(() => {
 			expect(runSyncSpy).toHaveBeenCalledTimes(1)
+		})
+	})
+
+	it('手动同步失败当下直接展示错误，后续同步状态恢复后移除旧反馈', async () => {
+		let syncStatusChangedHandler: TauriEvent.EventCallback<unknown> = () => undefined
+		mockedListen.mockImplementation(async (_eventName, handler) => {
+			syncStatusChangedHandler = handler
+			return unlistenSyncStatusSpy
+		})
+		getSyncStatusSpy.mockResolvedValue(createReadyIntervalSyncStatus())
+		runSyncSpy.mockRejectedValueOnce(new Error('手动同步连接被拒绝'))
+		mockSettingsSection = 'sync'
+		await renderSettingsPage()
+
+		fireEvent.click(screen.getByRole('button', { name: '立即同步' }))
+
+		await waitFor(() => {
+			expect(runSyncSpy).toHaveBeenCalledTimes(1)
+			expect(getSyncStatusSpy).toHaveBeenCalledTimes(2)
+			expect(screen.getByRole('button', { name: '立即同步' })).toBeEnabled()
+		})
+		const error = screen.getByRole('alert')
+		expect(error).toHaveTextContent('手动同步连接被拒绝')
+		expect(error).toBeVisible()
+		expect(screen.getByRole('button', { name: '详情与诊断' })).toHaveAttribute(
+			'aria-expanded',
+			'false',
+		)
+
+		getSyncStatusSpy.mockResolvedValueOnce({
+			...createReadyIntervalSyncStatus(),
+			lastPushAt: '2026-06-28T00:02:00Z',
+			lastPullAt: '2026-06-28T00:02:01Z',
+		})
+		act(() => {
+			syncStatusChangedHandler({
+				event: 'stoneflow://sync/status-changed',
+				id: 1,
+				payload: { source: 'sync', reason: 'completed' },
+			})
+		})
+		await waitFor(() => {
+			expect(getSyncStatusSpy).toHaveBeenCalledTimes(3)
+			expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+			expect(screen.queryByText('手动同步连接被拒绝')).not.toBeInTheDocument()
+			expect(screen.getByRole('button', { name: '立即同步' })).toBeEnabled()
 		})
 	})
 
@@ -1036,8 +1140,9 @@ describe('SettingsPage', () => {
 			expect(input).toHaveValue('15')
 		})
 
-		openSyncDetails()
-		expect(await screen.findByRole('alert')).toHaveTextContent('策略写入失败')
+		const error = await screen.findByRole('alert')
+		expect(error).toHaveTextContent('策略写入失败')
+		expect(error).toBeVisible()
 	})
 
 	it('缺少同步基线时展示提示并允许建立基线同步', async () => {
@@ -1069,7 +1174,12 @@ describe('SettingsPage', () => {
 		expect(screen.getByRole('button', { name: '建立基线并同步' })).toBeEnabled()
 	})
 
-	it('点击刷新诊断时展示远端与本地摘要', async () => {
+	it('待同步未读取时不显示零，读取后明确展示诊断快照而非实时数量', async () => {
+		let syncStatusChangedHandler: TauriEvent.EventCallback<unknown> = () => undefined
+		mockedListen.mockImplementation(async (_eventName, handler) => {
+			syncStatusChangedHandler = handler
+			return unlistenSyncStatusSpy
+		})
 		getSyncStatusSpy.mockResolvedValue(
 			createSyncStatusPayload({
 				enabled: true,
@@ -1090,6 +1200,10 @@ describe('SettingsPage', () => {
 
 		mockSettingsSection = 'sync'
 		await renderSettingsPage()
+		const pendingMetric = screen.getByText('待同步').closest('div')!
+		expect(within(pendingMetric).getByRole('definition')).toHaveTextContent('未读取')
+		expect(within(pendingMetric).queryByText('0 条')).not.toBeInTheDocument()
+		expect(getSyncDiagnosticsSpy).not.toHaveBeenCalled()
 		openSyncDetails()
 
 		fireEvent.click(screen.getByRole('button', { name: '刷新诊断' }))
@@ -1100,7 +1214,27 @@ describe('SettingsPage', () => {
 			expect(screen.getByText('postgresql://db.example.com:5432/sf')).toBeInTheDocument()
 			expect(screen.getAllByText('总计 88 条主数据')).toHaveLength(2)
 			expect(screen.getAllByText('1 条').length).toBeGreaterThanOrEqual(1)
+			expect(within(pendingMetric).getByRole('definition')).toHaveTextContent('1 条')
+			expect(within(pendingMetric).getByText('诊断快照')).toBeVisible()
 		})
+
+		openSyncDetails()
+		getSyncStatusSpy.mockResolvedValueOnce({
+			...createReadyIntervalSyncStatus(),
+			status: 'offline_pending',
+			dirtySince: '2026-06-28T00:01:00Z',
+		})
+		act(() => {
+			syncStatusChangedHandler({
+				event: 'stoneflow://sync/status-changed',
+				id: 1,
+				payload: { source: 'sync', reason: 'pending' },
+			})
+		})
+		await waitFor(() => expect(getSyncStatusSpy).toHaveBeenCalledTimes(2))
+		expect(getSyncDiagnosticsSpy).toHaveBeenCalledTimes(1)
+		expect(within(pendingMetric).getByRole('definition')).toHaveTextContent('1 条')
+		expect(within(pendingMetric).getByText('诊断快照')).toBeVisible()
 	})
 })
 

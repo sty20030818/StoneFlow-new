@@ -1,14 +1,5 @@
-import {
-	Alert,
-	Button,
-	Description,
-	Disclosure,
-	Label,
-	NumberField,
-	Radio,
-	RadioGroup,
-	Surface,
-} from '@heroui/react'
+import { Alert, Button, Card, Description, Disclosure, Label, NumberField } from '@heroui/react'
+import { RadioButtonGroup } from '@heroui-pro/react'
 import { useEffect, useRef, useState } from 'react'
 import { listen } from '@tauri-apps/api/event'
 import { SettingsIcon } from 'lucide-react'
@@ -41,7 +32,7 @@ import {
 	getSyncStatusCopy,
 	SyncCountsSummaryValue,
 	SyncCursorValue,
-	SyncMetricCard,
+	SyncMetric,
 	SyncReplicaBadge,
 	SyncStatusBadge,
 	SyncTimestampValue,
@@ -169,6 +160,7 @@ export function SettingsSyncPanel() {
 		try {
 			const payload = await getSyncStatus()
 			setSyncStatus(payload)
+			setSyncStatusMessage(null)
 			setIntervalMinutesDraft(payload.policyIntervalMinutes)
 			if (!payload.hasRemoteConfig) {
 				setSyncDiagnostics(null)
@@ -270,8 +262,8 @@ export function SettingsSyncPanel() {
 			await refreshSyncStatus({ syncUrlDraft: false })
 			await refreshSyncDiagnostics({ silent: true })
 		} catch (error) {
+			await refreshSyncStatus({ silent: true, syncUrlDraft: false })
 			setSyncStatusMessage(normalizeTauriError(error, '手动同步失败'))
-			await refreshSyncStatus({ syncUrlDraft: false })
 		} finally {
 			setSyncRunning(false)
 		}
@@ -292,8 +284,8 @@ export function SettingsSyncPanel() {
 			setSyncStatus(payload)
 			setIntervalMinutesDraft(payload.policyIntervalMinutes)
 		} catch (error) {
-			setSyncStatusMessage(normalizeTauriError(error, '同步频率保存失败'))
 			await refreshSyncStatus({ silent: true, syncUrlDraft: false })
+			setSyncStatusMessage(normalizeTauriError(error, '同步频率保存失败'))
 		} finally {
 			syncPolicySavingRef.current = false
 			setSyncPolicySaving(false)
@@ -400,294 +392,296 @@ export function SettingsSyncPanel() {
 
 	return (
 		<SettingsStack>
-			<SettingsSection
-				description='所有业务仍然只读写本地数据库；这里仅配置云端 Postgres 副本，并在需要时手动或自动触发同步。'
-				title='云同步'
-			>
-				<Surface className='overflow-hidden' variant='secondary'>
-					<div className='p-4'>
-						<div className='flex flex-col gap-4 md:flex-row md:items-start md:justify-between'>
-							<div className='min-w-0'>
-								<div className='flex flex-wrap items-center gap-2'>
-									<SyncStatusBadge status={displayedSyncStatus} />
-									<SyncReplicaBadge state={replicaState} />
-									<SyncCloudConfigBadge
-										credentialState={syncStatus?.credentialState ?? 'missing'}
-									/>
-								</div>
-								<h3 className='mt-3 text-base font-semibold tracking-tight text-foreground'>
-									{syncStatusCopy.title}
-								</h3>
-								<p className='mt-1 max-w-2xl text-sm leading-6 text-muted'>
-									{syncStatusCopy.statusDescription}
-								</p>
-							</div>
-							<div className='flex shrink-0 items-center gap-2 self-start'>
-								{syncActionBusy ? (
-									<DisabledActionTooltip label='配置同步数据库' reason='正在处理同步操作，请稍候'>
-										{configureButton}
-									</DisabledActionTooltip>
-								) : (
-									<ActionTooltip label='配置同步数据库'>{configureButton}</ActionTooltip>
-								)}
-								{syncNowDisabled ? (
-									<DisabledActionTooltip label='立即同步' reason={syncNowDisabledReason}>
-										{syncNowButton}
-									</DisabledActionTooltip>
-								) : (
-									syncNowButton
-								)}
-							</div>
-						</div>
-
-						<div className='mt-4 grid gap-2 md:grid-cols-4'>
-							<SyncMetricCard
-								label='上次提交'
-								value={<SyncTimestampValue timestamp={syncStatus?.lastPushAt ?? null} />}
-							/>
-							<SyncMetricCard
-								label='上次确认'
-								value={<SyncTimestampValue timestamp={syncStatus?.lastPullAt ?? null} />}
-							/>
-							<SyncMetricCard
-								label='待同步'
-								value={
-									<span className='font-medium text-foreground'>
-										{syncDiagnostics?.local.pendingMutationCount ?? 0} 条
-									</span>
-								}
-							/>
-							<SyncMetricCard label='副本状态' value={formatReplicaState(replicaState)} />
-						</div>
-
-						<div className='mt-4 flex min-w-0 flex-col gap-3'>
-							<div className='flex flex-col gap-1.5'>
-								<span className='text-xs font-medium text-foreground'>同步频率</span>
-								<RadioGroup
-									aria-label='同步频率'
-									className='grid gap-2 sm:grid-cols-3'
-									isDisabled={syncActionBusy}
-									onChange={(value) => void handleSyncModeChange(value as SyncPolicyMode)}
-									value={policyMode}
-									variant='secondary'
-								>
-									{SYNC_MODE_OPTIONS.map((option) => (
-										<Radio key={option.mode} value={option.mode}>
-											<Radio.Content>
-												<span className='min-w-0 flex-1 text-left'>
-													<span className='block text-sm font-medium text-foreground'>
-														{option.label}
-													</span>
-													<span className='block text-[11px] leading-4 text-muted'>
-														{option.description}
-													</span>
-												</span>
-												<Radio.Control>
-													<Radio.Indicator />
-												</Radio.Control>
-											</Radio.Content>
-										</Radio>
-									))}
-								</RadioGroup>
-							</div>
-
-							{policyMode === 'interval' ? (
-								<div
-									className='max-w-xs'
-									onBlur={(event) => {
-										if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-											void handleIntervalMinutesCommit()
-										}
-									}}
-								>
-									<NumberField
-										isDisabled={syncActionBusy}
-										maxValue={MAX_INTERVAL_MINUTES}
-										minValue={MIN_INTERVAL_MINUTES}
-										onChange={setIntervalMinutesDraft}
-										onKeyDown={(event) => {
-											if (event.key === 'Enter') {
-												event.preventDefault()
-											}
-										}}
-										onKeyUp={(event) => {
-											if (event.key === 'Enter') {
-												event.preventDefault()
-												void handleIntervalMinutesCommit()
-											}
-										}}
-										step={1}
-										value={intervalMinutesDraft}
-										variant='secondary'
-									>
-										<Label>同步间隔（分钟）</Label>
-										<div className='flex items-center gap-2'>
-											<NumberField.Group className='w-40'>
-												<NumberField.DecrementButton aria-label='减少同步间隔' />
-												<NumberField.Input />
-												<NumberField.IncrementButton aria-label='增加同步间隔' />
-											</NumberField.Group>
-											<span className='text-sm text-muted'>分钟</span>
+			<SettingsSection description='数据始终先保存在本机，再同步到云端副本。' title='云同步'>
+				{syncStatus ? (
+					<Card>
+						<Card.Content>
+							<div className='grid gap-4'>
+								<div className='flex flex-col gap-4 md:flex-row md:items-start md:justify-between'>
+									<div className='min-w-0'>
+										<div className='flex flex-wrap items-center gap-2'>
+											<SyncStatusBadge status={displayedSyncStatus} />
+											<SyncReplicaBadge state={replicaState} />
+											<SyncCloudConfigBadge
+												credentialState={syncStatus?.credentialState ?? 'missing'}
+											/>
 										</div>
-										<Description>
-											可填 {MIN_INTERVAL_MINUTES}–{MAX_INTERVAL_MINUTES}
-											（1 天）；精确到 1 分钟。
-										</Description>
-									</NumberField>
-								</div>
-							) : null}
-
-							<p className='text-xs leading-5 text-muted'>{formatSyncPolicySummary(syncStatus)}</p>
-						</div>
-					</div>
-
-					<Disclosure isExpanded={syncDetailsOpen} onExpandedChange={setSyncDetailsOpen}>
-						<Disclosure.Heading>
-							<Disclosure.Trigger>
-								<span className='inline-flex items-center gap-2 font-medium'>
-									详情与诊断
-									<Disclosure.Indicator />
-								</span>
-							</Disclosure.Trigger>
-						</Disclosure.Heading>
-						<Disclosure.Content>
-							<Disclosure.Body>
-								<Alert
-									aria-busy={syncLoading || syncSaving || syncRunning}
-									aria-live='polite'
-									status={syncStatusCopy.variant}
-								>
-									<Alert.Indicator />
-									<Alert.Content>
-										<Alert.Title>{syncStatusCopy.title}</Alert.Title>
-										<Alert.Description>{syncStatusCopy.summary}</Alert.Description>
-									</Alert.Content>
-								</Alert>
-
-								{replicaState === 'baseline_required' && syncStatus?.replicaReason ? (
-									<Alert status='warning'>
-										<Alert.Indicator />
-										<Alert.Content>
-											<Alert.Title>当前设备需要建立同步基线</Alert.Title>
-											<Alert.Description>{syncStatus.replicaReason}</Alert.Description>
-										</Alert.Content>
-									</Alert>
-								) : null}
-
-								{effectiveSyncError ? (
-									<Alert role='alert' status='danger'>
-										<Alert.Indicator />
-										<Alert.Content>
-											<Alert.Title>{effectiveSyncErrorTitle}</Alert.Title>
-											<Alert.Description>{effectiveSyncError}</Alert.Description>
-										</Alert.Content>
-									</Alert>
-								) : null}
-
-								<div className='flex flex-col gap-3'>
-									<div className='flex items-center justify-between gap-3'>
-										<div className='min-w-0'>
-											<h3 className='text-sm font-semibold text-foreground'>同步诊断</h3>
-											<p className='mt-1 text-xs leading-5 text-muted'>
-												只读查看当前设备与云端副本的同步序号和工作集摘要，用于排查同步问题。
-											</p>
-										</div>
-										{diagnosticsDisabled ? (
-											<DisabledActionTooltip label='刷新诊断' reason={diagnosticsDisabledReason}>
-												{refreshDiagnosticsButton}
+										<h3
+											aria-live='polite'
+											className='mt-3 text-base font-semibold tracking-tight text-foreground'
+										>
+											{syncStatusCopy.title}
+										</h3>
+										<p className='mt-1 max-w-2xl text-sm leading-6 text-muted'>
+											{syncStatusCopy.summary}
+										</p>
+									</div>
+									<div className='flex shrink-0 items-center gap-2 self-start'>
+										{syncActionBusy ? (
+											<DisabledActionTooltip
+												label='配置同步数据库'
+												reason='正在处理同步操作，请稍候'
+											>
+												{configureButton}
 											</DisabledActionTooltip>
 										) : (
-											refreshDiagnosticsButton
+											<ActionTooltip label='配置同步数据库'>{configureButton}</ActionTooltip>
+										)}
+										{syncNowDisabled ? (
+											<DisabledActionTooltip label='立即同步' reason={syncNowDisabledReason}>
+												{syncNowButton}
+											</DisabledActionTooltip>
+										) : (
+											syncNowButton
 										)}
 									</div>
-
-									{syncDiagnostics ? (
-										<div className='grid gap-3 md:grid-cols-2 xl:grid-cols-3'>
-											<SettingInfoRow
-												description='当前保存并正在使用的云端副本地址（已脱敏）。'
-												label='云端副本'
-												value={
-													<span className='break-all font-medium text-foreground'>
-														{syncDiagnostics.remoteHost ?? '未读取'}
-													</span>
-												}
-											/>
-											<SettingInfoRow
-												description='当前设备最后一次成功吸收远端 change log 后落在本地的 server_seq。'
-												label='本地 server_seq'
-												value={
-													<SyncCursorValue value={syncDiagnostics.local.lastPulledServerSeq} />
-												}
-											/>
-											<SettingInfoRow
-												description='云端变更日志当前看到的最新同步序号。'
-												label='远端同步序号'
-												value={<SyncCursorValue value={syncDiagnostics.remote.latestServerSeq} />}
-											/>
-											<SettingInfoRow
-												description='当前设备本地还没提交成功的 mutation 数量。'
-												label='待同步 mutation'
-												value={
-													<span className='font-medium text-foreground'>
-														{syncDiagnostics.local.pendingMutationCount} 条
-													</span>
-												}
-											/>
-											<SettingInfoRow
-												description='本机未进回收站的实体数（含归档；不含永久删除）。'
-												label='本地工作集'
-												value={<SyncCountsSummaryValue counts={syncDiagnostics.local.counts} />}
-											/>
-											<SettingInfoRow
-												description='云端当前投影：每个实体只计最新 generation，且不含 trashed。不是 change_log 条数。'
-												label='远端工作集'
-												value={<SyncCountsSummaryValue counts={syncDiagnostics.remote.counts} />}
-											/>
-										</div>
-									) : (
-										<Alert>
-											<Alert.Indicator />
-											<Alert.Content>
-												<Alert.Title>尚未读取同步诊断</Alert.Title>
-												<Alert.Description>
-													{syncStatus?.hasRemoteConfig
-														? '点击「刷新诊断」后，会显示本地 cursor、远端 cursor 和工作集计数。'
-														: '先保存可用的同步数据库连接，才能读取远端诊断信息。'}
-												</Alert.Description>
-											</Alert.Content>
-										</Alert>
-									)}
-
-									{syncDiagnosticsMessage ? (
-										<Alert role='alert' status='danger'>
-											<Alert.Indicator />
-											<Alert.Content>
-												<Alert.Title>同步诊断读取失败</Alert.Title>
-												<Alert.Description>{syncDiagnosticsMessage}</Alert.Description>
-											</Alert.Content>
-										</Alert>
-									) : null}
 								</div>
-							</Disclosure.Body>
-						</Disclosure.Content>
-					</Disclosure>
-				</Surface>
 
-				<SyncConfigDialog
-					configSource={syncStatus?.configSource ?? 'system_keychain'}
-					databaseUrl={databaseUrl}
-					legacyRemoteAdoptionRequired={replicaState === 'legacy_binding_required'}
-					legacyRemoteReason={syncStatus?.replicaReason ?? null}
-					redactedRemoteUrl={syncStatus?.remoteUrl ?? null}
-					onAdoptLegacyRemote={handleAdoptLegacyRemote}
-					onClose={() => setSyncConfigDialogOpen(false)}
-					onDatabaseUrlChange={setDatabaseUrl}
-					onRebind={handleRebindSyncConfig}
-					onSave={handleSaveSyncConfig}
-					open={syncConfigDialogOpen}
-					saving={syncSaving}
-				/>
+								<dl className='grid gap-4 sm:grid-cols-3'>
+									<SyncMetric
+										label='上次提交'
+										value={<SyncTimestampValue timestamp={syncStatus?.lastPushAt ?? null} />}
+									/>
+									<SyncMetric
+										label='上次确认'
+										value={<SyncTimestampValue timestamp={syncStatus?.lastPullAt ?? null} />}
+									/>
+									<SyncMetric
+										label='待同步'
+										value={
+											<div className='grid gap-1'>
+												<span>
+													{syncDiagnostics
+														? `${syncDiagnostics.local.pendingMutationCount} 条`
+														: '未读取'}
+												</span>
+												{syncDiagnostics ? (
+													<span className='text-xs text-muted'>诊断快照</span>
+												) : null}
+											</div>
+										}
+									/>
+								</dl>
+							</div>
+						</Card.Content>
+					</Card>
+				) : syncLoading ? (
+					<p aria-busy='true' className='text-sm text-muted' role='status'>
+						正在读取同步状态…
+					</p>
+				) : (
+					<Alert role='alert' status='danger'>
+						<Alert.Indicator />
+						<Alert.Content>
+							<Alert.Title>同步状态读取失败</Alert.Title>
+							<Alert.Description>
+								{syncStatusMessage ?? '请重试读取同步状态，本地数据不受影响。'}
+							</Alert.Description>
+						</Alert.Content>
+						<Button
+							onPress={() => void refreshSyncStatus({ syncUrlDraft: false })}
+							variant='outline'
+						>
+							重试
+						</Button>
+					</Alert>
+				)}
+				{syncStatus && effectiveSyncError ? (
+					<Alert role='alert' status='danger'>
+						<Alert.Indicator />
+						<Alert.Content>
+							<Alert.Title>{effectiveSyncErrorTitle}</Alert.Title>
+							<Alert.Description>{effectiveSyncError}</Alert.Description>
+						</Alert.Content>
+					</Alert>
+				) : null}
 			</SettingsSection>
+
+			{syncStatus ? (
+				<SettingsSection title='同步方式' description='选择自动同步的时机，或仅在需要时手动同步。'>
+					<RadioButtonGroup
+						aria-label='同步频率'
+						className='grid-cols-1 sm:grid-cols-3'
+						layout='grid'
+						isDisabled={syncActionBusy}
+						onChange={(value) => void handleSyncModeChange(value as SyncPolicyMode)}
+						value={policyMode}
+						variant='secondary'
+					>
+						{SYNC_MODE_OPTIONS.map((option) => (
+							<RadioButtonGroup.Item key={option.mode} value={option.mode}>
+								<RadioButtonGroup.Indicator />
+								<RadioButtonGroup.ItemContent>
+									<span className='block text-sm font-medium text-foreground'>{option.label}</span>
+									<span className='mt-1 block text-xs leading-5 text-muted'>
+										{option.description}
+									</span>
+								</RadioButtonGroup.ItemContent>
+							</RadioButtonGroup.Item>
+						))}
+					</RadioButtonGroup>
+
+					{policyMode === 'interval' ? (
+						<div
+							className='max-w-xs'
+							onBlur={(event) => {
+								if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+									void handleIntervalMinutesCommit()
+								}
+							}}
+						>
+							<NumberField
+								isDisabled={syncActionBusy}
+								maxValue={MAX_INTERVAL_MINUTES}
+								minValue={MIN_INTERVAL_MINUTES}
+								onChange={setIntervalMinutesDraft}
+								onKeyDown={(event) => {
+									if (event.key === 'Enter') {
+										event.preventDefault()
+									}
+								}}
+								onKeyUp={(event) => {
+									if (event.key === 'Enter') {
+										event.preventDefault()
+										void handleIntervalMinutesCommit()
+									}
+								}}
+								step={1}
+								value={intervalMinutesDraft}
+								variant='secondary'
+							>
+								<Label>同步间隔（分钟）</Label>
+								<div className='flex items-center gap-2'>
+									<NumberField.Group className='w-40'>
+										<NumberField.DecrementButton aria-label='减少同步间隔' />
+										<NumberField.Input />
+										<NumberField.IncrementButton aria-label='增加同步间隔' />
+									</NumberField.Group>
+									<span className='text-sm text-muted'>分钟</span>
+								</div>
+								<Description>
+									可填 {MIN_INTERVAL_MINUTES}–{MAX_INTERVAL_MINUTES}
+									（1 天）；精确到 1 分钟。
+								</Description>
+							</NumberField>
+						</div>
+					) : null}
+
+					<p className='text-xs leading-5 text-muted'>{formatSyncPolicySummary(syncStatus)}</p>
+				</SettingsSection>
+			) : null}
+
+			<Disclosure isExpanded={syncDetailsOpen} onExpandedChange={setSyncDetailsOpen}>
+				<Disclosure.Heading>
+					<Disclosure.Trigger>
+						<span className='inline-flex items-center gap-2 font-medium'>
+							详情与诊断
+							<Disclosure.Indicator />
+						</span>
+					</Disclosure.Trigger>
+				</Disclosure.Heading>
+				<Disclosure.Content>
+					<Disclosure.Body>
+						<div className='flex flex-col gap-3'>
+							<div className='flex items-center justify-between gap-3'>
+								<div className='min-w-0'>
+									<h3 className='text-sm font-semibold text-foreground'>同步诊断</h3>
+									<p className='mt-1 text-xs leading-5 text-muted'>
+										只读查看当前设备与云端副本的同步序号和工作集摘要，用于排查同步问题。
+									</p>
+								</div>
+								{diagnosticsDisabled ? (
+									<DisabledActionTooltip label='刷新诊断' reason={diagnosticsDisabledReason}>
+										{refreshDiagnosticsButton}
+									</DisabledActionTooltip>
+								) : (
+									refreshDiagnosticsButton
+								)}
+							</div>
+
+							{syncDiagnostics ? (
+								<dl className='grid gap-x-6 sm:grid-cols-2'>
+									<SettingInfoRow
+										description='当前保存并正在使用的云端副本地址（已脱敏）。'
+										label='云端副本'
+										value={
+											<span className='break-all font-medium text-foreground'>
+												{syncDiagnostics.remoteHost ?? '未读取'}
+											</span>
+										}
+									/>
+									<SettingInfoRow
+										description='当前设备最后一次成功吸收远端 change log 后落在本地的 server_seq。'
+										label='本地 server_seq'
+										value={<SyncCursorValue value={syncDiagnostics.local.lastPulledServerSeq} />}
+									/>
+									<SettingInfoRow
+										description='云端变更日志当前看到的最新同步序号。'
+										label='远端同步序号'
+										value={<SyncCursorValue value={syncDiagnostics.remote.latestServerSeq} />}
+									/>
+									<SettingInfoRow
+										description='当前设备本地还没提交成功的 mutation 数量。'
+										label='待同步 mutation'
+										value={
+											<span className='font-medium text-foreground'>
+												{syncDiagnostics.local.pendingMutationCount} 条
+											</span>
+										}
+									/>
+									<SettingInfoRow
+										description='本机未进回收站的实体数（含归档；不含永久删除）。'
+										label='本地工作集'
+										value={<SyncCountsSummaryValue counts={syncDiagnostics.local.counts} />}
+									/>
+									<SettingInfoRow
+										description='云端当前投影：每个实体只计最新 generation，且不含 trashed。不是 change_log 条数。'
+										label='远端工作集'
+										value={<SyncCountsSummaryValue counts={syncDiagnostics.remote.counts} />}
+									/>
+								</dl>
+							) : (
+								<Alert>
+									<Alert.Indicator />
+									<Alert.Content>
+										<Alert.Title>尚未读取同步诊断</Alert.Title>
+										<Alert.Description>
+											{syncStatus?.hasRemoteConfig
+												? '点击「刷新诊断」后，会显示本地 cursor、远端 cursor 和工作集计数。'
+												: '先保存可用的同步数据库连接，才能读取远端诊断信息。'}
+										</Alert.Description>
+									</Alert.Content>
+								</Alert>
+							)}
+
+							{syncDiagnosticsMessage ? (
+								<Alert role='alert' status='danger'>
+									<Alert.Indicator />
+									<Alert.Content>
+										<Alert.Title>同步诊断读取失败</Alert.Title>
+										<Alert.Description>{syncDiagnosticsMessage}</Alert.Description>
+									</Alert.Content>
+								</Alert>
+							) : null}
+						</div>
+					</Disclosure.Body>
+				</Disclosure.Content>
+			</Disclosure>
+
+			<SyncConfigDialog
+				configSource={syncStatus?.configSource ?? 'system_keychain'}
+				databaseUrl={databaseUrl}
+				legacyRemoteAdoptionRequired={replicaState === 'legacy_binding_required'}
+				legacyRemoteReason={syncStatus?.replicaReason ?? null}
+				redactedRemoteUrl={syncStatus?.remoteUrl ?? null}
+				onAdoptLegacyRemote={handleAdoptLegacyRemote}
+				onClose={() => setSyncConfigDialogOpen(false)}
+				onDatabaseUrlChange={setDatabaseUrl}
+				onRebind={handleRebindSyncConfig}
+				onSave={handleSaveSyncConfig}
+				open={syncConfigDialogOpen}
+				saving={syncSaving}
+			/>
 		</SettingsStack>
 	)
 }
