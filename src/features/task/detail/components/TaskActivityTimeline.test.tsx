@@ -65,7 +65,7 @@ describe('TaskActivityTimeline', () => {
 			}),
 		)
 
-		render(<TaskActivityTimeline spaceId='space-1' taskId='task-1' />)
+		const { rerender } = render(<TaskActivityTimeline spaceId='space-1' taskId='task-1' />)
 
 		const timeline = screen.getByRole('list', { name: '任务活动记录' })
 		expect(within(timeline).getAllByRole('listitem')).toHaveLength(6)
@@ -75,6 +75,12 @@ describe('TaskActivityTimeline', () => {
 		expect(within(timeline).getAllByRole('listitem')).toHaveLength(7)
 		fireEvent.click(screen.getByRole('button', { name: '收起' }))
 		expect(within(timeline).getAllByRole('listitem')).toHaveLength(6)
+		fireEvent.click(screen.getByRole('button', { name: '查看更多' }))
+		rerender(<TaskActivityTimeline spaceId='space-1' taskId='task-2' />)
+		expect(
+			within(screen.getByRole('list', { name: '任务活动记录' })).getAllByRole('listitem'),
+		).toHaveLength(6)
+		expect(screen.getByRole('button', { name: '查看更多' })).toBeVisible()
 	})
 })
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Timeline } from '@heroui-pro/react'
 import { Alert, Button, Spinner } from '@heroui/react'
 
@@ -25,6 +25,10 @@ const EMPTY_ACTIVITY_ENTRIES: ActivityTimelineEntry[] = []
  * V1 只做轻量列表和基础字段变化展开，不引入复杂筛选、分组或协作回复。
  */
 export function TaskActivityTimeline({ spaceId, taskId }: TaskActivityTimelineProps) {
+	return <TaskActivityTimelineContent key={taskId} spaceId={spaceId} taskId={taskId} />
+}
+
+function TaskActivityTimelineContent({ spaceId, taskId }: TaskActivityTimelineProps) {
 	const [showAll, setShowAll] = useState(false)
 	const [requestedLimit, setRequestedLimit] = useState(INITIAL_ACTIVITY_FETCH_LIMIT)
 	const queryInput = useMemo(
@@ -45,11 +49,6 @@ export function TaskActivityTimeline({ spaceId, taskId }: TaskActivityTimelinePr
 			? 'loading'
 			: 'ready'
 	const errorMessage = timeline.error instanceof Error ? timeline.error.message : '读取操作记录失败'
-
-	useEffect(() => {
-		setShowAll(false)
-		setRequestedLimit(INITIAL_ACTIVITY_FETCH_LIMIT)
-	}, [taskId])
 
 	const reloadTimeline = useCallback(() => {
 		void timeline.refetch()
@@ -75,16 +74,6 @@ export function TaskActivityTimeline({ spaceId, taskId }: TaskActivityTimelinePr
 	useEventSubscription('task:updated', refetchCurrentTaskTimeline)
 	useEventSubscription('task:deleted', refetchCurrentTaskTimeline)
 	useEventSubscription('lifecycle:changed', refetchCurrentTaskTimeline)
-
-	useEffect(() => {
-		if (!showAll && entries.length > DEFAULT_VISIBLE_COUNT) {
-			return
-		}
-
-		if (showAll && requestedLimit < EXPANDED_ACTIVITY_FETCH_LIMIT) {
-			setRequestedLimit(EXPANDED_ACTIVITY_FETCH_LIMIT)
-		}
-	}, [entries.length, requestedLimit, showAll])
 
 	const displayItems = useMemo(() => {
 		if (loadState !== 'ready') {

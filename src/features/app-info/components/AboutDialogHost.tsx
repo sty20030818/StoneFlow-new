@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 
 import type { AboutDialogProps } from './AboutDialog'
 
@@ -8,9 +8,7 @@ const LazyAboutDialog = lazy(async () => ({
 
 export function AboutDialogHost(props: AboutDialogProps) {
 	const [loaded, setLoaded] = useState(props.open)
-	useEffect(() => {
-		if (props.open) setLoaded(true)
-	}, [props.open])
+	if (props.open && !loaded) setLoaded(true)
 	if (!props.open && !loaded) return null
 
 	return (

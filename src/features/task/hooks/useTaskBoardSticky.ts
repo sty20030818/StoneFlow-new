@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 import { buildTaskBoardStickyPush } from '@/features/task/model/taskBoardModel'
+import { useLatestRef } from '@/shared/lib/useLatestRef'
 
 type StickyMeta = {
 	stickyIndexes: readonly number[]
@@ -23,8 +24,7 @@ export function useTaskBoardSticky({
 	/** 列表 ready 后才绑 scroll */
 	enabled: boolean
 }) {
-	const stickyMetaRef = useRef<StickyMeta>({ stickyIndexes: [], itemOffsets: [] })
-	stickyMetaRef.current = { stickyIndexes, itemOffsets }
+	const stickyMetaRef = useLatestRef<StickyMeta>({ stickyIndexes, itemOffsets })
 
 	const stickyShellRef = useRef<HTMLDivElement | null>(null)
 	const stickyPushLayerRef = useRef<HTMLDivElement | null>(null)
@@ -34,28 +34,31 @@ export function useTaskBoardSticky({
 	const [stickyActiveIndex, setStickyActiveIndex] = useState(0)
 	const [stickyStuck, setStickyStuck] = useState(true)
 
-	const applyStickyDom = useCallback((scrollTop: number, forceTransform = false) => {
-		const layout = buildTaskBoardStickyPush({
-			stickyIndexes: stickyMetaRef.current.stickyIndexes,
-			itemOffsets: stickyMetaRef.current.itemOffsets,
-			scrollTop,
-		})
-		if (!layout) {
-			return null
-		}
-		const contentReady =
-			forceTransform || layout.activeStickyIndex === stickyRenderedIndexRef.current
-		const layer = stickyPushLayerRef.current
-		if (layer && contentReady) {
-			layer.style.transform = `translate3d(0, ${layout.pushOffset}px, 0)`
-		}
-		const shell = stickyShellRef.current
-		if (shell) {
-			shell.style.visibility = layout.stuck ? 'visible' : 'hidden'
-			shell.style.pointerEvents = layout.stuck ? 'auto' : 'none'
-		}
-		return layout
-	}, [])
+	const applyStickyDom = useCallback(
+		(scrollTop: number, forceTransform = false) => {
+			const layout = buildTaskBoardStickyPush({
+				stickyIndexes: stickyMetaRef.current.stickyIndexes,
+				itemOffsets: stickyMetaRef.current.itemOffsets,
+				scrollTop,
+			})
+			if (!layout) {
+				return null
+			}
+			const contentReady =
+				forceTransform || layout.activeStickyIndex === stickyRenderedIndexRef.current
+			const layer = stickyPushLayerRef.current
+			if (layer && contentReady) {
+				layer.style.transform = `translate3d(0, ${layout.pushOffset}px, 0)`
+			}
+			const shell = stickyShellRef.current
+			if (shell) {
+				shell.style.visibility = layout.stuck ? 'visible' : 'hidden'
+				shell.style.pointerEvents = layout.stuck ? 'auto' : 'none'
+			}
+			return layout
+		},
+		[stickyMetaRef],
+	)
 
 	useEffect(() => {
 		if (!enabled) {
@@ -105,7 +108,7 @@ export function useTaskBoardSticky({
 			scrollEl.removeEventListener('scroll', onScroll)
 			if (raf !== 0) cancelAnimationFrame(raf)
 		}
-	}, [applyStickyDom, enabled, scrollViewport, stickyIndexes, itemOffsets])
+	}, [applyStickyDom, enabled, scrollViewport, stickyIndexes, itemOffsets, stickyMetaRef])
 
 	const stickyHeaderKey = stickyIndexes.length > 0 ? `sticky:${stickyActiveIndex}` : 'sticky:none'
 

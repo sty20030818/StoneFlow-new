@@ -28,7 +28,7 @@ export function EntityDetailDrawerHost({
 	children,
 }: EntityDetailDrawerHostProps) {
 	const [sheetContainer, setSheetContainer] = useState<HTMLDivElement | null>(null)
-	const scrollPositions = useRef(new Map<string, number>())
+	const [scrollPositions] = useState(() => new Map<string, number>())
 	const returnFocusTarget = useRef<HTMLElement | null>(null)
 	const returnFocusCollectionRoot = useRef<HTMLElement | null>(null)
 	const returnFocusTaskId = useRef<string | null>(null)
@@ -90,7 +90,7 @@ export function EntityDetailDrawerHost({
 					<TaskEntityDetail
 						isCompact={isCompact}
 						onClose={onClose}
-						scrollPositions={scrollPositions.current}
+						scrollPositions={scrollPositions}
 						sheetContainer={sheetContainer}
 						taskId={detail.id}
 					/>

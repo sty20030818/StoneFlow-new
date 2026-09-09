@@ -30,7 +30,7 @@ function DisabledActionTooltip({
 			>
 				{children}
 			</Tooltip.Trigger>
-			<Tooltip.Content className='max-w-64' placement='bottom'>
+			<Tooltip.Content className='max-w-64' data-react-aria-top-layer placement='bottom'>
 				<div className='flex flex-col gap-0.5'>
 					<ActionTooltip.Row label={label} shortcut={shortcut} />
 					{reason ? (

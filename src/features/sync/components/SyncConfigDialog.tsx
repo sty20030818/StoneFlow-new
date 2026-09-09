@@ -1,5 +1,5 @@
 import { Alert, Button, Label, Modal, TextArea, TextField, toast } from '@heroui/react'
-import { useEffect, useId, useRef, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 
 import type { SyncConfigSource, SyncDatabaseConfigInput } from '@/features/sync/api/sync'
 import { normalizeTauriError } from '@/shared/lib/normalize-tauri-error'
@@ -20,7 +20,19 @@ type SyncConfigDialogProps = {
 	onDatabaseUrlChange: (value: string) => void
 }
 
-export function SyncConfigDialog({
+export function SyncConfigDialog(props: SyncConfigDialogProps) {
+	const [session, setSession] = useState({ open: props.open, key: 0 })
+	const successToastIdRef = useRef<string | null>(null)
+	if (session.open !== props.open) {
+		setSession({ open: props.open, key: session.key + (props.open ? 1 : 0) })
+	}
+
+	return (
+		<SyncConfigDialogSession key={session.key} {...props} successToastIdRef={successToastIdRef} />
+	)
+}
+
+function SyncConfigDialogSession({
 	open,
 	configSource,
 	databaseUrl,
@@ -33,26 +45,17 @@ export function SyncConfigDialog({
 	onSave,
 	onRebind,
 	onDatabaseUrlChange,
-}: SyncConfigDialogProps) {
+	successToastIdRef,
+}: SyncConfigDialogProps & { successToastIdRef: { current: string | null } }) {
 	const [saving, setSaving] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 	const [rebindRequired, setRebindRequired] = useState(false)
 	const [editingReplacement, setEditingReplacement] = useState(false)
-	const successToastIdRef = useRef<string | null>(null)
 	const descriptionId = useId()
 	const configIncomplete = databaseUrl.trim().length === 0
 	const busy = saving || savingExternal
 	const environmentManaged = configSource === 'environment'
 	const showingLegacyAdoption = legacyRemoteAdoptionRequired && !editingReplacement
-
-	useEffect(() => {
-		if (!open) {
-			setSaving(false)
-			setError(null)
-			setRebindRequired(false)
-			setEditingReplacement(false)
-		}
-	}, [open])
 
 	async function handleSave() {
 		if (busy || configIncomplete) return

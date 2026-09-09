@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import { createShellCommandRegistry } from '@/features/command/commands'
 import { CommandRuntime, createEmptyCommandContext } from '@/features/command/core'
@@ -33,7 +33,10 @@ describe('ShortcutHelp', () => {
 		expect(screen.queryByText('未绑定')).not.toBeInTheDocument()
 		const closeButton = screen.getByRole('button', { name: '关闭快捷键帮助' })
 		fireEvent.keyDown(document, { key: 'Tab' })
-		closeButton.focus()
+		act(() => closeButton.focus())
+		expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+		fireEvent.pointerMove(closeButton, { pointerType: 'mouse' })
+		fireEvent.pointerEnter(closeButton, { pointerType: 'mouse' })
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('关闭')
 		fireEvent.pointerDown(closeButton, { pointerType: 'mouse' })
 		fireEvent.click(closeButton)

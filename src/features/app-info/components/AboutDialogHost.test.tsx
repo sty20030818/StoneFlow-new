@@ -15,8 +15,13 @@ it('首次打开时加载 About，关闭后保留已加载 Dialog', async () => 
 	expect(screen.queryByTestId('about-dialog')).not.toBeInTheDocument()
 
 	view.rerender(<AboutDialogHost {...props} open />)
-	await screen.findByText('true')
+	const dialog = await screen.findByText('true')
 
 	view.rerender(<AboutDialogHost {...props} open={false} />)
 	await waitFor(() => expect(screen.getByTestId('about-dialog')).toHaveTextContent('false'))
+	expect(screen.getByTestId('about-dialog')).toBe(dialog)
+
+	view.rerender(<AboutDialogHost {...props} open />)
+	expect(screen.getByTestId('about-dialog')).toBe(dialog)
+	expect(dialog).toHaveTextContent('true')
 })

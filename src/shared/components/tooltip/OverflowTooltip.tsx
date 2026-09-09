@@ -70,7 +70,9 @@ function OverflowTooltip({ children, className, content }: OverflowTooltipProps)
 					</span>
 				)}
 			/>
-			<Tooltip.Content placement='bottom'>{content}</Tooltip.Content>
+			<Tooltip.Content data-react-aria-top-layer placement='bottom'>
+				{content}
+			</Tooltip.Content>
 		</Tooltip>
 	)
 }

@@ -54,6 +54,7 @@ export function useShellChromeData(currentScope: Scope) {
 	}, [loadSidebarSettings, sidebarSettingsStatus])
 
 	/** Header/Sidebar 共用的项目链接形状（含可选计数 badge） */
+	const showProjectTaskCounts = sidebarSettings?.projectSection.showCounts ?? false
 	const sidebarProjectLinks = useMemo(
 		() =>
 			sidebarProjects.items.map((project) => ({
@@ -62,7 +63,7 @@ export function useShellChromeData(currentScope: Scope) {
 				spaceId: project.spaceId,
 				spaceName: spaces.find((space) => space.id === project.spaceId)?.name ?? project.spaceId,
 				completedAt: project.completedAt,
-				badge: sidebarSettings?.projectSection.showCounts
+				badge: showProjectTaskCounts
 					? project.taskCount > 0
 						? String(project.taskCount)
 						: undefined
@@ -70,7 +71,7 @@ export function useShellChromeData(currentScope: Scope) {
 						? 'done'
 						: undefined,
 			})),
-		[sidebarProjects.items, sidebarSettings?.projectSection.showCounts, spaces],
+		[sidebarProjects.items, showProjectTaskCounts, spaces],
 	)
 
 	// spaces 为空是合法态（设置页已有空态 UI），不得永久卡死壳；仅 loading 时挡首屏。

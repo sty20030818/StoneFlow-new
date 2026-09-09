@@ -16,12 +16,12 @@ type UseTaskDetailViewModelOptions = {
 
 export function useTaskDetailViewModel({ taskId, onClose }: UseTaskDetailViewModelOptions) {
 	const detail = useTaskDetailController(taskId)
-	const lastResolvedTaskRef = useRef<TaskDetail | null>(null)
-	if (detail.task) {
-		lastResolvedTaskRef.current = detail.task
+	const [lastResolvedTask, setLastResolvedTask] = useState<TaskDetail | null>(null)
+	if (detail.task && detail.task !== lastResolvedTask) {
+		setLastResolvedTask(detail.task)
 	}
 
-	const autosaveTask = detail.task ?? lastResolvedTaskRef.current
+	const autosaveTask = detail.task ?? lastResolvedTask
 	const baseDraft = useMemo(
 		() =>
 			autosaveTask ? createTaskDetailDraft(autosaveTask) : createPendingTaskDetailDraft(taskId),

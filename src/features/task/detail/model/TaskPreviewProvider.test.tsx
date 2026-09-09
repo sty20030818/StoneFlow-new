@@ -1,8 +1,9 @@
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, render, renderHook, screen, waitFor } from '@testing-library/react'
 import { useEffect, useMemo } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { TaskListItem } from '@/shared/types'
+import { listTaskLinks } from '@/features/task/api/taskLinks'
 
 import { indexTasksById } from '../../model/taskCollectionIndex'
 import {
@@ -11,12 +12,106 @@ import {
 	useTaskPreviewContext,
 } from './TaskPreviewProvider'
 import { useTaskPreviewController as useTaskPreviewControllerModel } from './useTaskPreviewController'
+import { useTaskPreviewStore } from './useTaskPreviewStore'
 
 vi.mock('@/features/task/api/taskLinks', () => ({
 	listTaskLinks: vi.fn(() => Promise.resolve([])),
 }))
 
 describe('TaskPreviewProvider', () => {
+	it('目标切换立即清空旧摘要，并忽略旧请求返回与失效注册清理', async () => {
+		let resolveOld!: (items: Awaited<ReturnType<typeof listTaskLinks>>) => void
+		vi.mocked(listTaskLinks).mockImplementationOnce(
+			() =>
+				new Promise((resolve) => {
+					resolveOld = resolve
+				}),
+		)
+		const { result } = renderHook(useTaskPreviewStore)
+		const taskById = indexTasksById([
+			createTask({ id: 'task-a', title: '任务 A' }),
+			createTask({ id: 'task-b', title: '任务 B' }),
+		])
+		const oldToken = Symbol('old')
+		const token = Symbol('current')
+		act(() => {
+			result.current.registerSource(oldToken, {
+				taskById,
+				focusedTaskId: 'task-a',
+				activeTaskId: null,
+			})
+			result.current.openPreview('task-a', 'keyboard')
+		})
+		act(() => {
+			result.current.registerSource(token, {
+				taskById,
+				focusedTaskId: 'task-b',
+				activeTaskId: null,
+			})
+			result.current.clearSourceRegistration(oldToken)
+		})
+		expect(result.current.state.targetTaskId).toBe('task-b')
+		expect(result.current.state.linkSummary).toBeNull()
+		await act(async () => {
+			resolveOld([{ id: 'old-link', title: '旧链接' }] as Awaited<ReturnType<typeof listTaskLinks>>)
+		})
+		expect(result.current.state.linkSummary).toEqual({ items: [], remainingCount: 0 })
+		act(() => {
+			result.current.registerSource(token, {
+				taskById: indexTasksById([taskById.get('task-a')!]),
+				focusedTaskId: 'task-a',
+				activeTaskId: null,
+			})
+		})
+		expect(result.current.state.open).toBe(false)
+	})
+
+	it('离开行后延迟关闭，进入预览取消计时，再离开可重新关闭', async () => {
+		vi.useFakeTimers()
+		try {
+			const { result, unmount } = renderHook(useTaskPreviewStore)
+			const taskById = indexTasksById([createTask({ id: 'task-a', title: '任务 A' })])
+			await act(async () => {
+				result.current.registerSource(Symbol('source'), {
+					taskById,
+					focusedTaskId: null,
+					activeTaskId: null,
+				})
+				result.current.setHoveredTask('task-a', 'pointer')
+				result.current.openPreview('task-a', 'pointer')
+			})
+			act(() => result.current.setHoveredTask(null, null))
+			expect(result.current.state.closeDelayState).toBe('pending')
+			act(() => {
+				vi.advanceTimersByTime(100)
+				result.current.setPreviewPointerInside(true)
+			})
+			act(() => vi.advanceTimersByTime(180))
+			expect(result.current.state.open).toBe(true)
+			act(() => result.current.setPreviewPointerInside(false))
+			act(() => vi.advanceTimersByTime(179))
+			expect(result.current.state.open).toBe(true)
+			act(() => vi.advanceTimersByTime(1))
+			expect(result.current.state.open).toBe(false)
+			await act(async () => {
+				result.current.registerSource(Symbol('active-source'), {
+					taskById,
+					focusedTaskId: null,
+					activeTaskId: 'task-a',
+				})
+				result.current.openPreview('task-a', 'keyboard')
+				result.current.setPreviewPointerInside(true)
+				result.current.setPreviewPointerInside(false)
+			})
+			act(() => vi.advanceTimersByTime(180))
+			expect(result.current.state.open).toBe(true)
+			expect(result.current.state.closeDelayState).toBe('idle')
+			unmount()
+		} finally {
+			vi.useRealTimers()
+		}
+	})
+
 	it('每次渲染重建等价 task index 时注册会收敛，任务版本变化仍会发布', async () => {
 		const onRender = vi.fn()
 

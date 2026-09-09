@@ -4,7 +4,7 @@ import { type FormEvent, useEffect, useState } from 'react'
 import { getEntityActivities, type ActivityEntityType } from '@/features/activity'
 import { ActivityDebugPage, type ActivityDebugLoadState } from '@/features/activity'
 
-import { normalizeActivityDebugSearch } from './-activity-debug-search'
+import { normalizeActivityDebugSearch, type ActivityDebugSearch } from './-activity-debug-search'
 
 const activityDebugRoute = getRouteApi('/debug/activity')
 
@@ -14,26 +14,24 @@ const activityDebugRoute = getRouteApi('/debug/activity')
  */
 export function ActivityDebugRoute() {
 	const search = activityDebugRoute.useSearch()
+	return <ActivityDebugQuery key={JSON.stringify(search)} search={search} />
+}
+
+function ActivityDebugQuery({ search }: { search: ActivityDebugSearch }) {
 	const navigate = activityDebugRoute.useNavigate()
 	const [entityType, setEntityType] = useState<ActivityEntityType>(search.entityType)
 	const [entityId, setEntityId] = useState(search.entityId)
 	const [limit, setLimit] = useState(String(search.limit))
-	const [loadState, setLoadState] = useState<ActivityDebugLoadState>({ kind: 'idle' })
-
-	useEffect(() => {
-		setEntityType(search.entityType)
-		setEntityId(search.entityId)
-		setLimit(String(search.limit))
-	}, [search.entityId, search.entityType, search.limit])
+	const [loadState, setLoadState] = useState<ActivityDebugLoadState>(() => ({
+		kind: search.entityId ? 'loading' : 'idle',
+	}))
 
 	useEffect(() => {
 		if (!search.entityId) {
-			setLoadState({ kind: 'idle' })
 			return
 		}
 
 		let cancelled = false
-		setLoadState({ kind: 'loading' })
 
 		void (async () => {
 			try {

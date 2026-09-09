@@ -42,9 +42,8 @@ export type {
 
 export {
 	CollectionGridRoot,
-	CollectionGridGroupTrigger,
-	CollectionGridRow,
-	type CollectionGridRootState,
+	useCollectionGridGroupTrigger,
+	useCollectionGridRow,
 } from './components/CollectionGrid'
 
 /** 由 AppProviders 在组合根注入统一 KeybindingRegistry。 */

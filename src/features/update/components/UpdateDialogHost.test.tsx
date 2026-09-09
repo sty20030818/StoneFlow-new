@@ -15,8 +15,11 @@ it('首次打开时加载 Update，关闭后保留已加载 Dialog', async () =>
 	expect(screen.queryByTestId('update-dialog')).not.toBeInTheDocument()
 
 	act(() => useUpdateStore.setState({ dialogVisible: true }))
-	await screen.findByTestId('update-dialog')
+	const dialog = await screen.findByTestId('update-dialog')
 
 	act(() => useUpdateStore.setState({ dialogVisible: false }))
-	expect(screen.getByTestId('update-dialog')).toBeInTheDocument()
+	expect(screen.getByTestId('update-dialog')).toBe(dialog)
+
+	act(() => useUpdateStore.setState({ dialogVisible: true }))
+	expect(screen.getByTestId('update-dialog')).toBe(dialog)
 })

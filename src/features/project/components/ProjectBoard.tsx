@@ -4,10 +4,9 @@ import { ArchiveIcon, CheckIcon, ChevronRightIcon, FolderIcon, PlayIcon } from '
 import { useMemo, useState } from 'react'
 
 import {
-	CollectionGridGroupTrigger,
 	CollectionGridRoot,
-	CollectionGridRow,
-	type CollectionGridRootState,
+	useCollectionGridGroupTrigger,
+	useCollectionGridRow,
 	type GroupedCollectionInteraction,
 } from '@/features/selection'
 import {
@@ -106,23 +105,18 @@ export function ProjectBoard({
 			onFocusIntentConsumed={collection.consumeFocusIntent}
 			style={{ gap: COLLECTION_ITEM_GAP }}
 		>
-			{(rootState) => (
-				<>
-					{visibleSections.map((section) => (
-						<ProjectBoardSection
-							busyProjectId={busyProjectId}
-							collection={collection}
-							contextProjects={selectedProjects}
-							key={section.key}
-							onComplete={onComplete}
-							onOpen={onOpen}
-							onReopen={onReopen}
-							rootState={rootState}
-							section={section}
-						/>
-					))}
-				</>
-			)}
+			{visibleSections.map((section) => (
+				<ProjectBoardSection
+					busyProjectId={busyProjectId}
+					collection={collection}
+					contextProjects={selectedProjects}
+					key={section.key}
+					onComplete={onComplete}
+					onOpen={onOpen}
+					onReopen={onReopen}
+					section={section}
+				/>
+			))}
 		</CollectionGridRoot>
 	)
 }
@@ -130,7 +124,6 @@ export function ProjectBoard({
 function ProjectBoardSection({
 	section,
 	collection,
-	rootState,
 	contextProjects,
 	busyProjectId,
 	onOpen,
@@ -139,13 +132,13 @@ function ProjectBoardSection({
 }: {
 	section: ProjectSection
 	collection: ProjectBoardProps['collection']
-	rootState: CollectionGridRootState<string>
 	contextProjects: ProjectOverviewItem[]
 	busyProjectId: string | null
 	onOpen: ProjectBoardProps['onOpen']
 	onComplete: ProjectBoardProps['onComplete']
 	onReopen: ProjectBoardProps['onReopen']
 }) {
+	const { triggerRef, onBlur } = useCollectionGridGroupTrigger(section.key)
 	const [contextMenuOpen, setContextMenuOpen] = useState(false)
 	const sectionIds = useMemo(() => section.items.map((project) => project.id), [section.items])
 	const open = collection.openGroupKeys.has(section.key)
@@ -176,22 +169,18 @@ function ProjectBoardSection({
 						label={section.label}
 						leading={
 							<>
-								<CollectionGridGroupTrigger groupKey={section.key} rootState={rootState}>
-									{({ triggerRef, onBlur }) => (
-										<Button
-											ref={triggerRef}
-											aria-expanded={open}
-											aria-label={`${open ? '折叠' : '展开'} ${section.label}`}
-											isIconOnly
-											onBlur={onBlur}
-											onPress={() => collection.setGroupOpen(section.key, !open)}
-											size='sm'
-											variant='ghost'
-										>
-											<ChevronRightIcon className={open ? 'size-3.5 rotate-90' : 'size-3.5'} />
-										</Button>
-									)}
-								</CollectionGridGroupTrigger>
+								<Button
+									ref={triggerRef}
+									aria-expanded={open}
+									aria-label={`${open ? '折叠' : '展开'} ${section.label}`}
+									isIconOnly
+									onBlur={onBlur}
+									onPress={() => collection.setGroupOpen(section.key, !open)}
+									size='sm'
+									variant='ghost'
+								>
+									<ChevronRightIcon className={open ? 'size-3.5 rotate-90' : 'size-3.5'} />
+								</Button>
 								<ProjectSectionStatusIcon sectionKey={section.key} />
 							</>
 						}
@@ -213,7 +202,6 @@ function ProjectBoardSection({
 			{open ? (
 				<div className='flex flex-col' role='presentation' style={{ gap: COLLECTION_ITEM_GAP }}>
 					{section.items.map((project, index) => {
-						const isSelected = collection.interaction.selectedKeys.has(project.id)
 						const selectionPosition = getBoardRowSelectionPosition(
 							project.id,
 							section.items[index - 1]?.id,
@@ -222,43 +210,57 @@ function ProjectBoardSection({
 						)
 						return (
 							<BoardRowSlot key={project.id} selectionPosition={selectionPosition}>
-								<CollectionGridRow
+								<ProjectBoardRow
+									busyProjectId={busyProjectId}
+									contextProjects={contextProjects}
 									interaction={collection.interaction}
-									itemKey={project.id}
-									rootState={rootState}
-								>
-									{({ rowProps, gridCellProps, rowRef, onContextMenuOpenChange }) => (
-										<ProjectRowAdapter
-											actions={{
-												onCompleteProject: onComplete,
-												onOpenProject: onOpen,
-												onReopenProject: onReopen,
-												onToggleSelected: () => collection.interaction.toggleSelection(project.id),
-											}}
-											contextProjects={
-												isSelected && contextProjects.length > 1 ? contextProjects : undefined
-											}
-											gridCellProps={gridCellProps}
-											onContextMenuOpenChange={onContextMenuOpenChange}
-											project={project}
-											rowProps={rowProps}
-											rowRef={rowRef}
-											rowState={{
-												isFocused: rootState.focusedKey === project.id,
-												focusSource:
-													rootState.focusedKey === project.id ? rootState.focusSource : null,
-												isPending: busyProjectId === project.id,
-												isSelected,
-											}}
-										/>
-									)}
-								</CollectionGridRow>
+									onComplete={onComplete}
+									onOpen={onOpen}
+									onReopen={onReopen}
+									project={project}
+								/>
 							</BoardRowSlot>
 						)
 					})}
 				</div>
 			) : null}
 		</section>
+	)
+}
+
+function ProjectBoardRow({
+	project,
+	interaction,
+	contextProjects,
+	busyProjectId,
+	onOpen,
+	onComplete,
+	onReopen,
+}: Pick<ProjectBoardProps, 'busyProjectId' | 'onOpen' | 'onComplete' | 'onReopen'> & {
+	project: ProjectOverviewItem
+	interaction: ProjectBoardProps['collection']['interaction']
+	contextProjects: ProjectOverviewItem[]
+}) {
+	const { rowProps, gridCellProps, rowRef, onContextMenuOpenChange, isFocused, focusSource } =
+		useCollectionGridRow({ interaction, itemKey: project.id })
+	const isSelected = interaction.selectedKeys.has(project.id)
+
+	return (
+		<ProjectRowAdapter
+			actions={{
+				onCompleteProject: onComplete,
+				onOpenProject: onOpen,
+				onReopenProject: onReopen,
+				onToggleSelected: () => interaction.toggleSelection(project.id),
+			}}
+			contextProjects={isSelected && contextProjects.length > 1 ? contextProjects : undefined}
+			gridCellProps={gridCellProps}
+			onContextMenuOpenChange={onContextMenuOpenChange}
+			project={project}
+			rowProps={rowProps}
+			rowRef={rowRef}
+			rowState={{ isFocused, focusSource, isPending: busyProjectId === project.id, isSelected }}
+		/>
 	)
 }
 

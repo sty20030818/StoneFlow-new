@@ -10,6 +10,8 @@ import {
 } from 'react'
 import { Item, useListState, type ItemProps, type ListState, type Selection } from 'react-stately'
 
+import { useLatestRef } from '@/shared/lib/useLatestRef'
+
 import {
 	createCollectionProjection,
 	materializeEligibleSelection,
@@ -73,8 +75,7 @@ export function useCollectionInteraction<K extends CollectionKey>(
 		}
 		return createCollectionProjection(eligibleKeys, navigableKeys)
 	}, [eligibleKeys, navigableKeys, providedProjection])
-	const projectionRef = useRef(projection)
-	projectionRef.current = projection
+	const projectionRef = useLatestRef(projection)
 	const rangeToggleProjectionRef = useRef(projection)
 	const rangeToggleSessionRef = useRef<{
 		direction: -1 | 1
@@ -85,20 +86,22 @@ export function useCollectionInteraction<K extends CollectionKey>(
 	const [selectedKeys, setSelectedKeys] = useState<Set<K>>(() =>
 		intersectKeys(defaultSelectedKeys, projection),
 	)
-	const selectedKeysRef = useRef(selectedKeys)
-	selectedKeysRef.current = selectedKeys
+	const selectedKeysRef = useLatestRef(selectedKeys)
 
-	const setExplicitSelection = useCallback((selection: Selection) => {
-		if (!isRangeToggleWriteRef.current) {
-			rangeToggleSessionRef.current = null
-		}
-		const nextKeys =
-			selection === 'all'
-				? materializeEligibleSelection(projectionRef.current.eligibleKeys)
-				: intersectKeys(toCollectionKeys<K>(selection), projectionRef.current)
-		selectedKeysRef.current = nextKeys
-		setSelectedKeys(nextKeys)
-	}, [])
+	const setExplicitSelection = useCallback(
+		(selection: Selection) => {
+			if (!isRangeToggleWriteRef.current) {
+				rangeToggleSessionRef.current = null
+			}
+			const nextKeys =
+				selection === 'all'
+					? materializeEligibleSelection(projectionRef.current.eligibleKeys)
+					: intersectKeys(toCollectionKeys<K>(selection), projectionRef.current)
+			selectedKeysRef.current = nextKeys
+			setSelectedKeys(nextKeys)
+		},
+		[projectionRef, selectedKeysRef],
+	)
 
 	const items = useMemo<CollectionInteractionItem<K>[]>(
 		() => projection.eligibleKeys.map((key) => ({ key, textValue: key })),
@@ -132,8 +135,7 @@ export function useCollectionInteraction<K extends CollectionKey>(
 		selectedKeys,
 		onSelectionChange: setExplicitSelection,
 	})
-	const listStateRef = useRef(listState)
-	listStateRef.current = listState
+	const listStateRef = useLatestRef(listState)
 
 	const focusedKey = asCollectionKey<K>(listState.selectionManager.focusedKey)
 
@@ -151,27 +153,33 @@ export function useCollectionInteraction<K extends CollectionKey>(
 			selectedKeysRef.current = nextSelectedKeys
 			setSelectedKeys(nextSelectedKeys)
 		}
-	}, [projection])
+	}, [projection, selectedKeysRef])
 
-	const focusKey = useCallback((key: K | null) => {
-		if (key !== null && !projectionRef.current.navigableIndexByKey.has(key)) return
-		rangeToggleSessionRef.current = null
-		listStateRef.current.selectionManager.setFocusedKey(key)
-	}, [])
+	const focusKey = useCallback(
+		(key: K | null) => {
+			if (key !== null && !projectionRef.current.navigableIndexByKey.has(key)) return
+			rangeToggleSessionRef.current = null
+			listStateRef.current.selectionManager.setFocusedKey(key)
+		},
+		[listStateRef, projectionRef],
+	)
 
-	const toggleSelection = useCallback((key?: K | null) => {
-		const target = key ?? asCollectionKey<K>(listStateRef.current.selectionManager.focusedKey)
-		if (!target || !projectionRef.current.eligibleIndexByKey.has(target)) return
-		rangeToggleSessionRef.current = null
-		listStateRef.current.selectionManager.toggleSelection(target)
-	}, [])
+	const toggleSelection = useCallback(
+		(key?: K | null) => {
+			const target = key ?? asCollectionKey<K>(listStateRef.current.selectionManager.focusedKey)
+			if (!target || !projectionRef.current.eligibleIndexByKey.has(target)) return
+			rangeToggleSessionRef.current = null
+			listStateRef.current.selectionManager.toggleSelection(target)
+		},
+		[listStateRef, projectionRef],
+	)
 
 	const getSnapshot = useCallback(
 		(): CollectionState<K> => ({
 			selectedKeys: new Set(selectedKeysRef.current),
 			focusedKey: asCollectionKey<K>(listStateRef.current.selectionManager.focusedKey),
 		}),
-		[],
+		[listStateRef, selectedKeysRef],
 	)
 
 	const toggleRangeStep = useCallback(
@@ -224,7 +232,7 @@ export function useCollectionInteraction<K extends CollectionKey>(
 			}
 			return cursorKey
 		},
-		[],
+		[listStateRef, projectionRef],
 	)
 
 	const selectEligibleKeys = useCallback(() => {
@@ -232,19 +240,22 @@ export function useCollectionInteraction<K extends CollectionKey>(
 		listStateRef.current.selectionManager.setSelectedKeys(
 			materializeEligibleSelection(projectionRef.current.eligibleKeys),
 		)
-	}, [])
+	}, [listStateRef, projectionRef])
 
-	const replaceSelection = useCallback((keys: Iterable<K>) => {
-		rangeToggleSessionRef.current = null
-		listStateRef.current.selectionManager.setSelectedKeys(
-			intersectKeys(keys, projectionRef.current),
-		)
-	}, [])
+	const replaceSelection = useCallback(
+		(keys: Iterable<K>) => {
+			rangeToggleSessionRef.current = null
+			listStateRef.current.selectionManager.setSelectedKeys(
+				intersectKeys(keys, projectionRef.current),
+			)
+		},
+		[listStateRef, projectionRef],
+	)
 
 	const clearSelection = useCallback(() => {
 		rangeToggleSessionRef.current = null
 		listStateRef.current.selectionManager.clearSelection()
-	}, [])
+	}, [listStateRef])
 
 	return {
 		listState,

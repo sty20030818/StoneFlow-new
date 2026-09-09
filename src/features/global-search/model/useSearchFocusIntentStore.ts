@@ -13,6 +13,3 @@ export const useSearchFocusIntentStore = create<SearchFocusIntentState>((set) =>
 		}))
 	},
 }))
-
-export const selectSearchFocusRequestVersion = (state: SearchFocusIntentState) =>
-	state.focusRequestVersion

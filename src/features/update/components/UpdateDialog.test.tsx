@@ -237,6 +237,23 @@ describe('UpdateDialog', () => {
 		expect(mocks.install).toHaveBeenCalledWith('beta')
 	})
 
+	it('重新打开同一 Ready 版本时重新确认渠道，不沿用上次安装许可', async () => {
+		showSnapshot('ready', { channel: 'beta', version: '0.2.0-beta.4' })
+		renderUpdateDialog()
+		expect(await screen.findByRole('button', { name: '确认安装并重启' })).toBeEnabled()
+		act(() => useUpdateStore.setState({ dialogVisible: false }))
+
+		const pendingSettings = Promise.withResolvers<typeof stableSettings>()
+		mocks.getUpdateSettings.mockReturnValueOnce(pendingSettings.promise)
+		act(() => useUpdateStore.setState({ dialogVisible: true }))
+		expect(screen.getByRole('button', { name: '正在确认...' })).toBeDisabled()
+		expect(mocks.getUpdateSettings).toHaveBeenCalledTimes(2)
+		expect(mocks.install).not.toHaveBeenCalled()
+
+		await act(async () => pendingSettings.resolve(stableSettings))
+		expect(await screen.findByRole('button', { name: '确认安装并重启' })).toBeEnabled()
+	})
+
 	it('安装失败保持 Ready、原版本和同一安装重试入口', async () => {
 		mocks.getUpdateSettings.mockResolvedValue({ ...stableSettings, channel: 'beta' })
 		showSnapshot('ready', {

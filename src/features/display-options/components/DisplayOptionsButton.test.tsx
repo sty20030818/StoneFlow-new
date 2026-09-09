@@ -29,6 +29,9 @@ describe('DisplayOptionsButton', () => {
 		const trigger = screen.getByRole('button', { name: '显示选项' })
 		fireEvent.keyDown(document, { key: 'Tab' })
 		act(() => trigger.focus())
+		expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+		fireEvent.pointerMove(trigger, { pointerType: 'mouse' })
+		fireEvent.pointerEnter(trigger, { pointerType: 'mouse' })
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('显示选项')
 
 		fireEvent.click(trigger)

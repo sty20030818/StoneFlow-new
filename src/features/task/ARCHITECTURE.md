@@ -102,6 +102,8 @@ src/features/task/
 
 ---
 
+Peek 的 source、目标、指针状态与关闭意图由 `useTaskPreviewStore` 同一 reducer 原子更新；Effect 只执行 `180ms` 关闭计时器和目标链接读取，不再在提交后修正目标。source 暂空保留最近可渲染任务，过期 source 注销与链接回执不得覆盖当前目标。自动保存的 dirty 标识从 React 中已确认的 base 与当前 draft 派生；ref 仅供事件和保存队列读取，不能成为渲染事实源。
+
 ## 5. 变更纪律
 
 集合首屏读取遵循 [A3 界面系统](../../../Documents/01-架构/A3-界面系统.md) 的留白与加载语义合同，不恢复 Board 骨架。

@@ -45,6 +45,7 @@ export function useTaskDisplayOptions(pageKey: TaskDisplayPageKey): UseTaskDispl
 
 	const persistedPayload = preferenceQuery.data
 	const persistedPersonal = persistedPayload?.personal ?? null
+	const workspaceDefault = persistedPayload?.workspaceDefault ?? null
 
 	const personalOverride = useMemo<TaskDisplayPreferenceRecord>(
 		() => draftOverride ?? persistedPersonal ?? {},
@@ -55,10 +56,10 @@ export function useTaskDisplayOptions(pageKey: TaskDisplayPageKey): UseTaskDispl
 		() =>
 			resolveTaskDisplayOptions({
 				pageKey,
-				workspaceDefault: persistedPayload?.workspaceDefault ?? null,
+				workspaceDefault,
 				personalOverride,
 			}),
-		[pageKey, personalOverride, persistedPayload?.workspaceDefault],
+		[pageKey, personalOverride, workspaceDefault],
 	)
 
 	const isDirty = useMemo(() => {
@@ -72,7 +73,7 @@ export function useTaskDisplayOptions(pageKey: TaskDisplayPageKey): UseTaskDispl
 				await updatePreference.mutateAsync({
 					pageKey,
 					personal: nextPersonal,
-					workspaceDefault: persistedPayload?.workspaceDefault ?? null,
+					workspaceDefault,
 				})
 				setDraftOverride(null)
 			} catch (error) {
@@ -80,7 +81,7 @@ export function useTaskDisplayOptions(pageKey: TaskDisplayPageKey): UseTaskDispl
 				throw error
 			}
 		},
-		[pageKey, persistedPayload?.workspaceDefault, updatePreference],
+		[pageKey, updatePreference, workspaceDefault],
 	)
 
 	const applyPartial = useCallback(

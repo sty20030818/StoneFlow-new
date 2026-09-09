@@ -25,7 +25,7 @@ function ActionTooltipRoot({
 	return (
 		<Tooltip closeDelay={closeDelay} delay={delay} {...props} isDisabled>
 			<ActionTooltipTrigger isDisabled={props.isDisabled}>{children}</ActionTooltipTrigger>
-			<Tooltip.Content placement='bottom'>
+			<Tooltip.Content data-react-aria-top-layer placement='bottom'>
 				<ActionTooltipRow label={label} shortcut={shortcut} />
 			</Tooltip.Content>
 		</Tooltip>

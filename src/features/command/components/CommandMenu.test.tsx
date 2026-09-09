@@ -71,6 +71,20 @@ describe('CommandMenu', () => {
 		expect(onOpenChange).toHaveBeenCalledWith(false)
 	})
 
+	it('同一会话保留查询，切换模式或关闭重开时清空查询', () => {
+		const view = renderCommandMenu()
+		fireEvent.change(screen.getByRole('searchbox'), { target: { value: '工作草稿' } })
+		view.rerender(commandMenuElement())
+		expect(screen.getByRole('searchbox')).toHaveValue('工作草稿')
+
+		view.rerender(commandMenuElement({ mode: 'task-picker' }))
+		expect(screen.getByRole('searchbox')).toHaveValue('')
+		fireEvent.change(screen.getByRole('searchbox'), { target: { value: '任务草稿' } })
+		view.rerender(commandMenuElement({ mode: 'task-picker', open: false }))
+		view.rerender(commandMenuElement({ mode: 'task-picker' }))
+		expect(screen.getByRole('searchbox')).toHaveValue('')
+	})
+
 	it('disabled 命令只展示原因，不触发执行', () => {
 		renderCommandMenu()
 
@@ -175,6 +189,7 @@ describe('CommandMenu', () => {
 })
 
 type RenderCommandMenuOptions = Partial<{
+	open: boolean
 	mode: CommandMenuMode
 	context: CommandContext
 	onNavigateProject: (projectId: string) => void
@@ -188,7 +203,12 @@ type RenderCommandMenuOptions = Partial<{
 	runtime: CommandRuntime
 }>
 
-function renderCommandMenu({
+function renderCommandMenu(options: RenderCommandMenuOptions = {}) {
+	return render(commandMenuElement(options))
+}
+
+function commandMenuElement({
+	open = true,
 	mode = 'default',
 	context = createEmptyCommandContext(),
 	onNavigateProject = vi.fn(),
@@ -201,7 +221,7 @@ function renderCommandMenu({
 	onSelectTask = vi.fn(),
 	runtime = createRuntime(),
 }: RenderCommandMenuOptions = {}) {
-	return render(
+	return (
 		<ShortcutRegistryProvider registry={TEST_SHORTCUT_REGISTRY}>
 			<CommandMenu
 				context={context}
@@ -215,13 +235,13 @@ function renderCommandMenu({
 				onSelectTaskPlacement={onSelectTaskPlacement}
 				onSelectTaskPriority={onSelectTaskPriority}
 				onSelectTaskStatus={onSelectTaskStatus}
-				open
+				open={open}
 				projects={[{ id: 'project-a', label: '项目 A', badge: '2' }]}
 				runtime={runtime}
 				spaces={TEST_SPACES}
 				title='StoneFlow Command'
 			/>
-		</ShortcutRegistryProvider>,
+		</ShortcutRegistryProvider>
 	)
 }
 

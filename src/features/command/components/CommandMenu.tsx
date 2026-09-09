@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 
 import { Command } from '@heroui-pro/react'
 import { SearchIcon } from 'lucide-react'
@@ -76,7 +76,10 @@ export function CommandMenu({
 	spaces = EMPTY_SPACES,
 	title,
 }: CommandMenuProps) {
-	const [query, setQuery] = useState('')
+	const [search, setSearch] = useState({ mode, open, query: '' })
+	const sameSession = search.mode === mode && search.open === open
+	if (!sameSession) setSearch({ mode, open, query: '' })
+	const query = sameSession ? search.query : ''
 	const descriptionId = useId()
 	const shortcutRegistry = useShortcutRegistry()
 	const openCustomDateDialog = useDialogStore((state) => state.openCustomDateDialog)
@@ -87,10 +90,6 @@ export function CommandMenu({
 	const scopedSearch = useGlobalSearch(isCommandMenuSearchMode(mode) ? query : '')
 	const isScopedMode = mode !== 'default'
 
-	useEffect(() => {
-		setQuery('')
-	}, [mode, open])
-
 	return (
 		<Command>
 			<Command.Backdrop isDismissable isOpen={open} onOpenChange={onOpenChange}>
@@ -100,7 +99,7 @@ export function CommandMenu({
 						aria-label={title}
 						filter={isCommandMenuSearchMode(mode) ? () => true : undefined}
 						inputValue={query}
-						onInputChange={setQuery}
+						onInputChange={(query) => setSearch({ mode, open, query })}
 					>
 						<p className='sr-only' id={descriptionId}>
 							{description}

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 
 import type { ChangelogDialogProps } from './ChangelogDialog'
 
@@ -8,9 +8,7 @@ const LazyChangelogDialog = lazy(async () => ({
 
 export function ChangelogDialogHost(props: ChangelogDialogProps) {
 	const [loaded, setLoaded] = useState(props.open)
-	useEffect(() => {
-		if (props.open) setLoaded(true)
-	}, [props.open])
+	if (props.open && !loaded) setLoaded(true)
 	if (!props.open && !loaded) return null
 
 	return (

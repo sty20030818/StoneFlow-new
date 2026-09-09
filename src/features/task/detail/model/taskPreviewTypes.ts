@@ -31,9 +31,6 @@ export type TaskPreviewContextValue = {
 	sourceSnapshot: TaskPreviewSource | null
 	openPreview: (taskId: string, source: TaskPreviewAnchorReason) => void
 	closePreview: () => void
-	scheduleClosePreview: () => void
-	cancelScheduledClose: () => void
-	syncPreviewTarget: (taskId: string, source: TaskPreviewAnchorReason) => void
 	setHoveredTask: (taskId: string | null, source: TaskPreviewAnchorReason | null) => void
 	setPreviewPointerInside: (inside: boolean) => void
 	registerSource: (token: symbol, source: TaskPreviewSource) => void

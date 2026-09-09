@@ -53,6 +53,32 @@ describe('SyncConfigDialog', () => {
 		expect(screen.queryByRole('button', { name: '保存配置' })).not.toBeInTheDocument()
 	})
 
+	it('关闭重开清除上轮保存错误，连接串草稿仍由调用方保留', async () => {
+		const props = {
+			configSource: 'system_keychain' as const,
+			databaseUrl: 'postgresql://db.example.com/sf',
+			legacyRemoteAdoptionRequired: false,
+			legacyRemoteReason: null,
+			redactedRemoteUrl: null,
+			onClose: vi.fn(),
+			onAdoptLegacyRemote: vi.fn(async () => undefined),
+			onSave: vi.fn().mockRejectedValue(new Error('连接被拒绝')),
+			onRebind: vi.fn(async () => undefined),
+			onDatabaseUrlChange: vi.fn(),
+		}
+		const view = render(<SyncConfigDialog {...props} open />)
+		fireEvent.click(screen.getByRole('button', { name: '保存配置' }))
+		expect(await screen.findByRole('alert')).toHaveTextContent('连接被拒绝')
+		view.rerender(<SyncConfigDialog {...props} open />)
+		expect(screen.getByRole('alert')).toHaveTextContent('连接被拒绝')
+
+		view.rerender(<SyncConfigDialog {...props} open={false} />)
+		view.rerender(<SyncConfigDialog {...props} open />)
+		expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+		expect(screen.getByRole('textbox', { name: '同步数据库连接' })).toHaveValue(props.databaseUrl)
+		expect(screen.getByRole('button', { name: '保存配置' })).toBeEnabled()
+	})
+
 	it('环境配置存在旧游标时可显式沿用当前远端且不接收连接串', async () => {
 		const onAdoptLegacyRemote = vi.fn(async () => undefined)
 		const onClose = vi.fn()

@@ -18,25 +18,32 @@ export function useSyncStatusController() {
 	const [running, setRunning] = useState(false)
 	const [message, setMessage] = useState<string | null>(null)
 
-	const refresh = useCallback(async (options?: { silent?: boolean }) => {
-		const silent = options?.silent ?? false
-		if (!silent) {
-			setLoading(true)
-			setMessage(null)
-		}
+	const readStatus = useCallback(
+		() =>
+			getSyncStatus()
+				.then(setStatusPayload)
+				.catch((error: unknown) => {
+					setStatusPayload(null)
+					setMessage(normalizeTauriError(error, '同步状态读取失败'))
+				}),
+		[],
+	)
 
-		try {
-			const payload = await getSyncStatus()
-			setStatusPayload(payload)
-		} catch (error) {
-			setStatusPayload(null)
-			setMessage(normalizeTauriError(error, '同步状态读取失败'))
-		} finally {
+	const refresh = useCallback(
+		async (options?: { silent?: boolean }) => {
+			const silent = options?.silent ?? false
 			if (!silent) {
-				setLoading(false)
+				setLoading(true)
+				setMessage(null)
 			}
-		}
-	}, [])
+			try {
+				await readStatus()
+			} finally {
+				if (!silent) setLoading(false)
+			}
+		},
+		[readStatus],
+	)
 
 	const runNow = useCallback(async () => {
 		setRunning(true)
@@ -54,8 +61,8 @@ export function useSyncStatusController() {
 	}, [refresh])
 
 	useEffect(() => {
-		void refresh()
-	}, [refresh])
+		void readStatus().finally(() => setLoading(false))
+	}, [readStatus])
 
 	useEffect(() => {
 		let disposed = false

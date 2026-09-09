@@ -1,5 +1,6 @@
 /** @vitest-environment jsdom */
 import { fireEvent, render, screen } from '@testing-library/react'
+import { createRef } from 'react'
 
 import { COMMAND_IDS } from '@/features/command/core'
 import { KeybindingRegistry } from '@/features/command/keybinding'
@@ -8,6 +9,29 @@ import { ShortcutRegistryProvider } from '@/features/command/shortcuts'
 import { CommandActionTooltip, DisabledCommandActionTooltip } from './CommandActionTooltip'
 
 describe('CommandActionTooltip', () => {
+	it('合并的 trigger ref 连接同一个真实按钮并保留卸载清理', () => {
+		const childRef = createRef<HTMLButtonElement>()
+		const cleanup = vi.fn()
+		const outerRef = vi.fn(() => cleanup)
+		const view = renderTooltip(
+			new KeybindingRegistry([]),
+			<CommandActionTooltip commandId='test.unbound' label='入口提示' ref={outerRef}>
+				<button ref={childRef} type='button'>
+					入口
+				</button>
+			</CommandActionTooltip>,
+		)
+		const button = screen.getByRole('button', { name: '入口' })
+		expect(childRef.current).toBe(button)
+		expect(outerRef).toHaveBeenLastCalledWith(button)
+
+		cleanup.mockClear()
+		view.unmount()
+
+		expect(childRef.current).toBeNull()
+		expect(cleanup).toHaveBeenCalledOnce()
+	})
+
 	it('从注入的 Registry 展示主快捷键，并为顺序输入提供读屏文案', async () => {
 		const registry = new KeybindingRegistry([
 			{

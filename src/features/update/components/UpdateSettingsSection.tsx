@@ -21,7 +21,6 @@ import {
 } from './UpdateSettingsSection.presentation'
 
 export function UpdateSettingsSection() {
-	const [loading, setLoading] = useState(true)
 	const [saving, setSaving] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 	const [settings, setSettings] = useState<{
@@ -30,28 +29,28 @@ export function UpdateSettingsSection() {
 		checkIntervalSecs: number
 	} | null>(null)
 	const { checkNow, disabled, isChecking } = useManualUpdateCheck()
+	const loading = settings === null && error === null
 
-	const loadSettings = useCallback(async () => {
-		setLoading(true)
-		setError(null)
-		try {
-			const s = await getUpdateSettings()
-			const interval = ALLOWED_CHECK_INTERVAL_SECS.includes(
-				s.checkIntervalSecs as CheckIntervalSecs,
-			)
-				? s.checkIntervalSecs
-				: 6 * 60 * 60
-			setSettings({
-				checkMode: s.checkMode,
-				channel: s.channel,
-				checkIntervalSecs: interval,
-			})
-		} catch (err) {
-			setError(normalizeTauriError(err, '读取更新设置失败'))
-		} finally {
-			setLoading(false)
-		}
-	}, [])
+	const loadSettings = useCallback(
+		() =>
+			getUpdateSettings()
+				.then((s) => {
+					const interval = ALLOWED_CHECK_INTERVAL_SECS.includes(
+						s.checkIntervalSecs as CheckIntervalSecs,
+					)
+						? s.checkIntervalSecs
+						: 6 * 60 * 60
+					setSettings({
+						checkMode: s.checkMode,
+						channel: s.channel,
+						checkIntervalSecs: interval,
+					})
+				})
+				.catch((err: unknown) => {
+					setError(normalizeTauriError(err, '读取更新设置失败'))
+				}),
+		[],
+	)
 
 	useEffect(() => {
 		void loadSettings()
@@ -121,7 +120,14 @@ export function UpdateSettingsSection() {
 					<Alert.Title>无法读取更新设置</Alert.Title>
 					<Alert.Description>{error}</Alert.Description>
 				</Alert.Content>
-				<Button onPress={() => void loadSettings()} size='sm' variant='outline'>
+				<Button
+					onPress={() => {
+						setError(null)
+						void loadSettings()
+					}}
+					size='sm'
+					variant='outline'
+				>
 					重试
 				</Button>
 			</Alert>

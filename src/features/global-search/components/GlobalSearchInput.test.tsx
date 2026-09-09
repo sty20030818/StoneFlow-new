@@ -31,6 +31,26 @@ describe('GlobalSearchInput', () => {
 		expect(screen.getByLabelText('全局搜索')).toHaveFocus()
 	})
 
+	it('搜索仍有浏览器焦点时，新的聚焦意图也能重新展开结果', async () => {
+		mockedSearchEntities.mockResolvedValue({
+			tasks: [createTaskResult()],
+			projects: [],
+			completedTasks: [],
+			completedProjects: [],
+		})
+		renderSearch()
+		const input = screen.getByLabelText('全局搜索')
+		act(() => input.focus())
+		fireEvent.change(input, { target: { value: '任务' } })
+		await screen.findByRole('grid', { name: '任务搜索结果' })
+		fireEvent.pointerDown(document.body)
+		expect(input).toHaveFocus()
+		expect(screen.queryByRole('grid', { name: '任务搜索结果' })).not.toBeInTheDocument()
+
+		act(() => useSearchFocusIntentStore.getState().requestFocus())
+		expect(screen.getByRole('grid', { name: '任务搜索结果' })).toBeVisible()
+	})
+
 	it('按任务和项目分区展示结果，并标出独立事项上下文', async () => {
 		mockedSearchEntities.mockResolvedValue({
 			tasks: [
@@ -138,6 +158,67 @@ describe('GlobalSearchInput', () => {
 		await waitFor(() => {
 			expect(screen.getByText('没有匹配的任务或项目')).toBeInTheDocument()
 		})
+	})
+
+	it('清空后重新搜索不会把上次空结果当作本次已完成', async () => {
+		const nextSearch = createDeferred<SearchEntitiesResult>()
+		const empty = { tasks: [], projects: [], completedTasks: [], completedProjects: [] }
+		mockedSearchEntities.mockResolvedValueOnce(empty).mockReturnValueOnce(nextSearch.promise)
+		renderSearch()
+		const input = screen.getByLabelText('全局搜索')
+		fireEvent.change(input, { target: { value: '旧' } })
+		expect(await screen.findByText('没有匹配的任务或项目')).toBeInTheDocument()
+
+		fireEvent.keyDown(input, { key: 'Escape' })
+		fireEvent.change(input, { target: { value: '新' } })
+		expect(screen.queryByText('没有匹配的任务或项目')).not.toBeInTheDocument()
+		await flushSearch(2)
+		expect(screen.queryByText('没有匹配的任务或项目')).not.toBeInTheDocument()
+
+		await act(async () => nextSearch.resolve(empty))
+		expect(await screen.findByText('没有匹配的任务或项目')).toBeInTheDocument()
+	})
+
+	it('较旧查询晚到不会覆盖新结果，缩短结果列表后键盘从首项继续', async () => {
+		const olderSearch = createDeferred<SearchEntitiesResult>()
+		const latestSearch = createDeferred<SearchEntitiesResult>()
+		const onOpenTask = vi.fn()
+		const empty = { tasks: [], projects: [], completedTasks: [], completedProjects: [] }
+		mockedSearchEntities
+			.mockResolvedValueOnce({
+				...empty,
+				tasks: [createTaskResult({ id: 'a' }), createTaskResult({ id: 'b' })],
+			})
+			.mockReturnValueOnce(olderSearch.promise)
+			.mockReturnValueOnce(latestSearch.promise)
+		renderSearch({ onOpenTask })
+		const input = screen.getByLabelText('全局搜索')
+		fireEvent.change(input, { target: { value: '初次' } })
+		await screen.findAllByRole('row')
+		fireEvent.keyDown(input, { key: 'ArrowDown' })
+		fireEvent.change(input, { target: { value: '较旧' } })
+		await flushSearch(2)
+		fireEvent.change(input, { target: { value: '最新' } })
+		await flushSearch(3)
+		await act(async () =>
+			latestSearch.resolve({
+				...empty,
+				tasks: [createTaskResult({ id: 'latest', title: '最新结果' })],
+			}),
+		)
+		expect(await screen.findByRole('row', { name: '打开任务 最新结果' })).toHaveAttribute(
+			'aria-current',
+			'true',
+		)
+		await act(async () =>
+			olderSearch.resolve({
+				...empty,
+				tasks: [createTaskResult({ id: 'older', title: '较旧结果' })],
+			}),
+		)
+		expect(screen.queryByText('较旧结果')).not.toBeInTheDocument()
+		fireEvent.keyDown(input, { key: 'Enter' })
+		expect(onOpenTask).toHaveBeenCalledWith(expect.objectContaining({ id: 'latest' }))
 	})
 
 	it('支持键盘选择任务与鼠标点击项目', async () => {

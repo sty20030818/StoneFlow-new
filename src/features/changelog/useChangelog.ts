@@ -57,22 +57,28 @@ export function useChangelog(query: ChangelogQuery | null) {
 	const channel = query?.channel ?? null
 	const currentVersion = query?.kind === 'range' ? query.currentVersion : null
 	const targetVersion = query?.kind === 'range' ? query.targetVersion : null
-	const [document, setDocument] = useState<ChangelogDocument | null>(null)
-	const [isLoading, setIsLoading] = useState(query !== null)
+	const queryKey = JSON.stringify([kind, channel, currentVersion, targetVersion])
+	const [request, setRequest] = useState<{
+		queryKey: string
+		document: ChangelogDocument | null
+		isLoading: boolean
+	}>({ queryKey, document: null, isLoading: query !== null })
+	if (request.queryKey !== queryKey) {
+		setRequest({ ...request, queryKey, isLoading: query !== null })
+	}
+	const { document, isLoading } = request
 
 	useEffect(() => {
 		if (!kind || !channel) return
 		let active = true
-		setIsLoading(true)
 		void loadDocument().then((nextDocument) => {
 			if (!active) return
-			setDocument(nextDocument)
-			setIsLoading(false)
+			setRequest({ queryKey, document: nextDocument, isLoading: false })
 		})
 		return () => {
 			active = false
 		}
-	}, [channel, currentVersion, kind, targetVersion])
+	}, [channel, kind, queryKey])
 
 	const releases = useMemo(() => {
 		if (!document || !kind || !channel) return []

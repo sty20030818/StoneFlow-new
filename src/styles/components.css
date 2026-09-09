@@ -25,7 +25,7 @@
 	[data-theme="stoneflow-light"] .resizable__handle[data-focus-visible="true"],
 	[data-theme="stoneflow-light"]
 		.sidebar__menu-action:is(:focus-visible, [data-focus-visible="true"]) {
-		@apply ring-[length:var(--focus-ring-width)];
+		@apply ring-(length:--border-width);
 	}
 
 	/* Tooltip.Trigger 与按钮复合时不能覆盖按钮的 flex 对齐语义。 */
@@ -190,7 +190,7 @@
 
 	[data-theme="stoneflow-light"]
 		.radio-button-group__item[data-selected="true"]:not([data-focus-visible="true"]) {
-		@apply ring-[length:var(--border-width)];
+		@apply ring-(length:--border-width);
 	}
 
 	[data-theme="stoneflow-light"]

@@ -355,6 +355,7 @@ describe('useAutosaveController', () => {
 
 		expect(result.current.draft).toEqual({ title: 'first', note: 'second' })
 		expect(result.current.status).toBe('scheduled')
+		expect(result.current.isDirty).toBe(true)
 
 		await act(async () => {
 			vi.advanceTimersByTime(600)
@@ -363,5 +364,6 @@ describe('useAutosaveController', () => {
 
 		expect(savePatch).toHaveBeenNthCalledWith(2, { note: 'second' })
 		expect(result.current.status).toBe('saved')
+		expect(result.current.isDirty).toBe(false)
 	})
 })

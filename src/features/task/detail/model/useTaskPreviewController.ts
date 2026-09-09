@@ -18,9 +18,6 @@ export function useTaskPreviewController() {
 			linkSummary: context.state.linkSummary,
 			openPreview: context.openPreview,
 			closePreview: context.closePreview,
-			scheduleClosePreview: context.scheduleClosePreview,
-			cancelScheduledClose: context.cancelScheduledClose,
-			syncPreviewTarget: context.syncPreviewTarget,
 			setHoveredTask: context.setHoveredTask,
 			setPreviewPointerInside: context.setPreviewPointerInside,
 		}

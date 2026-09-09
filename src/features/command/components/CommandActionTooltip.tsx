@@ -96,11 +96,14 @@ const CommandActionTooltip = React.forwardRef<HTMLElement, CommandActionTooltipP
 		ref,
 	) {
 		const tokens = useCommandShortcutTokens(commandId, scope)
-		const mergedTriggerProps = mergeProps(triggerProps, children.props)
-		mergedTriggerProps.ref = mergeRefs(
-			ref,
-			children.props.ref as React.Ref<HTMLElement> | undefined,
+		const childRef = children.props.ref as React.Ref<HTMLElement> | undefined
+		const triggerRef = React.useCallback(
+			(node: HTMLElement | null) =>
+				(mergeRefs(ref, childRef) as React.RefCallback<HTMLElement>)(node),
+			[childRef, ref],
 		)
+		const mergedTriggerProps = mergeProps(triggerProps, children.props)
+		mergedTriggerProps.ref = triggerRef
 		const trigger = React.cloneElement(children, mergedTriggerProps)
 
 		return (

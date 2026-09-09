@@ -15,8 +15,13 @@ it('首次打开时加载 Changelog，关闭后保留已加载 Dialog', async ()
 	expect(screen.queryByTestId('changelog-dialog')).not.toBeInTheDocument()
 
 	view.rerender(<ChangelogDialogHost {...props} open />)
-	await screen.findByText('true')
+	const dialog = await screen.findByText('true')
 
 	view.rerender(<ChangelogDialogHost {...props} open={false} />)
 	await waitFor(() => expect(screen.getByTestId('changelog-dialog')).toHaveTextContent('false'))
+	expect(screen.getByTestId('changelog-dialog')).toBe(dialog)
+
+	view.rerender(<ChangelogDialogHost {...props} open />)
+	expect(screen.getByTestId('changelog-dialog')).toBe(dialog)
+	expect(dialog).toHaveTextContent('true')
 })

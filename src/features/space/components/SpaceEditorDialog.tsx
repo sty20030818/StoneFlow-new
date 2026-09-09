@@ -8,7 +8,7 @@ import {
 	Modal,
 	Select,
 } from '@heroui/react'
-import { useCallback, useEffect, useEffectEvent, useId, useState } from 'react'
+import { useCallback, useId, useState } from 'react'
 import { FormProvider, useController } from 'react-hook-form'
 
 import {
@@ -37,13 +37,23 @@ type SpaceEditorDialogProps = {
 /**
  * Space 创建 / 编辑弹窗，只承载最小字段输入。
  */
-export function SpaceEditorDialog({
-	open,
-	mode,
-	space = null,
-	onClose,
-	onSubmit,
-}: SpaceEditorDialogProps) {
+export function SpaceEditorDialog(props: SpaceEditorDialogProps) {
+	const { open, mode, space = null, onClose } = props
+	const [session, setSession] = useState({ open, mode, space, key: 0 })
+	if (session.open !== open || (open && (session.space !== space || session.mode !== mode))) {
+		setSession({ open, mode, space, key: session.key + (open ? 1 : 0) })
+	}
+
+	return (
+		<Modal.Backdrop isOpen={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+			<Modal.Container placement='center' size='lg'>
+				<SpaceEditorForm key={session.key} {...props} />
+			</Modal.Container>
+		</Modal.Backdrop>
+	)
+}
+
+function SpaceEditorForm({ open, mode, space = null, onClose, onSubmit }: SpaceEditorDialogProps) {
 	const form = useZodForm({
 		schema: spaceEditorSchema,
 		defaultValues: buildSpaceEditorDefaultValues(space ?? {}),
@@ -62,14 +72,6 @@ export function SpaceEditorDialog({
 	const PreviewIcon = previewVisual.icon
 	const SelectedIcon = selectedIconOption.icon
 	const descriptionId = useId()
-	const submitSpace = useEffectEvent(onSubmit)
-	const closeDialog = useEffectEvent(onClose)
-
-	useEffect(() => {
-		form.reset(buildSpaceEditorDefaultValues(space ?? {}))
-		setSubmitting(false)
-		setError(null)
-	}, [form, open, space])
 
 	const handleSubmit = useCallback(async () => {
 		const isValid = await form.trigger()
@@ -81,21 +83,18 @@ export function SpaceEditorDialog({
 		setSubmitting(true)
 		setError(null)
 		try {
-			// useEffectEvent：同组件事件回调中读取最新 props，避免 handleSubmit 依赖抖动
-			// react-doctor-disable-next-line react-doctor/rules-of-hooks
-			await submitSpace({
+			await onSubmit({
 				name: values.name.trim(),
 				iconKey: values.iconKey,
 				colorKey: values.colorKey,
 			})
-			// react-doctor-disable-next-line react-doctor/rules-of-hooks
-			closeDialog()
+			onClose()
 		} catch (error) {
 			setError(normalizeSubmitError(error, 'Space 保存失败'))
 		} finally {
 			setSubmitting(false)
 		}
-	}, [form])
+	}, [form, onClose, onSubmit])
 
 	useSubmitTargetFromForm({
 		id: open
@@ -116,161 +115,153 @@ export function SpaceEditorDialog({
 	})
 
 	return (
-		<Modal.Backdrop isOpen={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-			<Modal.Container placement='center' size='lg'>
-				<Modal.Dialog
-					aria-describedby={descriptionId}
-					className='overflow-hidden'
-					render={(dialogProps) => (
-						<section
-							{...dialogProps}
-							onKeyDown={(event) => {
-								if (event.key !== 'Escape' || event.defaultPrevented) event.stopPropagation()
-							}}
-						/>
-					)}
+		<Modal.Dialog
+			aria-describedby={descriptionId}
+			className='overflow-hidden'
+			render={(dialogProps) => (
+				<section
+					{...dialogProps}
+					onKeyDown={(event) => {
+						if (event.key !== 'Escape' || event.defaultPrevented) event.stopPropagation()
+					}}
+				/>
+			)}
+		>
+			<FormProvider {...form}>
+				<form
+					onSubmit={(event) => {
+						event.preventDefault()
+						void handleSubmit()
+					}}
 				>
-					<FormProvider {...form}>
-						<form
-							onSubmit={(event) => {
-								event.preventDefault()
-								void handleSubmit()
-							}}
-						>
-							<Modal.Header>
-								<Modal.Heading>{mode === 'create' ? '新建 Space' : '编辑 Space'}</Modal.Heading>
-								<p className='text-sm text-muted' id={descriptionId}>
-									Space 只承载顶级上下文。设置名称、图标和颜色即可。
+					<Modal.Header>
+						<Modal.Heading>{mode === 'create' ? '新建 Space' : '编辑 Space'}</Modal.Heading>
+						<p className='text-sm text-muted' id={descriptionId}>
+							Space 只承载顶级上下文。设置名称、图标和颜色即可。
+						</p>
+					</Modal.Header>
+
+					<Modal.Body>
+						<div className='flex items-center gap-3 rounded-xl border border-separator bg-surface-secondary px-4 py-3'>
+							<span
+								className={cn(
+									'flex size-10 shrink-0 items-center justify-center rounded-xl text-white',
+									previewVisual.iconBadgeClassName,
+								)}
+							>
+								<PreviewIcon className='size-5 text-white' />
+							</span>
+							<div className='min-w-0'>
+								<p className='truncate text-sm font-medium text-foreground'>
+									{name.trim() || 'Space 预览'}
 								</p>
-							</Modal.Header>
+								<p className='text-xs text-muted'>
+									{selectedIconOption.label} · {selectedColorOption.label}
+								</p>
+							</div>
+						</div>
 
-							<Modal.Body>
-								<div className='flex items-center gap-3 rounded-xl border border-separator bg-surface-secondary px-4 py-3'>
-									<span
-										className={cn(
-											'flex size-10 shrink-0 items-center justify-center rounded-xl text-white',
-											previewVisual.iconBadgeClassName,
-										)}
-									>
-										<PreviewIcon className='size-5 text-white' />
-									</span>
-									<div className='min-w-0'>
-										<p className='truncate text-sm font-medium text-foreground'>
-											{name.trim() || 'Space 预览'}
-										</p>
-										<p className='text-xs text-muted'>
-											{selectedIconOption.label} · {selectedColorOption.label}
-										</p>
-									</div>
-								</div>
+						<div className='mt-4 grid gap-1.5'>
+							<Label htmlFor='space-editor-name'>名称</Label>
+							<Input
+								autoFocus
+								disabled={submitting}
+								fullWidth
+								id='space-editor-name'
+								onBlur={nameField.onBlur}
+								onChange={nameField.onChange}
+								placeholder='例如：个人 / 工作 / 学习'
+								value={nameField.value}
+							/>
+						</div>
 
-								<div className='mt-4 grid gap-1.5'>
-									<Label htmlFor='space-editor-name'>名称</Label>
-									<Input
-										autoFocus
-										disabled={submitting}
-										fullWidth
-										id='space-editor-name'
-										onBlur={nameField.onBlur}
-										onChange={nameField.onChange}
-										placeholder='例如：个人 / 工作 / 学习'
-										value={nameField.value}
-									/>
-								</div>
-
-								<div className='mt-4 grid gap-4 sm:grid-cols-2'>
-									<Select
-										isDisabled={submitting}
-										onChange={(key) => typeof key === 'string' && iconKeyField.onChange(key)}
-										value={iconKey}
-									>
-										<Label>图标</Label>
-										<Select.Trigger>
-											<Select.Value>
-												<div className='flex min-w-0 items-center gap-2'>
-													<SelectedIcon
-														className={cn('size-4 shrink-0', previewVisual.iconClassName)}
-													/>
-													<span className='truncate'>{selectedIconOption.label}</span>
+						<div className='mt-4 grid gap-4 sm:grid-cols-2'>
+							<Select
+								isDisabled={submitting}
+								onChange={(key) => typeof key === 'string' && iconKeyField.onChange(key)}
+								value={iconKey}
+							>
+								<Label>图标</Label>
+								<Select.Trigger>
+									<Select.Value>
+										<div className='flex min-w-0 items-center gap-2'>
+											<SelectedIcon
+												className={cn('size-4 shrink-0', previewVisual.iconClassName)}
+											/>
+											<span className='truncate'>{selectedIconOption.label}</span>
+										</div>
+									</Select.Value>
+									<Select.Indicator />
+								</Select.Trigger>
+								<Select.Popover>
+									<ListBox>
+										{SPACE_ICON_OPTIONS.map((option) => (
+											<ListBox.Item id={option.value} key={option.value} textValue={option.label}>
+												<div className='flex items-center gap-2'>
+													<option.icon className='size-4 shrink-0 text-muted' />
+													<span>{option.label}</span>
 												</div>
-											</Select.Value>
-											<Select.Indicator />
-										</Select.Trigger>
-										<Select.Popover>
-											<ListBox>
-												{SPACE_ICON_OPTIONS.map((option) => (
-													<ListBox.Item
-														id={option.value}
-														key={option.value}
-														textValue={option.label}
-													>
-														<div className='flex items-center gap-2'>
-															<option.icon className='size-4 shrink-0 text-muted' />
-															<span>{option.label}</span>
-														</div>
-														<ListBox.ItemIndicator />
-													</ListBox.Item>
-												))}
-											</ListBox>
-										</Select.Popover>
-									</Select>
+												<ListBox.ItemIndicator />
+											</ListBox.Item>
+										))}
+									</ListBox>
+								</Select.Popover>
+							</Select>
 
-									<div className='grid content-start gap-1.5'>
-										<Label>颜色</Label>
-										<ColorSwatchPicker
-											aria-label='颜色'
-											onChange={(value) => {
-												const nextColorKey = getSpaceColorKeyByValue(value.toString('hex'))
-												if (nextColorKey) colorKeyField.onChange(nextColorKey)
-											}}
-											value={selectedColorOption.colorValue}
-										>
-											{SPACE_COLOR_OPTIONS.map((option) => (
-												<ColorSwatchPicker.Item
-													aria-label={option.label}
-													color={option.colorValue}
-													isDisabled={submitting}
-													key={option.value}
-												>
-													<ColorSwatchPicker.Swatch />
-													<ColorSwatchPicker.Indicator />
-												</ColorSwatchPicker.Item>
-											))}
-										</ColorSwatchPicker>
-									</div>
-								</div>
-
-								{error ? (
-									<Alert role='alert' status='danger'>
-										<Alert.Indicator />
-										<Alert.Content>
-											<Alert.Title>保存失败</Alert.Title>
-											<Alert.Description>{error}</Alert.Description>
-										</Alert.Content>
-									</Alert>
-								) : null}
-							</Modal.Body>
-
-							<Modal.Footer>
-								<Button isDisabled={submitting} onPress={onClose} type='button' variant='ghost'>
-									取消
-								</Button>
-								<Button
-									isDisabled={
-										submitting ||
-										nameField.value.trim().length === 0 ||
-										iconKeyField.value.trim().length === 0 ||
-										!isSpaceColorKey(colorKeyField.value)
-									}
-									type='submit'
+							<div className='grid content-start gap-1.5'>
+								<Label>颜色</Label>
+								<ColorSwatchPicker
+									aria-label='颜色'
+									onChange={(value) => {
+										const nextColorKey = getSpaceColorKeyByValue(value.toString('hex'))
+										if (nextColorKey) colorKeyField.onChange(nextColorKey)
+									}}
+									value={selectedColorOption.colorValue}
 								>
-									{mode === 'create' ? '创建 Space' : '保存变更'}
-								</Button>
-							</Modal.Footer>
-						</form>
-					</FormProvider>
-				</Modal.Dialog>
-			</Modal.Container>
-		</Modal.Backdrop>
+									{SPACE_COLOR_OPTIONS.map((option) => (
+										<ColorSwatchPicker.Item
+											aria-label={option.label}
+											color={option.colorValue}
+											isDisabled={submitting}
+											key={option.value}
+										>
+											<ColorSwatchPicker.Swatch />
+											<ColorSwatchPicker.Indicator />
+										</ColorSwatchPicker.Item>
+									))}
+								</ColorSwatchPicker>
+							</div>
+						</div>
+
+						{error ? (
+							<Alert role='alert' status='danger'>
+								<Alert.Indicator />
+								<Alert.Content>
+									<Alert.Title>保存失败</Alert.Title>
+									<Alert.Description>{error}</Alert.Description>
+								</Alert.Content>
+							</Alert>
+						) : null}
+					</Modal.Body>
+
+					<Modal.Footer>
+						<Button isDisabled={submitting} onPress={onClose} type='button' variant='ghost'>
+							取消
+						</Button>
+						<Button
+							isDisabled={
+								submitting ||
+								nameField.value.trim().length === 0 ||
+								iconKeyField.value.trim().length === 0 ||
+								!isSpaceColorKey(colorKeyField.value)
+							}
+							type='submit'
+						>
+							{mode === 'create' ? '创建 Space' : '保存变更'}
+						</Button>
+					</Modal.Footer>
+				</form>
+			</FormProvider>
+		</Modal.Dialog>
 	)
 }

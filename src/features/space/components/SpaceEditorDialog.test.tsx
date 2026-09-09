@@ -1,4 +1,4 @@
-import { act, fireEvent, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render as renderBase, screen, waitFor } from '@testing-library/react'
 import { useMemo, useState } from 'react'
 
 import {
@@ -7,7 +7,10 @@ import {
 	useSubmitRegistryContext,
 } from '@/features/submit'
 import type { Space } from '@/shared/types'
-import { renderWithInteractionProviders as render } from '@/test/TestInteractionProviders'
+import {
+	renderWithInteractionProviders as render,
+	TestInteractionProviders,
+} from '@/test/TestInteractionProviders'
 import { SpaceEditorDialog } from './SpaceEditorDialog'
 
 const SPACE_FIXTURE = {
@@ -85,6 +88,37 @@ describe('SpaceEditorDialog', () => {
 				colorKey: 'slate',
 			}),
 		)
+	})
+
+	it('同一编辑会话保留草稿，重开或切换 Space 时重置字段但不重建外层 Backdrop', async () => {
+		const props = {
+			mode: 'edit' as const,
+			onClose: vi.fn(),
+			onSubmit: vi.fn(async () => undefined),
+		}
+		const view = renderBase(<SpaceEditorDialog {...props} open space={SPACE_FIXTURE} />, {
+			wrapper: TestInteractionProviders,
+		})
+		const backdrop = screen.getByRole('dialog').closest('.modal__backdrop')
+		expect(backdrop).not.toBeNull()
+		fireEvent.change(screen.getByRole('textbox', { name: '名称' }), {
+			target: { value: '未保存草稿' },
+		})
+		view.rerender(<SpaceEditorDialog {...props} open space={SPACE_FIXTURE} />)
+		expect(screen.getByRole('textbox', { name: '名称' })).toHaveValue('未保存草稿')
+
+		const nextSpace = { ...SPACE_FIXTURE, id: 'space-2', name: '工作', colorKey: 'green' }
+		view.rerender(<SpaceEditorDialog {...props} open space={nextSpace} />)
+		expect(screen.getByRole('textbox', { name: '名称' })).toHaveValue('工作')
+		expect(screen.getByRole('option', { name: '绿色' })).toHaveAttribute('aria-selected', 'true')
+		expect(screen.getByRole('dialog').closest('.modal__backdrop')).toBe(backdrop)
+
+		fireEvent.change(screen.getByRole('textbox', { name: '名称' }), {
+			target: { value: '另一份草稿' },
+		})
+		view.rerender(<SpaceEditorDialog {...props} open={false} space={nextSpace} />)
+		view.rerender(<SpaceEditorDialog {...props} open space={nextSpace} />)
+		await waitFor(() => expect(screen.getByRole('textbox', { name: '名称' })).toHaveValue('工作'))
 	})
 
 	it('未知持久化颜色使用蓝色回退且不会提交非法 key', async () => {

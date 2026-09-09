@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { startTransition, useMemo, useState, useSyncExternalStore } from 'react'
 import { useLocation, useNavigate, useRouter } from '@tanstack/react-router'
 import {
 	ArchiveIcon,
@@ -256,15 +256,12 @@ export function useShellSessionRouteHistory({
 		currentIndex: -1,
 	})
 
-	useEffect(() => {
-		if (!isTrackableRouteHistoryEntry(currentEntry)) {
-			return
+	if (isTrackableRouteHistoryEntry(currentEntry)) {
+		const nextHistory = reduceRouteHistory(historyState, currentEntry, navigationType, maxEntries)
+		if (nextHistory !== historyState) {
+			setHistoryState(nextHistory)
 		}
-
-		setHistoryState((previous) =>
-			reduceRouteHistory(previous, currentEntry, navigationType, maxEntries),
-		)
-	}, [currentEntry, maxEntries, navigationType])
+	}
 
 	const currentHistoryEntry = historyState.entries[historyState.currentIndex] ?? currentEntry
 

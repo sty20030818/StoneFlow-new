@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 
 import { useUpdateStore } from '../model/useUpdateStore'
 
@@ -9,9 +9,7 @@ const LazyUpdateDialog = lazy(async () => ({
 export function UpdateDialogHost() {
 	const visible = useUpdateStore((state) => state.dialogVisible)
 	const [loaded, setLoaded] = useState(visible)
-	useEffect(() => {
-		if (visible) setLoaded(true)
-	}, [visible])
+	if (visible && !loaded) setLoaded(true)
 	if (!visible && !loaded) return null
 
 	return (

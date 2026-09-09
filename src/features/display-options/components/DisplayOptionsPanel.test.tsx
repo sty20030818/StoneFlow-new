@@ -33,6 +33,9 @@ describe('DisplayOptionsPanel', () => {
 		const trigger = screen.getByRole('button', { name: '切换为降序' })
 		fireEvent.keyDown(document, { key: 'Tab' })
 		act(() => trigger.focus())
+		expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+		fireEvent.pointerMove(trigger, { pointerType: 'mouse' })
+		fireEvent.pointerEnter(trigger, { pointerType: 'mouse' })
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('切换为降序')
 
 		fireEvent.click(trigger)

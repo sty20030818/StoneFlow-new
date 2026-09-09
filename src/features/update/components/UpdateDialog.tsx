@@ -16,10 +16,9 @@ import { downloadProgressBarValue, formatDownloadBytesLine } from '../model/upda
 import { selectUpdateSnapshot, useUpdateStore } from '../model/useUpdateStore'
 
 type ReadySettingsState =
-	| { key: string; status: 'loading' }
+	| { key: string | null; status: 'loading' }
 	| { key: string; status: 'loaded'; configuredChannel: UpdateChannel }
 	| { key: string; status: 'error'; message: string }
-	| null
 
 export function UpdateDialog() {
 	const dialogVisible = useUpdateStore((s) => s.dialogVisible)
@@ -31,7 +30,6 @@ export function UpdateDialog() {
 	const { phase, progress, errorMessage } = snapshot
 	const updateInfo = snapshot.update
 	const [currentVersion, setCurrentVersion] = useState<string | null>(null)
-	const [readySettings, setReadySettings] = useState<ReadySettingsState>(null)
 	const descriptionId = useId()
 
 	const isDownloading = phase === 'downloading'
@@ -41,6 +39,11 @@ export function UpdateDialog() {
 		dialogVisible && updateInfo ? `${updateInfo.channel}:${updateInfo.version}` : null
 	const readyKey =
 		dialogVisible && isReady && updateInfo ? `${updateInfo.channel}:${updateInfo.version}` : null
+	const [readySettings, setReadySettings] = useState<ReadySettingsState>({
+		key: readyKey,
+		status: 'loading',
+	})
+	if (readySettings.key !== readyKey) setReadySettings({ key: readyKey, status: 'loading' })
 	const { releases } = useChangelog(
 		dialogVisible && currentVersion && updateInfo
 			? {
@@ -71,12 +74,7 @@ export function UpdateDialog() {
 
 	useEffect(() => {
 		let active = true
-		if (!readyKey) {
-			setReadySettings(null)
-			return
-		}
-
-		setReadySettings({ key: readyKey, status: 'loading' })
+		if (!readyKey) return
 		void getUpdateSettings()
 			.then((settings) => {
 				if (active) {

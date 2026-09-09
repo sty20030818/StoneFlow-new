@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useReducer } from 'react'
 
 import { listTaskLinks } from '@/features/task/api/taskLinks'
 
@@ -9,355 +9,215 @@ import {
 	TASK_PREVIEW_LINK_SUMMARY_LIMIT,
 	type TaskPreviewAnchorReason,
 	type TaskPreviewContextValue,
+	type TaskPreviewLinkSummary,
 	type TaskPreviewSource,
 	type TaskPreviewState,
 } from './taskPreviewTypes'
 
-/**
- * Preview 开合 / 目标同步 / source 注册 / links 摘要。
- */
+type PreviewStore = {
+	state: TaskPreviewState
+	source: TaskPreviewSource | null
+	sourceSnapshot: TaskPreviewSource | null
+	sourceToken: symbol | null
+}
+
+type PreviewEvent =
+	| { type: 'open'; taskId: string; reason: TaskPreviewAnchorReason }
+	| { type: 'close' | 'close-timeout' }
+	| { type: 'hover'; taskId: string | null; reason: TaskPreviewAnchorReason | null }
+	| { type: 'pointer'; inside: boolean }
+	| { type: 'register'; token: symbol; source: TaskPreviewSource }
+	| { type: 'unregister'; token: symbol }
+	| { type: 'links'; taskId: string; summary: TaskPreviewLinkSummary | null }
+
+/** 目标跟随在输入事件中一次归约；Effect 只拥有计时器和链接读取。 */
 export function useTaskPreviewStore(): TaskPreviewContextValue {
-	const [state, setState] = useState<TaskPreviewState>(INITIAL_TASK_PREVIEW_STATE)
-	const [source, setSource] = useState<TaskPreviewSource | null>(null)
-	const [sourceSnapshot, setSourceSnapshot] = useState<TaskPreviewSource | null>(null)
-	const closeTimerRef = useRef<number | null>(null)
-	const activeSourceTokenRef = useRef<symbol | null>(null)
-
-	const cancelScheduledClose = useCallback(() => {
-		if (closeTimerRef.current !== null) {
-			window.clearTimeout(closeTimerRef.current)
-			closeTimerRef.current = null
-		}
-		setState((current) =>
-			current.closeDelayState === 'idle'
-				? current
-				: {
-						...current,
-						closeDelayState: 'idle',
-					},
-		)
-	}, [])
-
-	const closePreview = useCallback(() => {
-		if (closeTimerRef.current !== null) {
-			window.clearTimeout(closeTimerRef.current)
-			closeTimerRef.current = null
-		}
-		setState((current) => {
-			if (
-				!current.open &&
-				current.targetTaskId === null &&
-				current.closeDelayState === 'idle' &&
-				current.lastAnchorReason === null &&
-				current.linkSummary === null
-			) {
-				return current
-			}
-
-			return {
-				...current,
-				open: false,
-				targetTaskId: null,
-				closeDelayState: 'idle',
-				lastAnchorReason: null,
-				linkSummary: null,
-			}
-		})
-	}, [])
-
-	const openPreview = useCallback(
-		(taskId: string, reason: TaskPreviewAnchorReason) => {
-			cancelScheduledClose()
-			setState((current) => {
-				if (current.open && current.targetTaskId === taskId) {
-					return {
-						...current,
-						open: false,
-						targetTaskId: null,
-						closeDelayState: 'idle',
-						lastAnchorReason: null,
-						linkSummary: null,
-					}
-				}
-
-				return {
-					...current,
-					open: true,
-					targetTaskId: taskId,
-					closeDelayState: 'idle',
-					lastAnchorReason: reason,
-					linkSummary: null,
-				}
-			})
-		},
-		[cancelScheduledClose],
-	)
-
-	const scheduleClosePreview = useCallback(() => {
-		setState((current) => {
-			if (
-				!current.open ||
-				current.closeDelayState === 'pending' ||
-				current.isPointerInsidePreview
-			) {
-				return current
-			}
-
-			return {
-				...current,
-				closeDelayState: 'pending',
-			}
-		})
-
-		if (closeTimerRef.current !== null) {
-			return
-		}
-
-		closeTimerRef.current = window.setTimeout(() => {
-			closeTimerRef.current = null
-			setState((current) => {
-				if (
-					!current.open ||
-					current.isPointerInsidePreview ||
-					hasValidTask(source?.taskById, current.hoveredTaskId) ||
-					hasValidTask(source?.taskById, source?.focusedTaskId ?? null)
-				) {
-					return {
-						...current,
-						closeDelayState: 'idle',
-					}
-				}
-
-				return {
-					...current,
-					open: false,
-					targetTaskId: null,
-					closeDelayState: 'idle',
-					lastAnchorReason: null,
-					linkSummary: null,
-				}
-			})
-		}, TASK_PREVIEW_CLOSE_DELAY_MS)
-	}, [source])
-
-	const syncPreviewTarget = useCallback(
-		(taskId: string, reason: TaskPreviewAnchorReason) => {
-			cancelScheduledClose()
-			setState((current) => {
-				if (!current.open && current.targetTaskId !== taskId) {
-					return current
-				}
-				if (current.targetTaskId === taskId && current.lastAnchorReason === reason) {
-					return current
-				}
-
-				return {
-					...current,
-					targetTaskId: taskId,
-					lastAnchorReason: reason,
-					closeDelayState: 'idle',
-					linkSummary: current.targetTaskId === taskId ? current.linkSummary : null,
-				}
-			})
-		},
-		[cancelScheduledClose],
-	)
-
-	const setHoveredTask = useCallback(
-		(taskId: string | null, reason: TaskPreviewAnchorReason | null) => {
-			setState((current) => ({
-				...current,
-				hoveredTaskId: taskId,
-				hoverSource: reason,
-			}))
-		},
+	const [{ state, source, sourceSnapshot }, dispatch] = useReducer(reducePreview, {
+		state: INITIAL_TASK_PREVIEW_STATE,
+		source: null,
+		sourceSnapshot: null,
+		sourceToken: null,
+	})
+	const actions = useMemo(
+		() => ({
+			openPreview: (taskId: string, reason: TaskPreviewAnchorReason) =>
+				dispatch({ type: 'open', taskId, reason }),
+			closePreview: () => dispatch({ type: 'close' }),
+			setHoveredTask: (taskId: string | null, reason: TaskPreviewAnchorReason | null) =>
+				dispatch({ type: 'hover', taskId, reason }),
+			setPreviewPointerInside: (inside: boolean) => dispatch({ type: 'pointer', inside }),
+			registerSource: (token: symbol, source: TaskPreviewSource) =>
+				dispatch({ type: 'register', token, source }),
+			clearSourceRegistration: (token: symbol) => dispatch({ type: 'unregister', token }),
+		}),
 		[],
 	)
 
-	const setPreviewPointerInside = useCallback(
-		(inside: boolean) => {
-			if (inside) {
-				cancelScheduledClose()
-			}
-
-			setState((current) => ({
-				...current,
-				isPointerInsidePreview: inside,
-			}))
-		},
-		[cancelScheduledClose],
-	)
-
-	const registerSource = useCallback((token: symbol, nextSource: TaskPreviewSource) => {
-		activeSourceTokenRef.current = token
-		setSource((current) => (areSameTaskPreviewSource(current, nextSource) ? current : nextSource))
-		if (nextSource.taskById.size > 0) {
-			setSourceSnapshot((current) =>
-				areSameTaskPreviewSource(current, nextSource) ? current : nextSource,
-			)
-		}
-	}, [])
-
-	const clearSourceRegistration = useCallback((token: symbol) => {
-		if (activeSourceTokenRef.current !== token) {
-			return
-		}
-
-		activeSourceTokenRef.current = null
-		setSource(null)
-		setState((current) => ({
-			...current,
-			hoveredTaskId: null,
-			hoverSource: null,
-			open: false,
-			targetTaskId: null,
-			closeDelayState: 'idle',
-			lastAnchorReason: null,
-			linkSummary: null,
-		}))
-	}, [])
+	useEffect(() => {
+		if (state.closeDelayState !== 'pending') return
+		const timer = window.setTimeout(
+			() => dispatch({ type: 'close-timeout' }),
+			TASK_PREVIEW_CLOSE_DELAY_MS,
+		)
+		return () => window.clearTimeout(timer)
+	}, [state.closeDelayState])
 
 	useEffect(() => {
-		if (!state.open) {
-			return
-		}
-
-		const taskById = source?.taskById
-		if (!taskById || taskById.size === 0) {
-			return
-		}
-
-		if (state.targetTaskId && !hasValidTask(taskById, state.targetTaskId)) {
-			closePreview()
-			return
-		}
-
-		const nextTarget = resolvePreviewTarget({
-			activeTaskId: source?.activeTaskId ?? null,
-			focusedTaskId: source?.focusedTaskId ?? null,
-			hoveredTaskId: state.hoveredTaskId,
-			taskById,
-		})
-
-		if (nextTarget) {
-			cancelScheduledClose()
-			if (nextTarget !== state.targetTaskId) {
-				setState((current) => ({
-					...current,
-					targetTaskId: nextTarget,
-					lastAnchorReason: current.hoveredTaskId ? 'pointer' : 'keyboard',
-					linkSummary: null,
-				}))
-			}
-			return
-		}
-
-		if (!state.isPointerInsidePreview) {
-			scheduleClosePreview()
-		}
-	}, [
-		cancelScheduledClose,
-		closePreview,
-		scheduleClosePreview,
-		source,
-		state.hoveredTaskId,
-		state.isPointerInsidePreview,
-		state.open,
-		state.targetTaskId,
-	])
-
-	useEffect(() => {
-		if (!state.open || !state.targetTaskId) {
-			return
-		}
-
+		if (!state.open || !state.targetTaskId) return
+		const taskId = state.targetTaskId
 		let cancelled = false
-		setState((current) => ({
-			...current,
-			linkSummary: null,
-		}))
-
-		void listTaskLinks({ taskId: state.targetTaskId })
+		void listTaskLinks({ taskId })
 			.then((items) => {
-				if (cancelled) {
-					return
-				}
-
-				const summaryItems = items.slice(0, TASK_PREVIEW_LINK_SUMMARY_LIMIT).map((item) => ({
-					id: item.id,
-					title: item.title,
-				}))
-				setState((current) => {
-					if (current.targetTaskId !== state.targetTaskId) {
-						return current
-					}
-
-					return {
-						...current,
-						linkSummary: {
-							items: summaryItems,
-							remainingCount: Math.max(0, items.length - summaryItems.length),
-						},
-					}
+				if (cancelled) return
+				const summaryItems = items
+					.slice(0, TASK_PREVIEW_LINK_SUMMARY_LIMIT)
+					.map(({ id, title }) => ({ id, title }))
+				dispatch({
+					type: 'links',
+					taskId,
+					summary: {
+						items: summaryItems,
+						remainingCount: Math.max(0, items.length - summaryItems.length),
+					},
 				})
 			})
 			.catch(() => {
-				if (cancelled) {
-					return
-				}
-				setState((current) => {
-					if (current.targetTaskId !== state.targetTaskId) {
-						return current
-					}
-
-					return {
-						...current,
-						linkSummary: null,
-					}
-				})
+				// 摘要读取失败不阻断预览，保留未读取状态，不伪装成空列表。
+				if (!cancelled) dispatch({ type: 'links', taskId, summary: null })
 			})
-
 		return () => {
 			cancelled = true
 		}
 	}, [state.open, state.targetTaskId])
 
-	useEffect(() => {
-		return () => {
-			if (closeTimerRef.current !== null) {
-				window.clearTimeout(closeTimerRef.current)
-			}
-		}
-	}, [])
-
 	return useMemo(
-		() => ({
-			state,
-			source,
-			sourceSnapshot,
-			openPreview,
-			closePreview,
-			scheduleClosePreview,
-			cancelScheduledClose,
-			syncPreviewTarget,
-			setHoveredTask,
-			setPreviewPointerInside,
-			registerSource,
-			clearSourceRegistration,
-		}),
-		[
-			cancelScheduledClose,
-			clearSourceRegistration,
-			closePreview,
-			openPreview,
-			registerSource,
-			scheduleClosePreview,
-			setHoveredTask,
-			setPreviewPointerInside,
-			sourceSnapshot,
-			source,
-			state,
-			syncPreviewTarget,
-		],
+		() => ({ state, source, sourceSnapshot, ...actions }),
+		[state, source, sourceSnapshot, actions],
 	)
+}
+
+function closeState(state: TaskPreviewState): TaskPreviewState {
+	if (
+		!state.open &&
+		state.targetTaskId === null &&
+		state.closeDelayState === 'idle' &&
+		state.lastAnchorReason === null &&
+		state.linkSummary === null
+	)
+		return state
+	return {
+		...state,
+		open: false,
+		targetTaskId: null,
+		closeDelayState: 'idle',
+		lastAnchorReason: null,
+		linkSummary: null,
+	}
+}
+
+function reconcileTarget(
+	state: TaskPreviewState,
+	source: TaskPreviewSource | null,
+): TaskPreviewState {
+	if (!state.open || !source || source.taskById.size === 0) return state
+	if (state.targetTaskId && !hasValidTask(source.taskById, state.targetTaskId))
+		return closeState(state)
+	const target = resolvePreviewTarget({ ...source, hoveredTaskId: state.hoveredTaskId })
+	if (target) {
+		if (target === state.targetTaskId && state.closeDelayState === 'idle') return state
+		return {
+			...state,
+			targetTaskId: target,
+			closeDelayState: 'idle',
+			lastAnchorReason:
+				target === state.targetTaskId
+					? state.lastAnchorReason
+					: state.hoveredTaskId
+						? 'pointer'
+						: 'keyboard',
+			linkSummary: target === state.targetTaskId ? state.linkSummary : null,
+		}
+	}
+	return state.isPointerInsidePreview || state.closeDelayState === 'pending'
+		? state
+		: { ...state, closeDelayState: 'pending' }
+}
+
+function reducePreview(store: PreviewStore, event: PreviewEvent): PreviewStore {
+	let { state, source, sourceSnapshot, sourceToken } = store
+	switch (event.type) {
+		case 'open':
+			state =
+				state.open && state.targetTaskId === event.taskId
+					? closeState(state)
+					: reconcileTarget(
+							{
+								...state,
+								open: true,
+								targetTaskId: event.taskId,
+								closeDelayState: 'idle',
+								lastAnchorReason: event.reason,
+								linkSummary: null,
+							},
+							source,
+						)
+			break
+		case 'close':
+			state = closeState(state)
+			break
+		case 'hover':
+			if (state.hoveredTaskId === event.taskId && state.hoverSource === event.reason) return store
+			state = reconcileTarget(
+				{ ...state, hoveredTaskId: event.taskId, hoverSource: event.reason },
+				source,
+			)
+			break
+		case 'pointer':
+			if (state.isPointerInsidePreview === event.inside) return store
+			state = reconcileTarget(
+				{
+					...state,
+					isPointerInsidePreview: event.inside,
+					closeDelayState: event.inside ? 'idle' : state.closeDelayState,
+				},
+				source,
+			)
+			break
+		case 'register':
+			sourceToken = event.token
+			if (!areSameTaskPreviewSource(source, event.source)) {
+				source = event.source
+				state = reconcileTarget(state, source)
+			}
+			if (event.source.taskById.size > 0 && !areSameTaskPreviewSource(sourceSnapshot, event.source))
+				sourceSnapshot = event.source
+			break
+		case 'unregister':
+			if (sourceToken !== event.token) return store
+			sourceToken = null
+			source = null
+			state = { ...closeState(state), hoveredTaskId: null, hoverSource: null }
+			break
+		case 'close-timeout':
+			if (state.closeDelayState !== 'pending') return store
+			state =
+				!state.open ||
+				state.isPointerInsidePreview ||
+				hasValidTask(source?.taskById, state.hoveredTaskId) ||
+				hasValidTask(source?.taskById, source?.focusedTaskId)
+					? { ...state, closeDelayState: 'idle' }
+					: closeState(state)
+			break
+		case 'links':
+			if (!state.open || state.targetTaskId !== event.taskId || state.linkSummary === event.summary)
+				return store
+			state = { ...state, linkSummary: event.summary }
+			break
+	}
+	return state === store.state &&
+		source === store.source &&
+		sourceSnapshot === store.sourceSnapshot &&
+		sourceToken === store.sourceToken
+		? store
+		: { state, source, sourceSnapshot, sourceToken }
 }

@@ -19,6 +19,7 @@ export function useAutosaveController<TDraft, TPatch>({
 	savedVisibleMs = DEFAULT_SAVED_VISIBLE_MS,
 }: UseAutosaveControllerOptions<TDraft, TPatch>): AutosaveController<TDraft> {
 	const [draft, setDraftState] = useState(base)
+	const [savedBase, setSavedBase] = useState(base)
 	const [machine, dispatch] = useReducer(autosaveMachineReducer, initialAutosaveMachineState)
 
 	const baseRef = useRef(base)
@@ -60,94 +61,91 @@ export function useAutosaveController<TDraft, TPatch>({
 		return getPatch(baseRef.current, normalize(draftRef.current))
 	}, [getPatch, normalize])
 
-	const runSave = useCallback(async (): Promise<boolean> => {
-		clearDebounceTimer()
+	const runSave = useCallback(
+		async function saveCurrentDraft(): Promise<boolean> {
+			clearDebounceTimer()
 
-		if (savePromiseRef.current) {
-			return await savePromiseRef.current
-		}
-
-		const normalizedDraft = normalize(draftRef.current)
-		const patch = getPatch(baseRef.current, normalizedDraft)
-
-		if (!patch) {
-			draftRef.current = normalizedDraft
-			setDraftState(normalizedDraft)
-			dispatch({ type: 'RESET_FROM_REMOTE' })
-			return true
-		}
-
-		clearSavedTimer()
-		dispatch({ type: 'SAVE_START' })
-
-		const saveStartVersion = draftVersionRef.current
-		const savePromise = (async (): Promise<boolean> => {
-			try {
-				const nextBase = await savePatch(patch)
-				baseRef.current = nextBase
-
-				const draftChangedDuringSave = draftVersionRef.current !== saveStartVersion
-				if (!draftChangedDuringSave) {
-					draftRef.current = nextBase
-					setDraftState(nextBase)
-				}
-
-				dispatch({ type: 'SAVE_SUCCESS', savedAt: Date.now() })
-				markSavedVisible()
-			} catch (error: unknown) {
-				const message = error instanceof Error ? error.message : '保存失败'
-				clearSavedTimer()
-				dispatch({ type: 'SAVE_FAILURE', error: message })
-				return false
-			} finally {
-				savePromiseRef.current = null
+			if (savePromiseRef.current) {
+				return await savePromiseRef.current
 			}
 
-			const nextPatch = getPatch(baseRef.current, normalize(draftRef.current))
-			if (!nextPatch) {
-				pendingAfterSaveModeRef.current = null
-				return true
-			}
+			const normalizedDraft = normalize(draftRef.current)
+			const patch = getPatch(baseRef.current, normalizedDraft)
 
-			const nextMode = pendingAfterSaveModeRef.current ?? 'debounced'
-			pendingAfterSaveModeRef.current = null
-
-			if (nextMode === 'manual') {
-				clearSavedTimer()
-				dispatch({ type: 'CHANGE_FIELD' })
-				return true
-			}
-
-			if (nextMode === 'immediate') {
-				clearSavedTimer()
-				dispatch({ type: 'SCHEDULE_SAVE' })
-				debounceTimerRef.current = setTimeout(() => {
-					debounceTimerRef.current = null
-					void runSave()
-				}, 0)
+			if (!patch) {
+				draftRef.current = normalizedDraft
+				setDraftState(normalizedDraft)
+				dispatch({ type: 'RESET_FROM_REMOTE' })
 				return true
 			}
 
 			clearSavedTimer()
-			dispatch({ type: 'SCHEDULE_SAVE' })
-			debounceTimerRef.current = setTimeout(() => {
-				debounceTimerRef.current = null
-				void runSave()
-			}, debounceMs)
-			return true
-		})()
+			dispatch({ type: 'SAVE_START' })
 
-		savePromiseRef.current = savePromise
-		return await savePromise
-	}, [
-		clearDebounceTimer,
-		clearSavedTimer,
-		debounceMs,
-		getPatch,
-		markSavedVisible,
-		normalize,
-		savePatch,
-	])
+			const saveStartVersion = draftVersionRef.current
+			const savePromise = (async (): Promise<boolean> => {
+				try {
+					const nextBase = await savePatch(patch)
+					baseRef.current = nextBase
+					setSavedBase(nextBase)
+
+					const draftChangedDuringSave = draftVersionRef.current !== saveStartVersion
+					if (!draftChangedDuringSave) {
+						draftRef.current = nextBase
+						setDraftState(nextBase)
+					}
+
+					dispatch({ type: 'SAVE_SUCCESS', savedAt: Date.now() })
+					markSavedVisible()
+				} catch (error: unknown) {
+					const message = error instanceof Error ? error.message : '保存失败'
+					clearSavedTimer()
+					dispatch({ type: 'SAVE_FAILURE', error: message })
+					return false
+				} finally {
+					savePromiseRef.current = null
+				}
+
+				const nextPatch = getPatch(baseRef.current, normalize(draftRef.current))
+				if (!nextPatch) {
+					pendingAfterSaveModeRef.current = null
+					return true
+				}
+
+				const nextMode = pendingAfterSaveModeRef.current ?? 'debounced'
+				pendingAfterSaveModeRef.current = null
+
+				if (nextMode === 'manual') {
+					clearSavedTimer()
+					dispatch({ type: 'CHANGE_FIELD' })
+					return true
+				}
+
+				clearSavedTimer()
+				dispatch({ type: 'SCHEDULE_SAVE' })
+				debounceTimerRef.current = setTimeout(
+					() => {
+						debounceTimerRef.current = null
+						void saveCurrentDraft()
+					},
+					nextMode === 'immediate' ? 0 : debounceMs,
+				)
+				return true
+			})()
+
+			savePromiseRef.current = savePromise
+			return await savePromise
+		},
+		[
+			clearDebounceTimer,
+			clearSavedTimer,
+			debounceMs,
+			getPatch,
+			markSavedVisible,
+			normalize,
+			savePatch,
+		],
+	)
 
 	const scheduleSave = useCallback(
 		(saveMode: AutosaveSaveMode) => {
@@ -247,6 +245,7 @@ export function useAutosaveController<TDraft, TPatch>({
 			clearSavedTimer()
 			pendingAfterSaveModeRef.current = null
 			baseRef.current = nextBase
+			setSavedBase(nextBase)
 			draftRef.current = nextBase
 			draftVersionRef.current += 1
 			setDraftState(nextBase)
@@ -263,7 +262,7 @@ export function useAutosaveController<TDraft, TPatch>({
 		[clearDebounceTimer, clearSavedTimer],
 	)
 
-	const isDirty = getCurrentPatch() !== null
+	const isDirty = getPatch(savedBase, normalize(draft)) !== null
 
 	return {
 		draft,

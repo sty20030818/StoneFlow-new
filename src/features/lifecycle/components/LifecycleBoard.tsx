@@ -4,10 +4,9 @@ import { ArchiveIcon, ChevronRightIcon, TrashIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import {
-	CollectionGridGroupTrigger,
 	CollectionGridRoot,
-	CollectionGridRow,
-	type CollectionGridRootState,
+	useCollectionGridGroupTrigger,
+	useCollectionGridRow,
 	type GroupedCollectionInteraction,
 } from '@/features/selection'
 import {
@@ -108,21 +107,16 @@ export function LifecycleBoard({
 			onFocusIntentConsumed={collection.consumeFocusIntent}
 			style={{ gap: COLLECTION_ITEM_GAP }}
 		>
-			{(rootState) => (
-				<>
-					{visibleSections.map((section) => (
-						<LifecycleBoardSectionBlock
-							collection={collection}
-							contextEntries={selectedEntries}
-							key={section.key}
-							mode={mode}
-							onOpenDetail={onOpenDetail}
-							rootState={rootState}
-							section={section}
-						/>
-					))}
-				</>
-			)}
+			{visibleSections.map((section) => (
+				<LifecycleBoardSectionBlock
+					collection={collection}
+					contextEntries={selectedEntries}
+					key={section.key}
+					mode={mode}
+					onOpenDetail={onOpenDetail}
+					section={section}
+				/>
+			))}
 		</CollectionGridRoot>
 	)
 }
@@ -131,17 +125,16 @@ function LifecycleBoardSectionBlock({
 	section,
 	mode,
 	collection,
-	rootState,
 	contextEntries,
 	onOpenDetail,
 }: {
 	section: LifecycleBoardSection
 	mode: LifecycleMode
 	collection: LifecycleBoardProps['collection']
-	rootState: CollectionGridRootState<string>
 	contextEntries: LifecycleEntry[]
 	onOpenDetail?: (entry: LifecycleEntry) => void
 }) {
+	const { triggerRef, onBlur } = useCollectionGridGroupTrigger(section.key)
 	const [contextMenuOpen, setContextMenuOpen] = useState(false)
 	const sectionIds = useMemo(() => section.items.map((entry) => entry.id), [section.items])
 	const open = collection.openGroupKeys.has(section.key)
@@ -172,22 +165,18 @@ function LifecycleBoardSectionBlock({
 						label={section.label}
 						leading={
 							<>
-								<CollectionGridGroupTrigger groupKey={section.key} rootState={rootState}>
-									{({ triggerRef, onBlur }) => (
-										<Button
-											ref={triggerRef}
-											aria-expanded={open}
-											aria-label={`${open ? '折叠' : '展开'} ${section.label}`}
-											isIconOnly
-											onBlur={onBlur}
-											onPress={() => collection.setGroupOpen(section.key, !open)}
-											size='sm'
-											variant='ghost'
-										>
-											<ChevronRightIcon className={open ? 'size-3.5 rotate-90' : 'size-3.5'} />
-										</Button>
-									)}
-								</CollectionGridGroupTrigger>
+								<Button
+									ref={triggerRef}
+									aria-expanded={open}
+									aria-label={`${open ? '折叠' : '展开'} ${section.label}`}
+									isIconOnly
+									onBlur={onBlur}
+									onPress={() => collection.setGroupOpen(section.key, !open)}
+									size='sm'
+									variant='ghost'
+								>
+									<ChevronRightIcon className={open ? 'size-3.5 rotate-90' : 'size-3.5'} />
+								</Button>
 								<LifecycleModeIcon mode={mode} />
 							</>
 						}
@@ -209,7 +198,6 @@ function LifecycleBoardSectionBlock({
 			{open ? (
 				<div className='flex flex-col' role='presentation' style={{ gap: COLLECTION_ITEM_GAP }}>
 					{section.items.map((entry, index) => {
-						const isSelected = collection.interaction.selectedKeys.has(entry.id)
 						const selectionPosition = getBoardRowSelectionPosition(
 							entry.id,
 							section.items[index - 1]?.id,
@@ -218,41 +206,49 @@ function LifecycleBoardSectionBlock({
 						)
 						return (
 							<BoardRowSlot key={entry.id} selectionPosition={selectionPosition}>
-								<CollectionGridRow
+								<LifecycleBoardRow
+									contextEntries={contextEntries}
+									entry={entry}
 									interaction={collection.interaction}
-									itemKey={entry.id}
-									rootState={rootState}
-								>
-									{({ rowProps, gridCellProps, rowRef, onContextMenuOpenChange }) => (
-										<LifecycleRowAdapter
-											actions={{
-												onOpenDetail,
-												onToggleSelected: () => collection.interaction.toggleSelection(entry.id),
-											}}
-											contextEntries={
-												isSelected && contextEntries.length > 1 ? contextEntries : undefined
-											}
-											entry={entry}
-											gridCellProps={gridCellProps}
-											mode={mode}
-											onContextMenuOpenChange={onContextMenuOpenChange}
-											rowProps={rowProps}
-											rowRef={rowRef}
-											rowState={{
-												focusSource:
-													rootState.focusedKey === entry.id ? rootState.focusSource : null,
-												isFocused: rootState.focusedKey === entry.id,
-												isSelected,
-											}}
-										/>
-									)}
-								</CollectionGridRow>
+									mode={mode}
+									onOpenDetail={onOpenDetail}
+								/>
 							</BoardRowSlot>
 						)
 					})}
 				</div>
 			) : null}
 		</section>
+	)
+}
+
+function LifecycleBoardRow({
+	entry,
+	interaction,
+	contextEntries,
+	mode,
+	onOpenDetail,
+}: Pick<LifecycleBoardProps, 'mode' | 'onOpenDetail'> & {
+	entry: LifecycleEntry
+	interaction: LifecycleBoardProps['collection']['interaction']
+	contextEntries: LifecycleEntry[]
+}) {
+	const { rowProps, gridCellProps, rowRef, onContextMenuOpenChange, isFocused, focusSource } =
+		useCollectionGridRow({ interaction, itemKey: entry.id })
+	const isSelected = interaction.selectedKeys.has(entry.id)
+
+	return (
+		<LifecycleRowAdapter
+			actions={{ onOpenDetail, onToggleSelected: () => interaction.toggleSelection(entry.id) }}
+			contextEntries={isSelected && contextEntries.length > 1 ? contextEntries : undefined}
+			entry={entry}
+			gridCellProps={gridCellProps}
+			mode={mode}
+			onContextMenuOpenChange={onContextMenuOpenChange}
+			rowProps={rowProps}
+			rowRef={rowRef}
+			rowState={{ isFocused, focusSource, isSelected }}
+		/>
 	)
 }
 

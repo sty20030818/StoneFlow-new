@@ -1,10 +1,55 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 
-import { Button, Kbd } from '@heroui/react'
+import { Button, Kbd, Modal } from '@heroui/react'
 
 import { ActionTooltip, DisabledActionTooltip, OverflowTooltip } from '.'
 
 describe('shared tooltip patterns', () => {
+	it.each(['动作', '禁用', '截断'] as const)(
+		'Modal 内的%s提示仍可被读屏访问，背景操作保持隔离',
+		async (pattern) => {
+			const content = {
+				动作: (
+					<ActionTooltip label='弹窗操作提示'>
+						<button type='button'>弹窗操作</button>
+					</ActionTooltip>
+				),
+				禁用: (
+					<DisabledActionTooltip ariaLabel='弹窗操作' label='弹窗操作提示' reason={null}>
+						<button disabled type='button'>
+							弹窗操作
+						</button>
+					</DisabledActionTooltip>
+				),
+				截断: <OverflowTooltip content='弹窗操作提示'>弹窗操作</OverflowTooltip>,
+			}[pattern]
+			render(
+				<>
+					<button type='button'>背景操作</button>
+					<Modal.Backdrop isOpen>
+						<Modal.Container>
+							<Modal.Dialog>
+								<Modal.Heading>测试弹窗</Modal.Heading>
+								{content}
+							</Modal.Dialog>
+						</Modal.Container>
+					</Modal.Backdrop>
+				</>,
+			)
+			const trigger =
+				pattern === '截断'
+					? screen.getByText('弹窗操作')
+					: screen.getByRole(pattern === '动作' ? 'button' : 'group', { name: '弹窗操作' })
+			if (pattern === '截断') setElementSize(trigger, { clientWidth: 80, scrollWidth: 160 })
+			fireEvent.pointerMove(trigger, { pointerType: 'mouse' })
+			fireEvent.pointerEnter(trigger, { pointerType: 'mouse' })
+
+			expect(await screen.findByRole('tooltip')).toHaveTextContent('弹窗操作提示')
+			expect(trigger).toHaveAccessibleDescription('弹窗操作提示')
+			expect(screen.queryByRole('button', { name: '背景操作' })).not.toBeInTheDocument()
+		},
+	)
+
 	it('ActionTooltip 仅鼠标 hover 自动显示，Tab 聚焦不打开且关闭已有提示', () => {
 		vi.useFakeTimers()
 		try {

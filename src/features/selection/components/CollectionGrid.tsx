@@ -1,4 +1,6 @@
 import {
+	createContext,
+	use,
 	useCallback,
 	useEffect,
 	useMemo,
@@ -29,15 +31,23 @@ type CollectionGridRootProps<
 	onFocusIntentConsumed?: (intent: CollectionFocusIntent<K, G>) => void
 	onPreview?: (key: K) => void
 	onActivate?: (key: K) => void
-	children: (state: CollectionGridRootState<K>) => ReactNode
+	children: ReactNode
 }
 
-export type CollectionGridRootState<K extends CollectionKey> = {
-	focusedKey: K | null
+type CollectionGridContextValue = {
+	focusedKey: CollectionKey | null
 	focusSource: 'pointer' | 'keyboard' | null
 	focusBridge: ReturnType<typeof createCollectionFocusBridge>
-	onContextMenuOpenChange: (key: K, open: boolean) => void
+	onContextMenuOpenChange: (key: CollectionKey, open: boolean) => void
 	onGroupTriggerBlur: (groupKey: CollectionKey) => void
+}
+
+const CollectionGridContext = createContext<CollectionGridContextValue | null>(null)
+
+function useCollectionGridContext() {
+	const context = use(CollectionGridContext)
+	if (!context) throw new Error('Collection Grid 交互必须位于 CollectionGridRoot 内')
+	return context
 }
 
 /** 非虚拟列表的标准 React Aria Grid 根；不持有 selection/focus 状态。 */
@@ -61,9 +71,8 @@ export function CollectionGridRoot<
 		groupKey: CollectionKey
 		reentry: { type: 'item'; key: CollectionKey } | { type: 'root' }
 	} | null>(null)
-	const focusBridge = useMemo(
-		() => createCollectionFocusBridge({ requestScroll: () => undefined }),
-		[],
+	const [focusBridge] = useState(() =>
+		createCollectionFocusBridge({ requestScroll: () => undefined }),
 	)
 	const { gridProps } = useGridList(
 		{
@@ -105,7 +114,7 @@ export function CollectionGridRoot<
 	}, [focusBridge, focusIntent, onFocusIntentConsumed])
 
 	const onContextMenuOpenChange = useCallback(
-		(key: K, open: boolean) => {
+		(key: CollectionKey, open: boolean) => {
 			if (open) {
 				focusBridge.rememberTrigger(key)
 				return
@@ -163,7 +172,7 @@ export function CollectionGridRoot<
 		},
 		[focusBridge, focusSource, interaction, markKeyboardInteraction],
 	)
-	const state = useMemo<CollectionGridRootState<K>>(
+	const state = useMemo<CollectionGridContextValue>(
 		() => ({
 			focusedKey: interaction.focusedKey,
 			focusSource,
@@ -187,35 +196,30 @@ export function CollectionGridRoot<
 			onPointerDownCapture={markPointerInteraction}
 			style={style}
 		>
-			{children(state)}
+			<CollectionGridContext value={state}>{children}</CollectionGridContext>
 		</div>
 	)
 }
 
-type CollectionGridRowRenderProps = {
+type CollectionGridRowBinding = {
 	rowProps: HTMLAttributes<HTMLElement>
 	gridCellProps: GridListItemAria['gridCellProps']
 	rowRef: Ref<HTMLDivElement>
 	onContextMenuOpenChange: (open: boolean) => void
+	isFocused: boolean
+	focusSource: CollectionGridContextValue['focusSource']
 }
 
-type CollectionGridGroupTriggerRenderProps = {
+type CollectionGridGroupTriggerBinding = {
 	triggerRef: Ref<HTMLButtonElement>
 	onBlur: () => void
 }
 
-type CollectionGridGroupTriggerProps<K extends CollectionKey> = {
-	rootState: CollectionGridRootState<K>
-	groupKey: CollectionKey
-	children: (props: CollectionGridGroupTriggerRenderProps) => ReactNode
-}
-
 /** 把分组 toggle 注册为折叠后的真实焦点落点。 */
-export function CollectionGridGroupTrigger<K extends CollectionKey>({
-	rootState,
-	groupKey,
-	children,
-}: CollectionGridGroupTriggerProps<K>) {
+export function useCollectionGridGroupTrigger(
+	groupKey: CollectionKey,
+): CollectionGridGroupTriggerBinding {
+	const rootState = useCollectionGridContext()
 	const unregisterRef = useRef<(() => void) | null>(null)
 	const setTriggerRef = useCallback(
 		(element: HTMLButtonElement | null) => {
@@ -229,26 +233,23 @@ export function CollectionGridGroupTrigger<K extends CollectionKey>({
 	)
 	useEffect(() => () => unregisterRef.current?.(), [])
 
-	return children({
+	return {
 		triggerRef: setTriggerRef,
 		onBlur: () => rootState.onGroupTriggerBlur(groupKey),
-	})
+	}
 }
 
-type CollectionGridRowProps<K extends CollectionKey> = {
+type CollectionGridRowOptions<K extends CollectionKey> = {
 	interaction: CollectionInteraction<K>
-	rootState: CollectionGridRootState<K>
 	itemKey: K
-	children: (props: CollectionGridRowRenderProps) => ReactNode
 }
 
 /** 把已挂载行接到同一 listState 与 DOM focus bridge。 */
-export function CollectionGridRow<K extends CollectionKey>({
+export function useCollectionGridRow<K extends CollectionKey>({
 	interaction,
-	rootState,
 	itemKey,
-	children,
-}: CollectionGridRowProps<K>) {
+}: CollectionGridRowOptions<K>): CollectionGridRowBinding {
+	const rootState = useCollectionGridContext()
 	const rowRef = useRef<HTMLDivElement | null>(null)
 	const unregisterRef = useRef<(() => void) | null>(null)
 	const node = interaction.listState.collection.getItem(itemKey)
@@ -269,10 +270,12 @@ export function CollectionGridRow<K extends CollectionKey>({
 	)
 	useEffect(() => () => unregisterRef.current?.(), [])
 
-	return children({
+	return {
 		rowProps,
 		gridCellProps,
 		rowRef: setRowRef,
 		onContextMenuOpenChange: (open) => rootState.onContextMenuOpenChange(itemKey, open),
-	})
+		isFocused: rootState.focusedKey === itemKey,
+		focusSource: rootState.focusedKey === itemKey ? rootState.focusSource : null,
+	}
 }

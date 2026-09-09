@@ -118,10 +118,7 @@ export function ShellMain({
 									<TaskPreview
 										linkSummary={preview.linkSummary}
 										onPointerEnter={() => preview.setPreviewPointerInside(true)}
-										onPointerLeave={() => {
-											preview.setPreviewPointerInside(false)
-											preview.scheduleClosePreview()
-										}}
+										onPointerLeave={() => preview.setPreviewPointerInside(false)}
 										task={preview.targetTask}
 									/>
 								) : null}

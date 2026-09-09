@@ -17,7 +17,9 @@ function emptySearchEntitiesResult(): SearchEntitiesResult {
 export function useGlobalSearch(query: string) {
 	const normalizedQuery = query.trim()
 	const [debouncedQuery, setDebouncedQuery] = useState(normalizedQuery)
-	const [hasResolvedQuery, setHasResolvedQuery] = useState(false)
+	if (!normalizedQuery && debouncedQuery) {
+		setDebouncedQuery('')
+	}
 	const searchInput = useMemo(
 		() =>
 			debouncedQuery
@@ -32,8 +34,6 @@ export function useGlobalSearch(query: string) {
 
 	useEffect(() => {
 		if (!normalizedQuery) {
-			setDebouncedQuery('')
-			setHasResolvedQuery(false)
 			return
 		}
 
@@ -46,20 +46,13 @@ export function useGlobalSearch(query: string) {
 		}
 	}, [normalizedQuery])
 
-	useEffect(() => {
-		if (!debouncedQuery) {
-			return
-		}
-
-		if (!searchQuery.isPending && !searchQuery.isFetching) {
-			setHasResolvedQuery(true)
-		}
-	}, [debouncedQuery, searchQuery.isFetching, searchQuery.isPending])
-
 	return {
 		result: searchQuery.data ?? emptySearchEntitiesResult(),
 		isLoading: Boolean(normalizedQuery) && (searchQuery.isPending || searchQuery.isFetching),
 		errorMessage: searchQuery.isError ? '搜索失败，请稍后重试' : null,
-		hasResolvedQuery,
+		hasResolvedQuery:
+			Boolean(normalizedQuery && debouncedQuery) &&
+			!searchQuery.isPlaceholderData &&
+			!searchQuery.isPending,
 	}
 }

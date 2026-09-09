@@ -1,4 +1,12 @@
-import { createContext, use, useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react'
+import {
+	createContext,
+	use,
+	useCallback,
+	useEffect,
+	useMemo,
+	useState,
+	type ReactNode,
+} from 'react'
 
 import { isGlobalChordPending } from '@/shared/lib/global-chord-guard'
 import { useLatestRef } from '@/shared/lib/useLatestRef'
@@ -21,25 +29,22 @@ type ShortcutDispatcherProviderProps = {
 
 /** 组合根私有 Provider：全应用只挂载一个 window keydown listener。 */
 export function ShortcutDispatcherProvider({ children }: ShortcutDispatcherProviderProps) {
-	const dispatcherRef = useRef<ShortcutDispatcher | null>(null)
-	if (!dispatcherRef.current) {
-		dispatcherRef.current = new ShortcutDispatcher()
-	}
+	const [dispatcher] = useState(() => new ShortcutDispatcher())
 
-	const register = useCallback<ShortcutDispatcherContextValue['register']>((priority, handler) => {
-		return dispatcherRef.current!.register(priority, handler)
-	}, [])
+	const register = useCallback<ShortcutDispatcherContextValue['register']>(
+		(priority, handler) => dispatcher.register(priority, handler),
+		[dispatcher],
+	)
 	const contextValue = useMemo(() => ({ register }), [register])
 
 	useEffect(() => {
-		const dispatcher = dispatcherRef.current!
 		const handleKeyDown = (event: KeyboardEvent) => {
 			dispatcher.dispatch(event, { globalChordPending: isGlobalChordPending() })
 		}
 
 		window.addEventListener('keydown', handleKeyDown)
 		return () => window.removeEventListener('keydown', handleKeyDown)
-	}, [])
+	}, [dispatcher])
 
 	return <ShortcutDispatcherContext value={contextValue}>{children}</ShortcutDispatcherContext>
 }

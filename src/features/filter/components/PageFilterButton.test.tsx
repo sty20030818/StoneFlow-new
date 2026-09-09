@@ -23,6 +23,9 @@ describe('filter entry points', () => {
 		const trigger = screen.getByRole('button', { name: '筛选' })
 		fireEvent.keyDown(document, { key: 'Tab' })
 		act(() => trigger.focus())
+		expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+		fireEvent.pointerMove(trigger, { pointerType: 'mouse' })
+		fireEvent.pointerEnter(trigger, { pointerType: 'mouse' })
 
 		const tooltip = await screen.findByRole('tooltip')
 		expect(tooltip).toHaveTextContent('筛选F')
@@ -35,6 +38,9 @@ describe('filter entry points', () => {
 		const trigger = screen.getByRole('button', { name: '添加筛选' })
 		fireEvent.keyDown(document, { key: 'Tab' })
 		act(() => trigger.focus())
+		expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+		fireEvent.pointerMove(trigger, { pointerType: 'mouse' })
+		fireEvent.pointerEnter(trigger, { pointerType: 'mouse' })
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('添加筛选')
 
 		fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false })

@@ -1,9 +1,49 @@
-import { act, renderHook } from '@testing-library/react'
+import { act, fireEvent, render, renderHook, screen } from '@testing-library/react'
+import { startTransition, Suspense } from 'react'
 import { ListKeyboardDelegate } from 'react-aria'
 
 import { useCollectionInteraction } from './useCollectionInteraction'
 
 describe('useCollectionInteraction', () => {
+	it('未提交的挂起渲染不会替换当前可操作集合', () => {
+		const onSelection = vi.fn()
+		const pending = new Promise<never>(() => {})
+		function Collection({ suspend = false }: { suspend?: boolean }) {
+			const keys = suspend ? ['task-b'] : ['task-a']
+			const interaction = useCollectionInteraction({ eligibleKeys: keys, navigableKeys: keys })
+			if (suspend) throw pending
+			return (
+				<button
+					onClick={() => {
+						interaction.toggleSelection('task-a')
+						onSelection([...interaction.getSnapshot().selectedKeys])
+					}}
+					type='button'
+				>
+					选择当前任务
+				</button>
+			)
+		}
+		const view = render(
+			<Suspense>
+				<Collection />
+			</Suspense>,
+		)
+		act(() => {
+			startTransition(() =>
+				view.rerender(
+					<Suspense>
+						<Collection suspend />
+					</Suspense>,
+				),
+			)
+		})
+
+		fireEvent.click(screen.getByRole('button', { name: '选择当前任务' }))
+
+		expect(onSelection).toHaveBeenCalledWith(['task-a'])
+	})
+
 	it('只保留显式 eligible selection，增量加载不自动扩选', () => {
 		const { result, rerender } = renderHook(
 			({ eligibleKeys }) =>

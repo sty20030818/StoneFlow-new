@@ -2,10 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { SearchField } from '@heroui/react'
 
-import {
-	selectSearchFocusRequestVersion,
-	useSearchFocusIntentStore,
-} from '@/features/global-search/model/useSearchFocusIntentStore'
+import { useSearchFocusIntentStore } from '@/features/global-search/model/useSearchFocusIntentStore'
 import { useGlobalSearch } from '@/features/global-search/model/useGlobalSearch'
 import { GlobalSearchResults } from '@/features/global-search/components/GlobalSearchResults'
 import { COMMAND_IDS, CommandActionTooltip, CommandShortcut } from '@/features/command'
@@ -19,7 +16,6 @@ type GlobalSearchInputProps = {
 export function GlobalSearchInput({ onOpenTask, onOpenProject }: GlobalSearchInputProps) {
 	const rootRef = useRef<HTMLDivElement>(null)
 	const inputRef = useRef<HTMLInputElement>(null)
-	const focusRequestVersion = useSearchFocusIntentStore(selectSearchFocusRequestVersion)
 	const [query, setQuery] = useState('')
 	const [isFocused, setIsFocused] = useState(false)
 	const [highlightedIndex, setHighlightedIndex] = useState(0)
@@ -48,40 +44,9 @@ export function GlobalSearchInput({ onOpenTask, onOpenProject }: GlobalSearchInp
 	const shouldShowClearHint = isOpen || normalizedQuery.length > 0
 	const shouldShowResults =
 		isOpen && (flatItems.length > 0 || Boolean(errorMessage) || hasResolvedQuery)
-
-	useEffect(() => {
-		if (!isOpen) {
-			setHighlightedIndex(0)
-			return
-		}
-
-		setHighlightedIndex((currentIndex) => {
-			if (flatItems.length === 0) {
-				return 0
-			}
-			return currentIndex >= flatItems.length ? 0 : currentIndex
-		})
-	}, [flatItems.length, isOpen])
-
-	useEffect(() => {
-		if (!normalizedQuery) {
-			setHighlightedIndex(0)
-		}
-	}, [normalizedQuery])
-
-	useEffect(() => {
-		if (!isOpen || flatItems.length > 0) {
-			return
-		}
-
-		const timer = window.setTimeout(() => {
-			setHighlightedIndex(0)
-		}, 120)
-
-		return () => {
-			window.clearTimeout(timer)
-		}
-	}, [flatItems.length, isOpen])
+	if (highlightedIndex !== 0 && highlightedIndex >= flatItems.length) {
+		setHighlightedIndex(0)
+	}
 
 	useEffect(() => {
 		const handleDocumentPointerDown = (event: PointerEvent) => {
@@ -95,6 +60,7 @@ export function GlobalSearchInput({ onOpenTask, onOpenProject }: GlobalSearchInp
 			}
 
 			setIsFocused(false)
+			setHighlightedIndex(0)
 		}
 
 		document.addEventListener('pointerdown', handleDocumentPointerDown)
@@ -103,14 +69,15 @@ export function GlobalSearchInput({ onOpenTask, onOpenProject }: GlobalSearchInp
 		}
 	}, [])
 
-	useEffect(() => {
-		if (focusRequestVersion === 0) {
-			return
-		}
-
-		inputRef.current?.focus()
-		setIsFocused(true)
-	}, [focusRequestVersion])
+	useEffect(
+		() =>
+			useSearchFocusIntentStore.subscribe((state, previous) => {
+				if (state.focusRequestVersion === previous.focusRequestVersion) return
+				inputRef.current?.focus()
+				setIsFocused(true)
+			}),
+		[],
+	)
 
 	function clearSearch() {
 		setQuery('')
@@ -173,6 +140,7 @@ export function GlobalSearchInput({ onOpenTask, onOpenProject }: GlobalSearchInp
 				onChange={(value) => {
 					setQuery(value)
 					setIsFocused(true)
+					if (!value.trim()) setHighlightedIndex(0)
 				}}
 				onClear={clearSearch}
 				value={query}
