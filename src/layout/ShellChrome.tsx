@@ -12,6 +12,7 @@ import { ShellFooter } from '@/layout/ShellFooter'
 import { SidebarResizeRail } from '@/layout/sidebar/SidebarResizeRail'
 import { DEFAULT_SETTINGS_SECTION } from '@/features/settings'
 import { CommandShortcutLayer, type CommandId } from '@/features/command'
+import { BulkActionBar } from '@/features/bulk-action'
 import type { useShellCommandSystem } from '@/layout/model/useShellCommandSystem'
 import type { useShellChromeData } from '@/layout/model/useShellChromeData'
 import type { useShellCreateDialogState } from '@/layout/model/useShellCreateDialogState'
@@ -175,6 +176,7 @@ export function ShellChrome({
 							showPreview
 						>
 							{children}
+							<BulkActionBar context={command.commandContext} runtime={command.commandRuntime} />
 						</ShellMain>
 					</Sidebar.Main>
 				</div>

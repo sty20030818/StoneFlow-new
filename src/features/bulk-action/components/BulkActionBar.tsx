@@ -1,6 +1,6 @@
-import { Button, Chip, Separator } from '@heroui/react'
 import { ActionBar } from '@heroui-pro/react'
-import { Trash2Icon, XIcon } from 'lucide-react'
+import { Button, Chip, Separator } from '@heroui/react'
+import { ArchiveIcon, Trash2Icon, XIcon } from 'lucide-react'
 
 import {
 	COMMAND_IDS,
@@ -17,7 +17,11 @@ export type BulkActionBarProps = {
 	context: CommandContext
 }
 
-const TASK_ACTION_IDS = [COMMAND_IDS.openCommandMenu] as const
+const TASK_ACTION_IDS = [
+	COMMAND_IDS.openCommandMenu,
+	COMMAND_IDS.taskArchive,
+	COMMAND_IDS.taskDelete,
+] as const
 const PROJECT_ACTION_IDS = [COMMAND_IDS.projectArchive, COMMAND_IDS.projectDelete] as const
 const LIFECYCLE_ACTION_IDS = [
 	COMMAND_IDS.lifecycleRestore,
@@ -26,6 +30,7 @@ const LIFECYCLE_ACTION_IDS = [
 ] as const
 
 const DANGER_ACTION_IDS: ReadonlySet<CommandId> = new Set([
+	COMMAND_IDS.taskDelete,
 	COMMAND_IDS.projectDelete,
 	COMMAND_IDS.lifecycleDeletePermanently,
 ])
@@ -33,7 +38,7 @@ const DANGER_ACTION_IDS: ReadonlySet<CommandId> = new Set([
 /**
  * 壳层唯一批量操作表面。
  *
- * ActionBar 只负责标准 toolbar 视觉；命令元数据、可用性、目标快照与执行入口
+ * HeroUI ActionBar 负责开合动效、键盘导航与控件语义；命令元数据、可用性、目标快照与执行入口
  * 全部来自 Command Runtime，清空选择仍直接写回唯一 SelectionManager。
  */
 export function BulkActionBar({ runtime, context }: BulkActionBarProps) {
@@ -47,54 +52,68 @@ export function BulkActionBar({ runtime, context }: BulkActionBarProps) {
 	const isOpen = selectedCount > 0 && projections.length > 0
 
 	return (
-		<ActionBar aria-label='批量操作' isOpen={isOpen}>
-			<ActionBar.Prefix>
-				<Chip className='shrink-0' size='sm'>
-					{selectedCount}
-				</Chip>
-			</ActionBar.Prefix>
-			<Separator />
-			<ActionBar.Content>
-				{primaryProjections.map((projection) => (
-					<BulkCommandButton key={projection.id} projection={projection} />
-				))}
-				{primaryProjections.length > 0 && dangerProjections.length > 0 ? (
-					<Separator orientation='vertical' />
-				) : null}
-				{dangerProjections.map((projection) => (
-					<BulkCommandButton key={projection.id} projection={projection} />
-				))}
-			</ActionBar.Content>
-			<Separator />
-			<ActionBar.Suffix>
-				<CommandActionTooltip commandId={COMMAND_IDS.selectionClear} label='清空已选' scope='list'>
-					<Button
-						aria-label='清空已选'
-						isDisabled={!context.selection.clearSelection}
-						isIconOnly
-						onPress={context.selection.clearSelection}
-						size='sm'
-						variant='tertiary'
+		// 透明内边距扩展上游 filter 层的绘制范围，pill 仍距 main 底边 12px。
+		<div className='contents *:data-[slot=action-bar]:absolute *:data-[slot=action-bar]:bottom-0 *:data-[slot=action-bar]:py-3'>
+			<ActionBar aria-label='批量操作' isOpen={isOpen}>
+				<ActionBar.Prefix>
+					<Chip className='shrink-0' size='sm'>
+						{selectedCount}
+					</Chip>
+				</ActionBar.Prefix>
+				<Separator />
+				<ActionBar.Content>
+					{primaryProjections.map((projection) => (
+						<BulkCommandButton key={projection.id} projection={projection} />
+					))}
+					{primaryProjections.length > 0 && dangerProjections.length > 0 ? (
+						<Separator orientation='vertical' />
+					) : null}
+					{dangerProjections.map((projection) => (
+						<BulkCommandButton key={projection.id} projection={projection} />
+					))}
+				</ActionBar.Content>
+				<Separator />
+				<ActionBar.Suffix>
+					<CommandActionTooltip
+						commandId={COMMAND_IDS.selectionClear}
+						label='清空已选'
+						scope='list'
 					>
-						<XIcon />
-					</Button>
-				</CommandActionTooltip>
-			</ActionBar.Suffix>
-		</ActionBar>
+						<Button
+							aria-label='清空已选'
+							isDisabled={!context.selection.clearSelection}
+							isIconOnly
+							onPress={context.selection.clearSelection}
+							size='sm'
+							variant='tertiary'
+						>
+							<XIcon />
+						</Button>
+					</CommandActionTooltip>
+				</ActionBar.Suffix>
+			</ActionBar>
+		</div>
 	)
 }
 
 function BulkCommandButton({ projection }: { projection: CommandProjection }) {
 	const isDanger = DANGER_ACTION_IDS.has(projection.id)
+	const isTaskQuickAction =
+		projection.id === COMMAND_IDS.taskArchive || projection.id === COMMAND_IDS.taskDelete
 	const button = (
 		<Button
+			aria-label={projection.label}
 			isDisabled={!projection.enabled}
+			isIconOnly={isTaskQuickAction}
 			onPress={() => void projection.execute({ source: 'bulk-bar' })}
 			size='sm'
 			variant={isDanger ? 'danger' : 'tertiary'}
 		>
+			{projection.id === COMMAND_IDS.taskArchive ? <ArchiveIcon aria-hidden /> : null}
 			{isDanger ? <Trash2Icon aria-hidden /> : null}
-			<span className={isDanger ? 'action-bar__label' : undefined}>{projection.label}</span>
+			{!isTaskQuickAction ? (
+				<span className={isDanger ? 'sr-only sm:not-sr-only' : undefined}>{projection.label}</span>
+			) : null}
 		</Button>
 	)
 

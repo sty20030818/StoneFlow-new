@@ -134,19 +134,30 @@ function excerptAt(source: string, index: number) {
 	return excerpt.length > 180 ? `${excerpt.slice(0, 177)}...` : excerpt
 }
 
-function allowedResizeTransitionOffsets(source: string) {
+function allowedResizeTransitionOffsets({ source }: AnimationSource) {
 	const offsets = new Set<number>()
 	const blockPattern = /([^{}]+)\{([^{}]*)\}/gs
 
 	for (const block of source.matchAll(blockPattern)) {
 		if (!block[1].includes('[data-resizing')) continue
 		const bodyOffset = (block.index ?? 0) + block[0].lastIndexOf(block[2])
-		for (const transition of block[2].matchAll(/\btransition\s*:\s*none\s*;?/g)) {
+		for (const transition of block[2].matchAll(/(?<![\w-])transition\s*:\s*([^;{}]*)(?=;|$)/g)) {
+			const value = transition[1].replace(/\s+/g, '')
+			if (value !== 'none') continue
 			offsets.add(bodyOffset + (transition.index ?? 0))
 		}
 	}
 
 	return offsets
+}
+
+function allowedDetailAnimationOffset({ path, source }: AnimationSource) {
+	if (path !== 'src/features/entity-detail/components/EntityDetailDrawerHost.tsx') return null
+	// 唯一产品动效只允许当前调用；复制调用或改变参数都必须重新审查。
+	const pattern =
+		/(?<![\w$.])panel\.animate\(\s*\[\s*\{\s*maxWidth:\s*`\$\{fromWidth\}px`\s*\},\s*\{\s*maxWidth:\s*`\$\{toWidth\}px`\s*\}\s*\],\s*\{\s*duration:\s*200,\s*easing:\s*'cubic-bezier\(0\.32, 0\.72, 0, 1\)',\s*fill:\s*'both'\s*\},?\s*\)/g
+	const matches = [...source.matchAll(pattern)]
+	return matches.length === 1 ? (matches[0].index ?? 0) + 'panel'.length : null
 }
 
 function scanPackageJson(file: AnimationSource) {
@@ -189,14 +200,15 @@ export function scanFirstPartyAnimationSources(sources: readonly AnimationSource
 		}
 
 		const extension = extname(file.path)
-		const allowedTransitions =
-			extension === '.css' ? allowedResizeTransitionOffsets(file.source) : null
+		const allowedTransitions = extension === '.css' ? allowedResizeTransitionOffsets(file) : null
+		const allowedDetailAnimation = allowedDetailAnimationOffset(file)
 
 		for (const rule of SOURCE_RULES) {
 			if (rule.extensions && !rule.extensions.has(extension)) continue
 			for (const match of file.source.matchAll(rule.pattern)) {
 				const index = match.index ?? 0
 				if (rule.ruleId === 'css-transition' && allowedTransitions?.has(index)) continue
+				if (rule.ruleId === 'web-animations-api' && index === allowedDetailAnimation) continue
 				violations.push({
 					path: file.path,
 					line: lineNumber(file.source, index),

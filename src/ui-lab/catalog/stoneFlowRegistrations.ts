@@ -675,7 +675,7 @@ const EXPORTED_COMPONENT_CONSUMERS: Readonly<Record<string, readonly string[]>> 
 		'src/features/project/components/ProjectBoard.tsx',
 		'src/features/task/components/TaskBoard.tsx',
 	],
-	'stoneflow-component-bulk-action-bar': ['src/layout/ShellLayoutContent.tsx'],
+	'stoneflow-component-bulk-action-bar': ['src/layout/ShellChrome.tsx'],
 	'stoneflow-component-changelog-dialog': ['src/layout/overlays/ShellOverlays.tsx'],
 	'stoneflow-component-changelog-markdown': ['src/features/changelog/ChangelogRelease.tsx'],
 	'stoneflow-component-changelog-release': [
@@ -1263,10 +1263,7 @@ const REQUIRED_PRODUCT_SCENE_REGISTRATIONS = [
 		'task-board',
 		'TaskBoard + Group Header + Task Row + bulk ActionBar',
 		'src/features/task/components/TaskBoard.tsx',
-		[
-			'src/features/task-workspace/components/TaskWorkspace.tsx',
-			'src/layout/ShellLayoutContent.tsx',
-		],
+		['src/features/task-workspace/components/TaskWorkspace.tsx', 'src/layout/ShellChrome.tsx'],
 		[
 			'TaskBoard',
 			'StatusSectionHeader',

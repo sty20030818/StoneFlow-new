@@ -112,7 +112,9 @@ export function ShellMain({
 								onContextMenuCapture={handleGlobalContextMenu}
 								onPointerDownCapture={handleMainPointerDownCapture}
 							>
-								<div className='flex min-w-0 flex-1 flex-col overflow-hidden'>{children}</div>
+								<div className='relative flex min-w-0 flex-1 flex-col overflow-hidden'>
+									{children}
+								</div>
 
 								{showPreview && !isDrawerOpen && preview.previewState.open ? (
 									<TaskPreview

@@ -19,7 +19,6 @@ import { useSettingsReturnPath } from '@/layout/model/useSettingsReturnPath'
 import { ShellChrome } from '@/layout/ShellChrome'
 import { ShellLayoutSkeleton } from '@/layout/ShellLayoutSkeleton'
 import { ShellOverlays } from '@/layout/overlays/ShellOverlays'
-import { BulkActionBar } from '@/features/bulk-action'
 import { SyncStatusProvider } from '@/features/sync'
 import { CommandRuntimeProvider } from '@/features/command'
 import { useUpdateEvents } from '@/features/update'
@@ -193,7 +192,6 @@ export function ShellLayoutContent({
 					>
 						{children}
 					</ShellChrome>
-					<BulkActionBar context={command.commandContext} runtime={command.commandRuntime} />
 					<ShellOverlays
 						closeCustomDateDialog={createDialog.closeCustomDateDialog}
 						closeProjectCreateDialog={createDialog.closeProjectCreateDialog}

@@ -21,9 +21,22 @@ describe('BulkActionBar', () => {
 		const context = createEmptyCommandContext()
 		const runtime = createRuntime([createCommand(COMMAND_IDS.openCommandMenu, '打开命令菜单')])
 
-		const { container } = renderBulkActionBar(<BulkActionBar context={context} runtime={runtime} />)
+		renderBulkActionBar(<BulkActionBar context={context} runtime={runtime} />)
 
-		expect(container).toBeEmptyDOMElement()
+		expect(screen.queryByRole('toolbar', { name: '批量操作' })).not.toBeInTheDocument()
+	})
+
+	it('清空选择后保留操作栏直到 HeroUI 退出动效结束', async () => {
+		const runtime = createRuntime([createCommand(COMMAND_IDS.openCommandMenu, '打开命令菜单')])
+		const { rerender } = renderBulkActionBar(
+			<BulkActionBar context={createSelectionContext('task', ['task-a'])} runtime={runtime} />,
+		)
+		const actionBar = screen.getByRole('toolbar', { name: '批量操作' })
+
+		rerender(<BulkActionBar context={createEmptyCommandContext()} runtime={runtime} />)
+
+		expect(actionBar).toBeInTheDocument()
+		await waitFor(() => expect(actionBar).not.toBeInTheDocument())
 	})
 
 	it('从 CommandContext 显示选中数量并直接清空唯一选择状态', () => {
@@ -43,19 +56,48 @@ describe('BulkActionBar', () => {
 		expect(clearSelection).toHaveBeenCalledTimes(1)
 	})
 
-	it('任务选择只显示 canonical 打开命令菜单动作', () => {
-		const run = vi.fn<(ctx: CommandContext, invocation: CommandInvocation) => void>()
-		const context = createSelectionContext('task', ['task-a'])
-		const runtime = createRuntime([
-			createCommand(COMMAND_IDS.openCommandMenu, '打开命令菜单', { run }),
-			createCommand(COMMAND_IDS.projectArchive, '归档项目'),
+	it('任务动作依次显示命令菜单、归档、删除，并使用捕获的选择快照', () => {
+		const runOpen = vi.fn<(ctx: CommandContext, invocation: CommandInvocation) => void>()
+		const runArchive = vi.fn<(ctx: CommandContext, invocation: CommandInvocation) => void>()
+		const runDelete = vi.fn<(ctx: CommandContext, invocation: CommandInvocation) => void>()
+		const capturedContext = createSelectionContext('task', ['task-a', 'task-b'])
+		const laterContext = createSelectionContext('task', ['task-c'])
+		const runtime = createRuntime(
+			[
+				createCommand(COMMAND_IDS.openCommandMenu, '打开命令菜单', { run: runOpen }),
+				createCommand(COMMAND_IDS.taskArchive, '归档任务', { run: runArchive }),
+				createCommand(COMMAND_IDS.taskDelete, '删除任务', { run: runDelete }),
+				createCommand(COMMAND_IDS.projectArchive, '归档项目'),
+			],
+			() => laterContext,
+		)
+
+		renderBulkActionBar(<BulkActionBar context={capturedContext} runtime={runtime} />)
+
+		const actionBar = screen.getByRole('toolbar', { name: '批量操作' })
+		const openButton = screen.getByRole('button', { name: '打开命令菜单' })
+		const archiveButton = screen.getByRole('button', { name: '归档任务' })
+		const deleteButton = screen.getByRole('button', { name: '删除任务' })
+		expect(within(actionBar).getAllByRole('button')).toEqual([
+			openButton,
+			archiveButton,
+			deleteButton,
+			screen.getByRole('button', { name: '清空已选' }),
 		])
+		expect(archiveButton).toHaveClass('button--tertiary')
+		expect(archiveButton).toHaveClass('button--icon-only')
+		expect(archiveButton.querySelector('svg')).not.toBeNull()
+		expect(deleteButton).toHaveClass('button--danger')
+		expect(deleteButton).toHaveClass('button--icon-only')
+		expect(deleteButton.querySelector('svg')).not.toBeNull()
+		expect(within(actionBar).getAllByRole('separator')).toHaveLength(3)
 
-		renderBulkActionBar(<BulkActionBar context={context} runtime={runtime} />)
-		fireEvent.click(screen.getByRole('button', { name: '打开命令菜单' }))
-
-		expect(screen.queryByRole('button', { name: '归档项目' })).not.toBeInTheDocument()
-		expect(run).toHaveBeenCalledWith(context, { source: 'bulk-bar' })
+		fireEvent.click(openButton)
+		fireEvent.click(archiveButton)
+		fireEvent.click(deleteButton)
+		for (const run of [runOpen, runArchive, runDelete]) {
+			expect(run).toHaveBeenCalledExactlyOnceWith(capturedContext, { source: 'bulk-bar' })
+		}
 	})
 
 	it('项目动作使用 projection 捕获的目标快照与 bulk-bar 调用来源', async () => {
@@ -185,7 +227,11 @@ function createSelectionContext(
 }
 
 function renderBulkActionBar(ui: React.ReactNode) {
-	return render(
-		<ShortcutRegistryProvider registry={TEST_SHORTCUT_REGISTRY}>{ui}</ShortcutRegistryProvider>,
-	)
+	return render(ui, {
+		wrapper: ({ children }) => (
+			<ShortcutRegistryProvider registry={TEST_SHORTCUT_REGISTRY}>
+				{children}
+			</ShortcutRegistryProvider>
+		),
+	})
 }

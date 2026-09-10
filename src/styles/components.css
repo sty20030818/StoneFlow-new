@@ -376,6 +376,16 @@
 	}
 
 	[data-theme="stoneflow-light"]
+		.sidebar[data-state="expanded"]
+		.sidebar__header[data-space-switcher] {
+		padding-inline: 0.75rem;
+	}
+
+	[data-theme="stoneflow-light"] .sidebar__header[data-space-switcher] > .button {
+		border-radius: var(--radius-control);
+	}
+
+	[data-theme="stoneflow-light"]
 		.sf-shell-layout
 		[data-resizing="true"]
 		:is(.sidebar, .sidebar__menu-label) {

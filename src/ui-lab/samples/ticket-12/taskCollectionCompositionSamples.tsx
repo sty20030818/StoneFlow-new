@@ -42,16 +42,19 @@ function command(id: Command['id'], title: string, run: Command['run']): Command
 }
 
 function BulkActionBarFixture() {
-	const [selectedIds, setSelectedIds] = useState(['project-a', 'project-b', 'project-c'])
+	const [selectedIds, setSelectedIds] = useState(['task-a', 'task-b', 'task-c'])
 	const [status, setStatus] = useState('尚未执行批量动作')
 	const runtime = useMemo(
 		() =>
 			new CommandRuntime({
 				registry: new CommandRegistry([
-					command(COMMAND_IDS.projectArchive, '归档项目', () => {
+					command(COMMAND_IDS.openCommandMenu, '打开命令菜单', () => {
+						setStatus('已触发本地命令菜单动作')
+					}),
+					command(COMMAND_IDS.taskArchive, '归档任务', () => {
 						setStatus('已触发本地归档动作')
 					}),
-					command(COMMAND_IDS.projectDelete, '删除项目', () => {
+					command(COMMAND_IDS.taskDelete, '删除任务', () => {
 						setStatus('已触发本地删除动作')
 					}),
 				]),
@@ -64,17 +67,17 @@ function BulkActionBarFixture() {
 		return {
 			...base,
 			selection: {
-				type: 'project',
+				type: 'task',
 				ids: selectedIds,
-				entities: selectedIds.map((id) => ({ id, type: 'project', title: id })),
+				entities: selectedIds.map((id) => ({ id, type: 'task', title: id })),
 				primaryEntity: selectedIds[0]
-					? { id: selectedIds[0], type: 'project', title: selectedIds[0] }
+					? { id: selectedIds[0], type: 'task', title: selectedIds[0] }
 					: undefined,
 				clearSelection: () => {
 					setSelectedIds([])
 					setStatus('已清空本地选择')
 				},
-				source: 'project-list',
+				source: 'task-list',
 				hasSelection: selectedIds.length > 0,
 				isSingleSelection: selectedIds.length === 1,
 				isMultiSelection: selectedIds.length > 1,
@@ -83,17 +86,17 @@ function BulkActionBarFixture() {
 	}, [selectedIds])
 
 	return (
-		<div className='flex min-h-56 w-full max-w-3xl flex-col gap-4'>
+		<div className='flex w-full max-w-3xl flex-col gap-4'>
 			<div>
 				<h3 className='text-base font-semibold'>Bulk ActionBar</h3>
 				<p className='mt-1 text-sm leading-6 text-muted'>
-					直接渲染生产 BulkActionBar；选择和 Command Runtime 仅保存在这个 fixture 内。
+					在 352px 宽的裁切容器内核对按钮与阴影；所有动作只修改本地状态。
 				</p>
 			</div>
 			<Button
 				className='self-start'
 				onPress={() => {
-					setSelectedIds(['project-a', 'project-b', 'project-c'])
+					setSelectedIds(['task-a', 'task-b', 'task-c'])
 					setStatus('已恢复 3 项本地选择')
 				}}
 				size='sm'
@@ -104,9 +107,14 @@ function BulkActionBarFixture() {
 			<p aria-live='polite' className='text-sm text-muted'>
 				{status}
 			</p>
-			<ShortcutRegistryProvider registry={SHORTCUT_REGISTRY}>
-				<BulkActionBar context={context} runtime={runtime} />
-			</ShortcutRegistryProvider>
+			<div
+				className='relative h-56 w-88 max-w-full self-center overflow-hidden'
+				data-bulk-action-preview
+			>
+				<ShortcutRegistryProvider registry={SHORTCUT_REGISTRY}>
+					<BulkActionBar context={context} runtime={runtime} />
+				</ShortcutRegistryProvider>
+			</div>
 		</div>
 	)
 }
@@ -219,12 +227,13 @@ export const TICKET_12_SAMPLES = [
 		id: 'stoneflow-task-collection-bulk-action-review',
 		name: 'Bulk ActionBar · 产品合同',
 		category: 'Product Scenes',
-		description: '直接渲染生产 BulkActionBar，用本地 CommandContext 验证数量、动作层级与清空选择。',
+		description: '在窄裁切容器内验证生产 BulkActionBar 的阴影、任务动作顺序与清空选择。',
 		keywords: ['bulk action', 'action bar', 'selection', 'command runtime'],
 		source: 'src/features/bulk-action/components/BulkActionBar.tsx',
 		coverage: 'rendered',
 		Preview: BulkActionBarFixture,
-		states: '3 Selected、Command Action、Clear Selection、Restore Selection',
+		states:
+			'352px Container、Shadow、3 Selected、Command Action、Clear Selection、Restore Selection',
 		verification: '本地可逆状态；不执行生产命令、不写 Store',
 		inventoryRefs: ['stoneflow-scene-task-board', 'stoneflow-component-bulk-action-bar'],
 	},

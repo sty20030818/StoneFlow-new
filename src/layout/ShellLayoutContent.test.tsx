@@ -48,6 +48,10 @@ vi.mock('@/layout/ShellFooter', () => ({
 	ShellFooter: () => <footer data-testid='shell-footer' />,
 }))
 
+vi.mock('@/features/bulk-action', () => ({
+	BulkActionBar: () => <div aria-label='批量操作' role='toolbar' />,
+}))
+
 vi.mock('@/features/command', () => ({
 	CommandShortcutLayer: ({ onTrigger }: { onTrigger: (id: string) => void }) => (
 		<button onClick={() => onTrigger('layout.toggleSidebar')} type='button'>
@@ -57,6 +61,20 @@ vi.mock('@/features/command', () => ({
 }))
 
 describe('Shell 阶段 D 结构', () => {
+	it.each([
+		{ mode: 'desktop', desktop: true, detailOpen: false },
+		{ mode: 'desktop', desktop: true, detailOpen: true },
+		{ mode: 'compact', desktop: false, detailOpen: false },
+		{ mode: 'compact', desktop: false, detailOpen: true },
+	])('$mode 详情展开=$detailOpen 时唯一批量操作栏属于主内容容器', ({ desktop, detailOpen }) => {
+		installMatchMedia(desktop)
+		render(<Fixture detailOpen={detailOpen} />)
+
+		const actionBar = screen.getByRole('toolbar', { name: '批量操作' })
+		expect(screen.getByRole('main')).toContainElement(actionBar)
+		expect(screen.getByTestId('shell-main-content')).toContainElement(actionBar)
+	})
+
 	it('桌面只挂载一棵导航树，并由唯一 Sidebar.Main 提供 main landmark', () => {
 		installMatchMedia(true)
 		render(<Fixture />)

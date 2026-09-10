@@ -260,7 +260,7 @@ export function ShellSidebarNavigation({
 						className='h-full min-h-0'
 						style={{ '--sidebar-width': 'inherit', display: 'flex' } as CSSProperties}
 					>
-						<Sidebar.Header>
+						<Sidebar.Header data-space-switcher>
 							<Dropdown isOpen={spaceSwitcherMenuOpen} onOpenChange={setSpaceSwitcherMenuOpen}>
 								<Button
 									fullWidth
