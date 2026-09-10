@@ -513,18 +513,18 @@
 		border-radius: var(--radius-pill);
 	}
 
-	/* Header 搜索保持平白底；只给键盘焦点贴边提示，不叠加字段阴影与外扩 ring。 */
+	/* Header 搜索保持白底浅边框；聚焦反馈沿用 HeroUI 的细 ring。 */
 	[data-theme="stoneflow-light"] [data-sf-search-root="true"] .search-field__group {
-		box-shadow: none;
+		--field-border: var(--border);
+		--field-border-hover: var(--field-border);
+		--field-border-focus: var(--border);
+		--field-hover: var(--field-background);
+		height: var(--control-height-md);
+		border-width: var(--border-width);
 	}
 
-	@media (forced-colors: none) {
-		[data-theme="stoneflow-light"]
-			[data-sf-search-root="true"]
-			.search-field__group[data-focus-visible="true"] {
-			outline: var(--focus-ring-width) solid var(--focus);
-			outline-offset: calc(-1 * var(--focus-ring-width));
-		}
+	[data-theme="stoneflow-light"] [data-sf-search-root="true"] .search-field__input {
+		padding-block: calc(var(--spacing) / 2);
 	}
 
 	/* 全局搜索不是 Popover state machine，但视觉语义仍是浮层。 */
