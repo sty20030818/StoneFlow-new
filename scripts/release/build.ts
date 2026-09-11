@@ -61,7 +61,15 @@ export async function buildReleaseApp(
 	await runner({ argv: ['bun', 'install', '--frozen-lockfile'], cwd: input.sourceRoot, env })
 	const postInstallEnv = { ...env }
 	delete postInstallEnv.HEROUI_AUTH_TOKEN
-	await runner({ argv: ['bun', 'audit'], cwd: input.sourceRoot, env: postInstallEnv })
+	// npmmirror 没有 advisories bulk 接口，审计必须走 npm 官方源。
+	await runner({
+		argv: ['bun', 'audit'],
+		cwd: input.sourceRoot,
+		env: {
+			...postInstallEnv,
+			NPM_CONFIG_REGISTRY: 'https://registry.npmjs.org',
+		},
+	})
 	await runner({
 		argv: ['bun', 'run', 'scripts/release/verify-heroui-pro.ts'],
 		cwd: input.sourceRoot,
