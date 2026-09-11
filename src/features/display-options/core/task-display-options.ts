@@ -44,6 +44,13 @@ export type TaskDisplayOrderDirection = (typeof TASK_DISPLAY_ORDER_DIRECTION_VAL
 export type TaskDisplayCompletedOrder = (typeof TASK_DISPLAY_COMPLETED_ORDER_VALUES)[number]
 export type TaskDisplayPropertyKey = (typeof TASK_DISPLAY_PROPERTY_KEY_VALUES)[number]
 
+/** 创建和更新时间共用一个展示槽；最后选择的时间属性生效。 */
+export function getTaskDisplayTimestampProperty(
+	values: readonly TaskDisplayPropertyKey[],
+): 'createdAt' | 'updatedAt' | undefined {
+	return values.findLast((value) => value === 'createdAt' || value === 'updatedAt')
+}
+
 export type TaskDisplayOptions = {
 	groupBy: TaskDisplayGroupBy
 	subGroupBy: TaskDisplayGroupBy

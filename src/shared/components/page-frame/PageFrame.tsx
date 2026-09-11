@@ -150,7 +150,7 @@ function PageFrameToolbarChoices({
 			size='sm'
 		>
 			{pills.map((pill) => (
-				<ToggleButton id={pill.key} key={pill.key} variant='ghost'>
+				<ToggleButton data-page-toolbar-option='true' id={pill.key} key={pill.key} variant='ghost'>
 					{pill.label}
 				</ToggleButton>
 			))}

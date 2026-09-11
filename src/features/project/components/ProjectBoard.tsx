@@ -166,23 +166,21 @@ function ProjectBoardSection({
 				>
 					<BoardSectionHeader
 						count={section.items.length}
+						icon={<ProjectSectionStatusIcon sectionKey={section.key} />}
 						label={section.label}
 						leading={
-							<>
-								<Button
-									ref={triggerRef}
-									aria-expanded={open}
-									aria-label={`${open ? '折叠' : '展开'} ${section.label}`}
-									isIconOnly
-									onBlur={onBlur}
-									onPress={() => collection.setGroupOpen(section.key, !open)}
-									size='sm'
-									variant='ghost'
-								>
-									<ChevronRightIcon className={open ? 'size-3.5 rotate-90' : 'size-3.5'} />
-								</Button>
-								<ProjectSectionStatusIcon sectionKey={section.key} />
-							</>
+							<Button
+								ref={triggerRef}
+								aria-expanded={open}
+								aria-label={`${open ? '折叠' : '展开'} ${section.label}`}
+								isIconOnly
+								onBlur={onBlur}
+								onPress={() => collection.setGroupOpen(section.key, !open)}
+								size='sm'
+								variant='ghost'
+							>
+								<ChevronRightIcon className={open ? 'size-3.5 rotate-90' : 'size-3.5'} />
+							</Button>
 						}
 						selectedCount={selectedCount}
 					/>

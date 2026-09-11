@@ -10,6 +10,7 @@ import { Button, Kbd } from '@heroui/react'
 import { FolderIcon, MoreHorizontalIcon, PlusIcon } from 'lucide-react'
 
 import { SpaceEditorDialog } from '@/features/space'
+import { MetadataFieldValue } from '@/features/metadata-fields'
 import { TaskPageState } from '@/features/task'
 import { AppBreadcrumb } from '@/shared/components/AppBreadcrumb'
 import { AppScrollArea } from '@/shared/components/AppScrollArea'
@@ -184,7 +185,16 @@ function AppBreadcrumbFixture() {
 	return (
 		<Fixture title='AppBreadcrumb'>
 			<RouterContextProvider router={productRouter}>
-				<div className='w-full max-w-lg overflow-hidden rounded-lg border border-surface p-3'>
+				<div aria-label='短面包屑' className='w-full max-w-lg rounded-lg border border-surface p-3'>
+					<AppBreadcrumb
+						items={[
+							{ key: 'workspace', label: '工作区', to: '/space-demo' },
+							{ key: 'project', label: '项目 A', to: '/space-demo/projects/project-demo' },
+							{ key: 'task', label: '当前任务', current: true },
+						]}
+					/>
+				</div>
+				<div aria-label='长面包屑' className='w-full max-w-xs rounded-lg border border-surface p-3'>
 					<AppBreadcrumb
 						items={[
 							{ key: 'workspace', label: '工作区', to: '/space-demo' },
@@ -258,6 +268,26 @@ function RowShellFixture() {
 									</Button>
 								}
 								primary={<span className='block truncate'>{row.label}</span>}
+								properties={[
+									{
+										label: '处理状态',
+										content: (
+											<MetadataFieldValue
+												compact
+												label={
+													row.pending
+														? '更新中'
+														: row.selected
+															? '已选'
+															: row.active
+																? '已打开'
+																: '未选择'
+												}
+											/>
+										),
+									},
+								]}
+								propertiesLabel={`${row.label}的属性`}
 							/>
 						</RowShell>
 					</BoardRowSlot>

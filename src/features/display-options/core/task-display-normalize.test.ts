@@ -4,6 +4,7 @@ import {
 	createTaskDisplayViewPageKey,
 	getTaskDisplayPageKind,
 	isTaskDisplayPageKey,
+	normalizeTaskDisplayPreference,
 	resolveTaskDisplayOptions,
 } from './index'
 
@@ -93,4 +94,22 @@ describe('resolveTaskDisplayOptions', () => {
 
 		expect(resolved.visibleProperties).toEqual(['project', 'updatedAt', 'status'])
 	})
+
+	it.each([
+		{ values: ['status', 'createdAt', 'updatedAt'], expected: ['status', 'updatedAt'] },
+		{ values: ['status', 'updatedAt', 'createdAt'], expected: ['status', 'createdAt'] },
+		{ values: ['createdAt', 'updatedAt', 'createdAt'], expected: ['createdAt'] },
+		{ values: ['dueAt', 'plannedAt'], expected: ['dueAt', 'plannedAt'] },
+	] as const)(
+		'创建和更新时间只保留最后选择的一项，也允许不显示：$values',
+		({ values, expected }) => {
+			const preference = { visibleProperties: [...values] }
+
+			expect(normalizeTaskDisplayPreference(preference).visibleProperties).toEqual(expected)
+			expect(
+				resolveTaskDisplayOptions({ pageKey: 'task:all', personalOverride: preference })
+					.visibleProperties,
+			).toEqual(expected)
+		},
+	)
 })

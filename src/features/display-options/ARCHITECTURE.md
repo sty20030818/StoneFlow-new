@@ -44,7 +44,7 @@ src/features/display-options/
 
 | 类 | 符号 |
 |----|------|
-| 类型 / 键 | `TaskDisplayPageKey` · `TaskDisplayPropertyKey` · `TaskDisplayPreferenceRecord` · `createTaskDisplayViewPageKey` |
+| 类型 / 键 | `TaskDisplayPageKey` · `TaskDisplayPropertyKey` · `TaskDisplayPreferenceRecord` · `createTaskDisplayViewPageKey` · `getTaskDisplayTimestampProperty` |
 | Hook | `useTaskDisplayOptions`（含 `setAsDefault` / `resetToDefault`） |
 | API | `updateTaskDisplayPreference`（迁移等） |
 | 适配 | `applyTaskDisplayOptionsToTasks` · `createTaskDisplayApplyContext` |
@@ -69,3 +69,5 @@ src/features/display-options/
 | 读取 / 写入 | Query keys + mutations |
 | 页面键 | `TaskDisplayPageKey`（含 `task:view:{id}`） |
 | **不进** filter URL `f` | Display 与临时筛选分离 |
+
+`visibleProperties` 的创建时间与更新时间互斥，也允许都不选择。`getTaskDisplayTimestampProperty` 是共同规则：保留输入列表最后出现的时间项，显示面板新选择追加到末尾；再次点击已选时间项可关闭。偏好读取、写入与 Row 渲染共用这一规则，存量双时间偏好在既有归一化入口收敛，不增加存储字段或迁移旁路。属性按钮的展示顺序由页面 capabilities 决定，不重排用户选择序列。

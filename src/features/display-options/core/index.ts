@@ -21,6 +21,7 @@ export {
 	type ResolveTaskDisplayOptionsInput,
 } from './task-display-normalize'
 export {
+	getTaskDisplayTimestampProperty,
 	taskDisplayCompletedOrderSchema,
 	taskDisplayGroupBySchema,
 	taskDisplayOptionsSchema,

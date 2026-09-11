@@ -67,6 +67,7 @@ type BoardSectionHeaderProps = Omit<ComponentProps<'div'>, 'children'> & {
 	count: number
 	selectedCount?: number
 	leading?: ReactNode
+	icon?: ReactNode
 	trailing?: ReactNode
 }
 
@@ -75,6 +76,7 @@ export function BoardSectionHeader({
 	count,
 	selectedCount = 0,
 	leading,
+	icon,
 	trailing,
 	className,
 	style,
@@ -84,25 +86,64 @@ export function BoardSectionHeader({
 		<div
 			{...props}
 			className={cn(
-				'flex min-w-0 items-center gap-2 rounded-[var(--radius-surface)] bg-default pl-3 pr-1',
+				'flex min-w-0 items-center gap-4 rounded-(--radius-surface) bg-default ps-3 pe-1 text-foreground',
 				className,
 			)}
 			data-board-section-header='true'
 			style={{ ...style, height: COLLECTION_SECTION_HEADER_HEIGHT }}
 		>
-			{leading ? <div className='flex shrink-0 items-center gap-1'>{leading}</div> : null}
-			<div className='flex min-w-0 flex-1 items-center gap-2 px-1 text-xs font-semibold text-foreground'>
-				<div className='min-w-0 truncate'>{label}</div>
-				<Chip className='ml-1' size='sm' variant='tertiary'>
+			{leading || icon ? (
+				<div
+					className='flex shrink-0 items-center gap-4'
+					data-board-section-header-region='controls'
+				>
+					{leading ? (
+						<div
+							className='flex size-4 shrink-0 items-center justify-center'
+							data-board-section-header-slot='leading'
+						>
+							{leading}
+						</div>
+					) : null}
+					{icon ? (
+						<div
+							className='flex size-4 shrink-0 items-center justify-center'
+							data-board-section-header-slot='icon'
+						>
+							{icon}
+						</div>
+					) : null}
+				</div>
+			) : null}
+			<div
+				className='flex min-w-0 flex-1 items-center gap-4'
+				data-board-section-header-region='summary'
+			>
+				<div
+					className='min-w-0 truncate text-xs font-semibold'
+					data-board-section-header-slot='label'
+				>
+					{label}
+				</div>
+				<Chip data-board-section-header-slot='count' size='sm' variant='tertiary'>
 					{count}
 				</Chip>
 				{selectedCount > 0 ? (
-					<Chip color='accent' size='sm' variant='soft'>
+					<Chip
+						color='accent'
+						data-board-section-header-slot='selected-count'
+						size='sm'
+						variant='soft'
+					>
 						已选 {selectedCount}
 					</Chip>
 				) : null}
 			</div>
-			{trailing ? <div className='flex shrink-0 items-center'>{trailing}</div> : null}
+			{trailing ? (
+				<div className='flex shrink-0 items-center' data-board-section-header-slot='trailing'>
+					{trailing}
+				</div>
+			) : null}
 		</div>
 	)
 }

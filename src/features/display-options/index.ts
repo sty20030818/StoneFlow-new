@@ -16,7 +16,7 @@ export type {
 	TaskDisplayPropertyKey,
 } from './core'
 
-export { createTaskDisplayViewPageKey } from './core'
+export { createTaskDisplayViewPageKey, getTaskDisplayTimestampProperty } from './core'
 
 // ── Model hooks ─────────────────────────────────────────────────────────────
 

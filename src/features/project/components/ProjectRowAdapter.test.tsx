@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 
 import {
 	COMMAND_IDS,
@@ -29,6 +29,33 @@ describe('ProjectRowAdapter', () => {
 		expect(actions.onOpenProject).toHaveBeenCalledTimes(1)
 		expect(actions.onCompleteProject).toHaveBeenCalledWith('project-1')
 		expect(actions.onToggleSelected).toHaveBeenCalledTimes(1)
+	})
+
+	it('属性入口展示截止与创建时间，不触发打开项目', async () => {
+		const actions = buildActions()
+		renderProjectRow({
+			actions,
+			project: createProject({ id: 'project-1', name: '项目 A', dueAt: '2026-05-08T08:00:00Z' }),
+		})
+
+		fireEvent.click(screen.getByRole('button', { name: '查看项目 项目 A 的属性' }))
+		const dialog = await screen.findByRole('dialog', { name: '项目 项目 A 的属性' })
+		expect(within(dialog).getByText('截止时间')).toBeInTheDocument()
+		expect(within(dialog).getByText('截止 5/8')).toBeInTheDocument()
+		expect(within(dialog).getByText('创建时间')).toBeInTheDocument()
+		expect(within(dialog).getByText('创建 5/1')).toBeInTheDocument()
+		const dueDate = within(dialog).getByText('截止 5/8')
+		expect(dueDate.closest('[data-metadata-field-value]')).toHaveAttribute(
+			'data-metadata-field-value',
+			'true',
+		)
+		expect(dueDate.closest('button, [role="button"]')).toBeNull()
+		expect(
+			within(dialog).getByText('创建 5/1').closest('[data-metadata-field-value], button'),
+		).toBeNull()
+		fireEvent.click(dueDate)
+		expect(actions.onOpenProject).not.toHaveBeenCalled()
+		expect(actions.onToggleSelected).not.toHaveBeenCalled()
 	})
 
 	it('归档与删除统一通过右键菜单执行 context-menu command projection', async () => {
@@ -66,9 +93,11 @@ describe('ProjectRowAdapter', () => {
 
 function renderProjectRow({
 	actions = buildActions(),
+	project = createProject({ id: 'project-1', name: '项目 A' }),
 	runCommand = vi.fn(),
 }: {
 	actions?: ProjectRowAdapterProps['actions']
+	project?: ProjectOverviewItem
 	runCommand?: (
 		ctx: ReturnType<typeof createEmptyCommandContext>,
 		invocation: CommandInvocation,
@@ -92,7 +121,7 @@ function renderProjectRow({
 		<CommandRuntimeProvider context={context} runtime={runtime}>
 			<ProjectRowAdapter
 				actions={actions}
-				project={createProject({ id: 'project-1', name: '项目 A' })}
+				project={project}
 				rowState={{
 					focusSource: null,
 					isFocused: false,

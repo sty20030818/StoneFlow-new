@@ -2,6 +2,7 @@ import { getTaskDisplayPageCapabilities } from './task-display-capabilities'
 import { getTaskDisplaySystemDefaults } from './task-display-defaults'
 import type { TaskDisplayPageKey } from './display-page-key'
 import {
+	getTaskDisplayTimestampProperty,
 	taskDisplayOptionsSchema,
 	TASK_DISPLAY_COMPLETED_ORDER_VALUES,
 	TASK_DISPLAY_GROUP_BY_VALUES,
@@ -183,12 +184,17 @@ function filterVisibleProperties(
 	allowed: readonly TaskDisplayPropertyKey[],
 ): TaskDisplayPropertyKey[] {
 	const allowedSet = new Set<string>(allowed)
+	const timestamp = getTaskDisplayTimestampProperty(values.filter((value) => allowedSet.has(value)))
 	// 用 Set 记录已加入的值，避免循环内重复 array.includes 扫描
 	const seen = new Set<TaskDisplayPropertyKey>()
 	const result: TaskDisplayPropertyKey[] = []
 
 	for (const value of values) {
 		if (!PROPERTY_KEY_SET.has(value) || !allowedSet.has(value) || seen.has(value)) {
+			continue
+		}
+
+		if ((value === 'createdAt' || value === 'updatedAt') && value !== timestamp) {
 			continue
 		}
 

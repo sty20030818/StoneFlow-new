@@ -69,12 +69,13 @@ function BreadcrumbPreview() {
 }
 
 const SIDEBAR_ITEMS = [
-	{ id: 'inbox', label: '收件箱', icon: InboxIcon },
-	{ id: 'tasks', label: '所有任务', icon: ListTodoIcon },
+	{ id: 'inbox', label: '收件箱', icon: InboxIcon, count: 1 },
+	{ id: 'tasks', label: '所有任务', icon: ListTodoIcon, count: 12 },
 	{
 		id: 'project',
 		label: '这是一个很长很长的中文项目名称，用于观察溢出',
 		icon: FolderIcon,
+		count: 123,
 	},
 	{ id: 'archive', label: '归档（不可用）', icon: ArchiveIcon, isDisabled: true },
 ] as const
@@ -116,6 +117,7 @@ function SidebarFixture({
 											<Icon aria-hidden className='size-4' />
 										</Sidebar.MenuIcon>
 										<Sidebar.MenuLabel>{item.label}</Sidebar.MenuLabel>
+										{'count' in item ? <Sidebar.MenuChip>{item.count}</Sidebar.MenuChip> : null}
 									</Sidebar.MenuItem>
 								)
 							})}

@@ -110,6 +110,8 @@ HeroUI OSS/Pro 的锁定版本是默认实现，负责组件结构、Hover、Pre
 - 28/32/36px 工作台控件密度和紧凑集合行；
 - `RadioButtonGroup` 整卡选项使用 Surface 圆角、12px 内边距与 1px 选中边，焦点仍读取统一宽度；指示器预留独立空间。设置开关通过唯一 `SettingsToggleRow` 的稳定 hook 自适应多行高度、移除组内字段阴影，保留 CellSwitch 原生交互。
 - 次级选择的中性表面，避免 Accent 大面积铺色；
+- 页面视图选择继续使用原生 detached `ToggleButtonGroup`；`data-page-toolbar-option` 限定 28px 轻描边与中性选中面，不改变其他 Toggle 的 Accent 语义、键盘交互或动效。
+- 面包屑按内容自然排列，长祖先与当前项只收缩、不扩张；文本两侧内边距为 4px，分隔符两侧留白各 6px，不裁切外层焦点轮廓。
 - Card 与 Overlay 的统一轻边界；Surface 保持 HeroUI 上游的无边界语义；
 - `RowShell` 的 selected/current/focus-suppressed/context-menu-open 等稳定共享状态；普通 hover、current、selected 与 selected + hover 分别使用固定的 `surface-hover`、`surface-active`、`selection` 与 `selection-hover`，不随 Accent 预设漂移；键盘焦点恢复期间不得让 stale pointer hover 抢回 current 视觉。
 - `Input`、`Textarea`、`SearchField`、`NumberField`、`InputGroup`、`Select`、`Autocomplete` 与 `CellSwitch` 的外壳移除硬边框；primary 使用 HeroUI Light 轻阴影，secondary 保持无阴影填充面，focus / invalid 继续由上游 ring 与 outline 表达。
@@ -159,9 +161,12 @@ Form、RadioGroup、Toolbar、Surface、Resizable、ScrollShadow 与 Trigger 等
 
 - `PageFrame` 统一页头、工具栏、普通 `Body` 与集合 `CollectionBody`；`CollectionBody` 通过 `AppScrollArea` 提供唯一真实 viewport，页级图标操作由真实页面直接组合 HeroUI Button 与 `ActionTooltip`。
 - `PageFrame.Toolbar` 直接组合 HeroUI `Toolbar`，只保留产品槽位、外部布局与 FilterBar 的区域顺序，不重写工具条焦点模型。
-- `RowShell` 只统一可访问交互根与 active / selected / hover / focus / pending 状态；`RowLayout` 统一 `selection`、`leading`、`primary`、`properties`、`actions` 五槽排版，并在 selection / actions 槽隔离 Row activation 事件。
+- `RowShell` 只统一可访问交互根与 active / selected / hover / focus / pending 状态；`RowLayout` 使用 selection / leading / primary / properties / timestamp / actions 六槽，将 selection / leading 组合为起始控件区，primary 弹性伸缩，properties / timestamp / actions 靠末端。selection / properties（含 timestamp）/ actions 隔离 Row activation 事件，领域内容和动作仍由 Adapter 拥有。
+- Row 末端的可编辑属性使用 HeroUI `Button` 原生 outline；只读属性复用 `MetadataFieldValue`，使用透明 `Chip` 与 `components.css` 的语义描边，不新增可点击语义。创建、更新时间保留纯文本；内联与属性 Popover 共用该外观。
+- Row 与 Group Header 的区域间、起始控件间及 Header 摘要单元间距采用 spacing `4`（16px）；Row 末端 outline 属性组内部为 spacing `2`（8px），属性组与 timestamp 之间为 spacing `4`（16px），内联时间槽固定 64px、右对齐并使用等宽数字，过长内容省略；无时间时无占位，操作区内部仍为 spacing `0.5`（2px）。Header 分为起始控件、弹性摘要、末端动作三区；标题、数量、已选数在摘要区内独立排列，长标题可收缩截断，计数和动作不收缩。Header 的 leading / icon 与 Row 多选槽 / 首个图标控件共享 12px 左内边距和两列中心线；Row leading 使用 16px 等宽 Grid 轨道。`components.css` 在这两个起始控件区内统一 16px 图标上限、icon-only Button / ToggleButton / Checkbox.Content 的真实 16px 尺寸；无额外 padding 或热区、无按钮底色，保留键盘焦点与 Checkbox 选中样式。复合状态图标的内部 glyph 比例不变，不影响末端字段、新建按钮、表单或菜单。Sidebar 计数栏最小宽度仍为 spacing `6`（24px），由原生 `MenuChip` 居中数字，多位数自然扩展。
+- `RowLayout.properties` 接收同一份 `{ label, content }` 列表，`timestamp` 单独接收至多一个同形条目，label 在行内唯一，调用方不传入无内容项。Row 内容盒 `>=560px` 时内联显示，`<560px` 时将属性与时间一起收进具名 HeroUI Popover；浮层按需挂载，复用原字段内容，查询布局只用 CSS。常规排版的属性入口使用 `sr-only` 隐藏且不占位，仅自身 `focus-within` 或展开时恢复显示，不响应行 Hover / Focus；紧凑排版始终可见。入口不卸载，保证跨断点时浮层锚点与关闭回焦入口稳定，焦点离开后恢复隐藏；属性和时间都没有时省略整个区。属性收纳不改变 Row 高度、虚拟器几何或显示偏好。
 - `BoardRowSlot` 是 section 内连续选择形状与 `44px` 可见 Row 壳的唯一 Owner；`BoardSectionHeader` 只统一 `36px` Header anatomy。相邻 item 的 `2px` gap、邻接计算、sticky/absolute positioning、折叠、Context Menu 与领域动作归各 Board。
-- `shared/components/collectionGeometry.ts` 是 Row `44px`、Header `36px`、item gap `2px` 及其 stride 的唯一产品几何事实源；stride 只推进存在后继 item 的起点，终项不携带尾 gap。`components.css` 只渲染 `RowShell` 状态皮肤与 `BoardRowSlot` 暴露的连续选择状态，不复制数值或邻接算法。
+- `shared/components/collectionGeometry.ts` 是 Row `44px`、Header `36px`、item gap `2px` 及其 stride 的唯一产品几何事实源；stride 只推进存在后继 item 的起点，终项不携带尾 gap。`components.css` 渲染 `RowShell` 状态皮肤、起始纯图标控件 recipe 与 `BoardRowSlot` 暴露的连续选择状态，不复制行高数值或邻接算法。
 - Task Detail 只有一个生产 owner，其 Header/Footer/PageLayout/Section/SaveStatus 与滚动结构均由 task feature 持有。
 - `AppScrollArea` 只封装真实 viewport 与 ref context；滚动由浏览器执行，外观直接复用 HeroUI Styles 的 `scrollbar` utility。
 - `ActionTooltip` 隐藏 React Aria trigger props/ref 合并与快捷键展示行为。

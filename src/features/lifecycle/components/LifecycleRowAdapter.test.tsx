@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 
 import {
 	COMMAND_IDS,
@@ -44,6 +44,40 @@ describe('LifecycleRowAdapter', () => {
 
 		fireEvent.click(screen.getByRole('row', { name: '打开 任务 A' }))
 		expect(actions.onOpenDetail).toHaveBeenCalledWith(entry)
+	})
+
+	it.each([
+		['archive', '归档时间', '归档 5/3'],
+		['trash', '删除时间', '删除 5/3'],
+	] as const)('%s 的属性入口保留生命周期时间且不触发行打开', async (mode, label, value) => {
+		const actions = buildActions()
+		renderLifecycleRow({ actions, mode })
+
+		fireEvent.click(screen.getByRole('button', { name: '查看条目 任务 A 的属性' }))
+		const dialog = await screen.findByRole('dialog', { name: '条目 任务 A 的属性' })
+		expect(within(dialog).getByText(label)).toBeInTheDocument()
+		expect(within(dialog).getByText(value)).toBeInTheDocument()
+		const lifecycleDate = within(dialog).getByText(value)
+		expect(lifecycleDate.closest('[data-metadata-field-value]')).toHaveAttribute(
+			'data-metadata-field-value',
+			'true',
+		)
+		expect(lifecycleDate.closest('button, [role="button"]')).toBeNull()
+		fireEvent.click(lifecycleDate)
+		expect(actions.onOpenDetail).not.toHaveBeenCalled()
+		expect(actions.onToggleSelected).not.toHaveBeenCalled()
+	})
+
+	it('没有生命周期时间时不产生空属性入口', () => {
+		renderLifecycleRow({
+			entry: {
+				...createEntry({ id: 'task-1', entityType: 'task', title: '任务 A' }),
+				archivedAt: null,
+				deletedAt: null,
+			},
+		})
+
+		expect(screen.queryByRole('button', { name: '查看条目 任务 A 的属性' })).not.toBeInTheDocument()
 	})
 
 	it('多选右键永久删除使用完整目标快照', async () => {

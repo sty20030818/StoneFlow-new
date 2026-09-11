@@ -26,8 +26,9 @@ export function MetadataFieldValue({
 		<Chip
 			aria-label={ariaLabel}
 			className={cn('shrink-0', compact ? 'max-w-45' : 'max-w-52', className)}
+			data-metadata-field-value='true'
 			size='sm'
-			variant='secondary'
+			variant='tertiary'
 		>
 			{icon}
 			<Chip.Label className='min-w-0'>

@@ -99,6 +99,7 @@ describe('TaskRowAdapter', () => {
 
 		expect(screen.getByText('已完成任务')).toBeInTheDocument()
 		expect(screen.getByText('5/6')).toBeInTheDocument()
+		expect(screen.getByText('5/6').closest('[data-metadata-field-value], button')).toBeNull()
 	})
 
 	it('只呈现调用方声明的字段，并在 All scope 露出真实 Space', () => {
@@ -113,10 +114,39 @@ describe('TaskRowAdapter', () => {
 		expect(screen.queryByRole('button', { name: '修改优先级：跨空间任务' })).not.toBeInTheDocument()
 		expect(screen.queryByRole('button', { name: '归属' })).not.toBeInTheDocument()
 		expect(screen.getByText('5/7')).toBeInTheDocument()
+		expect(screen.getByText('5/7').closest('[data-metadata-field-value], button')).toBeNull()
+	})
+
+	it.each([
+		[['createdAt', 'updatedAt'], '5/7', '5/6', '更新时间', '创建时间'],
+		[['updatedAt', 'createdAt'], '5/6', '5/7', '创建时间', '更新时间'],
+	] as const)(
+		'时间字段 %j 只显示最后选择的一项',
+		async (visibleProperties, shown, hidden, label, hiddenLabel) => {
+			renderTaskRowAdapter({ visibleProperties })
+			expect(screen.getByText(shown)).toBeInTheDocument()
+			expect(screen.queryByText(hidden)).not.toBeInTheDocument()
+
+			fireEvent.click(screen.getByRole('button', { name: '查看任务 任务 A 的属性' }))
+			const dialog = await screen.findByRole('dialog', { name: '任务 任务 A 的属性' })
+			expect(within(dialog).getByText(label)).toBeInTheDocument()
+			expect(within(dialog).queryByText(hiddenLabel)).not.toBeInTheDocument()
+		},
+	)
+
+	it('未选择时间时两个都不显示', () => {
+		renderTaskRowAdapter({ visibleProperties: [] })
+		expect(screen.queryByText('5/6')).not.toBeInTheDocument()
+		expect(screen.queryByText('5/7')).not.toBeInTheDocument()
+		expect(screen.queryByRole('button', { name: '查看任务 任务 A 的属性' })).not.toBeInTheDocument()
 	})
 
 	it('把一个 metadata 字段和归属选择映射回任务动作', async () => {
 		const { actions, projectBinding, task } = renderTaskRowAdapter()
+
+		for (const name of ['修改截止时间：任务 A', '修改计划时间：任务 A', '归属']) {
+			expect(screen.getByRole('button', { name })).toHaveClass('button--outline')
+		}
 
 		fireEvent.pointerDown(screen.getByRole('button', { name: '修改优先级：任务 A' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /高/ }))
@@ -129,6 +159,48 @@ describe('TaskRowAdapter', () => {
 			spaceId: 'space-1',
 			projectId: 'project-2',
 		} satisfies TaskPlacementTarget)
+	})
+
+	it('属性入口保留日期与归属操作，不触发行打开', async () => {
+		const onCommand = vi.fn()
+		const { projectBinding, task } = renderTaskRowAdapter({ onCommand })
+
+		fireEvent.click(screen.getByRole('button', { name: '查看任务 任务 A 的属性' }))
+		const dialog = await screen.findByRole('dialog', { name: '任务 任务 A 的属性' })
+		expect(within(dialog).getByText('截止时间')).toBeInTheDocument()
+		expect(within(dialog).getByText('计划时间')).toBeInTheDocument()
+		expect(within(dialog).getByText('创建时间')).toBeInTheDocument()
+		expect(within(dialog).getByRole('button', { name: '修改截止时间：任务 A' })).toHaveTextContent(
+			'5/8',
+		)
+		expect(within(dialog).getByRole('button', { name: '修改计划时间：任务 A' })).toHaveTextContent(
+			'5/9',
+		)
+		expect(within(dialog).getByText('5/6')).toBeInTheDocument()
+		expect(
+			within(dialog).getByText('5/6').closest('[data-metadata-field-value], button'),
+		).toBeNull()
+		for (const name of ['修改截止时间：任务 A', '修改计划时间：任务 A', '归属']) {
+			expect(within(dialog).getByRole('button', { name })).toHaveClass('button--outline')
+		}
+
+		fireEvent.pointerDown(within(dialog).getByRole('button', { name: '归属' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /项目 B/ }))
+		expect(projectBinding?.onSelectPlacement).toHaveBeenCalledWith(task, {
+			kind: 'project',
+			spaceId: 'space-1',
+			projectId: 'project-2',
+		} satisfies TaskPlacementTarget)
+		expect(onCommand).not.toHaveBeenCalled()
+	})
+
+	it('已声明但无值的日期不产生空属性入口', () => {
+		renderTaskRowAdapter({
+			visibleProperties: ['dueAt', 'plannedAt', 'updatedAt', 'createdAt'],
+			task: buildTask({ dueAt: null, plannedAt: null, updatedAt: '', createdAt: '' }),
+		})
+
+		expect(screen.queryByRole('button', { name: '查看任务 任务 A 的属性' })).not.toBeInTheDocument()
 	})
 
 	it('多选右键属性动作只走 bulk snapshot，不回落到单行 binding', async () => {

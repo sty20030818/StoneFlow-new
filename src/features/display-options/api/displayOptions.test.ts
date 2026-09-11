@@ -29,18 +29,23 @@ describe('displayOptions api', () => {
 			pageKey: 'task:all',
 			personal: {
 				groupBy: 'status',
-				visibleProperties: ['status', 'status', 'project'],
+				visibleProperties: ['status', 'status', 'project', 'createdAt', 'updatedAt'],
 			},
 		})
 
 		await expect(getTaskDisplayPreference('task:all')).resolves.toEqual({
 			personal: {
 				groupBy: 'status',
-				visibleProperties: ['status', 'project'],
+				visibleProperties: ['status', 'project', 'updatedAt'],
 			},
 			workspaceDefault: null,
 		})
-		expect(localStorage.getItem(DISPLAY_OPTIONS_KEY)).not.toBeNull()
+		expect(JSON.parse(localStorage.getItem(DISPLAY_OPTIONS_KEY)!)).toEqual({
+			personal: {
+				groupBy: 'status',
+				visibleProperties: ['status', 'project', 'updatedAt'],
+			},
+		})
 	})
 
 	it('清空 personal 与 workspace default 时删除存储记录', async () => {

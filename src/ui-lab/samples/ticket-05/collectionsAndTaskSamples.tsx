@@ -27,6 +27,7 @@ import {
 	CircleIcon,
 	CopyIcon,
 	EllipsisIcon,
+	FlagIcon,
 	FolderIcon,
 	InboxIcon,
 	PinIcon,
@@ -44,6 +45,7 @@ import {
 	getBoardRowSelectionPosition,
 	type BoardRowSelectionPosition,
 } from '@/shared/components/board'
+import { MetadataFieldValue } from '@/features/metadata-fields'
 import { RowLayout, RowShell } from '@/shared/components/row'
 
 import type { UiLabReviewUnitInput } from '../../uiLabCatalog'
@@ -693,46 +695,78 @@ function TaskRowFixture({
 	selected,
 	selectionPosition,
 	title,
+	createdLabel = '8/20',
 	onSelectedChange,
 }: {
 	selected: boolean
 	selectionPosition?: BoardRowSelectionPosition
 	title: string
+	createdLabel?: string
 	onSelectedChange: (selected: boolean) => void
 }) {
 	const [status, setStatus] = useState('待处理')
+	const [highPriority, setHighPriority] = useState(false)
 
 	return (
 		<BoardRowSlot selectionPosition={selectionPosition}>
 			<RowShell interactive role='row' selected={selected}>
 				<RowLayout
-					actions={
-						<Button
-							aria-label={`切换状态：${title}`}
-							isIconOnly
-							onPress={() => setStatus((value) => (value === '待处理' ? '已完成' : '待处理'))}
-							size='sm'
-							type='button'
-							variant='ghost'
-						>
-							<CheckCircle2Icon aria-hidden className='size-4' />
-						</Button>
+					leading={
+						<>
+							<Button
+								aria-label={`切换优先级：${title}`}
+								aria-pressed={highPriority}
+								isIconOnly
+								onPress={() => setHighPriority((value) => !value)}
+								size='sm'
+								type='button'
+								variant='ghost'
+							>
+								<FlagIcon
+									aria-hidden
+									className={highPriority ? 'size-4 text-warning-on-surface' : 'size-4 text-muted'}
+								/>
+							</Button>
+							<Button
+								aria-label={`切换状态：${title}`}
+								aria-pressed={status === '已完成'}
+								isIconOnly
+								onPress={() => setStatus((value) => (value === '待处理' ? '已完成' : '待处理'))}
+								size='sm'
+								type='button'
+								variant='ghost'
+							>
+								{status === '已完成' ? (
+									<CheckCircle2Icon aria-hidden className='size-4 text-success-on-surface' />
+								) : (
+									<CircleIcon aria-hidden className='size-4 text-muted' />
+								)}
+							</Button>
+						</>
 					}
 					primary={
 						<span className='block truncate font-medium' title={title}>
 							{title}
 						</span>
 					}
-					properties={
-						<>
-							<Chip size='sm' variant='tertiary'>
-								<Chip.Label>{status}</Chip.Label>
-							</Chip>
-							<span className='flex items-center gap-1'>
-								<CalendarDaysIcon aria-hidden className='size-4' />8 月 30 日
-							</span>
-						</>
-					}
+					properties={[
+						{
+							label: '状态',
+							content: <MetadataFieldValue compact label={status} />,
+						},
+						{
+							label: '截止日期',
+							content: (
+								<MetadataFieldValue
+									compact
+									icon={<CalendarDaysIcon aria-hidden />}
+									label='8 月 30 日'
+								/>
+							),
+						},
+					]}
+					propertiesLabel={`${title}的属性`}
+					timestamp={{ label: '创建时间', content: <span>{createdLabel}</span> }}
 					selection={
 						<Checkbox
 							aria-label={`选择任务：${title}`}
@@ -756,7 +790,7 @@ function TaskRowsFixture({
 	items,
 	defaultSelectedIds = [],
 }: {
-	items: ReadonlyArray<{ id: string; title: string }>
+	items: ReadonlyArray<{ id: string; title: string; createdLabel?: string }>
 	defaultSelectedIds?: readonly string[]
 }) {
 	const [selectedIds, setSelectedIds] = useState(() => new Set(defaultSelectedIds))
@@ -775,6 +809,7 @@ function TaskRowsFixture({
 				return (
 					<TaskRowFixture
 						key={item.id}
+						createdLabel={item.createdLabel}
 						selected={selected}
 						selectionPosition={selectionPosition}
 						title={item.title}
@@ -801,16 +836,16 @@ export function TaskRowPreview() {
 				<TaskRowsFixture
 					defaultSelectedIds={['review', 'middle', 'short']}
 					items={[
-						{ id: 'review', title: LONG_TITLE },
-						{ id: 'middle', title: '连续选中分组的中间任务' },
-						{ id: 'short', title: '简短任务标题' },
-						{ id: 'rest', title: '未选择任务，用于观察 Hover' },
+						{ id: 'review', title: LONG_TITLE, createdLabel: '9/1' },
+						{ id: 'middle', title: '连续选中分组的中间任务', createdLabel: '12/31' },
+						{ id: 'short', title: '简短任务标题', createdLabel: '9/11' },
+						{ id: 'rest', title: '未选择任务，用于观察 Hover', createdLabel: '创建 12/31' },
 					]}
 				/>
 			</div>
 			<p className='mt-3 text-sm text-muted'>
 				前三行默认连续选中，用于检查 first / middle / last；第四行用于检查 Row Hover 与 Checkbox
-				显示。
+				显示。长短日期与项目时间前缀共用固定时间槽，前方属性保持对齐。
 			</p>
 		</div>
 	)
@@ -835,29 +870,27 @@ function TaskGroupFixture({
 			<div style={{ height: COLLECTION_SECTION_HEADER_HEIGHT }}>
 				<BoardSectionHeader
 					count={count}
+					icon={<CircleIcon aria-hidden className='size-4 shrink-0 text-warning-on-surface' />}
 					label={label}
 					leading={
-						<>
-							<Button
-								aria-controls={contentId}
-								aria-expanded={expanded}
-								aria-label={expanded ? `折叠 ${label}` : `展开 ${label}`}
-								isIconOnly
-								onDoubleClick={(event) => event.stopPropagation()}
-								onPress={toggleExpanded}
-								size='sm'
-								type='button'
-								variant='ghost'
-							>
-								<span className='inline-flex size-3 items-center justify-center'>
-									<TriangleIcon
-										aria-hidden
-										className={`size-1.5 fill-current text-muted ${expanded ? 'rotate-180' : 'rotate-90'}`}
-									/>
-								</span>
-							</Button>
-							<CircleIcon aria-hidden className='size-4 shrink-0 text-warning-on-surface' />
-						</>
+						<Button
+							aria-controls={contentId}
+							aria-expanded={expanded}
+							aria-label={expanded ? `折叠 ${label}` : `展开 ${label}`}
+							isIconOnly
+							onDoubleClick={(event) => event.stopPropagation()}
+							onPress={toggleExpanded}
+							size='sm'
+							type='button'
+							variant='ghost'
+						>
+							<span className='inline-flex size-3 items-center justify-center'>
+								<TriangleIcon
+									aria-hidden
+									className={`size-1.5 fill-current text-muted ${expanded ? 'rotate-180' : 'rotate-90'}`}
+								/>
+							</span>
+						</Button>
 					}
 					onDoubleClick={toggleExpanded}
 					trailing={
@@ -894,23 +927,23 @@ export function GroupHeaderPreview() {
 			</p>
 			<div className='mt-4'>
 				<TaskGroupFixture label='进行中 · 需要跨团队确认的长中文分组标题' count={12}>
-					<BoardRowSlot>
-						<RowShell>
-							<RowLayout primary='分组内第一条任务' />
-						</RowShell>
-					</BoardRowSlot>
+					<TaskRowsFixture
+						defaultSelectedIds={['first']}
+						items={[{ id: 'first', title: '分组内第一条任务' }]}
+					/>
 				</TaskGroupFixture>
 			</div>
 		</div>
 	)
 }
 
-function BoardFixture({ label, narrow = false }: { label: string; narrow?: boolean }) {
+function BoardFixture({ label, width }: { label: string; width?: 352 | 520 }) {
 	return (
 		<section
 			aria-label={label}
-			className={`@container/task-list ${narrow ? 'w-130 max-w-full' : 'w-full'}`}
+			className='@container/task-list w-full max-w-full'
 			data-ui-lab-task-rows
+			style={{ width }}
 		>
 			<h4 className='mb-2 text-sm font-medium'>{label}</h4>
 			<div className='bg-background'>
@@ -933,7 +966,8 @@ export function TaskBoardPreview() {
 		<div className='flex w-full max-w-5xl flex-col gap-6' data-ui-lab-preview-root='task-board'>
 			<h3 className='text-base font-semibold'>Task Board</h3>
 			<BoardFixture label='宽容器 · 560px 及以上' />
-			<BoardFixture label='紧凑容器 · 520px' narrow />
+			<BoardFixture label='紧凑容器 · 520px' width={520} />
+			<BoardFixture label='属性收纳 · 352px' width={352} />
 			<div className='rounded-lg border border-surface bg-surface-secondary p-4 text-sm leading-6'>
 				<p className='font-medium'>仅真实应用验证</p>
 				<p className='mt-1 text-muted'>
@@ -1080,14 +1114,14 @@ export const TICKET_05_SAMPLES = [
 		name: 'Task Row',
 		view: 'stoneflow',
 		category: 'Collections',
-		description: '用最小可信任务数据检查行 Hover、连续选择形状、状态、日期与尾部动作。',
-		keywords: ['task row', '任务行', 'selection', 'metadata', '尾部操作'],
+		description: '用最小可信任务数据检查行 Hover、连续选择形状、优先级、状态、日期与属性收纳。',
+		keywords: ['task row', '任务行', 'selection', 'metadata', '属性收纳'],
 		owner: 'UI Lab fixture',
 		source:
 			'src/ui-lab/samples/ticket-05/collectionsAndTaskSamples.tsx；src/shared/components/row/RowShell.tsx',
 		coverage: 'rendered',
 		states:
-			'Rest、Row Hover、Adjacent Selection Shape、Hover Reveal Primary Checkbox、长中文、Metadata、Trailing Action',
+			'Rest、Row Hover、Adjacent Selection Shape、Hover Reveal Primary Checkbox、Priority、Status、长中文、Metadata Overflow',
 		verification: 'Lab 可验证组合；Store、Query、写入与业务命令仅真实应用验证',
 		Preview: TaskRowPreview,
 	},
@@ -1111,13 +1145,22 @@ export const TICKET_05_SAMPLES = [
 		view: 'stoneflow',
 		category: 'Collections',
 		description:
-			'并排登记宽容器与 520px 紧凑容器，检查 2px 组间距、#efeff0 Group Header 与三档 Row 状态。',
-		keywords: ['task board', '任务面板', '560px', '520px', 'compact', '窄容器'],
+			'登记宽容器、520px 与 352px 限宽容器，检查组内 2px／组间 4px、44px Row／36px Header 与属性收纳。',
+		keywords: [
+			'task board',
+			'任务面板',
+			'560px',
+			'520px',
+			'352px',
+			'compact',
+			'属性收纳',
+			'窄容器',
+		],
 		owner: 'UI Lab fixture',
 		source:
 			'src/ui-lab/samples/ticket-05/collectionsAndTaskSamples.tsx；src/features/task/components/TaskBoard.tsx',
 		coverage: 'rendered',
-		states: 'Wide、<560 Compact、Selected、长中文、Overflow、Trailing Action',
+		states: 'Wide、520px Compact、352px Property Overflow、Selected、长中文、Header Alignment',
 		verification: 'Lab 可验证布局证据；虚拟滚动、Store、Query、Tauri 与写入仅真实应用验证',
 		Preview: TaskBoardPreview,
 	},

@@ -24,7 +24,7 @@ export function AppBreadcrumb({ items }: AppBreadcrumbProps) {
 	if (items.length === 0) return null
 
 	return (
-		<Breadcrumbs aria-label='当前位置' className='min-w-0 max-w-full'>
+		<Breadcrumbs aria-label='当前位置' className='w-fit min-w-0 max-w-full'>
 			{items.map((item, index) => (
 				<BreadcrumbNodeItem
 					icon={item.icon}
@@ -75,15 +75,10 @@ function BreadcrumbNodeItem({
 	)
 
 	return (
-		<Breadcrumb
-			className={cn(
-				'breadcrumbs__item',
-				truncate ? 'min-w-0' : null,
-				truncate && !isCurrent ? 'flex-1' : null,
-				truncate && isCurrent ? '!shrink' : null,
-			)}
-		>
-			{showSeparator ? <ChevronRightIcon aria-hidden className='breadcrumbs__separator' /> : null}
+		<Breadcrumb className={cn('breadcrumbs__item', truncate ? 'min-w-0 shrink' : null)}>
+			{showSeparator ? (
+				<ChevronRightIcon aria-hidden className='breadcrumbs__separator shrink-0' />
+			) : null}
 			{isCurrent || !to ? (
 				<span
 					aria-current={isCurrent ? 'page' : undefined}

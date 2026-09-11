@@ -4,9 +4,10 @@ import { useCallback, useMemo, type Ref } from 'react'
 import type { GridListItemAria } from 'react-aria'
 
 import { useCommandRuntimeContext, type CommandContext, type CommandId } from '@/features/command'
+import { MetadataFieldValue } from '@/features/metadata-fields'
 import type { ProjectOverviewItem } from '@/shared/types'
 import { formatShortDate } from '@/shared/lib/date'
-import { RowLayout, RowShell } from '@/shared/components/row'
+import { RowLayout, RowShell, type RowProperty } from '@/shared/components/row'
 
 import { buildProjectCommandSelection } from '../model/buildProjectCommandSelection'
 import { ProjectContextMenu } from './ProjectContextMenu'
@@ -67,6 +68,13 @@ export function ProjectRowAdapter({
 		[contextMenuCommandContext, runtime],
 	)
 	const busy = rowState.isPending
+	const properties: RowProperty[] = []
+	if (project.dueAt) {
+		properties.push({
+			label: '截止时间',
+			content: <MetadataFieldValue compact label={`截止 ${formatShortDate(project.dueAt)}`} />,
+		})
+	}
 
 	return (
 		<ProjectContextMenu
@@ -107,12 +115,16 @@ export function ProjectRowAdapter({
 						}
 						leading={<FolderIcon className='size-4 shrink-0 text-muted' />}
 						primary={<span className='block truncate font-medium'>{project.name}</span>}
-						properties={
-							<>
-								{project.dueAt ? <span>截止 {formatShortDate(project.dueAt)}</span> : null}
-								<span>创建 {formatShortDate(project.createdAt)}</span>
-							</>
+						properties={properties}
+						timestamp={
+							project.createdAt
+								? {
+										label: '创建时间',
+										content: <span>创建 {formatShortDate(project.createdAt)}</span>,
+									}
+								: undefined
 						}
+						propertiesLabel={`项目 ${project.name} 的属性`}
 						actions={
 							<Button
 								isDisabled={busy}

@@ -9,6 +9,7 @@ import { ArrowUpIcon, ArrowDownIcon } from 'lucide-react'
 
 import {
 	getTaskDisplayPageCapabilities,
+	normalizeTaskDisplayPreference,
 	type ResolvedTaskDisplayOptions,
 	type TaskDisplayPageKey,
 	type TaskDisplayPropertyKey,
@@ -73,16 +74,6 @@ const PROPERTY_META: Record<TaskDisplayPropertyKey, { label: string }> = {
 	updatedAt: { label: '更新时间' },
 	createdAt: { label: '创建时间' },
 }
-
-const TASK_DISPLAY_ORDERED_PROPERTIES = [
-	'status',
-	'priority',
-	'project',
-	'dueAt',
-	'plannedAt',
-	'updatedAt',
-	'createdAt',
-] as const satisfies readonly TaskDisplayPropertyKey[]
 
 export function DisplayOptionsPanel({
 	pageKey,
@@ -373,13 +364,11 @@ function toggleVisibleProperty(
 	current: readonly TaskDisplayPropertyKey[],
 	key: TaskDisplayPropertyKey,
 ) {
-	const exists = current.includes(key)
-	if (exists) {
-		return current.filter((item) => item !== key)
-	}
-
-	const order = new Map(TASK_DISPLAY_ORDERED_PROPERTIES.map((item, index) => [item, index]))
-	return [...current, key].toSorted(
-		(left, right) => (order.get(left) ?? 999) - (order.get(right) ?? 999),
+	return (
+		normalizeTaskDisplayPreference({
+			visibleProperties: current.includes(key)
+				? current.filter((item) => item !== key)
+				: [...current, key],
+		}).visibleProperties ?? []
 	)
 }

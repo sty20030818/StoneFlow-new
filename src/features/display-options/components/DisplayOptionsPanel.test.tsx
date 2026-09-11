@@ -96,4 +96,27 @@ describe('DisplayOptionsPanel', () => {
 
 		expect(actions.setGrouping).toHaveBeenCalledWith('priority')
 	})
+
+	it('创建和更新时间互相替换，再次点击当前时间可全部关闭', () => {
+		const panel = (visibleProperties: Array<'status' | 'createdAt' | 'updatedAt'>) => (
+			<DisplayOptionsPanel
+				actions={actions}
+				options={{ ...BASE_TASK_DISPLAY_OPTIONS, visibleProperties }}
+				pageKey='task:all'
+				status='ready'
+			/>
+		)
+		const { rerender } = render(panel(['status', 'createdAt']))
+
+		fireEvent.click(screen.getByRole('button', { name: '更新时间' }))
+		expect(actions.setVisibleProperties).toHaveBeenLastCalledWith(['status', 'updatedAt'])
+		rerender(panel(['status', 'updatedAt']))
+
+		fireEvent.click(screen.getByRole('button', { name: '创建时间' }))
+		expect(actions.setVisibleProperties).toHaveBeenLastCalledWith(['status', 'createdAt'])
+		rerender(panel(['status', 'createdAt']))
+
+		fireEvent.click(screen.getByRole('button', { name: '创建时间' }))
+		expect(actions.setVisibleProperties).toHaveBeenLastCalledWith(['status'])
+	})
 })

@@ -10,6 +10,7 @@ import {
 	type CommandId,
 	type CommandProjection,
 } from '@/features/command'
+import { MetadataFieldValue } from '@/features/metadata-fields'
 import type { LifecycleEntry, LifecycleMode } from '@/shared/types'
 import { formatShortDate } from '@/shared/lib/date'
 import { cn } from '@/shared/lib/utils'
@@ -158,12 +159,21 @@ export function LifecycleRowAdapter({
 						leading={<LifecycleEntityIcon entityType={entry.entityType} />}
 						primary={<span className='block truncate font-medium'>{entry.title}</span>}
 						properties={
-							createdAtValue ? (
-								<span className='text-xs text-muted'>
-									{mode === 'archive' ? '归档' : '删除'} {formatShortDate(createdAtValue)}
-								</span>
-							) : undefined
+							createdAtValue
+								? [
+										{
+											label: mode === 'archive' ? '归档时间' : '删除时间',
+											content: (
+												<MetadataFieldValue
+													compact
+													label={`${mode === 'archive' ? '归档' : '删除'} ${formatShortDate(createdAtValue)}`}
+												/>
+											),
+										},
+									]
+								: []
 						}
+						propertiesLabel={`条目 ${entry.title} 的属性`}
 						actions={
 							restoreCommand?.visible ? (
 								<Button

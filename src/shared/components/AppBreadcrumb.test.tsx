@@ -37,7 +37,7 @@ describe('AppBreadcrumb', () => {
 		expect(current).not.toHaveAttribute('tabindex')
 	})
 
-	it('长中间祖先占用剩余宽度，当前节点保留完整右侧边界', async () => {
+	it('路径按内容排列，长祖先与当前节点允许收缩而不瓜分剩余宽度', async () => {
 		await renderWithRouterContext(
 			<AppBreadcrumb
 				items={[
@@ -61,10 +61,11 @@ describe('AppBreadcrumb', () => {
 			.getByText(/同样需要在窄宽里保留右侧边界/)
 			.closest('.breadcrumbs__item')
 
-		expect(middleItem).toHaveClass('min-w-0', 'flex-1')
+		expect(middleItem).toHaveClass('min-w-0', 'shrink')
+		expect(middleItem).not.toHaveClass('flex-1')
 		expect(currentItem).not.toHaveClass('flex-1')
-		expect(currentItem).toHaveClass('!shrink')
-		expect(screen.getByLabelText('当前位置')).toHaveClass('max-w-full')
+		expect(currentItem).toHaveClass('min-w-0', 'shrink')
+		expect(screen.getByLabelText('当前位置')).toHaveClass('w-fit', 'max-w-full')
 		expect(screen.getByLabelText('当前位置')).not.toHaveClass('overflow-hidden')
 	})
 })

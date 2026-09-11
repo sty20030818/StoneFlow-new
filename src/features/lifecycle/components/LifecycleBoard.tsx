@@ -162,23 +162,21 @@ function LifecycleBoardSectionBlock({
 				>
 					<BoardSectionHeader
 						count={section.items.length}
+						icon={<LifecycleModeIcon mode={mode} />}
 						label={section.label}
 						leading={
-							<>
-								<Button
-									ref={triggerRef}
-									aria-expanded={open}
-									aria-label={`${open ? '折叠' : '展开'} ${section.label}`}
-									isIconOnly
-									onBlur={onBlur}
-									onPress={() => collection.setGroupOpen(section.key, !open)}
-									size='sm'
-									variant='ghost'
-								>
-									<ChevronRightIcon className={open ? 'size-3.5 rotate-90' : 'size-3.5'} />
-								</Button>
-								<LifecycleModeIcon mode={mode} />
-							</>
+							<Button
+								ref={triggerRef}
+								aria-expanded={open}
+								aria-label={`${open ? '折叠' : '展开'} ${section.label}`}
+								isIconOnly
+								onBlur={onBlur}
+								onPress={() => collection.setGroupOpen(section.key, !open)}
+								size='sm'
+								variant='ghost'
+							>
+								<ChevronRightIcon className={open ? 'size-3.5 rotate-90' : 'size-3.5'} />
+							</Button>
 						}
 						selectedCount={selectedCount}
 					/>

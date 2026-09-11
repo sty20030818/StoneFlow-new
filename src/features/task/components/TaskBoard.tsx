@@ -1255,6 +1255,7 @@ function StatusSectionHeader({
 	const headerContent = (
 		<BoardSectionHeader
 			count={count}
+			icon={status ? <TaskStatusIndicator status={status} /> : undefined}
 			label={
 				contextMenuOpen ? (
 					<span className='min-w-0 truncate'>{label}</span>
@@ -1264,14 +1265,7 @@ function StatusSectionHeader({
 					</OverflowTooltip>
 				)
 			}
-			leading={
-				toggleAction || status ? (
-					<>
-						{toggleAction}
-						{status ? <TaskStatusIndicator status={status} /> : null}
-					</>
-				) : undefined
-			}
+			leading={toggleAction}
 			onFocus={(event) => event.stopPropagation()}
 			selectedCount={selectedCount}
 			trailing={createAction}

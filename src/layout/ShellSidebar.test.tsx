@@ -44,7 +44,22 @@ describe('ShellSidebar', () => {
 		expect(screen.getByRole('row', { name: '项目总览' })).toBeInTheDocument()
 		expect(screen.getByRole('row', { name: '归档' })).toBeInTheDocument()
 		expect(screen.getByRole('row', { name: '回收站' })).toBeInTheDocument()
+		expect(screen.getByRole('separator')).toBeInTheDocument()
 		expect(screen.queryByRole('row', { name: '设置' })).not.toBeInTheDocument()
+	})
+
+	it('归档与回收站均隐藏时不显示分割线', async () => {
+		await renderShellSidebar({
+			...TEST_SETTINGS,
+			footerItems: {
+				archive: { ...TEST_SETTINGS.footerItems.archive, visible: false },
+				trash: { ...TEST_SETTINGS.footerItems.trash, visible: false },
+			},
+		})
+
+		expect(screen.queryByRole('row', { name: '归档' })).not.toBeInTheDocument()
+		expect(screen.queryByRole('row', { name: '回收站' })).not.toBeInTheDocument()
+		expect(screen.queryByRole('separator')).not.toBeInTheDocument()
 	})
 
 	it('All scope 下隐藏 Space 专属项目导航', async () => {

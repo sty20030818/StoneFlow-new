@@ -67,6 +67,21 @@
 		padding-inline: 0.5rem;
 	}
 
+	/* 页面视图选择保留轻描边与中性选中面，状态、焦点和动效仍由 HeroUI 驱动。 */
+	[data-theme="stoneflow-light"] .toggle-button[data-page-toolbar-option="true"] {
+		--toggle-button-bg-hover: color-mix(in srgb, var(--default) 60%, transparent);
+		--toggle-button-bg-selected: var(--default);
+		--toggle-button-bg-selected-hover: var(--default);
+		--toggle-button-bg-selected-pressed: var(--default);
+		--toggle-button-fg-selected: var(--foreground);
+		border: var(--border-width) solid color-mix(in srgb, var(--border) 75%, transparent);
+	}
+
+	[data-theme="stoneflow-light"]
+		.toggle-button[data-page-toolbar-option="true"][data-selected="true"] {
+		border-color: var(--toggle-button-bg-selected);
+	}
+
 	/* 14px 是高密度界面的默认图标上限；已有 12px glyph 不会被反向放大。 */
 	[data-theme="stoneflow-light"] .lucide:not(.size-5) {
 		max-inline-size: var(--icon-size);
@@ -329,10 +344,18 @@
 	}
 
 	/* Breadcrumb 祖先项使用填充式 Ghost；当前位置仍由 React Aria 持有语义。 */
+	[data-theme="stoneflow-light"] .breadcrumbs {
+		gap: calc(var(--spacing) / 2);
+	}
+
+	[data-theme="stoneflow-light"] .breadcrumbs .breadcrumbs__item {
+		padding-inline: 0;
+	}
+
 	[data-theme="stoneflow-light"] .breadcrumbs .breadcrumbs__link {
 		min-height: var(--control-height-sm);
 		border-radius: var(--radius-pill);
-		padding-inline: 0.5rem;
+		padding-inline: var(--spacing);
 		color: var(--muted);
 		text-decoration: none;
 	}
@@ -373,6 +396,10 @@
 	[data-theme="stoneflow-light"] .sidebar {
 		border-color: var(--separator);
 		background: var(--surface-secondary);
+	}
+
+	[data-theme="stoneflow-light"] .sidebar__menu-chip {
+		min-inline-size: calc(var(--spacing) * 6);
 	}
 
 	[data-theme="stoneflow-light"]
@@ -625,9 +652,41 @@
 		border-radius: var(--radius-control);
 	}
 
+	/* Chip 没有 outline variant；只读属性沿用透明 Chip，仅补齐与字段按钮一致的描边。 */
+	[data-theme="stoneflow-light"] [data-metadata-field-value="true"] {
+		border: var(--border-width) solid var(--border);
+	}
+
+	/* 行与分组头预留相同边界，避免第一列因焦点边框错开 1px。 */
+	[data-theme="stoneflow-light"] :is([data-row-shell], [data-board-section-header]) {
+		border: var(--border-width) solid transparent;
+	}
+
+	/* 起始控件按 16px 图标画布排版与命中；不扩展热区，不改变原生焦点和选中语义。 */
+	[data-theme="stoneflow-light"]
+		:is([data-row-layout-region="controls"], [data-board-section-header-region="controls"]) {
+		--icon-size: calc(var(--spacing) * 4);
+
+		:is(.button--icon-only, .toggle-button--icon-only, .checkbox__content) {
+			inline-size: var(--icon-size);
+			block-size: var(--icon-size);
+			min-block-size: var(--icon-size);
+			padding: 0;
+			gap: 0;
+		}
+
+		:is(.button--icon-only, .toggle-button--icon-only) {
+			background-color: transparent;
+			border-radius: var(--radius-sm);
+
+			svg {
+				margin: 0;
+			}
+		}
+	}
+
 	/* RowShell 只在这里拥有共享状态皮肤；连续选中形状由 BoardRowSlot 拥有。 */
 	[data-theme="stoneflow-light"] [data-row-shell] {
-		border: 1px solid transparent;
 		border-radius: var(--radius-surface);
 		background: transparent;
 		color: var(--foreground);

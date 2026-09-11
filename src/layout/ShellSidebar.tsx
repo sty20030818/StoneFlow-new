@@ -490,6 +490,7 @@ export function ShellSidebarNavigation({
 						</Sidebar.Content>
 
 						<Sidebar.Footer>
+							{footerItems.length > 0 ? <Sidebar.Separator /> : null}
 							<Sidebar.Menu aria-label='辅助导航'>
 								{footerItems.map((item) => (
 									<SidebarNavRow

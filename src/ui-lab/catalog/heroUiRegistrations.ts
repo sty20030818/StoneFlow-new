@@ -326,6 +326,7 @@ const OSS_PRODUCTION_USAGE = [
 		'src/shared/components/page-frame/PageFrame.tsx',
 		['ScrollShadow', 'Separator', 'Surface', 'ToggleButton', 'ToggleButtonGroup', 'Toolbar'],
 	],
+	['src/shared/components/row/RowLayout.tsx', ['Button', 'Popover']],
 	['src/shared/components/tooltip/ActionTooltip.tsx', ['Tooltip']],
 	['src/shared/components/tooltip/DisabledActionTooltip.tsx', ['Tooltip']],
 	['src/shared/components/tooltip/OverflowTooltip.tsx', ['Tooltip']],
