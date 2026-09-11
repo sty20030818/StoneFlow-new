@@ -33,6 +33,7 @@ export function DangerConfirmDialog({
 						<section
 							{...dialogProps}
 							onKeyDown={(event) => {
+								if (event.key === 'Tab') return
 								if (
 									event.key === 'Enter' &&
 									event.target === event.currentTarget &&

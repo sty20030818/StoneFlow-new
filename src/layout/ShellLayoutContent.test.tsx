@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { Sidebar } from '@heroui-pro/react'
 
 import { ShellChrome } from '@/layout/ShellChrome'
@@ -36,7 +36,13 @@ vi.mock('@/layout/ShellMain', () => ({
 }))
 
 vi.mock('@/layout/ShellSidebar', () => ({
-	ShellSidebar: () => <aside data-testid='sidebar-navigation'>导航</aside>,
+	ShellSidebar: () => (
+		<aside data-testid='sidebar-navigation'>
+			导航
+			<button type='button'>所有任务</button>
+			<button type='button'>归档</button>
+		</aside>
+	),
 }))
 
 vi.mock('@/features/settings', () => ({
@@ -119,6 +125,23 @@ describe('Shell 阶段 D 结构', () => {
 		await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
 		expect(screen.getByTestId('shell-main-content')).toHaveAttribute('data-detail-open', 'true')
 		expect(screen.getByTestId('shell-main-content')).toHaveAttribute('data-compact', 'true')
+	})
+
+	it('compact 导航的 Tab 和 Shift+Tab 在首尾回绕，Escape 仍可关闭', async () => {
+		installMatchMedia(false)
+		render(<Fixture />)
+		fireEvent.click(screen.getByRole('button', { name: '打开导航' }))
+		const dialog = await screen.findByRole('dialog', { name: '导航' })
+		const first = within(dialog).getByRole('button', { name: '所有任务' })
+		const last = within(dialog).getByRole('button', { name: '归档' })
+		await act(async () => last.focus())
+		fireEvent.keyDown(last, { key: 'Tab' })
+		expect(first).toHaveFocus()
+		fireEvent.keyDown(first, { key: 'Tab', shiftKey: true })
+		expect(last).toHaveFocus()
+		expect(dialog).toBeInTheDocument()
+		fireEvent.keyDown(last, { key: 'Escape' })
+		await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
 	})
 })
 

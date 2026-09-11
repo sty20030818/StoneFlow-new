@@ -18,7 +18,7 @@ describe('verifyHeroUiProInstallation', () => {
 	})
 
 	test('接受声明范围内的 frozen lock 版本', async () => {
-		const root = await createFixture({ installedVersion: '1.0.0-beta.9' })
+		const root = await createFixture({ installedVersion: '1.0.0-beta.10' })
 		await expect(verifyHeroUiProInstallation(root)).resolves.toBeUndefined()
 	})
 
@@ -53,13 +53,13 @@ async function createFixture(options: { installedVersion?: string } = {}) {
 	])
 	await writeFile(
 		path.join(root, 'package.json'),
-		JSON.stringify({ dependencies: { '@heroui-pro/react': '^1.0.0-beta.8' } }),
+		JSON.stringify({ dependencies: { '@heroui-pro/react': '^1.0.0-beta.9' } }),
 	)
 	await writeFile(
 		path.join(packageRoot, 'package.json'),
 		JSON.stringify({
 			name: '@heroui-pro/react',
-			version: options.installedVersion ?? '1.0.0-beta.8',
+			version: options.installedVersion ?? '1.0.0-beta.9',
 			exports: {
 				'.': { import: './dist/index.js' },
 				'./list-view': { import: './dist/components/list-view/index.js' },

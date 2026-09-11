@@ -72,7 +72,8 @@ describe('Shell Overlay focus matrix', () => {
 	it('ContextMenu submenu：两次 Escape 依次关闭子菜单与根菜单', async () => {
 		render(<ContextMenuProbe />)
 		fireEvent.contextMenu(screen.getByTestId('context-target'), { clientX: 20, clientY: 20 })
-		const rootMenu = await screen.findByRole('menu', { name: '根菜单' })
+		const rootMenu = await screen.findByRole('menu')
+		expect(rootMenu).toHaveAttribute('aria-label', '根菜单')
 		const submenuTrigger = screen.getByRole('menuitem', { name: /更多/ })
 
 		act(() => submenuTrigger.focus())

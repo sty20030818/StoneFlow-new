@@ -79,6 +79,7 @@ tailwindcss
 --radius-control: 6px;
 --radius-surface: 8px;
 --radius-overlay: 12px;
+--radius-dialog: 24px;
 --radius-pill: 9999px;
 
 --control-height-sm: 28px;
@@ -90,7 +91,7 @@ tailwindcss
 
 规则：
 
-- Input、Menu 与其他普通 Control 使用 `6px`；Button 与 Toggle 使用 pill；Card 与 Row 分组使用 `8px`；Popover、Modal 与 Sheet 使用 `12px`。
+- Input、Menu 与其他普通 Control 使用 `6px`；Button 与 Toggle 使用 pill；Card 与 Row 分组使用 `8px`；Popover 与 Sheet 使用 `12px`；普通 Modal 与 AlertDialog 使用 `24px`，真正铺满屏幕的 Modal 保持上游无圆角语义。
 - pill 用于 Button、Toggle、Chip、Avatar、ActionBar 和状态标记；导航行与 Sidebar 空间选择器使用 Control 圆角。空间选择器通过 `data-space-switcher` 限定 recipe，展开时两侧留白为 `12px`，与导航项外缘对齐。
 - 附着式 ButtonGroup 与 ToggleButtonGroup 的首、中、尾几何继续由 HeroUI 上游负责。
 - 有明确边界的 Surface 使用 `1px` 语义边框；Row 使用分隔线与状态背景；阴影只表达浮层或拖拽 elevation。
@@ -118,7 +119,9 @@ HeroUI OSS/Pro 的锁定版本是默认实现，负责组件结构、Hover、Pre
 - `Alert` 使用 1px 轻边界而非卡片阴影；accent、success、warning 与 danger 状态统一使用对应 soft surface 与同色边界，其中 Alert accent 固定表达 Info，不随用户 Accent 预设漂移。
 - 标题、代码和数字输入只通过稳定语义 hook 统一内容层级，不向 Feature 暴露可配置皮肤。
 - 普通键盘焦点宽度统一来自 `theme.css` 的 `--focus-ring-width: 1px`；扩展 HeroUI `focus-ring` / `focus-field-ring` 共同 utility，Pro 已编译 CSS 与本地焦点边在集中 recipe 消费同一 token。Invalid 保留原规则，forced-colors 下宽度为 2px 并保留系统 Highlight；既有 Row 1px 边不再减细。UI Lab 不以私有 inline 焦点样式覆盖真实上游表现。
-- 创建场景是明确的窄例外：`data-create-dialog` 使用 `24px` 圆角和 spacing `3`（`12px`）内边距，`data-create-dialog-header` 与共享分区使用同一纵向间隔；Header 分隔符两侧与属性间隔为 spacing `1.5`（`6px`）。`create-title` / `create-description` 编辑字段左侧额外缩进 `4px`、描述空态 `60px`，默认、hover、focus 下透明、无边框/阴影/ring，圆角为零以免裁切贴边光标，强制颜色保留 Highlight。创建属性沿用原生 outline variant，普通表单字段的上游 focus/invalid recipe 和普通 Overlay `12px` 不变。
+- 普通 Modal 与 AlertDialog 共用 `24px` 圆角和 spacing `3`（`12px`）外壳内边距，不改变宽度、滚动或原生动画。标准左对齐标题由实际 Feature 的普通内容块组合图标、8px 图文间隔和左内缩，图标仍遵从全局 `14px` 上限，不增加顶部留白。空间、保存视图、筛选保存、同步配置与已有关闭入口统一使用右上角小号 ghost Button 和 `14px` X 图标；关闭复用 HeroUI `slot='close'` 或既有关闭回调，新入口跟随各自取消语义，提交或安装中的关闭限制仍归业务。创建、关于、日期与危险确认保留各自布局，不创建通用弹窗壳。
+- 更新日志与 Available 更新说明通过 `data-release-dialog`、快捷键帮助通过 `data-shortcut-help-dialog` 使用次级表面衬托原生 Card；这些窄语义 hook 不改变其他 Modal 或下载、安装状态的底色，卡片排列与滚动仍由实际 Feature 持有。
+- 创建编辑区仍是窄例外：`data-create-dialog-header` 与共享分区使用同一纵向间隔；Header 分隔符两侧与属性间隔为 spacing `1.5`（`6px`）。`create-title` / `create-description` 编辑字段左侧额外缩进 `4px`、描述空态 `60px`，默认、hover、focus 下透明、无边框/阴影/ring，圆角为零以免裁切贴边光标，强制颜色保留 Highlight。创建属性沿用原生 outline variant，普通表单字段的上游 focus/invalid recipe 和 Popover/Sheet 的 `12px` 圆角不变。
 - 任务详情的 `detail-title` / `detail-note` 同样保持连续编辑面：默认、hover、focus 均透明且无框、阴影或 ring，圆角为零以免裁切贴边原生光标，以光标提示编辑位置，强制颜色保留 Highlight；Aside、Sheet 与完整详情页复用同一 recipe，不改变间距、滚动、输入、自动保存及其他表单字段。
 - 原生 host 合同只保留内容高度、Windows 窗体命中区、拖拽期间关闭 Sidebar transition、compact 导航 Sheet 的系统按钮避让、路由回退链接及 Launcher 嵌入提示所需的窄 recipe。
 - 创建窗口的定位留白与高度限制只读取 `.modal__container[data-create-dialog-container]` 的 `--create-dialog-block-gap: clamp(1rem, 14dvh, 8rem)`；上下对称留白，描述到上限后内部滚动。放大状态只填满同一可用高度，不再另写 `70dvh`。

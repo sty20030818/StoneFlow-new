@@ -91,6 +91,8 @@ index.ts                       # adapters public
 新增导出前确认已有外消费者。导出符合 CONVENTIONS TSDoc L1。
 keybinding 底层工具、Menu 内部分组、`createDisabledCommand` 等 bind 内部件默认不外放。
 
+`ShortcutHelp` 按实际命令分类使用 HeroUI Card，列表条目与键帽仍由现有模型和 `ShortcutTokens` 提供，不创建另一份快捷键清单。标题图标沿用全局 14px 上限，配合 8px 图文间隔与左内缩，不增加顶部留白；分组卡片间隔 12px，原生滚动区借用两侧外壳留白并对称预留 gutter，支持 Tab 聚焦后键盘阅读。灰色外壳由样式层的 `data-shortcut-help-dialog` 窄语义 hook 提供，不改变命令菜单。
+
 ---
 
 ## 4. 与其它模块

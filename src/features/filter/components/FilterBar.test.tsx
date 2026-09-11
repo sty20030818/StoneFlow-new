@@ -8,6 +8,40 @@ import { renderWithInteractionProviders } from '@/test/TestInteractionProviders'
 import { FilterBar } from './FilterBar'
 
 describe('FilterBar', () => {
+	it('保存视图弹窗可通过标题关闭按钮返回入口焦点', async () => {
+		const onSave = vi.fn(async () => undefined)
+		renderFilterBar({ onSave })
+		const saveTrigger = screen.getByRole('button', { name: '保存' })
+		act(() => saveTrigger.focus())
+		fireEvent.click(saveTrigger)
+
+		const dialog = screen.getByRole('dialog', { name: '保存为视图' })
+		fireEvent.click(within(dialog).getByRole('button', { name: '关闭保存视图' }))
+
+		await waitFor(() => {
+			expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+			expect(saveTrigger).toHaveFocus()
+		})
+		expect(onSave).not.toHaveBeenCalled()
+	})
+
+	it.each([
+		{ label: '另存为', mode: 'create', name: ' 高优先级任务 ' },
+		{ label: '覆盖当前', mode: 'overwrite', name: '' },
+	] as const)('统一标题后仍可$label视图', async ({ label, mode, name }) => {
+		const onSave = vi.fn(async () => undefined)
+		renderFilterBar({ canOverwriteView: true, onSave })
+		fireEvent.click(screen.getByRole('button', { name: '保存' }))
+		const dialog = screen.getByRole('dialog', { name: '保存为视图' })
+		fireEvent.change(within(dialog).getByRole('textbox', { name: '视图名称' }), {
+			target: { value: name },
+		})
+		fireEvent.click(within(dialog).getByRole('button', { name: label }))
+
+		await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+		expect(onSave).toHaveBeenCalledExactlyOnceWith({ mode, name: name.trim() || undefined })
+	})
+
 	it('每个条件独立分组，字段只读，运算符、值和删除各自可操作', () => {
 		renderFilterBar()
 
@@ -83,7 +117,13 @@ describe('FilterBar', () => {
 	})
 })
 
-function renderFilterBar() {
+function renderFilterBar({
+	canOverwriteView = false,
+	onSave,
+}: {
+	canOverwriteView?: boolean
+	onSave?: (input: { mode: 'create' | 'overwrite'; name?: string }) => Promise<void>
+} = {}) {
 	const status = createFilterClause('status', 'is', ['todo'], 'status-filter')
 	const priority = createFilterClause('priority', 'is', ['3'], 'priority-filter')
 	const replaceEffective = vi.fn()
@@ -95,6 +135,8 @@ function renderFilterBar() {
 		return (
 			<ListFilterUiProvider
 				value={{
+					canOverwriteView,
+					onSave,
 					session: {
 						base: EMPTY_FILTER_QUERY,
 						temp: query,

@@ -5,6 +5,8 @@ import { toast } from '@heroui/react'
 import { isTauri } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 
+import { prefetchChangelog } from '@/features/changelog'
+
 import {
 	consumeCompletedUpdate,
 	getUpdateSettings,
@@ -19,6 +21,11 @@ import { useUpdateStore } from '../model/useUpdateStore'
 export function useUpdateEvents(
 	onCompletedUpdate?: (version: string, channel: UpdateChannel) => void,
 ) {
+	const targetVersion = useUpdateStore((state) => state.snapshot?.update?.version)
+	useEffect(() => {
+		if (isTauri() && targetVersion) void prefetchChangelog(targetVersion)
+	}, [targetVersion])
+
 	useEffect(() => {
 		if (!isTauri()) return
 

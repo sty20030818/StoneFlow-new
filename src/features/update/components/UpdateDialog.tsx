@@ -1,9 +1,10 @@
-import { Alert, Button, Modal, ProgressBar, ScrollShadow, Spinner, toast } from '@heroui/react'
+import { Alert, Button, Card, Chip, Modal, ProgressBar, Spinner, toast } from '@heroui/react'
 import { useEffect, useId, useState } from 'react'
 import { DownloadIcon, RefreshCwIcon, XIcon } from 'lucide-react'
 import { ActionTooltip, DisabledActionTooltip } from '@/shared/components/tooltip'
 import { normalizeTauriError } from '@/shared/lib/normalize-tauri-error'
-import { ChangelogRelease, useChangelog } from '@/features/changelog'
+import { useChangelog } from '@/features/changelog'
+import { ChangelogRelease, ChangelogReleaseContent } from '@/features/changelog/presentation'
 import {
 	getCurrentVersion,
 	getUpdateSettings,
@@ -29,7 +30,7 @@ export function UpdateDialog() {
 	const { checkNow } = useManualUpdateCheck()
 	const { phase, progress, errorMessage } = snapshot
 	const updateInfo = snapshot.update
-	const [currentVersion, setCurrentVersion] = useState<string | null>(null)
+	const [currentVersion, setCurrentVersion] = useState<string | null>()
 	const descriptionId = useId()
 
 	const isDownloading = phase === 'downloading'
@@ -44,7 +45,7 @@ export function UpdateDialog() {
 		status: 'loading',
 	})
 	if (readySettings.key !== readyKey) setReadySettings({ key: readyKey, status: 'loading' })
-	const { releases } = useChangelog(
+	const { releases, isLoading: notesLoading } = useChangelog(
 		dialogVisible && currentVersion && updateInfo
 			? {
 					kind: 'range',
@@ -146,14 +147,19 @@ export function UpdateDialog() {
 	const displayVersion = updateInfo?.version ?? ''
 	const sourceChannelLabel = updateInfo?.channel === 'beta' ? 'Beta' : 'Stable'
 	const configuredChannelLabel = configuredChannel === 'beta' ? 'Beta' : 'Stable'
-	const showNotes = phase === 'available' && releases.length > 0
-	const showBody = showNotes || isDownloading || isReady || isInstalling || Boolean(errorMessage)
+	const targetRelease = releases.find((release) => release.version === updateInfo?.version)
+	const showNotes = phase === 'available'
+	const notesIncomplete = showNotes && !targetRelease
+	const showBody =
+		isDownloading ||
+		(isReady && (settingsLoading || settingsError || crossChannel)) ||
+		Boolean(errorMessage)
 
 	const titleText = isInstalling
 		? '正在安装更新'
 		: isReady
 			? errorMessage
-				? `安装 v${displayVersion} 失败`
+				? '安装更新失败'
 				: '更新已下载，等待安装'
 			: isDownloading
 				? '正在下载更新'
@@ -163,23 +169,23 @@ export function UpdateDialog() {
 						? '检查更新失败'
 						: errorMessage
 							? '更新下载失败'
-							: `发现新版本 ${displayVersion}`
+							: '发现新版本'
 
 	const descText = isInstalling
-		? `正在安装版本 ${displayVersion}，请勿关闭应用或重复操作。`
+		? `正在安装 v${displayVersion}，完成前无法关闭窗口，请勿退出应用。`
 		: isReady
 			? errorMessage
-				? `版本 ${displayVersion} 的安装包仍然完整保留，可以直接重试，无需重新检查或下载。`
-				: `版本 ${displayVersion} 已下载完成。点击「立即重启」才会安装；关闭应用或稍后再说都不会自动安装。`
+				? `v${displayVersion} 的安装包仍然完整保留，可直接重试，无需重新下载。`
+				: `v${displayVersion} 已准备好，由你确认重启安装。关闭窗口不会自动安装。`
 			: isDownloading
-				? '正在下载更新文件。整段进度可点回此窗口；取消后可重新下载。'
+				? `正在下载 v${displayVersion}，可关闭窗口在后台继续。`
 				: isChecking
-					? '正在检查更新...'
+					? '正在连接更新服务…'
 					: isCheckError
 						? '未能完成更新检查，请稍后重试。'
 						: errorMessage
-							? `版本 ${displayVersion} 仍可用，可以直接重新下载。`
-							: '建议及时更新以获得最新功能和问题修复。'
+							? '此版本仍可用，可以重新下载。'
+							: '下载完成后，由你决定何时重启安装。'
 
 	return (
 		<Modal.Backdrop
@@ -191,11 +197,13 @@ export function UpdateDialog() {
 			<Modal.Container placement='center' scroll='inside' size='lg'>
 				<Modal.Dialog
 					aria-describedby={descriptionId}
-					className='max-h-[min(42rem,calc(100dvh-3rem))] overflow-hidden'
+					className='max-h-[min(42rem,calc(100dvh-3rem))] overflow-hidden sm:max-w-2xl'
+					data-release-dialog={showNotes || undefined}
 					render={(dialogProps) => (
 						<section
 							{...dialogProps}
 							onKeyDown={(event) => {
+								if (event.key === 'Tab') return
 								if (event.key !== 'Escape' || event.defaultPrevented) event.stopPropagation()
 							}}
 						/>
@@ -203,8 +211,25 @@ export function UpdateDialog() {
 				>
 					<Modal.Header>
 						<div className='flex items-start gap-3'>
-							<div className='min-w-0 flex-1 space-y-1'>
-								<Modal.Heading>{titleText}</Modal.Heading>
+							<div className='min-w-0 flex-1 space-y-1 ps-2'>
+								<div className='flex flex-wrap items-center gap-2'>
+									<div className='flex items-center gap-2'>
+										<RefreshCwIcon aria-hidden className='size-4 shrink-0 text-muted' />
+										<Modal.Heading>{titleText}</Modal.Heading>
+									</div>
+									{phase === 'available' && updateInfo ? (
+										<>
+											<Chip size='sm' variant='soft'>
+												v{displayVersion}
+											</Chip>
+											{targetRelease ? (
+												<time className='text-xs text-muted' dateTime={targetRelease.date}>
+													{targetRelease.date}
+												</time>
+											) : null}
+										</>
+									) : null}
+								</div>
 								<p className='text-sm leading-5 text-muted' id={descriptionId}>
 									{descText}
 								</p>
@@ -219,31 +244,60 @@ export function UpdateDialog() {
 										type='button'
 										variant='ghost'
 									>
-										<XIcon aria-hidden className='size-4' />
+										<XIcon aria-hidden className='size-3.5' />
 									</Button>
 								</DisabledActionTooltip>
 							) : (
 								<ActionTooltip label='关闭'>
-									<Modal.CloseTrigger aria-label='关闭' className='static shrink-0' />
+									<Button
+										aria-label='关闭'
+										isIconOnly
+										size='sm'
+										slot='close'
+										type='button'
+										variant='ghost'
+									>
+										<XIcon aria-hidden className='size-3.5' />
+									</Button>
 								</ActionTooltip>
 							)}
 						</div>
 					</Modal.Header>
 
-					{showBody ? (
-						<Modal.Body>
-							{showNotes ? (
-								<ScrollShadow
-									aria-label='本次累计更新说明'
-									className='max-h-64 space-y-5 overflow-y-auto pe-2'
-									role='region'
-								>
-									{releases.map((release) => (
-										<ChangelogRelease key={release.version} release={release} />
-									))}
-								</ScrollShadow>
-							) : null}
+					{showNotes ? (
+						<Card className='mt-3 min-h-0 flex-1'>
+							<Card.Content
+								aria-label='本次累计更新说明'
+								className='scrollbar min-h-0 overflow-y-auto overscroll-contain'
+								role='region'
+								tabIndex={0}
+							>
+								<div className='space-y-5'>
+									{notesIncomplete ? (
+										<p aria-live='polite' className='text-sm text-muted' role='status'>
+											{currentVersion === undefined || notesLoading
+												? '正在读取本次更新说明…'
+												: '本次更新说明暂不可用，不影响更新。'}
+										</p>
+									) : null}
+									{releases.map((release) =>
+										release.version === displayVersion ? (
+											<ChangelogReleaseContent
+												headingLevel={3}
+												key={release.version}
+												release={release}
+											/>
+										) : (
+											<ChangelogRelease key={release.version} release={release} />
+										),
+									)}
+								</div>
+							</Card.Content>
+						</Card>
+					) : null}
 
+					{showBody ? (
+						<Modal.Body className={showNotes ? 'mt-3 max-h-[25dvh] flex-initial' : undefined}>
 							{isDownloading ? (
 								<div className='space-y-2'>
 									<ProgressBar aria-label='下载进度' size='sm' value={progressPercent}>
@@ -255,32 +309,6 @@ export function UpdateDialog() {
 										{formatDownloadBytesLine(downloaded, total)}
 									</p>
 								</div>
-							) : null}
-
-							{isInstalling ? (
-								<Alert status='accent'>
-									<Alert.Indicator>
-										<Spinner aria-hidden color='current' size='sm' />
-									</Alert.Indicator>
-									<Alert.Content>
-										<Alert.Title>正在安装</Alert.Title>
-										<Alert.Description>
-											系统安装器正在处理已验证的安装包。完成前所有更新操作均已锁定。
-										</Alert.Description>
-									</Alert.Content>
-								</Alert>
-							) : null}
-
-							{isReady && !errorMessage ? (
-								<Alert status='success'>
-									<Alert.Indicator />
-									<Alert.Content>
-										<Alert.Title>安装包已就绪</Alert.Title>
-										<Alert.Description>
-											只有点击「立即重启」才会开始安装并退出当前进程。
-										</Alert.Description>
-									</Alert.Content>
-								</Alert>
 							) : null}
 
 							{errorMessage ? (
@@ -326,7 +354,7 @@ export function UpdateDialog() {
 						</Modal.Body>
 					) : null}
 
-					<Modal.Footer>
+					<Modal.Footer className={showNotes ? 'mt-3' : 'mt-5'}>
 						{isInstalling ? (
 							<Button isDisabled isPending size='sm' type='button'>
 								<Spinner aria-hidden color='current' size='sm' />
@@ -364,12 +392,8 @@ export function UpdateDialog() {
 								>
 									取消下载
 								</Button>
-								<Button onPress={closeDialog} size='sm' type='button' variant='ghost'>
+								<Button onPress={closeDialog} size='sm' type='button' variant='secondary'>
 									后台继续
-								</Button>
-								<Button isDisabled isPending size='sm' type='button'>
-									<Spinner aria-hidden color='current' size='sm' />
-									下载中
 								</Button>
 							</>
 						) : isChecking ? (
@@ -383,20 +407,25 @@ export function UpdateDialog() {
 								重新检查
 							</Button>
 						) : phase === 'available' ? (
-							<>
+							<div className='flex w-full flex-wrap items-center justify-between gap-2'>
 								<Button onPress={() => void handleSkip()} size='sm' type='button' variant='ghost'>
 									跳过此版本
 								</Button>
-								<Button
-									isDisabled={!canDownload}
-									onPress={() => void startDownload()}
-									size='sm'
-									type='button'
-								>
-									<DownloadIcon aria-hidden className='size-3.5' />
-									{errorMessage ? '重新下载' : '立即更新'}
-								</Button>
-							</>
+								<div className='ml-auto flex items-center gap-2'>
+									<Button onPress={closeDialog} size='sm' type='button' variant='secondary'>
+										稍后
+									</Button>
+									<Button
+										isDisabled={!canDownload}
+										onPress={() => void startDownload()}
+										size='sm'
+										type='button'
+									>
+										<DownloadIcon aria-hidden className='size-3.5' />
+										{errorMessage ? '重新下载' : '立即更新'}
+									</Button>
+								</div>
+							</div>
 						) : (
 							<Button onPress={closeDialog} size='sm' type='button' variant='ghost'>
 								关闭

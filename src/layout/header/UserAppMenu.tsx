@@ -1,4 +1,4 @@
-import { Avatar, Button, Dropdown } from '@heroui/react'
+import { Avatar, Button, Dropdown, Separator } from '@heroui/react'
 
 import {
 	COMMAND_IDS,
@@ -66,44 +66,49 @@ export function UserAppMenu({
 
 			<Dropdown.Popover className='min-w-56' offset={6} placement='bottom end'>
 				<Dropdown.Menu aria-label='应用菜单'>
-					<Dropdown.Item
-						aria-current={isSettingsActive ? 'page' : undefined}
-						id='settings'
-						onAction={() => onRunCommand(COMMAND_IDS.openSettings)}
-						textValue='设置'
-					>
-						<SettingsIcon />
-						<span>设置</span>
-						<MenuCommandShortcut commandId={COMMAND_IDS.openSettings} />
-					</Dropdown.Item>
-					<Dropdown.Item
-						id='shortcuts'
-						onAction={() => onRunCommand(COMMAND_IDS.openShortcutHelp)}
-						textValue='键盘快捷键'
-					>
-						<KeyboardIcon />
-						<span>键盘快捷键</span>
-						<MenuCommandShortcut commandId={COMMAND_IDS.openShortcutHelp} />
-					</Dropdown.Item>
-					<Dropdown.Item
-						id='check-update'
-						isDisabled={disabled}
-						onAction={() => void checkNow()}
-						textValue='检查更新'
-					>
-						<RefreshCwIcon />
-						<span>
-							{isChecking ? '正在检查更新...' : disabled ? '正在安装更新...' : '检查更新'}
-						</span>
-					</Dropdown.Item>
-					<Dropdown.Item id='changelog' onAction={onOpenChangelog} textValue='更新日志'>
-						<HistoryIcon />
-						<span>更新日志</span>
-					</Dropdown.Item>
-					<Dropdown.Item id='about' onAction={onOpenAbout} textValue='关于 StoneFlow'>
-						<InfoIcon />
-						<span>关于 StoneFlow</span>
-					</Dropdown.Item>
+					<Dropdown.Section aria-label='偏好设置'>
+						<Dropdown.Item
+							aria-current={isSettingsActive ? 'page' : undefined}
+							id='settings'
+							onAction={() => onRunCommand(COMMAND_IDS.openSettings)}
+							textValue='设置'
+						>
+							<SettingsIcon />
+							<span>设置</span>
+							<MenuCommandShortcut commandId={COMMAND_IDS.openSettings} />
+						</Dropdown.Item>
+						<Dropdown.Item
+							id='shortcuts'
+							onAction={() => onRunCommand(COMMAND_IDS.openShortcutHelp)}
+							textValue='键盘快捷键'
+						>
+							<KeyboardIcon />
+							<span>键盘快捷键</span>
+							<MenuCommandShortcut commandId={COMMAND_IDS.openShortcutHelp} />
+						</Dropdown.Item>
+					</Dropdown.Section>
+					<Separator />
+					<Dropdown.Section aria-label='应用信息'>
+						<Dropdown.Item
+							id='check-update'
+							isDisabled={disabled}
+							onAction={() => void checkNow()}
+							textValue='检查更新'
+						>
+							<RefreshCwIcon />
+							<span>
+								{isChecking ? '正在检查更新...' : disabled ? '正在安装更新...' : '检查更新'}
+							</span>
+						</Dropdown.Item>
+						<Dropdown.Item id='changelog' onAction={onOpenChangelog} textValue='更新日志'>
+							<HistoryIcon />
+							<span>更新日志</span>
+						</Dropdown.Item>
+						<Dropdown.Item id='about' onAction={onOpenAbout} textValue='关于 StoneFlow'>
+							<InfoIcon />
+							<span>关于 StoneFlow</span>
+						</Dropdown.Item>
+					</Dropdown.Section>
 				</Dropdown.Menu>
 			</Dropdown.Popover>
 		</Dropdown>

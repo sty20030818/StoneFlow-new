@@ -202,6 +202,7 @@ export function ShellChrome({
 									<section
 										{...dialogProps}
 										onKeyDown={(event) => {
+											if (event.key === 'Tab') return
 											if (event.key !== 'Escape' || event.defaultPrevented) event.stopPropagation()
 										}}
 									/>

@@ -44,7 +44,7 @@ describe('ShortcutHelp', () => {
 		await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument())
 	})
 
-	it('列表区使用 Modal 内建滚动区域，标题和描述保留在区域外', () => {
+	it('分类卡片位于可键盘聚焦的独立滚动区，标题和描述保留在区域外', () => {
 		renderShortcutHelp(
 			<ShortcutHelp
 				context={createEmptyCommandContext()}
@@ -62,6 +62,9 @@ describe('ShortcutHelp', () => {
 		const listItem = screen.getByText('打开命令菜单')
 
 		expect(dialog).toHaveAccessibleDescription('测试')
+		expect(listRegion).toHaveAttribute('tabindex', '0')
+		expect(listRegion).toContainElement(screen.getByRole('group', { name: '创建' }))
+		expect(listRegion).toContainElement(screen.getByRole('group', { name: '操作' }))
 		expect(listRegion).toContainElement(listItem)
 		expect(listRegion).not.toContainElement(title)
 	})

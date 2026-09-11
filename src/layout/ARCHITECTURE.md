@@ -2,7 +2,7 @@
 
 > 作用：描述 `src/layout` 的稳定职责与本轮定稿装配边界
 > 总览：`src/ARCHITECTURE.md`
-> 最后更新：2026-09-09
+> 最后更新：2026-09-12
 
 ---
 
@@ -57,7 +57,7 @@ src/layout/
 
 创建提交只允许当前仍挂载的表单处理成功反馈、关闭与导航。用户关闭后，已发出的写入仍按原合同完成，但迟到的结果不能关闭后来打开的创建窗口；Task / Project 复用 `useCreateSessionActive` 维护这一生命周期边界，不增加持久化会话或草稿状态。
 
-创建壳不拦截 Tab，焦点首尾回绕由 React Aria 的 FocusScope 处理；其他按键隔离与 Escape 优先级保持。内层表单框架不额外裁切，避免属性按钮的焦点边在内容起点被切掉。
+Modal、AlertDialog 与模态 Sheet 的根键盘边界必须放行 Tab / Shift+Tab，让事件到达 React Aria 在 document 冒泡阶段注册的 FocusScope，统一负责首尾回绕与跳过禁用控件；不得另写焦点循环或正数 tabIndex。其余按键继续隔离背景快捷键，未消费的 Escape 交给上游，已被消费的 Escape 不再穿透外层。创建壳沿用同一规则，内层表单框架不额外裁切，避免属性按钮的焦点边在内容起点被切掉。
 
 UI Lab 仅 `createDialogSamples` 样例可直接消费 `ShellCreationOverlays` 和 `useShellCreateDialogState` 两个既有装配入口，用隔离的内存 Query / Router / IPC 验收真实创建组合，避免复制静态外壳。该例外由精确 source → target 门禁限定，不开放其他 Layout 导入；检测到原生 Tauri 环境时样例拒绝运行。
 

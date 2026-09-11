@@ -88,6 +88,20 @@ describe('EntityDetailDrawerHost', () => {
 		window.removeEventListener('keydown', onWindowKeyDown)
 	})
 
+	it('compact 详情的 Tab 和 Shift+Tab 在内容首尾回绕，不关闭详情', async () => {
+		renderHost({ isCompact: true })
+		const dialog = await screen.findByRole('dialog', { name: '任务详情' })
+		const first = screen.getByRole('textbox', { name: '任务详情草稿' })
+		const last = screen.getByRole('button', { name: '关闭内容' })
+		await act(async () => last.focus())
+		fireEvent.keyDown(last, { key: 'Tab' })
+		expect(first).toHaveFocus()
+		fireEvent.keyDown(first, { key: 'Tab', shiftKey: true })
+		expect(last).toHaveFocus()
+		expect(dialog).toBeInTheDocument()
+		expect(onClose).not.toHaveBeenCalled()
+	})
+
 	it('跨断点保留草稿、滚动位置与主集合 DOM', async () => {
 		const children = <div data-testid='main-content'>任务列表</div>
 		const view = renderHost({ children })

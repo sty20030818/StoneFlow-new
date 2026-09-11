@@ -62,8 +62,11 @@ const EXPORTED_COMPONENT_GROUPS = [
 	],
 	['src/features/bulk-action/components/BulkActionBar.tsx', 'task-board', ['BulkActionBar']],
 	['src/features/changelog/ChangelogDialog.tsx', 'feedback-recovery', ['ChangelogDialog']],
-	['src/features/changelog/ChangelogMarkdown.tsx', 'feedback-recovery', ['ChangelogMarkdown']],
-	['src/features/changelog/ChangelogRelease.tsx', 'feedback-recovery', ['ChangelogRelease']],
+	[
+		'src/features/changelog/ChangelogRelease.tsx',
+		'feedback-recovery',
+		['ChangelogRelease', 'ChangelogReleaseContent'],
+	],
 	['src/features/command/components/ChordHint.tsx', 'command-menu', ['ChordHint']],
 	[
 		'src/features/command/components/CommandActionTooltip.tsx',
@@ -677,7 +680,10 @@ const EXPORTED_COMPONENT_CONSUMERS: Readonly<Record<string, readonly string[]>> 
 	],
 	'stoneflow-component-bulk-action-bar': ['src/layout/ShellChrome.tsx'],
 	'stoneflow-component-changelog-dialog': ['src/layout/overlays/ShellOverlays.tsx'],
-	'stoneflow-component-changelog-markdown': ['src/features/changelog/ChangelogRelease.tsx'],
+	'stoneflow-component-changelog-release-content': [
+		'src/features/changelog/ChangelogRelease.tsx',
+		'src/features/update/components/UpdateDialog.tsx',
+	],
 	'stoneflow-component-changelog-release': [
 		'src/features/changelog/ChangelogDialog.tsx',
 		'src/features/update/components/UpdateDialog.tsx',

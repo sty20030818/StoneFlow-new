@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react'
+import { fireEvent, screen, within } from '@testing-library/react'
 import { render } from '@testing-library/react'
 
 import { UserAppMenu } from '@/layout/header/UserAppMenu'
@@ -29,6 +29,13 @@ describe('UserAppMenu', () => {
 		fireEvent.click(trigger)
 
 		expect(await screen.findByRole('menuitem', { name: /设置/ })).toBeInTheDocument()
+		const preferences = screen.getByRole('group', { name: '偏好设置' })
+		const appInformation = screen.getByRole('group', { name: '应用信息' })
+		expect(within(preferences).getAllByRole('menuitem')).toHaveLength(2)
+		expect(within(preferences).getByRole('menuitem', { name: /键盘快捷键/ })).toBeInTheDocument()
+		expect(within(appInformation).getAllByRole('menuitem')).toHaveLength(3)
+		expect(within(appInformation).getByRole('menuitem', { name: /检查更新/ })).toBeInTheDocument()
+		expect(within(screen.getByRole('menu')).getAllByRole('separator')).toHaveLength(1)
 		expect(screen.getByRole('menuitem', { name: /键盘快捷键/ })).toBeInTheDocument()
 		expect(screen.getByRole('menuitem', { name: /更新日志/ })).toBeInTheDocument()
 		expect(screen.queryByRole('menuitem', { name: /用户资料/ })).not.toBeInTheDocument()

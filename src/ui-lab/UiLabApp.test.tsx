@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { toast } from '@heroui/react'
 
-import { HEROUI_REGISTRATIONS } from './catalog/heroUiRegistrations'
+import { HEROUI_PACKAGES, HEROUI_REGISTRATIONS } from './catalog/heroUiRegistrations'
 import {
 	STONEFLOW_CATALOG_REGISTRATIONS,
 	STONEFLOW_PRODUCT_SCENE_REGISTRATIONS,
@@ -33,8 +33,13 @@ describe('UiLabApp', () => {
 		window.localStorage.removeItem('stoneflow.ui-lab.last-sample')
 	})
 
-	afterEach(() => {
+	afterEach(async () => {
 		act(() => toast.clear())
+		await waitFor(() => {
+			if (toast.getQueue().visibleToasts.length > 0) {
+				throw new Error('HeroUI toast queue still has visible notifications')
+			}
+		})
 	})
 
 	it('每个审查单元只属于一个批次，总账条目无需进入批次', () => {
@@ -526,7 +531,8 @@ describe('UiLabApp', () => {
 		expect(document.querySelector('[data-native-comparison="button"]')).toBeInTheDocument()
 	})
 
-	it('第七批 Context Menu 保留游标坐标锚点并支持触屏长按', () => {
+	it('第七批 Context Menu 在 iOS 长按打开并可执行动作', () => {
+		const platform = vi.spyOn(navigator, 'platform', 'get').mockReturnValue('iPhone')
 		render(<UiLabApp />)
 		expandReviewDirectory()
 
@@ -551,16 +557,24 @@ describe('UiLabApp', () => {
 
 		vi.useFakeTimers()
 		try {
-			fireEvent.touchStart(trigger!, {
-				touches: [{ clientX: 140, clientY: 110 }],
+			fireEvent.pointerDown(trigger!, {
+				button: 0,
+				clientX: 140,
+				clientY: 110,
+				pointerId: 1,
+				pointerType: 'touch',
 			})
 			act(() => vi.advanceTimersByTime(500))
 
-			const anchor = trigger!.querySelector<HTMLElement>('[aria-hidden="true"]')
-			expect(anchor).toHaveStyle({ left: '40px', top: '30px' })
-			expect(screen.getByRole('menu', { name: '任务上下文菜单' })).toBeInTheDocument()
+			const menu = screen.getByRole('menu')
+			expect(menu).toHaveAttribute('aria-label', '任务上下文菜单')
+			expect(menu.closest('[data-slot="context-menu-popover"]')).toBeInTheDocument()
+			fireEvent.click(within(menu).getByRole('menuitem', { name: '重命名' }))
+			expect(screen.getByText('已选择：重命名')).toBeInTheDocument()
+			expect(screen.queryByRole('menu')).not.toBeInTheDocument()
 		} finally {
 			vi.useRealTimers()
+			platform.mockRestore()
 		}
 	})
 
@@ -1272,7 +1286,7 @@ describe('UiLabApp', () => {
 		for (const ledgerQuery of [
 			'HeroUI ColorSwatchPicker',
 			'swatch',
-			'@heroui/react@3.2.4',
+			`${HEROUI_PACKAGES.oss.name}@${HEROUI_PACKAGES.oss.version}`,
 			'SpaceEditorDialog.tsx',
 		]) {
 			fireEvent.change(search, { target: { value: ledgerQuery } })

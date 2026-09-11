@@ -1,7 +1,9 @@
 import { Alert, Button, Label, Modal, TextArea, TextField, toast } from '@heroui/react'
+import { CloudIcon, XIcon } from 'lucide-react'
 import { useId, useRef, useState } from 'react'
 
 import type { SyncConfigSource, SyncDatabaseConfigInput } from '@/features/sync/api/sync'
+import { ActionTooltip, DisabledActionTooltip } from '@/shared/components/tooltip'
 import { normalizeTauriError } from '@/shared/lib/normalize-tauri-error'
 
 type SyncConfigDialogProps = {
@@ -116,6 +118,20 @@ function SyncConfigDialogSession({
 		}
 	}
 
+	const closeButton = (
+		<Button
+			aria-label='关闭同步配置'
+			isDisabled={busy}
+			isIconOnly
+			onPress={() => !busy && onClose()}
+			size='sm'
+			type='button'
+			variant='ghost'
+		>
+			<XIcon aria-hidden className='size-3.5' />
+		</Button>
+	)
+
 	return (
 		<Modal.Backdrop
 			isDismissable={!busy}
@@ -130,26 +146,41 @@ function SyncConfigDialogSession({
 						<section
 							{...dialogProps}
 							onKeyDown={(event) => {
+								if (event.key === 'Tab') return
 								if (event.key !== 'Escape' || event.defaultPrevented) event.stopPropagation()
 							}}
 						/>
 					)}
 				>
+					<div className='absolute end-3 top-3'>
+						{busy ? (
+							<DisabledActionTooltip label='关闭' reason='正在保存同步配置，请稍候。'>
+								{closeButton}
+							</DisabledActionTooltip>
+						) : (
+							<ActionTooltip label='关闭'>{closeButton}</ActionTooltip>
+						)}
+					</div>
 					<Modal.Header>
-						<Modal.Heading>
-							{showingLegacyAdoption
-								? '确认沿用当前远端'
-								: environmentManaged
-									? '开发同步配置'
-									: '配置云端副本'}
-						</Modal.Heading>
-						<p className='text-sm leading-6 text-muted' id={descriptionId}>
-							{showingLegacyAdoption
-								? '请确认当前配置仍指向此前使用的同一个远端。'
-								: environmentManaged
-									? '开发构建只读取项目根目录 .env.local，不会写入系统钥匙串。'
-									: '粘贴 Neon 或自建 Postgres 连接串。保存时会验证连接并确认远端实例身份。'}
-						</p>
+						<div className='space-y-1 ps-2 pe-10'>
+							<div className='flex items-center gap-2'>
+								<CloudIcon aria-hidden className='size-4 shrink-0 text-muted' />
+								<Modal.Heading>
+									{showingLegacyAdoption
+										? '确认沿用当前远端'
+										: environmentManaged
+											? '开发同步配置'
+											: '配置云端副本'}
+								</Modal.Heading>
+							</div>
+							<p className='text-sm leading-6 text-muted' id={descriptionId}>
+								{showingLegacyAdoption
+									? '请确认当前配置仍指向此前使用的同一个远端。'
+									: environmentManaged
+										? '开发构建只读取项目根目录 .env.local，不会写入系统钥匙串。'
+										: '粘贴 Neon 或自建 Postgres 连接串。保存时会验证连接并确认远端实例身份。'}
+							</p>
+						</div>
 					</Modal.Header>
 
 					<Modal.Body>

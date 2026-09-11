@@ -43,7 +43,18 @@ describe('useChangelog', () => {
 		expect(result.current.releases[0].yanked).toBe(true)
 	})
 
-	it('打包快照不会冒充远端缓存，关闭后重开会重新请求', async () => {
+	it('首次打开立即展示内置日志，不等待远端响应', async () => {
+		const remote = Promise.withResolvers<string | null>()
+		mocks.getChangelog.mockReturnValue(remote.promise)
+		const { useChangelog } = await loadHook()
+		const { result } = renderHook(() => useChangelog({ kind: 'history', channel: 'stable' }))
+
+		expect(result.current.releases.length).toBeGreaterThan(0)
+		await act(async () => remote.resolve(null))
+	})
+
+	it('失败后保留内置日志，短期重开不重复请求，过期后可恢复', async () => {
+		const now = vi.spyOn(Date, 'now').mockReturnValue(0)
 		mocks.getChangelog
 			.mockResolvedValueOnce(null)
 			.mockResolvedValueOnce(changelog(release('9.0.0', { text: '网络恢复' })))
@@ -60,11 +71,19 @@ describe('useChangelog', () => {
 
 		rerender({ query: null })
 		rerender({ query: history })
+		expect(mocks.getChangelog).toHaveBeenCalledTimes(1)
+		expect(result.current.releases.length).toBeGreaterThan(0)
+		expect(result.current.isLoading).toBe(false)
+
+		now.mockReturnValue(5 * 60 * 1000)
+		rerender({ query: null })
+		rerender({ query: history })
 		await waitFor(() => expect(mocks.getChangelog).toHaveBeenCalledTimes(2))
 		await waitFor(() => expect(result.current.releases[0]?.version).toBe('9.0.0'))
 	})
 
-	it('远端无效时回退到上次有效远端', async () => {
+	it('缓存过期后后台刷新，远端无效时保留上次有效内容', async () => {
+		const now = vi.spyOn(Date, 'now').mockReturnValue(0)
 		let resolveInvalid!: (value: string | null) => void
 		mocks.getChangelog
 			.mockResolvedValueOnce(changelog(release('2.0.0', { text: '上次有效内容' })))
@@ -82,16 +101,18 @@ describe('useChangelog', () => {
 		})
 
 		await waitFor(() => expect(result.current.releases[0]?.version).toBe('2.0.0'))
+		now.mockReturnValue(5 * 60 * 1000)
 		rerender({ query: null })
 		rerender({ query: history })
 		await waitFor(() => expect(mocks.getChangelog).toHaveBeenCalledTimes(2))
 		expect(result.current.isLoading).toBe(true)
+		expect(result.current.releases[0]?.version).toBe('2.0.0')
 		await act(async () => resolveInvalid('不是合法 changelog'))
 		await waitFor(() => expect(result.current.isLoading).toBe(false))
 		expect(result.current.releases[0]?.version).toBe('2.0.0')
 	})
 
-	it('目标版本改变时刷新并重新选择开闭区间', async () => {
+	it('缓存已包含目标时，改变区间直接重新筛选而不重复请求', async () => {
 		const remote = changelog(release('1.2.0'), release('1.1.0'), release('1.0.0'))
 		mocks.getChangelog.mockResolvedValue(remote)
 		const { useChangelog } = await loadHook()
@@ -117,8 +138,78 @@ describe('useChangelog', () => {
 				targetVersion: '1.2.0',
 			},
 		})
-		await waitFor(() => expect(mocks.getChangelog).toHaveBeenCalledTimes(2))
+		expect(mocks.getChangelog).toHaveBeenCalledTimes(1)
 		expect(result.current.releases.map((item) => item.version)).toEqual(['1.2.0', '1.1.0'])
+	})
+
+	it('预取缓存直接供弹窗使用，新目标缺失时越过保鲜期刷新并通知已有消费者', async () => {
+		mocks.getChangelog.mockResolvedValueOnce(changelog(release('1.0.0')))
+		const { prefetchChangelog, useChangelog } = await loadHook()
+		await prefetchChangelog('1.0.0')
+		const { result } = renderHook(() => useChangelog({ kind: 'history', channel: 'stable' }))
+		expect(result.current.releases[0]?.version).toBe('1.0.0')
+		expect(mocks.getChangelog).toHaveBeenCalledTimes(1)
+
+		const remote = Promise.withResolvers<string | null>()
+		mocks.getChangelog.mockReturnValueOnce(remote.promise)
+		let first!: Promise<void>
+		let second!: Promise<void>
+		act(() => {
+			first = prefetchChangelog('1.1.0')
+			second = prefetchChangelog('1.1.0')
+		})
+		expect(first).toBe(second)
+		expect(mocks.getChangelog).toHaveBeenCalledTimes(2)
+		expect(result.current.releases[0]?.version).toBe('1.0.0')
+
+		await act(async () => {
+			remote.resolve(changelog(release('1.1.0'), release('1.0.0')))
+			await first
+		})
+		expect(result.current.releases[0]?.version).toBe('1.1.0')
+	})
+
+	it('尚未缓存的新版本读取失败时不伪造说明，同一目标重开不连续重试', async () => {
+		mocks.getChangelog.mockResolvedValue(null)
+		const { prefetchChangelog, useChangelog } = await loadHook()
+		await prefetchChangelog('9.0.0')
+		const { result } = renderHook(() =>
+			useChangelog({
+				kind: 'range',
+				channel: 'stable',
+				currentVersion: '8.0.0',
+				targetVersion: '9.0.0',
+			}),
+		)
+		expect(result.current.releases).toEqual([])
+		expect(result.current.isLoading).toBe(false)
+		expect(mocks.getChangelog).toHaveBeenCalledTimes(1)
+	})
+
+	it('历史请求进行中发现新目标，旧响应缺少目标时只补取一次', async () => {
+		const history = Promise.withResolvers<string | null>()
+		mocks.getChangelog
+			.mockReturnValueOnce(history.promise)
+			.mockResolvedValueOnce(changelog(release('9.0.0')))
+		const { prefetchChangelog, useChangelog } = await loadHook()
+		const first = prefetchChangelog()
+		const target = prefetchChangelog('9.0.0')
+		const { result } = renderHook(() =>
+			useChangelog({
+				kind: 'range',
+				channel: 'stable',
+				currentVersion: '8.0.0',
+				targetVersion: '9.0.0',
+			}),
+		)
+		expect(mocks.getChangelog).toHaveBeenCalledTimes(1)
+
+		await act(async () => {
+			history.resolve(changelog(release('1.0.0')))
+			await Promise.all([first, target])
+		})
+		expect(mocks.getChangelog).toHaveBeenCalledTimes(2)
+		expect(result.current.releases[0]?.version).toBe('9.0.0')
 	})
 
 	it('并发消费者共享一个 in-flight 请求', async () => {

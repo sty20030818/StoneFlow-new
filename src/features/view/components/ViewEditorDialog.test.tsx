@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 
 import { SubmitRegistryProvider, useSubmitRegistryContext } from '@/features/submit'
 import type { View } from '@/shared/types'
@@ -8,6 +8,31 @@ import { ViewEditorDialog } from './ViewEditorDialog'
 import { buildViewEditorDefaultValues, toCreateViewDraft } from './ViewEditorDialog.form'
 
 describe('ViewEditorDialog', () => {
+	it('Tab 和 Shift+Tab 在弹窗首尾回绕，不触发提交或关闭', async () => {
+		const onClose = vi.fn()
+		const onCreate = vi.fn(async () => undefined)
+		render(
+			<ViewEditorDialog
+				isSubmitting={false}
+				onClose={onClose}
+				onCreate={onCreate}
+				onUpdate={vi.fn(async () => undefined)}
+				open
+				projects={buildProjects()}
+				view={null}
+			/>,
+		)
+		const first = screen.getByRole('button', { name: '关闭保存视图编辑窗口' })
+		const last = screen.getByRole('button', { name: '取消' })
+		await act(async () => last.focus())
+		fireEvent.keyDown(last, { key: 'Tab' })
+		expect(first).toHaveFocus()
+		fireEvent.keyDown(first, { key: 'Tab', shiftKey: true })
+		expect(last).toHaveFocus()
+		expect(onClose).not.toHaveBeenCalled()
+		expect(onCreate).not.toHaveBeenCalled()
+	})
+
 	it('create 模式可以稳定渲染并注册 submit target', async () => {
 		render(
 			<SubmitRegistryProvider>
@@ -58,6 +83,42 @@ describe('ViewEditorDialog', () => {
 		await waitFor(() => expect(onUpdate).toHaveBeenCalledTimes(1))
 		expect(onUpdate).toHaveBeenCalledWith({ viewId: 'view-1', name: '重点事项' })
 	})
+
+	it.each([false, true])(
+		'isSubmitting=%s 时右上关闭与取消一致，不提交草稿',
+		async (isSubmitting) => {
+			const onClose = vi.fn()
+			const onCreate = vi.fn(async () => undefined)
+			const onUpdate = vi.fn(async () => undefined)
+			render(
+				<ViewEditorDialog
+					isSubmitting={isSubmitting}
+					onClose={onClose}
+					onCreate={onCreate}
+					onUpdate={onUpdate}
+					open
+					projects={buildProjects()}
+					view={buildView()}
+				/>,
+			)
+			await act(async () => {
+				fireEvent.change(screen.getByRole('textbox', { name: '名称' }), {
+					target: { value: '未提交的视图' },
+				})
+			})
+			const closeButton = screen.getByRole('button', { name: '关闭保存视图编辑窗口' })
+			expect(closeButton).toBeEnabled()
+			expect(screen.getByRole('button', { name: '取消' })).toBeEnabled()
+
+			await act(async () => {
+				fireEvent.click(closeButton)
+			})
+
+			expect(onClose).toHaveBeenCalledTimes(1)
+			expect(onCreate).not.toHaveBeenCalled()
+			expect(onUpdate).not.toHaveBeenCalled()
+		},
+	)
 
 	it('创建时把独立事项或项目写入不可移除 context', () => {
 		const values = buildViewEditorDefaultValues(null)

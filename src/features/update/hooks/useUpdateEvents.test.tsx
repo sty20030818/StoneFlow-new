@@ -5,6 +5,8 @@ import { listen } from '@tauri-apps/api/event'
 import type * as TauriEvent from '@tauri-apps/api/event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { prefetchChangelog } from '@/features/changelog'
+
 import {
 	consumeCompletedUpdate,
 	getUpdateSettings,
@@ -14,6 +16,8 @@ import {
 } from '../api/updates'
 import { useUpdateStore } from '../model/useUpdateStore'
 import { useUpdateEvents } from './useUpdateEvents'
+
+vi.mock('@/features/changelog', () => ({ prefetchChangelog: vi.fn() }))
 
 vi.mock('@tauri-apps/api/event', () => ({
 	listen: vi.fn<typeof TauriEvent.listen>(),
@@ -192,6 +196,20 @@ describe('useUpdateEvents', () => {
 		expect(mockedListen).not.toHaveBeenCalled()
 		expect(mockedGetUpdateSession).not.toHaveBeenCalled()
 		expect(mockedConsumeCompletedUpdate).not.toHaveBeenCalled()
+		expect(prefetchChangelog).not.toHaveBeenCalled()
+	})
+
+	it('无需打开弹窗便预取新目标日志，同一目标的阶段变化不重复预取', async () => {
+		mockedListen.mockResolvedValue(() => undefined)
+		mockedGetUpdateSession.mockResolvedValue(snapshot(0, 'idle'))
+		renderHook(() => useUpdateEvents())
+		await waitFor(() => expect(mockedGetUpdateSession).toHaveBeenCalledTimes(1))
+
+		act(() => useUpdateStore.getState().applySnapshot(snapshot(1, 'available')))
+		expect(prefetchChangelog).toHaveBeenCalledExactlyOnceWith('0.2.0')
+		expect(useUpdateStore.getState().dialogVisible).toBe(false)
+		act(() => useUpdateStore.getState().applySnapshot(snapshot(2, 'downloading')))
+		expect(prefetchChangelog).toHaveBeenCalledTimes(1)
 	})
 
 	it('仅提醒模式接受 Available snapshot 后打开 Dialog', async () => {

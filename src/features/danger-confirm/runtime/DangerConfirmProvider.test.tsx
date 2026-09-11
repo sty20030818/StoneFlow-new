@@ -1,8 +1,27 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import { DangerConfirmProvider, useDangerConfirm } from '@/features/danger-confirm'
 
 describe('DangerConfirmProvider', () => {
+	it('Tab 和 Shift+Tab 在确认按钮与取消按钮间回绕，不结算请求', async () => {
+		render(
+			<DangerConfirmProvider>
+				<TestHarness />
+			</DangerConfirmProvider>,
+		)
+		fireEvent.click(screen.getByRole('button', { name: '请求归档确认' }))
+		const dialog = await screen.findByRole('alertdialog')
+		const first = screen.getByRole('button', { name: '取消' })
+		const last = screen.getByRole('button', { name: '归档' })
+		await act(async () => last.focus())
+		fireEvent.keyDown(last, { key: 'Tab' })
+		expect(first).toHaveFocus()
+		fireEvent.keyDown(first, { key: 'Tab', shiftKey: true })
+		expect(last).toHaveFocus()
+		expect(dialog).toBeInTheDocument()
+		expect(screen.getByTestId('first-result')).toHaveTextContent('pending')
+	})
+
 	it('confirm / cancel / 替换请求都会正确结算 Promise', async () => {
 		render(
 			<DangerConfirmProvider>

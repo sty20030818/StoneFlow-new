@@ -9,7 +9,7 @@ export type AppInfoLink = {
 /**
  * StoneFlow 的公开资料入口。
  *
- * 地址未由产品确认前必须保持 `null`，以禁用 UI 而非提供虚假跳转。
+ * 地址未由产品确认前必须保持 `null`，对应入口不展示，避免提供虚假跳转。
  */
 export const appInfoLinks: readonly AppInfoLink[] = [
 	{ key: 'website', label: '官方网站', url: null },

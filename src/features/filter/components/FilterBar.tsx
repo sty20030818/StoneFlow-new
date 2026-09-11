@@ -14,7 +14,7 @@ import {
 	Surface,
 	type Selection,
 } from '@heroui/react'
-import { PlusIcon, XIcon } from 'lucide-react'
+import { LayersIcon, PlusIcon, XIcon } from 'lucide-react'
 
 import { COMMAND_IDS, CommandActionTooltip } from '@/features/command'
 import { ActionTooltip } from '@/shared/components/tooltip'
@@ -328,8 +328,24 @@ function FilterSaveDialog({
 		<Modal.Backdrop isOpen={open} onOpenChange={onOpenChange}>
 			<Modal.Container placement='center'>
 				<Modal.Dialog className='max-w-sm overflow-hidden'>
+					<ActionTooltip label='关闭'>
+						<Button
+							aria-label='关闭保存视图'
+							className='absolute end-3 top-3'
+							isIconOnly
+							onPress={() => onOpenChange(false)}
+							size='sm'
+							type='button'
+							variant='ghost'
+						>
+							<XIcon aria-hidden className='size-3.5' />
+						</Button>
+					</ActionTooltip>
 					<Modal.Header>
-						<Modal.Heading>保存为视图</Modal.Heading>
+						<div className='flex items-center gap-2 ps-2 pe-10'>
+							<LayersIcon aria-hidden className='size-4 shrink-0 text-muted' />
+							<Modal.Heading>保存为视图</Modal.Heading>
+						</div>
 					</Modal.Header>
 					<Modal.Body>
 						<div className='grid gap-1.5 text-sm'>

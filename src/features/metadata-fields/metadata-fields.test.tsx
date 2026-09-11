@@ -128,6 +128,29 @@ describe('metadata-fields', () => {
 		expect(onOpenChange).toHaveBeenCalledWith(false)
 	})
 
+	it.each([false, true])('自定义日期首尾 Tab 回绕（Shift=%s）', (shiftKey) => {
+		render(
+			<CustomDateDialog
+				hasExistingValue
+				label='截止时间'
+				onOpenChange={vi.fn()}
+				onSubmit={vi.fn()}
+				open
+				value='2026-05-10'
+			/>,
+		)
+		const first = screen.getByRole('button', { name: 'Previous' })
+		const last = screen.getByRole('button', { name: '保存截止时间' })
+		const source = shiftKey ? first : last
+		const target = shiftKey ? last : first
+		act(() => source.focus())
+		expect(source).toHaveFocus()
+
+		fireEvent.keyDown(source, { key: 'Tab', shiftKey })
+
+		expect(target).toHaveFocus()
+	})
+
 	it('取消与 Escape 丢弃日历草稿，重开恢复已保存日期', async () => {
 		const onSubmit = vi.fn()
 		render(<CustomDateDialogHarness onSubmit={onSubmit} />)

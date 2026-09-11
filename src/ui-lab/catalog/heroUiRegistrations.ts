@@ -1,6 +1,6 @@
 export const HEROUI_PACKAGES = {
-	oss: { name: '@heroui/react', version: '3.2.4' },
-	pro: { name: '@heroui-pro/react', version: '1.0.0-beta.8' },
+	oss: { name: '@heroui/react', version: '3.2.5' },
+	pro: { name: '@heroui-pro/react', version: '1.0.0-beta.9' },
 } as const
 
 export type HeroUIPackageName = (typeof HEROUI_PACKAGES)[keyof typeof HEROUI_PACKAGES]['name']
@@ -139,6 +139,7 @@ const PRO_COMPONENT_SUBPATHS = [
 	'empty-state',
 	'file-tree',
 	'floating-toc',
+	'holo-card',
 	'hover-card',
 	'inline-select',
 	'item-card',
@@ -176,15 +177,19 @@ const PRO_COMPONENT_SUBPATHS = [
 
 const OSS_PRODUCTION_USAGE = [
 	['src/app/providers/AppProviders.tsx', ['Toast']],
-	['src/features/app-info/components/AboutDialog.tsx', ['Alert', 'Button', 'Modal', 'Spinner']],
+	['src/shared/lib/utils.ts', ['cn']],
+	[
+		'src/features/app-info/components/AboutDialog.tsx',
+		['Alert', 'Button', 'Modal', 'Separator', 'Spinner'],
+	],
 	['src/features/app-info/components/AppVersionFooterItem.tsx', ['Chip']],
 	['src/features/bulk-action/components/BulkActionBar.tsx', ['Button', 'Chip', 'Separator']],
 	['src/features/bulk-action/components/bulk-action-result-toast.ts', ['toast']],
-	['src/features/changelog/ChangelogDialog.tsx', ['Chip', 'Modal', 'Spinner']],
+	['src/features/changelog/ChangelogDialog.tsx', ['Button', 'Card', 'Chip', 'Modal', 'Spinner']],
 	['src/features/changelog/ChangelogRelease.tsx', ['Chip']],
 	['src/features/command/components/CommandMenuListPrimitives.tsx', ['Chip', 'Kbd']],
 	['src/features/command/components/CommandMenuSelectionChips.tsx', ['Chip']],
-	['src/features/command/components/ShortcutHelp.tsx', ['Modal']],
+	['src/features/command/components/ShortcutHelp.tsx', ['Button', 'Card', 'Modal']],
 	['src/features/danger-confirm/components/DangerConfirmDialog.tsx', ['AlertDialog', 'Button']],
 	['src/features/display-options/components/DisplayOptionsButton.tsx', ['Button']],
 	[
@@ -292,7 +297,7 @@ const OSS_PRODUCTION_USAGE = [
 	['src/features/update/components/SystemStatusChip.tsx', ['Alert', 'Button']],
 	[
 		'src/features/update/components/UpdateDialog.tsx',
-		['Alert', 'Button', 'Modal', 'ProgressBar', 'ScrollShadow', 'Spinner', 'toast'],
+		['Alert', 'Button', 'Card', 'Chip', 'Modal', 'ProgressBar', 'Spinner', 'toast'],
 	],
 	['src/features/update/components/UpdateFooterChip.tsx', ['Button', 'ProgressCircle']],
 	[
@@ -316,7 +321,7 @@ const OSS_PRODUCTION_USAGE = [
 	['src/layout/ShellSidebar.tsx', ['Button', 'Dropdown', 'Tooltip']],
 	['src/layout/header/HistoryDropdown.tsx', ['Button', 'Dropdown']],
 	['src/layout/header/NavBackForward.tsx', ['Button', 'Tooltip']],
-	['src/layout/header/UserAppMenu.tsx', ['Avatar', 'Button', 'Dropdown']],
+	['src/layout/header/UserAppMenu.tsx', ['Avatar', 'Button', 'Dropdown', 'Separator']],
 	['src/routes/__root.tsx', ['Button']],
 	['src/routes/_shell/route.tsx', ['Button']],
 	['src/shared/components/AppBreadcrumb.tsx', ['Breadcrumbs']],
@@ -335,6 +340,7 @@ const OSS_PRODUCTION_USAGE = [
 const PRO_PRODUCTION_USAGE = [
 	['src/features/bulk-action/components/BulkActionBar.tsx', ['ActionBar']],
 	['src/features/changelog/ChangelogDialog.tsx', ['EmptyState']],
+	['src/features/changelog/ChangelogRelease.tsx', ['Markdown']],
 	['src/features/command/components/CommandMenu.tsx', ['Command']],
 	['src/features/command/components/CommandMenuListPrimitives.tsx', ['Command']],
 	['src/features/command/components/ScopedPickerCommandGroup.tsx', ['Command']],
@@ -486,6 +492,17 @@ export const HEROUI_REGISTRATIONS: readonly HeroUIRegistration[] = [
 		exportKind: 'function',
 		adoption: 'used',
 		consumers: ossConsumers.get('toast') ?? [],
+		previewId: null,
+	},
+	{
+		id: 'heroui-oss-cn-function',
+		packageName: HEROUI_PACKAGES.oss.name,
+		packageVersion: HEROUI_PACKAGES.oss.version,
+		family: 'cn',
+		exportPath: HEROUI_PACKAGES.oss.name,
+		exportKind: 'function',
+		adoption: 'used',
+		consumers: ossConsumers.get('cn') ?? [],
 		previewId: null,
 	},
 	{

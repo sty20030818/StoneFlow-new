@@ -27,6 +27,21 @@ const SPACE_FIXTURE = {
 } satisfies Space
 
 describe('SpaceEditorDialog', () => {
+	it('Tab 和 Shift+Tab 在弹窗首尾回绕，不触发提交或关闭', async () => {
+		const onClose = vi.fn()
+		const onSubmit = vi.fn(async () => undefined)
+		render(<SpaceEditorDialog mode='create' open onClose={onClose} onSubmit={onSubmit} />)
+		const first = screen.getByRole('button', { name: '关闭 Space 编辑窗口' })
+		const last = screen.getByRole('button', { name: '取消' })
+		await act(async () => last.focus())
+		fireEvent.keyDown(last, { key: 'Tab' })
+		expect(first).toHaveFocus()
+		fireEvent.keyDown(first, { key: 'Tab', shiftKey: true })
+		expect(last).toHaveFocus()
+		expect(onClose).not.toHaveBeenCalled()
+		expect(onSubmit).not.toHaveBeenCalled()
+	})
+
 	it('新建弹窗可以稳定渲染', () => {
 		render(
 			<SpaceEditorDialog
@@ -63,6 +78,63 @@ describe('SpaceEditorDialog', () => {
 		expect(screen.getByRole('dialog', { name: '编辑 Space' })).toBeInTheDocument()
 		expect(await screen.findByRole('textbox', { name: '名称' })).toHaveValue('个人')
 		expect(screen.getByRole('option', { name: '玫红' })).toHaveAttribute('aria-selected', 'true')
+	})
+
+	it.each(['create', 'edit'] as const)('%s 模式的右上关闭入口只关闭，不提交草稿', async (mode) => {
+		const onClose = vi.fn()
+		const onSubmit = vi.fn(async () => undefined)
+		render(
+			<SpaceEditorDialog
+				mode={mode}
+				onClose={onClose}
+				onSubmit={onSubmit}
+				open
+				space={mode === 'edit' ? SPACE_FIXTURE : null}
+			/>,
+		)
+		await act(async () => {
+			fireEvent.change(screen.getByRole('textbox', { name: '名称' }), {
+				target: { value: '未提交的空间' },
+			})
+		})
+
+		await act(async () => {
+			fireEvent.click(screen.getByRole('button', { name: '关闭 Space 编辑窗口' }))
+		})
+
+		expect(onClose).toHaveBeenCalledTimes(1)
+		expect(onSubmit).not.toHaveBeenCalled()
+	})
+
+	it('保存中关闭入口与取消一起禁用，失败后保留错误并恢复关闭', async () => {
+		const pendingSubmit = Promise.withResolvers<void>()
+		const onClose = vi.fn()
+		render(
+			<SpaceEditorDialog
+				mode='edit'
+				onClose={onClose}
+				onSubmit={() => pendingSubmit.promise}
+				open
+				space={SPACE_FIXTURE}
+			/>,
+		)
+		fireEvent.click(screen.getByRole('button', { name: '保存变更' }))
+
+		await waitFor(() =>
+			expect(screen.getByRole('button', { name: '关闭 Space 编辑窗口' })).toBeDisabled(),
+		)
+		expect(screen.getByRole('button', { name: '取消' })).toBeDisabled()
+		fireEvent.click(screen.getByRole('button', { name: '关闭 Space 编辑窗口' }))
+		expect(onClose).not.toHaveBeenCalled()
+		act(() => screen.getByRole('group', { name: '关闭' }).focus())
+		expect(await screen.findByRole('tooltip')).toHaveTextContent('正在保存，请稍后关闭')
+
+		await act(async () => pendingSubmit.reject(new Error('保存连接失败')))
+		expect(screen.getByRole('alert')).toHaveTextContent('保存连接失败')
+		const closeButton = screen.getByRole('button', { name: '关闭 Space 编辑窗口' })
+		expect(closeButton).toBeEnabled()
+		fireEvent.click(closeButton)
+		expect(onClose).toHaveBeenCalledTimes(1)
 	})
 
 	it('键盘选择颜色后只提交对应 colorKey', async () => {

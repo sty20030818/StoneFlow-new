@@ -8,6 +8,7 @@ import {
 	Modal,
 	Select,
 } from '@heroui/react'
+import { LayersIcon, XIcon } from 'lucide-react'
 import { useCallback, useId, useState } from 'react'
 import { FormProvider, useController } from 'react-hook-form'
 
@@ -23,6 +24,7 @@ import {
 import type { Space } from '@/shared/types'
 import { normalizeSubmitError, useZodForm } from '@/shared/form'
 import { useSubmitTargetFromForm } from '@/features/submit'
+import { ActionTooltip, DisabledActionTooltip } from '@/shared/components/tooltip'
 import { cn } from '@/shared/lib/utils'
 import { buildSpaceEditorDefaultValues, spaceEditorSchema } from './SpaceEditorDialog.form'
 
@@ -113,6 +115,19 @@ function SpaceEditorForm({ open, mode, space = null, onClose, onSubmit }: SpaceE
 		isSubmitting: submitting,
 		submit: handleSubmit,
 	})
+	const closeButton = (
+		<Button
+			aria-label='关闭 Space 编辑窗口'
+			isDisabled={submitting}
+			isIconOnly
+			size='sm'
+			slot='close'
+			type='button'
+			variant='ghost'
+		>
+			<XIcon aria-hidden className='size-3.5' />
+		</Button>
+	)
 
 	return (
 		<Modal.Dialog
@@ -122,11 +137,21 @@ function SpaceEditorForm({ open, mode, space = null, onClose, onSubmit }: SpaceE
 				<section
 					{...dialogProps}
 					onKeyDown={(event) => {
+						if (event.key === 'Tab') return
 						if (event.key !== 'Escape' || event.defaultPrevented) event.stopPropagation()
 					}}
 				/>
 			)}
 		>
+			<div className='absolute end-3 top-3'>
+				{submitting ? (
+					<DisabledActionTooltip label='关闭' reason='正在保存，请稍后关闭'>
+						{closeButton}
+					</DisabledActionTooltip>
+				) : (
+					<ActionTooltip label='关闭'>{closeButton}</ActionTooltip>
+				)}
+			</div>
 			<FormProvider {...form}>
 				<form
 					onSubmit={(event) => {
@@ -135,10 +160,15 @@ function SpaceEditorForm({ open, mode, space = null, onClose, onSubmit }: SpaceE
 					}}
 				>
 					<Modal.Header>
-						<Modal.Heading>{mode === 'create' ? '新建 Space' : '编辑 Space'}</Modal.Heading>
-						<p className='text-sm text-muted' id={descriptionId}>
-							Space 只承载顶级上下文。设置名称、图标和颜色即可。
-						</p>
+						<div className='flex flex-col gap-3 ps-2 pe-10'>
+							<div className='flex items-center gap-2'>
+								<LayersIcon aria-hidden className='size-4 shrink-0 text-muted' />
+								<Modal.Heading>{mode === 'create' ? '新建 Space' : '编辑 Space'}</Modal.Heading>
+							</div>
+							<p className='text-sm text-muted' id={descriptionId}>
+								Space 只承载顶级上下文。设置名称、图标和颜色即可。
+							</p>
+						</div>
 					</Modal.Header>
 
 					<Modal.Body>

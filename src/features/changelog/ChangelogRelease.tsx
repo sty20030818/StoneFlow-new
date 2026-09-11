@@ -1,14 +1,31 @@
 import { Chip } from '@heroui/react'
+import { Markdown, type MarkdownProps } from '@heroui-pro/react/markdown'
 
 import type { ChangelogRelease as ChangelogReleaseModel } from './contract'
-import { ChangelogMarkdown } from './ChangelogMarkdown'
+
+const components: MarkdownProps['components'] = {
+	hr: () => null,
+}
+
+export function ChangelogReleaseContent({
+	release,
+	headingLevel = 4,
+}: {
+	release: ChangelogReleaseModel
+	headingLevel?: 3 | 4
+}) {
+	return (
+		<div className='space-y-4'>
+			{Array.from(release.sections, ([category, body]) => (
+				<Markdown components={components} key={category}>
+					{`${'#'.repeat(headingLevel)} ${category}\n\n${body}`}
+				</Markdown>
+			))}
+		</div>
+	)
+}
 
 export function ChangelogRelease({ release }: { release: ChangelogReleaseModel }) {
-	const content = Array.from(
-		release.sections,
-		([category, body]) => `### ${category}\n\n${body}`,
-	).join('\n\n')
-
 	return (
 		<section>
 			<div className='mb-4 flex items-baseline gap-2'>
@@ -20,7 +37,7 @@ export function ChangelogRelease({ release }: { release: ChangelogReleaseModel }
 					</Chip>
 				) : null}
 			</div>
-			<ChangelogMarkdown content={content} />
+			<ChangelogReleaseContent release={release} />
 		</section>
 	)
 }

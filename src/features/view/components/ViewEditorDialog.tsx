@@ -8,12 +8,14 @@ import {
 	ToggleButton,
 	ToggleButtonGroup,
 } from '@heroui/react'
+import { ListFilterIcon, XIcon } from 'lucide-react'
 import { useCallback, useEffect, useId, useMemo } from 'react'
 import { FormProvider, useController } from 'react-hook-form'
 
 import type { ProjectOption } from '@/features/project'
 import { useZodForm } from '@/shared/form'
 import { useSubmitTargetFromForm } from '@/features/submit'
+import { ActionTooltip } from '@/shared/components/tooltip'
 import type { TaskStatus, UpdateViewInput, View } from '@/shared/types'
 import {
 	buildViewEditorDefaultValues,
@@ -142,11 +144,25 @@ export function ViewEditorDialog({
 						<section
 							{...dialogProps}
 							onKeyDown={(event) => {
+								if (event.key === 'Tab') return
 								if (event.key !== 'Escape' || event.defaultPrevented) event.stopPropagation()
 							}}
 						/>
 					)}
 				>
+					<ActionTooltip label='关闭'>
+						<Button
+							aria-label='关闭保存视图编辑窗口'
+							className='absolute end-3 top-3'
+							isIconOnly
+							size='sm'
+							slot='close'
+							type='button'
+							variant='ghost'
+						>
+							<XIcon aria-hidden className='size-3.5' />
+						</Button>
+					</ActionTooltip>
 					<FormProvider {...form}>
 						<form
 							onSubmit={(event) => {
@@ -155,12 +171,17 @@ export function ViewEditorDialog({
 							}}
 						>
 							<Modal.Header>
-								<Modal.Heading>{title}</Modal.Heading>
-								<p className='max-w-140 text-sm text-muted' id={descriptionId}>
-									{view
-										? '这里仅修改名称；查询条件请在保存视图详情中修改并覆盖。'
-										: '保存视图固定查询边界与筛选；分组和排序仍由「显示」独立管理。'}
-								</p>
+								<div className='flex flex-col gap-3 ps-2 pe-10'>
+									<div className='flex items-center gap-2'>
+										<ListFilterIcon aria-hidden className='size-4 shrink-0 text-muted' />
+										<Modal.Heading>{title}</Modal.Heading>
+									</div>
+									<p className='max-w-140 text-sm text-muted' id={descriptionId}>
+										{view
+											? '这里仅修改名称；查询条件请在保存视图详情中修改并覆盖。'
+											: '保存视图固定查询边界与筛选；分组和排序仍由「显示」独立管理。'}
+									</p>
+								</div>
 							</Modal.Header>
 
 							<Modal.Body>

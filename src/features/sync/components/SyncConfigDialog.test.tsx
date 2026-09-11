@@ -15,6 +15,29 @@ describe('SyncConfigDialog', () => {
 		act(() => toast.clear())
 	})
 
+	it.each([false, true])('首尾 Tab 回绕（Shift=%s）', (shiftKey) => {
+		render(
+			<DialogHarness
+				configSource='system_keychain'
+				onClose={vi.fn()}
+				onSave={vi.fn(async () => undefined)}
+			/>,
+		)
+		fireEvent.change(screen.getByRole('textbox', { name: '同步数据库连接' }), {
+			target: { value: 'postgresql://db.example.com/sf' },
+		})
+		const first = screen.getByRole('button', { name: '关闭同步配置' })
+		const last = screen.getByRole('button', { name: '保存配置' })
+		const source = shiftKey ? first : last
+		const target = shiftKey ? last : first
+		act(() => source.focus())
+		expect(source).toHaveFocus()
+
+		fireEvent.keyDown(source, { key: 'Tab', shiftKey })
+
+		expect(target).toHaveFocus()
+	})
+
 	it('修剪连接串后保存并关闭', async () => {
 		const onSave = vi.fn(async () => undefined)
 		const onClose = vi.fn()
@@ -39,18 +62,18 @@ describe('SyncConfigDialog', () => {
 		expect(successToast).toHaveTextContent('已绑定远端，正在后台执行同步。')
 	})
 
-	it('环境配置只展示说明，不暴露凭据写入', () => {
-		render(
-			<DialogHarness
-				configSource='environment'
-				onClose={vi.fn()}
-				onSave={vi.fn(async () => undefined)}
-			/>,
-		)
+	it('环境配置只展示说明，可通过标题关闭按钮退出，不暴露凭据写入', async () => {
+		const onClose = vi.fn()
+		const onSave = vi.fn(async () => undefined)
+		render(<DialogHarness configSource='environment' onClose={onClose} onSave={onSave} />)
 
 		expect(screen.getByText('.env.local 是唯一配置来源')).toBeInTheDocument()
 		expect(screen.queryByRole('textbox', { name: '同步数据库连接' })).not.toBeInTheDocument()
 		expect(screen.queryByRole('button', { name: '保存配置' })).not.toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: '关闭同步配置' }))
+		await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+		expect(onClose).toHaveBeenCalledOnce()
+		expect(onSave).not.toHaveBeenCalled()
 	})
 
 	it('关闭重开清除上轮保存错误，连接串草稿仍由调用方保留', async () => {
@@ -197,6 +220,12 @@ describe('SyncConfigDialog', () => {
 		fireEvent.click(saveButton)
 		await waitFor(() => expect(onSave).toHaveBeenCalledTimes(2))
 		expect(saveButton).toBeDisabled()
+		const closeButton = screen.getByRole('button', { name: '关闭同步配置' })
+		expect(closeButton).toBeDisabled()
+		fireEvent.click(closeButton)
+		fireEvent.keyDown(dialog, { key: 'Escape' })
+		expect(onClose).not.toHaveBeenCalled()
+		expect(dialog).toBeInTheDocument()
 		fireEvent.click(saveButton)
 		expect(onSave).toHaveBeenCalledTimes(2)
 

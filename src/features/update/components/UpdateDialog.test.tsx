@@ -17,10 +17,14 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@/features/changelog', () => ({
+	useChangelog: mocks.useChangelog,
+}))
+
+vi.mock('@/features/changelog/presentation', () => ({
 	ChangelogRelease: ({ release }: { release: { version: string } }) => (
 		<article>v{release.version}</article>
 	),
-	useChangelog: mocks.useChangelog,
+	ChangelogReleaseContent: () => <p>目标版本更新内容</p>,
 }))
 
 vi.mock('../hooks/useUpdateInstallActions', () => ({
@@ -84,6 +88,21 @@ describe('UpdateDialog', () => {
 		mocks.useChangelog.mockReturnValue({ releases: [], isLoading: false })
 	})
 
+	it.each([false, true])('首尾 Tab 回绕（Shift=%s）', (shiftKey) => {
+		showSnapshot('available')
+		renderUpdateDialog()
+		const first = screen.getByRole('button', { name: '关闭' })
+		const last = screen.getByRole('button', { name: '立即更新' })
+		const source = shiftKey ? first : last
+		const target = shiftKey ? last : first
+		act(() => source.focus())
+		expect(source).toHaveFocus()
+
+		fireEvent.keyDown(source, { key: 'Tab', shiftKey })
+
+		expect(target).toHaveFocus()
+	})
+
 	it('检查失败时不展示安装动作，并允许重新检查', async () => {
 		useUpdateStore.setState({
 			dialogVisible: true,
@@ -120,7 +139,9 @@ describe('UpdateDialog', () => {
 		mocks.getCurrentVersion.mockResolvedValue('0.1.2-beta.2')
 		mocks.useChangelog.mockImplementation((query) => ({
 			isLoading: false,
-			releases: query ? [{ version: '0.1.2-beta.4' }, { version: '0.1.2-beta.3' }] : [],
+			releases: query
+				? [{ version: '0.1.2-beta.4', date: '2026-08-07' }, { version: '0.1.2-beta.3' }]
+				: [],
 		}))
 		showSnapshot('available', { channel: 'beta', version: '0.1.2-beta.4' })
 		renderUpdateDialog()
@@ -134,7 +155,12 @@ describe('UpdateDialog', () => {
 			}),
 		)
 		const notes = screen.getByRole('region', { name: '本次累计更新说明' })
-		expect(within(notes).getByText('v0.1.2-beta.4')).toBeInTheDocument()
+		expect(notes).toHaveAttribute('tabindex', '0')
+		expect(screen.getByRole('heading', { name: '发现新版本' })).toBeInTheDocument()
+		expect(screen.getAllByText(/0\.1\.2-beta\.4/)).toHaveLength(1)
+		expect(screen.getByText('2026-08-07')).toHaveAttribute('datetime', '2026-08-07')
+		expect(notes).not.toContainElement(screen.getByText('v0.1.2-beta.4'))
+		expect(within(notes).getByText('目标版本更新内容')).toBeInTheDocument()
 		expect(within(notes).getByText('v0.1.2-beta.3')).toBeInTheDocument()
 	})
 
@@ -151,11 +177,35 @@ describe('UpdateDialog', () => {
 				targetVersion: '0.2.0',
 			}),
 		)
-		expect(screen.queryByRole('region', { name: '本次累计更新说明' })).not.toBeInTheDocument()
+		expect(screen.getByRole('region', { name: '本次累计更新说明' })).toBeInTheDocument()
+		expect(screen.getByText('本次更新说明暂不可用，不影响更新。')).toBeInTheDocument()
+		expect(screen.getAllByText('v0.2.0')).toHaveLength(1)
+		expect(screen.queryByText('2026-08-07')).not.toBeInTheDocument()
 		const updateButton = screen.getByRole('button', { name: '立即更新' })
 		expect(updateButton).toBeEnabled()
 		fireEvent.click(updateButton)
 		expect(mocks.startDownload).toHaveBeenCalledTimes(1)
+	})
+
+	it('说明仍在加载或只缓存了部分版本时，不隐藏已有内容也不禁用更新', async () => {
+		mocks.getCurrentVersion.mockResolvedValue('0.1.0')
+		mocks.useChangelog.mockReturnValue({ releases: [{ version: '0.1.1' }], isLoading: true })
+		showSnapshot('available', { version: '0.2.0' })
+		renderUpdateDialog()
+
+		expect(await screen.findByText('正在读取本次更新说明…')).toBeInTheDocument()
+		expect(screen.getAllByText('v0.2.0')).toHaveLength(1)
+		expect(screen.getByText('v0.1.1')).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: '立即更新' })).toBeEnabled()
+	})
+
+	it('运行版本读取失败时结束说明加载提示，仍允许更新', async () => {
+		mocks.getCurrentVersion.mockRejectedValue(new Error('version unavailable'))
+		showSnapshot('available')
+		renderUpdateDialog()
+
+		expect(await screen.findByText('本次更新说明暂不可用，不影响更新。')).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: '立即更新' })).toBeEnabled()
 	})
 
 	it('只在后端确认跳过成功后应用权威快照并关闭', async () => {
@@ -177,6 +227,22 @@ describe('UpdateDialog', () => {
 
 		expect(mocks.skipVersion).toHaveBeenCalledWith('0.2.0-beta.4', 'beta')
 		expect(useUpdateStore.getState().snapshot).toMatchObject({ revision: 2, phase: 'idle' })
+	})
+
+	it('稍后只关闭当前提醒，不跳过版本或启动下载', () => {
+		showSnapshot('available')
+		const snapshot = useUpdateStore.getState().snapshot
+		renderUpdateDialog()
+
+		fireEvent.click(screen.getByRole('button', { name: '稍后' }))
+
+		expect(useUpdateStore.getState()).toMatchObject({
+			dialogVisible: false,
+			dialogClosedRevision: 1,
+		})
+		expect(useUpdateStore.getState().snapshot).toBe(snapshot)
+		expect(mocks.skipVersion).not.toHaveBeenCalled()
+		expect(mocks.startDownload).not.toHaveBeenCalled()
 	})
 
 	it('跳过失败时保留权威 Available 和 Dialog 并提示错误', async () => {
@@ -203,6 +269,18 @@ describe('UpdateDialog', () => {
 		})
 	})
 
+	it('下载时用进度条表达状态，只保留取消与后台继续两个动作', () => {
+		showSnapshot('downloading')
+		renderUpdateDialog()
+
+		expect(screen.getByRole('progressbar', { name: '下载进度' })).toBeInTheDocument()
+		expect(screen.queryByRole('button', { name: '下载中' })).not.toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: '取消下载' }))
+		expect(mocks.cancelDownload).toHaveBeenCalledTimes(1)
+		fireEvent.click(screen.getByRole('button', { name: '后台继续' }))
+		expect(useUpdateStore.getState().dialogVisible).toBe(false)
+	})
+
 	it('Ready 打开后先读取配置渠道，完成前禁止安装', async () => {
 		let resolveSettings: ((settings: typeof stableSettings) => void) | undefined
 		mocks.getUpdateSettings.mockReturnValue(
@@ -221,6 +299,7 @@ describe('UpdateDialog', () => {
 		})
 		const installButton = await screen.findByRole('button', { name: '立即重启' })
 		expect(installButton).toBeEnabled()
+		expect(screen.queryByText('安装包已就绪')).not.toBeInTheDocument()
 		fireEvent.click(installButton)
 		expect(mocks.install).toHaveBeenCalledWith(null)
 		expect(useUpdateStore.getState()).not.toHaveProperty('configuredChannel')
