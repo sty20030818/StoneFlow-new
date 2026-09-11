@@ -50,16 +50,22 @@ describe('buildReleaseApp', () => {
 			['bun', 'run', 'scripts/release/verify-heroui-pro.ts'],
 			['bun', 'run', 'tauri', 'build'],
 		])
-		for (const [index, command] of captured.commands.entries()) {
-			expect(command.cwd).toBe('/snapshot')
-			expect(command.env).toEqual({
-				...(index === 0 ? { HEROUI_AUTH_TOKEN } : {}),
-				KEEP: 'yes',
-				CARGO_TARGET_DIR: '/run/target',
-				PWD: '/snapshot',
-				INIT_CWD: '/snapshot',
-			})
+		const sharedEnv = {
+			KEEP: 'yes',
+			CARGO_TARGET_DIR: '/run/target',
+			PWD: '/snapshot',
+			INIT_CWD: '/snapshot',
 		}
+		for (const command of captured.commands) {
+			expect(command.cwd).toBe('/snapshot')
+		}
+		expect(captured.commands[0]?.env).toEqual({ HEROUI_AUTH_TOKEN, ...sharedEnv })
+		expect(captured.commands[1]?.env).toEqual({
+			...sharedEnv,
+			NPM_CONFIG_REGISTRY: 'https://registry.npmjs.org',
+		})
+		expect(captured.commands[2]?.env).toEqual(sharedEnv)
+		expect(captured.commands[3]?.env).toEqual(sharedEnv)
 	})
 
 	test('Beta 通过 --config 覆盖版本且不改写 tauri.conf.json', async () => {
