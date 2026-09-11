@@ -196,10 +196,10 @@ const OSS_PRODUCTION_USAGE = [
 	['src/features/entity-detail/components/EntityDetailDrawerHost.tsx', ['Surface']],
 	[
 		'src/features/filter/components/FilterBar.tsx',
-		['Button', 'Dropdown', 'Input', 'Label', 'Modal', 'Selection'],
+		['Button', 'ButtonGroup', 'Dropdown', 'Input', 'Label', 'Modal', 'Surface', 'Selection'],
 	],
 	['src/features/filter/components/FilterMenu.tsx', ['Dropdown', 'SearchField']],
-	['src/features/filter/components/FilterValueOption.tsx', ['Dropdown']],
+	['src/features/filter/components/FilterValueOption.tsx', ['Dropdown', 'checkboxVariants']],
 	['src/features/filter/components/FilterValueSubMenu.tsx', ['Dropdown', 'SearchField']],
 	['src/features/filter/components/PageFilterButton.tsx', ['Button']],
 	['src/features/global-search/components/GlobalSearchInput.tsx', ['SearchField']],
@@ -466,6 +466,17 @@ const proConsumers = indexConsumers(PRO_PRODUCTION_USAGE)
 export const HEROUI_REGISTRATIONS: readonly HeroUIRegistration[] = [
 	...componentRegistrations(HEROUI_PACKAGES.oss, OSS_COMPONENT_SUBPATHS, ossConsumers),
 	...componentRegistrations(HEROUI_PACKAGES.pro, PRO_COMPONENT_SUBPATHS, proConsumers),
+	{
+		id: 'heroui-oss-checkbox-variants-function',
+		packageName: HEROUI_PACKAGES.oss.name,
+		packageVersion: HEROUI_PACKAGES.oss.version,
+		family: 'checkboxVariants',
+		exportPath: `${HEROUI_PACKAGES.oss.name}/checkbox`,
+		exportKind: 'function',
+		adoption: 'used',
+		consumers: ossConsumers.get('checkboxVariants') ?? [],
+		previewId: null,
+	},
 	{
 		id: 'heroui-oss-toast-function',
 		packageName: HEROUI_PACKAGES.oss.name,

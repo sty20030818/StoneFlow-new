@@ -101,24 +101,48 @@ describe('filter entry points', () => {
 		expect(screen.queryByRole('button', { name: '添加筛选' })).not.toBeInTheDocument()
 	})
 
-	it('字段菜单以嵌套子菜单选择值并保持根菜单打开', async () => {
-		const value = renderFilterEntry(<PageFilterButton />)
+	it.each(['点击行', 'Enter'] as const)(
+		'勾选框支持连续多选，%s 选择后关闭两级菜单并归还焦点',
+		async (method) => {
+			const value = renderFilterEntry(<PageFilterButton />)
 
-		fireEvent.click(screen.getByRole('button', { name: '筛选' }))
-		const statusField = await screen.findByRole('menuitem', { name: /状态/ })
-		fireEvent.keyDown(statusField, { key: 'ArrowRight' })
+			const trigger = screen.getByRole('button', { name: '筛选' })
+			fireEvent.click(trigger)
+			const statusField = await screen.findByRole('menuitem', { name: /状态/ })
+			fireEvent.keyDown(statusField, { key: 'ArrowRight' })
 
-		const submenu = screen.getByRole('menu', { name: '状态' })
-		fireEvent.click(screen.getByRole('menuitemcheckbox', { name: '进行中' }))
+			const submenu = screen.getByRole('menu', { name: '状态' })
+			const option = screen.getByRole('menuitemcheckbox', { name: '进行中' })
+			const checkbox = option.querySelector('[data-slot="checkbox"]')!
+			fireEvent.pointerDown(checkbox, { pointerType: 'mouse', button: 0 })
+			fireEvent.click(checkbox)
 
-		expect(value.session.replaceEffective).toHaveBeenCalledWith(
-			expect.objectContaining({
-				clauses: [expect.objectContaining({ field: 'status', values: ['todo', 'doing'] })],
-			}),
-		)
-		expect(submenu).toBeInTheDocument()
-		expect(screen.getByRole('menu', { name: '筛选' })).toBeInTheDocument()
-	})
+			expect(value.session.replaceEffective).toHaveBeenCalledOnce()
+			expect(value.session.replaceEffective).toHaveBeenCalledWith(
+				expect.objectContaining({
+					clauses: [expect.objectContaining({ field: 'status', values: ['todo', 'doing'] })],
+				}),
+			)
+			expect(submenu).toBeInTheDocument()
+			expect(screen.getByRole('menu', { name: '筛选' })).toBeInTheDocument()
+
+			if (method === '点击行') {
+				fireEvent.pointerDown(option, { pointerType: 'mouse', button: 0 })
+				fireEvent.click(option)
+			} else {
+				act(() => option.focus())
+				fireEvent.keyDown(option, { key: 'Enter', code: 'Enter' })
+				fireEvent.keyUp(option, { key: 'Enter', code: 'Enter' })
+			}
+
+			expect(value.session.replaceEffective).toHaveBeenCalledTimes(2)
+			await waitFor(() => {
+				expect(screen.queryByRole('menu', { name: '状态' })).not.toBeInTheDocument()
+				expect(screen.queryByRole('menu', { name: '筛选' })).not.toBeInTheDocument()
+				expect(trigger).toHaveFocus()
+			})
+		},
+	)
 
 	it('保存对话框沿用既有视图保存契约', async () => {
 		const onSave = vi.fn(async () => undefined)

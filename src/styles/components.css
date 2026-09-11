@@ -82,6 +82,36 @@
 		border-color: var(--toggle-button-bg-selected);
 	}
 
+	/* 筛选公式是只读字段与独立动作的分段组；不裁切原生焦点轮廓。 */
+	[data-theme="stoneflow-light"] [data-filter-bar] {
+		border-radius: var(--radius-surface);
+	}
+
+	[data-theme="stoneflow-light"] [data-filter-clause] {
+		border: var(--border-width) solid var(--border);
+		border-radius: var(--radius-overlay);
+		background: var(--surface);
+		color: var(--foreground);
+
+		> .button {
+			border-radius: 0;
+		}
+
+		> .button:last-child {
+			border-start-end-radius: calc(var(--radius-overlay) - var(--border-width));
+			border-end-end-radius: calc(var(--radius-overlay) - var(--border-width));
+		}
+
+		.button-group__separator {
+			inset-inline-start: 0;
+			top: 0;
+			height: 100%;
+			border-radius: 0;
+			background: var(--border);
+			opacity: 1;
+		}
+	}
+
 	/* 14px 是高密度界面的默认图标上限；已有 12px glyph 不会被反向放大。 */
 	[data-theme="stoneflow-light"] .lucide:not(.size-5) {
 		max-inline-size: var(--icon-size);
@@ -227,6 +257,13 @@
 		font-weight: 600;
 	}
 
+	/* 菜单搜索融入菜单表面；清空按钮和菜单项仍保留独立的键盘焦点。 */
+	[data-theme="stoneflow-light"] .search-field__group[data-field-role="filter-search"] {
+		background: transparent;
+		box-shadow: none;
+		outline: none;
+	}
+
 	[data-theme="stoneflow-light"] .input[data-field-role="create-title"] {
 		height: var(--control-height-lg);
 		min-height: var(--control-height-lg);
@@ -279,7 +316,9 @@
 				.textarea[data-field-role="create-description"],
 				.input[data-field-role="detail-title"],
 				.textarea[data-field-role="detail-note"]
-			):focus-visible {
+			):focus-visible,
+		[data-theme="stoneflow-light"]
+			.search-field__group[data-field-role="filter-search"]:has(input:focus-visible) {
 			outline: 2px solid Highlight;
 			outline-offset: -2px;
 		}
@@ -327,6 +366,13 @@
 
 	[data-theme="stoneflow-light"] .checkbox__control {
 		border-radius: var(--radius-sm);
+	}
+
+	/* 菜单内展示勾选框在高对比模式下仍保留可辨认的边界。 */
+	@media (forced-colors: active) {
+		[data-theme="stoneflow-light"] [role="menuitemcheckbox"] .checkbox__control {
+			border: 1px solid ButtonText;
+		}
 	}
 
 	[data-theme="stoneflow-light"] .checkbox__control::before {

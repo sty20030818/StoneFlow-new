@@ -57,6 +57,13 @@ export function formatClauseValuesSummary(
 	clause: FilterClause,
 	projects?: Array<{ id: string; name: string }>,
 ): string {
+	if (clause.values.length > 1) {
+		const label =
+			clause.field === 'due' || clause.field === 'planned'
+				? '日期条件'
+				: formatFilterFieldLabel(clause.field)
+		return `${clause.values.length} 个${label}`
+	}
 	return clause.values
 		.map((value) => formatFilterValueLabel(clause.field, value, projects))
 		.join('、')

@@ -10,6 +10,7 @@ import { FilterValueOption } from './FilterValueOption'
 type FilterValueSubMenuProps = {
 	field: FilterField
 	isChecked: (value: string) => boolean
+	onClose: () => void
 	onToggle: (value: string) => void
 	projects?: Array<{ id: string; name: string }>
 }
@@ -18,6 +19,7 @@ type FilterValueSubMenuProps = {
 export function FilterValueSubMenu({
 	field,
 	isChecked,
+	onClose,
 	onToggle,
 	projects,
 }: FilterValueSubMenuProps) {
@@ -32,7 +34,7 @@ export function FilterValueSubMenu({
 
 	return (
 		<>
-			<div className='shrink-0 border-b border-separator p-2'>
+			<div className='shrink-0 border-b border-separator px-2 py-1.5'>
 				<SearchField
 					aria-label={`${formatFilterFieldLabel(field)} 筛选`}
 					fullWidth
@@ -40,8 +42,7 @@ export function FilterValueSubMenu({
 					value={query}
 					variant='secondary'
 				>
-					<SearchField.Group>
-						<SearchField.SearchIcon />
+					<SearchField.Group data-field-role='filter-search'>
 						<SearchField.Input
 							onKeyDown={(event) => {
 								if (event.key !== 'Escape') event.stopPropagation()
@@ -67,6 +68,7 @@ export function FilterValueSubMenu({
 						key={option.value}
 						label={option.label}
 						leading={option.leading}
+						onClose={onClose}
 						onToggle={() => onToggle(option.value)}
 						value={option.value}
 					/>

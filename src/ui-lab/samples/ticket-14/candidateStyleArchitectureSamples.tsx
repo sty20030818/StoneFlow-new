@@ -3,6 +3,7 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { KeybindingRegistry, ShortcutRegistryProvider } from '@/features/command'
 import {
 	EMPTY_FILTER_QUERY,
+	FilterBar,
 	ListFilterUiProvider,
 	PageFilterButton,
 	isFilterQueryEmpty,
@@ -103,7 +104,7 @@ function SearchablePropertyMenuCurrentPreview() {
 
 	return (
 		<CurrentEvidence
-			note='直接渲染生产 PageFilterButton/FilterMenu，并只在 fixture 内保存 FilterQuery；不复制私有菜单 DOM。'
+			note='直接渲染生产筛选菜单与 FilterBar；添加条件后检查分段编辑、恢复和窄宽换行。只有 fixture 保存本地 FilterQuery。'
 			title='Current · 可搜索筛选属性菜单'
 		>
 			<ShortcutRegistryProvider registry={FILTER_SHORTCUT_REGISTRY}>
@@ -112,6 +113,7 @@ function SearchablePropertyMenuCurrentPreview() {
 						<PageFilterButton />
 						<span className='text-sm text-muted'>打开后搜索字段并进入二级值菜单</span>
 					</div>
+					<FilterBar />
 				</ListFilterUiProvider>
 			</ShortcutRegistryProvider>
 		</CurrentEvidence>
@@ -251,7 +253,7 @@ export const TICKET_14_SAMPLES = [
 		states: 'Search、Empty、Keyboard Navigation、Submenu、Multiple Values、Escape、Focus Return',
 		verification: 'Lab 使用本地 FilterQuery；真实 URL/View session、项目数据与命令入口仅产品验收',
 		preservedContract:
-			'字段搜索、二级值菜单、多选勾选、即时写回、菜单保持打开、空结果、Escape 焦点返回、命令快捷键。',
+			'字段搜索、二级值菜单、即时写回、Checkbox 点击继续多选、Item 点击关闭、空结果、Escape 焦点返回、命令快捷键。',
 		expectedDeletion:
 			'无。ComboBox/Autocomplete 的单值输入语义不能替代字段子菜单、多选值菜单与即时 FilterQuery 写回。',
 		recipeFamilies: [

@@ -4,28 +4,40 @@
  * 筛选公式条：chip（field 固定 / op·值可改）+ Clear（仅 dirty）+ Save。
  */
 import { useState } from 'react'
-import { Button, Dropdown, Input, Label, Modal, type Selection } from '@heroui/react'
+import {
+	Button,
+	ButtonGroup,
+	Dropdown,
+	Input,
+	Label,
+	Modal,
+	Surface,
+	type Selection,
+} from '@heroui/react'
 import { PlusIcon, XIcon } from 'lucide-react'
 
 import { COMMAND_IDS, CommandActionTooltip } from '@/features/command'
-import { ActionTooltip, OverflowTooltip } from '@/shared/components/tooltip'
+import { ActionTooltip } from '@/shared/components/tooltip'
 import { cn } from '@/shared/lib/utils'
 
 import {
 	createFilterClause,
 	normalizeFilterQuery,
 	type FilterClause,
+	type FilterField,
 	type FilterOp,
 	type FilterQuery,
 } from '../core'
 import { useListFilterUi } from '../model/ListFilterUiContext'
 import { FilterMenu } from './FilterMenu'
+import { FilterValueOption } from './FilterValueOption'
 import {
 	formatClauseValuesSummary,
 	formatFilterFieldLabel,
 	formatFilterOpLabel,
+	formatFilterValueLabel,
 } from './filterLabels'
-import { getFilterValueOptions } from './filterOptionCatalog'
+import { getFilterFieldLeading, getFilterValueOptions } from './filterOptionCatalog'
 
 export function FilterBar({ className }: { className?: string }) {
 	const { session, projects, canOverwriteView, onSave } = useListFilterUi()
@@ -56,7 +68,11 @@ export function FilterBar({ className }: { className?: string }) {
 
 	return (
 		<div className={cn('flex flex-col gap-1.5', className)}>
-			<div className='flex flex-wrap items-center gap-1 px-1 py-0.5'>
+			<Surface
+				className='flex flex-wrap items-center gap-2 p-2'
+				data-filter-bar='true'
+				variant='secondary'
+			>
 				{effective.clauses.map((clause) => (
 					<FilterChip
 						clause={clause}
@@ -88,18 +104,16 @@ export function FilterBar({ className }: { className?: string }) {
 					}
 				/>
 				<div className='ml-auto flex items-center gap-1.5'>
-					{dirty ? (
-						<Button onPress={() => clearTemp()} size='sm' type='button' variant='ghost'>
-							恢复
-						</Button>
-					) : null}
+					<Button onPress={() => clearTemp()} size='sm' type='button' variant='ghost'>
+						恢复
+					</Button>
 					{onSave ? (
 						<Button onPress={() => setSaveOpen(true)} size='sm' type='button' variant='outline'>
 							保存
 						</Button>
 					) : null}
 				</div>
-			</div>
+			</Surface>
 
 			{onSave ? (
 				<FilterSaveDialog
@@ -126,10 +140,14 @@ function FilterChip({
 }) {
 	const multi = clause.values.length > 1
 	return (
-		<div className='inline-flex max-w-full items-center gap-0.5 text-[12px]'>
-			<span className='shrink-0 px-0.5 font-medium text-muted'>
-				{formatFilterFieldLabel(clause.field)}
-			</span>
+		<ButtonGroup
+			aria-label={`${formatFilterFieldLabel(clause.field)}筛选条件`}
+			className='max-w-full'
+			data-filter-clause='true'
+			size='sm'
+			variant='ghost'
+		>
+			<FilterFieldLabel field={clause.field} />
 			<OpPicker multi={multi} op={clause.op} onChange={(op) => onUpdate({ ...clause, op })} />
 			<ValuesPicker
 				clause={clause}
@@ -147,10 +165,23 @@ function FilterChip({
 					type='button'
 					variant='ghost'
 				>
+					<ButtonGroup.Separator />
 					<XIcon className='size-3' />
 				</Button>
 			</ActionTooltip>
-		</div>
+		</ButtonGroup>
+	)
+}
+
+/** 字段名只读，不伪装成禁用按钮，也不进入 Tab 顺序。 */
+function FilterFieldLabel({ field }: { field: FilterField }) {
+	return (
+		<span className='flex shrink-0 items-center gap-1.5 self-stretch px-2 text-[13px]'>
+			<span className='flex size-4 shrink-0 items-center justify-center' aria-hidden>
+				{getFilterFieldLeading(field)}
+			</span>
+			{formatFilterFieldLabel(field)}
+		</span>
 	)
 }
 
@@ -166,6 +197,7 @@ function OpPicker({
 	return (
 		<Dropdown>
 			<Button aria-label='筛选运算符' className='min-w-0' size='sm' type='button' variant='ghost'>
+				<ButtonGroup.Separator />
 				{formatFilterOpLabel(op, multi)}
 			</Button>
 			<Dropdown.Popover className='w-28' placement='bottom start'>
@@ -198,6 +230,12 @@ function ValuesPicker({
 }) {
 	const options = getFilterValueOptions(clause.field, projects)
 	const summary = formatClauseValuesSummary(clause, projects)
+	const fullSummary = clause.values
+		.map((value) => formatFilterValueLabel(clause.field, value, projects))
+		.join('、')
+	const leadingOptions = options
+		.filter((option) => clause.values.includes(option.value) && option.leading)
+		.slice(0, 3)
 
 	function handleSelectionChange(selection: Selection) {
 		const selectedKeys =
@@ -214,16 +252,29 @@ function ValuesPicker({
 		<Dropdown>
 			<Button
 				aria-label={`筛选值 ${summary}`}
-				className='max-w-35 min-w-0'
+				className='max-w-35 min-w-0 shrink'
 				size='sm'
 				type='button'
 				variant='ghost'
 			>
-				<span className='min-w-0 truncate' title={summary}>
+				<ButtonGroup.Separator />
+				{leadingOptions.length > 0 ? (
+					<span className='isolate flex shrink-0 -space-x-1.5' aria-hidden>
+						{leadingOptions.map((option) => (
+							<span
+								className='relative flex size-4 shrink-0 items-center justify-center'
+								key={option.value}
+							>
+								{option.leading}
+							</span>
+						))}
+					</span>
+				) : null}
+				<span className='min-w-0 truncate' title={fullSummary}>
 					{summary}
 				</span>
 			</Button>
-			<Dropdown.Popover className='w-48' placement='bottom start'>
+			<Dropdown.Popover className='w-64' placement='bottom start'>
 				<Dropdown.Menu
 					aria-label='筛选值'
 					disallowEmptySelection
@@ -232,26 +283,15 @@ function ValuesPicker({
 					shouldCloseOnSelect={false}
 					onSelectionChange={handleSelectionChange}
 				>
-					{options.map((option) => {
-						return (
-							<Dropdown.Item
-								id={option.value}
-								key={option.value}
-								shouldCloseOnSelect={false}
-								textValue={option.label}
-							>
-								<Dropdown.ItemIndicator />
-								{option.leading ? (
-									<span className='flex size-4 shrink-0 items-center justify-center' aria-hidden>
-										{option.leading}
-									</span>
-								) : null}
-								<OverflowTooltip className='min-w-0 flex-1' content={option.label}>
-									{option.label}
-								</OverflowTooltip>
-							</Dropdown.Item>
-						)
-					})}
+					{options.map((option) => (
+						<FilterValueOption
+							count={option.count}
+							key={option.value}
+							label={option.label}
+							leading={option.leading}
+							value={option.value}
+						/>
+					))}
 				</Dropdown.Menu>
 			</Dropdown.Popover>
 		</Dropdown>

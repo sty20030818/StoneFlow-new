@@ -62,8 +62,8 @@ export function FilterMenu({ trigger, open, onOpenChange }: FilterMenuProps) {
 					cloneElement(trigger, props as Record<string, unknown>)
 				}
 			/>
-			<Dropdown.Popover className='w-60 min-w-60' offset={6} placement='bottom end'>
-				<div className='border-b border-separator p-2'>
+			<Dropdown.Popover className='w-64' offset={6} placement='bottom end'>
+				<div className='border-b border-separator px-2 py-1.5'>
 					<SearchField
 						aria-label='筛选字段'
 						fullWidth
@@ -71,8 +71,7 @@ export function FilterMenu({ trigger, open, onOpenChange }: FilterMenuProps) {
 						value={query}
 						variant='secondary'
 					>
-						<SearchField.Group>
-							<SearchField.SearchIcon />
+						<SearchField.Group data-field-role='filter-search'>
 							<SearchField.Input
 								onKeyDown={(event) => {
 									if (event.key !== 'Escape') event.stopPropagation()
@@ -95,10 +94,11 @@ export function FilterMenu({ trigger, open, onOpenChange }: FilterMenuProps) {
 								<span className='flex-1'>{formatFilterFieldLabel(field)}</span>
 								<Dropdown.SubmenuIndicator />
 							</Dropdown.Item>
-							<Dropdown.Popover className='w-56 overflow-hidden' placement='right top'>
+							<Dropdown.Popover className='w-64 overflow-hidden' placement='right top'>
 								<FilterValueSubMenu
 									field={field}
 									isChecked={(value) => isChecked(field, value)}
+									onClose={() => handleOpenChange(false)}
 									onToggle={(value) => toggleValue(field, value)}
 									projects={projects}
 								/>
