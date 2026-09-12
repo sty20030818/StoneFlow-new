@@ -13,6 +13,14 @@
 		line-height: 1.25rem;
 	}
 
+	/* RAC 按钮以自身可见焦点状态为准，避免浏览器把浮层返回焦点误画成键盘 ring。 */
+	[data-theme="stoneflow-light"]
+		:is(.button, .toggle-button, .close-button)[data-rac]:focus-visible:not(
+			[data-focus-visible="true"]
+		) {
+		@apply ring-0 ring-offset-0;
+	}
+
 	/* Pro 发布的是已编译 CSS；这些焦点 recipe 同样消费全局宽度，不改颜色或交互状态。 */
 	[data-theme="stoneflow-light"] .cell-select .cell-select__trigger:focus-visible:not(:focus),
 	[data-theme="stoneflow-light"] .cell-select .cell-select__trigger[data-focus-visible="true"],
@@ -44,21 +52,6 @@
 	[data-theme="stoneflow-light"] .button[data-content-height="true"] {
 		height: auto;
 		min-height: revert-layer;
-	}
-
-	/* Windows 自绘窗体控制需要保留平台命中区与关闭危险态。 */
-	[data-theme="stoneflow-light"] .button[data-window-control="true"] {
-		height: 2.5rem;
-		min-height: 2.5rem;
-		width: 2.5rem;
-	}
-
-	@media (hover: hover) {
-		[data-theme="stoneflow-light"]
-			.button[data-window-close-button="true"]:is(:hover, [data-hovered="true"]) {
-			background-color: var(--danger);
-			color: var(--danger-foreground);
-		}
 	}
 
 	[data-theme="stoneflow-light"] :is(.button--sm, .toggle-button--sm) {
@@ -152,6 +145,32 @@
 	[data-theme="stoneflow-light"]
 		:is(.button--icon-only.button--lg, .toggle-button--icon-only.toggle-button--lg) {
 		width: var(--control-height-lg);
+	}
+
+	/* 窗口控制独立于普通 pill；放在尺寸规则之后，避免 sm 图标按钮把命中区压窄。 */
+	[data-theme="stoneflow-light"] .button[data-window-control="true"] {
+		height: 2.25rem;
+		min-height: 2.25rem;
+		width: 2.25rem;
+		flex-shrink: 0;
+		border-radius: var(--radius-control);
+	}
+
+	[data-theme="stoneflow-light"] .button[data-window-close-button="true"] {
+		--button-bg-hover: var(--danger);
+		--button-bg-pressed: var(--danger-hover);
+
+		&:active,
+		&[data-pressed="true"] {
+			color: var(--danger-foreground);
+		}
+	}
+
+	@media (hover: hover) {
+		[data-theme="stoneflow-light"]
+			.button[data-window-close-button="true"]:is(:hover, [data-hovered="true"]) {
+			color: var(--danger-foreground);
+		}
 	}
 
 	/* Avatar 保持身份图像的正圆语义；小头像与紧凑图标按钮共享 28px 基线。 */

@@ -119,6 +119,7 @@ HeroUI OSS/Pro 的锁定版本是默认实现，负责组件结构、Hover、Pre
 - `Alert` 使用 1px 轻边界而非卡片阴影；accent、success、warning 与 danger 状态统一使用对应 soft surface 与同色边界，其中 Alert accent 固定表达 Info，不随用户 Accent 预设漂移。
 - 标题、代码和数字输入只通过稳定语义 hook 统一内容层级，不向 Feature 暴露可配置皮肤。
 - 普通键盘焦点宽度统一来自 `theme.css` 的 `--focus-ring-width: 1px`；扩展 HeroUI `focus-ring` / `focus-field-ring` 共同 utility，Pro 已编译 CSS 与本地焦点边在集中 recipe 消费同一 token。Invalid 保留原规则，forced-colors 下宽度为 2px 并保留系统 Highlight；既有 Row 1px 边不再减细。UI Lab 不以私有 inline 焦点样式覆盖真实上游表现。
+- HeroUI `Button`、`ToggleButton` 与 `CloseButton` 的 RAC 控件以 `data-focus-visible` 决定 ring；集中 recipe 消除浏览器原生 `:focus-visible` 在鼠标关闭浮层、返回焦点时多画的 ring，保留真实焦点和键盘指示。原生控件、字段校验与强制颜色轮廓不受此规则影响。
 - 普通 Modal 与 AlertDialog 共用 `24px` 圆角和 spacing `3`（`12px`）外壳内边距，不改变宽度、滚动或原生动画。标准左对齐标题由实际 Feature 的普通内容块组合图标、8px 图文间隔和左内缩，图标仍遵从全局 `14px` 上限，不增加顶部留白。空间、保存视图、筛选保存、同步配置与已有关闭入口统一使用右上角小号 ghost Button 和 `14px` X 图标；关闭复用 HeroUI `slot='close'` 或既有关闭回调，新入口跟随各自取消语义，提交或安装中的关闭限制仍归业务。创建、关于、日期与危险确认保留各自布局，不创建通用弹窗壳。
 - 更新日志与 Available 更新说明通过 `data-release-dialog`、快捷键帮助通过 `data-shortcut-help-dialog` 使用次级表面衬托原生 Card；这些窄语义 hook 不改变其他 Modal 或下载、安装状态的底色，卡片排列与滚动仍由实际 Feature 持有。
 - 创建编辑区仍是窄例外：`data-create-dialog-header` 与共享分区使用同一纵向间隔；Header 分隔符两侧与属性间隔为 spacing `1.5`（`6px`）。`create-title` / `create-description` 编辑字段左侧额外缩进 `4px`、描述空态 `60px`，默认、hover、focus 下透明、无边框/阴影/ring，圆角为零以免裁切贴边光标，强制颜色保留 Highlight。创建属性沿用原生 outline variant，普通表单字段的上游 focus/invalid recipe 和 Popover/Sheet 的 `12px` 圆角不变。

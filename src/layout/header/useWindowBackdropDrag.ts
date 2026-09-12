@@ -20,9 +20,12 @@ export function useWindowBackdropDrag(headerRef: RefObject<HTMLElement | null>) 
 				!(target instanceof HTMLElement)
 			)
 				return
-			// 嵌套浮层会把背景遮罩设为 inert，浏览器此时将外点命中到 body。
+			// 背景被浮层隔离后，顶栏外点会命中 body。
 			const isInertBackground = target === document.body && header.closest('[inert]') !== null
-			if (!target.matches(BACKDROP_SELECTOR) && !isInertBackground) return
+			const isModalBackdrop =
+				target.matches(BACKDROP_SELECTOR) ||
+				(isInertBackground && document.querySelector(BACKDROP_SELECTOR) !== null)
+			if (!isModalBackdrop && !isInertBackground) return
 
 			const rect = header.getBoundingClientRect()
 			if (
@@ -32,6 +35,16 @@ export function useWindowBackdropDrag(headerRef: RefObject<HTMLElement | null>) 
 				event.clientY >= rect.bottom
 			)
 				return
+
+			if (!isModalBackdrop) {
+				if (event.type === 'pointerdown') {
+					// 外点按住期间保住菜单焦点，并把移入菜单后的释放仍归给 body，避免误选。
+					event.preventDefault()
+					target.setPointerCapture((event as PointerEvent).pointerId)
+				}
+				// 让 React Aria 接收 pointerdown / click，按原合同在松开时关闭浮层。
+				return
+			}
 
 			// 先于 document 上的外点监听消费手势；不让拖动后的 click 关闭浮层或转移焦点。
 			event.preventDefault()

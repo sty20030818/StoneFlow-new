@@ -34,6 +34,7 @@ import {
 import type { TaskPriorityValue } from '@/features/task'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import {
+	CopyIcon,
 	MinusIcon,
 	PanelLeftCloseIcon,
 	PanelLeftOpenIcon,
@@ -212,7 +213,11 @@ export function ShellHeader({
 		}
 
 		const activeElement = document.activeElement
-		if (activeElement instanceof HTMLElement) {
+		// 菜单已在 pointerdown 打开；mousedown 只能退出搜索，不能再清掉浮层焦点。
+		if (
+			activeElement instanceof HTMLElement &&
+			activeElement.closest('[data-sf-search-root="true"]')
+		) {
 			activeElement.blur()
 		}
 	}
@@ -370,47 +375,45 @@ export function ShellHeader({
 
 							{/* macOS 使用系统原生窗体控制，避免与页面内自绘按钮重复。 */}
 							{!isMac ? (
-								<div className='flex h-full items-center gap-0.5' data-tauri-drag-region>
-									<Tooltip>
-										<Button
-											aria-label='最小化窗口'
-											data-window-control='true'
-											isIconOnly
-											onPress={() => void handleMinimize()}
-											size='sm'
-											variant='ghost'
-										>
-											<MinusIcon className='size-3.5' />
-										</Button>
-										<Tooltip.Content>最小化窗口</Tooltip.Content>
-									</Tooltip>
-									<Tooltip>
-										<Button
-											aria-label={isMaximized ? '还原窗口' : '最大化窗口'}
-											data-window-control='true'
-											isIconOnly
-											onPress={() => void handleToggleMaximize()}
-											size='sm'
-											variant='ghost'
-										>
-											<SquareIcon className={`size-3 ${isMaximized ? 'scale-[0.88]' : ''}`} />
-										</Button>
-										<Tooltip.Content>{isMaximized ? '还原窗口' : '最大化窗口'}</Tooltip.Content>
-									</Tooltip>
-									<Tooltip>
-										<Button
-											aria-label='关闭窗口'
-											data-window-close-button='true'
-											data-window-control='true'
-											isIconOnly
-											onPress={() => void handleClose()}
-											size='sm'
-											variant='ghost'
-										>
-											<XIcon className='size-3.5' />
-										</Button>
-										<Tooltip.Content>关闭窗口</Tooltip.Content>
-									</Tooltip>
+								<div
+									className='flex h-full shrink-0 items-center gap-0.5 px-1'
+									data-tauri-drag-region
+								>
+									<Button
+										aria-label='最小化窗口'
+										data-window-control='true'
+										isIconOnly
+										onPress={() => void handleMinimize()}
+										size='sm'
+										variant='ghost'
+									>
+										<MinusIcon className='size-3.5' />
+									</Button>
+									<Button
+										aria-label={isMaximized ? '还原窗口' : '最大化窗口'}
+										data-window-control='true'
+										isIconOnly
+										onPress={() => void handleToggleMaximize()}
+										size='sm'
+										variant='ghost'
+									>
+										{isMaximized ? (
+											<CopyIcon className='size-3' />
+										) : (
+											<SquareIcon className='size-3' />
+										)}
+									</Button>
+									<Button
+										aria-label='关闭窗口'
+										data-window-close-button='true'
+										data-window-control='true'
+										isIconOnly
+										onPress={() => void handleClose()}
+										size='sm'
+										variant='ghost'
+									>
+										<XIcon className='size-3.5' />
+									</Button>
 								</div>
 							) : null}
 						</div>
