@@ -3,7 +3,7 @@ import { Card } from '@heroui/react'
 import { CellSwitch } from '@heroui-pro/react'
 
 export function SettingsStack({ children }: { children: ReactNode }) {
-	return <div className='flex w-full min-w-0 flex-col gap-6'>{children}</div>
+	return <div className='flex w-full min-w-0 flex-col gap-3'>{children}</div>
 }
 
 export function SettingsSection({
@@ -17,14 +17,20 @@ export function SettingsSection({
 }) {
 	const headingId = useId()
 	return (
-		<section aria-labelledby={headingId} className='grid min-w-0 gap-3'>
-			<div className='grid gap-1'>
-				<h2 className='text-sm font-semibold text-foreground' id={headingId}>
-					{title}
-				</h2>
-				<p className='text-xs leading-5 text-muted'>{description}</p>
-			</div>
-			{children}
+		<section aria-labelledby={headingId} className='min-w-0'>
+			<Card>
+				<Card.Header>
+					<div className='grid gap-1'>
+						<h2 className='text-sm font-medium leading-6 text-foreground' id={headingId}>
+							{title}
+						</h2>
+						<p className='text-xs leading-5 text-muted'>{description}</p>
+					</div>
+				</Card.Header>
+				<Card.Content>
+					<div className='grid min-w-0 gap-3'>{children}</div>
+				</Card.Content>
+			</Card>
 		</section>
 	)
 }
@@ -93,12 +99,8 @@ export function SettingsPreferenceGroup({
 	isPending?: boolean
 }) {
 	return (
-		<Card>
-			<Card.Content>
-				<div aria-busy={isPending || undefined} className='divide-y divide-separator'>
-					{children}
-				</div>
-			</Card.Content>
-		</Card>
+		<div aria-busy={isPending || undefined} className='divide-y divide-separator'>
+			{children}
+		</div>
 	)
 }

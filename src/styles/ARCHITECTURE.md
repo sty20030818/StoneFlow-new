@@ -91,7 +91,7 @@ tailwindcss
 
 规则：
 
-- Input、Menu 与其他普通 Control 使用 `6px`；Button 与 Toggle 使用 pill；Card 与 Row 分组使用 `8px`；Popover 与 Sheet 使用 `12px`；普通 Modal 与 AlertDialog 使用 `24px`，真正铺满屏幕的 Modal 保持上游无圆角语义。
+- Input、Menu 与其他普通 Control 使用 `6px`；Button 与 Toggle 使用 pill；Row 分组使用 `8px`；原生 Card 通过 `--radius-3xl` 映射使用 `12px`，Popover 与 Sheet 同为 `12px`；普通 Modal 与 AlertDialog 使用 `24px`，真正铺满屏幕的 Modal 保持上游无圆角语义。
 - pill 用于 Button、Toggle、Chip、Avatar、ActionBar 和状态标记；导航行与 Sidebar 空间选择器使用 Control 圆角。空间选择器通过 `data-space-switcher` 限定 recipe，展开时两侧留白为 `12px`，与导航项外缘对齐。
 - 附着式 ButtonGroup 与 ToggleButtonGroup 的首、中、尾几何继续由 HeroUI 上游负责。
 - 有明确边界的 Surface 使用 `1px` 语义边框；Row 使用分隔线与状态背景；阴影只表达浮层或拖拽 elevation。

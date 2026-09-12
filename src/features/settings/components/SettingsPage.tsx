@@ -83,11 +83,9 @@ export function SettingsPage() {
 					/>
 				}
 			/>
-			<PageFrame.Body>
-				<div className='mx-auto flex w-full max-w-3xl min-w-0 flex-1 flex-col px-4 py-4'>
-					{renderPanel(section)}
-				</div>
-			</PageFrame.Body>
+			<div className='flex min-h-0 min-w-0 flex-1 flex-col bg-surface'>
+				<PageFrame.Body>{renderPanel(section)}</PageFrame.Body>
+			</div>
 		</PageFrame.Root>
 	)
 }

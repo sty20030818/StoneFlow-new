@@ -394,77 +394,68 @@ export function SettingsSyncPanel() {
 		<SettingsStack>
 			<SettingsSection description='数据始终先保存在本机，再同步到云端副本。' title='云同步'>
 				{syncStatus ? (
-					<Card>
-						<Card.Content>
-							<div className='grid gap-4'>
-								<div className='flex flex-col gap-4 md:flex-row md:items-start md:justify-between'>
-									<div className='min-w-0'>
-										<div className='flex flex-wrap items-center gap-2'>
-											<SyncStatusBadge status={displayedSyncStatus} />
-											<SyncReplicaBadge state={replicaState} />
-											<SyncCloudConfigBadge
-												credentialState={syncStatus?.credentialState ?? 'missing'}
-											/>
-										</div>
-										<h3
-											aria-live='polite'
-											className='mt-3 text-base font-semibold tracking-tight text-foreground'
-										>
-											{syncStatusCopy.title}
-										</h3>
-										<p className='mt-1 max-w-2xl text-sm leading-6 text-muted'>
-											{syncStatusCopy.summary}
-										</p>
-									</div>
-									<div className='flex shrink-0 items-center gap-2 self-start'>
-										{syncActionBusy ? (
-											<DisabledActionTooltip
-												label='配置同步数据库'
-												reason='正在处理同步操作，请稍候'
-											>
-												{configureButton}
-											</DisabledActionTooltip>
-										) : (
-											<ActionTooltip label='配置同步数据库'>{configureButton}</ActionTooltip>
-										)}
-										{syncNowDisabled ? (
-											<DisabledActionTooltip label='立即同步' reason={syncNowDisabledReason}>
-												{syncNowButton}
-											</DisabledActionTooltip>
-										) : (
-											syncNowButton
-										)}
-									</div>
+					<div className='grid gap-4'>
+						<div className='flex flex-col gap-4 md:flex-row md:items-start md:justify-between'>
+							<div className='min-w-0'>
+								<div className='flex flex-wrap items-center gap-2'>
+									<SyncStatusBadge status={displayedSyncStatus} />
+									<SyncReplicaBadge state={replicaState} />
+									<SyncCloudConfigBadge
+										credentialState={syncStatus?.credentialState ?? 'missing'}
+									/>
 								</div>
-
-								<dl className='grid gap-4 sm:grid-cols-3'>
-									<SyncMetric
-										label='上次提交'
-										value={<SyncTimestampValue timestamp={syncStatus?.lastPushAt ?? null} />}
-									/>
-									<SyncMetric
-										label='上次确认'
-										value={<SyncTimestampValue timestamp={syncStatus?.lastPullAt ?? null} />}
-									/>
-									<SyncMetric
-										label='待同步'
-										value={
-											<div className='grid gap-1'>
-												<span>
-													{syncDiagnostics
-														? `${syncDiagnostics.local.pendingMutationCount} 条`
-														: '未读取'}
-												</span>
-												{syncDiagnostics ? (
-													<span className='text-xs text-muted'>诊断快照</span>
-												) : null}
-											</div>
-										}
-									/>
-								</dl>
+								<h3
+									aria-live='polite'
+									className='mt-3 text-base font-semibold tracking-tight text-foreground'
+								>
+									{syncStatusCopy.title}
+								</h3>
+								<p className='mt-1 max-w-2xl text-sm leading-6 text-muted'>
+									{syncStatusCopy.summary}
+								</p>
 							</div>
-						</Card.Content>
-					</Card>
+							<div className='flex shrink-0 items-center gap-2 self-start'>
+								{syncActionBusy ? (
+									<DisabledActionTooltip label='配置同步数据库' reason='正在处理同步操作，请稍候'>
+										{configureButton}
+									</DisabledActionTooltip>
+								) : (
+									<ActionTooltip label='配置同步数据库'>{configureButton}</ActionTooltip>
+								)}
+								{syncNowDisabled ? (
+									<DisabledActionTooltip label='立即同步' reason={syncNowDisabledReason}>
+										{syncNowButton}
+									</DisabledActionTooltip>
+								) : (
+									syncNowButton
+								)}
+							</div>
+						</div>
+
+						<dl className='grid gap-4 sm:grid-cols-3'>
+							<SyncMetric
+								label='上次提交'
+								value={<SyncTimestampValue timestamp={syncStatus?.lastPushAt ?? null} />}
+							/>
+							<SyncMetric
+								label='上次确认'
+								value={<SyncTimestampValue timestamp={syncStatus?.lastPullAt ?? null} />}
+							/>
+							<SyncMetric
+								label='待同步'
+								value={
+									<div className='grid gap-1'>
+										<span>
+											{syncDiagnostics
+												? `${syncDiagnostics.local.pendingMutationCount} 条`
+												: '未读取'}
+										</span>
+										{syncDiagnostics ? <span className='text-xs text-muted'>诊断快照</span> : null}
+									</div>
+								}
+							/>
+						</dl>
+					</div>
 				) : syncLoading ? (
 					<p aria-busy='true' className='text-sm text-muted' role='status'>
 						正在读取同步状态…
@@ -571,102 +562,108 @@ export function SettingsSyncPanel() {
 				</SettingsSection>
 			) : null}
 
-			<Disclosure isExpanded={syncDetailsOpen} onExpandedChange={setSyncDetailsOpen}>
-				<Disclosure.Heading>
-					<Disclosure.Trigger>
-						<span className='inline-flex items-center gap-2 font-medium'>
-							详情与诊断
-							<Disclosure.Indicator />
-						</span>
-					</Disclosure.Trigger>
-				</Disclosure.Heading>
-				<Disclosure.Content>
-					<Disclosure.Body>
-						<div className='flex flex-col gap-3'>
-							<div className='flex items-center justify-between gap-3'>
-								<div className='min-w-0'>
-									<h3 className='text-sm font-semibold text-foreground'>同步诊断</h3>
-									<p className='mt-1 text-xs leading-5 text-muted'>
-										只读查看当前设备与云端副本的同步序号和工作集摘要，用于排查同步问题。
-									</p>
+			<Card>
+				<Card.Content>
+					<Disclosure isExpanded={syncDetailsOpen} onExpandedChange={setSyncDetailsOpen}>
+						<Disclosure.Heading>
+							<Disclosure.Trigger>
+								<span className='inline-flex items-center gap-2 font-medium'>
+									详情与诊断
+									<Disclosure.Indicator />
+								</span>
+							</Disclosure.Trigger>
+						</Disclosure.Heading>
+						<Disclosure.Content>
+							<Disclosure.Body>
+								<div className='flex flex-col gap-3'>
+									<div className='flex items-center justify-between gap-3'>
+										<div className='min-w-0'>
+											<h3 className='text-sm font-semibold text-foreground'>同步诊断</h3>
+											<p className='mt-1 text-xs leading-5 text-muted'>
+												只读查看当前设备与云端副本的同步序号和工作集摘要，用于排查同步问题。
+											</p>
+										</div>
+										{diagnosticsDisabled ? (
+											<DisabledActionTooltip label='刷新诊断' reason={diagnosticsDisabledReason}>
+												{refreshDiagnosticsButton}
+											</DisabledActionTooltip>
+										) : (
+											refreshDiagnosticsButton
+										)}
+									</div>
+
+									{syncDiagnostics ? (
+										<dl className='grid gap-x-6 sm:grid-cols-2'>
+											<SettingInfoRow
+												description='当前保存并正在使用的云端副本地址（已脱敏）。'
+												label='云端副本'
+												value={
+													<span className='break-all font-medium text-foreground'>
+														{syncDiagnostics.remoteHost ?? '未读取'}
+													</span>
+												}
+											/>
+											<SettingInfoRow
+												description='当前设备最后一次成功吸收远端 change log 后落在本地的 server_seq。'
+												label='本地 server_seq'
+												value={
+													<SyncCursorValue value={syncDiagnostics.local.lastPulledServerSeq} />
+												}
+											/>
+											<SettingInfoRow
+												description='云端变更日志当前看到的最新同步序号。'
+												label='远端同步序号'
+												value={<SyncCursorValue value={syncDiagnostics.remote.latestServerSeq} />}
+											/>
+											<SettingInfoRow
+												description='当前设备本地还没提交成功的 mutation 数量。'
+												label='待同步 mutation'
+												value={
+													<span className='font-medium text-foreground'>
+														{syncDiagnostics.local.pendingMutationCount} 条
+													</span>
+												}
+											/>
+											<SettingInfoRow
+												description='本机未进回收站的实体数（含归档；不含永久删除）。'
+												label='本地工作集'
+												value={<SyncCountsSummaryValue counts={syncDiagnostics.local.counts} />}
+											/>
+											<SettingInfoRow
+												description='云端当前投影：每个实体只计最新 generation，且不含 trashed。不是 change_log 条数。'
+												label='远端工作集'
+												value={<SyncCountsSummaryValue counts={syncDiagnostics.remote.counts} />}
+											/>
+										</dl>
+									) : (
+										<Alert>
+											<Alert.Indicator />
+											<Alert.Content>
+												<Alert.Title>尚未读取同步诊断</Alert.Title>
+												<Alert.Description>
+													{syncStatus?.hasRemoteConfig
+														? '点击「刷新诊断」后，会显示本地 cursor、远端 cursor 和工作集计数。'
+														: '先保存可用的同步数据库连接，才能读取远端诊断信息。'}
+												</Alert.Description>
+											</Alert.Content>
+										</Alert>
+									)}
+
+									{syncDiagnosticsMessage ? (
+										<Alert role='alert' status='danger'>
+											<Alert.Indicator />
+											<Alert.Content>
+												<Alert.Title>同步诊断读取失败</Alert.Title>
+												<Alert.Description>{syncDiagnosticsMessage}</Alert.Description>
+											</Alert.Content>
+										</Alert>
+									) : null}
 								</div>
-								{diagnosticsDisabled ? (
-									<DisabledActionTooltip label='刷新诊断' reason={diagnosticsDisabledReason}>
-										{refreshDiagnosticsButton}
-									</DisabledActionTooltip>
-								) : (
-									refreshDiagnosticsButton
-								)}
-							</div>
-
-							{syncDiagnostics ? (
-								<dl className='grid gap-x-6 sm:grid-cols-2'>
-									<SettingInfoRow
-										description='当前保存并正在使用的云端副本地址（已脱敏）。'
-										label='云端副本'
-										value={
-											<span className='break-all font-medium text-foreground'>
-												{syncDiagnostics.remoteHost ?? '未读取'}
-											</span>
-										}
-									/>
-									<SettingInfoRow
-										description='当前设备最后一次成功吸收远端 change log 后落在本地的 server_seq。'
-										label='本地 server_seq'
-										value={<SyncCursorValue value={syncDiagnostics.local.lastPulledServerSeq} />}
-									/>
-									<SettingInfoRow
-										description='云端变更日志当前看到的最新同步序号。'
-										label='远端同步序号'
-										value={<SyncCursorValue value={syncDiagnostics.remote.latestServerSeq} />}
-									/>
-									<SettingInfoRow
-										description='当前设备本地还没提交成功的 mutation 数量。'
-										label='待同步 mutation'
-										value={
-											<span className='font-medium text-foreground'>
-												{syncDiagnostics.local.pendingMutationCount} 条
-											</span>
-										}
-									/>
-									<SettingInfoRow
-										description='本机未进回收站的实体数（含归档；不含永久删除）。'
-										label='本地工作集'
-										value={<SyncCountsSummaryValue counts={syncDiagnostics.local.counts} />}
-									/>
-									<SettingInfoRow
-										description='云端当前投影：每个实体只计最新 generation，且不含 trashed。不是 change_log 条数。'
-										label='远端工作集'
-										value={<SyncCountsSummaryValue counts={syncDiagnostics.remote.counts} />}
-									/>
-								</dl>
-							) : (
-								<Alert>
-									<Alert.Indicator />
-									<Alert.Content>
-										<Alert.Title>尚未读取同步诊断</Alert.Title>
-										<Alert.Description>
-											{syncStatus?.hasRemoteConfig
-												? '点击「刷新诊断」后，会显示本地 cursor、远端 cursor 和工作集计数。'
-												: '先保存可用的同步数据库连接，才能读取远端诊断信息。'}
-										</Alert.Description>
-									</Alert.Content>
-								</Alert>
-							)}
-
-							{syncDiagnosticsMessage ? (
-								<Alert role='alert' status='danger'>
-									<Alert.Indicator />
-									<Alert.Content>
-										<Alert.Title>同步诊断读取失败</Alert.Title>
-										<Alert.Description>{syncDiagnosticsMessage}</Alert.Description>
-									</Alert.Content>
-								</Alert>
-							) : null}
-						</div>
-					</Disclosure.Body>
-				</Disclosure.Content>
-			</Disclosure>
+							</Disclosure.Body>
+						</Disclosure.Content>
+					</Disclosure>
+				</Card.Content>
+			</Card>
 
 			<SyncConfigDialog
 				configSource={syncStatus?.configSource ?? 'system_keychain'}

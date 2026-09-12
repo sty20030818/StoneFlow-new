@@ -130,35 +130,39 @@ export function SettingsSidebarPanel() {
 
 	if (isSettingsLoading) {
 		return (
-			<Alert aria-busy='true' aria-live='polite' role='status' status='accent'>
-				<Alert.Indicator>
-					<Spinner aria-hidden='true' color='current' size='sm' />
-				</Alert.Indicator>
-				<Alert.Content>
-					<Alert.Title>加载中</Alert.Title>
-					<Alert.Description>正在读取 Sidebar 设置。</Alert.Description>
-				</Alert.Content>
-			</Alert>
+			<SettingsSection description='选择导航入口与项目列表的显示内容。' title='侧边栏'>
+				<Alert aria-busy='true' aria-live='polite' role='status' status='accent'>
+					<Alert.Indicator>
+						<Spinner aria-hidden='true' color='current' size='sm' />
+					</Alert.Indicator>
+					<Alert.Content>
+						<Alert.Title>加载中</Alert.Title>
+						<Alert.Description>正在读取侧边栏设置。</Alert.Description>
+					</Alert.Content>
+				</Alert>
+			</SettingsSection>
 		)
 	}
 
 	if (sidebarStatus === 'error' && sidebarSettings === null) {
 		return (
-			<Alert role='alert' status='danger'>
-				<Alert.Indicator />
-				<Alert.Content>
-					<Alert.Title>无法读取设置</Alert.Title>
-					<Alert.Description>{sidebarError ?? 'Sidebar 设置加载失败。'}</Alert.Description>
-				</Alert.Content>
-				<Button
-					onPress={() => void loadSidebarSettings().catch(() => undefined)}
-					size='sm'
-					type='button'
-					variant='outline'
-				>
-					重试
-				</Button>
-			</Alert>
+			<SettingsSection description='选择导航入口与项目列表的显示内容。' title='侧边栏'>
+				<Alert role='alert' status='danger'>
+					<Alert.Indicator />
+					<Alert.Content>
+						<Alert.Title>无法读取设置</Alert.Title>
+						<Alert.Description>{sidebarError ?? '侧边栏设置加载失败。'}</Alert.Description>
+					</Alert.Content>
+					<Button
+						onPress={() => void loadSidebarSettings().catch(() => undefined)}
+						size='sm'
+						type='button'
+						variant='outline'
+					>
+						重试
+					</Button>
+				</Alert>
+			</SettingsSection>
 		)
 	}
 
