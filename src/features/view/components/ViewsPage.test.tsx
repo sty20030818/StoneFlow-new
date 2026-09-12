@@ -67,7 +67,8 @@ vi.mock('@/shared/components/page-frame', () => ({
 }))
 
 vi.mock('./ViewEditorDialog', () => ({
-	ViewEditorDialog: ({ open }: { open: boolean }) => (open ? <div>视图编辑器</div> : null),
+	ViewEditorDialog: ({ flow }: { flow: { open: boolean } }) =>
+		flow.open ? <div>视图编辑器</div> : null,
 }))
 
 const savedView: View = {
@@ -83,13 +84,11 @@ const savedView: View = {
 }
 
 const editor = {
-	open: false,
+	flow: { open: false },
 	view: null,
 	projects: [],
-	isSubmitting: false,
 	openCreate: vi.fn(),
 	openEdit: vi.fn(),
-	onClose: vi.fn(),
 	onCreate: vi.fn(async () => undefined),
 	onUpdate: vi.fn(async () => undefined),
 }
@@ -226,6 +225,7 @@ function buildWorkspaceScene() {
 		breadcrumbItems: [{ key: 'view-1', label: savedView.name, current: true }],
 		displayPageKey: 'view:view-1',
 		filterUiValue: {},
+		saveView: { flow: editor.flow, canOverwrite: true, onSave: vi.fn(async () => undefined) },
 		taskCollection: { boardProps: { tasks: [{ title: '写阶段总结' }] } },
 		toolbarPills: [
 			{ key: 'saved:view-1', label: savedView.name },

@@ -5,6 +5,7 @@ import { ActionTooltip } from '@/shared/components/tooltip'
 import { COMMAND_IDS, CommandShortcut } from '@/features/command'
 import { useTaskListScene, type TaskListSceneVariant } from '@/features/task/hooks/useTaskListScene'
 import { TaskWorkspace } from '@/features/task-workspace'
+import { ViewSaveDialog } from '@/features/view'
 import { TaskBoard } from './TaskBoard'
 import { AppBreadcrumb } from '@/shared/components/AppBreadcrumb'
 
@@ -28,6 +29,7 @@ export function TaskListSceneView({ variant }: TaskListSceneViewProps) {
 			breadcrumb={<AppBreadcrumb items={scene.breadcrumbItems} />}
 			displayPageKey={scene.displayPageKey}
 			filterUiValue={scene.filterUiValue}
+			overlays={<ViewSaveDialog {...scene.saveView} />}
 			headerActions={
 				<ActionTooltip
 					label='创建任务'

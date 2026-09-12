@@ -4,17 +4,8 @@
  * 筛选公式条：chip（field 固定 / op·值可改）+ Clear（仅 dirty）+ Save。
  */
 import { useState } from 'react'
-import {
-	Button,
-	ButtonGroup,
-	Dropdown,
-	Input,
-	Label,
-	Modal,
-	Surface,
-	type Selection,
-} from '@heroui/react'
-import { LayersIcon, PlusIcon, XIcon } from 'lucide-react'
+import { Button, ButtonGroup, Dropdown, Surface, type Selection } from '@heroui/react'
+import { PlusIcon, XIcon } from 'lucide-react'
 
 import { COMMAND_IDS, CommandActionTooltip } from '@/features/command'
 import { ActionTooltip } from '@/shared/components/tooltip'
@@ -40,8 +31,7 @@ import {
 import { getFilterFieldLeading, getFilterValueOptions } from './filterOptionCatalog'
 
 export function FilterBar({ className }: { className?: string }) {
-	const { session, projects, canOverwriteView, onSave } = useListFilterUi()
-	const [saveOpen, setSaveOpen] = useState(false)
+	const { session, projects, onSave } = useListFilterUi()
 	const [filterMenuOpen, setFilterMenuOpen] = useState(false)
 	const [filterTooltipOpen, setFilterTooltipOpen] = useState(false)
 
@@ -108,21 +98,12 @@ export function FilterBar({ className }: { className?: string }) {
 						恢复
 					</Button>
 					{onSave ? (
-						<Button onPress={() => setSaveOpen(true)} size='sm' type='button' variant='outline'>
+						<Button onPress={onSave} size='sm' type='button' variant='outline'>
 							保存
 						</Button>
 					) : null}
 				</div>
 			</Surface>
-
-			{onSave ? (
-				<FilterSaveDialog
-					canOverwrite={Boolean(canOverwriteView)}
-					onOpenChange={setSaveOpen}
-					onSave={onSave}
-					open={saveOpen}
-				/>
-			) : null}
 		</div>
 	)
 }
@@ -295,97 +276,5 @@ function ValuesPicker({
 				</Dropdown.Menu>
 			</Dropdown.Popover>
 		</Dropdown>
-	)
-}
-
-function FilterSaveDialog({
-	open,
-	onOpenChange,
-	canOverwrite,
-	onSave,
-}: {
-	open: boolean
-	onOpenChange: (open: boolean) => void
-	canOverwrite: boolean
-	onSave: (input: { mode: 'create' | 'overwrite'; name?: string }) => Promise<void>
-}) {
-	const [name, setName] = useState('')
-	const [busy, setBusy] = useState(false)
-
-	async function run(mode: 'create' | 'overwrite') {
-		if (mode === 'create' && name.trim().length === 0) return
-		setBusy(true)
-		try {
-			await onSave({ mode, name: name.trim() || undefined })
-			onOpenChange(false)
-			setName('')
-		} finally {
-			setBusy(false)
-		}
-	}
-
-	return (
-		<Modal.Backdrop isOpen={open} onOpenChange={onOpenChange}>
-			<Modal.Container placement='center'>
-				<Modal.Dialog className='max-w-sm overflow-hidden'>
-					<ActionTooltip label='关闭'>
-						<Button
-							aria-label='关闭保存视图'
-							className='absolute end-3 top-3'
-							isIconOnly
-							onPress={() => onOpenChange(false)}
-							size='sm'
-							type='button'
-							variant='ghost'
-						>
-							<XIcon aria-hidden className='size-3.5' />
-						</Button>
-					</ActionTooltip>
-					<Modal.Header>
-						<div className='flex items-center gap-2 ps-2 pe-10'>
-							<LayersIcon aria-hidden className='size-4 shrink-0 text-muted' />
-							<Modal.Heading>保存为视图</Modal.Heading>
-						</div>
-					</Modal.Header>
-					<Modal.Body>
-						<div className='grid gap-1.5 text-sm'>
-							<Label htmlFor='filter-view-name'>视图名称</Label>
-							<Input
-								fullWidth
-								id='filter-view-name'
-								disabled={busy}
-								onChange={(event) => setName(event.currentTarget.value)}
-								placeholder='例如：高优先级进行中'
-								value={name}
-							/>
-						</div>
-						<p className='text-[12px] text-muted'>仅保存筛选条件，不包含显示选项。</p>
-					</Modal.Body>
-					<Modal.Footer>
-						<Button onPress={() => onOpenChange(false)} type='button' variant='tertiary'>
-							取消
-						</Button>
-						{canOverwrite ? (
-							<Button
-								isDisabled={busy}
-								onPress={() => void run('overwrite')}
-								type='button'
-								variant='secondary'
-							>
-								覆盖当前
-							</Button>
-						) : null}
-						<Button
-							isDisabled={busy || name.trim().length === 0}
-							isPending={busy}
-							onPress={() => void run('create')}
-							type='button'
-						>
-							另存为
-						</Button>
-					</Modal.Footer>
-				</Modal.Dialog>
-			</Modal.Container>
-		</Modal.Backdrop>
 	)
 }

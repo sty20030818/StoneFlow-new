@@ -12,6 +12,7 @@ import { ActionTooltip } from '@/shared/components/tooltip'
 import { useSavedViewWorkspaceScene } from '../hooks/useViewsScene'
 import { ViewActionsMenu } from './ViewActionsMenu'
 import { ViewEditorDialog } from './ViewEditorDialog'
+import { ViewSaveDialog } from './ViewSaveDialog'
 
 /** `/views/:viewId`：执行一个持久化 Saved View，并复用统一 Task Workspace。 */
 export function SavedViewPage() {
@@ -52,6 +53,7 @@ export function SavedViewPage() {
 					</>
 				}
 				onViewChange={scene.selectToolbar}
+				overlays={<ViewSaveDialog {...scene.saveView} />}
 				selectedViewKey={scene.selectedToolbarKey}
 				views={scene.toolbarPills}
 			>
@@ -59,11 +61,9 @@ export function SavedViewPage() {
 			</TaskWorkspace>
 
 			<ViewEditorDialog
-				isSubmitting={scene.editor.isSubmitting}
-				onClose={scene.editor.onClose}
+				flow={scene.editor.flow}
 				onCreate={scene.editor.onCreate}
 				onUpdate={scene.editor.onUpdate}
-				open={scene.editor.open}
 				projects={scene.editor.projects}
 				view={scene.editor.view}
 			/>

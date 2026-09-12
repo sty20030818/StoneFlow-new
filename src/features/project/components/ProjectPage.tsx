@@ -11,6 +11,7 @@ import { EmptyState } from '@heroui-pro/react'
 
 import { TaskBoard } from '@/features/task'
 import { TaskWorkspace } from '@/features/task-workspace'
+import { ViewSaveDialog } from '@/features/view'
 import type { Scope } from '@/shared/types'
 import { AppBreadcrumb } from '@/shared/components/AppBreadcrumb'
 import { PageFrame } from '@/shared/components/page-frame'
@@ -56,6 +57,7 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 			breadcrumb={<AppBreadcrumb items={scene.breadcrumbItems} />}
 			displayPageKey={scene.displayPageKey}
 			filterUiValue={scene.filterUiValue}
+			overlays={<ViewSaveDialog {...scene.saveView} />}
 			headerActions={
 				<div className='flex items-center gap-1.5'>
 					<ActionTooltip label={scene.project.completedAt ? '重开项目' : '完成项目'}>

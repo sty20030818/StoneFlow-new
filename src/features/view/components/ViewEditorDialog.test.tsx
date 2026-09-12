@@ -1,132 +1,134 @@
-import { act, fireEvent, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render as renderComponent, screen, waitFor } from '@testing-library/react'
+import type { ReactNode } from 'react'
 
 import { SubmitRegistryProvider, useSubmitRegistryContext } from '@/features/submit'
 import type { View } from '@/shared/types'
-import { renderWithInteractionProviders as render } from '@/test/TestInteractionProviders'
+import { TestInteractionProviders } from '@/test/TestInteractionProviders'
 
+import type { ViewSaveFlow } from '../hooks/useViewSaveFlow'
 import { ViewEditorDialog } from './ViewEditorDialog'
 import { buildViewEditorDefaultValues, toCreateViewDraft } from './ViewEditorDialog.form'
 
 describe('ViewEditorDialog', () => {
-	it.each(['resolve', 'reject'] as const)(
-		'重命名防重复，关闭并打开新会话后旧请求 %s 不串入新输入',
-		async (outcome) => {
-			const pending = Promise.withResolvers<void>()
-			const onUpdate = vi.fn(() => pending.promise)
-			const onClose = vi.fn()
+	it.each(['保存按钮', '名称输入'] as const)(
+		'等待和失败保留%s焦点，使用 flow 错误与重试',
+		async (entry) => {
+			const flow = makeFlow()
+			const onUpdate = vi.fn(async () => undefined)
 			const view = buildView()
 			const props = {
-				isSubmitting: false,
-				onClose,
+				view,
+				projects: buildProjects(),
 				onCreate: vi.fn(async () => undefined),
 				onUpdate,
-				projects: buildProjects(),
-				view,
 			}
-			const { rerender } = render(<ViewEditorDialog {...props} open />)
-			const name = screen.getByRole('textbox', { name: '名称' })
-			fireEvent.change(name, { target: { value: '旧请求的名称' } })
-			const form = name.closest('form')!
-			fireEvent.submit(form)
-			fireEvent.submit(form)
-			await waitFor(() => expect(onUpdate).toHaveBeenCalledOnce())
-			expect(name).toHaveAttribute('readonly')
-			fireEvent.click(screen.getByRole('button', { name: '取消' }))
-			expect(onClose).toHaveBeenCalledOnce()
-			rerender(<ViewEditorDialog {...props} open={false} />)
-			rerender(<ViewEditorDialog {...props} open />)
-			fireEvent.change(screen.getByRole('textbox', { name: '名称' }), {
-				target: { value: '新会话尚未提交' },
-			})
-			await act(async () => {
-				if (outcome === 'resolve') pending.resolve()
-				else pending.reject(new Error('旧请求失败'))
-			})
-			expect(screen.getByRole('dialog', { name: '编辑保存视图' })).toBeInTheDocument()
-			expect(screen.getByRole('textbox', { name: '名称' })).toHaveValue('新会话尚未提交')
-			expect(screen.queryByRole('alert')).not.toBeInTheDocument()
-			expect(screen.getByRole('button', { name: '保存视图' })).toBeEnabled()
-			expect(onClose).toHaveBeenCalledOnce()
+			const { rerender } = render(<ViewEditorDialog {...props} flow={flow} />)
+			const input = screen.getByRole('textbox', { name: '名称' })
+			fireEvent.change(input, { target: { value: '需要保留的输入' } })
+			const save = screen.getByRole('button', { name: '保存视图' })
+			const focused = entry === '保存按钮' ? save : input
+			await act(async () => focused.focus())
+			rerender(<ViewEditorDialog {...props} flow={{ ...flow, pending: 'rename' }} />)
+			expect(input).not.toBeDisabled()
+			expect(input).toHaveAttribute('readonly')
+			expect(save).not.toBeDisabled()
+			expect(save).toHaveAttribute('aria-disabled', 'true')
+			expect(focused).toHaveFocus()
+			fireEvent.click(save)
+			fireEvent.submit(input.closest('form')!)
+			expect(onUpdate).not.toHaveBeenCalled()
+			expect(screen.getByRole('button', { name: '取消' })).toBeEnabled()
+			rerender(
+				<ViewEditorDialog
+					{...props}
+					flow={{ ...flow, error: { kind: 'write', message: '请稍后重试' } }}
+				/>,
+			)
+			expect(screen.getByRole('alert')).toHaveTextContent('请稍后重试')
+			expect(focused).toHaveFocus()
+			expect(input).toHaveValue('需要保留的输入')
+			fireEvent.click(screen.getByRole('button', { name: '重试保存' }))
+			await waitFor(() =>
+				expect(onUpdate).toHaveBeenCalledExactlyOnceWith({
+					viewId: view.id,
+					name: '需要保留的输入',
+				}),
+			)
+			expect(flow.close).not.toHaveBeenCalled()
 		},
 	)
 
-	it.each(['保存按钮', '名称输入'] as const)('重命名等待和失败后保留%s焦点', async (entry) => {
-		const pending = Promise.withResolvers<void>()
-		const onUpdate = vi.fn(() => pending.promise)
-		render(
-			<ViewEditorDialog
-				isSubmitting={false}
-				onClose={vi.fn()}
-				onCreate={vi.fn(async () => undefined)}
-				onUpdate={onUpdate}
-				open
-				projects={buildProjects()}
-				view={buildView()}
-			/>,
+	it('编辑与新建共用受控关闭，开启新 session 时重置草稿', async () => {
+		const flow = makeFlow()
+		const props = {
+			view: buildView(),
+			projects: buildProjects(),
+			onCreate: vi.fn(async () => undefined),
+			onUpdate: vi.fn(async () => undefined),
+		}
+		const { rerender } = render(<ViewEditorDialog {...props} flow={flow} />)
+		await act(async () => {
+			fireEvent.change(screen.getByRole('textbox', { name: '名称' }), {
+				target: { value: '未提交的旧输入' },
+			})
+		})
+		fireEvent.click(screen.getByRole('button', { name: '关闭保存视图编辑窗口' }))
+		expect(flow.close).toHaveBeenCalledOnce()
+		await act(async () =>
+			rerender(<ViewEditorDialog {...props} flow={{ ...flow, sessionKey: 2 }} />),
 		)
-		const input = screen.getByRole('textbox', { name: '名称' })
-		const save = screen.getByRole('button', { name: '保存视图' })
-		const focused = entry === '保存按钮' ? save : input
-		await act(async () => focused.focus())
-		if (entry === '保存按钮') fireEvent.click(save)
-		else fireEvent.submit(input.closest('form')!)
-		await waitFor(() => expect(onUpdate).toHaveBeenCalledOnce())
-		expect(input).not.toBeDisabled()
-		expect(input).toHaveAttribute('readonly')
-		expect(save).not.toBeDisabled()
-		expect(save).toHaveAttribute('aria-disabled', 'true')
-		expect(save).toHaveAttribute('type', 'button')
-		expect(focused).toHaveFocus()
-		fireEvent.click(save)
-		fireEvent.submit(input.closest('form')!)
-		expect(onUpdate).toHaveBeenCalledOnce()
-		await act(async () => pending.reject(new Error('请稍后重试')))
-		expect(await screen.findByRole('alert')).toHaveTextContent('请稍后重试')
-		expect(focused).toHaveFocus()
-		expect(input).not.toHaveAttribute('readonly')
-		expect(screen.getByRole('button', { name: '重试保存' })).not.toHaveAttribute('aria-disabled')
+		expect(screen.getByRole('textbox', { name: '名称' })).toHaveValue('重点事项')
+		fireEvent.click(screen.getByRole('button', { name: '取消' }))
+		expect(flow.close).toHaveBeenCalledTimes(2)
+		expect(props.onUpdate).not.toHaveBeenCalled()
 	})
 
-	it('重命名失败保留名称，展示可感知错误并允许原地重试', async () => {
-		const onClose = vi.fn()
-		const onUpdate = vi
-			.fn<(input: { viewId: string; name?: string }) => Promise<void>>()
-			.mockRejectedValueOnce(new Error('同步暂时不可用'))
-			.mockResolvedValueOnce(undefined)
-		render(
+	it('创建失败保留草稿；已保存但打开失败时只有打开恢复，不再创建', async () => {
+		const flow = makeFlow()
+		const onCreate = vi.fn(async () => undefined)
+		const props = {
+			view: null,
+			projects: buildProjects(),
+			onCreate,
+			onUpdate: vi.fn(async () => undefined),
+		}
+		const { rerender } = render(<ViewEditorDialog {...props} flow={flow} />)
+		const name = screen.getByRole('textbox', { name: '名称' })
+		fireEvent.change(name, { target: { value: '创建的视图' } })
+		fireEvent.submit(name.closest('form')!)
+		await waitFor(() => expect(onCreate).toHaveBeenCalledOnce())
+		expect(onCreate).toHaveBeenCalledWith(
+			expect.objectContaining({ name: '创建的视图', context: { kind: 'all' }, baseViewKey: 'all' }),
+		)
+		rerender(
 			<ViewEditorDialog
-				isSubmitting={false}
-				onClose={onClose}
-				onCreate={vi.fn(async () => undefined)}
-				onUpdate={onUpdate}
-				open
-				projects={buildProjects()}
-				view={buildView()}
+				{...props}
+				flow={{ ...flow, error: { kind: 'write', message: '创建暂时失败' } }}
 			/>,
 		)
-		fireEvent.change(screen.getByRole('textbox', { name: '名称' }), {
-			target: { value: '等待同步的重要视图' },
-		})
-		fireEvent.click(screen.getByRole('button', { name: '保存视图' }))
-		expect(await screen.findByRole('alert')).toHaveTextContent('同步暂时不可用')
-		expect(screen.getByRole('textbox', { name: '名称' })).toHaveValue('等待同步的重要视图')
-		expect(onClose).not.toHaveBeenCalled()
-		fireEvent.click(screen.getByRole('button', { name: '重试保存' }))
-		await waitFor(() => expect(onClose).toHaveBeenCalledOnce())
-		expect(onUpdate).toHaveBeenCalledTimes(2)
-		expect(onUpdate).toHaveBeenLastCalledWith({ viewId: 'view-1', name: '等待同步的重要视图' })
+		expect(name).toHaveValue('创建的视图')
+		expect(screen.getByRole('alert')).toHaveTextContent('创建暂时失败')
+		rerender(
+			<ViewEditorDialog
+				{...props}
+				flow={{ ...flow, savedView: buildView(), error: { kind: 'open', message: '路由不可用' } }}
+			/>,
+		)
+		expect(screen.getByRole('alert')).toHaveTextContent('已保存，但未能打开')
+		expect(name).toHaveAttribute('readonly')
+		fireEvent.click(screen.getByRole('button', { name: '打开已保存视图' }))
+		await waitFor(() => expect(flow.retryOpen).toHaveBeenCalledOnce())
+		expect(onCreate).toHaveBeenCalledOnce()
 	})
 
 	it('Tab 和 Shift+Tab 在弹窗首尾回绕，不触发提交或关闭', async () => {
-		const onClose = vi.fn()
+		const flow = makeFlow()
 		const onCreate = vi.fn(async () => undefined)
 		render(
 			<ViewEditorDialog
-				isSubmitting={false}
-				onClose={onClose}
+				flow={flow}
 				onCreate={onCreate}
 				onUpdate={vi.fn(async () => undefined)}
-				open
 				projects={buildProjects()}
 				view={null}
 			/>,
@@ -138,96 +140,42 @@ describe('ViewEditorDialog', () => {
 		expect(first).toHaveFocus()
 		fireEvent.keyDown(first, { key: 'Tab', shiftKey: true })
 		expect(last).toHaveFocus()
-		expect(onClose).not.toHaveBeenCalled()
+		expect(flow.close).not.toHaveBeenCalled()
 		expect(onCreate).not.toHaveBeenCalled()
 	})
 
-	it('create 模式可以稳定渲染并注册 submit target', async () => {
-		render(
+	it('create 模式注册 submit target；edit 只提交名称，不重写现有筛选', async () => {
+		const flow = makeFlow()
+		const onUpdate = vi.fn(async () => undefined)
+		const props = {
+			flow,
+			onCreate: vi.fn(async () => undefined),
+			onUpdate,
+			projects: buildProjects(),
+		}
+		const { rerender } = render(
 			<SubmitRegistryProvider>
-				<ViewEditorDialog
-					isSubmitting={false}
-					onClose={vi.fn()}
-					onCreate={vi.fn(async () => undefined)}
-					onUpdate={vi.fn(async () => undefined)}
-					open
-					projects={buildProjects()}
-					view={null}
-				/>
+				<ViewEditorDialog {...props} view={null} />
 				<SubmitStateProbe />
 			</SubmitRegistryProvider>,
 		)
-
-		expect(screen.getByRole('dialog', { name: '新建保存视图' })).toBeInTheDocument()
 		expect(screen.getByTestId('active-target')).toHaveTextContent('none')
-
 		fireEvent.change(screen.getByLabelText('名称'), { target: { value: '我的视图' } })
-
-		await waitFor(() => {
-			expect(screen.getByTestId('active-target')).toHaveTextContent('view-editor:create')
-		})
-	})
-
-	it('edit 模式只改名，不重写现有筛选', async () => {
-		const onUpdate = vi.fn(async () => undefined)
-
-		render(
+		await waitFor(() =>
+			expect(screen.getByTestId('active-target')).toHaveTextContent('view-editor:create'),
+		)
+		rerender(
 			<SubmitRegistryProvider>
-				<ViewEditorDialog
-					isSubmitting={false}
-					onClose={vi.fn()}
-					onCreate={vi.fn(async () => undefined)}
-					onUpdate={onUpdate}
-					open
-					projects={buildProjects()}
-					view={buildView()}
-				/>
+				<ViewEditorDialog {...props} view={buildView()} />
+				<SubmitStateProbe />
 			</SubmitRegistryProvider>,
 		)
-
-		expect(screen.getByDisplayValue('重点事项')).toBeInTheDocument()
 		expect(screen.queryByRole('group', { name: '状态筛选' })).not.toBeInTheDocument()
 		fireEvent.click(screen.getByRole('button', { name: '保存视图' }))
-
-		await waitFor(() => expect(onUpdate).toHaveBeenCalledTimes(1))
-		expect(onUpdate).toHaveBeenCalledWith({ viewId: 'view-1', name: '重点事项' })
+		await waitFor(() =>
+			expect(onUpdate).toHaveBeenCalledExactlyOnceWith({ viewId: 'view-1', name: '重点事项' }),
+		)
 	})
-
-	it.each([false, true])(
-		'isSubmitting=%s 时右上关闭与取消一致，不提交草稿',
-		async (isSubmitting) => {
-			const onClose = vi.fn()
-			const onCreate = vi.fn(async () => undefined)
-			const onUpdate = vi.fn(async () => undefined)
-			render(
-				<ViewEditorDialog
-					isSubmitting={isSubmitting}
-					onClose={onClose}
-					onCreate={onCreate}
-					onUpdate={onUpdate}
-					open
-					projects={buildProjects()}
-					view={buildView()}
-				/>,
-			)
-			await act(async () => {
-				fireEvent.change(screen.getByRole('textbox', { name: '名称' }), {
-					target: { value: '未提交的视图' },
-				})
-			})
-			const closeButton = screen.getByRole('button', { name: '关闭保存视图编辑窗口' })
-			expect(closeButton).toBeEnabled()
-			expect(screen.getByRole('button', { name: '取消' })).toBeEnabled()
-
-			await act(async () => {
-				fireEvent.click(closeButton)
-			})
-
-			expect(onClose).toHaveBeenCalledTimes(1)
-			expect(onCreate).not.toHaveBeenCalled()
-			expect(onUpdate).not.toHaveBeenCalled()
-		},
-	)
 
 	it('创建时把独立事项或项目写入不可移除 context', () => {
 		const values = buildViewEditorDefaultValues(null)
@@ -299,4 +247,22 @@ function buildView(): View {
 		createdAt: '2026-06-18T00:00:00.000Z',
 		updatedAt: '2026-06-18T00:00:00.000Z',
 	}
+}
+
+function makeFlow(): ViewSaveFlow {
+	return {
+		open: true,
+		sessionKey: 1,
+		pending: null,
+		error: null,
+		savedView: null,
+		begin: vi.fn(),
+		close: vi.fn(),
+		submit: vi.fn(async () => undefined),
+		retryOpen: vi.fn(async () => undefined),
+	}
+}
+
+function render(node: ReactNode) {
+	return renderComponent(node, { wrapper: TestInteractionProviders })
 }

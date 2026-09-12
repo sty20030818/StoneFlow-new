@@ -17,6 +17,7 @@ type TaskWorkspaceProps = {
 	onViewChange: (key: string) => void
 	displayPageKey: TaskDisplayPageKey
 	filterUiValue: ListFilterUiValue
+	overlays?: ReactNode
 	children: ReactNode
 }
 
@@ -29,6 +30,7 @@ export function TaskWorkspace({
 	onViewChange,
 	displayPageKey,
 	filterUiValue,
+	overlays,
 	children,
 }: TaskWorkspaceProps) {
 	return (
@@ -45,6 +47,7 @@ export function TaskWorkspace({
 				/>
 				<PageFrame.CollectionBody>{children}</PageFrame.CollectionBody>
 			</PageFrame.Root>
+			{overlays}
 		</ListFilterUiProvider>
 	)
 }

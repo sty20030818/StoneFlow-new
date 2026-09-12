@@ -18,7 +18,7 @@ import { useDialogStore } from '@/features/shell-dialogs'
 import { useSpaces } from '@/features/space'
 import { useTaskCollectionScene, useTaskQueryData } from '@/features/task'
 import { getDefaultTaskViews, useDefaultTaskViewSelection } from '@/features/task-workspace'
-import { useCreateViewMutation } from '@/features/view'
+import { useViewSaveFlow } from '@/features/view'
 import { EMPTY_FILTER_QUERY } from '@/shared/types'
 import type { Scope, TaskViewContext } from '@/shared/types'
 
@@ -54,7 +54,7 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 	const reopenProject = useReopenProjectMutation()
 	const archiveProject = useArchiveProjectMutation()
 	const deleteProject = useDeleteProjectMutation()
-	const createSavedView = useCreateViewMutation()
+	const saveFlow = useViewSaveFlow({ scope, spaceId })
 	const [busyAction, setBusyAction] = useState<string | null>(null)
 	const context = useMemo<TaskViewContext>(() => ({ kind: 'project', projectId }), [projectId])
 	const defaultViews = useMemo(
@@ -126,18 +126,13 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 		[project, projectId, shellRoute],
 	)
 
-	const filterUiValue = {
-		session: filterSession,
+	const filterUiValue = { session: filterSession, onSave: saveFlow.begin }
+	const saveView = {
+		flow: saveFlow,
+		canOverwrite: false,
 		onSave: async (input: { mode: 'create' | 'overwrite'; name?: string }) => {
 			if (input.mode !== 'create' || !input.name?.trim()) return
-			await createSavedView.mutateAsync({
-				name: input.name.trim(),
-				scope,
-				context,
-				baseViewKey: viewSelection.selected.baseViewKey,
-				filters: filterSession.effective,
-			})
-			filterSession.clearTemp()
+			await saveFlow.submit({ mode: 'create', input: { ...queryInput, name: input.name.trim() } })
 		},
 	}
 
@@ -164,6 +159,7 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 		selectedToolbarKey: viewSelection.selectedKey,
 		selectToolbar: viewSelection.select,
 		filterUiValue,
+		saveView,
 		goToProjectsOverview,
 		completeOrReopen: () => {
 			if (!project) return

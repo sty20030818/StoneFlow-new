@@ -1,12 +1,12 @@
 # task-workspace · 任务结果页工作区组合
 
-> 最后更新：2026-09-02
+> 最后更新：2026-09-13
 
 ## 1. 职责 / 不负责
 
 **负责：**
 
-- 统一组合 `PageFrame.Header`、任务视图 Toolbar、Filter Bar 与 `PageFrame.CollectionBody`
+- `TaskWorkspace` 组件统一组合 `PageFrame.Header`、任务视图 Toolbar、Filter Bar 与 `PageFrame.CollectionBody`；通过 `overlays` 插槽放置调用方提供的浮层
 - 按 `all`、`standalone`、`project` 上下文给出代码定义的默认视图矩阵
 - 维护默认视图 URL `v` 的选择语义，并在切换查询基线时清除旧 Filter Draft `f`
 - 为任务工作区路由复用 `v` 与 filter `f` 的 search 解析
@@ -78,7 +78,10 @@ src/features/task-workspace/
 | 临时筛选 | Router search `f`，解析与会话归 `filter` |
 | 默认视图矩阵 | 纯 model，由页面上下文与项目完成态派生 |
 | Filter / Display UI | 调用方注入受控值；本模块不另建真相源 |
-| 任务数据 | 无；由调用方提供 Board |
+| 任务数据 | 无；由调用方 scene 组合查询与 collection，并提供 Board |
+| 保存交互 | `view` 的 `useViewSaveFlow`；调用方提供 `ViewSaveDialog` overlays，本组件不执行保存 |
+
+默认项选择与筛选会话通过 navigation 的 `useCurrentRouteSource` 读取属于已渲染页面的 search；跨页加载时旧页面不能解释或清理目标 URL。同页切换仍在一次导航中更新 `v` 并删除 `f`。
 
 `CollectionBody` 是任务结果页唯一真实 viewport；TaskBoard 的 loaded-only 虚拟几何、固定分页 sentinel、sticky、分页状态、append anchor 与 stable-id 焦点恢复仍由 task 域持有。本模块只组合 viewport，不解释或改写虚拟几何，也不把 `totalCount` 转换为滚动高度。
 

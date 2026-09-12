@@ -2,8 +2,10 @@
  * 列表筛选会话：base（View 定义）+ URL draft → effective。
  * URL `f` 是否存在与 draft 是否为空分离；draft 是 base 的完整替换。
  */
-import { useCallback, useEffect, useMemo } from 'react'
-import { useNavigate, useRouterState } from '@tanstack/react-router'
+import { useCallback, useMemo } from 'react'
+import { useNavigate } from '@tanstack/react-router'
+
+import { useCurrentRouteSource } from '@/app/navigation'
 
 import {
 	EMPTY_FILTER_QUERY,
@@ -17,7 +19,7 @@ import {
 } from '../core'
 
 export type UseListFilterSessionOptions = {
-	/** View 定义 filters；null 表示定义尚未就绪，禁止提前规范化 URL draft。 */
+	/** View 定义 filters；null 表示定义尚未就绪，URL draft 保持原样。 */
 	base?: FilterQuery | null
 }
 
@@ -38,13 +40,12 @@ export type ListFilterSession = {
 }
 
 export function useListFilterSession(options: UseListFilterSessionOptions = {}): ListFilterSession {
-	const baseReady = options.base !== null
 	const base = useMemo(
 		() => normalizeFilterQuery(options.base ?? EMPTY_FILTER_QUERY),
 		[options.base],
 	)
 	const navigate = useNavigate()
-	const searchStr = useRouterState({ select: (state) => state.location.searchStr })
+	const { searchStr, isCurrent } = useCurrentRouteSource()
 
 	const currentEncoded = useMemo(() => {
 		const params = new URLSearchParams(searchStr.startsWith('?') ? searchStr.slice(1) : searchStr)
@@ -59,7 +60,7 @@ export function useListFilterSession(options: UseListFilterSessionOptions = {}):
 
 	const writeDraft = useCallback(
 		(encoded: string | null) => {
-			if (currentEncoded === encoded) return
+			if (!isCurrent() || currentEncoded === encoded) return
 			void navigate({
 				search: ((prev: Record<string, unknown>) => {
 					const nextSearch = { ...prev }
@@ -73,14 +74,8 @@ export function useListFilterSession(options: UseListFilterSessionOptions = {}):
 				replace: true,
 			})
 		},
-		[currentEncoded, navigate],
+		[currentEncoded, isCurrent, navigate],
 	)
-
-	useEffect(() => {
-		if (baseReady && draft !== null && filterQueriesEqual(draft, base)) {
-			writeDraft(null)
-		}
-	}, [base, baseReady, draft, writeDraft])
 
 	const setTemp = useCallback(
 		(query: FilterQuery) => {

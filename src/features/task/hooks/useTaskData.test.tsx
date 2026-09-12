@@ -76,7 +76,7 @@ describe('useTaskBoardPagination', () => {
 describe('useTaskQueryData', () => {
 	afterEach(() => runTaskQueryMock.mockReset())
 
-	it('切换视图时保留上一份成功结果，直到新结果就绪', async () => {
+	it('切换查询时进入加载态，旧任务和总数不能成为新来源的就绪结果', async () => {
 		let resolveNext: ((page: RunTaskQueryResult) => void) | undefined
 		const nextPage = new Promise<RunTaskQueryResult>((resolve) => {
 			resolveNext = resolve
@@ -102,14 +102,79 @@ describe('useTaskQueryData', () => {
 		rerender({ baseViewKey: 'all' })
 		await waitFor(() => expect(runTaskQueryMock).toHaveBeenCalledTimes(2))
 
-		expect(result.current.status).toBe('ready')
-		expect(result.current.items[0]?.id).toBe('task-a')
+		expect(result.current.status).toBe('loading')
+		expect(result.current.items).toEqual([])
 		expect(result.current.pagination.state).toBe('exhausted')
+		expect(result.current.pagination).not.toHaveProperty('totalCount')
 
 		await act(async () => {
 			resolveNext?.(page(createTask('task-b', '任务 B')))
 		})
 		await waitFor(() => expect(result.current.items[0]?.id).toBe('task-b'))
+	})
+
+	it('旧请求晚于新来源返回时不能覆盖新结果', async () => {
+		let resolvePrevious!: (page: RunTaskQueryResult) => void
+		const previousPage = new Promise<RunTaskQueryResult>((resolve) => {
+			resolvePrevious = resolve
+		})
+		runTaskQueryMock.mockImplementation(({ baseViewKey }: { baseViewKey: TaskViewBaseKey }) =>
+			baseViewKey === 'active' ? previousPage : Promise.resolve(page(createTask('new', '新来源'))),
+		)
+		const { result, rerender } = renderHook(
+			({ baseViewKey }: { baseViewKey: TaskViewBaseKey }) =>
+				useTaskQueryData({
+					scope: { type: 'all' },
+					context: { kind: 'all' },
+					baseViewKey,
+					filters: { clauses: [] },
+				}),
+			{ initialProps: { baseViewKey: 'active' }, wrapper: createQueryWrapper() },
+		)
+		await waitFor(() => expect(runTaskQueryMock).toHaveBeenCalledOnce())
+		rerender({ baseViewKey: 'all' })
+		await waitFor(() => expect(result.current.items[0]?.id).toBe('new'))
+
+		await act(async () => {
+			resolvePrevious(page(createTask('old', '旧来源')))
+		})
+
+		expect(result.current.items.map((item) => item.id)).toEqual(['new'])
+		expect(result.current.input.baseViewKey).toBe('all')
+		expect(result.current.status).toBe('ready')
+	})
+
+	it('同一查询后台刷新保留已有结果', async () => {
+		let resolveRefetch!: (page: RunTaskQueryResult) => void
+		const refresh = new Promise<RunTaskQueryResult>((resolve) => {
+			resolveRefetch = resolve
+		})
+		runTaskQueryMock
+			.mockResolvedValueOnce(page(createTask('previous', '当前结果')))
+			.mockReturnValueOnce(refresh)
+		const { result } = renderHook(
+			() =>
+				useTaskQueryData({
+					scope: { type: 'all' },
+					context: { kind: 'all' },
+					baseViewKey: 'active',
+					filters: { clauses: [] },
+				}),
+			{ wrapper: createQueryWrapper() },
+		)
+		await waitFor(() => expect(result.current.items[0]?.id).toBe('previous'))
+		let refetch!: Promise<unknown>
+		act(() => {
+			refetch = result.current.refetch()
+		})
+		await waitFor(() => expect(runTaskQueryMock).toHaveBeenCalledTimes(2))
+		expect(result.current.status).toBe('ready')
+		expect(result.current.items[0]?.id).toBe('previous')
+		await act(async () => {
+			resolveRefetch(page(createTask('refreshed', '刷新结果')))
+			await refetch
+		})
+		await waitFor(() => expect(result.current.items[0]?.id).toBe('refreshed'))
 	})
 })
 

@@ -39,6 +39,10 @@ vi.mock('../hooks/useProjectDetailScene', () => ({
 	}),
 }))
 
+vi.mock('@/features/view', () => ({
+	ViewSaveDialog: () => null,
+}))
+
 vi.mock('@/features/task', () => ({
 	TaskBoard: () => <div data-testid='task-board'>状态分组任务 Board</div>,
 }))

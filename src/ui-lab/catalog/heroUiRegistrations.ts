@@ -201,7 +201,7 @@ const OSS_PRODUCTION_USAGE = [
 	['src/features/entity-detail/components/EntityDetailDrawerHost.tsx', ['Surface']],
 	[
 		'src/features/filter/components/FilterBar.tsx',
-		['Button', 'ButtonGroup', 'Dropdown', 'Input', 'Label', 'Modal', 'Surface', 'Selection'],
+		['Button', 'ButtonGroup', 'Dropdown', 'Surface', 'Selection'],
 	],
 	['src/features/filter/components/FilterMenu.tsx', ['Dropdown', 'SearchField']],
 	['src/features/filter/components/FilterValueOption.tsx', ['Dropdown', 'checkboxVariants']],
@@ -311,6 +311,10 @@ const OSS_PRODUCTION_USAGE = [
 	['src/features/update/hooks/useUpdateInstallActions.ts', ['toast']],
 	['src/features/view/components/SavedViewPage.tsx', ['Button']],
 	['src/features/view/components/ViewActionsMenu.tsx', ['Alert', 'Button', 'Dropdown']],
+	[
+		'src/features/view/components/ViewSaveDialog.tsx',
+		['Alert', 'Button', 'Input', 'Label', 'Modal'],
+	],
 	[
 		'src/features/view/components/ViewEditorDialog.tsx',
 		[

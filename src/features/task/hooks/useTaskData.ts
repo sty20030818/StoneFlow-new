@@ -87,7 +87,7 @@ export function useTaskQueryData(input: RunTaskQueryInput) {
 		sourceKey: hashKey(taskQueryInfiniteQueryOptions(input).queryKey),
 		loadedPageCount: query.data?.pages.length ?? 0,
 		fetchNextPage: query.fetchNextPage,
-		hasNextPage: query.isPlaceholderData ? false : query.hasNextPage,
+		hasNextPage: query.hasNextPage,
 		isFetchingNextPage: query.isFetchingNextPage,
 		isFetchNextPageError: query.isFetchNextPageError,
 		error: query.error,

@@ -10,14 +10,15 @@ import {
 	ToggleButtonGroup,
 } from '@heroui/react'
 import { ListFilterIcon, XIcon } from 'lucide-react'
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo } from 'react'
 import { FormProvider, useController } from 'react-hook-form'
 
 import type { ProjectOption } from '@/features/project'
-import { normalizeSubmitError, useZodForm } from '@/shared/form'
+import { useZodForm } from '@/shared/form'
 import { useSubmitTargetFromForm } from '@/features/submit'
 import { ActionTooltip } from '@/shared/components/tooltip'
 import type { TaskStatus, UpdateViewInput, View } from '@/shared/types'
+import type { ViewSaveFlow } from '../hooks/useViewSaveFlow'
 import {
 	buildViewEditorDefaultValues,
 	type CreateViewDraft,
@@ -36,33 +37,21 @@ const STATUS_OPTIONS: Array<{ key: TaskStatus; label: string }> = [
 ]
 
 type ViewEditorDialogProps = {
-	open: boolean
+	flow: ViewSaveFlow
 	view: View | null
 	projects: ProjectOption[]
-	isSubmitting: boolean
-	onClose: () => void
 	onCreate: (input: CreateViewDraft) => Promise<void>
 	onUpdate: (input: UpdateViewInput) => Promise<void>
 }
 
 export function ViewEditorDialog({
-	open,
+	flow,
 	view,
 	projects,
-	isSubmitting,
-	onClose,
 	onCreate,
 	onUpdate,
 }: ViewEditorDialogProps) {
-	const renameRequest = useRef<symbol | null>(null)
-	const [renaming, setRenaming] = useState(false)
-	const [renameError, setRenameError] = useState<string | null>(null)
-	const [session, setSession] = useState({ open, view })
-	if (session.open !== open || session.view !== view) {
-		setSession({ open, view })
-		setRenaming(false)
-		setRenameError(null)
-	}
+	const { open, sessionKey, pending, error, savedView, close, retryOpen } = flow
 	const form = useZodForm({
 		schema: viewEditorSchema,
 		defaultValues: buildViewEditorDefaultValues(view),
@@ -91,20 +80,12 @@ export function ViewEditorDialog({
 	})
 
 	useEffect(() => {
-		renameRequest.current = null
 		if (!open) {
 			return
 		}
 
 		form.reset(buildViewEditorDefaultValues(view))
-		return () => {
-			renameRequest.current = null
-		}
-	}, [form, open, view])
-	const closeEditor = useCallback(() => {
-		renameRequest.current = null
-		onClose()
-	}, [onClose])
+	}, [form, open, sessionKey, view])
 
 	const submitLabel = view ? '保存视图' : '创建保存视图'
 	const title = view ? '编辑保存视图' : '新建保存视图'
@@ -123,57 +104,37 @@ export function ViewEditorDialog({
 	const hasSpecificProject = projectMode !== 'specific' || specificProjectId !== 'none'
 	const canSubmit =
 		nameField.value.trim().length > 0 && (view ? true : statusList.length > 0 && hasSpecificProject)
-	const submitting = view ? renaming : isSubmitting
+	const submitting = pending !== null
+	const readOnly = submitting || Boolean(savedView)
 
 	const handleSubmit = useCallback(async () => {
-		if (view) {
-			if (renameRequest.current) return
-			const request = Symbol('rename-view')
-			renameRequest.current = request
-			const input = toUpdateViewInput(form.getValues(), view.id)
-			setRenaming(true)
-			setRenameError(null)
-			try {
-				if (!(await form.trigger()) || renameRequest.current !== request) return
-				await onUpdate(input)
-				if (renameRequest.current === request) closeEditor()
-			} catch (error) {
-				if (renameRequest.current === request) {
-					setRenameError(normalizeSubmitError(error, '重命名失败，请重试。'))
-				}
-			} finally {
-				if (renameRequest.current === request) {
-					renameRequest.current = null
-					setRenaming(false)
-				}
-			}
+		if (submitting) return
+		if (savedView) {
+			await retryOpen()
 			return
 		}
-		const isValid = await form.trigger()
-		if (!isValid) {
-			return
-		}
-
 		const values = form.getValues()
-
-		await onCreate(toCreateViewDraft(values))
-
-		onClose()
-	}, [closeEditor, form, onClose, onCreate, onUpdate, view])
+		if (!viewEditorSchema.safeParse(values).success) {
+			await form.trigger()
+			return
+		}
+		if (view) await onUpdate(toUpdateViewInput(values, view.id))
+		else await onCreate(toCreateViewDraft(values))
+	}, [form, onCreate, onUpdate, retryOpen, savedView, submitting, view])
 
 	useSubmitTargetFromForm({
 		id: open ? (view ? `view-editor:${view.id}` : 'view-editor:create') : null,
-		title: view ? '保存视图' : '创建保存视图',
+		title: savedView ? '打开已保存视图' : submitLabel,
 		priority: 100,
 		context: { source: 'view-editor' as const },
 		form,
-		canSubmit,
+		canSubmit: Boolean(savedView) || canSubmit,
 		isSubmitting: submitting,
 		submit: handleSubmit,
 	})
 
 	return (
-		<Modal.Backdrop isOpen={open} onOpenChange={(nextOpen) => !nextOpen && closeEditor()}>
+		<Modal.Backdrop isOpen={open} onOpenChange={(nextOpen) => !nextOpen && close()}>
 			<Modal.Container placement='center' scroll='inside' size='lg'>
 				<Modal.Dialog
 					aria-describedby={descriptionId}
@@ -231,16 +192,24 @@ export function ViewEditorDialog({
 										id='view-editor-name'
 										onBlur={nameField.onBlur}
 										onChange={nameField.onChange}
-										readOnly={Boolean(view) && renaming}
+										readOnly={readOnly}
 										value={nameField.value}
 									/>
 								</div>
-								{view && renameError ? (
+								{error ? (
 									<Alert className='mt-3' role='alert' status='danger'>
 										<Alert.Indicator />
 										<Alert.Content className='min-w-0'>
-											<Alert.Title>重命名失败</Alert.Title>
-											<Alert.Description className='wrap-anywhere'>{renameError}</Alert.Description>
+											<Alert.Title>
+												{error.kind === 'open'
+													? '已保存，但未能打开'
+													: view
+														? '重命名失败'
+														: '创建失败'}
+											</Alert.Title>
+											<Alert.Description className='wrap-anywhere'>
+												{error.message}
+											</Alert.Description>
 										</Alert.Content>
 									</Alert>
 								) : null}
@@ -251,6 +220,7 @@ export function ViewEditorDialog({
 										<ToggleButtonGroup
 											aria-label='状态筛选'
 											isDetached
+											isDisabled={readOnly}
 											selectedKeys={statusList}
 											selectionMode='multiple'
 											onSelectionChange={(keys) =>
@@ -269,6 +239,7 @@ export function ViewEditorDialog({
 								{view ? null : (
 									<section className='grid gap-3 md:grid-cols-2'>
 										<DialogSelect
+											disabled={readOnly}
 											label='优先级'
 											onValueChange={(value) => priorityModeField.onChange(value as PriorityMode)}
 											options={[
@@ -281,6 +252,7 @@ export function ViewEditorDialog({
 											value={priorityMode}
 										/>
 										<DialogSelect
+											disabled={readOnly}
 											label='查询范围'
 											onValueChange={(value) =>
 												projectModeField.onChange(value as 'any' | 'none' | 'specific')
@@ -293,7 +265,7 @@ export function ViewEditorDialog({
 											value={projectMode}
 										/>
 										<DialogSelect
-											disabled={projectMode !== 'specific'}
+											disabled={readOnly || projectMode !== 'specific'}
 											label='指定项目'
 											onValueChange={specificProjectIdField.onChange}
 											options={[
@@ -306,6 +278,7 @@ export function ViewEditorDialog({
 											value={specificProjectId}
 										/>
 										<DialogSelect
+											disabled={readOnly}
 											label='截止时间'
 											onValueChange={dueModeField.onChange}
 											options={[
@@ -318,6 +291,7 @@ export function ViewEditorDialog({
 											value={dueMode}
 										/>
 										<DialogSelect
+											disabled={readOnly}
 											label='计划时间'
 											onValueChange={plannedModeField.onChange}
 											options={[
@@ -334,15 +308,15 @@ export function ViewEditorDialog({
 							</Modal.Body>
 
 							<Modal.Footer>
-								<Button onPress={closeEditor} type='button' variant='ghost'>
-									取消
+								<Button onPress={close} type='button' variant='ghost'>
+									{savedView ? '关闭' : '取消'}
 								</Button>
-								<Button
-									isDisabled={!canSubmit || (!view && isSubmitting)}
-									isPending={Boolean(view) && renaming}
-									type='submit'
-								>
-									{view && renameError ? '重试保存' : submitLabel}
+								<Button isDisabled={!savedView && !canSubmit} isPending={submitting} type='submit'>
+									{savedView
+										? '打开已保存视图'
+										: error?.kind === 'write'
+											? '重试保存'
+											: submitLabel}
 								</Button>
 							</Modal.Footer>
 						</form>

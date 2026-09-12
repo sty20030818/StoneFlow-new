@@ -144,21 +144,15 @@ describe('filter entry points', () => {
 		},
 	)
 
-	it('保存对话框沿用既有视图保存契约', async () => {
-		const onSave = vi.fn(async () => undefined)
+	it('公式条保存入口调用外部打开动作', () => {
+		const onSave = vi.fn()
 		const value = { ...createFilterUiValue(), onSave }
 		renderFilterEntry(<FilterBar />, value)
 
 		fireEvent.click(screen.getByRole('button', { name: '保存' }))
-		expect(await screen.findByRole('dialog', { name: '保存为视图' })).toBeInTheDocument()
-		fireEvent.change(screen.getByRole('textbox', { name: '视图名称' }), {
-			target: { value: '高优先级任务' },
-		})
-		fireEvent.click(screen.getByRole('button', { name: '另存为' }))
 
-		await waitFor(() => {
-			expect(onSave).toHaveBeenCalledWith({ mode: 'create', name: '高优先级任务' })
-		})
+		expect(onSave).toHaveBeenCalledOnce()
+		expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 	})
 })
 

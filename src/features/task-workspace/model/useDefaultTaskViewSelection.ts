@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo } from 'react'
-import { useNavigate, useRouterState } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 
+import { useCurrentRouteSource } from '@/app/navigation'
 import { FILTER_SEARCH_PARAM_KEY } from '@/features/filter'
 
 import type { DefaultTaskView, DefaultTaskViewKey } from './defaultTaskViews'
@@ -12,7 +13,7 @@ export function useDefaultTaskViewSelection(input: {
 	defaultKey: DefaultTaskViewKey
 }) {
 	const navigate = useNavigate()
-	const searchStr = useRouterState({ select: (state) => state.location.searchStr })
+	const { searchStr, isCurrent } = useCurrentRouteSource()
 	const requestedKey = useMemo(() => {
 		const params = new URLSearchParams(searchStr.startsWith('?') ? searchStr.slice(1) : searchStr)
 		return params.get(DEFAULT_TASK_VIEW_SEARCH_PARAM_KEY)
@@ -22,7 +23,7 @@ export function useDefaultTaskViewSelection(input: {
 	const selected = input.options.find((option) => option.key === selectedKey) ?? input.options[0]!
 
 	useEffect(() => {
-		if (requestedKey === null || requestedKeyIsValid) return
+		if (requestedKey === null || requestedKeyIsValid || !isCurrent()) return
 		void navigate({
 			search: ((previous: Record<string, unknown>) => {
 				const next = { ...previous }
@@ -32,11 +33,16 @@ export function useDefaultTaskViewSelection(input: {
 			}) as never,
 			replace: true,
 		})
-	}, [navigate, requestedKey, requestedKeyIsValid])
+	}, [isCurrent, navigate, requestedKey, requestedKeyIsValid])
 
 	const select = useCallback(
 		(key: string) => {
-			if (!input.options.some((option) => option.key === key) || key === selectedKey) return
+			if (
+				!isCurrent() ||
+				!input.options.some((option) => option.key === key) ||
+				key === selectedKey
+			)
+				return
 			return navigate({
 				search: ((previous: Record<string, unknown>) => {
 					const next = { ...previous }
@@ -51,7 +57,7 @@ export function useDefaultTaskViewSelection(input: {
 				replace: true,
 			})
 		},
-		[input.defaultKey, input.options, navigate, selectedKey],
+		[input.defaultKey, input.options, isCurrent, navigate, selectedKey],
 	)
 
 	return { selected, selectedKey, select }

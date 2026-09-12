@@ -15,8 +15,8 @@ export { useViewsQuery } from './hooks'
 /** URL search → 仅 `f`（临时 FilterQuery）。 */
 export { parseViewSearch } from './api/viewSearch'
 
-/** View 变更 mutations。 */
-export { useCreateViewMutation, useUpdateViewMutation } from './hooks/view.mutations'
+/** 保存用例：当前查询快照、返回身份、导航与失败恢复。 */
+export { useViewSaveFlow, type ViewSaveCommand, type ViewSaveFlow } from './hooks/useViewSaveFlow'
 
 // ── UI ──────────────────────────────────────────────────────────────────────
 
@@ -29,3 +29,4 @@ export { SavedViewPage } from './components/SavedViewPage'
 /** 保存视图管理交互（UI Lab 使用生产组件与内存回调）。 */
 export { ViewActionsMenu } from './components/ViewActionsMenu'
 export { ViewEditorDialog } from './components/ViewEditorDialog'
+export { ViewSaveDialog } from './components/ViewSaveDialog'

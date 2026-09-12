@@ -24,14 +24,12 @@ import {
 	type CreateViewInput,
 	type Scope,
 	type TaskViewContext,
+	type UpdateViewInput,
 	type View,
 } from '@/shared/types'
 
-import {
-	useCreateViewMutation,
-	useDeleteViewMutation,
-	useUpdateViewMutation,
-} from './view.mutations'
+import { useDeleteViewMutation } from './view.mutations'
+import { useViewSaveFlow } from './useViewSaveFlow'
 import {
 	flattenTaskViewPages,
 	taskViewRunInfiniteQueryOptions,
@@ -69,51 +67,29 @@ export function resolveSavedViewWorkspaceContext(
 	}
 }
 
-function useSavedViewEditor(
-	scope: ReturnType<typeof resolveShellRouteScope>,
-	sourceViewId?: string,
-) {
-	const createView = useCreateViewMutation()
-	const updateView = useUpdateViewMutation()
-	const [open, setOpen] = useState(false)
+function useSavedViewEditor(scope: Scope, spaceId: string | null) {
+	const flow = useViewSaveFlow({ scope, spaceId })
 	const [view, setView] = useState<View | null>(null)
-	const [isSubmitting, setIsSubmitting] = useState(false)
 	const projects = useProjectOptions(scope)
-	const sourceKey = hashKey([scope, sourceViewId])
-	const [editorSourceKey, setEditorSourceKey] = useState(sourceKey)
-	if (sourceKey !== editorSourceKey) {
-		setEditorSourceKey(sourceKey)
-		setOpen(false)
-		setView(null)
-	}
 
 	return {
-		open,
+		flow,
 		view,
 		projects,
-		isSubmitting,
 		openCreate: () => {
 			setView(null)
-			setOpen(true)
+			flow.begin()
 		},
 		openEdit: (nextView: View) => {
 			setView(nextView)
-			setOpen(true)
-		},
-		onClose: () => {
-			setOpen(false)
-			setView(null)
+			flow.begin()
 		},
 		onCreate: async (input: Omit<CreateViewInput, 'scope'>) => {
-			setIsSubmitting(true)
-			try {
-				await createView.mutateAsync({ ...input, scope } satisfies CreateViewInput)
-			} finally {
-				setIsSubmitting(false)
-			}
+			await flow.submit({ mode: 'create', input: { ...input, scope } })
 		},
-		onUpdate: async (input: Parameters<typeof updateView.mutateAsync>[0]) => {
-			await updateView.mutateAsync(input)
+		onUpdate: async (input: UpdateViewInput) => {
+			if (!view || input.viewId !== view.id || !input.name?.trim()) return
+			await flow.submit({ mode: 'rename', input: { viewId: view.id, name: input.name.trim() } })
 		},
 	}
 }
@@ -125,7 +101,7 @@ export function useSavedViewLibraryScene() {
 	const navigate = useNavigate({ from: '/' })
 	const viewsQuery = useViewsQuery(scope)
 	const deleteView = useDeleteViewMutation()
-	const editor = useSavedViewEditor(scope)
+	const editor = useSavedViewEditor(scope, spaceId)
 	const [search, setSearch] = useState('')
 	const views = viewsQuery.data ?? EMPTY_VIEWS
 	const normalizedSearch = search.trim().toLocaleLowerCase('zh-CN')
@@ -190,10 +166,9 @@ export function useSavedViewWorkspaceScene() {
 	const { spaces } = useSpaces()
 	const activeDetail = useEntityDetailController().activeDetail
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
-	const createView = useCreateViewMutation()
-	const updateView = useUpdateViewMutation()
+	const saveFlow = useViewSaveFlow({ scope, spaceId })
 	const deleteView = useDeleteViewMutation()
-	const editor = useSavedViewEditor(scope, viewId)
+	const editor = useSavedViewEditor(scope, spaceId)
 	const workspaceContext = resolveSavedViewWorkspaceContext(runnableView?.context, scope)
 	const openCreateTask = () => openTaskCreateDialog(workspaceContext.createDraft)
 	useRegisterFilterCommandAdapter({ session: filterSession })
@@ -269,27 +244,30 @@ export function useSavedViewWorkspaceScene() {
 		...(runnableView?.context.kind === 'all'
 			? { projects: projectOptions.map((project) => ({ id: project.id, name: project.name })) }
 			: {}),
-		canOverwriteView: Boolean(runnableView),
+		onSave: runnableView ? saveFlow.begin : undefined,
+	}
+	const saveView = {
+		flow: saveFlow,
+		canOverwrite: Boolean(runnableView),
 		onSave: async (input: { mode: 'create' | 'overwrite'; name?: string }) => {
 			if (!runnableView) return
 			if (input.mode === 'overwrite') {
-				await updateView.mutateAsync({
-					viewId: runnableView.id,
-					filters: filterSession.effective,
+				await saveFlow.submit({
+					mode: 'overwrite',
+					input: { viewId: runnableView.id, filters: filterSession.effective },
 				})
-				filterSession.clearTemp()
-				return
+			} else if (input.name?.trim()) {
+				await saveFlow.submit({
+					mode: 'create',
+					input: {
+						name: input.name.trim(),
+						scope,
+						context: runnableView.context,
+						baseViewKey: runnableView.baseViewKey,
+						filters: filterSession.effective,
+					},
+				})
 			}
-			if (!input.name?.trim()) return
-			const created = await createView.mutateAsync({
-				name: input.name.trim(),
-				scope,
-				context: runnableView.context,
-				baseViewKey: runnableView.baseViewKey,
-				filters: filterSession.effective,
-			})
-			filterSession.clearTemp()
-			void navigate({ to: openView(scope, created.id, spaceId) as never, search: {} as never })
 		},
 	}
 
@@ -327,6 +305,7 @@ export function useSavedViewWorkspaceScene() {
 		breadcrumbItems: resolveBreadcrumb({ route: shellRoute, viewName: activeView?.name ?? null }),
 		displayPageKey,
 		filterUiValue,
+		saveView,
 		taskCollection,
 		toolbarPills: runnableView
 			? [

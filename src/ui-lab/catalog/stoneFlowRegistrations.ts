@@ -406,6 +406,7 @@ const EXPORTED_COMPONENT_GROUPS = [
 	['src/features/view/components/SavedViewPage.tsx', 'collection-pages', ['SavedViewPage']],
 	['src/features/view/components/ViewActionsMenu.tsx', 'collection-pages', ['ViewActionsMenu']],
 	['src/features/view/components/ViewEditorDialog.tsx', 'collection-pages', ['ViewEditorDialog']],
+	['src/features/view/components/ViewSaveDialog.tsx', 'collection-pages', ['ViewSaveDialog']],
 	['src/features/view/components/ViewsPage.tsx', 'collection-pages', ['ViewsPage']],
 	['src/layout/AppLayout.tsx', 'shell', ['AppLayout']],
 	[
@@ -488,7 +489,7 @@ const PRIVATE_LEAF_GROUPS = [
 	[
 		'src/features/filter/components/FilterBar.tsx',
 		'FilterBar',
-		['FilterChip', 'OpPicker', 'ValuesPicker', 'FilterSaveDialog'],
+		['FilterChip', 'OpPicker', 'ValuesPicker'],
 	],
 	[
 		'src/features/global-search/components/GlobalSearchResults.tsx',
@@ -1131,6 +1132,11 @@ const EXPORTED_COMPONENT_CONSUMERS: Readonly<Record<string, readonly string[]>> 
 	'stoneflow-component-view-editor-dialog': [
 		'src/features/view/components/SavedViewPage.tsx',
 		'src/features/view/components/ViewsPage.tsx',
+	],
+	'stoneflow-component-view-save-dialog': [
+		'src/features/view/components/SavedViewPage.tsx',
+		'src/features/task/components/TaskListSceneView.tsx',
+		'src/features/project/components/ProjectPage.tsx',
 	],
 	'stoneflow-component-views-page': ['src/routes/_shell/-workspace-views.tsx'],
 	'stoneflow-row-shell': [

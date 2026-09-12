@@ -2,7 +2,12 @@ import { Button } from '@heroui/react'
 import { useRef, useState } from 'react'
 
 import { SubmitRegistryProvider } from '@/features/submit'
-import { ViewActionsMenu, ViewEditorDialog } from '@/features/view'
+import {
+	ViewActionsMenu,
+	ViewEditorDialog,
+	ViewSaveDialog,
+	type ViewSaveFlow,
+} from '@/features/view'
 import type { View } from '@/shared/types'
 
 import type { UiLabReviewUnitInput } from '../uiLabCatalog'
@@ -28,7 +33,8 @@ function ViewManagementPreview() {
 	return (
 		<div className='flex w-full min-w-0 max-w-3xl flex-col gap-3'>
 			<p className='text-sm text-muted'>
-				重命名和删除各自首次失败，再次尝试成功；默认等待 3 秒。仅使用样例内存，无 IPC 或数据库连接。
+				保存和编辑使用受控状态展示，提交回调只展示长错误；删除首次失败后可重试。仅使用样例内存，无
+				IPC 或数据库连接。
 			</p>
 			<Button
 				className='self-start'
@@ -44,41 +50,76 @@ function ViewManagementPreview() {
 	)
 }
 
+type PreviewState = 'idle' | 'pending' | 'write-error' | 'open-error'
+type PreviewDialog = 'rename' | 'create' | 'save' | null
+
 function ViewManagementFixture() {
 	const [view, setView] = useState<View | null>(INITIAL_VIEW)
-	const [editingView, setEditingView] = useState<View | null>(null)
-	const [open, setOpen] = useState(false)
-	const [slow, setSlow] = useState(true)
-	const [result, setResult] = useState('尚未操作。可通过右侧菜单重命名或删除。')
-	const attempts = useRef({ rename: 0, delete: 0 })
+	const [dialog, setDialog] = useState<PreviewDialog>(null)
+	const [sessionKey, setSessionKey] = useState(0)
+	const [preview, setPreview] = useState<PreviewState>('idle')
+	const [result, setResult] = useState(
+		'先选择预设状态，再打开真实组件。共享 flow 的异步时序由页面测试验证。',
+	)
+	const deleteAttempts = useRef(0)
+	const canOpenResult = dialog !== 'rename' && preview === 'open-error'
 
-	async function simulateWrite(operation: 'rename' | 'delete') {
-		const attempt = ++attempts.current[operation]
-		const label = operation === 'rename' ? '重命名' : '删除'
-		setResult(`${label}第 ${attempt} 次提交中；可在等待期间关闭并重新打开。`)
-		await new Promise<void>((resolve) => setTimeout(resolve, slow ? 3000 : 0))
-		if (attempt === 1) {
-			setResult(`${label}失败；记录保持原样，可使用原输入重试。`)
-			throw new Error(LONG_ERROR)
-		}
-		setResult(`${label}成功，内存记录已更新。`)
+	function showDialog(next: PreviewDialog) {
+		setSessionKey((value) => value + 1)
+		setDialog(next)
 	}
-
-	function openEditor(target: View) {
-		setEditingView(target)
-		setOpen(true)
+	async function showWriteError() {
+		setPreview('write-error')
+		setResult('提交回调已触发。此受控展示固定返回长错误，不执行持久化或导航。')
+	}
+	const flow: ViewSaveFlow = {
+		open: dialog !== null,
+		sessionKey,
+		pending: preview === 'pending' ? (dialog === 'rename' ? 'rename' : 'create') : null,
+		error: canOpenResult
+			? { kind: 'open', message: LONG_ERROR }
+			: preview === 'write-error'
+				? { kind: 'write', message: LONG_ERROR }
+				: null,
+		savedView: canOpenResult ? INITIAL_VIEW : null,
+		begin: () => showDialog('save'),
+		close: () => setDialog(null),
+		submit: showWriteError,
+		retryOpen: async () => {
+			setResult('打开恢复回调已触发；此受控样例不进行导航或再次写入。')
+			setDialog(null)
+		},
 	}
 
 	return (
 		<>
-			<Button
-				aria-pressed={slow}
-				className='self-start'
-				onPress={() => setSlow(!slow)}
-				variant='outline'
-			>
-				模拟 3 秒等待：{slow ? '开' : '关'}
-			</Button>
+			<div className='flex flex-wrap gap-2' role='group' aria-label='预设状态'>
+				{(
+					[
+						['idle', '可提交'],
+						['pending', '等待中'],
+						['write-error', '写入失败'],
+						['open-error', '已保存但未打开'],
+					] as const
+				).map(([state, label]) => (
+					<Button
+						key={state}
+						aria-pressed={preview === state}
+						onPress={() => setPreview(state)}
+						variant='outline'
+					>
+						{label}
+					</Button>
+				))}
+			</div>
+			<div className='flex flex-wrap gap-2'>
+				<Button onPress={() => showDialog('save')} variant='secondary'>
+					保存 / 覆盖示例
+				</Button>
+				<Button onPress={() => showDialog('create')} variant='outline'>
+					从视图库创建示例
+				</Button>
+			</div>
 			{view ? (
 				<div className='flex min-w-0 items-center gap-3 rounded-lg border border-separator bg-surface p-3'>
 					<p className='min-w-0 flex-1 truncate text-sm' title={view.name}>
@@ -86,11 +127,11 @@ function ViewManagementFixture() {
 					</p>
 					<ViewActionsMenu
 						activeView={view}
+						onEdit={() => showDialog('rename')}
 						onDelete={async () => {
-							await simulateWrite('delete')
+							if (++deleteAttempts.current === 1) throw new Error(LONG_ERROR)
 							setView(null)
 						}}
-						onEdit={openEditor}
 					/>
 				</div>
 			) : (
@@ -99,20 +140,18 @@ function ViewManagementFixture() {
 			<p className='wrap-anywhere text-sm text-muted' role='status'>
 				{result}
 			</p>
-			<ViewEditorDialog
-				isSubmitting={false}
-				onClose={() => setOpen(false)}
-				onCreate={async () => {
-					throw new Error('此样例只开放重命名与删除')
-				}}
-				onUpdate={async ({ name }) => {
-					await simulateWrite('rename')
-					setView((current) => (current ? { ...current, name: name ?? current.name } : current))
-				}}
-				open={open}
-				projects={[]}
-				view={editingView}
-			/>
+			{dialog === 'save' ? (
+				<ViewSaveDialog flow={flow} canOverwrite onSave={showWriteError} />
+			) : null}
+			{dialog === 'rename' || dialog === 'create' ? (
+				<ViewEditorDialog
+					flow={flow}
+					onCreate={showWriteError}
+					onUpdate={showWriteError}
+					projects={[]}
+					view={dialog === 'rename' ? view : null}
+				/>
+			) : null}
 		</>
 	)
 }
@@ -120,22 +159,23 @@ function ViewManagementFixture() {
 export const VIEW_MANAGEMENT_SAMPLES: readonly UiLabReviewUnitInput[] = [
 	{
 		id: 'stoneflow-view-management-recovery',
-		name: '保存视图 · 重命名与删除恢复',
+		name: '保存视图 · 保存与管理恢复',
 		view: 'stoneflow',
 		category: 'Product Scenes',
 		owner: 'Product',
 		recommendedOwner: 'Product',
 		disposition: 'keep',
 		description:
-			'复用生产 ViewEditorDialog 与 ViewActionsMenu，检查等待、首次失败重试、长文本和关闭后的会话隔离。',
+			'受控展示生产保存/编辑弹窗与删除菜单，检查等待、错误恢复、长文本和键盘入口；不复制共享 flow。',
 		keywords: ['view', '保存视图', '重命名', '删除', '失败', '重试', 'pending', '窄窗口'],
 		source:
-			'src/features/view/components/ViewEditorDialog.tsx；src/features/view/components/ViewActionsMenu.tsx',
-		states: '长名称 / 长错误 / 3 秒等待 / 首次失败 / 重试成功 / 关闭再打开 / 删除后重置',
+			'src/features/view/components/ViewSaveDialog.tsx；src/features/view/components/ViewEditorDialog.tsx；src/features/view/components/ViewActionsMenu.tsx',
+		states: '长名称 / 长错误 / 受控等待 / 写入失败 / 打开恢复 / 创建 / 另存 / 覆盖 / 删除重试',
 		verification:
-			'仅内存异步回调，无 IPC 或正式数据访问；真实页面数据链由 ViewManagement.test.tsx 覆盖，原生和视觉验收另记。',
+			'受控 UI 状态，无 IPC 或正式数据访问；共享 flow 与真实页面测试负责写入、导航和迟到结果，原生和视觉验收另记。',
 		inventoryRefs: [
 			'stoneflow-component-view-editor-dialog',
+			'stoneflow-component-view-save-dialog',
 			'stoneflow-component-view-actions-menu',
 		],
 		coverage: 'rendered',

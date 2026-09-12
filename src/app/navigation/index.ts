@@ -26,6 +26,7 @@ export {
 } from './shellLocation'
 
 export { ShellRouteProvider, useCurrentShellRoute } from './ShellRouteContext'
+export { useCurrentRouteSource } from './useCurrentRouteSource'
 
 export {
 	openSection,

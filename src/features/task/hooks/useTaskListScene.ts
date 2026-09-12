@@ -11,7 +11,7 @@ import { useProjectOptions } from '@/features/project'
 import { useDialogStore } from '@/features/shell-dialogs'
 import { useSpaces } from '@/features/space'
 import { getDefaultTaskViews, useDefaultTaskViewSelection } from '@/features/task-workspace'
-import { useCreateViewMutation } from '@/features/view'
+import { useViewSaveFlow } from '@/features/view'
 import { EMPTY_FILTER_QUERY, type TaskViewContext } from '@/shared/types'
 
 import { useTaskCollectionScene } from './useTaskCollectionScene'
@@ -44,7 +44,7 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 	const filterSession = useListFilterSession({ base: EMPTY_FILTER_QUERY })
 	const projectOptions = useProjectOptions(scope)
 	const { spaces } = useSpaces()
-	const createSavedView = useCreateViewMutation()
+	const saveFlow = useViewSaveFlow({ scope, spaceId: shellRoute.spaceId })
 	useRegisterFilterCommandAdapter({ session: filterSession })
 
 	const queryInput = useMemo(
@@ -94,16 +94,14 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 		...(context.kind === 'all'
 			? { projects: projectOptions.map((project) => ({ id: project.id, name: project.name })) }
 			: {}),
+		onSave: saveFlow.begin,
+	}
+	const saveView = {
+		flow: saveFlow,
+		canOverwrite: false,
 		onSave: async (input: { mode: 'create' | 'overwrite'; name?: string }) => {
 			if (input.mode !== 'create' || !input.name?.trim()) return
-			await createSavedView.mutateAsync({
-				name: input.name.trim(),
-				scope,
-				context,
-				baseViewKey: viewSelection.selected.baseViewKey,
-				filters: filterSession.effective,
-			})
-			filterSession.clearTemp()
+			await saveFlow.submit({ mode: 'create', input: { ...queryInput, name: input.name.trim() } })
 		},
 	}
 
@@ -115,6 +113,7 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 		selectedToolbarKey: viewSelection.selectedKey,
 		selectToolbar: viewSelection.select,
 		filterUiValue,
+		saveView,
 		openCreate,
 	}
 }

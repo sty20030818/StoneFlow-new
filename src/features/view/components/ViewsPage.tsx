@@ -59,11 +59,9 @@ export function ViewsPage() {
 			</PageFrame.Root>
 
 			<ViewEditorDialog
-				isSubmitting={scene.editor.isSubmitting}
-				onClose={scene.editor.onClose}
+				flow={scene.editor.flow}
 				onCreate={scene.editor.onCreate}
 				onUpdate={scene.editor.onUpdate}
-				open={scene.editor.open}
 				projects={scene.editor.projects}
 				view={scene.editor.view}
 			/>
