@@ -1,4 +1,5 @@
 import {
+	Alert,
 	Button,
 	Input,
 	Label,
@@ -9,11 +10,11 @@ import {
 	ToggleButtonGroup,
 } from '@heroui/react'
 import { ListFilterIcon, XIcon } from 'lucide-react'
-import { useCallback, useEffect, useId, useMemo } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { FormProvider, useController } from 'react-hook-form'
 
 import type { ProjectOption } from '@/features/project'
-import { useZodForm } from '@/shared/form'
+import { normalizeSubmitError, useZodForm } from '@/shared/form'
 import { useSubmitTargetFromForm } from '@/features/submit'
 import { ActionTooltip } from '@/shared/components/tooltip'
 import type { TaskStatus, UpdateViewInput, View } from '@/shared/types'
@@ -53,6 +54,15 @@ export function ViewEditorDialog({
 	onCreate,
 	onUpdate,
 }: ViewEditorDialogProps) {
+	const renameRequest = useRef<symbol | null>(null)
+	const [renaming, setRenaming] = useState(false)
+	const [renameError, setRenameError] = useState<string | null>(null)
+	const [session, setSession] = useState({ open, view })
+	if (session.open !== open || session.view !== view) {
+		setSession({ open, view })
+		setRenaming(false)
+		setRenameError(null)
+	}
 	const form = useZodForm({
 		schema: viewEditorSchema,
 		defaultValues: buildViewEditorDefaultValues(view),
@@ -81,12 +91,20 @@ export function ViewEditorDialog({
 	})
 
 	useEffect(() => {
+		renameRequest.current = null
 		if (!open) {
 			return
 		}
 
 		form.reset(buildViewEditorDefaultValues(view))
+		return () => {
+			renameRequest.current = null
+		}
 	}, [form, open, view])
+	const closeEditor = useCallback(() => {
+		renameRequest.current = null
+		onClose()
+	}, [onClose])
 
 	const submitLabel = view ? '保存视图' : '创建保存视图'
 	const title = view ? '编辑保存视图' : '新建保存视图'
@@ -105,8 +123,32 @@ export function ViewEditorDialog({
 	const hasSpecificProject = projectMode !== 'specific' || specificProjectId !== 'none'
 	const canSubmit =
 		nameField.value.trim().length > 0 && (view ? true : statusList.length > 0 && hasSpecificProject)
+	const submitting = view ? renaming : isSubmitting
 
 	const handleSubmit = useCallback(async () => {
+		if (view) {
+			if (renameRequest.current) return
+			const request = Symbol('rename-view')
+			renameRequest.current = request
+			const input = toUpdateViewInput(form.getValues(), view.id)
+			setRenaming(true)
+			setRenameError(null)
+			try {
+				if (!(await form.trigger()) || renameRequest.current !== request) return
+				await onUpdate(input)
+				if (renameRequest.current === request) closeEditor()
+			} catch (error) {
+				if (renameRequest.current === request) {
+					setRenameError(normalizeSubmitError(error, '重命名失败，请重试。'))
+				}
+			} finally {
+				if (renameRequest.current === request) {
+					renameRequest.current = null
+					setRenaming(false)
+				}
+			}
+			return
+		}
 		const isValid = await form.trigger()
 		if (!isValid) {
 			return
@@ -114,14 +156,10 @@ export function ViewEditorDialog({
 
 		const values = form.getValues()
 
-		if (view) {
-			await onUpdate(toUpdateViewInput(values, view.id))
-		} else {
-			await onCreate(toCreateViewDraft(values))
-		}
+		await onCreate(toCreateViewDraft(values))
 
 		onClose()
-	}, [form, onClose, onCreate, onUpdate, view])
+	}, [closeEditor, form, onClose, onCreate, onUpdate, view])
 
 	useSubmitTargetFromForm({
 		id: open ? (view ? `view-editor:${view.id}` : 'view-editor:create') : null,
@@ -130,12 +168,12 @@ export function ViewEditorDialog({
 		context: { source: 'view-editor' as const },
 		form,
 		canSubmit,
-		isSubmitting,
+		isSubmitting: submitting,
 		submit: handleSubmit,
 	})
 
 	return (
-		<Modal.Backdrop isOpen={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+		<Modal.Backdrop isOpen={open} onOpenChange={(nextOpen) => !nextOpen && closeEditor()}>
 			<Modal.Container placement='center' scroll='inside' size='lg'>
 				<Modal.Dialog
 					aria-describedby={descriptionId}
@@ -165,6 +203,7 @@ export function ViewEditorDialog({
 					</ActionTooltip>
 					<FormProvider {...form}>
 						<form
+							className='flex min-h-0 flex-col'
 							onSubmit={(event) => {
 								event.preventDefault()
 								void handleSubmit()
@@ -192,9 +231,19 @@ export function ViewEditorDialog({
 										id='view-editor-name'
 										onBlur={nameField.onBlur}
 										onChange={nameField.onChange}
+										readOnly={Boolean(view) && renaming}
 										value={nameField.value}
 									/>
 								</div>
+								{view && renameError ? (
+									<Alert className='mt-3' role='alert' status='danger'>
+										<Alert.Indicator />
+										<Alert.Content className='min-w-0'>
+											<Alert.Title>重命名失败</Alert.Title>
+											<Alert.Description className='wrap-anywhere'>{renameError}</Alert.Description>
+										</Alert.Content>
+									</Alert>
+								) : null}
 
 								{view ? null : (
 									<section className='grid gap-2'>
@@ -285,11 +334,15 @@ export function ViewEditorDialog({
 							</Modal.Body>
 
 							<Modal.Footer>
-								<Button onPress={onClose} type='button' variant='ghost'>
+								<Button onPress={closeEditor} type='button' variant='ghost'>
 									取消
 								</Button>
-								<Button isDisabled={!canSubmit || isSubmitting} type='submit'>
-									{submitLabel}
+								<Button
+									isDisabled={!canSubmit || (!view && isSubmitting)}
+									isPending={Boolean(view) && renaming}
+									type='submit'
+								>
+									{view && renameError ? '重试保存' : submitLabel}
 								</Button>
 							</Modal.Footer>
 						</form>

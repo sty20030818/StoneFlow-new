@@ -1,12 +1,20 @@
 //! 首次绑定空云端时：把本机已有实体灌进 Outbox，作为上传基线。
 
-use sea_orm::{ConnectionTrait, DatabaseBackend, Statement};
+use sea_orm::{
+    ConnectionTrait, DatabaseBackend, EntityTrait, QueryOrder, SqliteTransactionMode, Statement,
+    TransactionOptions, TransactionTrait,
+};
 use serde_json::{json, Map, Value};
 use stoneflow_application::operation::{
     OutboxEnqueueRecord, OutboxOpKind, OutboxPayload, SyncEntityKind,
 };
+use stoneflow_application::view::codec::view_sync_fields;
 use stoneflow_domain::now_utc;
-use stoneflow_storage::{database::DatabaseRuntimeState, repositories::OutboxRepository};
+use stoneflow_storage::{
+    database::DatabaseRuntimeState,
+    entities::{prelude::View, view},
+    repositories::{map_view, OutboxRepository},
+};
 use uuid::Uuid;
 
 use crate::app::error::AppError;
@@ -58,26 +66,34 @@ pub async fn reset_origin_binding_for_reseed(
 pub async fn seed_origin_outbox_if_needed(
     database: &DatabaseRuntimeState,
 ) -> Result<usize, AppError> {
-    if has_setting(database, SERVER_SEQ_CURSOR_SCOPE).await? {
-        return Ok(0);
-    }
-    if has_setting(database, ORIGIN_SEED_SCOPE).await? {
+    let connection = database.connection();
+    // 标记检查与全部灌库写入共用写事务，失败不留半批，并发调用不能重复 seed。
+    let transaction = connection
+        .begin_with_options(TransactionOptions {
+            sqlite_transaction_mode: Some(SqliteTransactionMode::Immediate),
+            ..Default::default()
+        })
+        .await?;
+    if has_setting(&transaction, SERVER_SEQ_CURSOR_SCOPE).await?
+        || has_setting(&transaction, ORIGIN_SEED_SCOPE).await?
+    {
+        transaction.commit().await?;
         return Ok(0);
     }
 
-    let connection = database.connection();
     let outbox = OutboxRepository::new(connection.clone());
     let now = now_utc().to_rfc3339();
     let mut seeded = 0usize;
 
     // 顺序：space → project → task → task_link → view（引用依赖）
-    seeded += seed_spaces(connection, &outbox, &now).await?;
-    seeded += seed_projects(connection, &outbox, &now).await?;
-    seeded += seed_tasks(connection, &outbox, &now).await?;
-    seeded += seed_task_links(connection, &outbox, &now).await?;
-    seeded += seed_views(connection, &outbox, &now).await?;
+    seeded += seed_spaces(&transaction, &outbox, &now).await?;
+    seeded += seed_projects(&transaction, &outbox, &now).await?;
+    seeded += seed_tasks(&transaction, &outbox, &now).await?;
+    seeded += seed_task_links(&transaction, &outbox, &now).await?;
+    seeded += seed_views(&transaction, &outbox, &now).await?;
 
-    write_setting(connection, ORIGIN_SEED_SCOPE, &now, &now).await?;
+    write_setting(&transaction, ORIGIN_SEED_SCOPE, &now, &now).await?;
+    transaction.commit().await?;
     if seeded > 0 {
         log::info!("同步:首次灌库 {seeded} 条");
     }
@@ -121,6 +137,7 @@ async fn seed_spaces(
             ),
         ]);
         enqueue(
+            connection,
             outbox,
             SyncEntityKind::Space,
             &id,
@@ -195,6 +212,7 @@ async fn seed_projects(
             ),
         ]);
         enqueue(
+            connection,
             outbox,
             SyncEntityKind::Project,
             &id,
@@ -270,6 +288,7 @@ async fn seed_tasks(
             ),
         ]);
         enqueue(
+            connection,
             outbox,
             SyncEntityKind::Task,
             &id,
@@ -320,7 +339,16 @@ async fn seed_task_links(
                 json!(row.try_get::<String>("", "updated_at")?),
             ),
         ]);
-        enqueue(outbox, SyncEntityKind::TaskLink, &id, 1, fields, now).await?;
+        enqueue(
+            connection,
+            outbox,
+            SyncEntityKind::TaskLink,
+            &id,
+            1,
+            fields,
+            now,
+        )
+        .await?;
         count += 1;
     }
     Ok(count)
@@ -331,58 +359,23 @@ async fn seed_views(
     outbox: &OutboxRepository,
     now: &str,
 ) -> Result<usize, AppError> {
-    let rows = connection
-        .query_all_raw(Statement::from_string(
-            DatabaseBackend::Sqlite,
-            r#"
-            SELECT id, name, entity_kind, scope_json, filters_json, sort_json, group_by_json,
-                   position, generation, created_at, updated_at
-            FROM views
-            ORDER BY position ASC, id ASC
-            "#
-            .to_owned(),
-        ))
+    let rows = View::find()
+        .order_by_asc(view::Column::Position)
+        .order_by_asc(view::Column::Id)
+        .all(connection)
         .await
         .map_err(|error| AppError::database(format!("origin seed 读取 views 失败: {error}")))?;
 
     let mut count = 0;
     for row in rows {
-        let id: String = row.try_get("", "id")?;
-        let scope: String = row.try_get("", "scope_json")?;
-        let filters: String = row.try_get("", "filters_json")?;
-        let sort: String = row.try_get("", "sort_json")?;
-        let group_by: Option<String> = row.try_get("", "group_by_json")?;
-        let fields = map_of([
-            ("name", json!(row.try_get::<String>("", "name")?)),
-            (
-                "entity_kind",
-                json!(row.try_get::<String>("", "entity_kind")?),
-            ),
-            ("scope", parse_json_value(&scope)?),
-            ("filters", parse_json_value(&filters)?),
-            ("sort", parse_json_value(&sort)?),
-            (
-                "group_by",
-                group_by
-                    .map(|raw| parse_json_value(&raw))
-                    .transpose()?
-                    .unwrap_or(Value::Null),
-            ),
-            ("position", json!(row.try_get::<i64>("", "position")?)),
-            (
-                "created_at",
-                json!(row.try_get::<String>("", "created_at")?),
-            ),
-            (
-                "updated_at",
-                json!(row.try_get::<String>("", "updated_at")?),
-            ),
-        ]);
+        let record = map_view(row);
+        let fields = view_sync_fields(&record)?;
         enqueue(
+            connection,
             outbox,
             SyncEntityKind::View,
-            &id,
-            row.try_get("", "generation")?,
+            &record.id,
+            record.generation,
             fields,
             now,
         )
@@ -393,6 +386,7 @@ async fn seed_views(
 }
 
 async fn enqueue(
+    connection: &impl ConnectionTrait,
     outbox: &OutboxRepository,
     entity_type: SyncEntityKind,
     entity_id: &str,
@@ -411,7 +405,7 @@ async fn enqueue(
     let payload = OutboxPayload::Patch { fields };
     outbox
         .enqueue_in_connection(
-            outbox.connection(),
+            connection,
             &OutboxEnqueueRecord {
                 id: Uuid::now_v7().to_string(),
                 operation_id: format!("origin-seed:{kind}:{entity_id}"),
@@ -438,14 +432,8 @@ fn map_of(entries: impl IntoIterator<Item = (&'static str, Value)>) -> Map<Strin
         .collect()
 }
 
-fn parse_json_value(raw: &str) -> Result<Value, AppError> {
-    serde_json::from_str(raw)
-        .map_err(|error| AppError::database(format!("origin seed 解析 JSON 失败: {error}")))
-}
-
-async fn has_setting(database: &DatabaseRuntimeState, scope: &str) -> Result<bool, AppError> {
-    let row = database
-        .connection()
+async fn has_setting(connection: &impl ConnectionTrait, scope: &str) -> Result<bool, AppError> {
+    let row = connection
         .query_one_raw(Statement::from_string(
             DatabaseBackend::Sqlite,
             format!("SELECT cursor FROM sync_cursors WHERE scope = '{scope}'"),
@@ -477,4 +465,92 @@ async fn write_setting(
         .await
         .map_err(|error| AppError::database(format!("写入 setting 失败: {error}")))?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use stoneflow_application::view::{
+        CreateViewInput, FilterQueryValue, TaskScopeInput, TaskScopeKind, TaskViewBaseKey,
+        TaskViewContext,
+    };
+    use stoneflow_storage::adapters::build_view_service;
+    use stoneflow_test_support::TestDatabase;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn failed_origin_seed_rolls_back_and_retries_without_duplicate_outbox() {
+        let database = TestDatabase::bootstrap_in_memory().await.unwrap();
+        let connection = database.connection();
+        let service = build_view_service(connection.clone());
+        let outbox = OutboxRepository::new(connection.clone());
+        let mut view_ids = Vec::new();
+        for name in ["有效视图", "待修复视图"] {
+            let view = service
+                .create_view(CreateViewInput {
+                    name: name.to_owned(),
+                    scope: TaskScopeInput {
+                        kind: TaskScopeKind::All,
+                        space_id: None,
+                    },
+                    context: TaskViewContext::All,
+                    base_view_key: TaskViewBaseKey::Active,
+                    filters: FilterQueryValue::default(),
+                })
+                .await
+                .unwrap();
+            view_ids.push(view.id);
+        }
+        let damaged_id = &view_ids[1];
+        let original = View::find_by_id(damaged_id)
+            .one(connection)
+            .await
+            .unwrap()
+            .unwrap();
+        connection
+            .execute_raw(Statement::from_sql_and_values(
+                DatabaseBackend::Sqlite,
+                "UPDATE views SET filters_json = ? WHERE id = ?",
+                [r#"{"unknown":true}"#.into(), damaged_id.clone().into()],
+            ))
+            .await
+            .unwrap();
+        let pending_before = outbox.list_pending_operations(100).await.unwrap();
+        let count_before = outbox.count_all().await.unwrap();
+
+        for _ in 0..2 {
+            assert!(matches!(
+                seed_origin_outbox_if_needed(&database).await,
+                Err(AppError::Validation(_))
+            ));
+            assert!(!has_setting(connection, ORIGIN_SEED_SCOPE).await.unwrap());
+        }
+        assert_eq!(outbox.count_all().await.unwrap(), count_before);
+        assert_eq!(
+            outbox.list_pending_operations(100).await.unwrap(),
+            pending_before
+        );
+
+        connection
+            .execute_raw(Statement::from_sql_and_values(
+                DatabaseBackend::Sqlite,
+                "UPDATE views SET filters_json = ? WHERE id = ?",
+                [original.filters_json.into(), damaged_id.clone().into()],
+            ))
+            .await
+            .unwrap();
+        let seeded = seed_origin_outbox_if_needed(&database).await.unwrap();
+        assert!(seeded > 0);
+        assert!(has_setting(connection, ORIGIN_SEED_SCOPE).await.unwrap());
+        assert_eq!(
+            outbox.count_all().await.unwrap(),
+            count_before + seeded as u64
+        );
+        let pending_after = outbox.list_pending_operations(100).await.unwrap();
+        assert_eq!(seed_origin_outbox_if_needed(&database).await.unwrap(), 0);
+        assert_eq!(
+            outbox.list_pending_operations(100).await.unwrap(),
+            pending_after
+        );
+    }
 }

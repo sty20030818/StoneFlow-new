@@ -1,7 +1,7 @@
 # view · 保存视图
 
 > 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。  
-> 最后更新：2026-08-22（Default View / Saved View / Filter Draft 硬切）
+> 最后更新：2026-09-13（同步 codec 与重命名、删除失败恢复）
 
 ---
 
@@ -33,6 +33,15 @@ Save
 `FilterQuery`；当前模型无法表达的旧条件显式失败，禁止近似后返回错误结果。
 无效旧定义仍以“需要重建”留在 Library，允许删除但不可编辑或执行；单条坏数据不得拖垮列表。
 
+重命名的提交、错误与重试由 `ViewEditorDialog` 持有，提交只捕获当前名称和 View ID；
+失败保留输入，提交中防重复。关闭、换来源或开启新编辑会话后，旧请求仍完成 mutation
+及缓存失效，但不得关闭新弹窗、覆盖输入或展示旧错误。
+
+删除操作由 Library 与详情共用 `ViewActionsMenu`：请求完成前锁定该记录的操作，
+失败保留记录并在菜单内提供可感知错误和重试。关闭再打开菜单不会重复发起仍在进行的删除，
+旧菜单的迟到结果不打开或关闭新菜单。详情删除成功后的导航属于 scene，且仅在来源仍未切换时执行。
+键盘与浮层焦点沿用 HeroUI / ListView 的集合行为，不另建焦点系统。
+
 跨模块 **只** `import { … } from '@/features/view'`。  
 **禁止** `features/view` → `@/layout/**`。
 
@@ -59,6 +68,7 @@ src/features/view/
 | 类 | 示例 |
 |----|------|
 | 页面 | `ViewsPage`、`SavedViewPage` |
+| 管理交互 | `ViewEditorDialog`、`ViewActionsMenu`（UI Lab 复用生产组件与内存回调） |
 | 数据 | `useViewsQuery`、`createView`、`useCreateViewMutation` |
 | Search | `parseViewSearch`（仅 `f`） |
 

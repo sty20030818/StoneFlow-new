@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from '@tanstack/react-router'
 import { hashKey, useQuery } from '@tanstack/react-query'
 
@@ -69,13 +69,23 @@ export function resolveSavedViewWorkspaceContext(
 	}
 }
 
-function useSavedViewEditor(scope: ReturnType<typeof resolveShellRouteScope>) {
+function useSavedViewEditor(
+	scope: ReturnType<typeof resolveShellRouteScope>,
+	sourceViewId?: string,
+) {
 	const createView = useCreateViewMutation()
 	const updateView = useUpdateViewMutation()
 	const [open, setOpen] = useState(false)
 	const [view, setView] = useState<View | null>(null)
 	const [isSubmitting, setIsSubmitting] = useState(false)
 	const projects = useProjectOptions(scope)
+	const sourceKey = hashKey([scope, sourceViewId])
+	const [editorSourceKey, setEditorSourceKey] = useState(sourceKey)
+	if (sourceKey !== editorSourceKey) {
+		setEditorSourceKey(sourceKey)
+		setOpen(false)
+		setView(null)
+	}
 
 	return {
 		open,
@@ -103,12 +113,7 @@ function useSavedViewEditor(scope: ReturnType<typeof resolveShellRouteScope>) {
 			}
 		},
 		onUpdate: async (input: Parameters<typeof updateView.mutateAsync>[0]) => {
-			setIsSubmitting(true)
-			try {
-				await updateView.mutateAsync(input)
-			} finally {
-				setIsSubmitting(false)
-			}
+			await updateView.mutateAsync(input)
 		},
 	}
 }
@@ -153,6 +158,13 @@ export function useSavedViewWorkspaceScene() {
 	const spaceId = shellRoute.spaceId
 	const navigate = useNavigate({ from: '/' })
 	const { viewId = '' } = useParams({ strict: false }) as { viewId?: string }
+	// 删除可以在用户离开后完成，但成功导航只属于发起删除的详情来源。
+	const deletionSource = useRef(0)
+	useEffect(() => {
+		return () => {
+			deletionSource.current += 1
+		}
+	}, [viewId, spaceId, scope.type])
 	const viewsQuery = useViewsQuery(scope)
 	const views = viewsQuery.data ?? EMPTY_VIEWS
 	const activeView = views.find((view) => view.id === viewId) ?? null
@@ -181,7 +193,7 @@ export function useSavedViewWorkspaceScene() {
 	const createView = useCreateViewMutation()
 	const updateView = useUpdateViewMutation()
 	const deleteView = useDeleteViewMutation()
-	const editor = useSavedViewEditor(scope)
+	const editor = useSavedViewEditor(scope, viewId)
 	const workspaceContext = resolveSavedViewWorkspaceContext(runnableView?.context, scope)
 	const openCreateTask = () => openTaskCreateDialog(workspaceContext.createDraft)
 	useRegisterFilterCommandAdapter({ session: filterSession })
@@ -330,8 +342,11 @@ export function useSavedViewWorkspaceScene() {
 		editor,
 		deleteActiveView: async () => {
 			if (!activeView) return
+			const source = deletionSource.current
 			await deleteView.mutateAsync(activeView.id)
-			void navigate({ to: openView(scope, null, spaceId) as never, search: {} as never })
+			if (source === deletionSource.current) {
+				void navigate({ to: openView(scope, null, spaceId) as never, search: {} as never })
+			}
 		},
 	}
 }

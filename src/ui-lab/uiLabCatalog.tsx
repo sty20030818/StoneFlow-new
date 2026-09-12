@@ -20,6 +20,7 @@ import { TICKET_12_SAMPLES } from './samples/ticket-12/taskCollectionComposition
 import { TICKET_13_SAMPLES } from './samples/ticket-13/shellSettingsDesktopSceneSamples'
 import { TICKET_14_SAMPLES } from './samples/ticket-14/candidateStyleArchitectureSamples'
 import { CREATE_DIALOG_SAMPLES } from './samples/createDialogSamples'
+import { VIEW_MANAGEMENT_SAMPLES } from './samples/viewManagementSamples'
 
 export type UiLabViewId = 'stoneflow' | 'heroui'
 export type UiLabCoverage =
@@ -49,6 +50,7 @@ export type UiLabReviewBatchId =
 	| 'batch-13'
 	| 'batch-14'
 	| 'batch-15'
+	| 'batch-16'
 
 export type UiLabReviewEntry = {
 	sampleId: string
@@ -171,6 +173,7 @@ const UI_LAB_REVIEW_UNITS: readonly UiLabReviewUnitInput[] = [
 	...TICKET_13_SAMPLES,
 	...TICKET_14_SAMPLES,
 	...CREATE_DIALOG_SAMPLES,
+	...VIEW_MANAGEMENT_SAMPLES,
 	{
 		id: 'stoneflow-main-launcher-real-app',
 		name: 'Main / Launcher 原生窗口验收',
@@ -652,6 +655,17 @@ export const UI_LAB_REVIEW_BATCHES: readonly UiLabReviewBatch[] = [
 		objective:
 			'核对任务与项目创建的编辑工作面、Space 归属、日期渐进展示、失败恢复与一次性创建更多。',
 		entries: CREATE_DIALOG_SAMPLES.map(({ id }) => ({
+			sampleId: id,
+			role: 'target' as const,
+			status: 'pending' as const,
+		})),
+	},
+	{
+		id: 'batch-16',
+		label: '第十六批',
+		title: '保存视图管理恢复',
+		objective: '核对重命名和删除的失败恢复、等待、会话隔离与窄窗口长文本可达性。',
+		entries: VIEW_MANAGEMENT_SAMPLES.map(({ id }) => ({
 			sampleId: id,
 			role: 'target' as const,
 			status: 'pending' as const,

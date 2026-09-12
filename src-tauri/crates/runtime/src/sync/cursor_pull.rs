@@ -13,11 +13,17 @@ use std::collections::BTreeMap;
 use std::time::Instant;
 
 use sea_orm::{
-    ConnectionTrait, DatabaseBackend, DatabaseTransaction, SqliteTransactionMode, Statement,
-    TransactionOptions, TransactionTrait,
+    ActiveEnum, ConnectionTrait, DatabaseBackend, DatabaseTransaction, EntityTrait, QueryOrder,
+    SqliteTransactionMode, Statement, TransactionOptions, TransactionTrait,
 };
 use serde_json::{json, Value};
-use stoneflow_storage::database::DatabaseRuntimeState;
+use stoneflow_application::view::codec::{view_record_from_sync_fields, view_sync_fields};
+use stoneflow_storage::{
+    database::DatabaseRuntimeState,
+    entities::{prelude::View, view},
+    mappers::view_entity_kind_to_schema,
+    repositories::map_view,
+};
 use stoneflow_sync::{
     apply_mutation, Baseline, EntityIdentity, EntitySnapshot, LifecycleState, ReplicaEntity,
     SequencedMutation, SyncCloudConfig, SyncEntityKind, SyncError, SyncMutation, Tombstone,
@@ -530,55 +536,20 @@ async fn seed_protocol_views(
     transaction: &DatabaseTransaction,
     base_seq: i64,
 ) -> Result<usize, AppError> {
-    let rows = transaction
-        .query_all_raw(statement(
-            r#"
-            SELECT id, name, entity_kind, scope_json, filters_json, sort_json, group_by_json,
-                   position, generation, created_at, updated_at
-            FROM views
-            ORDER BY position ASC, id ASC
-            "#,
-            vec![],
-        ))
+    let rows = View::find()
+        .order_by_asc(view::Column::Position)
+        .order_by_asc(view::Column::Id)
+        .all(transaction)
         .await?;
     let mut count = 0;
     for row in rows {
-        let id: String = row.try_get("", "id")?;
-        let scope: String = row.try_get("", "scope_json")?;
-        let filters: String = row.try_get("", "filters_json")?;
-        let sort: String = row.try_get("", "sort_json")?;
-        let group_by: Option<String> = row.try_get("", "group_by_json")?;
-        let fields = bmap([
-            ("name", json!(row.try_get::<String>("", "name")?)),
-            (
-                "entity_kind",
-                json!(row.try_get::<String>("", "entity_kind")?),
-            ),
-            ("scope", parse_json_value(&scope)?),
-            ("filters", parse_json_value(&filters)?),
-            ("sort", parse_json_value(&sort)?),
-            (
-                "group_by",
-                group_by
-                    .map(|raw| parse_json_value(&raw))
-                    .transpose()?
-                    .unwrap_or(Value::Null),
-            ),
-            ("position", json!(row.try_get::<i64>("", "position")?)),
-            (
-                "created_at",
-                json!(row.try_get::<String>("", "created_at")?),
-            ),
-            (
-                "updated_at",
-                json!(row.try_get::<String>("", "updated_at")?),
-            ),
-        ]);
+        let record = map_view(row);
+        let fields = view_sync_fields(&record)?.into_iter().collect();
         persist_seeded_snapshot(
             transaction,
             SyncEntityKind::View,
-            &id,
-            row.try_get("", "generation")?,
+            &record.id,
+            record.generation,
             fields,
             LifecycleState::Active,
             base_seq,
@@ -649,11 +620,6 @@ fn bmap(entries: impl IntoIterator<Item = (&'static str, Value)>) -> BTreeMap<St
         .into_iter()
         .map(|(k, v)| (k.to_owned(), v))
         .collect()
-}
-
-fn parse_json_value(raw: &str) -> Result<Value, AppError> {
-    serde_json::from_str(raw)
-        .map_err(|error| AppError::internal(format!("解析 JSON 字段失败: {error}")))
 }
 
 async fn apply_baseline(
@@ -808,6 +774,12 @@ async fn materialize_applied_mutation(
             }
             if snapshot_has_required_business_fields(&snapshot) {
                 return materialize_document(transaction, &snapshot, committed_at).await;
+            }
+            if snapshot.entity.entity_type == SyncEntityKind::View {
+                // 不得把未投影的 View 当作成功并推进 cursor；整页回滚后仍可重放。
+                return Err(AppError::validation(
+                    "View 同步定义不完整，需要完整定义才能恢复",
+                ));
             }
             if business_row_exists(transaction, &snapshot).await? {
                 // 仍不全：只更新 patch 里带的已知列（如 status 完成），绝不阻断整页。
@@ -998,7 +970,6 @@ fn snapshot_has_required_business_fields(snapshot: &EntitySnapshot) -> bool {
                 && has_str("entity_kind")
                 && f.contains_key("scope")
                 && f.contains_key("filters")
-                && f.contains_key("sort")
                 && has_i64("position")
                 && has_str("created_at")
                 && has_str("updated_at")
@@ -1125,8 +1096,12 @@ async fn hydrate_missing_fields_from_business(
             insert_str_if_missing(f, "updated_at", row.try_get("", "updated_at")?);
         }
         SyncEntityKind::View => {
-            // View 字段含 JSON，残缺时局部更新更稳妥；此处不 hydrate。
-            return Ok(false);
+            let Some(row) = View::find_by_id(&id).one(transaction).await? else {
+                return Ok(false);
+            };
+            for (key, value) in view_sync_fields(&map_view(row))? {
+                snapshot.fields.entry(key).or_insert(value);
+            }
         }
     }
     Ok(snapshot.fields.len() > before)
@@ -1271,7 +1246,10 @@ async fn materialize_partial_fields(
                 ))
                 .await?;
         }
-        SyncEntityKind::TaskLink | SyncEntityKind::View => {
+        SyncEntityKind::View => {
+            return Err(AppError::validation("View 不允许残缺定义物化"));
+        }
+        SyncEntityKind::TaskLink => {
             // 结构简单；残缺又无完整文档时跳过，避免写坏行。
             log::warn!(
                 "同步:跳过残缺 {} 局部物化 id={}",
@@ -1545,15 +1523,6 @@ fn nullable_string(
     }
 }
 
-fn json_field(fields: &BTreeMap<String, Value>, key: &str) -> Result<String, AppError> {
-    fields
-        .get(key)
-        .map(serde_json::to_string)
-        .transpose()
-        .map_err(|error| AppError::internal(format!("序列化 字段 {key} 失败: {error}")))?
-        .ok_or_else(|| AppError::internal(format!("entity 缺少 JSON 字段 {key}")))
-}
-
 fn project_values(
     snapshot: &EntitySnapshot,
     archived_at: Option<String>,
@@ -1610,19 +1579,25 @@ fn task_values(
 }
 
 fn view_values(snapshot: &EntitySnapshot) -> Result<Vec<sea_orm::Value>, AppError> {
-    let f = &snapshot.fields;
+    let record = view_record_from_sync_fields(
+        &snapshot.entity.entity_id,
+        snapshot.entity.generation,
+        &snapshot.fields,
+    )?;
     Ok(vec![
-        snapshot.entity.entity_id.clone().into(),
-        required_string(f, "name")?.into(),
-        required_string(f, "entity_kind")?.into(),
-        json_field(f, "scope")?.into(),
-        json_field(f, "filters")?.into(),
-        json_field(f, "sort")?.into(),
-        nullable_string(f, "group_by")?.into(),
-        required_i64(f, "position")?.into(),
-        snapshot.entity.generation.into(),
-        required_string(f, "created_at")?.into(),
-        required_string(f, "updated_at")?.into(),
+        record.id.into(),
+        record.name.into(),
+        view_entity_kind_to_schema(record.entity_kind)
+            .to_value()
+            .into(),
+        record.scope_json.into(),
+        record.filters_json.into(),
+        record.sort_json.into(),
+        record.group_by_json.into(),
+        record.position.into(),
+        record.generation.into(),
+        record.created_at.into(),
+        record.updated_at.into(),
     ])
 }
 
@@ -1632,6 +1607,10 @@ fn to_cloud_config(remote: &RuntimeRemoteConfig, remote_instance_id: &str) -> Sy
         expected_instance_id: Some(remote_instance_id.to_owned()),
     }
 }
+
+#[cfg(test)]
+#[path = "cursor_pull_view_tests.rs"]
+mod view_tests;
 
 #[cfg(test)]
 mod tests {

@@ -129,7 +129,7 @@ function SavedViewLibraryContent({ scene }: { scene: LibraryScene }) {
 					<ListView.ItemAction>
 						<ViewActionsMenu
 							activeView={view}
-							onDelete={(target) => void scene.deleteView(target)}
+							onDelete={scene.deleteView}
 							onEdit={view.definitionError ? undefined : scene.editor.openEdit}
 						/>
 					</ListView.ItemAction>

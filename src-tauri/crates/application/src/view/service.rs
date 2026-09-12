@@ -8,8 +8,11 @@ use crate::{
     },
     task::executor::{decode_task_query_cursor, encode_task_query_cursor},
     view::{
-        filter_query::{parse_filters_json, validate_filter_query, FilterQueryValue},
-        CreateViewPersistenceRecord, TaskScopeInput, TaskScopeKind, TaskViewBaseKey,
+        codec::{
+            decode_record_definition, from_json, to_json, validate_definition, validate_scope,
+            view_sync_fields, StoredTaskViewDefinition, EMPTY_SORT_JSON, NO_GROUP_JSON,
+        },
+        CreateViewPersistenceRecord, FilterQueryValue, TaskScopeInput, TaskViewBaseKey,
         TaskViewContext, UpdateViewPatch, ViewDateBoundaries, ViewProjectLookupRecord, ViewRecord,
         ViewSpaceLookupRecord, ViewTaskPage, ViewTaskQuery,
     },
@@ -17,23 +20,10 @@ use crate::{
 };
 use chrono::{Datelike, Duration, Local, NaiveDate, TimeZone, Utc};
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Map, Value};
 use std::collections::{HashMap, HashSet};
-use stoneflow_domain::{
-    create_id, normalize_required_text, now_utc, validate_project_id, ViewEntityKind, WorkStatus,
-};
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct StoredTaskViewDefinition {
-    base_view_key: TaskViewBaseKey,
-    context: TaskViewContext,
-    filters: FilterQueryValue,
-}
+use stoneflow_domain::{create_id, normalize_required_text, now_utc, ViewEntityKind, WorkStatus};
 
 const DEFAULT_TASK_QUERY_PAGE_SIZE: u32 = 150;
-const EMPTY_SORT_JSON: &str = "[]";
-const NO_GROUP_JSON: &str = "\"none\"";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -275,7 +265,7 @@ where
             OutboxOpKind::Upsert,
             &now,
             OutboxPayload::Patch {
-                fields: view_fields(&record)?,
+                fields: view_sync_fields(&record)?,
             },
         )
         .await?;
@@ -321,7 +311,10 @@ where
             .await?
             .ok_or_else(|| ApplicationError::not_found("View 不存在"))?;
         let payload = OutboxPayload::Patch {
-            fields: changed_outbox_fields(&view_fields(&current)?, &view_fields(&record)?),
+            fields: changed_outbox_fields(
+                &view_sync_fields(&current)?,
+                &view_sync_fields(&record)?,
+            ),
         };
         enqueue(
             &self.persistence,
@@ -535,40 +528,8 @@ fn local_day_start(date: NaiveDate) -> Result<String, ApplicationError> {
     Ok(local.with_timezone(&Utc).to_rfc3339())
 }
 
-fn validate_definition(
-    scope: &TaskScopeInput,
-    context: &TaskViewContext,
-    filters: &FilterQueryValue,
-) -> Result<(), ApplicationError> {
-    validate_scope(scope)?;
-    if let TaskViewContext::Project { project_id } = context {
-        validate_project_id(project_id)?;
-    }
-    validate_filter_query(filters)?;
-    Ok(())
-}
-
-fn validate_scope(scope: &TaskScopeInput) -> Result<(), ApplicationError> {
-    if matches!(scope.kind, TaskScopeKind::Space)
-        && scope.space_id.as_deref().is_none_or(str::is_empty)
-    {
-        return Err(ApplicationError::validation("Space 范围必须提供 spaceId"));
-    }
-    if matches!(scope.kind, TaskScopeKind::All) && scope.space_id.is_some() {
-        return Err(ApplicationError::validation(
-            "全部 Space 范围不能提供 spaceId",
-        ));
-    }
-    Ok(())
-}
-
 fn decode_view(record: ViewRecord) -> Result<ViewDto, ApplicationError> {
-    if record.entity_kind != ViewEntityKind::Task {
-        return Err(ApplicationError::validation("仅支持 Task View"));
-    }
-    let scope = from_json(&record.scope_json)?;
-    let definition = decode_stored_definition(&record.filters_json)?;
-    validate_definition(&scope, &definition.context, &definition.filters)?;
+    let (scope, definition) = decode_record_definition(&record)?;
     Ok(ViewDto {
         id: record.id,
         name: record.name,
@@ -608,42 +569,6 @@ fn decode_view_for_list(
     }
 }
 
-fn decode_stored_definition(value: &str) -> Result<StoredTaskViewDefinition, ApplicationError> {
-    let trimmed = value.trim();
-    if trimmed.is_empty() || trimmed == "null" {
-        return Ok(StoredTaskViewDefinition {
-            base_view_key: TaskViewBaseKey::All,
-            context: TaskViewContext::All,
-            filters: FilterQueryValue::default(),
-        });
-    }
-    let json: Value = serde_json::from_str(trimmed)
-        .map_err(|_| ApplicationError::validation("View filters 定义无效"))?;
-    let is_definition = json.as_object().is_some_and(|object| {
-        object.contains_key("baseViewKey")
-            || object.contains_key("context")
-            || object.contains_key("filters")
-    });
-    if is_definition {
-        return serde_json::from_value(json)
-            .map_err(|_| ApplicationError::validation("Saved View 定义无效"));
-    }
-
-    // 唯一兼容边界：旧 filters_json 仍按原筛选形状读取，随后进入新定义。
-    Ok(StoredTaskViewDefinition {
-        base_view_key: TaskViewBaseKey::All,
-        context: TaskViewContext::All,
-        filters: parse_filters_json(value)?,
-    })
-}
-
-fn to_json<T: Serialize>(value: &T) -> Result<String, ApplicationError> {
-    serde_json::to_string(value)
-        .map_err(|error| ApplicationError::validation(format!("View 定义序列化失败: {error}")))
-}
-fn from_json<T: for<'de> Deserialize<'de>>(value: &str) -> Result<T, ApplicationError> {
-    serde_json::from_str(value).map_err(|_| ApplicationError::validation("View 定义无效"))
-}
 async fn enqueue<P: ViewPersistence>(
     persistence: &P,
     connection: &P::Connection,
@@ -675,44 +600,10 @@ async fn enqueue<P: ViewPersistence>(
         .await
 }
 
-fn view_fields(record: &ViewRecord) -> Result<Map<String, Value>, ApplicationError> {
-    Ok(Map::from_iter([
-        ("name".to_owned(), json!(record.name)),
-        ("entity_kind".to_owned(), json!(record.entity_kind)),
-        (
-            "scope".to_owned(),
-            serde_json::from_str(&record.scope_json)
-                .map_err(|_| ApplicationError::validation("View scope 定义无效"))?,
-        ),
-        (
-            "filters".to_owned(),
-            serde_json::from_str(&record.filters_json)
-                .map_err(|_| ApplicationError::validation("View filters 定义无效"))?,
-        ),
-        (
-            "sort".to_owned(),
-            serde_json::from_str(&record.sort_json)
-                .map_err(|_| ApplicationError::validation("View sort 定义无效"))?,
-        ),
-        (
-            "group_by".to_owned(),
-            record
-                .group_by_json
-                .as_deref()
-                .map(serde_json::from_str)
-                .transpose()
-                .map_err(|_| ApplicationError::validation("View groupBy 定义无效"))?
-                .unwrap_or(Value::Null),
-        ),
-        ("position".to_owned(), json!(record.position)),
-        ("created_at".to_owned(), json!(record.created_at)),
-        ("updated_at".to_owned(), json!(record.updated_at)),
-    ]))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::view::{codec::decode_stored_definition, TaskScopeKind};
     use serde_json::json;
 
     #[test]

@@ -46,7 +46,7 @@ export function SavedViewPage() {
 						</ActionTooltip>
 						<ViewActionsMenu
 							activeView={scene.activeView}
-							onDelete={() => void scene.deleteActiveView()}
+							onDelete={scene.deleteActiveView}
 							onEdit={scene.editor.openEdit}
 						/>
 					</>

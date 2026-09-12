@@ -178,6 +178,7 @@ describe('Saved View pages', () => {
 		fireEvent.click(screen.getByRole('button', { name: '视图操作' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: '删除保存视图' }))
 		expect(scene.deleteActiveView).toHaveBeenCalledOnce()
+		await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument())
 	})
 
 	it('详情缺失时返回保存视图库', () => {
@@ -201,6 +202,7 @@ describe('Saved View pages', () => {
 		expect(screen.queryByRole('menuitem', { name: '编辑保存视图' })).not.toBeInTheDocument()
 		fireEvent.click(await screen.findByRole('menuitem', { name: '删除保存视图' }))
 		expect(scene.deleteView).toHaveBeenCalledWith(invalidView)
+		await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument())
 	})
 
 	it('旧定义损坏的详情页不执行任务工作区', () => {

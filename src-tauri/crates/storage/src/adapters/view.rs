@@ -236,16 +236,142 @@ impl ViewLookupReader for ViewPersistenceAdapter {
 
 #[cfg(test)]
 mod tests {
+    use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter};
+    use serde_json::json;
     use stoneflow_application::{
+        operation::OutboxPayload,
         task::TaskQueryCursor,
         view::{
-            FilterQueryValue, TaskScopeInput, TaskScopeKind, TaskViewBaseKey, TaskViewContext,
-            ViewDateBoundaries, ViewTaskQuery,
+            codec::{EMPTY_SORT_JSON, NO_GROUP_JSON},
+            CreateViewInput, FilterQueryValue, TaskScopeInput, TaskScopeKind, TaskViewBaseKey,
+            TaskViewContext, UpdateViewInput, ViewDateBoundaries, ViewTaskQuery,
         },
     };
     use stoneflow_test_support::TestDatabase;
 
     use super::*;
+    use crate::entities::{outbox, prelude::Outbox, prelude::View};
+
+    async fn single_view_outbox(connection: &DatabaseConnection, id: &str) -> outbox::Model {
+        let entries = Outbox::find()
+            .filter(outbox::Column::EntityId.eq(id))
+            .all(connection)
+            .await
+            .unwrap();
+        assert_eq!(entries.len(), 1);
+        entries.into_iter().next().unwrap()
+    }
+
+    #[tokio::test]
+    async fn view_edits_keep_generation_and_emit_only_changed_fields_after_legacy_repair() {
+        let database = TestDatabase::bootstrap_in_memory().await.unwrap();
+        let connection = database.connection();
+        let service = build_view_service(connection.clone());
+        let outbox = OutboxRepository::new(connection.clone());
+        let created = service.create_view(CreateViewInput {
+            name: "待执行".to_owned(),
+            scope: TaskScopeInput { kind: TaskScopeKind::All, space_id: None },
+            context: TaskViewContext::Standalone,
+            base_view_key: TaskViewBaseKey::Active,
+            filters: serde_json::from_value(json!({"clauses":[{"id":"status-1","field":"status","op":"is","values":["todo"]}]})).unwrap(),
+        }).await.unwrap();
+        let creation = single_view_outbox(connection, &created.id).await;
+        assert_eq!(creation.generation, 1);
+        outbox
+            .acknowledge_operation(&creation.operation_id)
+            .await
+            .unwrap();
+
+        let original = View::find_by_id(&created.id)
+            .one(connection)
+            .await
+            .unwrap()
+            .unwrap();
+        let mut legacy: crate::entities::view::ActiveModel = original.clone().into();
+        legacy.sort_json = Set("obsolete-sort".to_owned());
+        legacy.group_by_json = Set(Some("none".to_owned()));
+        legacy.update(connection).await.unwrap();
+
+        let renamed = service
+            .update_view(UpdateViewInput {
+                view_id: created.id.clone(),
+                name: Some("下一步".to_owned()),
+                scope: None,
+                context: None,
+                base_view_key: None,
+                filters: None,
+            })
+            .await
+            .unwrap();
+        assert_eq!(renamed.name, "下一步");
+        assert_eq!(renamed.filters, created.filters);
+        assert_eq!(renamed.context, created.context);
+        assert_eq!(renamed.base_view_key, created.base_view_key);
+        let rename = single_view_outbox(connection, &created.id).await;
+        assert_eq!(rename.generation, 1);
+        let OutboxPayload::Patch { fields } = serde_json::from_str(&rename.payload_json).unwrap()
+        else {
+            panic!("rename should emit a field patch");
+        };
+        assert_eq!(fields["name"], json!("下一步"));
+        assert!(fields
+            .keys()
+            .all(|key| matches!(key.as_str(), "name" | "updated_at")));
+        outbox
+            .acknowledge_operation(&rename.operation_id)
+            .await
+            .unwrap();
+
+        let updated = service
+            .update_view(UpdateViewInput {
+                view_id: created.id.clone(),
+                name: None,
+                scope: None,
+                context: None,
+                base_view_key: None,
+                filters: Some(FilterQueryValue::default()),
+            })
+            .await
+            .unwrap();
+        assert_eq!(updated.name, renamed.name);
+        assert_eq!(updated.filters, FilterQueryValue::default());
+        let edit = single_view_outbox(connection, &created.id).await;
+        assert_eq!(edit.generation, 1);
+        let OutboxPayload::Patch { fields } = serde_json::from_str(&edit.payload_json).unwrap()
+        else {
+            panic!("filter edit should emit a field patch");
+        };
+        assert_eq!(fields["filters"]["filters"], json!({"clauses":[]}));
+        assert!(fields
+            .keys()
+            .all(|key| matches!(key.as_str(), "filters" | "updated_at")));
+        outbox
+            .acknowledge_operation(&edit.operation_id)
+            .await
+            .unwrap();
+
+        let stored = View::find_by_id(&created.id)
+            .one(connection)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(stored.sort_json, EMPTY_SORT_JSON);
+        assert_eq!(stored.group_by_json.as_deref(), Some(NO_GROUP_JSON));
+        assert_eq!(stored.generation, original.generation);
+        assert_eq!(stored.created_at, original.created_at);
+        service.delete_view(&created.id).await.unwrap();
+        let deletion = single_view_outbox(connection, &created.id).await;
+        assert_eq!(deletion.generation, 2);
+        assert!(matches!(
+            serde_json::from_str::<OutboxPayload>(&deletion.payload_json).unwrap(),
+            OutboxPayload::Tombstone { .. }
+        ));
+        assert!(View::find_by_id(&created.id)
+            .one(connection)
+            .await
+            .unwrap()
+            .is_none());
+    }
 
     #[tokio::test]
     async fn task_query_counts_only_the_first_page_and_supports_count_only() {
