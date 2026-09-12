@@ -74,10 +74,7 @@ function ActionTooltipTrigger({
 
 function ActionTooltipRow({ label, shortcut }: ActionTooltipRowProps) {
 	return (
-		<div
-			className='flex min-h-6 items-center justify-between gap-4 rounded-md px-1.5 py-0.5'
-			data-slot='action-tooltip-row'
-		>
+		<div className='flex items-center justify-between gap-2' data-slot='action-tooltip-row'>
 			<span className='min-w-0 text-pretty'>{label}</span>
 			{shortcut === undefined ? null : (
 				<span className='shrink-0' data-slot='action-tooltip-shortcut'>

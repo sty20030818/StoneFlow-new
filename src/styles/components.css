@@ -724,6 +724,14 @@
 
 	[data-theme="stoneflow-light"] .tooltip {
 		border-radius: var(--radius-control);
+		padding: calc(var(--spacing) * 1.5) calc(var(--spacing) * 2);
+	}
+
+	[data-theme="stoneflow-light"] .tooltip .kbd {
+		height: calc(var(--spacing) * 5);
+		padding-inline: var(--spacing);
+		font-size: 0.75rem;
+		line-height: 1rem;
 	}
 
 	/* Chip 没有 outline variant；只读属性沿用透明 Chip，仅补齐与字段按钮一致的描边。 */

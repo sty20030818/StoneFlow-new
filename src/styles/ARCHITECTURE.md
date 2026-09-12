@@ -109,6 +109,7 @@ HeroUI OSS/Pro 的锁定版本是默认实现，负责组件结构、Hover、Pre
 - 桌面详情 Aside 是经确认的唯一产品动效例外，由 `EntityDetailDrawerHost` 持有：外层 Panel 通过唯一 WAAPI 调用在当前实际宽度与目标实际宽度之间改变 `maxWidth`，使用 `200ms`、`cubic-bezier(0.32, 0.72, 0, 1)` 与 `fill: 'both'`；关闭目标为 `0`。初次打开在微任务中等待子 Panel 注册后测量 Resizable 自然布局，关闭同步启动以供 `useExitAnimation` 等待；开合期间冻结内部内容宽度，打开结束后取消临时效果并把宽度交回 Resizable，关闭则保留零宽度直至卸载。减少动态效果时跳过动画，运行中切换则完成动画；反转和卸载取消旧效果。任务切换和拖拽不重播；入场期间组内指针交互或分隔柄键盘交互开始时同步释放动画与冻结宽度，将尺寸交回 Resizable，不依赖异步 finish 事件。该动画仍会改变列表可用宽度并产生布局成本，但不需要每帧写 React state；窄窗 Sheet 仍使用上游动画。`components.css` 不再定义 Aside 宽度上限或过渡，常态尺寸约束仅由 Resizable 拥有；门禁仅放行宿主这一精确调用，CSS 仍只保留拖拽态 `transition: none` 的既有例外，不派生通用动效工具或 timing token。
 
 - 28/32/36px 工作台控件密度和紧凑集合行；
+- Tooltip 保留 12px 文字与 6px 圆角，外壳统一使用上下 6px、左右 8px 内边距；内容行不重复添加内边距或最小高度，标题与快捷键间距为 8px。Tooltip 内键帽使用 20px 高度、12px 文字和左右 4px 内边距，不影响菜单与快捷键帮助中的键帽；多行内容继续自然换行，禁用原因与标题左对齐。
 - `RadioButtonGroup` 整卡选项使用 Surface 圆角、12px 内边距与 1px 选中边，焦点仍读取统一宽度；指示器预留独立空间。设置开关通过唯一 `SettingsToggleRow` 的稳定 hook 自适应多行高度、移除组内字段阴影，保留 CellSwitch 原生交互。
 - 次级选择的中性表面，避免 Accent 大面积铺色；
 - 页面视图选择继续使用原生 detached `ToggleButtonGroup`；`data-page-toolbar-option` 限定 28px 轻描边与中性选中面，不改变其他 Toggle 的 Accent 语义、键盘交互或动效。

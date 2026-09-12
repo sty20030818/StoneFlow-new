@@ -1092,7 +1092,7 @@ export const TICKET_05_SAMPLES = [
 		source: '@heroui/react@3.2.4',
 		coverage: 'rendered',
 		states: 'Short、Overflow Count、Accent、Warning',
-		verification: 'Lab 可验证；当前没有生产消费者，不提前设计在线状态点',
+		verification: 'Lab 可验证计数锚定；Header 头像角标需真实应用验证',
 		Preview: BadgePreview,
 	},
 	{

@@ -278,4 +278,19 @@ describe('ShellHeader 导航与窗体控件', () => {
 		fireEvent.click(screen.getByRole('button', { name: '关闭窗口' }))
 		expect(windowMock.close).toHaveBeenCalledOnce()
 	})
+
+	it('双击搜索框不会触发窗口最大化，双击中间空白仍可最大化', async () => {
+		Object.defineProperty(window.navigator, 'userAgent', {
+			configurable: true,
+			value: 'Windows NT 10.0',
+		})
+		renderHeader()
+		const input = screen.getByRole('textbox', { name: '全局搜索' })
+		const center = input.closest('[data-slot="shell-header-center"]')!
+		fireEvent.doubleClick(input)
+		expect(windowMock.toggleMaximize).not.toHaveBeenCalled()
+
+		fireEvent.doubleClick(center)
+		await waitFor(() => expect(windowMock.toggleMaximize).toHaveBeenCalledOnce())
+	})
 })

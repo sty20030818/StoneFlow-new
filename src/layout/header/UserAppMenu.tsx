@@ -1,4 +1,4 @@
-import { Avatar, Button, Dropdown, Separator } from '@heroui/react'
+import { Avatar, Badge, Button, Dropdown, Separator } from '@heroui/react'
 
 import {
 	COMMAND_IDS,
@@ -61,6 +61,14 @@ export function UserAppMenu({
 						<Avatar.Image alt='' src='/avatar.jpg' />
 						<Avatar.Fallback>U</Avatar.Fallback>
 					</Avatar>
+					<Badge
+						aria-hidden
+						className='min-h-2.5 min-w-2.5'
+						color='success'
+						placement='bottom-right'
+						size='sm'
+						variant='primary'
+					/>
 				</Button>
 			</ActionTooltip>
 

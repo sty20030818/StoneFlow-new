@@ -38,7 +38,6 @@ import {
 	MinusIcon,
 	PanelLeftCloseIcon,
 	PanelLeftOpenIcon,
-	SquarePenIcon,
 	SquareIcon,
 	XIcon,
 } from 'lucide-react'
@@ -326,16 +325,16 @@ export function ShellHeader({
 					>
 						{!isAtLeastSm && sidebar.isCompact ? sidebarToggleControl : null}
 						<div
-							className='flex min-h-0 min-w-0 flex-1 justify-center'
+							className='flex min-h-0 min-w-0 flex-1 items-center justify-center'
 							data-slot='shell-header-center'
 							data-tauri-drag-region
-							onDoubleClick={() => {
-								if (!isMac) {
+							onDoubleClick={(event) => {
+								if (!isMac && event.target === event.currentTarget) {
 									void handleToggleMaximize()
 								}
 							}}
 						>
-							<div className='mx-auto w-full min-w-0 max-w-120' data-tauri-drag-region>
+							<div className='w-full min-w-0 max-w-100' data-tauri-drag-region>
 								<GlobalSearchInput
 									onOpenProject={handleOpenProjectFromSearch}
 									onOpenTask={handleOpenTaskFromSearch}
@@ -347,23 +346,6 @@ export function ShellHeader({
 							data-slot='shell-header-right'
 							data-tauri-drag-region
 						>
-							{/* 单一创建入口：与 C 键同源 quick task；完整任务/项目走 Command / 侧栏 */}
-							<Tooltip>
-								<Button
-									aria-label='快速新建任务'
-									isIconOnly
-									onPress={() => onRunCommand(COMMAND_IDS.newQuickTask)}
-									size='sm'
-									type='button'
-									variant='outline'
-								>
-									<SquarePenIcon className='size-3.5' />
-								</Button>
-								<Tooltip.Content>
-									<CommandTooltipRow commandId={COMMAND_IDS.newQuickTask} label='快速新建任务' />
-								</Tooltip.Content>
-							</Tooltip>
-
 							<UserAppMenu
 								isSettingsActive={activeSection === 'settings'}
 								onOpenAbout={onOpenAbout}

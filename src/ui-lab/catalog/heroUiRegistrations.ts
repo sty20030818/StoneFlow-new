@@ -321,7 +321,7 @@ const OSS_PRODUCTION_USAGE = [
 	['src/layout/ShellSidebar.tsx', ['Button', 'Dropdown', 'Tooltip']],
 	['src/layout/header/HistoryDropdown.tsx', ['Button', 'Dropdown']],
 	['src/layout/header/NavBackForward.tsx', ['Button', 'Tooltip']],
-	['src/layout/header/UserAppMenu.tsx', ['Avatar', 'Button', 'Dropdown', 'Separator']],
+	['src/layout/header/UserAppMenu.tsx', ['Avatar', 'Badge', 'Button', 'Dropdown', 'Separator']],
 	['src/routes/__root.tsx', ['Button']],
 	['src/routes/_shell/route.tsx', ['Button']],
 	['src/shared/components/AppBreadcrumb.tsx', ['Breadcrumbs']],

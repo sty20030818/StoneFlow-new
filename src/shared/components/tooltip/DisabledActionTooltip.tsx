@@ -34,10 +34,7 @@ function DisabledActionTooltip({
 				<div className='flex flex-col gap-0.5'>
 					<ActionTooltip.Row label={label} shortcut={shortcut} />
 					{reason ? (
-						<span
-							className='px-1.5 pb-1 text-pretty text-muted'
-							data-slot='disabled-action-tooltip-reason'
-						>
+						<span className='text-pretty text-muted' data-slot='disabled-action-tooltip-reason'>
 							{reason}
 						</span>
 					) : null}
