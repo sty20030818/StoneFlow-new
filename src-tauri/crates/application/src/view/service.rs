@@ -12,9 +12,9 @@ use crate::{
             decode_record_definition, from_json, to_json, validate_definition, validate_scope,
             view_sync_fields, StoredTaskViewDefinition, EMPTY_SORT_JSON, NO_GROUP_JSON,
         },
-        CreateViewPersistenceRecord, FilterQueryValue, TaskScopeInput, TaskViewBaseKey,
-        TaskViewContext, UpdateViewPatch, ViewDateBoundaries, ViewProjectLookupRecord, ViewRecord,
-        ViewSpaceLookupRecord, ViewTaskPage, ViewTaskQuery,
+        CreateViewPersistenceRecord, FilterQueryValue, TaskScopeInput, TaskScopeKind,
+        TaskViewBaseKey, TaskViewContext, UpdateViewPatch, ViewDateBoundaries,
+        ViewProjectLookupRecord, ViewRecord, ViewSpaceLookupRecord, ViewTaskPage, ViewTaskQuery,
     },
     ApplicationError,
 };
@@ -38,8 +38,26 @@ pub struct ViewDto {
     pub position: i64,
     pub created_at: String,
     pub updated_at: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub definition_error: Option<String>,
+}
+
+/// Library 的不可用记录只有恢复所需身份，不提供可被误执行的默认查询。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UnavailableViewDto {
+    pub id: String,
+    pub name: String,
+    pub scope: Option<TaskScopeInput>,
+    pub position: i64,
+    pub created_at: String,
+    pub updated_at: String,
+    pub definition_error: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(untagged)]
+pub enum ViewListItemDto {
+    Available(ViewDto),
+    Unavailable(UnavailableViewDto),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -157,6 +175,16 @@ pub trait ViewPersistence: Send + Sync {
     async fn begin(&self) -> Result<Self::Connection, ApplicationError>;
     async fn commit(&self, connection: Self::Connection) -> Result<(), ApplicationError>;
     async fn get(&self, view_id: &str) -> Result<Option<ViewRecord>, ApplicationError>;
+    async fn get_in_connection(
+        &self,
+        connection: &Self::Connection,
+        view_id: &str,
+    ) -> Result<Option<ViewRecord>, ApplicationError>;
+    async fn get_project_in_connection(
+        &self,
+        connection: &Self::Connection,
+        project_id: &str,
+    ) -> Result<Option<ViewProjectLookupRecord>, ApplicationError>;
     async fn list(&self) -> Result<Vec<ViewRecord>, ApplicationError>;
     async fn next_position(&self, connection: &Self::Connection) -> Result<i64, ApplicationError>;
     async fn create(
@@ -218,15 +246,67 @@ where
     pub async fn list_views(
         &self,
         input: ListViewsInput,
-    ) -> Result<Vec<ViewDto>, ApplicationError> {
+    ) -> Result<Vec<ViewListItemDto>, ApplicationError> {
         validate_scope(&input.scope)?;
         let records = self.persistence.list().await?;
         let mut views = Vec::new();
         for record in records {
-            let scope: TaskScopeInput = from_json(&record.scope_json)?;
-            validate_scope(&scope)?;
-            if scope == input.scope {
-                views.push(decode_view_for_list(record, scope)?);
+            let scope = from_json::<TaskScopeInput>(&record.scope_json)
+                .and_then(|scope| {
+                    validate_scope(&scope)?;
+                    Ok(scope)
+                })
+                .ok();
+            let belongs = scope
+                .as_ref()
+                .map_or(input.scope.kind == TaskScopeKind::All, |scope| {
+                    scope == &input.scope
+                });
+            if !belongs {
+                continue;
+            }
+            views.push(match decode_view(record.clone()) {
+                Ok(view) => ViewListItemDto::Available(view),
+                Err(error) => unavailable_view(record, scope, error),
+            });
+        }
+        let project_ids: Vec<_> = views
+            .iter()
+            .filter_map(|item| match item {
+                ViewListItemDto::Available(ViewDto {
+                    context: TaskViewContext::Project { project_id },
+                    ..
+                }) => Some(project_id.clone()),
+                _ => None,
+            })
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .collect();
+        // I/O 失败仍使本次读取失败；只有读到的业务事实可将单条定义标为不可用。
+        let projects: HashMap<_, _> = self
+            .lookup_reader
+            .list_projects_by_ids(&project_ids)
+            .await?
+            .into_iter()
+            .map(|project| (project.id.clone(), project))
+            .collect();
+        for item in &mut views {
+            if let ViewListItemDto::Available(view) = item {
+                if let TaskViewContext::Project { project_id } = &view.context {
+                    if let Err(error) =
+                        validate_project_boundary(&view.scope, projects.get(project_id))
+                    {
+                        *item = ViewListItemDto::Unavailable(UnavailableViewDto {
+                            id: view.id.clone(),
+                            name: view.name.clone(),
+                            scope: Some(view.scope.clone()),
+                            position: view.position,
+                            created_at: view.created_at.clone(),
+                            updated_at: view.updated_at.clone(),
+                            definition_error: error.to_string(),
+                        });
+                    }
+                }
             }
         }
         Ok(views)
@@ -240,6 +320,8 @@ where
         };
         let now = now_utc().to_rfc3339();
         let connection = self.persistence.begin().await?;
+        self.validate_project_in_connection(&connection, &input.scope, &definition.context)
+            .await?;
         let record = self
             .persistence
             .create(
@@ -273,12 +355,15 @@ where
         decode_view(record)
     }
     pub async fn update_view(&self, input: UpdateViewInput) -> Result<ViewDto, ApplicationError> {
+        let connection = self.persistence.begin().await?;
         let current = self
             .persistence
-            .get(&input.view_id)
+            .get_in_connection(&connection, &input.view_id)
             .await?
             .ok_or_else(|| ApplicationError::not_found("View 不存在"))?;
         let current_dto = decode_view(current.clone())?;
+        self.validate_project_in_connection(&connection, &current_dto.scope, &current_dto.context)
+            .await?;
         let scope = input.scope.unwrap_or(current_dto.scope);
         let definition = StoredTaskViewDefinition {
             base_view_key: input.base_view_key.unwrap_or(current_dto.base_view_key),
@@ -287,7 +372,8 @@ where
         };
         validate_definition(&scope, &definition.context, &definition.filters)?;
         let now = now_utc().to_rfc3339();
-        let connection = self.persistence.begin().await?;
+        self.validate_project_in_connection(&connection, &scope, &definition.context)
+            .await?;
         // sort/group 已退出产品契约；旧列只写空值，Saved View 定义统一进 filters_json。
         let record = self
             .persistence
@@ -329,13 +415,13 @@ where
         decode_view(record)
     }
     pub async fn delete_view(&self, view_id: &str) -> Result<(), ApplicationError> {
+        let connection = self.persistence.begin().await?;
         let current = self
             .persistence
-            .get(view_id)
+            .get_in_connection(&connection, view_id)
             .await?
             .ok_or_else(|| ApplicationError::not_found("View 不存在"))?;
         let now = now_utc().to_rfc3339();
-        let connection = self.persistence.begin().await?;
         if self.persistence.delete(&connection, view_id).await? == 0 {
             return Err(ApplicationError::not_found("View 不存在"));
         }
@@ -366,6 +452,7 @@ where
         if view.scope != input.scope {
             return Err(ApplicationError::validation("View 不属于当前 Scope"));
         }
+        self.validate_project(&view.scope, &view.context).await?;
 
         let filter_query = input.filters.unwrap_or_else(|| view.filters.clone());
         let result = self
@@ -383,6 +470,40 @@ where
             total_count: result.total_count,
             next_cursor: result.next_cursor,
         })
+    }
+
+    async fn validate_project_in_connection(
+        &self,
+        connection: &P::Connection,
+        scope: &TaskScopeInput,
+        context: &TaskViewContext,
+    ) -> Result<(), ApplicationError> {
+        if let TaskViewContext::Project { project_id } = context {
+            let project = self
+                .persistence
+                .get_project_in_connection(connection, project_id)
+                .await?;
+            validate_project_boundary(scope, project.as_ref())?;
+        }
+        Ok(())
+    }
+
+    async fn validate_project(
+        &self,
+        scope: &TaskScopeInput,
+        context: &TaskViewContext,
+    ) -> Result<(), ApplicationError> {
+        if let TaskViewContext::Project { project_id } = context {
+            let projects = self
+                .lookup_reader
+                .list_projects_by_ids(std::slice::from_ref(project_id))
+                .await?;
+            validate_project_boundary(
+                scope,
+                projects.iter().find(|project| &project.id == project_id),
+            )?;
+        }
+        Ok(())
     }
 
     /// 执行 Task 查询。Default View 直接调用；Saved View 加载定义后委托到这里。
@@ -540,33 +661,45 @@ fn decode_view(record: ViewRecord) -> Result<ViewDto, ApplicationError> {
         position: record.position,
         created_at: record.created_at,
         updated_at: record.updated_at,
-        definition_error: None,
     })
 }
 
 /// Library 必须隔离单行旧定义错误，让用户仍可删除并重建该 Saved View。
-fn decode_view_for_list(
+fn unavailable_view(
     record: ViewRecord,
-    scope: TaskScopeInput,
-) -> Result<ViewDto, ApplicationError> {
-    if record.entity_kind != ViewEntityKind::Task {
-        return Err(ApplicationError::validation("仅支持 Task View"));
+    scope: Option<TaskScopeInput>,
+    error: ApplicationError,
+) -> ViewListItemDto {
+    ViewListItemDto::Unavailable(UnavailableViewDto {
+        id: record.id,
+        name: record.name,
+        scope,
+        position: record.position,
+        created_at: record.created_at,
+        updated_at: record.updated_at,
+        definition_error: error.to_string(),
+    })
+}
+
+fn validate_project_boundary(
+    scope: &TaskScopeInput,
+    project: Option<&ViewProjectLookupRecord>,
+) -> Result<(), ApplicationError> {
+    let project =
+        project.ok_or_else(|| ApplicationError::validation("项目不存在，需要重新保存视图"))?;
+    if project.archived_at.is_some() || project.deleted_at.is_some() {
+        return Err(ApplicationError::validation(
+            "项目已归档或在回收站中，请恢复项目后重试",
+        ));
     }
-    match decode_view(record.clone()) {
-        Ok(view) => Ok(view),
-        Err(error) => Ok(ViewDto {
-            id: record.id,
-            name: record.name,
-            scope,
-            context: TaskViewContext::All,
-            base_view_key: TaskViewBaseKey::All,
-            filters: FilterQueryValue::default(),
-            position: record.position,
-            created_at: record.created_at,
-            updated_at: record.updated_at,
-            definition_error: Some(error.to_string()),
-        }),
+    if scope.kind == TaskScopeKind::Space
+        && scope.space_id.as_deref() != Some(project.space_id.as_str())
+    {
+        return Err(ApplicationError::validation(
+            "项目范围已变化，需要重新保存视图",
+        ));
     }
+    Ok(())
 }
 
 async fn enqueue<P: ViewPersistence>(
@@ -585,12 +718,14 @@ async fn enqueue<P: ViewPersistence>(
                 operation_id: create_id().to_string(),
                 entity_type: SyncEntityKind::View,
                 entity_id: record.id.clone(),
-                generation: record.generation
-                    + if matches!(operation_type, OutboxOpKind::Delete) {
-                        1
-                    } else {
-                        0
-                    },
+                generation: if matches!(operation_type, OutboxOpKind::Delete) {
+                    record
+                        .generation
+                        .checked_add(1)
+                        .ok_or_else(|| ApplicationError::validation("View 代际已超出可删除范围"))?
+                } else {
+                    record.generation
+                },
                 operation_type,
                 payload_json: payload.to_json()?,
                 created_at: now.to_owned(),
@@ -603,7 +738,7 @@ async fn enqueue<P: ViewPersistence>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::view::{codec::decode_stored_definition, TaskScopeKind};
+    use crate::view::codec::decode_stored_definition;
     use serde_json::json;
 
     #[test]
@@ -660,33 +795,5 @@ mod tests {
         let missing_context = r#"{"baseViewKey":"all","filters":{"clauses":[]}}"#;
 
         assert!(decode_stored_definition(missing_context).is_err());
-    }
-
-    #[test]
-    fn invalid_legacy_definition_should_remain_listable_for_cleanup() {
-        let scope = TaskScopeInput {
-            kind: TaskScopeKind::All,
-            space_id: None,
-        };
-        let view = decode_view_for_list(
-            ViewRecord {
-                id: "legacy".to_owned(),
-                name: "旧视图".to_owned(),
-                entity_kind: ViewEntityKind::Task,
-                scope_json: to_json(&scope).unwrap(),
-                filters_json: r#"{"due":{"mode":"between","from":null,"to":null}}"#.to_owned(),
-                sort_json: "[]".to_owned(),
-                group_by_json: None,
-                position: 1,
-                generation: 1,
-                created_at: "2026-08-22T00:00:00Z".to_owned(),
-                updated_at: "2026-08-22T00:00:00Z".to_owned(),
-            },
-            scope,
-        )
-        .unwrap();
-
-        assert_eq!(view.id, "legacy");
-        assert!(view.definition_error.is_some());
     }
 }

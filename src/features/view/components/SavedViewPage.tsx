@@ -73,11 +73,29 @@ export function SavedViewPage() {
 
 type WorkspaceScene = ReturnType<typeof useSavedViewWorkspaceScene>
 
-function SavedViewPageState({ scene }: { scene: WorkspaceScene }) {
+type PageStateScene = Pick<
+	WorkspaceScene,
+	| 'viewStatus'
+	| 'activeView'
+	| 'breadcrumbItems'
+	| 'deleteActiveView'
+	| 'openLibrary'
+	| 'reloadViews'
+	| 'isReloading'
+>
+
+export function SavedViewPageState({ scene }: { scene: PageStateScene }) {
 	const invalidDefinition = scene.viewStatus === 'invalid-definition'
 	return (
 		<PageFrame.Root>
-			<PageFrame.Header breadcrumb={<AppBreadcrumb items={scene.breadcrumbItems} />} />
+			<PageFrame.Header
+				breadcrumb={<AppBreadcrumb items={scene.breadcrumbItems} />}
+				actions={
+					invalidDefinition && scene.activeView ? (
+						<ViewActionsMenu activeView={scene.activeView} onDelete={scene.deleteActiveView} />
+					) : undefined
+				}
+			/>
 			<PageFrame.Body>
 				{scene.viewStatus === 'loading' ? (
 					<div
@@ -87,7 +105,10 @@ function SavedViewPageState({ scene }: { scene: WorkspaceScene }) {
 						role='region'
 					/>
 				) : (
-					<EmptyState className='mx-auto my-auto max-w-md'>
+					<EmptyState
+						className='mx-auto my-auto max-w-md'
+						role={scene.viewStatus === 'error' ? 'alert' : undefined}
+					>
 						<EmptyState.Header>
 							{scene.viewStatus === 'error' || invalidDefinition ? (
 								<AlertCircleIcon />
@@ -98,18 +119,18 @@ function SavedViewPageState({ scene }: { scene: WorkspaceScene }) {
 								{scene.viewStatus === 'error'
 									? '读取保存视图失败'
 									: invalidDefinition
-										? '保存视图需要重建'
+										? '保存视图暂不可用'
 										: '找不到保存视图'}
 							</EmptyState.Title>
-							<EmptyState.Description>
+							<EmptyState.Description className='wrap-anywhere'>
 								{scene.viewStatus === 'error'
 									? '保存视图暂时无法读取，请稍后重试。'
 									: invalidDefinition
-										? '这个旧视图的筛选条件无法无损升级，请返回视图库删除后重新创建。'
+										? scene.activeView?.definitionError
 										: '它可能已被删除，或不属于当前范围。'}
 							</EmptyState.Description>
 						</EmptyState.Header>
-						<EmptyState.Content>
+						<EmptyState.Content className='flex flex-wrap justify-center gap-2'>
 							<ActionTooltip label='返回保存视图'>
 								<Button
 									aria-label='返回保存视图'
@@ -122,6 +143,16 @@ function SavedViewPageState({ scene }: { scene: WorkspaceScene }) {
 									<ArrowLeftIcon aria-hidden='true' className='size-4' />
 								</Button>
 							</ActionTooltip>
+							{scene.viewStatus === 'error' || invalidDefinition ? (
+								<Button
+									isPending={scene.isReloading}
+									onPress={scene.reloadViews}
+									size='sm'
+									variant='outline'
+								>
+									重试读取
+								</Button>
+							) : null}
 						</EmptyState.Content>
 					</EmptyState>
 				)}

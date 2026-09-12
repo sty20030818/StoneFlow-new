@@ -53,12 +53,20 @@ impl ViewRepository {
     }
 
     pub async fn get(&self, view_id: &str) -> Result<Option<view::Model>, StorageError> {
-        let mut record = View::find_by_id(view_id).one(&self.db).await?;
+        self.get_in_connection(&self.db, view_id).await
+    }
+
+    pub async fn get_in_connection<C: ConnectionTrait>(
+        &self,
+        connection: &C,
+        view_id: &str,
+    ) -> Result<Option<view::Model>, StorageError> {
+        let mut record = View::find_by_id(view_id).one(connection).await?;
         if let Some(record) = record.as_mut() {
             if record.entity_kind == StorageViewEntityKind::Task
                 && record.group_by_json.as_deref() == Some("none")
             {
-                repair_legacy_group_by(&self.db, Some(view_id)).await?;
+                repair_legacy_group_by(connection, Some(view_id)).await?;
                 record.group_by_json = Some(NO_GROUP_JSON.to_owned());
             }
         }

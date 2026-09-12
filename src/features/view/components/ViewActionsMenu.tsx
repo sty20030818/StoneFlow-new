@@ -1,15 +1,15 @@
 import { Alert, Button, Dropdown } from '@heroui/react'
 import { EllipsisIcon, PencilIcon, Trash2Icon } from 'lucide-react'
-import { useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 
 import { ActionTooltip } from '@/shared/components/tooltip'
 import { normalizeSubmitError } from '@/shared/form'
-import type { View } from '@/shared/types'
+import type { View, ViewListItem } from '@/shared/types'
 
 type ViewActionsMenuProps = {
-	activeView: View
+	activeView: ViewListItem
 	onEdit?: (view: View) => void
-	onDelete: (view: View) => Promise<void>
+	onDelete: (view: ViewListItem) => Promise<void>
 }
 
 export function ViewActionsMenu({ activeView, onEdit, onDelete }: ViewActionsMenuProps) {
@@ -18,6 +18,7 @@ export function ViewActionsMenu({ activeView, onEdit, onDelete }: ViewActionsMen
 	const [error, setError] = useState<string | null>(null)
 	const request = useRef<symbol | null>(null)
 	const menuSession = useRef(0)
+	const triggerRef = useRef<HTMLButtonElement>(null)
 	const errorId = useId()
 	const [viewId, setViewId] = useState(activeView.id)
 	if (viewId !== activeView.id) {
@@ -34,11 +35,30 @@ export function ViewActionsMenu({ activeView, onEdit, onDelete }: ViewActionsMen
 		}
 	}, [activeView.id])
 
-	function changeOpen(nextOpen: boolean) {
+	const changeOpen = useCallback((nextOpen: boolean) => {
 		menuSession.current += 1
 		setOpen(nextOpen)
 		if (!nextOpen) setError(null)
-	}
+	}, [])
+
+	useEffect(() => {
+		if (!open) return
+		// 缩窗可能把来源行移出视口；菜单不能继续锚定不可见的按钮。
+		const closeIfTriggerHidden = () => {
+			const rect = triggerRef.current?.getBoundingClientRect()
+			if (
+				rect &&
+				(rect.bottom <= 0 ||
+					rect.top >= window.innerHeight ||
+					rect.right <= 0 ||
+					rect.left >= window.innerWidth)
+			) {
+				changeOpen(false)
+			}
+		}
+		window.addEventListener('resize', closeIfTriggerHidden)
+		return () => window.removeEventListener('resize', closeIfTriggerHidden)
+	}, [open, changeOpen])
 
 	async function removeView() {
 		if (request.current) return
@@ -65,7 +85,14 @@ export function ViewActionsMenu({ activeView, onEdit, onDelete }: ViewActionsMen
 	return (
 		<Dropdown isOpen={open} onOpenChange={changeOpen}>
 			<ActionTooltip label='视图操作'>
-				<Button aria-label='视图操作' isIconOnly size='sm' type='button' variant='outline'>
+				<Button
+					ref={triggerRef}
+					aria-label='视图操作'
+					isIconOnly
+					size='sm'
+					type='button'
+					variant='outline'
+				>
 					<EllipsisIcon className='size-4' />
 				</Button>
 			</ActionTooltip>
@@ -75,7 +102,7 @@ export function ViewActionsMenu({ activeView, onEdit, onDelete }: ViewActionsMen
 					aria-label='视图操作'
 					shouldCloseOnSelect={false}
 				>
-					{onEdit ? (
+					{onEdit && activeView.definitionError == null ? (
 						<Dropdown.Item
 							id='edit-view'
 							isDisabled={deleting}

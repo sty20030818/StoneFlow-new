@@ -99,6 +99,9 @@ pub struct ViewSpaceLookupRecord {
 pub struct ViewProjectLookupRecord {
     pub id: String,
     pub name: String,
+    pub space_id: String,
+    pub archived_at: Option<String>,
+    pub deleted_at: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

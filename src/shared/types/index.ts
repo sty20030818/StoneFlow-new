@@ -36,7 +36,9 @@ export type {
 	TaskViewBaseKey,
 	TaskViewContext,
 	UpdateViewInput,
+	UnavailableView,
 	View,
+	ViewListItem,
 } from './view'
 export type {
 	FilterClause,

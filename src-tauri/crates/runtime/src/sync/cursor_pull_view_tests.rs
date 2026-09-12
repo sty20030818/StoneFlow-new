@@ -5,7 +5,7 @@ use stoneflow_application::{
     operation::OutboxPayload,
     view::{
         CreateViewInput, FilterQueryValue, ListViewsInput, TaskScopeInput, TaskScopeKind,
-        TaskViewBaseKey, TaskViewContext, UpdateViewInput,
+        TaskViewBaseKey, TaskViewContext, UpdateViewInput, ViewListItemDto,
     },
 };
 use stoneflow_storage::{adapters::build_view_service, repositories::OutboxRepository};
@@ -121,6 +121,419 @@ async fn stored_view(database: &TestDatabase, id: &str) -> sea_orm::QueryResult 
         .unwrap()
 }
 
+const OTHER_SPACE_ID: &str = "01999000-0000-7000-8000-000000000001";
+
+async fn mixed_view_page(database: &TestDatabase) -> Vec<SequencedMutation> {
+    create_view(database).await;
+    let initial = changes(database, 1).await.remove(0);
+    (0..4)
+        .map(|index| {
+            let mut change = initial.clone();
+            change.server_seq = index + 1;
+            let SyncMutation::Patch { patch } = &mut change.mutation else {
+                panic!("创建 View 应生成完整 patch");
+            };
+            patch.entity.entity_id = stoneflow_domain::create_id().to_string();
+            patch.fields.insert("position".into(), json!(index * 1000));
+            if index == 1 || index == 3 {
+                patch.fields.insert(
+                    "scope".into(),
+                    json!({"type": "space", "spaceId": OTHER_SPACE_ID}),
+                );
+            }
+            if index == 2 {
+                patch.fields.insert(
+                    "scope".into(),
+                    json!({"type": "future-scope", "spaceId": OTHER_SPACE_ID}),
+                );
+            }
+            if index == 3 {
+                patch.fields.insert(
+                    "filters".into(),
+                    json!({"planned": {"mode": "between", "from": null, "to": null}}),
+                );
+            }
+            change
+        })
+        .collect()
+}
+
+fn baseline_from_page(page: &[SequencedMutation]) -> Baseline {
+    Baseline {
+        cursor: SyncCursor {
+            server_seq: page.last().unwrap().server_seq,
+        },
+        entities: page
+            .iter()
+            .map(|change| {
+                let mut replica = ReplicaEntity::default();
+                apply_mutation(&mut replica, &change.mutation, change.server_seq);
+                replica.snapshot.unwrap()
+            })
+            .collect(),
+        tombstones: vec![],
+    }
+}
+
+#[tokio::test]
+async fn mixed_view_download_retains_invalid_definitions_and_lists_each_scope_independently() {
+    let source = TestDatabase::bootstrap_in_memory().await.unwrap();
+    let page = mixed_view_page(&source).await;
+    for baseline in [false, true] {
+        let database = TestDatabase::bootstrap_in_memory().await.unwrap();
+        if baseline {
+            apply_baseline(&database, "test-remote", baseline_from_page(&page))
+                .await
+                .unwrap();
+        } else {
+            apply_page(&database, "test-remote", &page, 4)
+                .await
+                .unwrap();
+        }
+
+        for change in &page {
+            let SyncMutation::Patch { patch } = &change.mutation else {
+                unreachable!();
+            };
+            let row = stored_view(&database, &patch.entity.entity_id).await;
+            for (field, column) in [("scope", "scope_json"), ("filters", "filters_json")] {
+                let raw = row.try_get::<String>("", column).unwrap();
+                assert_eq!(
+                    serde_json::from_str::<Value>(&raw).unwrap(),
+                    patch.fields[field]
+                );
+            }
+            let transaction = database.connection().begin().await.unwrap();
+            let replica = load_replica(&transaction, &patch.entity).await.unwrap();
+            assert_eq!(replica.snapshot.unwrap().fields, patch.fields);
+            transaction.rollback().await.unwrap();
+        }
+        assert_eq!(read_cursor(&database).await.unwrap(), Some(4));
+
+        let service = build_view_service(database.connection().clone());
+        let all = serde_json::to_value(
+            service
+                .list_views(ListViewsInput { scope: scope() })
+                .await
+                .unwrap(),
+        )
+        .unwrap();
+        let all = all.as_array().unwrap();
+        assert_eq!(all.len(), 2);
+        assert_eq!(all[0]["id"], page[0].mutation.entity().entity_id);
+        assert_eq!(all[0]["filters"], json!(filters("todo")));
+        assert_eq!(all[1]["id"], page[2].mutation.entity().entity_id);
+        assert!(all[1]["scope"].is_null());
+        assert!(!all[1]["definitionError"].is_null());
+        assert!(all[1].get("filters").is_none());
+
+        let space = serde_json::to_value(
+            service
+                .list_views(ListViewsInput {
+                    scope: TaskScopeInput {
+                        kind: TaskScopeKind::Space,
+                        space_id: Some(OTHER_SPACE_ID.into()),
+                    },
+                })
+                .await
+                .unwrap(),
+        )
+        .unwrap();
+        let space = space.as_array().unwrap();
+        assert_eq!(space.len(), 2);
+        assert_eq!(space[0]["id"], page[1].mutation.entity().entity_id);
+        assert_eq!(space[0]["filters"], json!(filters("todo")));
+        assert_eq!(space[1]["id"], page[3].mutation.entity().entity_id);
+        assert_eq!(space[1]["scope"]["spaceId"], OTHER_SPACE_ID);
+        assert!(!space[1]["definitionError"].is_null());
+        assert!(space[1].get("filters").is_none());
+    }
+}
+
+#[tokio::test]
+async fn retained_invalid_views_accept_later_patches_and_delete_through_real_outbox() {
+    let source = TestDatabase::bootstrap_in_memory().await.unwrap();
+    let page = mixed_view_page(&source).await;
+    for protocol in ["warm", "cold-seed", "cold-delta"] {
+        let database = TestDatabase::bootstrap_in_memory().await.unwrap();
+        let replica = TestDatabase::bootstrap_in_memory().await.unwrap();
+        apply_page(&database, "test-remote", &page, 4)
+            .await
+            .unwrap();
+        apply_page(&replica, "test-remote", &page, 4).await.unwrap();
+        if protocol != "warm" {
+            database
+                .connection()
+                .execute_raw(statement("DELETE FROM sync_protocol_entities", vec![]))
+                .await
+                .unwrap();
+        }
+        if protocol == "cold-seed" {
+            warm_local_protocol_if_needed(&database).await.unwrap();
+        }
+        let damaged_id = &page[2].mutation.entity().entity_id;
+        let changed = SequencedMutation {
+            server_seq: 5,
+            committed_at: "2026-09-13T00:00:00Z".into(),
+            mutation: SyncMutation::Patch {
+                patch: EntityPatch {
+                    entity: page[2].mutation.entity().clone(),
+                    fields: BTreeMap::from([("name".into(), json!("仍可识别的坏视图"))]),
+                },
+            },
+        };
+        apply_page(&database, "test-remote", &[changed], 5)
+            .await
+            .unwrap();
+        let row = stored_view(&database, damaged_id).await;
+        assert_eq!(
+            row.try_get::<String>("", "name").unwrap(),
+            "仍可识别的坏视图"
+        );
+        let SyncMutation::Patch { patch } = &page[2].mutation else {
+            unreachable!()
+        };
+        assert_eq!(
+            serde_json::from_str::<Value>(&row.try_get::<String>("", "scope_json").unwrap())
+                .unwrap(),
+            patch.fields["scope"],
+        );
+
+        let service = build_view_service(database.connection().clone());
+        for index in [2, 3] {
+            service
+                .delete_view(&page[index].mutation.entity().entity_id)
+                .await
+                .unwrap();
+        }
+        let deletions = changes(&database, 6).await;
+        assert_eq!(deletions.len(), 2);
+        apply_page(&replica, "test-remote", &deletions, 7)
+            .await
+            .unwrap();
+        apply_page(&replica, "test-remote", &deletions, 7)
+            .await
+            .unwrap();
+        for (index, original) in page[2..].iter().enumerate() {
+            let mut stale = original.clone();
+            stale.server_seq = 8 + index as i64;
+            apply_page(&replica, "test-remote", &[stale], 8 + index as i64)
+                .await
+                .unwrap();
+            assert!(View::find_by_id(&original.mutation.entity().entity_id)
+                .one(replica.connection())
+                .await
+                .unwrap()
+                .is_none());
+            let transaction = replica.connection().begin().await.unwrap();
+            let deleted = load_replica(&transaction, original.mutation.entity())
+                .await
+                .unwrap();
+            assert!(deleted.snapshot.is_none());
+            assert_eq!(deleted.tombstone.unwrap().entity.generation, 2);
+            transaction.rollback().await.unwrap();
+        }
+        assert_eq!(read_cursor(&replica).await.unwrap(), Some(9));
+    }
+}
+
+#[tokio::test]
+async fn malformed_local_view_text_survives_origin_seed_and_protocol_warmup() {
+    let database = TestDatabase::bootstrap_in_memory().await.unwrap();
+    let id = create_view(&database).await;
+    database
+        .connection()
+        .execute_raw(statement(
+            "UPDATE views SET scope_json = ?, filters_json = ? WHERE id = ?",
+            vec![
+                "scope without json".into(),
+                "{broken filters".into(),
+                id.clone().into(),
+            ],
+        ))
+        .await
+        .unwrap();
+    let before = stored_view(&database, &id).await;
+    let seeded = crate::sync::origin_seed::seed_origin_outbox_if_needed(&database)
+        .await
+        .unwrap();
+    assert!(seeded > 0);
+    let operations = OutboxRepository::new(database.connection().clone())
+        .list_pending_operations(100)
+        .await
+        .unwrap();
+    let entry = operations
+        .iter()
+        .find(|operation| operation.operation_id == format!("origin-seed:view:{id}"))
+        .unwrap()
+        .entries
+        .first()
+        .unwrap();
+    let OutboxPayload::Patch { fields } = serde_json::from_str(&entry.payload_json).unwrap() else {
+        panic!("origin seed 必须保留完整字段");
+    };
+    assert_eq!(fields["scope"], json!("scope without json"));
+    assert_eq!(fields["filters"], json!("{broken filters"));
+    warm_local_protocol_if_needed(&database).await.unwrap();
+    let transaction = database.connection().begin().await.unwrap();
+    let replica = load_replica(
+        &transaction,
+        &EntityIdentity {
+            entity_type: SyncEntityKind::View,
+            entity_id: id.clone(),
+            generation: 1,
+        },
+    )
+    .await
+    .unwrap();
+    assert_eq!(
+        replica.snapshot.as_ref().unwrap().fields,
+        fields.into_iter().collect()
+    );
+    transaction.rollback().await.unwrap();
+    let after = stored_view(&database, &id).await;
+    for column in ["scope_json", "filters_json", "created_at", "updated_at"] {
+        assert_eq!(
+            before.try_get::<String>("", column).unwrap(),
+            after.try_get::<String>("", column).unwrap()
+        );
+    }
+    let fresh = TestDatabase::bootstrap_in_memory().await.unwrap();
+    restore(&fresh, &replica, 1).await;
+    let unavailable = serde_json::to_value(
+        build_view_service(fresh.connection().clone())
+            .list_views(ListViewsInput { scope: scope() })
+            .await
+            .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(unavailable[0]["id"], id);
+    assert!(unavailable[0]["scope"].is_null());
+    assert!(!unavailable[0]["definitionError"].is_null());
+    assert!(unavailable[0].get("filters").is_none());
+    let stored = stored_view(&fresh, &id).await;
+    assert_eq!(
+        serde_json::from_str::<Value>(&stored.try_get::<String>("", "scope_json").unwrap())
+            .unwrap(),
+        json!("scope without json")
+    );
+    assert_eq!(
+        serde_json::from_str::<Value>(&stored.try_get::<String>("", "filters_json").unwrap())
+            .unwrap(),
+        json!("{broken filters")
+    );
+    build_view_service(fresh.connection().clone())
+        .delete_view(&id)
+        .await
+        .unwrap();
+    assert!(View::find_by_id(&id)
+        .one(fresh.connection())
+        .await
+        .unwrap()
+        .is_none());
+}
+
+#[tokio::test]
+async fn unrecoverable_view_or_storage_failure_rolls_back_page_and_baseline() {
+    let source = TestDatabase::bootstrap_in_memory().await.unwrap();
+    let page = mixed_view_page(&source).await;
+    for invalid in [
+        "missing-name",
+        "negative-position",
+        "unknown-entity-kind",
+        "missing-filters",
+        "empty-id",
+        "exhausted-generation",
+        "storage-failure",
+    ] {
+        for baseline in [false, true] {
+            let database = TestDatabase::bootstrap_in_memory().await.unwrap();
+            apply_page(&database, "test-remote", &page[..1], 1)
+                .await
+                .unwrap();
+            let mut replacement = page[0].clone();
+            replacement.server_seq = 5;
+            let SyncMutation::Patch { patch } = &mut replacement.mutation else {
+                unreachable!()
+            };
+            patch.fields.insert("name".into(), json!("不应被部分写入"));
+            let mut damaged = page[1].clone();
+            damaged.server_seq = 6;
+            let SyncMutation::Patch { patch } = &mut damaged.mutation else {
+                unreachable!()
+            };
+            match invalid {
+                "missing-name" => {
+                    patch.fields.remove("name");
+                }
+                "negative-position" => {
+                    patch.fields.insert("position".into(), json!(-1));
+                }
+                "unknown-entity-kind" => {
+                    patch
+                        .fields
+                        .insert("entity_kind".into(), json!("future-kind"));
+                }
+                "missing-filters" => {
+                    patch.fields.remove("filters");
+                }
+                "empty-id" => {
+                    patch.entity.entity_id.clear();
+                }
+                "exhausted-generation" => {
+                    patch.entity.generation = i64::MAX;
+                }
+                "storage-failure" => {
+                    database.connection().execute_raw(statement(
+                        &format!(
+                            "CREATE TRIGGER reject_view_materialization BEFORE INSERT ON views WHEN NEW.id = '{}' BEGIN SELECT RAISE(ABORT, '拒绝测试物化'); END",
+                            patch.entity.entity_id,
+                        ),
+                        vec![],
+                    )).await.unwrap();
+                }
+                _ => unreachable!(),
+            }
+            let invalid_page = [replacement, damaged];
+            let result = if baseline {
+                apply_baseline(&database, "test-remote", baseline_from_page(&invalid_page)).await
+            } else {
+                apply_page(&database, "test-remote", &invalid_page, 6).await
+            };
+            assert!(result.is_err(), "{invalid}, baseline={baseline}");
+            assert_eq!(read_cursor(&database).await.unwrap(), Some(1));
+            assert_eq!(
+                View::find().all(database.connection()).await.unwrap().len(),
+                1
+            );
+            assert_eq!(
+                stored_view(&database, &page[0].mutation.entity().entity_id)
+                    .await
+                    .try_get::<String>("", "name")
+                    .unwrap(),
+                "待执行"
+            );
+            let transaction = database.connection().begin().await.unwrap();
+            let existing = load_replica(&transaction, page[0].mutation.entity())
+                .await
+                .unwrap();
+            assert_eq!(existing.snapshot.unwrap().fields["name"], json!("待执行"));
+            let protocol_count: i64 = transaction
+                .query_one_raw(statement(
+                    "SELECT COUNT(*) AS n FROM sync_protocol_entities",
+                    vec![],
+                ))
+                .await
+                .unwrap()
+                .unwrap()
+                .try_get("", "n")
+                .unwrap();
+            assert_eq!(protocol_count, 1);
+            transaction.rollback().await.unwrap();
+        }
+    }
+}
+
 #[tokio::test]
 async fn view_outbox_round_trip_stays_editable_and_can_bootstrap_a_new_replica() {
     let source = TestDatabase::bootstrap_in_memory().await.unwrap();
@@ -161,12 +574,15 @@ async fn view_outbox_round_trip_stays_editable_and_can_bootstrap_a_new_replica()
         apply_mutation(&mut remote, &change.mutation, change.server_seq);
     }
     restore(&fresh, &remote, 3).await;
-    let view = build_view_service(fresh.connection().clone())
+    let item = build_view_service(fresh.connection().clone())
         .list_views(ListViewsInput { scope: scope() })
         .await
         .unwrap()
         .pop()
         .unwrap();
+    let ViewListItemDto::Available(view) = item else {
+        panic!("合法同步定义必须保持可编辑");
+    };
     assert_eq!(view.id, id);
     assert_eq!(view.name, "重点事项");
     assert_eq!(view.filters, filters("doing"));

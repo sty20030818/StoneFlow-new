@@ -17,7 +17,9 @@ use sea_orm::{
     SqliteTransactionMode, Statement, TransactionOptions, TransactionTrait,
 };
 use serde_json::{json, Value};
-use stoneflow_application::view::codec::{view_record_from_sync_fields, view_sync_fields};
+use stoneflow_application::view::codec::{
+    view_record_from_sync_fields, view_sync_fields_preserving_definition,
+};
 use stoneflow_storage::{
     database::DatabaseRuntimeState,
     entities::{prelude::View, view},
@@ -544,7 +546,9 @@ async fn seed_protocol_views(
     let mut count = 0;
     for row in rows {
         let record = map_view(row);
-        let fields = view_sync_fields(&record)?.into_iter().collect();
+        let fields = view_sync_fields_preserving_definition(&record)?
+            .into_iter()
+            .collect();
         persist_seeded_snapshot(
             transaction,
             SyncEntityKind::View,
@@ -1099,7 +1103,7 @@ async fn hydrate_missing_fields_from_business(
             let Some(row) = View::find_by_id(&id).one(transaction).await? else {
                 return Ok(false);
             };
-            for (key, value) in view_sync_fields(&map_view(row))? {
+            for (key, value) in view_sync_fields_preserving_definition(&map_view(row))? {
                 snapshot.fields.entry(key).or_insert(value);
             }
         }

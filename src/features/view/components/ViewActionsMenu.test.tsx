@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 
-import type { View } from '@/shared/types'
+import type { View, ViewListItem } from '@/shared/types'
 import { ViewActionsMenu } from './ViewActionsMenu'
 
 const customView: View = {
@@ -44,7 +44,7 @@ it('删除中拒绝重复提交，关闭菜单后迟到失败不会重新打开�
 
 it('删除失败保留操作入口及错误，可原位重试并恢复焦点', async () => {
 	const onDelete = vi
-		.fn<(view: View) => Promise<void>>()
+		.fn<(view: ViewListItem) => Promise<void>>()
 		.mockRejectedValueOnce(new Error('删除暂时不可用'))
 		.mockResolvedValueOnce(undefined)
 	render(<ViewActionsMenu activeView={customView} onDelete={onDelete} />)
@@ -74,4 +74,20 @@ it('视图菜单只在调用方需要时提供创建入口', async () => {
 	fireEvent.click(await screen.findByRole('menuitem', { name: '删除保存视图' }))
 	expect(onDelete).toHaveBeenCalledWith(customView)
 	await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument())
+})
+
+it('缩窗后仅在来源按钮移出视口时关闭菜单', async () => {
+	render(<ViewActionsMenu activeView={customView} onDelete={vi.fn()} />)
+	const trigger = screen.getByRole('button', { name: '视图操作' })
+	const bounds = vi
+		.spyOn(trigger, 'getBoundingClientRect')
+		.mockReturnValue(new DOMRect(20, 20, 28, 28))
+	fireEvent.click(trigger)
+	expect(await screen.findByRole('menu')).toBeVisible()
+	fireEvent(window, new Event('resize'))
+	expect(screen.getByRole('menu')).toBeVisible()
+	bounds.mockReturnValue(new DOMRect(20, window.innerHeight + 8, 28, 28))
+	fireEvent(window, new Event('resize'))
+	await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument())
+	bounds.mockRestore()
 })

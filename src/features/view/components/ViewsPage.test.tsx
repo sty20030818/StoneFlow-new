@@ -196,7 +196,7 @@ describe('Saved View pages', () => {
 		useLibrarySceneMock.mockReturnValue(scene)
 		render(<ViewsPage />)
 
-		expect(screen.getByText('需要重建')).toBeInTheDocument()
+		expect(screen.getByText('暂不可用 · 无法无损升级')).toBeInTheDocument()
 		fireEvent.click(screen.getByRole('button', { name: '视图操作' }))
 		expect(screen.queryByRole('menuitem', { name: '编辑保存视图' })).not.toBeInTheDocument()
 		fireEvent.click(await screen.findByRole('menuitem', { name: '删除保存视图' }))
@@ -213,7 +213,7 @@ describe('Saved View pages', () => {
 		useWorkspaceSceneMock.mockReturnValue(scene)
 		render(<SavedViewPage />)
 
-		expect(screen.getByText('保存视图需要重建')).toBeInTheDocument()
+		expect(screen.getByText('保存视图暂不可用')).toBeInTheDocument()
 		expect(screen.queryByRole('region', { name: '任务工作区' })).not.toBeInTheDocument()
 	})
 })

@@ -5,7 +5,7 @@
 import { invoke } from '@tauri-apps/api/core'
 
 import { normalizeFilterQuery } from '@/features/filter'
-import { EMPTY_FILTER_QUERY, type Scope } from '@/shared/types'
+import type { Scope } from '@/shared/types'
 import type {
 	CreateViewInput,
 	FilterQuery,
@@ -14,6 +14,7 @@ import type {
 	TaskViewContext,
 	UpdateViewInput,
 	View,
+	ViewListItem,
 } from '@/shared/types'
 
 type ScopePayload =
@@ -37,7 +38,15 @@ export async function listViews(scope: Scope) {
 	const records = await invoke<Array<Record<string, unknown>>>('list_views', {
 		input: { scope: toScopePayload(scope) },
 	})
-	return records.map(toView)
+	return records
+		.map(toViewListItem)
+		.filter((view) =>
+			view.scope === null
+				? scope.type === 'all'
+				: view.scope.type === scope.type &&
+					(scope.type === 'all' ||
+						(view.scope.type === 'space' && view.scope.spaceId === scope.spaceId)),
+		)
 }
 
 export async function runTaskView(input: RunTaskViewInput): Promise<RunTaskViewResult> {
@@ -99,22 +108,67 @@ export async function deleteView(viewId: string) {
 	return invoke<void>('delete_view', { viewId })
 }
 
-/** DTO → Saved View。 */
-function toView(value: Record<string, unknown>): View {
+function toMetadata(value: Record<string, unknown>) {
+	if (
+		typeof value.id !== 'string' ||
+		!value.id.trim() ||
+		typeof value.name !== 'string' ||
+		typeof value.position !== 'number' ||
+		!Number.isSafeInteger(value.position) ||
+		value.position < 0 ||
+		typeof value.createdAt !== 'string' ||
+		typeof value.updatedAt !== 'string'
+	) {
+		throw new Error('View 响应缺少可恢复的身份或元数据')
+	}
 	return {
-		id: String(value.id),
-		name: String(value.name),
+		id: value.id,
+		name: value.name,
+		position: value.position,
+		createdAt: value.createdAt,
+		updatedAt: value.updatedAt,
+	}
+}
+
+/** Library 逐条隔离定义错误；缺少可信身份的响应仍作为读取失败。 */
+function toViewListItem(value: Record<string, unknown>): ViewListItem {
+	const metadata = toMetadata(value)
+	let scope: Scope | null = null
+	try {
+		scope = toScope(value.scope)
+		return toView(value)
+	} catch (error) {
+		return {
+			...metadata,
+			scope,
+			definitionError:
+				typeof value.definitionError === 'string' && value.definitionError.length > 0
+					? value.definitionError
+					: error instanceof Error
+						? error.message
+						: '保存视图定义无法读取',
+		}
+	}
+}
+
+/** 写入和运行必须返回有效定义，不能降级成恢复记录或空筛选。 */
+function toView(value: Record<string, unknown>): View {
+	if (typeof value.definitionError === 'string' && value.definitionError.length > 0) {
+		throw new Error(value.definitionError)
+	}
+	if (
+		!value.filters ||
+		typeof value.filters !== 'object' ||
+		!Array.isArray((value.filters as FilterQuery).clauses)
+	) {
+		throw new Error('View 响应包含无效 filters')
+	}
+	return {
+		...toMetadata(value),
 		scope: toScope(value.scope),
 		context: toContext(value.context),
 		baseViewKey: toBaseViewKey(value.baseViewKey),
-		filters: normalizeFilterQuery((value.filters as FilterQuery) ?? EMPTY_FILTER_QUERY),
-		position: Number(value.position),
-		createdAt: String(value.createdAt ?? ''),
-		updatedAt: String(value.updatedAt ?? ''),
-		definitionError:
-			typeof value.definitionError === 'string' && value.definitionError.length > 0
-				? value.definitionError
-				: null,
+		filters: normalizeFilterQuery(value.filters as FilterQuery),
 	}
 }
 

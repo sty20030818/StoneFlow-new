@@ -8,7 +8,7 @@ use serde_json::{json, Map, Value};
 use stoneflow_application::operation::{
     OutboxEnqueueRecord, OutboxOpKind, OutboxPayload, SyncEntityKind,
 };
-use stoneflow_application::view::codec::view_sync_fields;
+use stoneflow_application::view::codec::view_sync_fields_preserving_definition;
 use stoneflow_domain::now_utc;
 use stoneflow_storage::{
     database::DatabaseRuntimeState,
@@ -369,7 +369,7 @@ async fn seed_views(
     let mut count = 0;
     for row in rows {
         let record = map_view(row);
-        let fields = view_sync_fields(&record)?;
+        let fields = view_sync_fields_preserving_definition(&record)?;
         enqueue(
             connection,
             outbox,
@@ -502,16 +502,12 @@ mod tests {
             view_ids.push(view.id);
         }
         let damaged_id = &view_ids[1];
-        let original = View::find_by_id(damaged_id)
-            .one(connection)
-            .await
-            .unwrap()
-            .unwrap();
         connection
-            .execute_raw(Statement::from_sql_and_values(
+            .execute_raw(Statement::from_string(
                 DatabaseBackend::Sqlite,
-                "UPDATE views SET filters_json = ? WHERE id = ?",
-                [r#"{"unknown":true}"#.into(), damaged_id.clone().into()],
+                format!(
+                    "CREATE TRIGGER reject_view_seed BEFORE INSERT ON outbox WHEN NEW.operation_id = 'origin-seed:view:{damaged_id}' BEGIN SELECT RAISE(ABORT, '拒绝测试灌库'); END"
+                ),
             ))
             .await
             .unwrap();
@@ -521,7 +517,7 @@ mod tests {
         for _ in 0..2 {
             assert!(matches!(
                 seed_origin_outbox_if_needed(&database).await,
-                Err(AppError::Validation(_))
+                Err(AppError::Database(_))
             ));
             assert!(!has_setting(connection, ORIGIN_SEED_SCOPE).await.unwrap());
         }
@@ -532,10 +528,9 @@ mod tests {
         );
 
         connection
-            .execute_raw(Statement::from_sql_and_values(
+            .execute_raw(Statement::from_string(
                 DatabaseBackend::Sqlite,
-                "UPDATE views SET filters_json = ? WHERE id = ?",
-                [original.filters_json.into(), damaged_id.clone().into()],
+                "DROP TRIGGER reject_view_seed".to_owned(),
             ))
             .await
             .unwrap();

@@ -6,9 +6,11 @@ import {
 	ViewActionsMenu,
 	ViewEditorDialog,
 	ViewSaveDialog,
+	SavedViewLibraryContent,
+	SavedViewPageState,
 	type ViewSaveFlow,
 } from '@/features/view'
-import type { View } from '@/shared/types'
+import type { UnavailableView, View } from '@/shared/types'
 
 import type { UiLabReviewUnitInput } from '../uiLabCatalog'
 
@@ -45,8 +47,82 @@ function ViewManagementPreview() {
 			</Button>
 			<SubmitRegistryProvider key={session}>
 				<ViewManagementFixture />
+				<ViewRecoveryFixture />
 			</SubmitRegistryProvider>
 		</div>
+	)
+}
+
+function ViewRecoveryFixture() {
+	const [page, setPage] = useState<'library' | 'detail' | 'read-error'>('library')
+	const [pending, setPending] = useState(false)
+	const [view, setView] = useState<UnavailableView | null>({
+		id: 'unavailable-view',
+		name: INITIAL_VIEW.name,
+		position: 1,
+		createdAt: INITIAL_VIEW.createdAt,
+		updatedAt: INITIAL_VIEW.updatedAt,
+		scope: null,
+		definitionError: '原范围无法识别，保留记录供检查或删除。' + LONG_ERROR,
+	})
+	const attempts = useRef(0)
+	const reloadViews = () => setPending(true)
+	async function remove() {
+		if (++attempts.current === 1) throw new Error(LONG_ERROR)
+		setView(null)
+		setPage('library')
+	}
+	return (
+		<section aria-label='不可用视图恢复样例' className='grid min-w-0 gap-3'>
+			<div className='flex flex-wrap gap-2'>
+				<Button
+					onPress={() => {
+						setPage('read-error')
+						setPending(false)
+					}}
+					variant='outline'
+				>
+					读取失败示例
+				</Button>
+				<Button
+					onPress={() => {
+						setPage('library')
+						setPending(false)
+					}}
+					variant='outline'
+				>
+					完成读取示例
+				</Button>
+			</div>
+			{page === 'detail' ? (
+				<SavedViewPageState
+					scene={{
+						viewStatus: 'invalid-definition',
+						activeView: view,
+						breadcrumbItems: [
+							{ key: 'recovery', label: view?.name ?? '已删除视图', current: true },
+						],
+						deleteActiveView: remove,
+						openLibrary: () => setPage('library'),
+						reloadViews,
+						isReloading: pending,
+					}}
+				/>
+			) : (
+				<SavedViewLibraryContent
+					scene={{
+						status: page === 'read-error' ? 'error' : 'ready',
+						views: view ? [view] : [],
+						search: '',
+						reloadViews,
+						isReloading: pending,
+						openView: () => setPage('detail'),
+						deleteView: remove,
+						editor: { openCreate: () => undefined, openEdit: () => undefined },
+					}}
+				/>
+			)}
+		</section>
 	)
 }
 
@@ -170,7 +246,8 @@ export const VIEW_MANAGEMENT_SAMPLES: readonly UiLabReviewUnitInput[] = [
 		keywords: ['view', '保存视图', '重命名', '删除', '失败', '重试', 'pending', '窄窗口'],
 		source:
 			'src/features/view/components/ViewSaveDialog.tsx；src/features/view/components/ViewEditorDialog.tsx；src/features/view/components/ViewActionsMenu.tsx',
-		states: '长名称 / 长错误 / 受控等待 / 写入失败 / 打开恢复 / 创建 / 另存 / 覆盖 / 删除重试',
+		states:
+			'长名称 / 长错误 / 受控等待 / 写入失败 / 打开恢复 / 创建 / 另存 / 覆盖 / 删除重试 / 范围未知 / 不可用详情 / 读取重试',
 		verification:
 			'受控 UI 状态，无 IPC 或正式数据访问；共享 flow 与真实页面测试负责写入、导航和迟到结果，原生和视觉验收另记。',
 		inventoryRefs: [

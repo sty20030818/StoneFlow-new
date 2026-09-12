@@ -6,10 +6,20 @@ import type { RunTaskViewInput, RunTaskViewResult, Scope, TaskListItem } from '@
 import { viewKeys } from './view.keys'
 
 export function useViewsQuery(scope: Scope) {
-	return useQuery({
+	const query = useQuery({
 		queryKey: viewKeys.list(scope),
 		queryFn: () => listViews(scope),
 	})
+	return {
+		...query,
+		// 首次失败后的 refetch 会回到 pending；保留恢复界面和键盘焦点。
+		readStatus:
+			query.isError || (query.isPending && query.errorUpdatedAt > 0)
+				? ('error' as const)
+				: query.isPending
+					? ('loading' as const)
+					: ('ready' as const),
+	}
 }
 
 /** View 任务窗口：key 不含 cursor，cursor 走 pageParam */

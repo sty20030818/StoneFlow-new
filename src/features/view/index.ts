@@ -21,10 +21,10 @@ export { useViewSaveFlow, type ViewSaveCommand, type ViewSaveFlow } from './hook
 // ── UI ──────────────────────────────────────────────────────────────────────
 
 /** Saved View Library（route `/views`）。 */
-export { ViewsPage } from './components/ViewsPage'
+export { ViewsPage, SavedViewLibraryContent } from './components/ViewsPage'
 
 /** Saved View 任务工作区（route `/views/$viewId`）。 */
-export { SavedViewPage } from './components/SavedViewPage'
+export { SavedViewPage, SavedViewPageState } from './components/SavedViewPage'
 
 /** 保存视图管理交互（UI Lab 使用生产组件与内存回调）。 */
 export { ViewActionsMenu } from './components/ViewActionsMenu'

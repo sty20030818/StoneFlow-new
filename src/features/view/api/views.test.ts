@@ -1,0 +1,41 @@
+import { createView, listViews, runTaskView, updateView } from './views'
+
+const { invokeMock } = vi.hoisted(() => ({ invokeMock: vi.fn() }))
+vi.mock('@tauri-apps/api/core', () => ({ invoke: invokeMock }))
+
+const definition = {
+	scope: { type: 'all' as const },
+	context: { kind: 'all' as const },
+	baseViewKey: 'active' as const,
+	filters: { clauses: [] },
+}
+const record = {
+	...definition,
+	id: 'view-1',
+	name: '保存视图',
+	position: 0,
+	createdAt: '2026-09-13T00:00:00Z',
+	updatedAt: '2026-09-13T00:00:00Z',
+}
+
+beforeEach(() => invokeMock.mockReset())
+
+it('没有可信身份的列表响应报读取失败，不生成无法清理的记录', async () => {
+	invokeMock.mockResolvedValue([{ ...record, id: undefined }])
+	await expect(listViews({ type: 'all' })).rejects.toThrow('身份或元数据')
+})
+
+it('写入和运行响应不得把不可用定义当成功或空筛选', async () => {
+	const unavailable = { ...record, definitionError: '项目范围已变化', filters: undefined }
+	invokeMock.mockResolvedValue(unavailable)
+	await expect(createView({ name: record.name, ...definition })).rejects.toThrow('项目范围已变化')
+	await expect(updateView({ viewId: record.id, name: '新名称' })).rejects.toThrow('项目范围已变化')
+	invokeMock.mockResolvedValue({
+		view: { ...record, filters: undefined },
+		items: [],
+		totalCount: 0,
+	})
+	await expect(runTaskView({ scope: definition.scope, viewId: record.id })).rejects.toThrow(
+		'无效 filters',
+	)
+})

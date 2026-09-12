@@ -1,7 +1,7 @@
 # view · 保存视图
 
 > 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。  
-> 最后更新：2026-09-13（保存会话、导航与失败恢复）
+> 最后更新：2026-09-13（保存会话与不可用视图恢复）
 
 ---
 
@@ -31,7 +31,19 @@ Save
 
 `filters_json` 的旧扁平形状只在 Rust 存储解码边界读取：可无损表达的条件转换为
 `FilterQuery`；当前模型无法表达的旧条件显式失败，禁止近似后返回错误结果。
-无效旧定义仍以“需要重建”留在 Library，允许删除但不可编辑或执行；单条坏数据不得拖垮列表。
+Library 的 `ViewListItem` 区分有效 `View` 与 `UnavailableView`；后者仅保留身份、排序、时间、
+可空 scope 和 `definitionError`，不提供 `context/baseViewKey/filters`。API facade 逐条隔离定义错误，
+无法恢复身份或元数据时仍报读取失败。已知 scope 精确匹配原 Library，未知 scope 只在 all Library
+显示“范围未知”；all Library 不聚合其它 Space 的 View。
+
+项目 View 在 Rust create/update/list/run 边界校验项目存在、未归档、未进入回收站与 scope 归属。
+项目迁出使单 Space View 暂不可用；合法 all scope Project View 保持有效。项目迁回或恢复后重新校验，
+不改写原 `scope/context`；同步项目变更同时失效 View 查询。同步与协议预热保留坏定义原值，
+不生成默认查询；不可恢复的元数据或存储错误仍回滚事务，具体边界见 [系统设计](../../../Documents/01-架构/A2-系统设计.md)。
+
+不可用详情显示“保存视图暂不可用”与具体原因，禁止运行、重命名和覆盖；可重试读取、按 ID 删除，
+或返回 Library 从有效项目新建。Library/详情读取失败均提供实际 refetch，重试期间保留恢复界面与焦点；
+未加载、读取失败、定义不可用和任务零结果分别表达。
 
 创建、另存、覆盖与重命名统一由 `useViewSaveFlow` 持有 mutation、提交锁、错误与会话有效性。
 场景提供提交时的完整定义；覆盖只交付当前有效 View 的 ID 与 filters，重命名只交付 ID 与名称。

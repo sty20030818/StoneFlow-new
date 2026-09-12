@@ -8,13 +8,14 @@ use crate::sync;
 use stoneflow_application::view::{
     CountTaskQueryInput, CountTaskQueryOutput, CreateViewInput, ListViewsInput, RunTaskQueryInput,
     RunTaskQueryOutput, RunTaskViewInput, RunTaskViewOutput, UpdateViewInput, ViewDto,
+    ViewListItemDto,
 };
 
 #[tauri::command]
 pub async fn list_views(
     input: ListViewsInput,
     state: State<'_, AppState>,
-) -> Result<Vec<ViewDto>, AppError> {
+) -> Result<Vec<ViewListItemDto>, AppError> {
     state.views.list_views(input).await.map_err(AppError::from)
 }
 

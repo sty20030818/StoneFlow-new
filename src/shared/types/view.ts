@@ -25,9 +25,16 @@ export type View = {
 	position: number
 	createdAt: string
 	updatedAt: string
-	/** 旧定义无法无损升级时仅供 Library 展示与删除；不得执行查询或编辑定义。 */
-	definitionError?: string | null
+	definitionError?: null
 }
+
+/** 不可用记录只提供恢复所需元数据，不伪造可执行定义。 */
+export type UnavailableView = Pick<View, 'id' | 'name' | 'position' | 'createdAt' | 'updatedAt'> & {
+	scope: Scope | null
+	definitionError: string
+}
+
+export type ViewListItem = View | UnavailableView
 
 export type RunTaskViewInput = {
 	scope: Scope

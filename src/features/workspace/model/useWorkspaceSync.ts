@@ -67,7 +67,10 @@ export function useWorkspaceSync(scope: Scope) {
 			if (payload.changedDomains.length === 0) {
 				return
 			}
-			void invalidateWorkspaceQueries(queryClient, { include: payload.changedDomains })
+			// View 可用性依赖项目归属与生命周期，同步项目后必须重新校验。
+			const domains = new Set(payload.changedDomains)
+			if (domains.has('projects')) domains.add('views')
+			void invalidateWorkspaceQueries(queryClient, { include: [...domains] })
 			return
 		}
 		void invalidateWorkspaceQueries(queryClient, { include: [...SYNC_WORKSPACE_DOMAINS] })

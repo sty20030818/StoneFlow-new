@@ -26,6 +26,7 @@ import {
 	type TaskViewContext,
 	type UpdateViewInput,
 	type View,
+	type ViewListItem,
 } from '@/shared/types'
 
 import { useDeleteViewMutation } from './view.mutations'
@@ -37,7 +38,7 @@ import {
 	useViewsQuery,
 } from './view.queries'
 
-const EMPTY_VIEWS: View[] = []
+const EMPTY_VIEWS: ViewListItem[] = []
 
 export function resolveSavedViewWorkspaceContext(
 	context: TaskViewContext | undefined,
@@ -112,17 +113,15 @@ export function useSavedViewLibraryScene() {
 	return {
 		breadcrumbItems: resolveBreadcrumb({ route: shellRoute }),
 		views: visibleViews,
-		status: viewsQuery.isError
-			? 'error'
-			: viewsQuery.isLoading || viewsQuery.isPending
-				? 'loading'
-				: 'ready',
+		status: viewsQuery.readStatus,
+		reloadViews: (): void => void viewsQuery.refetch(),
+		isReloading: viewsQuery.isFetching,
 		search,
 		setSearch,
 		editor,
-		openView: (view: View) =>
+		openView: (view: ViewListItem): void =>
 			void navigate({ to: openView(scope, view.id, spaceId) as never, search: {} as never }),
-		deleteView: async (view: View) => {
+		deleteView: async (view: ViewListItem) => {
 			await deleteView.mutateAsync(view.id)
 		},
 	}
@@ -144,7 +143,7 @@ export function useSavedViewWorkspaceScene() {
 	const viewsQuery = useViewsQuery(scope)
 	const views = viewsQuery.data ?? EMPTY_VIEWS
 	const activeView = views.find((view) => view.id === viewId) ?? null
-	const runnableView = activeView?.definitionError ? null : activeView
+	const runnableView = activeView && activeView.definitionError == null ? activeView : null
 	const projectId = runnableView?.context.kind === 'project' ? runnableView.context.projectId : ''
 	const projectQuery = useQuery({
 		...projectDetailQueryOptions(projectId),
@@ -192,7 +191,7 @@ export function useSavedViewWorkspaceScene() {
 				? 'error'
 				: 'ready'
 	useTaskChangedListener(scope, () => {
-		void taskRunQuery.refetch()
+		if (taskRunInput) void taskRunQuery.refetch()
 	})
 	const taskTotalCount = taskRunQuery.data?.pages[0]?.totalCount
 	const pagination = useTaskBoardPagination({
@@ -292,16 +291,16 @@ export function useSavedViewWorkspaceScene() {
 
 	return {
 		activeView,
+		reloadViews: (): void => void viewsQuery.refetch(),
+		isReloading: viewsQuery.isFetching,
 		viewStatus:
-			viewsQuery.isLoading || viewsQuery.isPending
-				? 'loading'
-				: viewsQuery.isError
-					? 'error'
-					: activeView?.definitionError
-						? 'invalid-definition'
-						: activeView
-							? 'ready'
-							: 'not-found',
+			viewsQuery.readStatus !== 'ready'
+				? viewsQuery.readStatus
+				: activeView?.definitionError
+					? 'invalid-definition'
+					: activeView
+						? 'ready'
+						: 'not-found',
 		breadcrumbItems: resolveBreadcrumb({ route: shellRoute, viewName: activeView?.name ?? null }),
 		displayPageKey,
 		filterUiValue,
@@ -316,7 +315,7 @@ export function useSavedViewWorkspaceScene() {
 		selectedToolbarKey: runnableView ? `saved:${runnableView.id}` : '',
 		selectToolbar,
 		openTaskCreateDialog: openCreateTask,
-		openLibrary: () =>
+		openLibrary: (): void =>
 			void navigate({ to: openView(scope, null, spaceId) as never, search: {} as never }),
 		editor,
 		deleteActiveView: async () => {

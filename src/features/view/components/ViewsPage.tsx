@@ -6,7 +6,7 @@ import type { ReactNode } from 'react'
 import { AppBreadcrumb } from '@/shared/components/AppBreadcrumb'
 import { PageFrame } from '@/shared/components/page-frame'
 import { ActionTooltip } from '@/shared/components/tooltip'
-import type { TaskViewBaseKey, View } from '@/shared/types'
+import type { TaskViewBaseKey, ViewListItem } from '@/shared/types'
 
 import { useSavedViewLibraryScene } from '../hooks/useViewsScene'
 import { ViewActionsMenu } from './ViewActionsMenu'
@@ -71,7 +71,12 @@ export function ViewsPage() {
 
 type LibraryScene = ReturnType<typeof useSavedViewLibraryScene>
 
-function SavedViewLibraryContent({ scene }: { scene: LibraryScene }) {
+type LibraryContentScene = Pick<
+	LibraryScene,
+	'status' | 'views' | 'search' | 'openView' | 'deleteView' | 'reloadViews' | 'isReloading'
+> & { editor: Pick<LibraryScene['editor'], 'openCreate' | 'openEdit'> }
+
+export function SavedViewLibraryContent({ scene }: { scene: LibraryContentScene }) {
 	if (scene.status === 'loading') {
 		return (
 			<div aria-label='正在加载保存视图' className='grid gap-1'>
@@ -85,6 +90,10 @@ function SavedViewLibraryContent({ scene }: { scene: LibraryScene }) {
 	if (scene.status === 'error') {
 		return (
 			<LibraryEmptyState
+				role='alert'
+				action={scene.reloadViews}
+				actionLabel='重试读取'
+				isPending={scene.isReloading}
 				description='保存视图暂时无法读取，请稍后重试。'
 				icon={<AlertCircleIcon />}
 				title='读取保存视图失败'
@@ -116,13 +125,29 @@ function SavedViewLibraryContent({ scene }: { scene: LibraryScene }) {
 			variant='secondary'
 		>
 			{(view) => (
-				<ListView.Item id={view.id} textValue={`${view.name} ${describeView(view)}`}>
+				<ListView.Item
+					id={view.id}
+					textValue={`${view.name} ${describeView(view)} ${view.definitionError ?? ''}`}
+				>
 					<ListView.ItemContent>
 						<BookmarkIcon aria-hidden='true' />
-						<ListView.Title className='min-w-0 flex-1'>{view.name}</ListView.Title>
-						<ListView.Description className='mt-0 shrink-0'>
-							{describeView(view)}
-						</ListView.Description>
+						{view.definitionError ? (
+							<div className='min-w-0 flex-1'>
+								<ListView.Title className='block wrap-anywhere whitespace-normal'>
+									{view.name}
+								</ListView.Title>
+								<ListView.Description className='block wrap-anywhere whitespace-normal'>
+									{describeView(view)} · {view.definitionError}
+								</ListView.Description>
+							</div>
+						) : (
+							<>
+								<ListView.Title className='min-w-0 flex-1'>{view.name}</ListView.Title>
+								<ListView.Description className='mt-0 shrink-0'>
+									{describeView(view)}
+								</ListView.Description>
+							</>
+						)}
 					</ListView.ItemContent>
 					<ListView.ItemAction>
 						<ViewActionsMenu
@@ -142,14 +167,20 @@ function LibraryEmptyState({
 	description,
 	icon,
 	action,
+	actionLabel = '新建保存视图',
+	isPending = false,
+	role,
 }: {
 	title: string
 	description: string
 	icon: ReactNode
 	action?: () => void
+	actionLabel?: string
+	isPending?: boolean
+	role?: 'alert'
 }) {
 	return (
-		<EmptyState className='mx-auto my-auto max-w-md'>
+		<EmptyState className='mx-auto my-auto max-w-md' role={role}>
 			<EmptyState.Header>
 				{icon}
 				<EmptyState.Title>{title}</EmptyState.Title>
@@ -157,26 +188,17 @@ function LibraryEmptyState({
 			</EmptyState.Header>
 			{action ? (
 				<EmptyState.Content>
-					<ActionTooltip label='新建保存视图'>
-						<Button
-							aria-label='新建保存视图'
-							isIconOnly
-							onPress={action}
-							size='sm'
-							type='button'
-							variant='outline'
-						>
-							<PlusIcon aria-hidden='true' className='size-4' />
-						</Button>
-					</ActionTooltip>
+					<Button isPending={isPending} onPress={action} size='sm' type='button' variant='outline'>
+						{actionLabel}
+					</Button>
 				</EmptyState.Content>
 			) : null}
 		</EmptyState>
 	)
 }
 
-function describeView(view: View) {
-	if (view.definitionError) return '需要重建'
+function describeView(view: ViewListItem) {
+	if (view.definitionError != null) return view.scope === null ? '范围未知' : '暂不可用'
 	const context =
 		view.context.kind === 'standalone'
 			? '独立事项'

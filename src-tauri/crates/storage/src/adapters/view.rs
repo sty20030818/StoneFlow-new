@@ -57,6 +57,28 @@ impl ViewPersistence for ViewPersistenceAdapter {
             .map(|view| view.map(map_view))
             .map_err(from_display)
     }
+    async fn get_in_connection(
+        &self,
+        connection: &Self::Connection,
+        view_id: &str,
+    ) -> Result<Option<ViewRecord>, ApplicationError> {
+        self.views
+            .get_in_connection(connection, view_id)
+            .await
+            .map(|view| view.map(map_view))
+            .map_err(from_display)
+    }
+    async fn get_project_in_connection(
+        &self,
+        connection: &Self::Connection,
+        project_id: &str,
+    ) -> Result<Option<ViewProjectLookupRecord>, ApplicationError> {
+        self.projects
+            .get_in_connection(connection, project_id)
+            .await
+            .map(|project| project.map(map_project_lookup))
+            .map_err(from_display)
+    }
     async fn list(&self) -> Result<Vec<ViewRecord>, ApplicationError> {
         self.views
             .list()
@@ -222,35 +244,428 @@ impl ViewLookupReader for ViewPersistenceAdapter {
         self.projects
             .list_by_ids(ids)
             .await
-            .map(|rows| {
-                rows.into_iter()
-                    .map(|project| ViewProjectLookupRecord {
-                        id: project.id,
-                        name: project.name,
-                    })
-                    .collect()
-            })
+            .map(|rows| rows.into_iter().map(map_project_lookup).collect())
             .map_err(from_display)
+    }
+}
+
+fn map_project_lookup(project: crate::entities::project::Model) -> ViewProjectLookupRecord {
+    ViewProjectLookupRecord {
+        id: project.id,
+        name: project.name,
+        space_id: project.space_id,
+        archived_at: project.archived_at,
+        deleted_at: project.deleted_at,
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter};
+    use sea_orm::{
+        ActiveModelTrait, ActiveValue::Set, ColumnTrait, ConnectionTrait, EntityTrait,
+        PaginatorTrait, QueryFilter,
+    };
     use serde_json::json;
     use stoneflow_application::{
         operation::OutboxPayload,
         task::TaskQueryCursor,
         view::{
             codec::{EMPTY_SORT_JSON, NO_GROUP_JSON},
-            CreateViewInput, FilterQueryValue, TaskScopeInput, TaskScopeKind, TaskViewBaseKey,
-            TaskViewContext, UpdateViewInput, ViewDateBoundaries, ViewTaskQuery,
+            CreateViewInput, FilterQueryValue, ListViewsInput, RunTaskViewInput, TaskScopeInput,
+            TaskScopeKind, TaskViewBaseKey, TaskViewContext, UpdateViewInput, ViewDateBoundaries,
+            ViewTaskQuery,
         },
     };
     use stoneflow_test_support::TestDatabase;
 
     use super::*;
     use crate::entities::{outbox, prelude::Outbox, prelude::View};
+
+    fn scope(space_id: Option<&str>) -> TaskScopeInput {
+        TaskScopeInput {
+            kind: if space_id.is_some() {
+                TaskScopeKind::Space
+            } else {
+                TaskScopeKind::All
+            },
+            space_id: space_id.map(str::to_owned),
+        }
+    }
+
+    fn create_input(scope: TaskScopeInput, project_id: Option<&str>) -> CreateViewInput {
+        CreateViewInput {
+            name: "保存的查询".to_owned(),
+            scope,
+            context: project_id.map_or(TaskViewContext::All, |id| TaskViewContext::Project {
+                project_id: id.to_owned(),
+            }),
+            base_view_key: TaskViewBaseKey::Active,
+            filters: FilterQueryValue::default(),
+        }
+    }
+
+    async fn list_json(service: &ViewAppService, scope: TaskScopeInput) -> serde_json::Value {
+        serde_json::to_value(service.list_views(ListViewsInput { scope }).await.unwrap()).unwrap()
+    }
+
+    async fn seed_project(connection: &DatabaseConnection) {
+        connection.execute_unprepared(
+            "INSERT INTO spaces (id, name, icon_key, color_key, is_default, position, generation, created_at, updated_at) VALUES
+            ('view-space-a', 'A', 'home', 'blue', 0, 1024, 1, '2026-09-13T00:00:00Z', '2026-09-13T00:00:00Z'),
+            ('view-space-b', 'B', 'home', 'blue', 0, 2048, 1, '2026-09-13T00:00:00Z', '2026-09-13T00:00:00Z');
+            INSERT INTO projects (id, space_id, name, status, priority, status_changed_at, position, generation, created_at, updated_at)
+            VALUES ('11111111-1111-4111-8111-111111111111', 'view-space-a', 'Project', 'todo', 0, '2026-09-13T00:00:00Z', 1024, 1, '2026-09-13T00:00:00Z', '2026-09-13T00:00:00Z');"
+        ).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn library_isolates_invalid_scopes_and_definitions_without_inventing_queries() {
+        let database = TestDatabase::bootstrap_in_memory().await.unwrap();
+        let connection = database.connection();
+        let service = build_view_service(connection.clone());
+        let all = service
+            .create_view(create_input(scope(None), None))
+            .await
+            .unwrap();
+        let space = service
+            .create_view(create_input(scope(Some("view-space-a")), None))
+            .await
+            .unwrap();
+        let unknown = service
+            .create_view(create_input(scope(None), None))
+            .await
+            .unwrap();
+        let bad_definition = service
+            .create_view(create_input(scope(Some("view-space-a")), None))
+            .await
+            .unwrap();
+        let mut damaged: crate::entities::view::ActiveModel = View::find_by_id(&unknown.id)
+            .one(connection)
+            .await
+            .unwrap()
+            .unwrap()
+            .into();
+        damaged.scope_json = Set(r#"{"type":"unknown"}"#.to_owned());
+        damaged.update(connection).await.unwrap();
+        let mut damaged: crate::entities::view::ActiveModel = View::find_by_id(&bad_definition.id)
+            .one(connection)
+            .await
+            .unwrap()
+            .unwrap()
+            .into();
+        damaged.filters_json =
+            Set(r#"{"due":{"mode":"between","from":null,"to":null}}"#.to_owned());
+        damaged.update(connection).await.unwrap();
+
+        let all_rows = list_json(&service, scope(None)).await;
+        assert_eq!(all_rows.as_array().unwrap().len(), 2);
+        assert_eq!(all_rows[0]["id"], all.id);
+        assert!(all_rows[0].get("definitionError").is_none());
+        assert_eq!(all_rows[1]["id"], unknown.id);
+        assert!(all_rows[1]["scope"].is_null());
+        let space_rows = list_json(&service, scope(Some("view-space-a"))).await;
+        assert_eq!(space_rows.as_array().unwrap().len(), 2);
+        assert_eq!(space_rows[0]["id"], space.id);
+        assert_eq!(space_rows[1]["id"], bad_definition.id);
+        assert_eq!(
+            space_rows[1]["scope"],
+            json!({"type":"space","spaceId":"view-space-a"})
+        );
+        for row in [&all_rows[1], &space_rows[1]] {
+            assert!(!row["definitionError"].as_str().unwrap().is_empty());
+            for key in ["context", "baseViewKey", "filters"] {
+                assert!(
+                    row.get(key).is_none(),
+                    "unavailable row must not invent {key}"
+                );
+            }
+        }
+        for (id, row_scope) in [
+            (&unknown.id, scope(None)),
+            (&bad_definition.id, scope(Some("view-space-a"))),
+        ] {
+            assert!(service
+                .run_task_view(RunTaskViewInput {
+                    scope: row_scope,
+                    view_id: id.clone(),
+                    filters: None,
+                    cursor: None
+                })
+                .await
+                .is_err());
+            assert!(service
+                .update_view(UpdateViewInput {
+                    view_id: id.clone(),
+                    name: Some("不能重命名".to_owned()),
+                    scope: None,
+                    context: None,
+                    base_view_key: None,
+                    filters: None
+                })
+                .await
+                .is_err());
+            service.delete_view(id).await.unwrap();
+        }
+        assert_eq!(
+            list_json(&service, scope(None))
+                .await
+                .as_array()
+                .unwrap()
+                .len(),
+            1
+        );
+        assert_eq!(
+            list_json(&service, scope(Some("view-space-a")))
+                .await
+                .as_array()
+                .unwrap()
+                .len(),
+            1
+        );
+    }
+
+    #[tokio::test]
+    async fn project_boundaries_are_checked_before_writes_and_rechecked_after_moves() {
+        let database = TestDatabase::bootstrap_in_memory().await.unwrap();
+        let connection = database.connection();
+        seed_project(connection).await;
+        let service = build_view_service(connection.clone());
+        for input in [
+            create_input(scope(None), Some("22222222-2222-4222-8222-222222222222")),
+            create_input(
+                scope(Some("view-space-b")),
+                Some("11111111-1111-4111-8111-111111111111"),
+            ),
+        ] {
+            assert!(service.create_view(input).await.is_err());
+        }
+        assert_eq!(View::find().count(connection).await.unwrap(), 0);
+        assert_eq!(Outbox::find().count(connection).await.unwrap(), 0);
+        let scoped = service
+            .create_view(create_input(
+                scope(Some("view-space-a")),
+                Some("11111111-1111-4111-8111-111111111111"),
+            ))
+            .await
+            .unwrap();
+        let all = service
+            .create_view(create_input(
+                scope(None),
+                Some("11111111-1111-4111-8111-111111111111"),
+            ))
+            .await
+            .unwrap();
+        let before = View::find_by_id(&scoped.id)
+            .one(connection)
+            .await
+            .unwrap()
+            .unwrap();
+        let outbox_count = Outbox::find().count(connection).await.unwrap();
+        assert!(service
+            .update_view(UpdateViewInput {
+                view_id: scoped.id.clone(),
+                name: None,
+                scope: Some(scope(Some("view-space-b"))),
+                context: None,
+                base_view_key: None,
+                filters: None,
+            })
+            .await
+            .is_err());
+        assert!(service
+            .update_view(UpdateViewInput {
+                view_id: scoped.id.clone(),
+                name: None,
+                scope: None,
+                context: Some(TaskViewContext::Project {
+                    project_id: "22222222-2222-4222-8222-222222222222".to_owned()
+                }),
+                base_view_key: None,
+                filters: None,
+            })
+            .await
+            .is_err());
+        connection
+            .execute_unprepared(
+                "UPDATE projects SET space_id = 'view-space-b' WHERE id = '11111111-1111-4111-8111-111111111111'",
+            )
+            .await
+            .unwrap();
+        let invalid = list_json(&service, scope(Some("view-space-a"))).await;
+        assert!(invalid[0]["definitionError"]
+            .as_str()
+            .unwrap()
+            .contains("项目范围已变化"));
+        assert!(service
+            .run_task_view(RunTaskViewInput {
+                scope: scoped.scope.clone(),
+                view_id: scoped.id.clone(),
+                filters: None,
+                cursor: None
+            })
+            .await
+            .is_err());
+        // 失效定义不能通过一次覆盖偷偷改写来源边界。
+        assert!(service
+            .update_view(UpdateViewInput {
+                view_id: scoped.id.clone(),
+                name: Some("不能重命名".to_owned()),
+                scope: Some(scope(Some("view-space-b"))),
+                context: None,
+                base_view_key: None,
+                filters: None
+            })
+            .await
+            .is_err());
+        assert_eq!(
+            View::find_by_id(&scoped.id)
+                .one(connection)
+                .await
+                .unwrap()
+                .unwrap(),
+            before
+        );
+        assert_eq!(
+            Outbox::find().count(connection).await.unwrap(),
+            outbox_count
+        );
+        assert!(list_json(&service, scope(None)).await[0]
+            .get("definitionError")
+            .is_none());
+        assert_eq!(
+            service
+                .run_task_view(RunTaskViewInput {
+                    scope: all.scope.clone(),
+                    view_id: all.id.clone(),
+                    filters: None,
+                    cursor: None
+                })
+                .await
+                .unwrap()
+                .total_count,
+            Some(0)
+        );
+        connection
+            .execute_unprepared(
+                "UPDATE projects SET space_id = 'view-space-a' WHERE id = '11111111-1111-4111-8111-111111111111'",
+            )
+            .await
+            .unwrap();
+        assert!(list_json(&service, scope(Some("view-space-a"))).await[0]
+            .get("definitionError")
+            .is_none());
+        assert!(service
+            .run_task_view(RunTaskViewInput {
+                scope: scoped.scope,
+                view_id: scoped.id,
+                filters: None,
+                cursor: None
+            })
+            .await
+            .is_ok());
+    }
+
+    #[tokio::test]
+    async fn project_lifecycle_recovery_revalidates_the_stored_view() {
+        let database = TestDatabase::bootstrap_in_memory().await.unwrap();
+        let connection = database.connection();
+        seed_project(connection).await;
+        let service = build_view_service(connection.clone());
+        let view = service
+            .create_view(create_input(
+                scope(None),
+                Some("11111111-1111-4111-8111-111111111111"),
+            ))
+            .await
+            .unwrap();
+        for column in ["archived_at", "deleted_at"] {
+            connection.execute_unprepared(&format!("UPDATE projects SET {column} = '2026-09-13T00:00:00Z' WHERE id = '11111111-1111-4111-8111-111111111111'")).await.unwrap();
+            assert!(list_json(&service, scope(None)).await[0]["definitionError"]
+                .as_str()
+                .unwrap()
+                .contains("恢复项目"));
+            assert!(service
+                .create_view(create_input(
+                    scope(None),
+                    Some("11111111-1111-4111-8111-111111111111")
+                ))
+                .await
+                .is_err());
+            assert!(service
+                .run_task_view(RunTaskViewInput {
+                    scope: view.scope.clone(),
+                    view_id: view.id.clone(),
+                    filters: None,
+                    cursor: None
+                })
+                .await
+                .is_err());
+            connection.execute_unprepared(&format!("UPDATE projects SET {column} = NULL WHERE id = '11111111-1111-4111-8111-111111111111'")).await.unwrap();
+            assert!(list_json(&service, scope(None)).await[0]
+                .get("definitionError")
+                .is_none());
+        }
+        connection
+            .execute_unprepared(
+                "DELETE FROM projects WHERE id = '11111111-1111-4111-8111-111111111111'",
+            )
+            .await
+            .unwrap();
+        assert!(list_json(&service, scope(None)).await[0]["definitionError"]
+            .as_str()
+            .unwrap()
+            .contains("项目不存在"));
+        service.delete_view(&view.id).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn unavailable_view_delete_failure_keeps_the_record_and_allows_retry() {
+        let database = TestDatabase::bootstrap_in_memory().await.unwrap();
+        let connection = database.connection();
+        let service = build_view_service(connection.clone());
+        let view = service
+            .create_view(create_input(scope(None), None))
+            .await
+            .unwrap();
+        let mut damaged: crate::entities::view::ActiveModel = View::find_by_id(&view.id)
+            .one(connection)
+            .await
+            .unwrap()
+            .unwrap()
+            .into();
+        damaged.scope_json = Set("invalid-json".to_owned());
+        damaged.update(connection).await.unwrap();
+        connection.execute_unprepared("CREATE TRIGGER reject_view_tombstone BEFORE INSERT ON outbox WHEN NEW.entity_type = 'view' AND NEW.operation_type = 'delete' BEGIN SELECT RAISE(FAIL, 'injected tombstone failure'); END;").await.unwrap();
+        let before = View::find_by_id(&view.id)
+            .one(connection)
+            .await
+            .unwrap()
+            .unwrap();
+        let outbox_count = Outbox::find().count(connection).await.unwrap();
+        assert!(service.delete_view(&view.id).await.is_err());
+        assert_eq!(
+            View::find_by_id(&view.id)
+                .one(connection)
+                .await
+                .unwrap()
+                .unwrap(),
+            before
+        );
+        assert_eq!(
+            Outbox::find().count(connection).await.unwrap(),
+            outbox_count
+        );
+        connection
+            .execute_unprepared("DROP TRIGGER reject_view_tombstone")
+            .await
+            .unwrap();
+        service.delete_view(&view.id).await.unwrap();
+        assert_eq!(list_json(&service, scope(None)).await, json!([]));
+        assert_eq!(
+            Outbox::find().count(connection).await.unwrap(),
+            outbox_count + 1
+        );
+    }
 
     async fn single_view_outbox(connection: &DatabaseConnection, id: &str) -> outbox::Model {
         let entries = Outbox::find()
