@@ -121,7 +121,7 @@ beforeEach(() => {
 		},
 	)
 	useShellPreferenceStore.setState({
-		projectTaskBoardOpenSections: ['todo', 'doing', 'waiting', 'done', 'canceled'],
+		taskBoardCollapsedGroups: {},
 	})
 })
 
@@ -469,7 +469,14 @@ function queryTasks(query: RunTaskQueryInput) {
 			return clause.values.includes(task.status)
 		})
 	})
-	return { items: structuredClone(items), totalCount: items.length, nextCursor: null }
+	return {
+		items: structuredClone(items).map((task) => ({
+			...task,
+			group: { kind: 'status', status: task.status },
+		})),
+		totalCount: items.length,
+		nextCursor: null,
+	}
 }
 
 async function renderWorkspace(initialEntry: string) {

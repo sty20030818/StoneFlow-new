@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react'
 import { hashKey, useQueryClient } from '@tanstack/react-query'
 
-import type { CountTaskQueryInput, RunTaskQueryInput, TaskListItem } from '@/shared/types'
+import type { CountTaskQueryInput, RunTaskQueryInput, TaskQueryItem } from '@/shared/types'
 import type { QueryLoadStatus } from '@/shared/query/queryStatus'
 import type { TaskBoardPagination } from '../components/TaskBoard'
 
@@ -13,7 +13,7 @@ import {
 	useTaskQueryInfiniteQuery,
 } from './task.queries'
 
-const EMPTY_TASK_LIST_ITEMS: TaskListItem[] = []
+const EMPTY_TASK_LIST_ITEMS: TaskQueryItem[] = []
 
 export function useTaskBoardPagination({
 	sourceKey,

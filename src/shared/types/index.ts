@@ -34,6 +34,9 @@ export type {
 	RunTaskViewInput,
 	RunTaskViewResult,
 	TaskWindowOrder,
+	TaskWindowGroupBy,
+	TaskQueryGroup,
+	TaskQueryItem,
 	TaskQueryWindow,
 	TaskQueryDefinition,
 	TaskViewBaseKey,
@@ -60,6 +63,7 @@ export {
 
 export {
 	TASK_WINDOW_ORDER_BY_VALUES,
+	TASK_WINDOW_GROUP_BY_VALUES,
 	TASK_WINDOW_ORDER_DIRECTION_VALUES,
 	TASK_WINDOW_COMPLETED_ORDER_VALUES,
 } from './view'

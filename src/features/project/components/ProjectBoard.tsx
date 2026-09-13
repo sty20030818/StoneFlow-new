@@ -193,7 +193,7 @@ function ProjectBoardSection({
 					onExpandAll={collection.expandAll}
 					onSelectAll={handleSelectAll}
 					open={open}
-					selectedCount={selectedCount}
+					selectedAll={sectionIds.length > 0 && selectedCount === sectionIds.length}
 				/>
 			</ContextMenu>
 

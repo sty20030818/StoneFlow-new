@@ -8,7 +8,8 @@ use crate::{
     },
     task::{
         executor::{decode_task_query_cursor, encode_task_query_cursor, TaskQueryIdentity},
-        TaskCompletedOrder, TaskOrderBy, TaskOrderDirection, TaskQueryOrder,
+        TaskCompletedOrder, TaskGroupBy, TaskOrderBy, TaskOrderDirection, TaskQueryGroup,
+        TaskQueryOrder,
     },
     view::{
         codec::{
@@ -131,6 +132,7 @@ pub struct CountTaskQueryInput {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TaskViewItemDto {
+    pub group: TaskQueryGroup,
     pub id: String,
     pub space_id: String,
     pub space_name: String,
@@ -556,15 +558,6 @@ where
         let mut page_tasks = page.items;
         let has_more = page_tasks.len() as u32 > limit;
         page_tasks.truncate(limit as usize);
-        let next_cursor = if has_more {
-            page_tasks
-                .last()
-                .map(|task| encode_task_query_cursor(&identity, &dates, task))
-                .transpose()?
-        } else {
-            None
-        };
-
         let space_ids = page_tasks
             .iter()
             .map(|task| task.space_id.clone())
@@ -597,7 +590,13 @@ where
                 let space = spaces
                     .get(&task.space_id)
                     .ok_or_else(|| ApplicationError::internal("Task 的 Space 不存在"))?;
+                let project_name = task.project_id.as_ref().and_then(|id| projects.get(id));
                 Ok(TaskViewItemDto {
+                    group: order.group_by.resolve(
+                        task,
+                        &dates,
+                        project_name.map(String::as_str),
+                    )?,
                     id: task.id.clone(),
                     space_id: task.space_id.clone(),
                     space_name: space.name.clone(),
@@ -623,6 +622,15 @@ where
                 })
             })
             .collect::<Result<Vec<_>, ApplicationError>>()?;
+        let next_cursor = if has_more {
+            page_tasks
+                .last()
+                .zip(items.last())
+                .map(|(task, item)| encode_task_query_cursor(&identity, &dates, task, &item.group))
+                .transpose()?
+        } else {
+            None
+        };
         Ok(RunTaskQueryOutput {
             items,
             total_count: page.total_count,
@@ -645,6 +653,7 @@ where
                 filters: input.filters,
                 dates: build_date_boundaries(stoneflow_domain::today_local_date())?,
                 order: TaskQueryOrder {
+                    group_by: TaskGroupBy::None,
                     order_by: TaskOrderBy::Manual,
                     order_direction: TaskOrderDirection::Asc,
                     completed_order: TaskCompletedOrder::Natural,
@@ -784,13 +793,22 @@ mod tests {
     use serde_json::json;
 
     #[test]
+    fn primary_group_is_part_of_the_required_window_order() {
+        let order = json!({"groupBy": "status", "orderBy": "smart", "orderDirection": "asc", "completedOrder": "recency"});
+        assert!(serde_json::from_value::<TaskQueryOrder>(order.clone()).is_ok());
+        let mut missing = order;
+        missing.as_object_mut().unwrap().remove("groupBy");
+        assert!(serde_json::from_value::<TaskQueryOrder>(missing).is_err());
+    }
+
+    #[test]
     fn task_query_inputs_require_order_and_canonical_date_basis() {
         let query = json!({
             "scope": { "type": "all" },
             "context": { "kind": "all" },
             "baseViewKey": "all",
             "filters": { "clauses": [] },
-            "order": { "orderBy": "smart", "orderDirection": "asc", "completedOrder": "natural" },
+            "order": { "groupBy": "none", "orderBy": "smart", "orderDirection": "asc", "completedOrder": "natural" },
             "dateBasis": "2026-09-13"
         });
         assert!(serde_json::from_value::<RunTaskQueryInput>(query.clone()).is_ok());

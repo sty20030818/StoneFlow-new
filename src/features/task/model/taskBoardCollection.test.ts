@@ -25,10 +25,10 @@ describe('taskBoardCollection', () => {
 		expect(collection.projection.eligibleKeys).toEqual(['todo-a', 'todo-b', 'doing-c'])
 		expect(collection.projection.navigableKeys).toEqual(['todo-a', 'todo-b', 'doing-c'])
 		expect([...collection.flatIndexByKey]).toEqual([
-			['h:todo', 0],
+			['h:status:todo', 0],
 			['todo-a', 1],
 			['todo-b', 2],
-			['h:doing', 3],
+			['h:status:doing', 3],
 			['doing-c', 4],
 		])
 		expect([...collection.rowOrdinalByKey]).toEqual([
@@ -36,8 +36,8 @@ describe('taskBoardCollection', () => {
 			['todo-b', 2],
 			['doing-c', 3],
 		])
-		expect(collection.rowKeysByGroupKey.get('h:todo')).toEqual(new Set(['todo-a', 'todo-b']))
-		expect(collection.rowKeysByGroupKey.get('h:doing')).toEqual(new Set(['doing-c']))
+		expect(collection.rowKeysByGroupKey.get('h:status:todo')).toEqual(new Set(['todo-a', 'todo-b']))
+		expect(collection.rowKeysByGroupKey.get('h:status:doing')).toEqual(new Set(['doing-c']))
 	})
 
 	it('折叠只移除 navigation，并复用 H transition 输出 group trigger 与再次进入目标', () => {
@@ -49,12 +49,13 @@ describe('taskBoardCollection', () => {
 		})
 
 		const transition = reconcileCollapsedGroup(state, previous.projection, next.projection, {
-			groupKey: 'h:todo',
-			collapsedKeys: previous.rowKeysByGroupKey.get('h:todo') ?? new Set(),
+			groupKey: 'h:status:todo',
+			collapsedKeys: previous.rowKeysByGroupKey.get('h:status:todo') ?? new Set(),
 		})
 
 		expect(next.projection.eligibleKeys).toEqual(ELIGIBLE_KEYS)
 		expect(next.projection.navigableKeys).toEqual(['doing-c'])
+		expect(next.rowKeysByGroupKey.get('h:status:todo')).toEqual(new Set(['todo-a', 'todo-b']))
 		expect([...next.rowOrdinalByKey]).toEqual([['doing-c', 1]])
 		expect(transition.state).toEqual({
 			selectedKeys: state.selectedKeys,
@@ -62,7 +63,7 @@ describe('taskBoardCollection', () => {
 		})
 		expect(transition.focusIntent).toEqual({
 			type: 'group-trigger',
-			groupKey: 'h:todo',
+			groupKey: 'h:status:todo',
 			reentry: { type: 'item', key: 'doing-c' },
 		})
 	})
@@ -76,14 +77,14 @@ describe('taskBoardCollection', () => {
 			previous.projection,
 			next.projection,
 			{
-				groupKey: 'h:doing',
-				collapsedKeys: previous.rowKeysByGroupKey.get('h:doing') ?? new Set(),
+				groupKey: 'h:status:doing',
+				collapsedKeys: previous.rowKeysByGroupKey.get('h:status:doing') ?? new Set(),
 			},
 		)
 
 		expect(transition.focusIntent).toEqual({
 			type: 'group-trigger',
-			groupKey: 'h:doing',
+			groupKey: 'h:status:doing',
 			reentry: { type: 'root' },
 		})
 	})
@@ -110,9 +111,7 @@ describe('taskBoardCollection', () => {
 
 	it('拒绝重复 flat key，避免 virtual index 静默覆盖', () => {
 		const duplicateHeaders = buildTaskBoardFlatItems({
-			tasks: TASKS,
-			openSections: ['todo', 'doing'],
-			customSections: [
+			sections: [
 				{ key: 'same', label: '第一组', tasks: [TASKS[0]!] },
 				{ key: 'same', label: '第二组', tasks: [TASKS[1]!] },
 			],
@@ -131,9 +130,15 @@ function buildCollection(tasks: readonly TaskListItem[], openSections: readonly 
 	return buildTaskBoardCollection({
 		eligibleKeys: tasks.map((task) => task.id),
 		flatItems: buildTaskBoardFlatItems({
-			tasks,
-			statusOrder: STATUS_ORDER,
-			openSections,
+			sections: STATUS_ORDER.map((status) => ({
+				key: `status:${status}`,
+				label: status,
+				status,
+				tasks: tasks.filter((task) => task.status === status),
+			})),
+			collapsedGroupKeys: STATUS_ORDER.filter((status) => !openSections.includes(status)).map(
+				(status) => `h:status:${status}`,
+			),
 		}),
 	})
 }

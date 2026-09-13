@@ -31,7 +31,8 @@ export { updateTaskDisplayPreference } from './api/displayOptions'
 
 // ── Task adapter（列表页 apply） ────────────────────────────────────────────
 
-export { applyTaskDisplayOptionsToTasks, createTaskDisplayApplyContext } from './adapters/task'
+export { applyTaskDisplayOptionsToTasks } from './adapters/task'
+export type { TaskDisplaySection } from './adapters/task'
 
 // ── UI ──────────────────────────────────────────────────────────────────────
 

@@ -14,7 +14,7 @@ import {
 import { normalizeTaskWindowOrder } from '@/features/display-options'
 import { countTaskQuery, getTaskDetail, runTaskQuery } from '@/features/task/api/tasks'
 import { listTaskLinks } from '@/features/task/api/taskLinks'
-import type { CountTaskQueryInput, RunTaskQueryInput, TaskListItem } from '@/shared/types'
+import type { CountTaskQueryInput, RunTaskQueryInput, TaskQueryItem } from '@/shared/types'
 
 import { taskKeys } from './task.keys'
 
@@ -86,12 +86,12 @@ export function useTaskLinksQuery(taskId: string | null | undefined) {
 
 /** 展平 infinite pages 为列表项 */
 export function flattenTaskListPages(
-	pages: Array<{ items: TaskListItem[] }> | undefined,
-): TaskListItem[] {
+	pages: Array<{ items: TaskQueryItem[] }> | undefined,
+): TaskQueryItem[] {
 	if (!pages) {
 		return []
 	}
-	const items: TaskListItem[] = []
+	const items: TaskQueryItem[] = []
 	for (const page of pages) {
 		items.push(...page.items)
 	}

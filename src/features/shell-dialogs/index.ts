@@ -17,7 +17,4 @@ export {
 	type CustomDateDialogState,
 } from './useDialogStore'
 
-export {
-	useShellPreferenceStore,
-	selectProjectTaskBoardOpenSections,
-} from './useShellPreferenceStore'
+export { useShellPreferenceStore } from './useShellPreferenceStore'

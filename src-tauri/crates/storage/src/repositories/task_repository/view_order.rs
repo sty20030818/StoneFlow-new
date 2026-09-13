@@ -6,7 +6,7 @@ use sea_orm::{
 };
 use stoneflow_application::{
     task::{TaskOrderDirection, TaskOrderField, TaskOrderPartition, TaskOrderTerm, TaskOrderValue},
-    view::ViewTaskQuery,
+    view::{ViewDateBoundaries, ViewTaskQuery},
 };
 
 use super::view_date::sqlite_date_expression;
@@ -25,7 +25,7 @@ pub(super) fn apply_view_task_order(
         let mut after = Condition::any();
         let mut prefix = Condition::all();
         for (term, value) in terms.iter().zip(&cursor.values) {
-            let expression = order_expression(*term);
+            let expression = order_expression(*term, &definition.dates);
             if let Some(value) = value {
                 let value = cursor_expression(term.field, value);
                 let comparison = match term.direction {
@@ -46,7 +46,7 @@ pub(super) fn apply_view_task_order(
         query = query.filter(after);
     }
     for term in terms {
-        let expression = order_expression(term);
+        let expression = order_expression(term, &definition.dates);
         if term.can_be_null() {
             query = query.order_by(expression.clone().is_null(), Order::Asc);
         }
@@ -61,8 +61,25 @@ pub(super) fn apply_view_task_order(
     Ok(query)
 }
 
-fn order_expression(term: TaskOrderTerm) -> SimpleExpr {
+fn order_expression(term: TaskOrderTerm, dates: &ViewDateBoundaries) -> SimpleExpr {
+    if matches!(
+        term.field,
+        TaskOrderField::DueBucket | TaskOrderField::PlannedBucket
+    ) {
+        return date_bucket_expression(
+            if term.field == TaskOrderField::DueBucket {
+                "due_at"
+            } else {
+                "planned_at"
+            },
+            dates,
+        );
+    }
     let field = match term.field {
+        TaskOrderField::ProjectMissing => "project_id IS NULL",
+        TaskOrderField::ProjectName => "COALESCE((SELECT name FROM projects WHERE projects.id = tasks.project_id), '') COLLATE BINARY",
+        TaskOrderField::ProjectId => "project_id COLLATE BINARY",
+        TaskOrderField::DueBucket | TaskOrderField::PlannedBucket => unreachable!(),
         TaskOrderField::IsDone => "status = 'done'",
         TaskOrderField::Position => "position",
         TaskOrderField::Status => "CASE status WHEN 'doing' THEN 0 WHEN 'todo' THEN 1 WHEN 'waiting' THEN 2 WHEN 'done' THEN 3 WHEN 'canceled' THEN 4 END",
@@ -87,6 +104,37 @@ fn order_expression(term: TaskOrderTerm) -> SimpleExpr {
     } else {
         expression
     }
+}
+
+fn date_bucket_expression(column: &'static str, dates: &ViewDateBoundaries) -> SimpleExpr {
+    let value = sqlite_date_expression(Expr::cust(column));
+    Expr::case(Expr::cust(column).is_null(), 5)
+        .case(
+            value
+                .clone()
+                .lt(sqlite_date_expression(Expr::val(dates.today_start.clone()))),
+            0,
+        )
+        .case(
+            value.clone().lt(sqlite_date_expression(Expr::val(
+                dates.tomorrow_start.clone(),
+            ))),
+            1,
+        )
+        .case(
+            value.clone().lt(sqlite_date_expression(Expr::val(
+                dates.day_after_tomorrow_start.clone(),
+            ))),
+            2,
+        )
+        .case(
+            value.lt(sqlite_date_expression(Expr::val(
+                dates.next_week_start.clone(),
+            ))),
+            3,
+        )
+        .finally(4)
+        .into()
 }
 
 fn cursor_expression(field: TaskOrderField, value: &TaskOrderValue) -> SimpleExpr {

@@ -533,7 +533,7 @@ const PRIVATE_LEAF_GROUPS = [
 	[
 		'src/features/task/components/TaskBoard.tsx',
 		'TaskBoard',
-		['TaskBoardEmptyState', 'TaskBoardGridRow', 'StatusSectionHeader'],
+		['TaskBoardEmptyState', 'TaskBoardGridRow', 'TaskGroupHeader'],
 	],
 	['src/features/task/components/TaskRowAdapter.tsx', 'TaskRowAdapter', ['UpdatedAtCell']],
 	[
@@ -1290,7 +1290,7 @@ const REQUIRED_PRODUCT_SCENE_REGISTRATIONS = [
 		['src/features/task-workspace/components/TaskWorkspace.tsx', 'src/layout/ShellChrome.tsx'],
 		[
 			'TaskBoard',
-			'StatusSectionHeader',
+			'TaskGroupHeader',
 			'BoardSectionHeader',
 			'BoardRowSlot',
 			'TaskRowAdapter',

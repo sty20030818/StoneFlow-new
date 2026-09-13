@@ -73,7 +73,7 @@ export async function runTaskView(input: RunTaskViewInput): Promise<RunTaskViewR
 	}
 	return {
 		view: toView(result.view),
-		items: result.items.map(toTaskListItem),
+		items: result.items.map(toTaskQueryItem),
 		totalCount: result.totalCount ?? null,
 		nextCursor: result.nextCursor ?? null,
 	}
@@ -207,8 +207,9 @@ function toBaseViewKey(value: unknown): View['baseViewKey'] {
 	throw new Error('View 响应包含无效 baseViewKey')
 }
 
-function toTaskListItem(value: Record<string, unknown>): RunTaskViewResult['items'][number] {
+function toTaskQueryItem(value: Record<string, unknown>): RunTaskViewResult['items'][number] {
 	return {
+		group: value.group as RunTaskViewResult['items'][number]['group'],
 		id: String(value.id),
 		spaceId: String(value.spaceId),
 		spaceName: String(value.spaceName),

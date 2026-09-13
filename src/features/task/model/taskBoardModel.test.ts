@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { TaskListItem } from '@/shared/types'
+import type { TaskListItem, TaskStatus } from '@/shared/types'
 import {
 	COLLECTION_ITEM_GAP,
 	COLLECTION_ROW_HEIGHT,
@@ -42,6 +42,28 @@ function task(
 	}
 }
 
+function buildFixture({
+	tasks,
+	openSections = ['todo', 'doing'],
+	statusOrder = ['todo', 'doing'],
+}: {
+	tasks: TaskListItem[]
+	openSections?: TaskStatus[]
+	statusOrder?: TaskStatus[]
+}) {
+	return buildTaskBoardFlatItems({
+		sections: statusOrder.map((status) => ({
+			key: `status:${status}`,
+			label: status,
+			status,
+			tasks: tasks.filter((item) => item.status === status),
+		})),
+		collapsedGroupKeys: statusOrder
+			.filter((status) => !openSections.includes(status))
+			.map((status) => `h:status:${status}`),
+	})
+}
+
 describe('taskBoardModel', () => {
 	it('几何锁定批准的 TaskBoard 密度', () => {
 		expect(COLLECTION_ROW_HEIGHT).toBe(44)
@@ -53,13 +75,13 @@ describe('taskBoardModel', () => {
 			task({ id: 'a', title: 'A', status: 'todo' }),
 			task({ id: 'b', title: 'B', status: 'doing' }),
 		]
-		const open = buildTaskBoardFlatItems({
+		const open = buildFixture({
 			tasks,
 			openSections: ['todo', 'doing'],
 		})
 		expect(open.filter((i) => i.kind === 'row')).toHaveLength(2)
 
-		const collapsed = buildTaskBoardFlatItems({
+		const collapsed = buildFixture({
 			tasks,
 			openSections: ['todo'],
 		})
@@ -68,7 +90,7 @@ describe('taskBoardModel', () => {
 	})
 
 	it('virtual layout：只在分页未结束时追加一行 sentinel', () => {
-		const flatItems = buildTaskBoardFlatItems({
+		const flatItems = buildFixture({
 			tasks: [
 				task({ id: 'a', title: 'A', status: 'todo' }),
 				task({ id: 'b', title: 'B', status: 'doing' }),
@@ -102,8 +124,8 @@ describe('taskBoardModel', () => {
 		expect(buildTaskBoardVirtualLayout([], true).contentHeightPx).toBe(COLLECTION_ROW_HEIGHT)
 	})
 
-	it('append anchor：新页任务插入前方分组后仍保持同一 task 的视口位置', () => {
-		const previous = buildTaskBoardFlatItems({
+	it('数据刷新在前序组插入任务后，按 stable task key 恢复视口锚点', () => {
+		const previous = buildFixture({
 			tasks: [
 				task({ id: 'todo-a', title: 'A', status: 'todo' }),
 				task({ id: 'doing-c', title: 'C', status: 'doing' }),
@@ -111,7 +133,7 @@ describe('taskBoardModel', () => {
 			statusOrder: ['todo', 'doing'],
 			openSections: ['todo', 'doing'],
 		})
-		const next = buildTaskBoardFlatItems({
+		const next = buildFixture({
 			tasks: [
 				task({ id: 'todo-a', title: 'A', status: 'todo' }),
 				task({ id: 'doing-c', title: 'C', status: 'doing' }),
@@ -143,7 +165,7 @@ describe('taskBoardModel', () => {
 			task({ id: 'b', title: 'B', status: 'todo' }),
 			task({ id: 'c', title: 'C', status: 'doing' }),
 		]
-		const flat = buildTaskBoardFlatItems({
+		const flat = buildFixture({
 			tasks,
 			openSections: ['todo', 'doing'],
 		})

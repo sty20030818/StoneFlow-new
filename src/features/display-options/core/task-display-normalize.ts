@@ -217,6 +217,7 @@ function getFallbackValue<T extends string>(preferred: T, allowed: readonly T[])
 /** 只投影会改变窗口的排序意图；固定顺序不产生无效方向变体。 */
 export function normalizeTaskWindowOrder(options: TaskWindowOrder): TaskWindowOrder {
 	return {
+		groupBy: options.groupBy,
 		orderBy: options.orderBy,
 		orderDirection:
 			options.orderBy === 'manual' || options.orderBy === 'smart' ? 'asc' : options.orderDirection,

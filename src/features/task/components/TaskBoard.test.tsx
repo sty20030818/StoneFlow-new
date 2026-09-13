@@ -21,6 +21,7 @@ import {
 } from '@/features/command'
 import { DangerConfirmProvider } from '@/features/danger-confirm'
 import { useCollectionInteraction, type CollectionFocusIntent } from '@/features/selection'
+import { useDialogStore } from '@/features/shell-dialogs'
 import {
 	TaskBoard,
 	type TaskBoardPagination,
@@ -30,13 +31,10 @@ import { focusTaskBoardTaskId } from '@/features/task/components/taskBoardFocus'
 import {
 	buildTaskBoardItemOffsets,
 	buildTaskBoardFlatItems,
-	type TaskBoardCustomSection,
 } from '@/features/task/model/taskBoardModel'
 import { buildTaskBoardCollection } from '@/features/task/model/taskBoardCollection'
-import {
-	TASK_BOARD_STATUS_ORDER,
-	orderTasksByTaskBoardVisualOrder,
-} from '@/features/task/model/taskBoardOrder'
+import type { TaskDisplaySection } from '@/features/display-options'
+import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { indexTasksById } from '@/features/task/model/taskCollectionIndex'
 import { AppScrollArea } from '@/shared/components/AppScrollArea'
 import {
@@ -121,6 +119,165 @@ describe('TaskBoard', () => {
 			expect(sectionHeader).toHaveStyle({ height: '36px' })
 			expect(sectionHeader.parentElement).toHaveClass('block', 'w-full')
 		}
+	})
+
+	it('非状态组可折叠并选中隐藏的已加载成员，展开后保持选择与菜单焦点', async () => {
+		const tasks = [
+			createTask({ id: 'high-a', title: '高优先级 A', priority: 4 }),
+			createTask({ id: 'high-b', title: '高优先级 B', priority: 4 }),
+			createTask({ id: 'low-c', title: '低优先级 C', priority: 1 }),
+		]
+		const onSectionOpenChange = vi.fn()
+		function GroupProbe() {
+			const [collapsedGroupKeys, setCollapsedGroupKeys] = useState<readonly string[]>([])
+			return (
+				<TaskBoardHarness
+					tasks={tasks}
+					sections={[
+						{ key: 'priority:4', label: '紧急', tasks: tasks.slice(0, 2) },
+						{ key: 'priority:1', label: '低', tasks: tasks.slice(2) },
+					]}
+					collapsedGroupKeys={collapsedGroupKeys}
+					onSectionOpenChange={(groupKey, open) => {
+						onSectionOpenChange(groupKey, open)
+						setCollapsedGroupKeys(open ? [] : [groupKey])
+					}}
+					onEmptyAction={() => undefined}
+					onToggleTaskStatus={async () => undefined}
+					onUpdateTaskPriority={async () => undefined}
+					onUpdateTaskStatus={async () => undefined}
+					pendingTaskId={null}
+				/>
+			)
+		}
+		renderTaskBoard(<GroupProbe />)
+		const trigger = screen.getByRole('button', { name: '折叠 紧急' })
+		fireEvent.click(trigger)
+		expect(onSectionOpenChange).toHaveBeenCalledWith('h:priority:4', false)
+		expect(trigger).toHaveAttribute('aria-expanded', 'false')
+		expect(screen.queryByRole('row', { name: '打开任务 高优先级 A' })).not.toBeInTheDocument()
+		expect(screen.queryByRole('row', { name: '打开任务 高优先级 B' })).not.toBeInTheDocument()
+		fireEvent.contextMenu(trigger.closest('[data-board-section-header]')!)
+		fireEvent.click(await screen.findByRole('menuitem', { name: '选中全部' }))
+		await waitFor(() =>
+			expect(screen.getByTestId('selected-keys')).toHaveTextContent('high-a,high-b'),
+		)
+		expect(screen.getByRole('row', { name: '打开任务 低优先级 C' })).toHaveAttribute(
+			'aria-selected',
+			'false',
+		)
+		expect(screen.queryByRole('button', { name: '在 紧急 中创建任务' })).not.toBeInTheDocument()
+		await waitFor(() => expect(trigger).toHaveFocus())
+		fireEvent.click(screen.getByRole('button', { name: '展开 紧急' }))
+		expect(onSectionOpenChange).toHaveBeenLastCalledWith('h:priority:4', true)
+		for (const title of ['高优先级 A', '高优先级 B']) {
+			expect(screen.getByRole('row', { name: `打开任务 ${title}` })).toHaveAttribute(
+				'aria-selected',
+				'true',
+			)
+		}
+	})
+
+	it('同组追加成员后保留一个组头，部分选中时选中全部包含新增成员', async () => {
+		const tasks = [
+			createTask({ id: 'project-a', title: '项目任务 A' }),
+			createTask({ id: 'project-b', title: '项目任务 B' }),
+			createTask({ id: 'project-c', title: '项目任务 C' }),
+		]
+		function AppendProbe() {
+			const [loadedCount, setLoadedCount] = useState(2)
+			const loadedTasks = tasks.slice(0, loadedCount)
+			return (
+				<>
+					<button type='button' onClick={() => setLoadedCount(3)}>
+						追加下一页
+					</button>
+					<TaskBoardHarness
+						tasks={loadedTasks}
+						sections={[{ key: 'project:alpha', label: '项目甲', tasks: loadedTasks }]}
+						selectedTaskIds={['project-a', 'project-b']}
+						onEmptyAction={() => undefined}
+						onToggleTaskStatus={async () => undefined}
+						onUpdateTaskPriority={async () => undefined}
+						onUpdateTaskStatus={async () => undefined}
+						pendingTaskId={null}
+					/>
+				</>
+			)
+		}
+		renderTaskBoard(<AppendProbe />)
+		expect(screen.queryByRole('row', { name: '打开任务 项目任务 C' })).not.toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: '追加下一页' }))
+		expect(screen.getAllByRole('button', { name: '折叠 项目甲' })).toHaveLength(1)
+		expect(screen.getByRole('row', { name: '打开任务 项目任务 C' })).toHaveAttribute(
+			'aria-selected',
+			'false',
+		)
+		fireEvent.contextMenu(
+			screen.getByRole('button', { name: '折叠 项目甲' }).closest('[data-board-section-header]')!,
+		)
+		fireEvent.click(await screen.findByRole('menuitem', { name: '选中全部' }))
+		await waitFor(() =>
+			expect(screen.getByTestId('selected-keys')).toHaveTextContent(
+				'project-a,project-b,project-c',
+			),
+		)
+	})
+
+	it('创建动作使用状态元数据预填项目与状态，不从非状态标签推断动作', () => {
+		const tasks = [
+			createTask({ id: 'task-a', title: '任务 A', status: 'doing' }),
+			createTask({ id: 'task-b', title: '任务 B' }),
+		]
+		useDialogStore.setState(useDialogStore.getInitialState())
+		try {
+			renderTaskBoard(
+				<TaskBoardHarness
+					tasks={tasks}
+					sections={[
+						{ key: 'status:doing', label: '处理队列', status: 'doing', tasks: tasks.slice(0, 1) },
+						{ key: 'project:todo', label: '待执行', tasks: tasks.slice(1) },
+					]}
+					createProjectId='project-alpha'
+					onEmptyAction={() => undefined}
+					onToggleTaskStatus={async () => undefined}
+					onUpdateTaskPriority={async () => undefined}
+					onUpdateTaskStatus={async () => undefined}
+					pendingTaskId={null}
+				/>,
+			)
+			expect(screen.getByRole('button', { name: '折叠 待执行' })).toBeInTheDocument()
+			expect(screen.queryByRole('button', { name: '在 待执行 中创建任务' })).not.toBeInTheDocument()
+			fireEvent.click(screen.getByRole('button', { name: '在 处理队列 中创建任务' }))
+			expect(useDialogStore.getState()).toMatchObject({
+				createDialogType: 'task',
+				taskCreateDraft: { projectId: 'project-alpha', status: 'doing' },
+			})
+		} finally {
+			act(() => useDialogStore.getState().closeTaskCreateDialog())
+		}
+	})
+
+	it('单成员组全部选中后可取消，保留其他组的选择', async () => {
+		const tasks = [
+			createTask({ id: 'todo-a', title: '待执行 A', status: 'todo' }),
+			createTask({ id: 'doing-b', title: '进行中 B', status: 'doing' }),
+		]
+		renderTaskBoard(
+			<TaskBoardHarness
+				tasks={tasks}
+				selectedTaskIds={['todo-a', 'doing-b']}
+				onEmptyAction={() => undefined}
+				onToggleTaskStatus={async () => undefined}
+				onUpdateTaskPriority={async () => undefined}
+				onUpdateTaskStatus={async () => undefined}
+				pendingTaskId={null}
+			/>,
+		)
+		const trigger = screen.getByRole('button', { name: '折叠 待执行' })
+		fireEvent.contextMenu(trigger.closest('[data-board-section-header]')!)
+		fireEvent.click(await screen.findByRole('menuitem', { name: '取消选中全部' }))
+		await waitFor(() => expect(screen.getByTestId('selected-keys')).toHaveTextContent(/^doing-b$/))
 	})
 
 	it('连续选择组填满虚拟行间隙并只保留外侧圆角', () => {
@@ -440,10 +597,18 @@ describe('TaskBoard', () => {
 		})
 		const initialTasks = [
 			...Array.from({ length: 20 }, (_, index) =>
-				createTask({ id: `todo-${index}`, title: `待执行 ${index}`, status: 'todo' }),
+				createTask({
+					id: `todo-${index}`,
+					title: `待执行 ${index}`,
+					status: 'todo',
+				}),
 			),
 			...Array.from({ length: 20 }, (_, index) =>
-				createTask({ id: `doing-${index}`, title: `进行中 ${index}`, status: 'doing' }),
+				createTask({
+					id: `doing-${index}`,
+					title: `进行中 ${index}`,
+					status: 'doing',
+				}),
 			),
 		]
 		const onFetchNextPage = vi.fn()
@@ -460,7 +625,11 @@ describe('TaskBoard', () => {
 				return page.then(() => {
 					setTasks((current) => [
 						...current,
-						createTask({ id: 'doing-next-page', title: '新页进行中', status: 'doing' }),
+						createTask({
+							id: 'doing-next-page',
+							title: '新页进行中',
+							status: 'doing',
+						}),
 					])
 					setLoadedPageCount(2)
 				})
@@ -472,7 +641,11 @@ describe('TaskBoard', () => {
 						onClick={() =>
 							setTasks((current) => [
 								...current,
-								createTask({ id: 'done-mutation', title: '普通变更', status: 'done' }),
+								createTask({
+									id: 'done-mutation',
+									title: '普通变更',
+									status: 'done',
+								}),
 							])
 						}
 						type='button'
@@ -485,7 +658,7 @@ describe('TaskBoard', () => {
 						onToggleTaskStatus={async () => undefined}
 						onUpdateTaskPriority={async () => undefined}
 						onUpdateTaskStatus={async () => undefined}
-						openSections={['todo', 'doing']}
+						collapsedGroupKeys={['h:status:done', 'h:status:canceled']}
 						pagination={{
 							sourceKey: 'anchor-probe',
 							loadedPageCount,
@@ -641,19 +814,19 @@ describe('TaskBoard', () => {
 		]
 
 		function RowIndexProbe() {
-			const [openSections, setOpenSections] = useState<readonly TaskStatus[]>(['todo', 'doing'])
+			const [collapsedGroupKeys, setCollapsedGroupKeys] = useState<readonly string[]>([])
 			return (
 				<TaskBoardHarness
 					onEmptyAction={() => undefined}
-					onSectionOpenChange={(_groupKey, status, open) =>
-						setOpenSections((current) =>
-							open ? [...current, status] : current.filter((value) => value !== status),
+					onSectionOpenChange={(groupKey, open) =>
+						setCollapsedGroupKeys((current) =>
+							open ? current.filter((key) => key !== groupKey) : [...current, groupKey],
 						)
 					}
 					onToggleTaskStatus={async () => undefined}
 					onUpdateTaskPriority={async () => undefined}
 					onUpdateTaskStatus={async () => undefined}
-					openSections={openSections}
+					collapsedGroupKeys={collapsedGroupKeys}
 					pendingTaskId={null}
 					status='ready'
 					tasks={tasks}
@@ -805,7 +978,9 @@ describe('TaskBoard', () => {
 			expect(screen.getByTestId('focused-key')).toHaveTextContent('none')
 		})
 
-		const closeMenuB = screen.getByRole('button', { name: '关闭模拟菜单 任务 B' })
+		const closeMenuB = screen.getByRole('button', {
+			name: '关闭模拟菜单 任务 B',
+		})
 		fireEvent.click(closeMenuB)
 		await waitFor(() => expect(rowB).toHaveFocus())
 
@@ -845,8 +1020,7 @@ describe('TaskBoard', () => {
 			createTask({ id: `task-${index}`, title: `任务 ${index}` }),
 		)
 		const flatItems = buildTaskBoardFlatItems({
-			tasks,
-			openSections: TASK_BOARD_STATUS_ORDER,
+			sections: statusSectionFixture(tasks),
 		})
 		const itemOffsets = buildTaskBoardItemOffsets(flatItems)
 		try {
@@ -933,7 +1107,9 @@ describe('TaskBoard', () => {
 			const overscanStart = itemOffsets[overscanIndex]
 			if (overscanStart === undefined) throw new Error('overscan row 缺少 offset')
 			expect(
-				screen.getByRole('row', { name: `打开任务 ${overscanItem.task.title}` }),
+				screen.getByRole('row', {
+					name: `打开任务 ${overscanItem.task.title}`,
+				}),
 			).toBeInTheDocument()
 
 			scrollTo.mockClear()
@@ -948,7 +1124,9 @@ describe('TaskBoard', () => {
 			})
 			await waitFor(() =>
 				expect(
-					screen.getByRole('row', { name: `打开任务 ${overscanItem.task.title}` }),
+					screen.getByRole('row', {
+						name: `打开任务 ${overscanItem.task.title}`,
+					}),
 				).toHaveFocus(),
 			)
 		} finally {
@@ -1098,44 +1276,40 @@ type TaskBoardHarnessProps = Omit<
 	| 'onSectionOpenChange'
 	| 'taskById'
 > & {
-	customSections?: readonly TaskBoardCustomSection[]
+	sections?: readonly TaskDisplaySection[]
 	focusIntent?: CollectionFocusIntent<string, string> | null
 	onFocusIntentConsumed?: (intent: CollectionFocusIntent<string, string>) => void
 	onSectionOpenChange?: TaskBoardProps['onSectionOpenChange']
 	pagination?: TaskBoardPagination
 	onRetry?: TaskBoardProps['onRetry']
-	openSections?: readonly TaskStatus[]
+	collapsedGroupKeys?: readonly string[]
 	selectedTaskIds?: readonly string[]
 }
 
 function TaskBoardHarness({
-	customSections,
+	sections,
 	focusIntent = null,
 	onFocusIntentConsumed = () => undefined,
 	onSectionOpenChange = () => undefined,
 	pagination = { sourceKey: 'test', loadedPageCount: 1, state: 'exhausted' },
 	onRetry = () => undefined,
-	openSections = TASK_BOARD_STATUS_ORDER,
+	collapsedGroupKeys = [],
 	selectedTaskIds = [],
 	...props
 }: TaskBoardHarnessProps) {
+	const groups = useMemo(
+		() => sections ?? statusSectionFixture(props.tasks),
+		[sections, props.tasks],
+	)
 	const flatItems = useMemo(
-		() =>
-			buildTaskBoardFlatItems({
-				tasks: props.tasks,
-				openSections,
-				customSections,
-			}),
-		[customSections, openSections, props.tasks],
+		() => buildTaskBoardFlatItems({ sections: groups, collapsedGroupKeys }),
+		[groups, collapsedGroupKeys],
 	)
 	const eligibleKeys = useMemo(
-		() =>
-			orderTasksByTaskBoardVisualOrder(props.tasks, {
-				statusOrder: TASK_BOARD_STATUS_ORDER,
-				customSections,
-			}).map((task) => task.id),
-		[customSections, props.tasks],
+		() => groups.flatMap((group) => group.tasks.map((task) => task.id)),
+		[groups],
 	)
+
 	const boardCollection = useMemo(
 		() => buildTaskBoardCollection({ eligibleKeys, flatItems }),
 		[eligibleKeys, flatItems],
@@ -1193,4 +1367,16 @@ function createTask(
 		createdAt: overrides.createdAt ?? '2026-06-28T09:00:00.000Z',
 		updatedAt: overrides.updatedAt ?? '2026-06-28T11:00:00.000Z',
 	}
+}
+
+/** renderer 夹具显式给定组顺序；真实分组规则由 Display/SQL 测试验证。 */
+function statusSectionFixture(tasks: TaskListItem[]): TaskDisplaySection[] {
+	return (['doing', 'waiting', 'todo', 'done', 'canceled'] satisfies TaskStatus[]).map(
+		(status) => ({
+			key: `status:${status}`,
+			label: formatTaskStatusLabel(status),
+			status,
+			tasks: tasks.filter((task) => task.status === status),
+		}),
+	)
 }

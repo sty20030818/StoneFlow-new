@@ -5,7 +5,10 @@ use stoneflow_domain::WorkStatus;
 
 use crate::{
     activity::{ActivityAction, ActivityChangeInput},
-    task::{order::invalid_cursor, TaskOrderTuple, TaskQueryCursor, TaskQueryOrder, TaskRecord},
+    task::{
+        order::invalid_cursor, TaskOrderTuple, TaskQueryCursor, TaskQueryGroup, TaskQueryOrder,
+        TaskRecord,
+    },
     view::{
         FilterQueryValue, TaskScopeInput, TaskViewBaseKey, TaskViewContext, ViewDateBoundaries,
         ViewTaskRecord,
@@ -68,11 +71,12 @@ pub(crate) fn encode_task_query_cursor(
     query: &TaskQueryIdentity,
     dates: &ViewDateBoundaries,
     task: &ViewTaskRecord,
+    group: &TaskQueryGroup,
 ) -> Result<String, ApplicationError> {
-    let values = query.order.tuple(task);
+    let values = query.order.tuple(task, group);
     query.order.validate_tuple(&values)?;
     serde_json::to_string(&TaskCursorPayload {
-        version: 1,
+        version: 2,
         query: query.clone(),
         dates: dates.clone(),
         values,
@@ -85,7 +89,7 @@ pub(crate) fn decode_task_query_cursor(
     query: &TaskQueryIdentity,
 ) -> Result<(TaskQueryCursor, ViewDateBoundaries), ApplicationError> {
     let payload: TaskCursorPayload = serde_json::from_str(raw).map_err(|_| invalid_cursor())?;
-    if payload.version != 1 || &payload.query != query {
+    if payload.version != 2 || &payload.query != query {
         return Err(invalid_cursor());
     }
     query.order.validate_tuple(&payload.values)?;

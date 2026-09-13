@@ -1,30 +1,20 @@
 import { create } from 'zustand'
-import { uniq } from 'es-toolkit/array'
 import { persist } from 'zustand/middleware'
 
-import type { TaskStatus } from '@/shared/types'
-
-// ----- 常量 -----
-const PROJECT_TASK_BOARD_OPEN_SECTIONS_STORAGE_KEY = 'stoneflow:project-task-board-open-sections:v2'
-const DEFAULT_PROJECT_TASK_BOARD_OPEN_SECTIONS: TaskStatus[] = [
-	'doing',
-	'todo',
-	'waiting',
-	'done',
-	'canceled',
-]
+// 旧全局状态组偏好没有来源身份，不能复制成各工作台的折叠事实。
+const TASK_BOARD_COLLAPSED_GROUPS_STORAGE_KEY = 'stoneflow:task-board-collapsed-groups:v1'
 
 // ----- 类型 -----
 type ShellPreferenceState = {
 	projectTreeCollapsed: Record<string, boolean>
-	projectTaskBoardOpenSections: TaskStatus[]
+	taskBoardCollapsedGroups: Record<string, string[]>
 
 	setProjectTreeCollapsed: (payload: {
 		spaceId: string
 		projectId: string
 		collapsed: boolean
 	}) => void
-	setProjectTaskBoardOpenSections: (sections: TaskStatus[]) => void
+	setTaskBoardCollapsedGroups: (sourceKey: string, groupKeys: readonly string[]) => void
 }
 
 // ----- Store -----
@@ -32,7 +22,7 @@ export const useShellPreferenceStore = create<ShellPreferenceState>()(
 	persist(
 		(set) => ({
 			projectTreeCollapsed: {},
-			projectTaskBoardOpenSections: DEFAULT_PROJECT_TASK_BOARD_OPEN_SECTIONS,
+			taskBoardCollapsedGroups: {},
 
 			setProjectTreeCollapsed: ({ spaceId, projectId, collapsed }) =>
 				set((state) => ({
@@ -41,27 +31,22 @@ export const useShellPreferenceStore = create<ShellPreferenceState>()(
 						[toProjectTreeKey(spaceId, projectId)]: collapsed,
 					},
 				})),
-			setProjectTaskBoardOpenSections: (sections) =>
-				set(() => ({
-					projectTaskBoardOpenSections: uniq(
-						sections.filter((section) =>
-							['todo', 'doing', 'waiting', 'done', 'canceled'].includes(section),
-						),
-					),
+			setTaskBoardCollapsedGroups: (sourceKey, groupKeys) =>
+				set((state) => ({
+					taskBoardCollapsedGroups: {
+						...state.taskBoardCollapsedGroups,
+						[sourceKey]: [...new Set(groupKeys)],
+					},
 				})),
 		}),
 		{
-			name: PROJECT_TASK_BOARD_OPEN_SECTIONS_STORAGE_KEY,
+			name: TASK_BOARD_COLLAPSED_GROUPS_STORAGE_KEY,
 			partialize: (state) => ({
-				projectTaskBoardOpenSections: state.projectTaskBoardOpenSections,
+				taskBoardCollapsedGroups: state.taskBoardCollapsedGroups,
 			}),
 		},
 	),
 )
-
-// ----- Selectors -----
-export const selectProjectTaskBoardOpenSections = (state: ShellPreferenceState) =>
-	state.projectTaskBoardOpenSections
 
 // ----- 工具函数 -----
 export function toProjectTreeKey(spaceId: string, projectId: string) {

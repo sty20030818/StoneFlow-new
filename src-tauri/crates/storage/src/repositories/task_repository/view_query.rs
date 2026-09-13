@@ -319,6 +319,7 @@ fn storage_status_from_str(value: &str) -> Option<StorageWorkStatus> {
 mod tests {
     fn manual_order() -> TaskQueryOrder {
         TaskQueryOrder {
+            group_by: TaskGroupBy::None,
             order_by: TaskOrderBy::Manual,
             order_direction: TaskOrderDirection::Asc,
             completed_order: TaskCompletedOrder::Natural,
@@ -329,8 +330,8 @@ mod tests {
     use serde::Deserialize;
     use stoneflow_application::{
         task::{
-            TaskCompletedOrder, TaskOrderBy, TaskOrderDirection, TaskOrderValue, TaskQueryCursor,
-            TaskQueryOrder,
+            TaskCompletedOrder, TaskGroupBy, TaskOrderBy, TaskOrderDirection, TaskOrderValue,
+            TaskQueryCursor, TaskQueryOrder,
         },
         view::{FilterQueryValue, TaskScopeInput},
     };

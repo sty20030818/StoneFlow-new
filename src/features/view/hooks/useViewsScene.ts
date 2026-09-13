@@ -227,7 +227,12 @@ export function useSavedViewWorkspaceScene() {
 		totalCount: taskTotalCount,
 	})
 	const taskCollection = useTaskCollectionScene({
-		source: { items, status: boardStatus, onRetry: taskRunQuery.refetch },
+		source: {
+			items,
+			status: boardStatus,
+			onRetry: taskRunQuery.refetch,
+			collapseScopeKey: JSON.stringify([scope, viewId]),
+		},
 		displayPageKey,
 		display,
 		fallbackSubtitle:

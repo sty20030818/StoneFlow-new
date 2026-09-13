@@ -86,7 +86,12 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 	}, [config.fallbackSubtitle, isAllScope])
 
 	const taskCollection = useTaskCollectionScene({
-		source: { items: taskList.items, status: taskList.status, onRetry: taskList.refetch },
+		source: {
+			items: taskList.items,
+			status: taskList.status,
+			onRetry: taskList.refetch,
+			collapseScopeKey: JSON.stringify([scope, context, queryInput.baseViewKey]),
+		},
 		displayPageKey: config.displayPageKey,
 		display,
 		fallbackSubtitle,

@@ -23,12 +23,14 @@ import type {
 	FilterQuery,
 	RunTaskQueryInput,
 	RunTaskQueryResult,
-	TaskListItem,
+	TaskQueryItem,
 	View,
 } from '@/shared/types'
 import { TestInteractionProviders } from '@/test/TestInteractionProviders'
 
-import { TaskPreviewProvider } from '../detail/model/TaskPreviewProvider'
+import { TaskPreviewProvider, useTaskPreviewContext } from '../detail/model/TaskPreviewProvider'
+import { TaskPreview } from '../detail/components/TaskPreview'
+import { useTaskPreviewController } from '../detail/model/useTaskPreviewController'
 import { TaskListSceneView } from './TaskListSceneView'
 
 const { invokeMock } = vi.hoisted(() => ({ invokeMock: vi.fn() }))
@@ -62,8 +64,13 @@ beforeEach(() => {
 			return this.dataset.scrollContainer === 'true' ? 1200 : 0
 		},
 	)
+	vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockImplementation(
+		function (this: HTMLElement) {
+			return this.dataset.scrollContainer === 'true' ? 960 : 0
+		},
+	)
 	useShellPreferenceStore.setState({
-		projectTaskBoardOpenSections: ['todo', 'doing', 'waiting', 'done', 'canceled'],
+		taskBoardCollapsedGroups: {},
 	})
 })
 
@@ -214,6 +221,7 @@ it.each([PROJECT_PATH, SAVED_PATH])(
 		if (toDesc) fireEvent.click(toDesc)
 		await waitFor(() =>
 			expect(backend.requests.at(-1)?.query.order).toEqual({
+				groupBy: 'status',
 				orderBy: 'priority',
 				orderDirection: 'desc',
 				completedOrder: 'recency',
@@ -254,13 +262,135 @@ it.each([PROJECT_PATH, SAVED_PATH])(
 	},
 )
 
+it.each([
+	{ groupBy: 'status' as const, label: '进行中' },
+	{ groupBy: 'priority' as const, label: '紧急' },
+])(
+	'$groupBy 分组跨页合并、折叠后选择与续页重试共用真实页面，偏好按来源和分组隔离',
+	async ({ groupBy, label }) => {
+		const backend = installBackend()
+		const next = deferred<RunTaskQueryResult>()
+		const first = { ...task('group-a', '同组首屏任务', 'doing'), priority: 4 as const }
+		const second = { ...task('group-b', '同组续页任务', 'doing'), priority: 4 as const }
+		const other = task('other-group', '另一组任务', 'todo')
+		backend.items = [first, second, other]
+		let restarted = false
+		let failed = false
+		backend.read = async (query, cursor) => {
+			const items = [first, second, other].map((item): TaskQueryItem => ({
+				...item,
+				group:
+					query.order.groupBy === 'priority'
+						? { kind: 'priority', priority: item.priority }
+						: { kind: 'status', status: item.status },
+			}))
+			if (restarted || query.order.groupBy !== groupBy) return page(items, null, 3)
+			if (!cursor) return page(items.slice(0, 1), 'same-group-next', 3)
+			if (!failed) return next.promise
+			return page(items.slice(1), null, null)
+		}
+		const workspace = await renderWorkspace(PROJECT_PATH, <WorkspacePreview />)
+		await screen.findByText('同组首屏任务')
+		if (groupBy === 'priority') await chooseGrouping('状态', '优先级')
+		await waitFor(() => expect(backend.requests.at(-1)?.cursor).toBe('same-group-next'))
+		const trigger = screen.getByRole('button', { name: `折叠 ${label}` })
+		fireEvent.click(trigger)
+		expect(screen.queryByRole('row', { name: '打开任务 同组首屏任务' })).not.toBeInTheDocument()
+		fireEvent.contextMenu(trigger.closest('[data-board-section-header]')!)
+		fireEvent.click(await screen.findByRole('menuitem', { name: '选中全部' }))
+		await waitFor(() => expect(trigger).toHaveFocus())
+		failed = true
+		await act(async () => next.reject(new Error('分组续页读取中断')))
+		expect(await screen.findByText('分组续页读取中断')).toBeVisible()
+		pressEnter(screen.getByRole('button', { name: '重试' }))
+		expect(await screen.findByRole('row', { name: '打开任务 另一组任务' })).toHaveAttribute(
+			'aria-selected',
+			'false',
+		)
+		expect(screen.queryByRole('row', { name: '打开任务 同组续页任务' })).not.toBeInTheDocument()
+		expect(screen.getAllByRole('button', { name: `展开 ${label}` })).toHaveLength(1)
+		fireEvent.click(screen.getByRole('button', { name: `展开 ${label}` }))
+		expect(screen.getByRole('row', { name: '打开任务 同组首屏任务' })).toHaveAttribute(
+			'aria-selected',
+			'true',
+		)
+		expect(screen.getByRole('row', { name: '打开任务 同组续页任务' })).toHaveAttribute(
+			'aria-selected',
+			'false',
+		)
+		fireEvent.contextMenu(
+			screen.getByRole('button', { name: `折叠 ${label}` }).closest('[data-board-section-header]')!,
+		)
+		fireEvent.click(await screen.findByRole('menuitem', { name: '选中全部' }))
+		expect(screen.getByRole('row', { name: '打开任务 同组续页任务' })).toHaveAttribute(
+			'aria-selected',
+			'true',
+		)
+		const grid = screen.getByRole('grid')
+		act(() => grid.focus())
+		fireEvent.keyDown(grid, { key: 'Home' })
+		const focusedRow = screen.getByRole('row', { name: '打开任务 同组首屏任务' })
+		await waitFor(() => expect(focusedRow).toHaveFocus())
+		fireEvent.click(screen.getByRole('button', { name: '键盘预览当前任务' }))
+		expect(await screen.findByLabelText('任务预览')).toHaveTextContent('同组首屏任务')
+		expect(focusedRow).toHaveAttribute('data-focus-suppressed', 'true')
+		fireEvent.click(screen.getByRole('button', { name: '关闭预览' }))
+		expect(screen.queryByLabelText('任务预览')).not.toBeInTheDocument()
+		expect(focusedRow).not.toHaveAttribute('data-focus-suppressed')
+		expect(focusedRow).toHaveFocus()
+		expect(focusedRow).toHaveAttribute('aria-selected', 'true')
+		fireEvent.click(screen.getByRole('button', { name: `折叠 ${label}` }))
+		expect(
+			backend.requests
+				.filter(({ query }) => query.order.groupBy === groupBy)
+				.map(({ cursor }) => cursor),
+		).toEqual([null, 'same-group-next', 'same-group-next'])
+
+		restarted = true
+		// 同项目的全部/未完成是两个工作台来源；切换分组也不复用旧组的折叠。
+		fireEvent.click(screen.getByRole('radio', { name: '全部' }))
+		expect(await screen.findByRole('row', { name: '打开任务 同组首屏任务' })).toBeVisible()
+		fireEvent.click(screen.getByRole('radio', { name: '未完成' }))
+		await screen.findByRole('button', { name: `展开 ${label}` })
+		const currentGroupLabel = groupBy === 'status' ? '状态' : '优先级'
+		const alternateGroupLabel = groupBy === 'status' ? '优先级' : '状态'
+		await chooseGrouping(currentGroupLabel, alternateGroupLabel)
+		expect(await screen.findByRole('row', { name: '打开任务 同组首屏任务' })).toBeVisible()
+		await chooseGrouping(alternateGroupLabel, currentGroupLabel)
+		await screen.findByRole('button', { name: `展开 ${label}` })
+		workspace.unmount()
+		await renderWorkspace(PROJECT_PATH)
+		expect(await screen.findByRole('button', { name: `展开 ${label}` })).toHaveAttribute(
+			'aria-expanded',
+			'false',
+		)
+		expect(screen.queryByRole('row', { name: '打开任务 同组首屏任务' })).not.toBeInTheDocument()
+	},
+)
+
+async function chooseGrouping(current: string, next: string) {
+	fireEvent.click(screen.getByRole('button', { name: '显示选项' }))
+	const panel = await screen.findByRole('dialog', { name: '显示选项' })
+	fireEvent.click(within(panel).getByRole('button', { name: `${current} 分组` }))
+	fireEvent.click(await screen.findByRole('option', { name: next }))
+	fireEvent.keyDown(panel, { key: 'Escape' })
+	await waitFor(() =>
+		expect(screen.queryByRole('dialog', { name: '显示选项' })).not.toBeInTheDocument(),
+	)
+}
+
 function pressEnter(element: HTMLElement) {
 	fireEvent.keyDown(element, { key: 'Enter' })
 	fireEvent.keyUp(element, { key: 'Enter' })
 }
 
-function task(id: string, title: string, status: TaskListItem['status'] = 'waiting'): TaskListItem {
+function task(
+	id: string,
+	title: string,
+	status: TaskQueryItem['status'] = 'waiting',
+): TaskQueryItem {
 	return {
+		group: { kind: 'status', status },
 		id,
 		title,
 		status,
@@ -283,7 +413,7 @@ function task(id: string, title: string, status: TaskListItem['status'] = 'waiti
 }
 
 function page(
-	items: TaskListItem[],
+	items: TaskQueryItem[],
 	nextCursor: string | null,
 	totalCount: number | null,
 ): RunTaskQueryResult {
@@ -336,6 +466,10 @@ function installBackend() {
 					return { id: 'project-1', name: '项目一', spaceId: 'space-1', completedAt: null }
 				case 'list_views':
 					return [view]
+				case 'list_task_links':
+					return []
+				case 'get_task_detail':
+					return { ...backend.items.find((item) => item.id === input.taskId), note: '预览备注' }
 				case 'run_task_query':
 				case 'run_task_view': {
 					const query =
@@ -360,7 +494,7 @@ function installBackend() {
 	return backend
 }
 
-async function renderWorkspace(initialEntry: string) {
+async function renderWorkspace(initialEntry: string, shellContent?: ReactNode) {
 	const queryClient = new QueryClient({
 		defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { retry: false } },
 	})
@@ -369,7 +503,12 @@ async function renderWorkspace(initialEntry: string) {
 		createRoute({
 			getParentRoute: () => root,
 			path,
-			component: () => <WorkspaceProviders>{node}</WorkspaceProviders>,
+			component: () => (
+				<WorkspaceProviders>
+					{node}
+					{shellContent}
+				</WorkspaceProviders>
+			),
 		})
 	const router = createRouter({
 		routeTree: root.addChildren([
@@ -389,6 +528,36 @@ async function renderWorkspace(initialEntry: string) {
 		await router.load()
 	})
 	return { router, queryClient, unmount: rendered.unmount }
+}
+
+/** 壳的预览入口接真实 controller 和 Card；页面、集合和详情查询均保留生产实现。 */
+function WorkspacePreview() {
+	const context = useTaskPreviewContext()
+	const preview = useTaskPreviewController()
+	return (
+		<>
+			<button
+				type='button'
+				onClick={() => {
+					const taskId = context.source?.focusedTaskId
+					if (taskId) preview.openPreview(taskId, 'keyboard')
+				}}
+			>
+				键盘预览当前任务
+			</button>
+			<button type='button' onClick={preview.closePreview}>
+				关闭预览
+			</button>
+			{preview.previewState.open ? (
+				<TaskPreview
+					task={preview.targetTask}
+					linkSummary={preview.linkSummary}
+					onPointerEnter={() => preview.setPreviewPointerInside(true)}
+					onPointerLeave={() => preview.setPreviewPointerInside(false)}
+				/>
+			) : null}
+		</>
+	)
 }
 
 function WorkspaceProviders({ children }: { children: ReactNode }) {

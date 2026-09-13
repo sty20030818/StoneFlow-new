@@ -1,18 +1,15 @@
 import { describe, expect, it } from 'vitest'
 
 import { resolveTaskDisplayOptions } from '@/features/display-options/core'
-import type { TaskListItem } from '@/shared/types'
+import type { TaskQueryItem } from '@/shared/types'
 
-import {
-	applyTaskDisplayOptionsToTasks,
-	createTaskDisplayApplyContext,
-	resolveTaskDateBucket,
-} from './index'
+import { applyTaskDisplayOptionsToTasks } from './index'
 
 function createTask(
-	overrides: Partial<TaskListItem> & Pick<TaskListItem, 'id' | 'title'>,
-): TaskListItem {
+	overrides: Partial<TaskQueryItem> & Pick<TaskQueryItem, 'id' | 'title'>,
+): TaskQueryItem {
 	return {
+		group: overrides.group ?? { kind: 'none' },
 		id: overrides.id,
 		title: overrides.title,
 		spaceId: overrides.spaceId ?? 'space-1',
@@ -63,7 +60,6 @@ describe('task-display adapters', () => {
 		const result = applyTaskDisplayOptionsToTasks({
 			items: tasks,
 			options: resolveTaskDisplayOptions({ pageKey: 'task:all' }),
-			context: createTaskDisplayApplyContext('task:all'),
 		})
 
 		expect(result.orderedItems.map((task) => task.id)).toEqual([
@@ -90,24 +86,25 @@ describe('task-display adapters', () => {
 		const result = applyTaskDisplayOptionsToTasks({
 			items: tasks,
 			options: resolveTaskDisplayOptions({ pageKey: 'task:project-detail' }),
-			context: createTaskDisplayApplyContext('task:project-detail'),
 		})
 
 		expect(result.orderedItems.map((task) => task.id)).toEqual(['older', 'newer'])
 	})
 
-	it('priority 分组会输出 customSections，并保持组内排序', () => {
+	it('priority 分组与状态组共用 sections，并保持组内排序', () => {
 		const tasks = [
 			createTask({
 				id: 'p4',
 				title: 'P4',
 				priority: 4,
+				group: { kind: 'priority', priority: 4 },
 				updatedAt: '2026-06-28T12:00:00.000Z',
 			}),
 			createTask({
 				id: 'p2',
 				title: 'P2',
 				priority: 2,
+				group: { kind: 'priority', priority: 2 },
 			}),
 		]
 
@@ -122,26 +119,29 @@ describe('task-display adapters', () => {
 		const result = applyTaskDisplayOptionsToTasks({
 			items: tasks,
 			options,
-			context: createTaskDisplayApplyContext('task:all'),
 		})
 
 		expect(result.sections.map((section) => section.key)).toEqual(['priority:4', 'priority:2'])
-		expect(result.boardPatch.customSections?.map((section) => section.key)).toEqual([
-			'priority:4',
-			'priority:2',
-		])
+		expect(result.sections.every((section) => section.status === undefined)).toBe(true)
 	})
 
-	it('status 分组不会生成 customSections，而是复用 board 的 statusOrder', () => {
-		const tasks = [createTask({ id: 'a', title: 'A', status: 'doing' })]
+	it('status 分组提供统一身份和动作元数据', () => {
+		const tasks = [
+			createTask({
+				id: 'a',
+				title: 'A',
+				status: 'doing',
+				group: { kind: 'status', status: 'doing' },
+			}),
+		]
 		const result = applyTaskDisplayOptionsToTasks({
 			items: tasks,
 			options: resolveTaskDisplayOptions({ pageKey: 'task:all' }),
-			context: createTaskDisplayApplyContext('task:all'),
 		})
 
-		expect(result.boardPatch.customSections).toBeUndefined()
-		expect(result.boardPatch.statusOrder).toEqual(['doing', 'todo', 'waiting', 'done', 'canceled'])
+		expect(result.sections).toEqual([
+			{ key: 'status:doing', label: '进行中', status: 'doing', tasks },
+		])
 	})
 
 	it('完成项投影同样只保留统一查询返回顺序', () => {
@@ -163,14 +163,70 @@ describe('task-display adapters', () => {
 		const result = applyTaskDisplayOptionsToTasks({
 			items: tasks,
 			options: resolveTaskDisplayOptions({ pageKey: 'task:completed' }),
-			context: createTaskDisplayApplyContext('task:completed'),
 		})
 
 		expect(result.orderedItems.map((task) => task.id)).toEqual(['old-completed', 'new-completed'])
 	})
 
-	it('日期 bucket 能区分 none 与 later', () => {
-		expect(resolveTaskDateBucket(null)).toBe('none')
-		expect(resolveTaskDateBucket('2099-06-30T10:00:00.000Z')).toBe('later')
+	it('日期身份来自查询冻结的 bucket，不按当前时钟重新分类', () => {
+		const tasks = [
+			createTask({
+				id: 'today',
+				title: 'Today',
+				dueAt: '2000-01-01T00:00:00Z',
+				group: { kind: 'due', bucket: 'today' },
+			}),
+		]
+		const result = applyTaskDisplayOptionsToTasks({
+			items: tasks,
+			options: resolveTaskDisplayOptions({
+				pageKey: 'task:all',
+				personalOverride: { groupBy: 'due' },
+			}),
+		})
+		expect(result.sections).toEqual([{ key: 'due:today', label: '今天', tasks }])
+	})
+
+	it('同一主组跨页合并，项目 key 不依赖标签且不再按 locale 重排', () => {
+		const tasks = [
+			createTask({
+				id: 'p1-a',
+				title: 'A',
+				group: { kind: 'project', projectId: 'p1', projectName: 'Z 项目' },
+			}),
+			createTask({
+				id: 'p1-b',
+				title: 'B',
+				group: { kind: 'project', projectId: 'p1', projectName: 'Z 项目' },
+			}),
+			createTask({
+				id: 'p2-a',
+				title: 'C',
+				group: { kind: 'project', projectId: 'p2', projectName: 'a 项目' },
+			}),
+			createTask({
+				id: 'standalone',
+				title: 'D',
+				group: { kind: 'project', projectId: null, projectName: null },
+			}),
+		]
+		const result = applyTaskDisplayOptionsToTasks({
+			items: tasks,
+			options: resolveTaskDisplayOptions({
+				pageKey: 'task:all',
+				personalOverride: { groupBy: 'project' },
+			}),
+		})
+		expect(
+			result.sections.map(({ key, label, tasks: members }) => ({
+				key,
+				label,
+				ids: members.map(({ id }) => id),
+			})),
+		).toEqual([
+			{ key: 'project:id:p1', label: 'Z 项目', ids: ['p1-a', 'p1-b'] },
+			{ key: 'project:id:p2', label: 'a 项目', ids: ['p2-a'] },
+			{ key: 'project:none', label: '独立事项', ids: ['standalone'] },
+		])
 	})
 })

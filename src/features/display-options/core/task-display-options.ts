@@ -1,18 +1,12 @@
 import { z } from 'zod'
 import {
+	TASK_WINDOW_GROUP_BY_VALUES,
 	TASK_WINDOW_ORDER_BY_VALUES,
 	TASK_WINDOW_ORDER_DIRECTION_VALUES,
 	TASK_WINDOW_COMPLETED_ORDER_VALUES,
 } from '@/shared/types'
 
-export const TASK_DISPLAY_GROUP_BY_VALUES = [
-	'none',
-	'status',
-	'priority',
-	'project',
-	'due',
-	'scheduled',
-] as const
+export const TASK_DISPLAY_GROUP_BY_VALUES = TASK_WINDOW_GROUP_BY_VALUES
 
 export const TASK_DISPLAY_ORDER_BY_VALUES = TASK_WINDOW_ORDER_BY_VALUES
 export const TASK_DISPLAY_ORDER_DIRECTION_VALUES = TASK_WINDOW_ORDER_DIRECTION_VALUES

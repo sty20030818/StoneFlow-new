@@ -3,6 +3,7 @@
 use serde::{Deserialize, Serialize};
 use stoneflow_domain::WorkStatus;
 
+use super::{TaskGroupBy, TaskQueryGroup};
 use crate::{view::ViewTaskRecord, ApplicationError};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -38,6 +39,7 @@ pub enum TaskCompletedOrder {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct TaskQueryOrder {
+    pub group_by: TaskGroupBy,
     pub order_by: TaskOrderBy,
     pub order_direction: TaskOrderDirection,
     pub completed_order: TaskCompletedOrder,
@@ -45,6 +47,11 @@ pub struct TaskQueryOrder {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TaskOrderField {
+    ProjectMissing,
+    ProjectName,
+    ProjectId,
+    DueBucket,
+    PlannedBucket,
     IsDone,
     Position,
     Status,
@@ -124,7 +131,26 @@ impl TaskQueryOrder {
                 terms
             }
         };
-        let mut terms = Vec::new();
+        let group = match self.group_by {
+            TaskGroupBy::None => vec![],
+            TaskGroupBy::Status => vec![(Field::Status, Asc)],
+            TaskGroupBy::Priority => vec![(Field::Priority, Desc)],
+            TaskGroupBy::Project => vec![
+                (Field::ProjectMissing, Asc),
+                (Field::ProjectName, Asc),
+                (Field::ProjectId, Asc),
+            ],
+            TaskGroupBy::Due => vec![(Field::DueBucket, Asc)],
+            TaskGroupBy::Scheduled => vec![(Field::PlannedBucket, Asc)],
+        };
+        let mut terms = group
+            .into_iter()
+            .map(|(field, direction)| TaskOrderTerm {
+                field,
+                direction,
+                partition: TaskOrderPartition::All,
+            })
+            .collect::<Vec<_>>();
         let partition = if self.completed_order == TaskCompletedOrder::Recency {
             terms.push(TaskOrderTerm {
                 field: Field::IsDone,
@@ -157,8 +183,11 @@ impl TaskQueryOrder {
         terms
     }
 
-    pub fn tuple(self, task: &ViewTaskRecord) -> TaskOrderTuple {
-        self.terms().iter().map(|term| term.value(task)).collect()
+    pub fn tuple(self, task: &ViewTaskRecord, group: &TaskQueryGroup) -> TaskOrderTuple {
+        self.terms()
+            .iter()
+            .map(|term| term.value(task, group))
+            .collect()
     }
 
     pub fn validate_tuple(self, values: &TaskOrderTuple) -> Result<(), ApplicationError> {
@@ -166,12 +195,12 @@ impl TaskQueryOrder {
         if terms.len() != values.len() {
             return Err(invalid_cursor());
         }
-        let done = match values.first() {
-            Some(Some(TaskOrderValue::Integer(value)))
-                if self.completed_order == TaskCompletedOrder::Recency =>
-            {
-                *value == 1
-            }
+        let done = match terms
+            .iter()
+            .position(|term| term.field == TaskOrderField::IsDone)
+            .and_then(|index| values.get(index))
+        {
+            Some(Some(TaskOrderValue::Integer(value))) => *value == 1,
             _ => false,
         };
         for (term, value) in terms.iter().zip(values) {
@@ -184,15 +213,24 @@ impl TaskQueryOrder {
                 continue;
             }
             let valid = match (&term.field, value) {
-                (TaskOrderField::IsDone, Some(TaskOrderValue::Integer(value))) => {
-                    (0..=1).contains(value)
-                }
+                (
+                    TaskOrderField::IsDone | TaskOrderField::ProjectMissing,
+                    Some(TaskOrderValue::Integer(value)),
+                ) => (0..=1).contains(value),
                 (TaskOrderField::Position, Some(TaskOrderValue::Integer(value))) => *value >= 0,
                 (
                     TaskOrderField::Priority | TaskOrderField::Status,
                     Some(TaskOrderValue::Integer(value)),
                 ) => (0..=4).contains(value),
-                (TaskOrderField::Id, Some(TaskOrderValue::Text(value))) => !value.is_empty(),
+                (
+                    TaskOrderField::Id | TaskOrderField::ProjectId,
+                    Some(TaskOrderValue::Text(value)),
+                ) => !value.is_empty(),
+                (TaskOrderField::ProjectName, Some(TaskOrderValue::Text(_))) => true,
+                (
+                    TaskOrderField::DueBucket | TaskOrderField::PlannedBucket,
+                    Some(TaskOrderValue::Integer(value)),
+                ) => (0..=5).contains(value),
                 (field, Some(TaskOrderValue::Text(value))) if field.is_date() => {
                     chrono::DateTime::parse_from_rfc3339(value).is_ok()
                 }
@@ -230,6 +268,7 @@ impl TaskOrderField {
                 | Self::PlannedAt
                 | Self::CompletedAt
                 | Self::CanceledAt
+                | Self::ProjectId
         )
     }
 }
@@ -239,7 +278,7 @@ impl TaskOrderTerm {
         self.partition != TaskOrderPartition::All || self.field.is_nullable()
     }
 
-    fn value(self, task: &ViewTaskRecord) -> Option<TaskOrderValue> {
+    fn value(self, task: &ViewTaskRecord, group: &TaskQueryGroup) -> Option<TaskOrderValue> {
         let done = task.status == WorkStatus::Done;
         if matches!(self.partition, TaskOrderPartition::Done) && !done
             || matches!(self.partition, TaskOrderPartition::NotDone) && done
@@ -248,6 +287,20 @@ impl TaskOrderTerm {
         }
         use TaskOrderValue::{Integer, Text};
         Some(match self.field {
+            TaskOrderField::ProjectMissing => Integer(i64::from(task.project_id.is_none())),
+            TaskOrderField::ProjectId => Text(task.project_id.clone()?),
+            TaskOrderField::ProjectName => match group {
+                TaskQueryGroup::Project { project_name, .. } => {
+                    Text(project_name.clone().unwrap_or_default())
+                }
+                _ => return None,
+            },
+            TaskOrderField::DueBucket | TaskOrderField::PlannedBucket => match group {
+                TaskQueryGroup::Due { bucket } | TaskQueryGroup::Scheduled { bucket } => {
+                    Integer(bucket.rank())
+                }
+                _ => return None,
+            },
             TaskOrderField::IsDone => Integer(i64::from(done)),
             TaskOrderField::Position => Integer(task.position),
             TaskOrderField::Status => Integer(match task.status {
@@ -315,6 +368,7 @@ mod tests {
 
     fn order(order_by: TaskOrderBy, completed_order: TaskCompletedOrder) -> TaskQueryOrder {
         TaskQueryOrder {
+            group_by: TaskGroupBy::None,
             order_by,
             order_direction: TaskOrderDirection::Asc,
             completed_order,
@@ -376,7 +430,9 @@ mod tests {
                             task.completed_at = date.clone();
                             task.due_at = date.clone();
                             task.planned_at = date;
-                            order.validate_tuple(&order.tuple(&task)).unwrap();
+                            order
+                                .validate_tuple(&order.tuple(&task, &TaskQueryGroup::None))
+                                .unwrap();
                         }
                     }
                 }
@@ -388,22 +444,22 @@ mod tests {
     fn manual_ignores_metadata_and_recency_overrides_only_done_positions() {
         let mut original = task();
         let manual = order(TaskOrderBy::Manual, TaskCompletedOrder::Natural);
-        let before = manual.tuple(&original);
+        let before = manual.tuple(&original, &TaskQueryGroup::None);
         original.updated_at = "2026-09-13T12:00:00Z".to_owned();
         original.title = "Edited".to_owned();
         original.priority = 1;
-        assert_eq!(manual.tuple(&original), before);
+        assert_eq!(manual.tuple(&original, &TaskQueryGroup::None), before);
         original.position += 1;
-        assert_ne!(manual.tuple(&original), before);
+        assert_ne!(manual.tuple(&original, &TaskQueryGroup::None), before);
 
         let recency = order(TaskOrderBy::Manual, TaskCompletedOrder::Recency);
         original.status = WorkStatus::Done;
         original.completed_at = Some("2026-09-13T09:00:00Z".to_owned());
-        let completed = recency.tuple(&original);
+        let completed = recency.tuple(&original, &TaskQueryGroup::None);
         original.position += 100;
         original.updated_at = "2026-09-13T14:00:00Z".to_owned();
-        assert_eq!(recency.tuple(&original), completed);
-        assert_ne!(manual.tuple(&original), before);
+        assert_eq!(recency.tuple(&original, &TaskQueryGroup::None), completed);
+        assert_ne!(manual.tuple(&original, &TaskQueryGroup::None), before);
     }
 
     #[test]
@@ -411,7 +467,7 @@ mod tests {
         let smart = order(TaskOrderBy::Smart, TaskCompletedOrder::Natural);
         let mut task = task();
         assert_eq!(
-            smart.tuple(&task),
+            smart.tuple(&task, &TaskQueryGroup::None),
             vec![
                 Some(TaskOrderValue::Integer(1)),
                 Some(TaskOrderValue::Text(task.due_at.clone().unwrap())),
@@ -423,7 +479,7 @@ mod tests {
         );
         task.due_at = None;
         assert_eq!(
-            smart.tuple(&task)[1],
+            smart.tuple(&task, &TaskQueryGroup::None)[1],
             task.planned_at.map(TaskOrderValue::Text)
         );
         assert_eq!(
@@ -448,14 +504,15 @@ mod tests {
         };
         let order = order(TaskOrderBy::Priority, TaskCompletedOrder::Natural);
         let query = identity(&filters, order, "2026-09-13");
-        let encoded = encode_task_query_cursor(&query, &dates(), &task()).unwrap();
+        let encoded =
+            encode_task_query_cursor(&query, &dates(), &task(), &TaskQueryGroup::None).unwrap();
         let mut equivalent = filters.clone();
         equivalent.clauses[0].id = "new-id".to_owned();
         equivalent.clauses[0].values.reverse();
         equivalent.clauses.push(equivalent.clauses[0].clone());
         let equivalent = identity(&equivalent, order, "2026-09-13");
         let (cursor, actual_dates) = decode_task_query_cursor(&encoded, &equivalent).unwrap();
-        assert_eq!(cursor.values, order.tuple(&task()));
+        assert_eq!(cursor.values, order.tuple(&task(), &TaskQueryGroup::None));
         assert_eq!(actual_dates, dates());
         for wrong_query in [
             identity(&FilterQueryValue::default(), order, "2026-09-13"),
@@ -476,7 +533,7 @@ mod tests {
         }
         let payload: serde_json::Value = serde_json::from_str(&encoded).unwrap();
         for (field, value) in [
-            ("version", serde_json::json!(2)),
+            ("version", serde_json::json!(1)),
             ("values", serde_json::json!([4, null, "task-1"])),
             ("values", serde_json::json!([4, "bad-date", "task-1"])),
             ("values", serde_json::json!([4, "2026-09-02T00:00:00Z"])),

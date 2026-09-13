@@ -2,7 +2,7 @@ import { normalizeTaskWindowOrder } from '@/features/display-options'
 import { infiniteQueryOptions, useInfiniteQuery, useQuery } from '@tanstack/react-query'
 
 import { listViews, runTaskView } from '../api/views'
-import type { RunTaskViewInput, RunTaskViewResult, Scope, TaskListItem } from '@/shared/types'
+import type { RunTaskViewInput, RunTaskViewResult, Scope, TaskQueryItem } from '@/shared/types'
 
 import { viewKeys } from './view.keys'
 
@@ -50,7 +50,12 @@ export function useTaskViewRunInfiniteQuery(input: RunTaskViewInput | null) {
 			input ?? {
 				scope: { type: 'all' },
 				viewId: '',
-				order: { orderBy: 'smart', orderDirection: 'asc', completedOrder: 'natural' },
+				order: {
+					groupBy: 'none',
+					orderBy: 'smart',
+					orderDirection: 'asc',
+					completedOrder: 'natural',
+				},
 				dateBasis: '',
 			},
 		),
@@ -60,11 +65,11 @@ export function useTaskViewRunInfiniteQuery(input: RunTaskViewInput | null) {
 
 export function flattenTaskViewPages(
 	pages: Array<Pick<RunTaskViewResult, 'items'>> | undefined,
-): TaskListItem[] {
+): TaskQueryItem[] {
 	if (!pages) {
 		return []
 	}
-	const items: TaskListItem[] = []
+	const items: TaskQueryItem[] = []
 	for (const page of pages) {
 		items.push(...page.items)
 	}

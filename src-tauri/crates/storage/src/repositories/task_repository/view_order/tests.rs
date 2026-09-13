@@ -1,8 +1,15 @@
-use std::{cmp::Ordering, collections::HashSet};
+use std::{
+    cmp::Ordering,
+    collections::{HashMap, HashSet},
+};
 
+use chrono::{Datelike, Duration, Local, NaiveDate, TimeZone};
 use sea_orm::ConnectionTrait;
 use stoneflow_application::{
-    task::{TaskCompletedOrder, TaskOrderBy, TaskOrderDirection, TaskQueryOrder, UpdateTaskInput},
+    task::{
+        TaskCompletedOrder, TaskDateBucket, TaskGroupBy, TaskOrderBy, TaskOrderDirection,
+        TaskQueryGroup, TaskQueryOrder, UpdateTaskInput,
+    },
     view::{
         CreateViewInput, FilterQueryValue, RunTaskQueryInput, RunTaskViewInput, TaskScopeInput,
         TaskScopeKind, TaskViewBaseKey, TaskViewContext, ViewDateBoundaries, ViewTaskQuery,
@@ -13,7 +20,7 @@ use stoneflow_test_support::TestDatabase;
 
 use crate::{
     adapters::{build_task_service, build_view_service},
-    repositories::{CreateTaskRecord, TaskRepository},
+    repositories::{CreateTaskRecord, TaskRepository, UpdateTaskPatch},
 };
 
 const SPACE: &str = "11111111-1111-4111-8111-111111111111";
@@ -242,6 +249,7 @@ async fn every_global_order_pages_through_real_sqlite_without_duplicates_or_omis
         for order_direction in [TaskOrderDirection::Asc, TaskOrderDirection::Desc] {
             for completed_order in [TaskCompletedOrder::Natural, TaskCompletedOrder::Recency] {
                 let order = TaskQueryOrder {
+                    group_by: TaskGroupBy::None,
                     order_by,
                     order_direction,
                     completed_order,
@@ -297,6 +305,7 @@ async fn saved_view_uses_same_order_and_manual_ignores_metadata_updates_except_e
     let service = build_view_service(database.connection().clone());
     let tasks = build_task_service(database.connection().clone());
     let order = TaskQueryOrder {
+        group_by: TaskGroupBy::None,
         order_by: TaskOrderBy::Manual,
         order_direction: TaskOrderDirection::Asc,
         completed_order: TaskCompletedOrder::Natural,
@@ -401,6 +410,7 @@ async fn date_membership_and_count_do_not_round_last_microseconds_into_tomorrow(
         base_view_key: TaskViewBaseKey::Today,
         filters: FilterQueryValue::default(),
         order: TaskQueryOrder {
+            group_by: TaskGroupBy::None,
             order_by: TaskOrderBy::DueAt,
             order_direction: TaskOrderDirection::Asc,
             completed_order: TaskCompletedOrder::Natural,
@@ -440,4 +450,284 @@ async fn date_membership_and_count_do_not_round_last_microseconds_into_tomorrow(
         .unwrap()
         .iter()
         .all(|row| row.id != rows[0].id));
+}
+
+async fn grouped_fixture() -> (TestDatabase, Vec<CreateTaskRecord>, HashMap<String, String>) {
+    let (database, mut rows) = fixture().await;
+    let names = ["A", "a", "同名", "同名", "\u{e000}", "𐀀"];
+    let mut projects = HashMap::new();
+    for (index, name) in names.into_iter().enumerate() {
+        let id = format!("22222222-2222-4222-8222-{index:012}");
+        database.connection().execute_unprepared(&format!(
+            "INSERT INTO projects (id, space_id, name, status, priority, status_changed_at, position, generation, created_at, updated_at) VALUES ('{id}', '{SPACE}', '{name}', 'todo', 0, '2026-09-10T00:00:00Z', 0, 1, '2026-09-10T00:00:00Z', '2026-09-10T00:00:00Z')"
+        )).await.unwrap();
+        projects.insert(id, name.to_owned());
+    }
+    let mut project_ids = projects.keys().cloned().collect::<Vec<_>>();
+    project_ids.sort();
+    let start = Local
+        .with_ymd_and_hms(2026, 9, 10, 0, 0, 0)
+        .earliest()
+        .unwrap();
+    let moments = [
+        Some((start - Duration::nanoseconds(1)).to_rfc3339()),
+        Some(start.to_rfc3339()),
+        Some((start + Duration::days(1) - Duration::nanoseconds(1)).to_rfc3339()),
+        Some((start + Duration::days(1)).to_rfc3339()),
+        Some((start + Duration::days(2)).to_rfc3339()),
+        Some((start + Duration::days(4)).to_rfc3339()),
+        None,
+    ];
+    let repository = TaskRepository::new(database.connection().clone());
+    for (index, row) in rows.iter_mut().enumerate() {
+        row.project_id = project_ids.get(index % (project_ids.len() + 1)).cloned();
+        row.priority = ((index / 5) % 5) as i32;
+        row.due_at = moments[index % moments.len()].clone();
+        row.planned_at = moments[(index + 3) % moments.len()].clone();
+        repository
+            .update(
+                database.connection(),
+                &row.id,
+                UpdateTaskPatch {
+                    project_id: Some(row.project_id.clone()),
+                    priority: Some(row.priority),
+                    due_at: Some(row.due_at.clone()),
+                    planned_at: Some(row.planned_at.clone()),
+                    ..Default::default()
+                },
+                &row.updated_at,
+            )
+            .await
+            .unwrap();
+    }
+    (database, rows, projects)
+}
+
+fn expected_group(
+    row: &CreateTaskRecord,
+    by: TaskGroupBy,
+    projects: &HashMap<String, String>,
+) -> TaskQueryGroup {
+    match by {
+        TaskGroupBy::None => TaskQueryGroup::None,
+        TaskGroupBy::Status => TaskQueryGroup::Status { status: row.status },
+        TaskGroupBy::Priority => TaskQueryGroup::Priority {
+            priority: row.priority,
+        },
+        TaskGroupBy::Project => TaskQueryGroup::Project {
+            project_id: row.project_id.clone(),
+            project_name: row
+                .project_id
+                .as_ref()
+                .and_then(|id| projects.get(id))
+                .cloned(),
+        },
+        TaskGroupBy::Due | TaskGroupBy::Scheduled => {
+            let value = if by == TaskGroupBy::Due {
+                row.due_at.as_deref()
+            } else {
+                row.planned_at.as_deref()
+            };
+            let today = NaiveDate::from_ymd_opt(2026, 9, 10).unwrap();
+            let bucket = value.map_or(TaskDateBucket::None, |value| {
+                let date = chrono::DateTime::parse_from_rfc3339(value)
+                    .unwrap()
+                    .with_timezone(&Local)
+                    .date_naive();
+                match date.signed_duration_since(today).num_days() {
+                    days if days < 0 => TaskDateBucket::Overdue,
+                    0 => TaskDateBucket::Today,
+                    1 => TaskDateBucket::Tomorrow,
+                    _ if date.iso_week() == today.iso_week() => TaskDateBucket::ThisWeek,
+                    _ => TaskDateBucket::Later,
+                }
+            });
+            if by == TaskGroupBy::Due {
+                TaskQueryGroup::Due { bucket }
+            } else {
+                TaskQueryGroup::Scheduled { bucket }
+            }
+        }
+    }
+}
+
+fn compare_group(left: &TaskQueryGroup, right: &TaskQueryGroup) -> Ordering {
+    match (left, right) {
+        (TaskQueryGroup::Status { status: left }, TaskQueryGroup::Status { status: right }) => {
+            status_rank(*left).cmp(&status_rank(*right))
+        }
+        (
+            TaskQueryGroup::Priority { priority: left },
+            TaskQueryGroup::Priority { priority: right },
+        ) => right.cmp(left),
+        (
+            TaskQueryGroup::Project {
+                project_id: left_id,
+                project_name: left_name,
+            },
+            TaskQueryGroup::Project {
+                project_id: right_id,
+                project_name: right_name,
+            },
+        ) => left_id
+            .is_none()
+            .cmp(&right_id.is_none())
+            .then_with(|| left_name.cmp(right_name))
+            .then_with(|| left_id.cmp(right_id)),
+        (TaskQueryGroup::Due { bucket: left }, TaskQueryGroup::Due { bucket: right })
+        | (
+            TaskQueryGroup::Scheduled { bucket: left },
+            TaskQueryGroup::Scheduled { bucket: right },
+        ) => {
+            let buckets = [
+                TaskDateBucket::Overdue,
+                TaskDateBucket::Today,
+                TaskDateBucket::Tomorrow,
+                TaskDateBucket::ThisWeek,
+                TaskDateBucket::Later,
+                TaskDateBucket::None,
+            ];
+            buckets
+                .iter()
+                .position(|bucket| bucket == left)
+                .cmp(&buckets.iter().position(|bucket| bucket == right))
+        }
+        (TaskQueryGroup::None, TaskQueryGroup::None) => Ordering::Equal,
+        _ => panic!("比较了不同分组配置"),
+    }
+}
+
+#[tokio::test]
+async fn primary_groups_and_row_identities_share_stable_windows_and_leaf_recency() {
+    let (database, rows, projects) = grouped_fixture().await;
+    let service = build_view_service(database.connection().clone());
+    for group_by in [
+        TaskGroupBy::Status,
+        TaskGroupBy::Priority,
+        TaskGroupBy::Project,
+        TaskGroupBy::Due,
+        TaskGroupBy::Scheduled,
+    ] {
+        for (order_by, order_direction) in [
+            (TaskOrderBy::Manual, TaskOrderDirection::Asc),
+            (TaskOrderBy::Smart, TaskOrderDirection::Asc),
+            (TaskOrderBy::Priority, TaskOrderDirection::Desc),
+            (TaskOrderBy::DueAt, TaskOrderDirection::Desc),
+        ] {
+            for completed_order in [TaskCompletedOrder::Natural, TaskCompletedOrder::Recency] {
+                let order = TaskQueryOrder {
+                    group_by,
+                    order_by,
+                    order_direction,
+                    completed_order,
+                };
+                let mut expected = rows.iter().collect::<Vec<_>>();
+                expected.sort_by(|left, right| {
+                    compare_group(
+                        &expected_group(left, group_by, &projects),
+                        &expected_group(right, group_by, &projects),
+                    )
+                    .then_with(|| compare(left, right, order))
+                });
+                let expected_ids = expected
+                    .iter()
+                    .map(|row| row.id.clone())
+                    .collect::<Vec<_>>();
+                let mut query = RunTaskQueryInput {
+                    date_basis: "2026-09-10".to_owned(),
+                    ..input(order)
+                };
+                let mut actual = Vec::new();
+                let mut group_keys = HashSet::new();
+                let mut last_group = None;
+                let mut crossed_group_page = false;
+                for page_index in 0..3 {
+                    let page = service.run_task_query(query.clone()).await.unwrap();
+                    assert_eq!(page.total_count, (page_index == 0).then_some(337));
+                    if page_index > 0
+                        && page
+                            .items
+                            .first()
+                            .is_some_and(|item| Some(&item.group) == last_group.as_ref())
+                    {
+                        crossed_group_page = true;
+                    }
+                    for item in &page.items {
+                        let expected_row = expected[actual.len()];
+                        assert_eq!(
+                            item.group,
+                            expected_group(expected_row, group_by, &projects),
+                            "{order:?}"
+                        );
+                        if last_group.as_ref() != Some(&item.group) {
+                            let key = serde_json::to_string(&item.group).unwrap();
+                            assert!(group_keys.insert(key), "{order:?}: 后页回到了之前的组");
+                            last_group = Some(item.group.clone());
+                        }
+                        actual.push(item.id.clone());
+                    }
+                    assert_eq!(
+                        actual,
+                        expected_ids[..actual.len()],
+                        "{order:?}, page {page_index}"
+                    );
+                    query.cursor = page.next_cursor;
+                    assert_eq!(query.cursor.is_some(), page_index < 2);
+                }
+                assert!(crossed_group_page, "夹具必须覆盖同组跨页");
+                assert_eq!(actual.iter().collect::<HashSet<_>>().len(), 337);
+            }
+        }
+    }
+}
+
+#[tokio::test]
+async fn grouping_changes_invalidate_cursors_and_saved_view_returns_the_same_grouped_window() {
+    let (database, _, _) = grouped_fixture().await;
+    let service = build_view_service(database.connection().clone());
+    let query = RunTaskQueryInput {
+        date_basis: "2026-09-10".to_owned(),
+        ..input(TaskQueryOrder {
+            group_by: TaskGroupBy::Project,
+            order_by: TaskOrderBy::Priority,
+            order_direction: TaskOrderDirection::Desc,
+            completed_order: TaskCompletedOrder::Recency,
+        })
+    };
+    let view = service
+        .create_view(CreateViewInput {
+            name: "项目分组".to_owned(),
+            scope: query.scope.clone(),
+            context: query.context.clone(),
+            base_view_key: query.base_view_key,
+            filters: query.filters.clone(),
+        })
+        .await
+        .unwrap();
+    let first = service.run_task_query(query.clone()).await.unwrap();
+    let saved_input = RunTaskViewInput {
+        scope: query.scope.clone(),
+        view_id: view.id,
+        filters: None,
+        order: query.order,
+        date_basis: query.date_basis.clone(),
+        cursor: None,
+    };
+    let saved = service.run_task_view(saved_input.clone()).await.unwrap();
+    assert_eq!(saved.items, first.items);
+    assert_eq!(saved.next_cursor, first.next_cursor);
+    let mut changed = query.clone();
+    changed.order.group_by = TaskGroupBy::Status;
+    changed.cursor = first.next_cursor.clone();
+    assert!(service.run_task_query(changed).await.is_err());
+    let mut old: serde_json::Value =
+        serde_json::from_str(first.next_cursor.as_deref().unwrap()).unwrap();
+    old["version"] = serde_json::json!(1);
+    assert!(service
+        .run_task_view(RunTaskViewInput {
+            cursor: Some(old.to_string()),
+            ..saved_input
+        })
+        .await
+        .is_err());
 }

@@ -19,6 +19,7 @@ const mockedInvoke = vi.mocked(invoke)
 
 const windowInput = {
 	order: {
+		groupBy: 'priority' as const,
 		orderBy: 'priority' as const,
 		orderDirection: 'desc' as const,
 		completedOrder: 'natural' as const,

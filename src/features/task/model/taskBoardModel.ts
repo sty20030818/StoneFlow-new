@@ -4,6 +4,7 @@
  */
 
 import type { TaskListItem, TaskStatus } from '@/shared/types'
+import type { TaskDisplaySection } from '@/features/display-options'
 
 import {
 	COLLECTION_ITEM_GAP,
@@ -13,9 +14,6 @@ import {
 	COLLECTION_SECTION_HEADER_STRIDE,
 } from '@/shared/components/collectionGeometry'
 
-import { TASK_BOARD_STATUS_ORDER } from './taskBoardOrder'
-import { formatTaskStatusLabel } from './taskStatus'
-
 export type TaskBoardFlatHeader = {
 	kind: 'header'
 	key: string
@@ -23,6 +21,8 @@ export type TaskBoardFlatHeader = {
 	count: number
 	status?: TaskStatus
 	open: boolean
+	/** 当前组的全部已加载成员，折叠只影响行的可见性。 */
+	tasks: readonly TaskListItem[]
 }
 
 export type TaskBoardFlatRow = {
@@ -33,86 +33,36 @@ export type TaskBoardFlatRow = {
 
 export type TaskBoardFlatItem = TaskBoardFlatHeader | TaskBoardFlatRow
 
-export type TaskBoardCustomSection = {
-	key: string
-	label: string
-	tasks: TaskListItem[]
-}
-
 export type BuildTaskBoardFlatItemsInput = {
-	tasks: readonly TaskListItem[]
-	statusOrder?: readonly TaskStatus[]
-	openSections: readonly TaskStatus[]
-	hideEmptySections?: boolean
-	customSections?: readonly TaskBoardCustomSection[]
+	sections: readonly TaskDisplaySection[]
+	collapsedGroupKeys?: readonly string[]
 }
 
-/**
- * 构建虚拟列表展平项（状态分区 header + 行，或 customSections）。
- */
+/** 只将唯一分组投影展平为虚拟项；不重新分类或排序任务。 */
 export function buildTaskBoardFlatItems({
-	tasks,
-	statusOrder = TASK_BOARD_STATUS_ORDER,
-	openSections,
-	hideEmptySections = true,
-	customSections,
+	sections,
+	collapsedGroupKeys = [],
 }: BuildTaskBoardFlatItemsInput): TaskBoardFlatItem[] {
 	const items: TaskBoardFlatItem[] = []
-
-	if (customSections && customSections.length > 0) {
-		for (const section of customSections) {
-			items.push({
-				kind: 'header',
-				key: `h:${section.key}`,
-				label: section.label,
-				count: section.tasks.length,
-				open: true,
-			})
-			for (const task of section.tasks) {
-				items.push({ kind: 'row', key: task.id, task })
-			}
-		}
-		return items
-	}
-
-	const grouped = groupTasksByStatus(tasks)
-	const openSet = new Set(openSections)
-
-	for (const status of statusOrder) {
-		const sectionTasks = grouped[status]
-		if (hideEmptySections && sectionTasks.length === 0) {
-			continue
-		}
-		const open = openSet.has(status)
+	const collapsed = new Set(collapsedGroupKeys)
+	for (const section of sections) {
+		if (section.tasks.length === 0) continue
+		const key = `h:${section.key}`
+		const open = !collapsed.has(key)
 		items.push({
 			kind: 'header',
-			key: `h:${status}`,
-			label: formatTaskStatusLabel(status),
-			count: sectionTasks.length,
-			status,
+			key,
+			label: section.label,
+			count: section.tasks.length,
+			status: section.status,
 			open,
+			tasks: section.tasks,
 		})
 		if (open) {
-			for (const task of sectionTasks) {
-				items.push({ kind: 'row', key: task.id, task })
-			}
+			for (const task of section.tasks) items.push({ kind: 'row', key: task.id, task })
 		}
 	}
 	return items
-}
-
-function groupTasksByStatus(tasks: readonly TaskListItem[]): Record<TaskStatus, TaskListItem[]> {
-	const result: Record<TaskStatus, TaskListItem[]> = {
-		todo: [],
-		doing: [],
-		waiting: [],
-		done: [],
-		canceled: [],
-	}
-	for (const task of tasks) {
-		result[task.status].push(task)
-	}
-	return result
 }
 
 /** 每项 start 偏移（与 estimateSize 同公式） */

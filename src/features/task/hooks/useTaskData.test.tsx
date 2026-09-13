@@ -5,7 +5,7 @@ import type { ReactNode } from 'react'
 import type {
 	RunTaskQueryInput,
 	RunTaskQueryResult,
-	TaskListItem,
+	TaskQueryItem,
 	TaskViewBaseKey,
 } from '@/shared/types'
 
@@ -13,6 +13,7 @@ import { useTaskBoardPagination, useTaskQueryData } from './useTaskData'
 
 const windowInput = {
 	order: {
+		groupBy: 'none' as const,
 		orderBy: 'priority' as const,
 		orderDirection: 'desc' as const,
 		completedOrder: 'natural' as const,
@@ -160,7 +161,7 @@ describe('useTaskQueryData', () => {
 		expect(result.current.status).toBe('ready')
 	})
 
-	it.each(['order', 'dateBasis'] as const)(
+	it.each(['order', 'dateBasis', 'groupBy'] as const)(
 		'切换 %s 从新首屏开始，慢旧续页不能拼入新结果',
 		async (change) => {
 			let resolvePrevious!: (page: RunTaskQueryResult) => void
@@ -172,7 +173,11 @@ describe('useTaskQueryData', () => {
 				return Promise.resolve(
 					page(
 						createTask(
-							order.orderDirection === 'asc' || dateBasis === '2026-09-14' ? 'new' : 'old',
+							order.orderDirection === 'asc' ||
+								dateBasis === '2026-09-14' ||
+								order.groupBy === 'status'
+								? 'new'
+								: 'old',
 							'任务',
 						),
 						'cursor',
@@ -199,7 +204,9 @@ describe('useTaskQueryData', () => {
 			rerender(
 				change === 'order'
 					? { ...input, order: { ...input.order, orderDirection: 'asc' } }
-					: { ...input, dateBasis: '2026-09-14' },
+					: change === 'groupBy'
+						? { ...input, order: { ...input.order, groupBy: 'status' } }
+						: { ...input, dateBasis: '2026-09-14' },
 			)
 			await waitFor(() => expect(result.current.items[0]?.id).toBe('new'))
 			await act(async () => resolvePrevious(page(createTask('old-more', '旧续页'))))
@@ -256,12 +263,13 @@ function createQueryWrapper() {
 	}
 }
 
-function page(item: TaskListItem, nextCursor: string | null = null): RunTaskQueryResult {
+function page(item: TaskQueryItem, nextCursor: string | null = null): RunTaskQueryResult {
 	return { items: [item], nextCursor, totalCount: nextCursor ? 2 : 1 }
 }
 
-function createTask(id: string, title: string): TaskListItem {
+function createTask(id: string, title: string): TaskQueryItem {
 	return {
+		group: { kind: 'none' },
 		id,
 		title,
 		spaceId: 'space-1',

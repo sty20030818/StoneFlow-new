@@ -3,7 +3,7 @@ import { CheckCheckIcon, ChevronsDownUpIcon, ChevronsUpDownIcon, XIcon } from 'l
 
 type BoardSectionContextMenuProps = {
 	open: boolean
-	selectedCount: number
+	selectedAll: boolean
 	onCollapse: () => void
 	onExpand: () => void
 	onCollapseAll: () => void
@@ -14,7 +14,7 @@ type BoardSectionContextMenuProps = {
 
 export function BoardSectionContextMenu({
 	open,
-	selectedCount,
+	selectedAll,
 	onCollapse,
 	onExpand,
 	onCollapseAll,
@@ -51,7 +51,7 @@ export function BoardSectionContextMenu({
 					</>
 				)}
 				<ContextMenu.Separator />
-				{selectedCount >= 2 ? (
+				{selectedAll ? (
 					<ContextMenu.Item
 						id='toggle-section-selection'
 						onAction={onDeselectAll}

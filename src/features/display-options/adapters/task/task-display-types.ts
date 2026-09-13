@@ -2,8 +2,6 @@ import type { TaskListItem, TaskStatus } from '@/shared/types'
 
 import type {
 	ResolvedTaskDisplayOptions,
-	TaskDisplayGroupBy,
-	TaskDisplayPageKey,
 	TaskDisplayPropertyKey,
 } from '@/features/display-options/core'
 
@@ -11,17 +9,8 @@ export type TaskDisplaySection = {
 	key: string
 	label: string
 	tasks: TaskListItem[]
-}
-
-export type TaskDisplayApplyContext = {
-	pageKey: TaskDisplayPageKey
-	includeEmptySections?: boolean
-}
-
-export type TaskDisplayBoardPatch = {
-	customSections?: TaskDisplaySection[]
-	statusOrder?: readonly TaskStatus[]
-	hideEmptySections?: boolean
+	/** 仅状态组的创建预填等领域动作使用，不充当通用组身份。 */
+	status?: TaskStatus
 }
 
 export type TaskDisplayApplyResult = {
@@ -30,18 +19,4 @@ export type TaskDisplayApplyResult = {
 	selectionOrderIds: string[]
 	sections: TaskDisplaySection[]
 	visibleProperties: TaskDisplayPropertyKey[]
-	boardPatch: TaskDisplayBoardPatch
-}
-
-export type TaskDateBucketKey = 'overdue' | 'today' | 'tomorrow' | 'this-week' | 'later' | 'none'
-
-export type TaskGroupDefinition = {
-	key: string
-	label: string
-	value: string
-}
-
-export type TaskDisplayGroupDescriptor = {
-	groupBy: TaskDisplayGroupBy
-	groups: TaskGroupDefinition[]
 }

@@ -17,7 +17,6 @@ import { TaskBoard, type TaskBoardPagination } from '@/features/task/components/
 import type { TaskRowAdapterProps } from '@/features/task/components/TaskRowAdapter'
 import { buildTaskBoardCollection } from '@/features/task/model/taskBoardCollection'
 import { buildTaskBoardFlatItems } from '@/features/task/model/taskBoardModel'
-import { TASK_BOARD_STATUS_ORDER } from '@/features/task/model/taskBoardOrder'
 import { indexTasksById } from '@/features/task/model/taskCollectionIndex'
 import type { TaskListItem } from '@/shared/types'
 import { renderWithInteractionProviders } from '@/test/TestInteractionProviders'
@@ -66,8 +65,7 @@ const TASKS: TaskListItem[] = [BASE_TASK, { ...BASE_TASK, id: 'task-2', title: '
 const TASK_BY_ID = indexTasksById(TASKS)
 const TASK_IDS = TASKS.map((task) => task.id)
 const FLAT_ITEMS = buildTaskBoardFlatItems({
-	tasks: TASKS,
-	openSections: TASK_BOARD_STATUS_ORDER,
+	sections: [{ key: 'status:todo', label: '待执行', status: 'todo', tasks: TASKS }],
 })
 const BOARD_COLLECTION = buildTaskBoardCollection({ eligibleKeys: TASK_IDS, flatItems: FLAT_ITEMS })
 const PAGINATION: TaskBoardPagination = {

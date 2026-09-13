@@ -1,56 +1,25 @@
-import type {
-	ResolvedTaskDisplayOptions,
-	TaskDisplayPageKey,
-} from '@/features/display-options/core'
+import type { ResolvedTaskDisplayOptions } from '@/features/display-options/core'
+import type { TaskQueryItem } from '@/shared/types'
 
 import { buildTaskDisplaySections } from './task-display-groups'
-import type { TaskDisplayApplyContext, TaskDisplayApplyResult } from './task-display-types'
-import type { TaskListItem } from '@/shared/types'
+import type { TaskDisplayApplyResult } from './task-display-types'
 
 type ApplyTaskDisplayOptionsInput = {
-	items: TaskListItem[]
+	items: TaskQueryItem[]
 	options: ResolvedTaskDisplayOptions
-	context: TaskDisplayApplyContext
 }
 
 export function applyTaskDisplayOptionsToTasks({
 	items,
 	options,
-	context,
 }: ApplyTaskDisplayOptionsInput): TaskDisplayApplyResult {
 	// 窗口由统一查询排序；展示投影只能保留输入顺序。
-	const orderedItems = items
-	const sections = buildTaskDisplaySections(orderedItems, options, context)
-	const selectionOrderIds = sections.flatMap((section) => section.tasks.map((task) => task.id))
-	const visibleProperties = [...options.visibleProperties]
-
+	const sections = buildTaskDisplaySections(items)
 	return {
 		options,
-		orderedItems,
-		selectionOrderIds,
+		orderedItems: items,
+		selectionOrderIds: sections.flatMap((section) => section.tasks.map((task) => task.id)),
 		sections,
-		visibleProperties,
-		boardPatch: {
-			customSections:
-				options.groupBy === 'status'
-					? undefined
-					: sections.map((section) => ({
-							key: section.key,
-							label: section.label,
-							tasks: section.tasks,
-						})),
-			statusOrder:
-				options.groupBy === 'status' ? ['doing', 'todo', 'waiting', 'done', 'canceled'] : undefined,
-			hideEmptySections: !context.includeEmptySections,
-		},
-	}
-}
-
-export function createTaskDisplayApplyContext(
-	pageKey: TaskDisplayPageKey,
-): TaskDisplayApplyContext {
-	return {
-		pageKey,
-		includeEmptySections: false,
+		visibleProperties: [...options.visibleProperties],
 	}
 }

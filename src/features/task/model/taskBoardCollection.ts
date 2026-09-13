@@ -23,7 +23,6 @@ export function buildTaskBoardCollection({
 	const flatIndexByKey = new Map<string, number>()
 	const rowOrdinalByKey = new Map<string, number>()
 	const rowKeysByGroupKey = new Map<string, Set<string>>()
-	let currentGroupRowKeys: Set<string> | null = null
 
 	for (const [index, item] of flatItems.entries()) {
 		if (flatIndexByKey.has(item.key)) {
@@ -32,14 +31,12 @@ export function buildTaskBoardCollection({
 		flatIndexByKey.set(item.key, index)
 
 		if (item.kind === 'header') {
-			currentGroupRowKeys = new Set()
-			rowKeysByGroupKey.set(item.key, currentGroupRowKeys)
+			rowKeysByGroupKey.set(item.key, new Set(item.tasks.map((task) => task.id)))
 			continue
 		}
 
 		navigableKeys.push(item.key)
 		rowOrdinalByKey.set(item.key, navigableKeys.length)
-		currentGroupRowKeys?.add(item.key)
 	}
 
 	return {

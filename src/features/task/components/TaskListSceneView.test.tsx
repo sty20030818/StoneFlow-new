@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useLayoutEffect, useState } from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { UseTaskDisplayOptionsResult } from '@/features/display-options'
 import { CommandSelectionProvider } from '@/features/selection'
 import { emitEvent } from '@/shared/events'
-import type { TaskListItem } from '@/shared/types'
+import type { TaskQueryItem } from '@/shared/types'
 import { useShellPreferenceStore } from '@/features/shell-dialogs'
 
 import { TaskPreviewProvider } from '../detail/model/TaskPreviewProvider'
@@ -39,7 +39,7 @@ describe('TaskListSceneView', () => {
 	beforeEach(() => {
 		listTaskLinksMock.mockReset().mockReturnValue(new Promise(() => undefined))
 		useShellPreferenceStore.setState({
-			projectTaskBoardOpenSections: ['todo', 'doing', 'waiting', 'done', 'canceled'],
+			taskBoardCollapsedGroups: {},
 		})
 	})
 
@@ -55,7 +55,7 @@ describe('TaskListSceneView', () => {
 		expect(screen.getByTestId('owner-intent')).toHaveTextContent(
 			JSON.stringify({
 				type: 'group-trigger',
-				groupKey: 'h:doing',
+				groupKey: 'h:status:doing',
 				reentry: { type: 'item', key: 'todo-a' },
 			}),
 		)
@@ -74,6 +74,38 @@ describe('TaskListSceneView', () => {
 		expect(screen.getByTestId('owner-intent')).toHaveTextContent(
 			JSON.stringify({ type: 'item', key: 'doing-c' }),
 		)
+	})
+
+	it('旧删除事件等待刷新时切换完整查询窗口，不迁移新窗口的焦点', async () => {
+		renderTaskCollectionOwner()
+		fireEvent.click(screen.getByRole('button', { name: '聚焦并选择待执行 B' }))
+		fireEvent.click(screen.getByRole('button', { name: '发出删除事件但保留旧窗口' }))
+		expect(screen.getByTestId('owner-rows')).toHaveTextContent('todo-b')
+		expect(screen.getByTestId('owner-intent')).toHaveTextContent('none')
+
+		fireEvent.click(screen.getByRole('button', { name: '切换完整查询窗口' }))
+		await waitFor(() =>
+			expect(screen.getByTestId('owner-rows')).toHaveTextContent('new-window-task'),
+		)
+		expect(screen.getByTestId('owner-focused')).toHaveTextContent('none')
+		expect(screen.getByTestId('owner-intent')).toHaveTextContent('none')
+	})
+
+	it('未消费的旧焦点意图不能暴露给新查询窗口的 Board 消费者', () => {
+		const onWindowCommit = vi.fn()
+		renderTaskCollectionOwner(onWindowCommit)
+		fireEvent.click(screen.getByRole('button', { name: '聚焦并选择进行中 C' }))
+		fireEvent.click(screen.getByRole('button', { name: '折叠进行中' }))
+		expect(screen.getByTestId('owner-intent')).toHaveTextContent('group-trigger')
+
+		onWindowCommit.mockClear()
+		fireEvent.click(screen.getByRole('button', { name: '切换完整查询窗口' }))
+		expect(screen.getByTestId('owner-intent')).toHaveTextContent('none')
+		const nextWindowIntents = onWindowCommit.mock.calls
+			.filter(([sourceKey]) => sourceKey === 'owner-test-next-window')
+			.map(([, intent]) => intent)
+		expect(nextWindowIntents.length).toBeGreaterThan(0)
+		expect(nextWindowIntents.every((intent) => intent === null)).toBe(true)
 	})
 
 	it('键盘 Peek 打开时隐藏当前行焦点边框，关闭后恢复', () => {
@@ -131,22 +163,22 @@ const TEST_DISPLAY = {
 } satisfies UseTaskDisplayOptionsResult
 
 const OWNER_TASKS = [
+	createTask({ id: 'doing-c', title: '进行中 C', status: 'doing' }),
 	createTask({ id: 'todo-a', title: '待执行 A', status: 'todo' }),
 	createTask({ id: 'todo-b', title: '待执行 B', status: 'todo' }),
-	createTask({ id: 'doing-c', title: '进行中 C', status: 'doing' }),
 ]
 
-function renderTaskCollectionOwner() {
+function renderTaskCollectionOwner(onWindowCommit?: (sourceKey: string, intent: unknown) => void) {
 	return render(
 		<CommandSelectionProvider>
 			<TaskPreviewProvider>
-				<TaskCollectionOwnerHarness />
+				<TaskCollectionOwnerHarness onWindowCommit={onWindowCommit} />
 			</TaskPreviewProvider>
 		</CommandSelectionProvider>,
 	)
 }
 
-function renderTaskCollectionProjection(tasks: TaskListItem[]) {
+function renderTaskCollectionProjection(tasks: TaskQueryItem[]) {
 	return render(
 		<CommandSelectionProvider>
 			<TaskPreviewProvider>
@@ -156,10 +188,15 @@ function renderTaskCollectionProjection(tasks: TaskListItem[]) {
 	)
 }
 
-function TaskCollectionProjectionHarness({ tasks }: { tasks: TaskListItem[] }) {
+function TaskCollectionProjectionHarness({ tasks }: { tasks: TaskQueryItem[] }) {
 	const scene = useTaskCollectionScene({
 		pagination: { sourceKey: 'projection-test', loadedPageCount: 1, state: 'exhausted' },
-		source: { items: tasks, status: 'ready', onRetry: () => undefined },
+		source: {
+			items: tasks,
+			collapseScopeKey: 'test-owner',
+			status: 'ready',
+			onRetry: () => undefined,
+		},
 		displayPageKey: 'task:all',
 		display: TEST_DISPLAY,
 		fallbackSubtitle: '无项目',
@@ -180,12 +217,22 @@ function TaskCollectionProjectionHarness({ tasks }: { tasks: TaskListItem[] }) {
 	)
 }
 
-function TaskCollectionOwnerHarness() {
+function TaskCollectionOwnerHarness({
+	onWindowCommit,
+}: {
+	onWindowCommit?: (sourceKey: string, intent: unknown) => void
+}) {
 	const [tasks, setTasks] = useState(OWNER_TASKS)
+	const [sourceKey, setSourceKey] = useState('owner-test')
 	const taskPreviewController = useTaskPreviewController()
 	const scene = useTaskCollectionScene({
-		pagination: { sourceKey: 'owner-test', loadedPageCount: 1, state: 'exhausted' },
-		source: { items: tasks, status: 'ready', onRetry: () => undefined },
+		pagination: { sourceKey, loadedPageCount: 1, state: 'exhausted' },
+		source: {
+			items: tasks,
+			collapseScopeKey: 'test-owner',
+			status: 'ready',
+			onRetry: () => undefined,
+		},
 		displayPageKey: 'task:all',
 		display: TEST_DISPLAY,
 		fallbackSubtitle: '无项目',
@@ -196,9 +243,29 @@ function TaskCollectionOwnerHarness() {
 		empty: { onEmptyAction: () => undefined },
 	})
 	const { collectionInteraction, flatItems, focusIntent } = scene.boardProps
+	useLayoutEffect(
+		() => onWindowCommit?.(sourceKey, focusIntent),
+		[sourceKey, focusIntent, onWindowCommit],
+	)
 
 	return (
 		<div>
+			<button
+				onClick={() => emitEvent({ type: 'task:deleted', payload: { taskId: 'todo-b' } })}
+				type='button'
+			>
+				发出删除事件但保留旧窗口
+			</button>
+			<button
+				onClick={() => {
+					collectionInteraction.focusKey(null)
+					setSourceKey('owner-test-next-window')
+					setTasks([createTask({ id: 'new-window-task', title: '新窗口任务' })])
+				}}
+				type='button'
+			>
+				切换完整查询窗口
+			</button>
 			<button onClick={() => taskPreviewController.openPreview('todo-a', 'keyboard')} type='button'>
 				键盘预览待执行 A
 			</button>
@@ -227,7 +294,7 @@ function TaskCollectionOwnerHarness() {
 				聚焦并选择待执行 B
 			</button>
 			<button
-				onClick={() => scene.boardProps.onSectionOpenChange('h:doing', 'doing', false)}
+				onClick={() => scene.boardProps.onSectionOpenChange('h:status:doing', false)}
 				type='button'
 			>
 				折叠进行中
@@ -266,8 +333,8 @@ function TaskCollectionOwnerHarness() {
 }
 
 function createTask(
-	overrides: Partial<TaskListItem> & Pick<TaskListItem, 'id' | 'title'>,
-): TaskListItem {
+	overrides: Partial<TaskQueryItem> & Pick<TaskQueryItem, 'id' | 'title'>,
+): TaskQueryItem {
 	return {
 		id: overrides.id,
 		title: overrides.title,
@@ -277,6 +344,7 @@ function createTask(
 		projectId: null,
 		projectName: null,
 		status: overrides.status ?? 'todo',
+		group: overrides.group ?? { kind: 'status', status: overrides.status ?? 'todo' },
 		statusChangedAt: '2026-08-17T08:00:00.000Z',
 		priority: 0,
 		dueAt: null,

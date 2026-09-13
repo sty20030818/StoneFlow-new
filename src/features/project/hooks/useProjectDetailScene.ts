@@ -111,6 +111,7 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 			items: project ? taskList.items : [],
 			status: project ? taskList.status : 'ready',
 			onRetry: taskList.refetch,
+			collapseScopeKey: JSON.stringify([scope, context, queryInput.baseViewKey]),
 		},
 		displayPageKey: PROJECT_DETAIL_DISPLAY_PAGE_KEY,
 		display,

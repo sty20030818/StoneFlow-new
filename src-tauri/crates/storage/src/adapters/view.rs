@@ -263,6 +263,7 @@ fn map_project_lookup(project: crate::entities::project::Model) -> ViewProjectLo
 mod tests {
     fn manual_order() -> TaskQueryOrder {
         TaskQueryOrder {
+            group_by: TaskGroupBy::None,
             order_by: TaskOrderBy::Manual,
             order_direction: TaskOrderDirection::Asc,
             completed_order: TaskCompletedOrder::Natural,
@@ -277,8 +278,8 @@ mod tests {
     use stoneflow_application::{
         operation::OutboxPayload,
         task::{
-            TaskCompletedOrder, TaskOrderBy, TaskOrderDirection, TaskOrderValue, TaskQueryCursor,
-            TaskQueryOrder,
+            TaskCompletedOrder, TaskGroupBy, TaskOrderBy, TaskOrderDirection, TaskOrderValue,
+            TaskQueryCursor, TaskQueryOrder,
         },
         view::{
             codec::{EMPTY_SORT_JSON, NO_GROUP_JSON},

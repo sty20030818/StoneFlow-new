@@ -106,7 +106,7 @@ export type TaskBoardProps = {
 	emptyActionLabel?: string
 	onEmptyAction: () => void
 	onRetry: () => void | Promise<unknown>
-	onSectionOpenChange: (groupKey: string, status: TaskStatus, open: boolean) => void
+	onSectionOpenChange: (groupKey: string, open: boolean) => void
 	onCollapseAll: () => void
 	onExpandAll: () => void
 	onUpdateTaskPriority: (task: TaskListItem, priority: TaskPriorityValue) => Promise<void>
@@ -131,7 +131,7 @@ export type TaskBoardProps = {
 }
 
 /**
- * 任务 Board：状态分区 sticky + 虚拟行。
+ * 任务 Board：统一分组 sticky + 虚拟行。
  * 几何见 collectionGeometry；滚动容器来自 AppScrollArea context。
  */
 export function TaskBoard({
@@ -222,19 +222,6 @@ export function TaskBoard({
 		[commandSnapshotRef],
 	)
 
-	const groupedTasks = useMemo(() => {
-		const map: Record<TaskStatus, TaskListItem[]> = {
-			todo: [],
-			doing: [],
-			waiting: [],
-			done: [],
-			canceled: [],
-		}
-		for (const task of tasks) {
-			map[task.status].push(task)
-		}
-		return map
-	}, [tasks])
 	const selectedTasks = useMemo(
 		() => tasks.filter((task) => selectedTaskIdSet.has(task.id)),
 		[selectedTaskIdSet, tasks],
@@ -780,7 +767,7 @@ export function TaskBoard({
 		item: Extract<TaskBoardFlatItem, { kind: 'header' }>,
 		registerTrigger: boolean,
 	) => (
-		<StatusSectionHeader
+		<TaskGroupHeader
 			count={item.count}
 			createProjectId={createProjectId}
 			groupKey={item.key}
@@ -788,16 +775,14 @@ export function TaskBoard({
 			onCollapseAll={onCollapseAll}
 			onExpandAll={onExpandAll}
 			onGroupTriggerBlur={handleGroupTriggerBlur}
-			onOpenChange={
-				item.status ? (open) => onSectionOpenChange(item.key, item.status!, open) : undefined
-			}
+			onOpenChange={(open) => onSectionOpenChange(item.key, open)}
 			onSetSectionSelection={setSectionSelection}
 			open={item.open}
 			openTaskCreateDialog={openTaskCreateDialog}
 			registerGroupTrigger={registerTrigger ? focusBridge.registerGroupTrigger : undefined}
 			selectedTaskIdSet={selectedTaskIdSet}
 			status={item.status}
-			tasks={item.status ? groupedTasks[item.status] : []}
+			tasks={item.tasks}
 		/>
 	)
 	const renderItemContent = (item: TaskBoardFlatItem, index: number, registerTrigger = true) => {
@@ -1139,7 +1124,7 @@ const TaskBoardGridRow = memo(function TaskBoardGridRow({
 	)
 })
 
-function StatusSectionHeader({
+function TaskGroupHeader({
 	status,
 	groupKey,
 	label,
@@ -1162,14 +1147,14 @@ function StatusSectionHeader({
 	count: number
 	open: boolean
 	createProjectId: string | null
-	onOpenChange?: (open: boolean) => void
+	onOpenChange: (open: boolean) => void
 	onCollapseAll: () => void
 	onExpandAll: () => void
 	onGroupTriggerBlur: (groupKey: string) => void
 	onSetSectionSelection: (taskIds: readonly string[], selected: boolean) => void
 	registerGroupTrigger?: (groupKey: string, element: HTMLElement) => () => void
 	selectedTaskIdSet: ReadonlySet<string>
-	tasks: TaskListItem[]
+	tasks: readonly TaskListItem[]
 	openTaskCreateDialog: (draft?: { projectId?: string | null; status?: TaskStatus }) => void
 }) {
 	const sectionIds = useMemo(() => tasks.map((t) => t.id), [tasks])
@@ -1211,37 +1196,36 @@ function StatusSectionHeader({
 		[onSetSectionSelection, sectionIds],
 	)
 
-	const toggleAction =
-		status && onOpenChange ? (
-			<ActionTooltip
-				isOpen={toggleTooltipOpen && !contextMenuOpen}
-				label={open ? `折叠 ${label}` : `展开 ${label}`}
-				onOpenChange={(nextOpen) => setToggleTooltipOpen(nextOpen && !contextMenuOpen)}
+	const toggleAction = (
+		<ActionTooltip
+			isOpen={toggleTooltipOpen && !contextMenuOpen}
+			label={open ? `折叠 ${label}` : `展开 ${label}`}
+			onOpenChange={(nextOpen) => setToggleTooltipOpen(nextOpen && !contextMenuOpen)}
+		>
+			<Button
+				ref={groupTriggerRef}
+				aria-expanded={open}
+				aria-label={open ? `折叠 ${label}` : `展开 ${label}`}
+				data-collection-group-key={groupKey}
+				isIconOnly
+				onBlur={() => onGroupTriggerBlur(groupKey)}
+				onPress={() => {
+					setToggleTooltipOpen(false)
+					onOpenChange(!open)
+				}}
+				size='sm'
+				type='button'
+				variant='ghost'
 			>
-				<Button
-					ref={groupTriggerRef}
-					aria-expanded={open}
-					aria-label={open ? `折叠 ${label}` : `展开 ${label}`}
-					data-collection-group-key={groupKey}
-					isIconOnly
-					onBlur={() => onGroupTriggerBlur(groupKey)}
-					onPress={() => {
-						setToggleTooltipOpen(false)
-						onOpenChange(!open)
-					}}
-					size='sm'
-					type='button'
-					variant='ghost'
-				>
-					<span className='inline-flex size-3 shrink-0 items-center justify-center' data-chevron>
-						<TriangleIcon
-							className={cn('size-1.5 text-muted', open ? 'rotate-180' : 'rotate-90')}
-							fill='currentColor'
-						/>
-					</span>
-				</Button>
-			</ActionTooltip>
-		) : null
+				<span className='inline-flex size-3 shrink-0 items-center justify-center' data-chevron>
+					<TriangleIcon
+						className={cn('size-1.5 text-muted', open ? 'rotate-180' : 'rotate-90')}
+						fill='currentColor'
+					/>
+				</span>
+			</Button>
+		</ActionTooltip>
+	)
 	const createAction = status ? (
 		<ActionTooltip
 			isOpen={createTooltipOpen && !contextMenuOpen}
@@ -1283,10 +1267,6 @@ function StatusSectionHeader({
 		/>
 	)
 
-	if (!onOpenChange) {
-		return headerContent
-	}
-
 	return (
 		<div data-board-section='true' data-state={open ? 'open' : 'closed'}>
 			<ContextMenu
@@ -1317,7 +1297,7 @@ function StatusSectionHeader({
 					onExpandAll={onExpandAll}
 					onSelectAll={handleSelectAll}
 					open={open}
-					selectedCount={selectedCount}
+					selectedAll={sectionIds.length > 0 && selectedCount === sectionIds.length}
 				/>
 			</ContextMenu>
 		</div>

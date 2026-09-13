@@ -18,7 +18,7 @@ import { CommandSelectionProvider } from '@/features/selection'
 import { TaskPreviewProvider } from '@/features/task'
 import { useWorkspaceSync } from '@/features/workspace'
 import { TASKS_CHANGED_EVENT, WORKSPACE_CHANGED_EVENT } from '@/shared/events'
-import type { Scope, TaskListItem } from '@/shared/types'
+import type { Scope, TaskQueryItem } from '@/shared/types'
 import { TestInteractionProviders } from '@/test/TestInteractionProviders'
 
 import { SavedViewPage } from './SavedViewPage'
@@ -326,8 +326,9 @@ function unavailableView(id: string, name: string, scope: Scope | null, definiti
 	}
 }
 
-function projectTask(title: string): TaskListItem {
+function projectTask(title: string): TaskQueryItem {
 	return {
+		group: { kind: 'status', status: 'todo' },
 		id: 'project-task',
 		title,
 		spaceId: 'space-1',
@@ -366,7 +367,7 @@ function installBackend() {
 		reads: [] as Scope[],
 		runs: [] as string[],
 		runScopes: [] as Scope[],
-		tasks: [] as TaskListItem[],
+		tasks: [] as TaskQueryItem[],
 		deletes: [] as string[],
 		writes: [] as string[],
 		projectSpaceId: 'space-1',

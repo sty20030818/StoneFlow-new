@@ -6,7 +6,6 @@ import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 import {
 	applyTaskDisplayOptionsToTasks,
-	createTaskDisplayApplyContext,
 	type TaskDisplayPageKey,
 	type UseTaskDisplayOptionsResult,
 } from '@/features/display-options'
@@ -19,11 +18,8 @@ import {
 	type CollectionState,
 } from '@/features/selection'
 import type { ProjectOption } from '@/features/project'
-import {
-	selectProjectTaskBoardOpenSections,
-	useShellPreferenceStore,
-} from '@/features/shell-dialogs'
-import type { Space, TaskListItem } from '@/shared/types'
+import { useShellPreferenceStore } from '@/features/shell-dialogs'
+import type { Space, TaskListItem, TaskQueryItem } from '@/shared/types'
 import { useEventSubscription } from '@/shared/events'
 
 import type { TaskBoardPagination, TaskBoardProps } from '../components/TaskBoard'
@@ -33,17 +29,18 @@ import { buildTaskCommandSelection } from '../model/buildTaskCommandSelection'
 import { buildTaskBoardCollection } from '../model/taskBoardCollection'
 import { indexTasksById } from '../model/taskCollectionIndex'
 import { buildTaskBoardFlatItems } from '../model/taskBoardModel'
-import { TASK_BOARD_STATUS_ORDER } from '../model/taskBoardOrder'
 import { useTaskListController } from './useTaskListController'
 import { useTaskSelection } from './useTaskSelection'
 
 type TaskCollectionSource = {
-	items: TaskListItem[]
+	items: TaskQueryItem[]
+	collapseScopeKey: string
 	status: NonNullable<TaskBoardProps['status']>
 	onRetry: TaskBoardProps['onRetry']
 }
 
 type PendingTaskDeleteBatch = {
+	sourceKey: string
 	taskIds: Set<string>
 	state: CollectionState<string>
 	projection: CollectionProjection<string>
@@ -68,15 +65,33 @@ export type TaskCollectionSceneInput = {
 	pagination: TaskBoardPagination
 }
 
+const EMPTY_COLLAPSED_GROUP_KEYS: readonly string[] = []
+
 /**
  * 任务集合的交互编排（展示 / 选择 / 预览 / 批量 / Board）。
  * 调用方负责：查询结果、筛选会话、display 订阅、页面专属动作。
  */
 export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 	const display = input.display
-	const openSections = useShellPreferenceStore(selectProjectTaskBoardOpenSections)
-	const setOpenSections = useShellPreferenceStore((state) => state.setProjectTaskBoardOpenSections)
-	const [focusIntent, setFocusIntent] = useState<CollectionFocusIntent<string, string> | null>(null)
+	const collapseKey = JSON.stringify([input.source.collapseScopeKey, display.options.groupBy])
+	const collapsedGroupKeys = useShellPreferenceStore(
+		(state) => state.taskBoardCollapsedGroups[collapseKey] ?? EMPTY_COLLAPSED_GROUP_KEYS,
+	)
+	const setCollapsedGroups = useShellPreferenceStore((state) => state.setTaskBoardCollapsedGroups)
+	const sourceKey = input.pagination.sourceKey
+	const [focusRequest, setFocusRequest] = useState<{
+		sourceKey: string
+		intent: CollectionFocusIntent<string, string>
+	} | null>(null)
+	// 渲染时即隔离旧窗口意图，避免子 Board 在 layout effect 中提前消费。
+	if (focusRequest && focusRequest.sourceKey !== sourceKey) setFocusRequest(null)
+	const focusIntent = focusRequest?.sourceKey === sourceKey ? focusRequest.intent : null
+	const setFocusIntent = useCallback(
+		(intent: CollectionFocusIntent<string, string> | null) => {
+			setFocusRequest(intent ? { sourceKey, intent } : null)
+		},
+		[sourceKey],
+	)
 	const pendingDeleteBatchRef = useRef<PendingTaskDeleteBatch | null>(null)
 	const taskById = useMemo(() => indexTasksById(input.source.items), [input.source.items])
 
@@ -85,28 +100,12 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 			applyTaskDisplayOptionsToTasks({
 				items: input.source.items,
 				options: display.options,
-				context: createTaskDisplayApplyContext(input.displayPageKey),
 			}),
-		[display.options, input.displayPageKey, input.source.items],
+		[display.options, input.source.items],
 	)
-	const statusOrder = displayResult.boardPatch.statusOrder ?? TASK_BOARD_STATUS_ORDER
-	const hideEmptySections = displayResult.boardPatch.hideEmptySections ?? true
 	const flatItems = useMemo(
-		() =>
-			buildTaskBoardFlatItems({
-				tasks: displayResult.orderedItems,
-				statusOrder,
-				openSections,
-				hideEmptySections,
-				customSections: displayResult.boardPatch.customSections,
-			}),
-		[
-			displayResult.boardPatch.customSections,
-			displayResult.orderedItems,
-			hideEmptySections,
-			openSections,
-			statusOrder,
-		],
+		() => buildTaskBoardFlatItems({ sections: displayResult.sections, collapsedGroupKeys }),
+		[displayResult.sections, collapsedGroupKeys],
 	)
 	const collection = useMemo(
 		() =>
@@ -141,6 +140,7 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 		}
 
 		pendingDeleteBatchRef.current = {
+			sourceKey,
 			taskIds: new Set([event.payload.taskId]),
 			state: selection.interaction.getSnapshot(),
 			projection: collection.projection,
@@ -148,6 +148,10 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 	})
 	useLayoutEffect(() => {
 		const pendingBatch = pendingDeleteBatchRef.current
+		if (pendingBatch && pendingBatch.sourceKey !== sourceKey) {
+			pendingDeleteBatchRef.current = null
+			return
+		}
 		if (
 			!pendingBatch ||
 			![...pendingBatch.taskIds].every(
@@ -175,37 +179,26 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 			selection.interaction.focusKey(reconciliation.state.focusedKey)
 		}
 		setFocusIntent(reconciliation.focusIntent)
-	}, [collection.projection, selection.interaction])
+	}, [collection.projection, selection.interaction, sourceKey, setFocusIntent])
 	const handleFocusIntentConsumed = useCallback(
 		(consumedIntent: CollectionFocusIntent<string, string>) => {
-			setFocusIntent((currentIntent) => (currentIntent === consumedIntent ? null : currentIntent))
+			setFocusRequest((current) => (current?.intent === consumedIntent ? null : current))
 		},
 		[],
 	)
-	const buildCollectionForOpenSections = useCallback(
-		(nextOpenSections: readonly (typeof openSections)[number][]) => {
-			const nextFlatItems = buildTaskBoardFlatItems({
-				tasks: displayResult.orderedItems,
-				statusOrder,
-				openSections: nextOpenSections,
-				hideEmptySections,
-				customSections: displayResult.boardPatch.customSections,
-			})
-			return buildTaskBoardCollection({
+	const buildCollectionForCollapsedGroups = useCallback(
+		(nextCollapsedGroupKeys: readonly string[]) =>
+			buildTaskBoardCollection({
 				eligibleKeys: displayResult.selectionOrderIds,
-				flatItems: nextFlatItems,
-			})
-		},
-		[
-			displayResult.boardPatch.customSections,
-			displayResult.orderedItems,
-			displayResult.selectionOrderIds,
-			hideEmptySections,
-			statusOrder,
-		],
+				flatItems: buildTaskBoardFlatItems({
+					sections: displayResult.sections,
+					collapsedGroupKeys: nextCollapsedGroupKeys,
+				}),
+			}),
+		[displayResult.sections, displayResult.selectionOrderIds],
 	)
-	const applyOpenSections = useCallback(
-		(nextOpenSections: (typeof openSections)[number][], collapsedGroupKey: string | null) => {
+	const applyCollapsedGroups = useCallback(
+		(nextCollapsedGroupKeys: readonly string[], collapsedGroupKey: string | null) => {
 			let nextFocusIntent: CollectionFocusIntent<string, string> | null = null
 			const collapsedKeys = collapsedGroupKey
 				? collection.rowKeysByGroupKey.get(collapsedGroupKey)
@@ -213,7 +206,7 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 
 			if (collapsedGroupKey && collapsedKeys) {
 				const currentState = selection.interaction.getSnapshot()
-				const nextCollection = buildCollectionForOpenSections(nextOpenSections)
+				const nextCollection = buildCollectionForCollapsedGroups(nextCollapsedGroupKeys)
 				const reconciliation = reconcileCollapsedGroup(
 					currentState,
 					collection.projection,
@@ -227,18 +220,25 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 			}
 
 			setFocusIntent(nextFocusIntent)
-			setOpenSections(nextOpenSections)
+			setCollapsedGroups(collapseKey, nextCollapsedGroupKeys)
 		},
-		[buildCollectionForOpenSections, collection, selection.interaction, setOpenSections],
+		[
+			buildCollectionForCollapsedGroups,
+			collection,
+			selection.interaction,
+			collapseKey,
+			setCollapsedGroups,
+			setFocusIntent,
+		],
 	)
 	const handleSectionOpenChange = useCallback(
-		(groupKey: string, sectionStatus: (typeof openSections)[number], open: boolean) => {
-			const nextOpenSections = open
-				? [...new Set([...openSections, sectionStatus])]
-				: openSections.filter((status) => status !== sectionStatus)
-			applyOpenSections(nextOpenSections, open ? null : groupKey)
+		(groupKey: string, open: boolean) => {
+			const nextCollapsedGroupKeys = open
+				? collapsedGroupKeys.filter((key) => key !== groupKey)
+				: [...new Set([...collapsedGroupKeys, groupKey])]
+			applyCollapsedGroups(nextCollapsedGroupKeys, open ? null : groupKey)
 		},
-		[applyOpenSections, openSections],
+		[applyCollapsedGroups, collapsedGroupKeys],
 	)
 	const handleCollapseAll = useCallback(() => {
 		const focusedKey = selection.interaction.focusedKey
@@ -251,15 +251,19 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 				}
 			}
 		}
-		applyOpenSections([], focusedGroupKey)
-	}, [applyOpenSections, collection.rowKeysByGroupKey, selection.interaction.focusedKey])
-	const handleExpandAll = useCallback(() => {
-		const populatedStatuses = new Set(displayResult.orderedItems.map((task) => task.status))
-		applyOpenSections(
-			statusOrder.filter((status) => populatedStatuses.has(status)),
-			null,
+		applyCollapsedGroups(
+			[...new Set([...collapsedGroupKeys, ...collection.rowKeysByGroupKey.keys()])],
+			focusedGroupKey,
 		)
-	}, [applyOpenSections, displayResult.orderedItems, statusOrder])
+	}, [
+		applyCollapsedGroups,
+		collapsedGroupKeys,
+		collection.rowKeysByGroupKey,
+		selection.interaction.focusedKey,
+	])
+	const handleExpandAll = useCallback(() => {
+		applyCollapsedGroups([], null)
+	}, [applyCollapsedGroups])
 
 	const commandSelection = useMemo(
 		() =>
