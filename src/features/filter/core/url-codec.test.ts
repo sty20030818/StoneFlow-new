@@ -30,20 +30,29 @@ describe('FilterQuery URL codec', () => {
 		expect(decoded!.clauses.some((c) => c.id === 'id-p' || c.id === 'id-s')).toBe(true)
 	})
 
-	it('非法 / 缺失参数 → 无 draft', () => {
-		expect(decodeFilterQueryFromSearchParam('%%%not-base64%%%')).toBeNull()
+	it('损坏的 UTF-8 不得替换为可执行的项目排除条件', () => {
+		const invalidUtf8 = btoa(
+			'{"v":1,"c":[{"i":"bad","f":"project","o":"is_not","v":["' +
+				String.fromCharCode(255) +
+				'"]}]}',
+		)
+		expect(() => decodeFilterQueryFromSearchParam(invalidUtf8)).toThrow('筛选链接无效')
+	})
+
+	it('缺失参数没有 draft，非法参数明确失败', () => {
+		expect(() => decodeFilterQueryFromSearchParam('%%%not-base64%%%')).toThrow('筛选链接无效')
 		const invalidClause = btoa(
 			JSON.stringify({ v: 1, c: [{ i: 'bad', f: 'unknown', o: 'is', v: ['todo'] }] }),
 		)
-		expect(decodeFilterQueryFromSearchParam(invalidClause)).toBeNull()
+		expect(() => decodeFilterQueryFromSearchParam(invalidClause)).toThrow('筛选链接无效')
 		const partlyInvalidClause = btoa(
 			JSON.stringify({
 				v: 1,
 				c: [{ i: 'bad-value', f: 'status', o: 'is', v: ['todo', 'unknown'] }],
 			}),
 		)
-		expect(decodeFilterQueryFromSearchParam(partlyInvalidClause)).toBeNull()
-		expect(decodeFilterQueryFromSearchParam('')).toBeNull()
+		expect(() => decodeFilterQueryFromSearchParam(partlyInvalidClause)).toThrow('筛选链接无效')
+		expect(() => decodeFilterQueryFromSearchParam('')).toThrow('筛选链接无效')
 		expect(decodeFilterQueryFromSearchParam(undefined)).toBeNull()
 	})
 })

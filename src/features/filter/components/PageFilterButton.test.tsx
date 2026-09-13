@@ -118,9 +118,13 @@ describe('filter entry points', () => {
 			fireEvent.click(checkbox)
 
 			expect(value.session.replaceEffective).toHaveBeenCalledOnce()
+			expect(vi.mocked(value.session.replaceEffective).mock.calls[0][0].clauses).toHaveLength(2)
 			expect(value.session.replaceEffective).toHaveBeenCalledWith(
 				expect.objectContaining({
-					clauses: [expect.objectContaining({ field: 'status', values: ['todo', 'doing'] })],
+					clauses: expect.arrayContaining([
+						expect.objectContaining({ id: 'status-filter', field: 'status', values: ['todo'] }),
+						expect.objectContaining({ field: 'status', values: ['doing'] }),
+					]),
 				}),
 			)
 			expect(submenu).toBeInTheDocument()
@@ -167,6 +171,7 @@ function createFilterUiValue() {
 		clauses: [createFilterClause('status', 'is', ['todo'], 'status-filter')],
 	})
 	const value: ListFilterUiValue = {
+		boundary: { scope: { type: 'all' }, context: { kind: 'all' }, baseViewKey: 'all' },
 		session: {
 			base: query,
 			temp: query,

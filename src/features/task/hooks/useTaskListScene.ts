@@ -10,7 +10,11 @@ import { useEntityDetailController } from '@/features/entity-detail'
 import { useProjectOptions } from '@/features/project'
 import { useDialogStore } from '@/features/shell-dialogs'
 import { useSpaces } from '@/features/space'
-import { getDefaultTaskViews, useDefaultTaskViewSelection } from '@/features/task-workspace'
+import {
+	getDefaultTaskEmptyState,
+	getDefaultTaskViews,
+	useDefaultTaskViewSelection,
+} from '@/features/task-workspace'
 import { useViewSaveFlow } from '@/features/view'
 import { EMPTY_FILTER_QUERY, type TaskViewContext } from '@/shared/types'
 
@@ -76,21 +80,26 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 		display,
 		fallbackSubtitle,
 		activeTaskId: activeDetail?.kind === 'task' ? activeDetail.id : null,
-		onCreateTask: openCreate,
 		projectOptions,
 		spaces,
 		showProjectCellOptions: config.supportsProject,
 		showSpaceLabel: isAllScope,
-		empty: {
-			emptyActionLabel: '创建任务',
-			emptyDescription: config.emptyDescription,
-			emptyTitle: config.emptyTitle,
-		},
+		empty: getDefaultTaskEmptyState({
+			query: queryInput,
+			totalCount: taskList.pagination.totalCount,
+			onCreateTask: openCreate,
+		}),
 		pagination: taskList.pagination,
 	})
 
 	const filterUiValue = {
 		session: filterSession,
+		boundary: {
+			scope,
+			context,
+			baseViewKey: queryInput.baseViewKey,
+			spaceName: spaces.find((space) => space.id === shellRoute.spaceId)?.name,
+		},
 		...(context.kind === 'all'
 			? { projects: projectOptions.map((project) => ({ id: project.id, name: project.name })) }
 			: {}),

@@ -1,7 +1,14 @@
 import { useState } from 'react'
-import { useLocation } from '@tanstack/react-router'
-import { act, fireEvent, screen, waitFor } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import {
+	createMemoryHistory,
+	createRootRoute,
+	createRoute,
+	createRouter,
+	RouterProvider,
+	useLocation,
+} from '@tanstack/react-router'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 
 import { renderWithMatchedRoute } from '@/test/renderWithRouter'
 import {
@@ -17,14 +24,50 @@ const BASE_QUERY: FilterQuery = {
 }
 
 describe('parseListFilterSearch', () => {
-	it('保留可解码 f，丢弃空与损坏值', () => {
+	it('保留可解码 f，非法参数阻止回退查询', () => {
 		const encoded = encodeFilterQueryToSearchParam(BASE_QUERY)
 		expect(parseListFilterSearch({ f: encoded!, other: 1 })).toEqual({
 			[FILTER_SEARCH_PARAM_KEY]: encoded,
 		})
-		expect(parseListFilterSearch({ f: '' })).toEqual({})
-		expect(parseListFilterSearch({ f: 'broken' })).toEqual({})
+		expect(parseListFilterSearch({})).toEqual({})
+		for (const f of ['', 'broken', 1, null, ['broken']]) {
+			expect(() => parseListFilterSearch({ f })).toThrow('筛选链接无效')
+		}
 	})
+})
+
+it('损坏的筛选链接进入路由错误边界，不执行列表 loader 或渲染扩大后的结果', async () => {
+	const errorLog = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+	const warningLog = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+	const loader = vi.fn()
+	const root = createRootRoute()
+	const route = createRoute({
+		getParentRoute: () => root,
+		path: '/tasks',
+		validateSearch: parseListFilterSearch,
+		loader,
+		component: () => <div>任务结果</div>,
+		errorComponent: ({ error }) => (
+			<div role='alert'>{error instanceof Error ? error.message : '加载失败'}</div>
+		),
+	})
+	const router = createRouter({
+		routeTree: root.addChildren([route]),
+		history: createMemoryHistory({ initialEntries: ['/tasks?f=broken'] }),
+	})
+	render(<RouterProvider router={router} />)
+	await act(async () => {
+		await router.load()
+	})
+	expect(await screen.findByRole('alert')).toHaveTextContent('筛选链接无效')
+	expect(loader).not.toHaveBeenCalled()
+	expect(screen.queryByText('任务结果')).not.toBeInTheDocument()
+	expect(
+		errorLog.mock.calls
+			.flat()
+			.some((value) => value instanceof Error && value.message.includes('筛选链接无效')),
+	).toBe(true)
+	expect(warningLog).toHaveBeenCalledWith(expect.stringContaining('Error in route match:'))
 })
 
 describe('useListFilterSession', () => {

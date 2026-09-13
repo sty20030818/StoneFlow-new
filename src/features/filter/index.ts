@@ -21,8 +21,6 @@ export {
 	isFilterDateValue,
 	isFilterQueryEmpty,
 	normalizeFilterQuery,
-	removeFilterField,
-	setFilterFieldClause,
 	type FilterClause,
 	type FilterDateValue,
 	type FilterField,

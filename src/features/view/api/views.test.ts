@@ -39,3 +39,22 @@ it('写入和运行响应不得把不可用定义当成功或空筛选', async (
 		'无效 filters',
 	)
 })
+
+it('非法筛选沿用逐条不可用恢复，正常记录保留，非法写入不发 IPC', async () => {
+	const filters = {
+		clauses: [{ id: 'bad', field: 'status', op: 'is', values: ['todo', 'unknown'] }],
+	}
+	invokeMock.mockResolvedValue([record, { ...record, id: 'invalid-view', filters }])
+	const items = await listViews({ type: 'all' })
+	expect(items[0]).toMatchObject({ id: record.id, filters: definition.filters })
+	expect(items[1]).toMatchObject({
+		id: 'invalid-view',
+		definitionError: expect.stringContaining('筛选条件无效'),
+	})
+	expect(items[1]).not.toHaveProperty('filters')
+	invokeMock.mockClear()
+	await expect(
+		createView({ name: '无效', ...definition, filters: filters as never }),
+	).rejects.toThrow('筛选条件无效')
+	expect(invokeMock).not.toHaveBeenCalled()
+})

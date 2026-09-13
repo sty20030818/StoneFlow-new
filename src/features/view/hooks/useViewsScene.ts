@@ -17,7 +17,7 @@ import { projectDetailQueryOptions, useProjectOptions } from '@/features/project
 import { useDialogStore } from '@/features/shell-dialogs'
 import { useSpaces } from '@/features/space'
 import { useTaskBoardPagination, useTaskCollectionScene } from '@/features/task'
-import { getDefaultTaskViews } from '@/features/task-workspace'
+import { getDefaultTaskViews, TASK_VIEW_EMPTY_STATE } from '@/features/task-workspace'
 import { useTaskChangedListener } from '@/shared/events'
 import {
 	EMPTY_FILTER_QUERY,
@@ -222,24 +222,26 @@ export function useSavedViewWorkspaceScene() {
 							}
 						: (task) => task.projectName ?? '独立事项',
 		activeTaskId: activeDetail?.kind === 'task' ? activeDetail.id : null,
-		onCreateTask: openCreateTask,
 		projectOptions,
 		spaces,
 		showProjectCellOptions: workspaceContext.supportsProject,
 		showSpaceLabel: workspaceContext.showSpaceLabel,
 		createProjectId: workspaceContext.createProjectId,
 		pagination,
-		empty: {
-			emptyActionLabel: '创建任务',
-			emptyDescription: runnableView
-				? `视图「${runnableView.name}」下没有符合条件的任务。`
-				: '这个保存视图不存在，或不属于当前范围。',
-			emptyTitle: runnableView ? '当前没有任务' : '找不到保存视图',
-		},
+		empty: TASK_VIEW_EMPTY_STATE,
 	})
 
 	const filterUiValue = {
 		session: filterSession,
+		boundary: runnableView
+			? {
+					scope: runnableView.scope,
+					context: runnableView.context,
+					baseViewKey: runnableView.baseViewKey,
+					spaceName: spaces.find((space) => space.id === spaceId)?.name,
+					projectName: projectQuery.data?.name,
+				}
+			: null,
 		...(runnableView?.context.kind === 'all'
 			? { projects: projectOptions.map((project) => ({ id: project.id, name: project.name })) }
 			: {}),

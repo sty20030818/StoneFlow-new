@@ -56,13 +56,15 @@ export type TaskCollectionSceneInput = {
 	display: UseTaskDisplayOptionsResult
 	fallbackSubtitle: string | ((task: TaskListItem) => string)
 	activeTaskId: string | null
-	onCreateTask: () => void
 	projectOptions: ProjectOption[]
 	spaces: Space[]
 	showProjectCellOptions: boolean
 	showSpaceLabel?: boolean
 	createProjectId?: string | null
-	empty: Pick<TaskBoardProps, 'emptyTitle' | 'emptyDescription' | 'emptyActionLabel'>
+	empty: Pick<
+		TaskBoardProps,
+		'emptyTitle' | 'emptyDescription' | 'emptyActionLabel' | 'onEmptyAction'
+	>
 	pagination: TaskBoardPagination
 }
 
@@ -296,7 +298,7 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 			flatItems,
 			focusIntent,
 			onCollapseAll: handleCollapseAll,
-			onEmptyAction: input.onCreateTask,
+			onEmptyAction: input.empty.onEmptyAction,
 			onExpandAll: handleExpandAll,
 			onFocusIntentConsumed: handleFocusIntentConsumed,
 			onRetry: input.source.onRetry,
@@ -337,7 +339,7 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 			input.empty.emptyActionLabel,
 			input.empty.emptyDescription,
 			input.empty.emptyTitle,
-			input.onCreateTask,
+			input.empty.onEmptyAction,
 			input.projectOptions,
 			input.pagination,
 			input.showProjectCellOptions,

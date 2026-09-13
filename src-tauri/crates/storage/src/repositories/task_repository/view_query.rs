@@ -5,8 +5,8 @@ use sea_orm::{
     QuerySelect, Select,
 };
 use stoneflow_application::view::{
-    FilterClauseValue, TaskScopeKind, TaskViewBaseKey, TaskViewContext, ViewDateBoundaries,
-    ViewTaskQuery,
+    filter_query::validate_filter_query, FilterClauseValue, TaskScopeKind, TaskViewBaseKey,
+    TaskViewContext, ViewDateBoundaries, ViewTaskQuery,
 };
 
 use super::TaskRepository;
@@ -21,7 +21,7 @@ impl TaskRepository {
         &self,
         definition: &ViewTaskQuery,
     ) -> Result<Vec<task::Model>, StorageError> {
-        let mut query = apply_view_task_filters(Task::find(), definition);
+        let mut query = apply_view_task_filters(Task::find(), definition)?;
         if let Some(cursor) = &definition.cursor {
             query = query.filter(
                 Condition::any()
@@ -44,14 +44,19 @@ impl TaskRepository {
 
     /// 与 `list_for_view` 完全相同的过滤条件，不含 cursor/window。
     pub async fn count_for_view(&self, definition: &ViewTaskQuery) -> Result<u64, StorageError> {
-        apply_view_task_filters(Task::find(), definition)
+        apply_view_task_filters(Task::find(), definition)?
             .count(&self.db)
             .await
             .map_err(Into::into)
     }
 }
 
-fn apply_view_task_filters(mut query: Select<Task>, definition: &ViewTaskQuery) -> Select<Task> {
+fn apply_view_task_filters(
+    mut query: Select<Task>,
+    definition: &ViewTaskQuery,
+) -> Result<Select<Task>, StorageError> {
+    validate_filter_query(&definition.filters)
+        .map_err(|error| StorageError::validation(error.to_string()))?;
     query = query
         .filter(task::Column::ArchivedAt.is_null())
         .filter(task::Column::DeletedAt.is_null());
@@ -114,8 +119,11 @@ fn apply_view_task_filters(mut query: Select<Task>, definition: &ViewTaskQuery) 
                 let values = clause
                     .values
                     .iter()
-                    .filter_map(|value| storage_status_from_str(value))
-                    .collect::<Vec<_>>();
+                    .map(|value| {
+                        storage_status_from_str(value)
+                            .ok_or_else(|| StorageError::validation("无效的状态筛选值"))
+                    })
+                    .collect::<Result<Vec<_>, _>>()?;
                 if clause.op == "is_not" {
                     query.filter(task::Column::Status.is_not_in(values))
                 } else {
@@ -126,8 +134,12 @@ fn apply_view_task_filters(mut query: Select<Task>, definition: &ViewTaskQuery) 
                 let values = clause
                     .values
                     .iter()
-                    .filter_map(|value| value.parse::<i32>().ok())
-                    .collect::<Vec<_>>();
+                    .map(|value| {
+                        value
+                            .parse::<i32>()
+                            .map_err(|_| StorageError::validation("无效的优先级筛选值"))
+                    })
+                    .collect::<Result<Vec<_>, _>>()?;
                 if clause.op == "is_not" {
                     query.filter(task::Column::Priority.is_not_in(values))
                 } else {
@@ -140,17 +152,17 @@ fn apply_view_task_filters(mut query: Select<Task>, definition: &ViewTaskQuery) 
                 "due_at",
                 clause,
                 &definition.dates,
-            )),
+            )?),
             "planned" => query.filter(date_clause_condition(
                 task::Column::PlannedAt,
                 "planned_at",
                 clause,
                 &definition.dates,
-            )),
-            _ => query,
+            )?),
+            _ => return Err(StorageError::validation("不支持的筛选字段")),
         };
     }
-    query
+    Ok(query)
 }
 
 fn project_clause_condition(clause: &FilterClauseValue) -> Condition {
@@ -191,20 +203,20 @@ fn date_clause_condition(
     column_name: &'static str,
     clause: &FilterClauseValue,
     dates: &ViewDateBoundaries,
-) -> Condition {
+) -> Result<Condition, StorageError> {
     if clause.op == "is_not" {
         return clause
             .values
             .iter()
-            .fold(Condition::all(), |condition, value| {
-                condition.add(date_value_complement(column, column_name, value, dates))
+            .try_fold(Condition::all(), |condition, value| {
+                Ok(condition.add(date_value_complement(column, column_name, value, dates)?))
             });
     }
     clause
         .values
         .iter()
-        .fold(Condition::any(), |condition, value| {
-            condition.add(date_value_condition(column, column_name, value, dates))
+        .try_fold(Condition::any(), |condition, value| {
+            Ok(condition.add(date_value_condition(column, column_name, value, dates)?))
         })
 }
 
@@ -213,8 +225,8 @@ fn date_value_condition(
     column_name: &'static str,
     value: &str,
     dates: &ViewDateBoundaries,
-) -> Condition {
-    match value {
+) -> Result<Condition, StorageError> {
+    Ok(match value {
         "today" => {
             sqlite_date_range_condition(column_name, &dates.today_start, &dates.tomorrow_start)
         }
@@ -232,8 +244,8 @@ fn date_value_condition(
         "overdue" => Condition::all().add(sqlite_date_before(column_name, &dates.today_start)),
         "hasDate" => Condition::all().add(column.is_not_null()),
         "noDate" => Condition::all().add(column.is_null()),
-        _ => Condition::all(),
-    }
+        _ => return Err(StorageError::validation("不支持的日期筛选值")),
+    })
 }
 
 fn date_value_complement(
@@ -241,8 +253,8 @@ fn date_value_complement(
     column_name: &'static str,
     value: &str,
     dates: &ViewDateBoundaries,
-) -> Condition {
-    match value {
+) -> Result<Condition, StorageError> {
+    Ok(match value {
         "today" => sqlite_date_range_complement(
             column,
             column_name,
@@ -269,8 +281,8 @@ fn date_value_complement(
             .add(sqlite_date_at_or_after(column_name, &dates.today_start)),
         "hasDate" => Condition::all().add(column.is_null()),
         "noDate" => Condition::all().add(column.is_not_null()),
-        _ => Condition::all(),
-    }
+        _ => return Err(StorageError::validation("不支持的日期筛选值")),
+    })
 }
 
 fn sqlite_date_range_condition(column: &str, from: &str, to: &str) -> Condition {
@@ -324,6 +336,7 @@ fn storage_status_from_str(value: &str) -> Option<StorageWorkStatus> {
 #[cfg(test)]
 mod tests {
     use sea_orm::ConnectionTrait;
+    use serde::Deserialize;
     use stoneflow_application::{
         task::TaskQueryCursor,
         view::{FilterQueryValue, TaskScopeInput},
@@ -338,6 +351,187 @@ mod tests {
     const NOW: &str = "2026-08-21T16:00:00Z";
     const DUE_TODAY: &str = "2026-08-21T09:30:00-07:00";
     const PLANNED_TOMORROW: &str = "2026-08-22T09:00:00-07:00";
+
+    #[derive(Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    struct FilterSemanticsCase {
+        name: String,
+        raw: FilterQueryValue,
+        normalized: FilterQueryValue,
+        expected_task_ids: Vec<String>,
+    }
+
+    #[tokio::test]
+    async fn shared_normalization_fixtures_preserve_real_sqlite_members_and_counts() {
+        let database = TestDatabase::bootstrap_in_memory().await.unwrap();
+        let connection = database.connection();
+        connection.execute_unprepared(&format!(
+            "INSERT INTO spaces (id, name, icon_key, color_key, is_default, position, generation, created_at, updated_at)
+            VALUES ('{SPACE_ID}', 'Query', 'home', 'blue', 0, 1000, 1, '{NOW}', '{NOW}');
+            INSERT INTO projects (id, space_id, name, status, priority, status_changed_at, position, generation, created_at, updated_at)
+            VALUES ('project-1', '{SPACE_ID}', 'P1', 'todo', 0, '{NOW}', 1000, 1, '{NOW}', '{NOW}'),
+                   ('project-2', '{SPACE_ID}', 'P2', 'todo', 0, '{NOW}', 2000, 1, '{NOW}', '{NOW}');"
+        )).await.unwrap();
+        let repository = TaskRepository::new(connection.clone());
+        for (index, (id, project_id, status, priority, due_at, planned_at)) in [
+            (
+                "todo-none",
+                None,
+                WorkStatus::Todo,
+                0,
+                Some(DUE_TODAY),
+                None,
+            ),
+            (
+                "doing-p1",
+                Some("project-1"),
+                WorkStatus::Doing,
+                4,
+                Some(PLANNED_TOMORROW),
+                Some(DUE_TODAY),
+            ),
+            (
+                "waiting-p2",
+                Some("project-2"),
+                WorkStatus::Waiting,
+                2,
+                None,
+                Some("2026-08-25T00:00:00+08:00"),
+            ),
+            (
+                "done-p1",
+                Some("project-1"),
+                WorkStatus::Done,
+                1,
+                Some("2026-08-20T00:00:00+08:00"),
+                None,
+            ),
+            (
+                "canceled-none",
+                None,
+                WorkStatus::Canceled,
+                3,
+                Some("2026-08-25T00:00:00+08:00"),
+                Some(PLANNED_TOMORROW),
+            ),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            repository
+                .create(
+                    connection,
+                    CreateTaskRecord {
+                        id: id.to_owned(),
+                        space_id: SPACE_ID.to_owned(),
+                        project_id: project_id.map(str::to_owned),
+                        title: id.to_owned(),
+                        note: None,
+                        status,
+                        priority,
+                        status_changed_at: NOW.to_owned(),
+                        planned_at: planned_at.map(str::to_owned),
+                        due_at: due_at.map(str::to_owned),
+                        remind_at: None,
+                        position: (index as i64 + 1) * 1024,
+                        completed_at: None,
+                        created_at: NOW.to_owned(),
+                        updated_at: NOW.to_owned(),
+                    },
+                )
+                .await
+                .unwrap();
+        }
+        let cases: Vec<FilterSemanticsCase> = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../tests/fixtures/filter-query-semantics.json"
+        )))
+        .unwrap();
+        for case in cases {
+            for filters in [case.raw, case.normalized] {
+                let query = ViewTaskQuery {
+                    scope: TaskScopeInput {
+                        kind: TaskScopeKind::All,
+                        space_id: None,
+                    },
+                    context: TaskViewContext::All,
+                    base_view_key: TaskViewBaseKey::All,
+                    filters,
+                    dates: ViewDateBoundaries {
+                        today_start: "2026-08-22T00:00:00+08:00".to_owned(),
+                        tomorrow_start: "2026-08-23T00:00:00+08:00".to_owned(),
+                        day_after_tomorrow_start: "2026-08-24T00:00:00+08:00".to_owned(),
+                        next_week_start: "2026-08-24T00:00:00+08:00".to_owned(),
+                    },
+                    limit: 10,
+                    cursor: None,
+                };
+                let items = repository.list_for_view(&query).await.unwrap();
+                assert_eq!(
+                    items.into_iter().map(|task| task.id).collect::<Vec<_>>(),
+                    case.expected_task_ids,
+                    "{}",
+                    case.name
+                );
+                assert_eq!(
+                    repository.count_for_view(&query).await.unwrap(),
+                    case.expected_task_ids.len() as u64,
+                    "{}",
+                    case.name
+                );
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn invalid_filter_input_is_rejected_by_both_sql_read_boundaries() {
+        let database = TestDatabase::bootstrap_in_memory().await.unwrap();
+        let repository = TaskRepository::new(database.connection().clone());
+        for (field, op, values) in [
+            ("unknown", "is", vec!["todo"]),
+            ("status", "unknown", vec!["todo"]),
+            ("status", "is_not", vec!["todo", "unknown"]),
+            ("priority", "is", vec!["01"]),
+            ("priority", "is_not", vec!["0", "bad"]),
+            ("project", "is", vec![" project-1"]),
+            ("due", "is", vec!["unknown"]),
+            ("planned", "is_not", vec!["today", "unknown"]),
+            ("status", "is", vec![]),
+        ] {
+            let query = ViewTaskQuery {
+                scope: TaskScopeInput {
+                    kind: TaskScopeKind::All,
+                    space_id: None,
+                },
+                context: TaskViewContext::All,
+                base_view_key: TaskViewBaseKey::All,
+                filters: FilterQueryValue {
+                    clauses: vec![FilterClauseValue {
+                        id: "condition".to_owned(),
+                        field: field.to_owned(),
+                        op: op.to_owned(),
+                        values: values.into_iter().map(str::to_owned).collect(),
+                    }],
+                },
+                dates: ViewDateBoundaries {
+                    today_start: "2026-08-22T00:00:00+08:00".to_owned(),
+                    tomorrow_start: "2026-08-23T00:00:00+08:00".to_owned(),
+                    day_after_tomorrow_start: "2026-08-24T00:00:00+08:00".to_owned(),
+                    next_week_start: "2026-08-24T00:00:00+08:00".to_owned(),
+                },
+                limit: 10,
+                cursor: None,
+            };
+            assert!(
+                repository.list_for_view(&query).await.is_err(),
+                "list accepted {field}/{op}"
+            );
+            assert!(
+                repository.count_for_view(&query).await.is_err(),
+                "count accepted {field}/{op}"
+            );
+        }
+    }
 
     async fn insert_task(
         repository: &TaskRepository,

@@ -1,10 +1,11 @@
-import { useRef, type ReactNode } from 'react'
+import { useRef, type ReactNode, type Ref } from 'react'
 
 import { checkboxVariants, Dropdown } from '@heroui/react'
 
 import { OverflowTooltip } from '@/shared/components/tooltip'
 
 type FilterValueOptionProps = {
+	ref?: Ref<HTMLDivElement>
 	value: string
 	label: string
 	leading?: ReactNode
@@ -18,6 +19,7 @@ const checkboxStyles = checkboxVariants({ variant: 'primary' })
 
 /** 复用 Labels 的展示勾选框；选择语义与焦点仍只由菜单项持有。 */
 export function FilterValueOption({
+	ref,
 	value,
 	label,
 	leading,
@@ -30,6 +32,7 @@ export function FilterValueOption({
 
 	return (
 		<Dropdown.Item
+			ref={ref}
 			aria-label={label}
 			id={value}
 			isDisabled={disabled}

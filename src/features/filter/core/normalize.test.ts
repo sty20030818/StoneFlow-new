@@ -5,50 +5,59 @@ import {
 	filterQueriesEqual,
 	isFilterQueryEmpty,
 	normalizeFilterQuery,
-	removeFilterField,
-	setFilterFieldClause,
 } from './normalize'
-import { EMPTY_FILTER_QUERY } from './types'
+import { EMPTY_FILTER_QUERY, type FilterQuery } from './types'
+import semanticCases from '../../../../tests/fixtures/filter-query-semantics.json'
 
 describe('normalizeFilterQuery', () => {
-	it('空 / 非法输入 → empty', () => {
+	it('只有缺失查询或显式空 clauses 表示 empty', () => {
 		expect(normalizeFilterQuery(null)).toEqual(EMPTY_FILTER_QUERY)
 		expect(normalizeFilterQuery(undefined)).toEqual(EMPTY_FILTER_QUERY)
 		expect(normalizeFilterQuery({ clauses: [] })).toEqual(EMPTY_FILTER_QUERY)
-		expect(
+		expect(() =>
 			normalizeFilterQuery({ clauses: [{ id: '1', field: 'status', op: 'is', values: [] }] }),
-		).toEqual(EMPTY_FILTER_QUERY)
+		).toThrow('筛选')
 	})
 
-	it('丢弃非法 field / op / value', () => {
-		const result = normalizeFilterQuery({
-			clauses: [
-				{ id: 'a', field: 'status', op: 'is', values: ['todo', 'not-a-status'] },
-				// @ts-expect-error 非法 field
-				{ id: 'b', field: 'assignee', op: 'is', values: ['x'] },
-				// @ts-expect-error 非法 op
-				{ id: 'c', field: 'priority', op: 'includes', values: ['1'] },
-			],
-		})
-		expect(result.clauses).toHaveLength(1)
-		expect(result.clauses[0]?.field).toBe('status')
-		expect(result.clauses[0]?.values).toEqual(['todo'])
+	it('非法字段、操作符、值和不完整结构明确失败', () => {
+		const bad = [
+			{ clauses: [{ id: 'a', field: 'status', op: 'is', values: ['todo', 'not-a-status'] }] },
+			{ clauses: [{ id: 'b', field: 'assignee', op: 'is', values: ['x'] }] },
+			{ clauses: [{ id: 'c', field: 'priority', op: 'includes', values: ['1'] }] },
+			{ clauses: [{ id: 'p', field: 'priority', op: 'is', values: ['01'] }] },
+			{ clauses: [{ id: 'p', field: 'project', op: 'is', values: [' project-1 '] }] },
+			{},
+		]
+		for (const query of bad) {
+			expect(() => normalizeFilterQuery(query as never)).toThrow('筛选')
+		}
 	})
 
-	it('同 field+op 合并 values 并稳定排序', () => {
+	it('同 field/op 保留 AND，仅条内去重和完全相同条件等价去重', () => {
 		const result = normalizeFilterQuery({
 			clauses: [
 				createFilterClause('priority', 'is', ['1'], 'p1'),
-				createFilterClause('priority', 'is', ['3', '1'], 'p2'),
+				createFilterClause('priority', 'is', ['3', '1', '3'], 'p2'),
 				createFilterClause('status', 'is', ['done', 'todo'], 's1'),
+				createFilterClause('status', 'is', ['todo', 'done'], 's2'),
 			],
 		})
-		expect(result.clauses.map((c) => c.field)).toEqual(['status', 'priority'])
-		const priority = result.clauses.find((c) => c.field === 'priority')
-		expect(priority?.id).toBe('p1')
-		expect(priority?.values).toEqual(['3', '1'])
-		const status = result.clauses.find((c) => c.field === 'status')
-		expect(status?.values).toEqual(['todo', 'done'])
+		expect(result.clauses.map((c) => c.id)).toEqual(['s1', 'p1', 'p2'])
+		expect(result.clauses.map((c) => c.values)).toEqual([['todo', 'done'], ['1'], ['3', '1']])
+	})
+
+	it('缺失或重复身份不会让编辑同时修改两条不同条件', () => {
+		const query = {
+			clauses: [
+				createFilterClause('status', 'is', ['todo'], 'duplicate'),
+				createFilterClause('status', 'is_not', ['done'], 'duplicate'),
+				createFilterClause('priority', 'is', ['4'], ''),
+			],
+		}
+		const ids = normalizeFilterQuery(query).clauses.map((c) => c.id)
+		expect(new Set(ids).size).toBe(3)
+		expect(ids.every(Boolean)).toBe(true)
+		expect(normalizeFilterQuery(query).clauses.map((c) => c.id)).toEqual(ids)
 	})
 
 	it('project __none__ 与 id 合法', () => {
@@ -68,7 +77,7 @@ describe('isFilterQueryEmpty / filterQueriesEqual', () => {
 		)
 	})
 
-	it('相等忽略 id 差异、依赖 normalize', () => {
+	it('相等忽略 id，但同字段的 AND 不等于 OR', () => {
 		const a = {
 			clauses: [createFilterClause('status', 'is', ['todo', 'doing'], 'a')],
 		}
@@ -78,31 +87,21 @@ describe('isFilterQueryEmpty / filterQueriesEqual', () => {
 				createFilterClause('status', 'is', ['todo'], 'b2'),
 			],
 		}
-		expect(filterQueriesEqual(a, b)).toBe(true)
+		expect(filterQueriesEqual(a, b)).toBe(false)
+		expect(
+			filterQueriesEqual(a, {
+				clauses: [createFilterClause('status', 'is', ['doing', 'todo'], 'other')],
+			}),
+		).toBe(true)
 		expect(
 			filterQueriesEqual(a, { clauses: [createFilterClause('status', 'is', ['todo'], 'x')] }),
 		).toBe(false)
 	})
 })
 
-describe('setFilterFieldClause / removeFilterField', () => {
-	it('写入并替换同 field', () => {
-		const base = { clauses: [createFilterClause('status', 'is', ['todo'], 's1')] }
-		const next = setFilterFieldClause(base, 'status', 'is', ['doing'])
-		expect(next.clauses).toHaveLength(1)
-		expect(next.clauses[0]?.values).toEqual(['doing'])
-	})
-
-	it('values 空则删除 field', () => {
-		const base = {
-			clauses: [
-				createFilterClause('status', 'is', ['todo'], 's1'),
-				createFilterClause('priority', 'is', ['4'], 'p1'),
-			],
-		}
-		expect(setFilterFieldClause(base, 'status', 'is', []).clauses.map((c) => c.field)).toEqual([
-			'priority',
-		])
-		expect(removeFilterField(base, 'priority').clauses.map((c) => c.field)).toEqual(['status'])
+describe('前端与 SQLite 共用语义样例', () => {
+	it.each(semanticCases)('$name', ({ raw, normalized }) => {
+		expect(normalizeFilterQuery(raw as FilterQuery)).toEqual(normalized)
+		expect(normalizeFilterQuery(normalized as FilterQuery)).toEqual(normalized)
 	})
 })

@@ -111,13 +111,13 @@ export function useListFilterSession(options: UseListFilterSessionOptions = {}):
 	}
 }
 
-/** 供路由 validateSearch：只关心 f，其它键透传 */
+/** 供路由 validateSearch：只解析 f，非法定义交由现有路由错误边界呈现。 */
 export function parseListFilterSearch(search: Record<string, unknown>): {
 	[FILTER_SEARCH_PARAM_KEY]?: string
 } {
 	const f = search[FILTER_SEARCH_PARAM_KEY]
-	if (typeof f === 'string' && decodeFilterQueryFromSearchParam(f) !== null) {
-		return { [FILTER_SEARCH_PARAM_KEY]: f }
-	}
-	return {}
+	if (f === undefined) return {}
+	if (typeof f !== 'string') throw new Error('筛选链接无效，请返回列表重新选择筛选。')
+	decodeFilterQueryFromSearchParam(f)
+	return { [FILTER_SEARCH_PARAM_KEY]: f }
 }

@@ -164,11 +164,10 @@ function TaskCollectionProjectionHarness({ tasks }: { tasks: TaskListItem[] }) {
 		display: TEST_DISPLAY,
 		fallbackSubtitle: '无项目',
 		activeTaskId: null,
-		onCreateTask: () => undefined,
 		projectOptions: [],
 		spaces: [],
 		showProjectCellOptions: false,
-		empty: {},
+		empty: { onEmptyAction: () => undefined },
 	})
 	const { boardCollection, collectionInteraction } = scene.boardProps
 
@@ -191,11 +190,10 @@ function TaskCollectionOwnerHarness() {
 		display: TEST_DISPLAY,
 		fallbackSubtitle: '无项目',
 		activeTaskId: null,
-		onCreateTask: () => undefined,
 		projectOptions: [],
 		spaces: [],
 		showProjectCellOptions: false,
-		empty: {},
+		empty: { onEmptyAction: () => undefined },
 	})
 	const { collectionInteraction, flatItems, focusIntent } = scene.boardProps
 

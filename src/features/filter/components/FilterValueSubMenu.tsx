@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 
 import { Dropdown, SearchField } from '@heroui/react'
 
@@ -24,6 +24,7 @@ export function FilterValueSubMenu({
 	projects,
 }: FilterValueSubMenuProps) {
 	const [query, setQuery] = useState('')
+	const firstOptionRef = useRef<HTMLDivElement>(null)
 	const options = useMemo(() => getFilterValueOptions(field, projects), [field, projects])
 	const visibleOptions = useMemo(() => {
 		const normalizedQuery = query.trim().toLowerCase()
@@ -45,7 +46,11 @@ export function FilterValueSubMenu({
 					<SearchField.Group data-field-role='filter-search'>
 						<SearchField.Input
 							onKeyDown={(event) => {
-								if (event.key !== 'Escape') event.stopPropagation()
+								if (event.key === 'ArrowDown') {
+									event.preventDefault()
+									firstOptionRef.current?.focus()
+								}
+								if (event.key !== 'Escape' && event.key !== 'Tab') event.stopPropagation()
 							}}
 							placeholder='筛选…'
 						/>
@@ -54,6 +59,7 @@ export function FilterValueSubMenu({
 				</SearchField>
 			</div>
 			<Dropdown.Menu
+				disallowEmptySelection
 				aria-label={`${formatFilterFieldLabel(field)} 筛选值`}
 				className='max-h-60 overflow-y-auto'
 				selectedKeys={options
@@ -64,6 +70,7 @@ export function FilterValueSubMenu({
 			>
 				{visibleOptions.map((option) => (
 					<FilterValueOption
+						ref={option === visibleOptions[0] ? firstOptionRef : undefined}
 						count={option.count}
 						key={option.value}
 						label={option.label}

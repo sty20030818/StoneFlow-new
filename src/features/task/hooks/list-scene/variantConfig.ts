@@ -11,8 +11,6 @@ export type TaskListSubtitleTask = {
 
 export type VariantConfig = {
 	displayPageKey: TaskDisplayPageKey
-	emptyTitle: string
-	emptyDescription: string
 	/** openTaskCreateDialog 草稿；undefined = 无参 */
 	createDraft?: {
 		status?: TaskStatus
@@ -25,9 +23,6 @@ export type VariantConfig = {
 export const VARIANT_CONFIG: Record<TaskListSceneVariant, VariantConfig> = {
 	all: {
 		displayPageKey: 'task:all',
-		emptyTitle: '当前没有任务',
-		emptyDescription:
-			'这里本来会显示符合当前条件的任务，不过现在还是空的。点「创建任务」先记下一项，后面再慢慢整理也来得及。',
 		createDraft: { status: 'todo' },
 		supportsProject: true,
 		fallbackSubtitle: (task) =>
@@ -35,9 +30,6 @@ export const VARIANT_CONFIG: Record<TaskListSceneVariant, VariantConfig> = {
 	},
 	standalone: {
 		displayPageKey: 'task:standalone',
-		emptyTitle: '当前没有独立事项',
-		emptyDescription:
-			'这里会放那些还没归属到项目里的任务，现在暂时还是空的。点「创建任务」先记下来，之后再决定要不要放进某个项目。',
 		createDraft: { placement: 'standalone' },
 		supportsProject: false,
 		fallbackSubtitle: '独立事项',

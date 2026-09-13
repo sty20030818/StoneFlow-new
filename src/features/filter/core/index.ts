@@ -9,8 +9,6 @@ export {
 	isFilterDateValue,
 	isFilterQueryEmpty,
 	normalizeFilterQuery,
-	removeFilterField,
-	setFilterFieldClause,
 } from './normalize'
 export {
 	EMPTY_FILTER_QUERY,

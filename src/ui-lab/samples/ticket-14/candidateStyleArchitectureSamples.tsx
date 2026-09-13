@@ -2,7 +2,8 @@ import { useMemo, useState, type ReactNode } from 'react'
 
 import { KeybindingRegistry, ShortcutRegistryProvider } from '@/features/command'
 import {
-	EMPTY_FILTER_QUERY,
+	createFilterClause,
+	filterQueriesEqual,
 	FilterBar,
 	ListFilterUiProvider,
 	PageFilterButton,
@@ -83,35 +84,49 @@ function InlineSelectCurrentPreview() {
 	)
 }
 
+const FILTER_PREVIEW_BASE: FilterQuery = {
+	clauses: [
+		createFilterClause('status', 'is', ['todo', 'doing'], 'lab-status'),
+		createFilterClause('status', 'is_not', ['waiting', 'canceled'], 'lab-excluded-status'),
+		createFilterClause('project', 'is_not', ['project-ui-lab'], 'lab-project'),
+	],
+}
+
 function SearchablePropertyMenuCurrentPreview() {
-	const [effective, setEffective] = useState<FilterQuery>(EMPTY_FILTER_QUERY)
+	const [effective, setEffective] = useState<FilterQuery>(FILTER_PREVIEW_BASE)
 	const value = useMemo<ListFilterUiValue>(
 		() => ({
+			boundary: {
+				scope: { type: 'space', spaceId: 'space-ui-lab' },
+				context: { kind: 'all' },
+				baseViewKey: 'active',
+				spaceName: '用于检查完整条件和窄窗口换行的设计与工程协作空间',
+			},
 			session: {
-				base: EMPTY_FILTER_QUERY,
+				base: FILTER_PREVIEW_BASE,
 				temp: effective,
 				effective,
-				dirty: effective !== EMPTY_FILTER_QUERY,
+				dirty: !filterQueriesEqual(effective, FILTER_PREVIEW_BASE),
 				isEmpty: isFilterQueryEmpty(effective),
 				setTemp: (query) => setEffective(query),
-				clearTemp: () => setEffective(EMPTY_FILTER_QUERY),
+				clearTemp: () => setEffective(FILTER_PREVIEW_BASE),
 				replaceEffective: (query) => setEffective(query),
 			},
-			projects: [{ id: 'project-ui-lab', name: 'UI Lab' }],
+			projects: [{ id: 'project-ui-lab', name: '用于验证负向项目条件完整显示与换行的长名称项目' }],
 		}),
 		[effective],
 	)
 
 	return (
 		<CurrentEvidence
-			note='直接渲染生产筛选菜单与 FilterBar；添加条件后检查分段编辑、恢复和窄宽换行。只有 fixture 保存本地 FilterQuery。'
+			note='直接渲染生产筛选菜单与 FilterBar；初始为 clean 的完整包含与排除条件。修改即时生效，Escape 不回滚；恢复回到基线。只有 fixture 保存内存 FilterQuery。'
 			title='Current · 可搜索筛选属性菜单'
 		>
 			<ShortcutRegistryProvider registry={FILTER_SHORTCUT_REGISTRY}>
 				<ListFilterUiProvider value={value}>
 					<div className='flex items-center gap-3'>
 						<PageFilterButton />
-						<span className='text-sm text-muted'>打开后搜索字段并进入二级值菜单</span>
+						<span className='text-sm text-muted'>检查固定边界与完整条件，再修改或添加条件</span>
 					</div>
 					<FilterBar />
 				</ListFilterUiProvider>

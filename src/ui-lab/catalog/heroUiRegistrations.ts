@@ -199,9 +199,10 @@ const OSS_PRODUCTION_USAGE = [
 	['src/features/display-options/components/DisplayOptionsPopover.tsx', ['Popover']],
 	['src/features/display-options/components/PropertyToggleGrid.tsx', ['ToggleButton']],
 	['src/features/entity-detail/components/EntityDetailDrawerHost.tsx', ['Surface']],
+	['src/features/filter/components/FilterBar.tsx', ['Button', 'Surface']],
 	[
-		'src/features/filter/components/FilterBar.tsx',
-		['Button', 'ButtonGroup', 'Dropdown', 'Surface', 'Selection'],
+		'src/features/filter/components/FilterClauseEditor.tsx',
+		['Button', 'ButtonGroup', 'Dropdown', 'Selection'],
 	],
 	['src/features/filter/components/FilterMenu.tsx', ['Dropdown', 'SearchField']],
 	['src/features/filter/components/FilterValueOption.tsx', ['Dropdown', 'checkboxVariants']],

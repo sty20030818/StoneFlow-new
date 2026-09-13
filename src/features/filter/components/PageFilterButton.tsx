@@ -8,6 +8,7 @@ import { ListFilterIcon } from 'lucide-react'
 
 import { COMMAND_IDS, CommandActionTooltip } from '@/features/command'
 
+import { useListFilterUi } from '../model/ListFilterUiContext'
 import { subscribeFilterUiEvent } from '../model/filterUiEvents'
 import { FilterMenu } from './FilterMenu'
 
@@ -16,6 +17,7 @@ type PageFilterButtonProps = {
 }
 
 export function PageFilterButton({ className }: PageFilterButtonProps) {
+	const { filterTriggerRef } = useListFilterUi()
 	const [menuOpen, setMenuOpen] = useState(false)
 	const [tooltipOpen, setTooltipOpen] = useState(false)
 
@@ -38,6 +40,7 @@ export function PageFilterButton({ className }: PageFilterButtonProps) {
 			isOpen={tooltipOpen}
 		>
 			<Button
+				ref={filterTriggerRef}
 				aria-label={label}
 				className={className}
 				isIconOnly

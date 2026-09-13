@@ -134,6 +134,11 @@ const EXPORTED_COMPONENT_GROUPS = [
 		['EntityDetailDrawerHost'],
 	],
 	['src/features/filter/components/FilterBar.tsx', 'task-workspace', ['FilterBar']],
+	[
+		'src/features/filter/components/FilterClauseEditor.tsx',
+		'task-workspace',
+		['FilterClauseEditor'],
+	],
 	['src/features/filter/components/FilterMenu.tsx', 'task-workspace', ['FilterMenu']],
 	['src/features/filter/components/FilterValueOption.tsx', 'task-workspace', ['FilterValueOption']],
 	[
@@ -487,10 +492,11 @@ const PRIVATE_LEAF_GROUPS = [
 		['TaskEntityDetail'],
 	],
 	[
-		'src/features/filter/components/FilterBar.tsx',
-		'FilterBar',
-		['FilterChip', 'OpPicker', 'ValuesPicker'],
+		'src/features/filter/components/FilterClauseEditor.tsx',
+		'FilterClauseEditor',
+		['FilterFieldLabel', 'OpPicker', 'ValuesPicker'],
 	],
+	['src/features/filter/components/FilterMenu.tsx', 'FilterMenu', ['QueryBoundary']],
 	[
 		'src/features/global-search/components/GlobalSearchResults.tsx',
 		'GlobalSearchResults',
@@ -635,7 +641,7 @@ const EXPORTED_COMPONENT_CONSUMERS: Readonly<Record<string, readonly string[]>> 
 		'src/features/command/components/CommandActionTooltip.tsx',
 		'src/features/command/components/ShortcutHelp.tsx',
 		'src/features/display-options/components/DisplayOptionsPanel.tsx',
-		'src/features/filter/components/FilterBar.tsx',
+		'src/features/filter/components/FilterClauseEditor.tsx',
 		'src/features/launcher/composer/PrimaryMetaBar.tsx',
 		'src/features/launcher/composer/controls/PriorityControl.tsx',
 		'src/features/launcher/composer/controls/SpaceControl.tsx',
@@ -780,11 +786,16 @@ const EXPORTED_COMPONENT_CONSUMERS: Readonly<Record<string, readonly string[]>> 
 	'stoneflow-component-empty-hint': ['src/features/launcher/results/LauncherResults.tsx'],
 	'stoneflow-component-entity-detail-drawer-host': ['src/layout/ShellMain.tsx'],
 	'stoneflow-component-filter-bar': ['src/features/task-workspace/components/TaskWorkspace.tsx'],
+	'stoneflow-component-filter-clause-editor': [
+		'src/features/filter/components/FilterBar.tsx',
+		'src/features/filter/components/FilterMenu.tsx',
+	],
 	'stoneflow-component-filter-menu': [
 		'src/features/filter/components/FilterBar.tsx',
 		'src/features/filter/components/PageFilterButton.tsx',
 	],
 	'stoneflow-component-filter-value-option': [
+		'src/features/filter/components/FilterClauseEditor.tsx',
 		'src/features/filter/components/FilterValueSubMenu.tsx',
 	],
 	'stoneflow-component-filter-value-sub-menu': ['src/features/filter/components/FilterMenu.tsx'],

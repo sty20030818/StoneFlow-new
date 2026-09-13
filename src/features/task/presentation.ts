@@ -11,3 +11,13 @@ export {
 export { TASK_STATUS_OPTIONS, formatTaskStatusLabel } from './model/taskStatus'
 export { PriorityIcon } from './model/indicators/PriorityIcon'
 export { TaskStatusIndicator } from './model/indicators/TaskStatusIndicator'
+
+import type { TaskViewBaseKey } from '@/shared/types'
+
+export const TASK_VIEW_BASE_LABELS: Record<TaskViewBaseKey, string> = {
+	all: '全部',
+	active: '未完成',
+	completed: '已完成',
+	today: '今天',
+	upcoming: '即将到期',
+}

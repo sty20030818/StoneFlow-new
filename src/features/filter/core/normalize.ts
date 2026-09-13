@@ -19,44 +19,44 @@ const PRIORITY_SET = new Set(['0', '1', '2', '3', '4'])
 
 const FIELD_ORDER = new Map(FILTER_FIELD_VALUES.map((field, index) => [field, index]))
 
-/**
- * 规范化：丢非法 field/op/value、丢空 values、同 field+op 合并 values、稳定排序。
- * 不生成 id；合并时保留先出现 clause 的 id。
- */
+/** 条件间保持 AND；只做条内去重、相同条件去重和稳定排序。非法定义明确失败。 */
 export function normalizeFilterQuery(query: FilterQuery | null | undefined): FilterQuery {
-	if (!query || !Array.isArray(query.clauses)) {
-		return EMPTY_FILTER_QUERY
+	if (query == null) return EMPTY_FILTER_QUERY
+	if (
+		typeof query !== 'object' ||
+		Array.isArray(query) ||
+		!Array.isArray(query.clauses) ||
+		Object.keys(query).some((key) => key !== 'clauses')
+	) {
+		throw new Error('筛选定义无效：缺少有效的条件列表。')
 	}
 
-	const merged = new Map<string, FilterClause>()
-
+	const unique = new Map<string, FilterClause>()
 	for (const raw of query.clauses) {
 		const clause = normalizeClause(raw)
-		if (!clause) {
-			continue
-		}
-		const key = `${clause.field}\0${clause.op}`
-		const existing = merged.get(key)
-		if (!existing) {
-			merged.set(key, clause)
-			continue
-		}
-		const valueSet = new Set([...existing.values, ...clause.values])
-		merged.set(key, {
-			...existing,
-			values: sortValues(clause.field, [...valueSet]),
-		})
+		const key = JSON.stringify([clause.field, clause.op, clause.values])
+		if (!unique.has(key)) unique.set(key, clause)
 	}
-
-	const clauses = [...merged.values()].toSorted((left, right) => {
-		const fieldDelta = (FIELD_ORDER.get(left.field) ?? 99) - (FIELD_ORDER.get(right.field) ?? 99)
-		if (fieldDelta !== 0) {
-			return fieldDelta
-		}
-		return left.op.localeCompare(right.op)
-	})
-
-	return { clauses }
+	const clauses = [...unique.values()].toSorted(
+		(left, right) =>
+			FIELD_ORDER.get(left.field)! - FIELD_ORDER.get(right.field)! ||
+			compareText(left.op, right.op) ||
+			compareText(JSON.stringify(left.values), JSON.stringify(right.values)),
+	)
+	// ID 只用于定位编辑项；补齐或去重不能改变查询含义，也不能在每次读取时随机变化。
+	const reserved = new Set(clauses.map((clause) => clause.id))
+	const used = new Set<string>()
+	return {
+		clauses: clauses.map((clause, index) => {
+			let id = clause.id
+			if (!id || used.has(id)) {
+				id = `fc_${index}`
+				while (reserved.has(id) || used.has(id)) id += '_'
+			}
+			used.add(id)
+			return { ...clause, id }
+		}),
+	}
 }
 
 export function isFilterQueryEmpty(query: FilterQuery | null | undefined): boolean {
@@ -112,68 +112,40 @@ export function createFilterClause(
 	}
 }
 
-/**
- * 写入/替换某一 field 的 clause（同 field 其它 op 一并去掉）。
- * values 为空则删除该 field。
- */
-export function setFilterFieldClause(
-	query: FilterQuery,
-	field: FilterField,
-	op: FilterOp,
-	values: readonly string[],
-): FilterQuery {
-	const rest = query.clauses.filter((clause) => clause.field !== field)
-	if (values.length === 0) {
-		return normalizeFilterQuery({ clauses: rest })
-	}
-	return normalizeFilterQuery({
-		clauses: [...rest, createFilterClause(field, op, values)],
-	})
-}
-
-/** 去掉某一 field 的全部 clause */
-export function removeFilterField(query: FilterQuery, field: FilterField): FilterQuery {
-	return normalizeFilterQuery({
-		clauses: query.clauses.filter((clause) => clause.field !== field),
-	})
-}
-
-function normalizeClause(raw: unknown): FilterClause | null {
-	if (!raw || typeof raw !== 'object') {
-		return null
+function normalizeClause(raw: unknown): FilterClause {
+	if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+		throw new Error('筛选条件无效。')
 	}
 	const record = raw as Partial<FilterClause>
-	if (typeof record.field !== 'string' || !FIELD_SET.has(record.field)) {
-		return null
+	if (
+		Object.keys(record).some((key) => !['id', 'field', 'op', 'values'].includes(key)) ||
+		(record.id !== undefined && typeof record.id !== 'string') ||
+		typeof record.field !== 'string' ||
+		!FIELD_SET.has(record.field) ||
+		typeof record.op !== 'string' ||
+		!OP_SET.has(record.op) ||
+		!Array.isArray(record.values) ||
+		record.values.length === 0 ||
+		!record.values.every(
+			(value) =>
+				typeof value === 'string' &&
+				value.length > 0 &&
+				value === value.trim() &&
+				isAllowedValue(record.field!, value),
+		)
+	) {
+		throw new Error('筛选条件无效：字段、操作符或条件值不受支持。')
 	}
-	if (typeof record.op !== 'string' || !OP_SET.has(record.op)) {
-		return null
-	}
-	if (!Array.isArray(record.values)) {
-		return null
-	}
-
-	const field = record.field as FilterField
-	const op = record.op as FilterOp
-	const cleaned = record.values
-		.filter((value): value is string => typeof value === 'string' && value.length > 0)
-		.map((value) => value.trim())
-		.filter((value) => value.length > 0 && isAllowedValue(field, value))
-
-	const unique = [...new Set(cleaned)]
-	if (unique.length === 0) {
-		return null
-	}
-
-	const id =
-		typeof record.id === 'string' && record.id.length > 0 ? record.id : createFilterClauseId()
-
 	return {
-		id,
-		field,
-		op,
-		values: sortValues(field, unique),
+		id: record.id ?? '',
+		field: record.field,
+		op: record.op,
+		values: sortValues(record.field, [...new Set(record.values)]),
 	}
+}
+
+function compareText(left: string, right: string): number {
+	return left < right ? -1 : left > right ? 1 : 0
 }
 
 function isAllowedValue(field: FilterField, value: string): boolean {
@@ -201,7 +173,7 @@ function sortValues(field: FilterField, values: string[]): string[] {
 		const rank = new Map(order.map((item, index) => [item, index]))
 		return values.toSorted((a, b) => (rank.get(a) ?? 99) - (rank.get(b) ?? 99))
 	}
-	return values.toSorted((a, b) => a.localeCompare(b))
+	return values.toSorted(compareText)
 }
 
 export function isFilterDateValue(value: string): value is FilterDateValue {

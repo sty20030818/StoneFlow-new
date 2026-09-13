@@ -39,3 +39,6 @@ export { parseTaskWorkspaceSearch } from './model/taskWorkspaceSearch'
  * 调用方注入头部、显示键、筛选会话与任务 Board；本组件不获取或修改任务数据。
  */
 export { TaskWorkspace } from './components/TaskWorkspace'
+
+/** 根据当前查询与已知总数区分创建引导和无匹配任务。 */
+export { getDefaultTaskEmptyState, TASK_VIEW_EMPTY_STATE } from './model/taskEmptyState'

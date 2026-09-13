@@ -17,7 +17,11 @@ import { useEntityDetailController } from '@/features/entity-detail'
 import { useDialogStore } from '@/features/shell-dialogs'
 import { useSpaces } from '@/features/space'
 import { useTaskCollectionScene, useTaskQueryData } from '@/features/task'
-import { getDefaultTaskViews, useDefaultTaskViewSelection } from '@/features/task-workspace'
+import {
+	getDefaultTaskEmptyState,
+	getDefaultTaskViews,
+	useDefaultTaskViewSelection,
+} from '@/features/task-workspace'
 import { useViewSaveFlow } from '@/features/view'
 import { EMPTY_FILTER_QUERY } from '@/shared/types'
 import type { Scope, TaskViewContext } from '@/shared/types'
@@ -97,20 +101,16 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 		display,
 		fallbackSubtitle: project?.name ?? '当前项目',
 		activeTaskId,
-		onCreateTask: () => openTaskCreateDialog({ projectId }),
 		projectOptions: projectMoveOptions,
 		spaces,
 		showProjectCellOptions: false,
 		createProjectId: projectId,
 		pagination: taskList.pagination,
-		empty: project
-			? {
-					emptyActionLabel: '创建任务',
-					emptyDescription:
-						'这个项目里还没有任务，所以现在还看不到进展内容。点「创建任务」先放进第一项，项目就能开始往前推进了。',
-					emptyTitle: '当前项目没有任务',
-				}
-			: {},
+		empty: getDefaultTaskEmptyState({
+			query: queryInput,
+			totalCount: taskList.pagination.totalCount,
+			onCreateTask: () => openTaskCreateDialog({ projectId }),
+		}),
 	})
 
 	const breadcrumbItems = useMemo(
@@ -126,7 +126,17 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 		[project, projectId, shellRoute],
 	)
 
-	const filterUiValue = { session: filterSession, onSave: saveFlow.begin }
+	const filterUiValue = {
+		session: filterSession,
+		boundary: {
+			scope,
+			context,
+			baseViewKey: queryInput.baseViewKey,
+			spaceName: spaces.find((space) => space.id === spaceId)?.name,
+			projectName: project?.name,
+		},
+		onSave: saveFlow.begin,
+	}
 	const saveView = {
 		flow: saveFlow,
 		canOverwrite: false,

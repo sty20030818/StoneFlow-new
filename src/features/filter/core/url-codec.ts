@@ -32,56 +32,44 @@ export function encodeFilterQueryToSearchParam(
 	return toBase64Url(JSON.stringify(payload))
 }
 
-/**
- * 解码 search 参数；缺失 / 非法 → null（无 draft）。
- */
+/** 缺失参数表示无 draft；损坏参数必须阻止查询，不能静默扩大结果。 */
 export function decodeFilterQueryFromSearchParam(
 	value: string | null | undefined,
 ): FilterQuery | null {
-	if (value == null || value === '') {
-		return null
-	}
+	if (value == null) return null
 	try {
-		const json = fromBase64Url(value)
-		const parsed: unknown = JSON.parse(json)
-		const query = payloadToQuery(parsed)
-		return query ? normalizeFilterQuery(query) : null
+		return normalizeFilterQuery(payloadToQuery(JSON.parse(fromBase64Url(value))))
 	} catch {
-		return null
+		throw new Error('筛选链接无效，请返回列表重新选择筛选。')
 	}
 }
 
-function payloadToQuery(parsed: unknown): FilterQuery | null {
-	if (!parsed || typeof parsed !== 'object') {
-		return null
-	}
+function payloadToQuery(parsed: unknown): FilterQuery {
+	if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed))
+		throw new Error('无效筛选结构')
 	const record = parsed as { v?: unknown; c?: unknown }
-	if (record.v !== 1 || !Array.isArray(record.c)) {
-		return null
+	if (
+		record.v !== 1 ||
+		!Array.isArray(record.c) ||
+		Object.keys(record).some((key) => !['v', 'c'].includes(key))
+	) {
+		throw new Error('无效筛选版本或条件列表')
 	}
-	const clauses: FilterQuery['clauses'] = []
-	for (const item of record.c) {
-		if (!item || typeof item !== 'object') return null
-		const row = item as { i?: unknown; f?: unknown; o?: unknown; v?: unknown }
-		if (!Array.isArray(row.v) || !row.v.every((value) => typeof value === 'string')) return null
-		const normalized = normalizeFilterQuery({
-			clauses: [
-				{
-					id: typeof row.i === 'string' ? row.i : '',
-					field: row.f as FilterQuery['clauses'][number]['field'],
-					op: row.o as FilterQuery['clauses'][number]['op'],
-					values: row.v,
-				},
-			],
-		})
-		if (normalized.clauses.length !== 1) return null
-		const normalizedValues = new Set(normalized.clauses[0]!.values)
-		if (row.v.length === 0 || !row.v.every((value) => normalizedValues.has(value.trim()))) {
-			return null
-		}
-		clauses.push(normalized.clauses[0]!)
+	return {
+		clauses: record.c.map((item: unknown) => {
+			if (
+				!item ||
+				typeof item !== 'object' ||
+				Array.isArray(item) ||
+				Object.keys(item).some((key) => !['i', 'f', 'o', 'v'].includes(key))
+			) {
+				throw new Error('无效筛选条件')
+			}
+			const row = item as { i?: unknown; f?: unknown; o?: unknown; v?: unknown }
+			// 只还原传输字段；字段、操作符和值由共同规范化入口严格校验。
+			return { id: row.i, field: row.f, op: row.o, values: row.v } as FilterQuery['clauses'][number]
+		}),
 	}
-	return normalizeFilterQuery({ clauses })
 }
 
 function toBase64Url(text: string): string {
@@ -104,5 +92,5 @@ function fromBase64Url(value: string): string {
 	for (let i = 0; i < binary.length; i++) {
 		bytes[i] = binary.charCodeAt(i)
 	}
-	return new TextDecoder().decode(bytes)
+	return new TextDecoder('utf-8', { fatal: true }).decode(bytes)
 }

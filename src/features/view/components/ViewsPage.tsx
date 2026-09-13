@@ -1,3 +1,4 @@
+import { TASK_VIEW_BASE_LABELS } from '@/features/task/presentation'
 import { Button, Input, Skeleton } from '@heroui/react'
 import { EmptyState, ListView } from '@heroui-pro/react'
 import { AlertCircleIcon, BookmarkIcon, PlusIcon } from 'lucide-react'
@@ -6,19 +7,11 @@ import type { ReactNode } from 'react'
 import { AppBreadcrumb } from '@/shared/components/AppBreadcrumb'
 import { PageFrame } from '@/shared/components/page-frame'
 import { ActionTooltip } from '@/shared/components/tooltip'
-import type { TaskViewBaseKey, ViewListItem } from '@/shared/types'
+import type { ViewListItem } from '@/shared/types'
 
 import { useSavedViewLibraryScene } from '../hooks/useViewsScene'
 import { ViewActionsMenu } from './ViewActionsMenu'
 import { ViewEditorDialog } from './ViewEditorDialog'
-
-const BASE_VIEW_LABELS: Record<TaskViewBaseKey, string> = {
-	all: '全部',
-	active: '未完成',
-	completed: '已完成',
-	today: '今天',
-	upcoming: '即将到期',
-}
 
 /** `/views`：只管理持久化 Saved View，不执行任务查询。 */
 export function ViewsPage() {
@@ -205,5 +198,5 @@ function describeView(view: ViewListItem) {
 			: view.context.kind === 'project'
 				? '项目'
 				: '全部任务'
-	return `${context} · ${BASE_VIEW_LABELS[view.baseViewKey]}`
+	return `${context} · ${TASK_VIEW_BASE_LABELS[view.baseViewKey]}`
 }

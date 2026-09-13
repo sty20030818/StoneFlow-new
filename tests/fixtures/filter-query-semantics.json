@@ -1,0 +1,380 @@
+[
+	{
+		"name": "重复包含条件保留交集",
+		"raw": {
+			"clauses": [
+				{
+					"id": "wide",
+					"field": "status",
+					"op": "is",
+					"values": ["waiting", "todo", "doing", "todo"]
+				},
+				{
+					"id": "narrow",
+					"field": "status",
+					"op": "is",
+					"values": ["doing"]
+				}
+			]
+		},
+		"normalized": {
+			"clauses": [
+				{
+					"id": "narrow",
+					"field": "status",
+					"op": "is",
+					"values": ["doing"]
+				},
+				{
+					"id": "wide",
+					"field": "status",
+					"op": "is",
+					"values": ["todo", "doing", "waiting"]
+				}
+			]
+		},
+		"expectedTaskIds": ["doing-p1"]
+	},
+	{
+		"name": "互斥状态不能合并成或",
+		"raw": {
+			"clauses": [
+				{
+					"id": "todo",
+					"field": "status",
+					"op": "is",
+					"values": ["todo"]
+				},
+				{
+					"id": "doing",
+					"field": "status",
+					"op": "is",
+					"values": ["doing"]
+				}
+			]
+		},
+		"normalized": {
+			"clauses": [
+				{
+					"id": "doing",
+					"field": "status",
+					"op": "is",
+					"values": ["doing"]
+				},
+				{
+					"id": "todo",
+					"field": "status",
+					"op": "is",
+					"values": ["todo"]
+				}
+			]
+		},
+		"expectedTaskIds": []
+	},
+	{
+		"name": "多个排除条件仍逐条且连接",
+		"raw": {
+			"clauses": [
+				{
+					"id": "todo",
+					"field": "status",
+					"op": "is_not",
+					"values": ["todo"]
+				},
+				{
+					"id": "doing",
+					"field": "status",
+					"op": "is_not",
+					"values": ["doing"]
+				}
+			]
+		},
+		"normalized": {
+			"clauses": [
+				{
+					"id": "doing",
+					"field": "status",
+					"op": "is_not",
+					"values": ["doing"]
+				},
+				{
+					"id": "todo",
+					"field": "status",
+					"op": "is_not",
+					"values": ["todo"]
+				}
+			]
+		},
+		"expectedTaskIds": ["waiting-p2", "done-p1", "canceled-none"]
+	},
+	{
+		"name": "日期重叠集合不能按token求交",
+		"raw": {
+			"clauses": [
+				{
+					"id": "today",
+					"field": "due",
+					"op": "is",
+					"values": ["today"]
+				},
+				{
+					"id": "week",
+					"field": "due",
+					"op": "is",
+					"values": ["thisWeek"]
+				}
+			]
+		},
+		"normalized": {
+			"clauses": [
+				{
+					"id": "week",
+					"field": "due",
+					"op": "is",
+					"values": ["thisWeek"]
+				},
+				{
+					"id": "today",
+					"field": "due",
+					"op": "is",
+					"values": ["today"]
+				}
+			]
+		},
+		"expectedTaskIds": ["todo-none"]
+	},
+	{
+		"name": "项目包含独立事项再排除项目",
+		"raw": {
+			"clauses": [
+				{
+					"id": "exclude",
+					"field": "project",
+					"op": "is_not",
+					"values": ["project-1"]
+				},
+				{
+					"id": "include",
+					"field": "project",
+					"op": "is",
+					"values": ["project-1", "__none__", "project-1"]
+				}
+			]
+		},
+		"normalized": {
+			"clauses": [
+				{
+					"id": "include",
+					"field": "project",
+					"op": "is",
+					"values": ["__none__", "project-1"]
+				},
+				{
+					"id": "exclude",
+					"field": "project",
+					"op": "is_not",
+					"values": ["project-1"]
+				}
+			]
+		},
+		"expectedTaskIds": ["todo-none", "canceled-none"]
+	},
+	{
+		"name": "多个日期排除保留空日期",
+		"raw": {
+			"clauses": [
+				{
+					"id": "tomorrow",
+					"field": "due",
+					"op": "is_not",
+					"values": ["tomorrow"]
+				},
+				{
+					"id": "today",
+					"field": "due",
+					"op": "is_not",
+					"values": ["today"]
+				}
+			]
+		},
+		"normalized": {
+			"clauses": [
+				{
+					"id": "today",
+					"field": "due",
+					"op": "is_not",
+					"values": ["today"]
+				},
+				{
+					"id": "tomorrow",
+					"field": "due",
+					"op": "is_not",
+					"values": ["tomorrow"]
+				}
+			]
+		},
+		"expectedTaskIds": ["waiting-p2", "done-p1", "canceled-none"]
+	},
+	{
+		"name": "完全相同条件去重保留首个身份",
+		"raw": {
+			"clauses": [
+				{
+					"id": "first",
+					"field": "status",
+					"op": "is",
+					"values": ["todo", "todo"]
+				},
+				{
+					"id": "second",
+					"field": "status",
+					"op": "is",
+					"values": ["todo"]
+				}
+			]
+		},
+		"normalized": {
+			"clauses": [
+				{
+					"id": "first",
+					"field": "status",
+					"op": "is",
+					"values": ["todo"]
+				}
+			]
+		},
+		"expectedTaskIds": ["todo-none"]
+	},
+	{
+		"name": "条内排序去重不改变多字段且",
+		"raw": {
+			"clauses": [
+				{
+					"id": "priority",
+					"field": "priority",
+					"op": "is",
+					"values": ["0", "4", "4"]
+				},
+				{
+					"id": "status",
+					"field": "status",
+					"op": "is_not",
+					"values": ["done"]
+				}
+			]
+		},
+		"normalized": {
+			"clauses": [
+				{
+					"id": "status",
+					"field": "status",
+					"op": "is_not",
+					"values": ["done"]
+				},
+				{
+					"id": "priority",
+					"field": "priority",
+					"op": "is",
+					"values": ["4", "0"]
+				}
+			]
+		},
+		"expectedTaskIds": ["todo-none", "doing-p1"]
+	},
+	{
+		"name": "有日期且无日期保持矛盾为空",
+		"raw": {
+			"clauses": [
+				{
+					"id": "none",
+					"field": "due",
+					"op": "is",
+					"values": ["noDate"]
+				},
+				{
+					"id": "some",
+					"field": "due",
+					"op": "is",
+					"values": ["hasDate"]
+				}
+			]
+		},
+		"normalized": {
+			"clauses": [
+				{
+					"id": "some",
+					"field": "due",
+					"op": "is",
+					"values": ["hasDate"]
+				},
+				{
+					"id": "none",
+					"field": "due",
+					"op": "is",
+					"values": ["noDate"]
+				}
+			]
+		},
+		"expectedTaskIds": []
+	},
+	{
+		"name": "日期条内多值并集与排除的补集",
+		"raw": {
+			"clauses": [
+				{
+					"id": "due",
+					"field": "due",
+					"op": "is_not",
+					"values": ["tomorrow", "today", "today"]
+				}
+			]
+		},
+		"normalized": {
+			"clauses": [
+				{
+					"id": "due",
+					"field": "due",
+					"op": "is_not",
+					"values": ["today", "tomorrow"]
+				}
+			]
+		},
+		"expectedTaskIds": ["waiting-p2", "done-p1", "canceled-none"]
+	},
+	{
+		"name": "计划日期的重叠与负向条件",
+		"raw": {
+			"clauses": [
+				{
+					"id": "exclude",
+					"field": "planned",
+					"op": "is_not",
+					"values": ["tomorrow"]
+				},
+				{
+					"id": "include",
+					"field": "planned",
+					"op": "is",
+					"values": ["thisWeek", "today"]
+				}
+			]
+		},
+		"normalized": {
+			"clauses": [
+				{
+					"id": "include",
+					"field": "planned",
+					"op": "is",
+					"values": ["thisWeek", "today"]
+				},
+				{
+					"id": "exclude",
+					"field": "planned",
+					"op": "is_not",
+					"values": ["tomorrow"]
+				}
+			]
+		},
+		"expectedTaskIds": ["doing-p1"]
+	}
+]

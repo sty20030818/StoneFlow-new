@@ -6,6 +6,7 @@ import { ListFilterUiProvider } from '@/features/filter/model/ListFilterUiContex
 import { renderWithInteractionProviders } from '@/test/TestInteractionProviders'
 
 import { FilterBar } from './FilterBar'
+import { PageFilterButton } from './PageFilterButton'
 
 describe('FilterBar', () => {
 	it('保存入口调用外部打开动作并保留当前 Draft', () => {
@@ -85,12 +86,14 @@ describe('FilterBar', () => {
 		fireEvent.click(within(statusGroup()).getByRole('button', { name: '删除筛选条件' }))
 		expect(replaceEffective).toHaveBeenLastCalledWith({ clauses: [priority] })
 		expect(screen.queryByRole('group', { name: '状态筛选条件' })).not.toBeInTheDocument()
+		expect(screen.getByRole('button', { name: '筛选' })).toHaveFocus()
 		expect(screen.getByRole('group', { name: '优先级筛选条件' })).toBeInTheDocument()
 
 		fireEvent.click(screen.getByRole('button', { name: '恢复' }))
 		expect(clearTemp).toHaveBeenCalledOnce()
 		expect(screen.queryByRole('group', { name: '优先级筛选条件' })).not.toBeInTheDocument()
 		expect(screen.queryByRole('button', { name: '恢复' })).not.toBeInTheDocument()
+		expect(screen.getByRole('button', { name: '筛选' })).toHaveFocus()
 	})
 })
 
@@ -106,6 +109,7 @@ function renderFilterBar({ onSave }: { onSave?: () => void } = {}) {
 		return (
 			<ListFilterUiProvider
 				value={{
+					boundary: { scope: { type: 'all' }, context: { kind: 'all' }, baseViewKey: 'all' },
 					onSave,
 					session: {
 						base: EMPTY_FILTER_QUERY,
@@ -125,6 +129,7 @@ function renderFilterBar({ onSave }: { onSave?: () => void } = {}) {
 					},
 				}}
 			>
+				<PageFilterButton />
 				<FilterBar />
 			</ListFilterUiProvider>
 		)

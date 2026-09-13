@@ -10,6 +10,7 @@
 - 按 `all`、`standalone`、`project` 上下文给出代码定义的默认视图矩阵
 - 维护默认视图 URL `v` 的选择语义，并在切换查询基线时清除旧 Filter Draft `f`
 - 为任务工作区路由复用 `v` 与 filter `f` 的 search 解析
+- 根据当前查询与首屏精确总数提供一致的空态文案和动作，不新增任务读取
 
 **不负责：**
 
@@ -29,6 +30,7 @@ src/features/task-workspace/
 ├── components/TaskWorkspace.tsx
 └── model/
     ├── defaultTaskViews.ts
+    ├── taskEmptyState.ts
     ├── taskWorkspaceSearch.ts
     └── useDefaultTaskViewSelection.ts
 ```
@@ -43,6 +45,7 @@ src/features/task-workspace/
 |----|------|
 | 组合 | `TaskWorkspace` |
 | 默认视图 | `getDefaultTaskViews` · `DefaultTaskView` · `DefaultTaskViewKey` |
+| 空态 | `getDefaultTaskEmptyState` · `TASK_VIEW_EMPTY_STATE` |
 | URL 选择 | `DEFAULT_TASK_VIEW_SEARCH_PARAM_KEY` · `useDefaultTaskViewSelection` |
 | Search | `parseTaskWorkspaceSearch` |
 
@@ -84,6 +87,8 @@ src/features/task-workspace/
 默认项选择与筛选会话通过 navigation 的 `useCurrentRouteSource` 读取属于已渲染页面的 search；跨页加载时旧页面不能解释或清理目标 URL。同页切换仍在一次导航中更新 `v` 并删除 `f`。
 
 `CollectionBody` 是任务结果页唯一真实 viewport；TaskBoard 的 loaded-only 虚拟几何、固定分页 sentinel、sticky、分页状态、append anchor 与 stable-id 焦点恢复仍由 task 域持有。本模块只组合 viewport，不解释或改写虚拟几何，也不把 `totalCount` 转换为滚动高度。
+
+仅当 Default 查询为 `baseViewKey=all`、无额外 filters 且首屏 `totalCount=0`，才显示当前上下文的创建引导；其它零结果及 Saved View 使用“当前视图无匹配任务”。总数未就绪不能视为 0，也不为判断空态额外读取任务或 COUNT。空态文案与 `onEmptyAction` 一起交付给 collection，“调整筛选”通过现有 Filter UI 事件打开 Toolbar 菜单。首屏加载、首屏错误与续页错误继续由任务查询和 TaskBoard 分别表达。
 
 ---
 

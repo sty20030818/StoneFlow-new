@@ -70,7 +70,6 @@ enum LegacyDateFilterMode {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct FilterQueryValue {
-    #[serde(default)]
     pub clauses: Vec<FilterClauseValue>,
 }
 
@@ -94,18 +93,20 @@ pub fn parse_filters_json(json: &str) -> Result<FilterQueryValue, ApplicationErr
     let value: serde_json::Value = serde_json::from_str(trimmed)
         .map_err(|_| ApplicationError::validation("View filters 定义无效"))?;
 
-    if value
+    let query = if value
         .as_object()
         .is_some_and(|obj| obj.contains_key("clauses"))
     {
-        return serde_json::from_value(value)
-            .map_err(|_| ApplicationError::validation("View filters 定义无效"));
-    }
-
-    // 旧扁平形状
-    let legacy: LegacyTaskViewFilters = serde_json::from_value(value)
-        .map_err(|_| ApplicationError::validation("View filters 定义无效"))?;
-    legacy_to_filter_query(legacy)
+        serde_json::from_value(value)
+            .map_err(|_| ApplicationError::validation("View filters 定义无效"))?
+    } else {
+        // 旧扁平形状
+        let legacy: LegacyTaskViewFilters = serde_json::from_value(value)
+            .map_err(|_| ApplicationError::validation("View filters 定义无效"))?;
+        legacy_to_filter_query(legacy)?
+    };
+    validate_filter_query(&query)?;
+    Ok(query)
 }
 
 fn legacy_to_filter_query(
@@ -243,12 +244,14 @@ pub fn validate_filter_query(query: &FilterQueryValue) -> Result<(), Application
                 .values
                 .iter()
                 .all(|value| parse_status(value).is_some()),
-            "priority" => clause.values.iter().all(|value| {
-                value
-                    .parse::<i32>()
-                    .is_ok_and(|priority| (0..=4).contains(&priority))
-            }),
-            "project" => clause.values.iter().all(|value| !value.trim().is_empty()),
+            "priority" => clause
+                .values
+                .iter()
+                .all(|value| matches!(value.as_str(), "0" | "1" | "2" | "3" | "4")),
+            "project" => clause
+                .values
+                .iter()
+                .all(|value| !value.is_empty() && value == value.trim()),
             "due" | "planned" => clause.values.iter().all(|value| {
                 matches!(
                     value.as_str(),
@@ -306,6 +309,36 @@ fn parse_status(value: &str) -> Option<WorkStatus> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn current_filter_query_requires_explicit_clauses_without_losing_legacy_empty() {
+        assert!(serde_json::from_str::<FilterQueryValue>("{}").is_err());
+        assert_eq!(
+            parse_filters_json("{}").unwrap(),
+            FilterQueryValue::default()
+        );
+    }
+
+    #[test]
+    fn validation_rejects_noncanonical_priority_and_padded_project_values() {
+        for (field, value) in [
+            ("priority", "01"),
+            ("priority", "+1"),
+            ("priority", "-0"),
+            ("project", " project-1"),
+            ("project", "project-1 "),
+        ] {
+            let query = FilterQueryValue {
+                clauses: vec![FilterClauseValue {
+                    id: "condition".to_owned(),
+                    field: field.to_owned(),
+                    op: "is".to_owned(),
+                    values: vec![value.to_owned()],
+                }],
+            };
+            assert!(validate_filter_query(&query).is_err(), "{field}={value}");
+        }
+    }
 
     #[test]
     fn parse_new_shape() {
