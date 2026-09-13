@@ -17,14 +17,16 @@
 | 25–26：同步后再编辑、已知旧格式恢复 | V01、AR4 | View codec、repository、origin seed、协议预热／下载物化 | [01](./01-verification.md)、[03](./03-verification.md)；[真实 SQLite／协议往返](../../src-tauri/crates/runtime/src/sync/cursor_pull_view_tests.rs) 与[存量编辑事务](../../src-tauri/crates/storage/src/adapters/view.rs)。仅证明新版 producer 与有界旧格式；旧版混用、历史远端残缺定义仍待用户决策 |
 | 27–29：坏定义隔离、说明与按 ID 清理 | V03、AR4 | View list DTO／API adapter → Library／不可用详情；ID 删除 | [03](./03-verification.md)、[04](./04-verification.md)；混合坏 scope／坏 filters 的 SQLite、同步与页面回归；09 原始非法 filters 的完整恢复链见下节 |
 | 30–31：项目存在、归属和跨 Space 失效 | V09 | ViewService 的 create/update/list/run 校验；项目事件失效 | [03 记录](./03-verification.md)；[SQLite 项目边界](../../src-tauri/crates/storage/src/adapters/view.rs) 与 [ViewRecovery](../../src/features/view/components/ViewRecovery.test.tsx) 的迁出／迁回，证明不扩大、不自动重绑原定义 |
-| 32–36：全局排序、稳定分页、窗口切换、manual 与总数 | V07、AR2 | 共同 TaskQuery 总序、SQL keyset、cursor、Query key、首屏摘要 | [05](./05-verification.md)、[06](./06-verification.md)、[08](./08-verification.md)；[337 条真实 SQLite 三页矩阵](../../src-tauri/crates/storage/src/repositories/task_repository/view_order/tests.rs)、[真实查询页面](../../src/features/task/components/TaskQueryEmptyState.test.tsx) 与慢旧续页隔离测试 |
+| 32–36：全局排序、稳定分页、窗口切换、manual 与总数 | V07、AR2 | 共同 TaskQuery 总序、SQL keyset、cursor、Query key、首屏摘要 | [05](./05-verification.md)、[06](./06-verification.md)、[08](./08-verification.md)；[337 条真实 SQLite 三页矩阵](../../src-tauri/crates/storage/src/repositories/task_repository/view_order/tests.rs)、[真实查询页面](../../src/features/task/components/TaskQueryEmptyState.test.tsx) 与慢旧续页隔离测试；[原生全序](./evidence-09/native-order.json)以连续 AX 窗口和只读 ID 映射验证一组设置下两入口的 337 个唯一任务与完整顺序 |
 | 37–40：子分组、一致折叠、已加载选择与空组 | V06、AR3 | Display 唯一 sections/children → flat model → TaskBoard／集合场景 | [06](./06-verification.md)、[07](./07-verification.md)、[08](./08-verification.md)；[真实页面](../../src/features/task/components/TaskQueryEmptyState.test.tsx) 覆盖两级交互、337 条三页、未到达非空组与真实零组、四类页面零结果开关；[Board](../../src/features/task/components/TaskBoard.test.tsx) 覆盖空组禁选和父按钮归焦 |
 | 41：已完成置底、最近优先 | V06、AR2 | SQL 叶组顺序中的 completedOrder | [05](./05-verification.md)、[06](./06-verification.md)、[07](./07-verification.md)；真实 SQLite natural/recency 矩阵包含 mixed done、空 completedAt、manual 和主子组，不把完成项搬出叶组 |
 | 42：本机偏好、设为默认与恢复 | AR1、AR3 | Display preference、capability 与有效窗口顺序 | [05](./05-verification.md)、[07](./07-verification.md)、[08](./08-verification.md)；[偏好测试](../../src/features/display-options/model/useTaskDisplayOptions.test.tsx) 与真实页面 rehydrate；View 创建／覆盖输入不保存 Display |
 | 43–44：筛选空、真正无任务、首次加载与续页失败 | V10 | 共用任务空态、Query 状态与分页 sentinel | [03](./03-verification.md)、[04](./04-verification.md)、[08](./08-verification.md)；[TaskQueryEmptyState](../../src/features/task/components/TaskQueryEmptyState.test.tsx) 覆盖精确 count、首屏缺摘要／计数失败、无匹配调整入口与同 cursor 重试 |
-| 45–47：键盘、辅助技术、窄窗、缩放与长列表体验 | V02、V05、V06、V08、AR3 | 生产弹窗／菜单、SubmitRegistry、单 viewport／sticky／预览与 focus bridge | [02 UI](./02-ui-verification.md)、[03](./03-verification.md)、[04](./04-verification.md) 有真实浏览器窄窗与键盘记录；[06](./06-verification.md)–[08](./08-verification.md) 有页面／Board 回归；[09 原生](./09-verification.md)已有取消归焦、预览关闭、End 续页、38 项选择稳定、sticky 新构建复测及 736×863 窄窗编辑／Tab／Escape 证据。VoiceOver、200% 缩放和完整快捷键矩阵未验 |
+| 45–47：键盘、辅助技术、窄窗、缩放与长列表体验 | V02、V05、V06、V08、AR3 | 生产弹窗／菜单、SubmitRegistry、单 viewport／sticky／预览与 focus bridge | [02 UI](./02-ui-verification.md)、[03](./03-verification.md)、[04](./04-verification.md) 有真实浏览器窄窗与键盘记录；[06](./06-verification.md)–[08](./08-verification.md) 有页面／Board 回归；[09 原生](./09-verification.md)已有取消归焦、预览关闭、End／Page Down 续页、38 项选择稳定、sticky 与窄窗证据；[键盘保存／重试](./evidence-09/native-keyboard.json)补齐 Return 激活及前后焦点。VoiceOver 与 200% 缩放仍待验 |
 
 V01–V10 与 AR1–AR4 均有上表对应入口。AR1 的 mutation／会话／导航集中在 View；AR2 的顺序与 cursor 共用执行定义；AR3 只有一份 Display 分组投影与 Board renderer；AR4 的严格业务与保留异常定义 codec 各有明确消费者。09 继续核对最终消费者与权威文档，不另建平行实现。
+
+功能项按[父规格](./spec.md)既定层面收口：故障注入与迟到请求属于页面流程，完整 ID／顺序及迁出迁回语义属于 SQLite／协议集成；原始操作、具体键盘和视觉行为另有原生证据。不会把前两类自动化判据扩张为必须在原生制造故障或执行产品不支持的项目跨 Space 移动。
 
 ## 09 新增的跨票回归
 
@@ -42,7 +44,9 @@ sticky 修复后的最终检查由主任务实际运行并复核：全 Vitest **
 
 独立 `StoneFlow Views Acceptance` 主窗口使用合成数据且同步未配置。首轮基于 `fc8a9de6`；最终复测构建加入 09 当前源码，构建 manifest 的文件 hash 与工作树一致。原始现场的代表性链已记录：[项目](./evidence-09/project-all.jpg)待执行 2 项 → 返回未完成 6 项 → 全部 8 项；独立事项为 1 → 3 → 5；所有任务为 71 → 总数 212 → 总数 350（后两步当时只加载 150 项）。Saved View 另存／覆盖／恢复及显式空 Draft、坏 filters 删除、旧 `none` 读取修复后重命名、坏 scope 隔离均有界面或本地库记录。
 
-项目与 Saved 两个入口都达到 150 → 300 → 337 项；项目[原先选中的 38 项](./evidence-09/group-counts.jpg)在续页后仍为 38，Saved 使用键盘 End 到达尾页。发现的[sticky 错组标题](./evidence-09/sticky-before.jpg)已经修复：新构建再次加载 150 → 300 → 337，末行“分页 320｜已取消”对应的[标题正确为“无优先级 › 已取消 22”](./evidence-09/sticky-after.jpg)。这些证据不等于人工逐 ID 比对两入口的全部顺序。736×863 原生[窄窗编辑弹窗](./evidence-09/narrow-editor.jpg)全部控件可见，Tab 可达关闭／取消／保存，Escape 返回视图操作。完整索引、数据库断言和观察限制见 [09 验证记录](./09-verification.md)。
+项目与 Saved 两个入口都达到 150 → 300 → 337 项；项目[原先选中的 38 项](./evidence-09/group-counts.jpg)在续页后仍为 38，Saved 使用键盘 End 与 Page Down 到达尾页。发现的[sticky 错组标题](./evidence-09/sticky-before.jpg)已经修复：新构建再次加载 150 → 300 → 337，末行“分页 320｜已取消”对应的[标题正确为“无优先级 › 已取消 22”](./evidence-09/sticky-after.jpg)。736×863 原生[窄窗编辑弹窗](./evidence-09/narrow-editor.jpg)全部控件可见，Tab 可达关闭／取消／保存，Escape 返回视图操作。完整索引、数据库断言和观察限制见 [09 验证记录](./09-verification.md)。
+
+`51da8063` 增量原生[完整顺序证据](./evidence-09/native-order.json)将两入口设置为同 Space／项目、all 基线、空附加条件，优先级主组、状态子组、优先级降序、recency 和显示空组开启。Down 每 12 步采完整 AX，Project 29 个窗口最小重叠 7，Saved 42 个窗口最小重叠 6；连续拼接后经隔离库只读映射，两者完整 337 个唯一 ID 顺序相同，且没有目标项目之外的任务。此为原生键盘 + AX 全窗口序列 + 只读库 ID 映射，不是人眼逐 ID 检查。[键盘增量](./evidence-09/native-keyboard.json)还证明 Return 保存完整项目 View 名称、同 ID 保留两项任务并归焦，以及坏 scope 键盘重试实际执行后保留错误和按钮焦点；不声称读屏或坏定义恢复成功。
 
 ## 用户可操作的最终验证步骤
 
@@ -56,8 +60,8 @@ sticky 修复后的最终检查由主任务实际运行并复核：全 Vitest **
 | 4. 历史与重入 | 带临时条件刷新，再后退／前进；重新进入原 Saved View | URL、条件和结果一致；没有草稿与显式空草稿可区分 |
 | 5. 全局顺序与分组 | 选择优先级／日期排序，检查原位置 151 条之后的优先任务；加载完三页。设置不同主／子分组，再切换“显示空分组”和“已完成置底，最近优先” | 首屏顺序正确；静态结果无重复遗漏。父子路径独立，同组追加不重复标题；未加载非空组不显示为零；空组开关不改变任务总数或重新读取窗口；recency 只在叶组内生效 |
 | 6. 折叠、选择、预览与分页 | 续页未到时折叠并选择已加载组；加载后检查新增成员；在子组菜单折叠全部；键盘打开预览后关闭；滚动到下一页 | 新成员不自动选中，其他组不受影响；父组可恢复焦点；预览关闭回到原任务；sticky 不遮挡键盘目标，只有一个分页入口，不按总数制造空白高度 |
-| 7. 可用性与恢复 | 在预置坏定义／项目迁出夹具中打开 Library 和详情；返回、重试或删除异常项。可控失败场景检查写入、读取、删除重试与提交中关闭 | 坏项不阻断正常 View，不扩大查询；删除按 ID。失败保留输入／原记录；写入成功但导航失败只打开已有 ID；迟到请求不导航旧页面或清新草稿。没有可控故障入口时保留自动化证据，不声称原生故障路径已验 |
-| 8. 键盘、窄窗与缩放 | 用 Tab／Shift+Tab、Enter、Escape 及界面标示的快捷键完成保存、取消、重试、筛选和分组；使用长名称与无空格长错误；检查窄窗及 200% 缩放，并用 VoiceOver 读取错误 | 所有操作可达、焦点可见并正确恢复、恢复按钮不裁切；错误可感知。缩小窗口不能替代真实 200% 缩放；没有可操作缩放或读屏入口时明确记录未验 |
+| 7. 可用性与恢复 | 在预置坏定义中打开 Library 和详情；返回、重试或删除异常项。项目边界变化及写入／读取／删除失败、提交中关闭等回归沿用真实页面与 SQLite 夹具 | 坏项不阻断正常 View，不扩大查询；删除按 ID。失败保留输入／原记录；写入成功但导航失败只打开已有 ID；迟到请求不导航旧页面或清新草稿。当前产品不提供项目跨 Space 移动，验收不增加该操作或重复原生故障注入门槛 |
+| 8. 键盘、窄窗与缩放 | 用 Tab／Shift+Tab、Enter／Escape 检查保存、取消和重试；使用长名称与无空格长错误；检查窄窗及 200% 缩放，并用 VoiceOver 读取错误 | 具体操作可达、焦点可见并正确恢复、恢复按钮不裁切；错误可感知。缩小窗口不能替代真实 200% 缩放；没有可操作缩放或读屏入口时明确记录未验 |
 | 9. 真实设备同步 | 支持范围确认且测试远端获准后，在两个实际设备／副本上执行创建 → 同步 → 重命名／覆盖 → 同步 → 删除 | 记录双方构建版本、View ID、查询条件和实际任务结果；与本地 SQLite／协议往返分别记录，不把本地夹具写成跨设备通过 |
 
 可在仓库根目录重跑对应自动回归，不需启动开发服务或连接正式数据库：
@@ -66,11 +70,11 @@ sticky 修复后的最终检查由主任务实际运行并复核：全 Vitest **
 bun run test:dom src/features/view/components/ViewSaving.test.tsx src/features/view/components/ViewRecovery.test.tsx src/features/task/components/TaskQueryEmptyState.test.tsx
 ```
 
-本轮根级自动检查结果见上节，新增构建 manifest 后的最后格式检查待补；后续若继续修改，应重跑受影响检查。人工步骤按实际证据逐项收口，本文件不更改 ticket 勾选状态。
+本轮根级自动检查已完成，结果见上节；后续若继续修改，应重跑受影响检查。各项按实际证据及规定层面收口，整包状态仍待验。
 
 ## 尚未闭合的边界
 
-- **真实设备同步、完整原生快捷键／VoiceOver／200% 缩放未验收。** 当前 CUA 的 View 菜单仅暴露 Toggle Full Screen，不能将全屏或窄窗当作 200% 缩放。UI Lab、jsdom 页面、隔离原生主窗口、本地 SQLite／协议夹具各自证明其覆盖层面。
+- **真实设备同步、VoiceOver 与 200% 缩放待验。** 当前 CUA 的 View 菜单仅暴露 Toggle Full Screen，不能将全屏或窄窗当作 200% 缩放。UI Lab、jsdom 页面、隔离原生主窗口、本地 SQLite／协议夹具各自证明其覆盖层面。
 - **clean 筛选完整标题的原生 AX 观察不足。** CUA 只暴露菜单，未暴露完整条件 header；这不足以断定界面缺少 header，也不能替代读屏验收。完整条件的组件／浏览器证据仍沿用 04。
 - **0.2.0 与新版混用策略待用户答复。** 是否统一升级所有写入设备，或需要支持混用的迁移／冲突恢复，尚无已确认结论；不把没有答复当作批准。
 - **历史远端残缺完整定义的恢复策略待用户答复。** 当前缺少可恢复完整记录时明确失败且不推进 cursor；已有本机 hydrate 不会自动修复远端丢失字段。不能据新版往返通过声称历史数据自动恢复。
