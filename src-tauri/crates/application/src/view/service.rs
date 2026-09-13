@@ -6,7 +6,10 @@ use crate::{
     operation::{
         changed_outbox_fields, OutboxEnqueueRecord, OutboxOpKind, OutboxPayload, SyncEntityKind,
     },
-    task::executor::{decode_task_query_cursor, encode_task_query_cursor},
+    task::{
+        executor::{decode_task_query_cursor, encode_task_query_cursor, TaskQueryIdentity},
+        TaskCompletedOrder, TaskOrderBy, TaskOrderDirection, TaskQueryOrder,
+    },
     view::{
         codec::{
             decode_record_definition, from_json, to_json, validate_definition, validate_scope,
@@ -94,7 +97,10 @@ pub struct RunTaskViewInput {
     pub view_id: String,
     /// URL draft；存在时完整替换 View filters（包括显式空查询）。
     pub filters: Option<FilterQueryValue>,
-    /// opaque keyset cursor（与统一查询的 position + id 排序一致）。
+    pub order: TaskQueryOrder,
+    /// 本机日历日；翻页期间固定，跨日重新从首屏开始。
+    pub date_basis: String,
+    /// 绑定查询、顺序、日期边界与完整 keyset 元组的版本化 cursor。
     #[serde(default)]
     pub cursor: Option<String>,
 }
@@ -107,6 +113,8 @@ pub struct RunTaskQueryInput {
     pub context: TaskViewContext,
     pub base_view_key: TaskViewBaseKey,
     pub filters: FilterQueryValue,
+    pub order: TaskQueryOrder,
+    pub date_basis: String,
     #[serde(default)]
     pub cursor: Option<String>,
 }
@@ -461,6 +469,8 @@ where
                 context: view.context.clone(),
                 base_view_key: view.base_view_key,
                 filters: filter_query,
+                order: input.order,
+                date_basis: input.date_basis,
                 cursor: input.cursor,
             })
             .await?;
@@ -512,6 +522,23 @@ where
         input: RunTaskQueryInput,
     ) -> Result<RunTaskQueryOutput, ApplicationError> {
         validate_definition(&input.scope, &input.context, &input.filters)?;
+        let date = parse_date_basis(&input.date_basis)?;
+        let order = input.order.normalized();
+        let identity = TaskQueryIdentity::new(
+            &input.scope,
+            &input.context,
+            input.base_view_key,
+            &input.filters,
+            order,
+            &input.date_basis,
+        );
+        let (cursor, dates) = match input.cursor.as_deref() {
+            Some(raw) => {
+                let (cursor, dates) = decode_task_query_cursor(raw, &identity)?;
+                (Some(cursor), dates)
+            }
+            None => (None, build_date_boundaries(date)?),
+        };
         let limit = DEFAULT_TASK_QUERY_PAGE_SIZE;
         let page = self
             .task_reader
@@ -520,13 +547,10 @@ where
                 context: input.context,
                 base_view_key: input.base_view_key,
                 filters: input.filters,
-                dates: build_date_boundaries(stoneflow_domain::today_local_date())?,
+                dates: dates.clone(),
+                order,
                 limit: limit.saturating_add(1),
-                cursor: input
-                    .cursor
-                    .as_deref()
-                    .map(decode_task_query_cursor)
-                    .transpose()?,
+                cursor,
             })
             .await?;
         let mut page_tasks = page.items;
@@ -535,7 +559,8 @@ where
         let next_cursor = if has_more {
             page_tasks
                 .last()
-                .map(|task| encode_task_query_cursor(task.position, &task.id))
+                .map(|task| encode_task_query_cursor(&identity, &dates, task))
+                .transpose()?
         } else {
             None
         };
@@ -619,12 +644,29 @@ where
                 base_view_key: input.base_view_key,
                 filters: input.filters,
                 dates: build_date_boundaries(stoneflow_domain::today_local_date())?,
+                order: TaskQueryOrder {
+                    order_by: TaskOrderBy::Manual,
+                    order_direction: TaskOrderDirection::Asc,
+                    completed_order: TaskCompletedOrder::Natural,
+                },
                 limit: 1,
                 cursor: None,
             })
             .await?;
         Ok(CountTaskQueryOutput { total_count })
     }
+}
+
+fn parse_date_basis(raw: &str) -> Result<NaiveDate, ApplicationError> {
+    if raw.len() != 10 {
+        return Err(ApplicationError::validation("列表日期基准无效"));
+    }
+    let date = NaiveDate::parse_from_str(raw, "%Y-%m-%d")
+        .map_err(|_| ApplicationError::validation("列表日期基准无效"))?;
+    if date.format("%Y-%m-%d").to_string() != raw {
+        return Err(ApplicationError::validation("列表日期基准无效"));
+    }
+    Ok(date)
 }
 
 fn build_date_boundaries(today: NaiveDate) -> Result<ViewDateBoundaries, ApplicationError> {
@@ -740,6 +782,47 @@ mod tests {
     use super::*;
     use crate::view::codec::decode_stored_definition;
     use serde_json::json;
+
+    #[test]
+    fn task_query_inputs_require_order_and_canonical_date_basis() {
+        let query = json!({
+            "scope": { "type": "all" },
+            "context": { "kind": "all" },
+            "baseViewKey": "all",
+            "filters": { "clauses": [] },
+            "order": { "orderBy": "smart", "orderDirection": "asc", "completedOrder": "natural" },
+            "dateBasis": "2026-09-13"
+        });
+        assert!(serde_json::from_value::<RunTaskQueryInput>(query.clone()).is_ok());
+        for field in ["order", "dateBasis"] {
+            let mut missing = query.clone();
+            missing.as_object_mut().unwrap().remove(field);
+            assert!(serde_json::from_value::<RunTaskQueryInput>(missing).is_err());
+        }
+        for invalid in [
+            "",
+            "2026-9-13",
+            "2026-09-31",
+            "2026-09-13T00:00:00Z",
+            "+262142-12-31",
+        ] {
+            assert!(parse_date_basis(invalid).is_err());
+        }
+        assert_eq!(
+            parse_date_basis("2026-09-13").unwrap(),
+            NaiveDate::from_ymd_opt(2026, 9, 13).unwrap()
+        );
+        let view = json!({
+            "scope": { "type": "all" }, "viewId": "view-1",
+            "order": query["order"], "dateBasis": query["dateBasis"]
+        });
+        assert!(serde_json::from_value::<RunTaskViewInput>(view.clone()).is_ok());
+        for field in ["order", "dateBasis"] {
+            let mut missing = view.clone();
+            missing.as_object_mut().unwrap().remove(field);
+            assert!(serde_json::from_value::<RunTaskViewInput>(missing).is_err());
+        }
+    }
 
     #[test]
     fn create_view_input_should_reject_unknown_fields() {

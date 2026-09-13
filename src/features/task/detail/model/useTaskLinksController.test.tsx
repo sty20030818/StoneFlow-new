@@ -1,4 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
+import { toast } from '@heroui/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -13,7 +14,6 @@ import {
 import { useTaskLinksController } from './useTaskLinksController'
 
 const openUrlMock = vi.fn<(url: string) => Promise<void>>()
-const toastErrorMock = vi.fn<(message: string) => void>()
 const windowOpenMock = vi.fn()
 
 vi.mock('@/features/task/api/taskLinks', () => ({
@@ -25,12 +25,6 @@ vi.mock('@/features/task/api/taskLinks', () => ({
 
 vi.mock('@tauri-apps/plugin-opener', () => ({
 	openUrl: (url: string) => openUrlMock(url),
-}))
-
-vi.mock('@heroui/react', () => ({
-	toast: {
-		danger: (message: string) => toastErrorMock(message),
-	},
 }))
 
 describe('useTaskLinksController', () => {
@@ -45,7 +39,7 @@ describe('useTaskLinksController', () => {
 		mockedUpdateTaskLink.mockReset()
 		mockedDeleteTaskLink.mockReset()
 		openUrlMock.mockReset()
-		toastErrorMock.mockReset()
+		vi.spyOn(toast, 'danger').mockReturnValue('test-toast')
 		windowOpenMock.mockReset()
 		vi.stubGlobal('open', windowOpenMock)
 	})
@@ -221,7 +215,7 @@ describe('useTaskLinksController', () => {
 			'_blank',
 			'noopener,noreferrer',
 		)
-		expect(toastErrorMock).toHaveBeenCalledWith('浏览器打开失败')
+		expect(toast.danger).toHaveBeenCalledWith('浏览器打开失败')
 	})
 })
 

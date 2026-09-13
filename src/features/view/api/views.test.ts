@@ -3,6 +3,15 @@ import { createView, listViews, runTaskView, updateView } from './views'
 const { invokeMock } = vi.hoisted(() => ({ invokeMock: vi.fn() }))
 vi.mock('@tauri-apps/api/core', () => ({ invoke: invokeMock }))
 
+const windowInput = {
+	order: {
+		orderBy: 'priority' as const,
+		orderDirection: 'desc' as const,
+		completedOrder: 'natural' as const,
+	},
+	dateBasis: '2026-09-13',
+}
+
 const definition = {
 	scope: { type: 'all' as const },
 	context: { kind: 'all' as const },
@@ -35,9 +44,9 @@ it('写入和运行响应不得把不可用定义当成功或空筛选', async (
 		items: [],
 		totalCount: 0,
 	})
-	await expect(runTaskView({ scope: definition.scope, viewId: record.id })).rejects.toThrow(
-		'无效 filters',
-	)
+	await expect(
+		runTaskView({ scope: definition.scope, viewId: record.id, ...windowInput }),
+	).rejects.toThrow('无效 filters')
 })
 
 it('非法筛选沿用逐条不可用恢复，正常记录保留，非法写入不发 IPC', async () => {
@@ -57,4 +66,18 @@ it('非法筛选沿用逐条不可用恢复，正常记录保留，非法写入�
 		createView({ name: '无效', ...definition, filters: filters as never }),
 	).rejects.toThrow('筛选条件无效')
 	expect(invokeMock).not.toHaveBeenCalled()
+})
+
+it('运行保存视图将当前窗口排序与日期透传 IPC，不写入 View 定义', async () => {
+	invokeMock.mockResolvedValue({ view: record, items: [], totalCount: 0 })
+	await runTaskView({ scope: definition.scope, viewId: record.id, ...windowInput })
+	expect(invokeMock).toHaveBeenCalledWith('run_task_view', {
+		input: {
+			scope: definition.scope,
+			viewId: record.id,
+			filters: undefined,
+			cursor: null,
+			...windowInput,
+		},
+	})
 })

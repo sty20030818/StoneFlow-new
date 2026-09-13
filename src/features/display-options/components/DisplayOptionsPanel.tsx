@@ -89,7 +89,7 @@ export function DisplayOptionsPanel({
 	const supportsSubGrouping = capabilities.allowedSubGroupBy.some((item) => item !== 'none')
 	const canToggleShowEmptyGroups =
 		capabilities.supportsShowEmptyGroups && options.groupBy !== 'none'
-	const canToggleOrderDirection = options.orderBy !== 'manual'
+	const canToggleOrderDirection = options.orderBy !== 'manual' && options.orderBy !== 'smart'
 	const visiblePropertySet = new Set(options.visibleProperties)
 	const orderCompletedByRecency = options.completedOrder === 'recency'
 
@@ -166,9 +166,9 @@ export function DisplayOptionsPanel({
 				</DisplayOptionRow>
 
 				{capabilities.allowedCompletedOrder.length > 0 ? (
-					<DisplayOptionRow label='完成按近到远'>
+					<DisplayOptionRow label='已完成置底，最近优先'>
 						<Switch
-							aria-label='已完成项按最近变更优先排序'
+							aria-label='已完成置底，最近优先'
 							isDisabled={isPending}
 							isSelected={orderCompletedByRecency}
 							onChange={(isSelected) =>

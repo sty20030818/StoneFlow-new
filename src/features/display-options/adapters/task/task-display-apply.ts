@@ -3,7 +3,6 @@ import type {
 	TaskDisplayPageKey,
 } from '@/features/display-options/core'
 
-import { createTaskDisplayComparator } from './task-display-compare'
 import { buildTaskDisplaySections } from './task-display-groups'
 import type { TaskDisplayApplyContext, TaskDisplayApplyResult } from './task-display-types'
 import type { TaskListItem } from '@/shared/types'
@@ -19,9 +18,8 @@ export function applyTaskDisplayOptionsToTasks({
 	options,
 	context,
 }: ApplyTaskDisplayOptionsInput): TaskDisplayApplyResult {
-	const orderedItems = items.toSorted(
-		createTaskDisplayComparator(options, { pageKey: context.pageKey }),
-	)
+	// 窗口由统一查询排序；展示投影只能保留输入顺序。
+	const orderedItems = items
 	const sections = buildTaskDisplaySections(orderedItems, options, context)
 	const selectionOrderIds = sections.flatMap((section) => section.tasks.map((task) => task.id))
 	const visibleProperties = [...options.visibleProperties]

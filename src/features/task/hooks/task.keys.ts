@@ -1,3 +1,5 @@
+import { getFilterQueryKey } from '@/features/filter'
+import { normalizeTaskWindowOrder } from '@/features/display-options'
 import type { CountTaskQueryInput, RunTaskQueryInput } from '@/shared/types'
 
 /**
@@ -9,9 +11,29 @@ import type { CountTaskQueryInput, RunTaskQueryInput } from '@/shared/types'
 export const taskKeys = {
 	all: ['tasks'] as const,
 	queries: () => [...taskKeys.all, 'query'] as const,
-	query: (input: RunTaskQueryInput) => [...taskKeys.queries(), input] as const,
+	query: (input: RunTaskQueryInput) =>
+		[
+			...taskKeys.queries(),
+			{
+				scope: input.scope,
+				context: input.context,
+				baseViewKey: input.baseViewKey,
+				filters: getFilterQueryKey(input.filters),
+				order: normalizeTaskWindowOrder(input.order),
+				dateBasis: input.dateBasis,
+			},
+		] as const,
 	counts: () => [...taskKeys.all, 'count'] as const,
-	count: (input: CountTaskQueryInput) => [...taskKeys.counts(), input] as const,
+	count: (input: CountTaskQueryInput) =>
+		[
+			...taskKeys.counts(),
+			{
+				scope: input.scope,
+				context: input.context,
+				baseViewKey: input.baseViewKey,
+				filters: getFilterQueryKey(input.filters),
+			},
+		] as const,
 	details: () => [...taskKeys.all, 'detail'] as const,
 	detail: (taskId: string) => [...taskKeys.details(), taskId] as const,
 	links: (taskId: string) => [...taskKeys.detail(taskId), 'links'] as const,

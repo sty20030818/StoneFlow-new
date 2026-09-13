@@ -1,14 +1,5 @@
 export { applyTaskDisplayOptionsToTasks, createTaskDisplayApplyContext } from './task-display-apply'
 export {
-	compareByDateField,
-	compareByManualOrder,
-	compareByPriority,
-	compareBySmartOrder,
-	compareByStatus,
-	createTaskDisplayComparator,
-	getTaskUrgencyBucket,
-} from './task-display-compare'
-export {
 	buildTaskDisplaySections,
 	getTaskDisplayGroupDescriptor,
 	resolveTaskDateBucket,
@@ -19,9 +10,7 @@ export type {
 	TaskDisplayApplyContext,
 	TaskDisplayApplyResult,
 	TaskDisplayBoardPatch,
-	TaskDisplayComparatorContext,
 	TaskDisplayGroupDescriptor,
 	TaskDisplaySection,
-	TaskDisplayStatusRank,
 	TaskGroupDefinition,
 } from './task-display-types'

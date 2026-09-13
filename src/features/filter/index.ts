@@ -18,6 +18,7 @@ export {
 	FILTER_PROJECT_NONE_VALUE,
 	FILTER_SEARCH_PARAM_KEY,
 	filterQueriesEqual,
+	getFilterQueryKey,
 	isFilterDateValue,
 	isFilterQueryEmpty,
 	normalizeFilterQuery,

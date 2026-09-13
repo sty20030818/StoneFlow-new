@@ -11,6 +11,7 @@ import {
 	useQuery,
 } from '@tanstack/react-query'
 
+import { normalizeTaskWindowOrder } from '@/features/display-options'
 import { countTaskQuery, getTaskDetail, runTaskQuery } from '@/features/task/api/tasks'
 import { listTaskLinks } from '@/features/task/api/taskLinks'
 import type { CountTaskQueryInput, RunTaskQueryInput, TaskListItem } from '@/shared/types'
@@ -24,6 +25,8 @@ export function taskQueryInfiniteQueryOptions(input: RunTaskQueryInput) {
 		context: input.context,
 		baseViewKey: input.baseViewKey,
 		filters: input.filters,
+		order: normalizeTaskWindowOrder(input.order),
+		dateBasis: input.dateBasis,
 	}
 	return infiniteQueryOptions({
 		queryKey: taskKeys.query(keyInput),
@@ -37,8 +40,8 @@ export function taskQueryInfiniteQueryOptions(input: RunTaskQueryInput) {
 	})
 }
 
-export function useTaskQueryInfiniteQuery(input: RunTaskQueryInput) {
-	return useInfiniteQuery(taskQueryInfiniteQueryOptions(input))
+export function useTaskQueryInfiniteQuery(input: RunTaskQueryInput, enabled = true) {
+	return useInfiniteQuery({ ...taskQueryInfiniteQueryOptions(input), enabled })
 }
 
 export function useTaskCountQuery(input: CountTaskQueryInput) {

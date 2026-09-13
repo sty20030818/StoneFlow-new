@@ -271,6 +271,7 @@ const OSS_PRODUCTION_USAGE = [
 	['src/features/task/components/TaskCreateDateProperties.tsx', ['Button', 'Dropdown']],
 	['src/ui-lab/samples/createDialogSamples.tsx', ['Button']],
 	['src/ui-lab/samples/viewManagementSamples.tsx', ['Button']],
+	['src/ui-lab/samples/displayOrderingSamples.tsx', ['Button']],
 	[
 		'src/features/task/components/TaskCreateContent.tsx',
 		['Button', 'FieldError', 'Form', 'Input', 'Switch', 'TextArea', 'TextField'],

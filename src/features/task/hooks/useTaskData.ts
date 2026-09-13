@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react'
-import { hashKey } from '@tanstack/react-query'
+import { hashKey, useQueryClient } from '@tanstack/react-query'
 
 import type { CountTaskQueryInput, RunTaskQueryInput, TaskListItem } from '@/shared/types'
 import type { QueryLoadStatus } from '@/shared/query/queryStatus'
@@ -24,6 +24,7 @@ export function useTaskBoardPagination({
 	isFetchNextPageError,
 	error,
 	totalCount,
+	restartFromFirstPage,
 }: {
 	sourceKey: string
 	loadedPageCount: number
@@ -33,6 +34,7 @@ export function useTaskBoardPagination({
 	isFetchNextPageError: boolean
 	error: unknown
 	totalCount: number | null | undefined
+	restartFromFirstPage?: () => Promise<unknown>
 }): TaskBoardPagination {
 	const fetchNextPage = useCallback(
 		() => (hasNextPage && !isFetchingNextPage ? queryFetchNextPage() : Promise.resolve(undefined)),
@@ -52,7 +54,13 @@ export function useTaskBoardPagination({
 		if (!hasNextPage) return { state: 'exhausted', ...progress }
 		if (isFetchingNextPage) return { state: 'loading', fetchNextPage, ...progress }
 		if (fetchNextPageError) {
-			return { state: 'error', error: fetchNextPageError, fetchNextPage, ...progress }
+			return {
+				state: 'error',
+				error: fetchNextPageError,
+				fetchNextPage,
+				restartFromFirstPage,
+				...progress,
+			}
 		}
 		return {
 			state: 'idle',
@@ -67,11 +75,18 @@ export function useTaskBoardPagination({
 		loadedPageCount,
 		sourceKey,
 		totalCount,
+		restartFromFirstPage,
 	])
 }
 
-export function useTaskQueryData(input: RunTaskQueryInput) {
-	const query = useTaskQueryInfiniteQuery(input)
+export function useTaskQueryData(input: RunTaskQueryInput, enabled = true) {
+	const queryClient = useQueryClient()
+	const query = useTaskQueryInfiniteQuery(input, enabled)
+	const sourceKey = hashKey(taskQueryInfiniteQueryOptions(input).queryKey)
+	const restartFromFirstPage = useCallback(
+		() => queryClient.resetQueries({ predicate: (entry) => entry.queryHash === sourceKey }),
+		[queryClient, sourceKey],
+	)
 	const items = useMemo(
 		() => flattenTaskListPages(query.data?.pages) ?? EMPTY_TASK_LIST_ITEMS,
 		[query.data?.pages],
@@ -84,7 +99,8 @@ export function useTaskQueryData(input: RunTaskQueryInput) {
 			? 'loading'
 			: 'ready'
 	const pagination = useTaskBoardPagination({
-		sourceKey: hashKey(taskQueryInfiniteQueryOptions(input).queryKey),
+		sourceKey,
+		restartFromFirstPage,
 		loadedPageCount: query.data?.pages.length ?? 0,
 		fetchNextPage: query.fetchNextPage,
 		hasNextPage: query.hasNextPage,

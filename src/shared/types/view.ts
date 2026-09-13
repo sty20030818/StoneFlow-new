@@ -36,12 +36,40 @@ export type UnavailableView = Pick<View, 'id' | 'name' | 'position' | 'createdAt
 
 export type ViewListItem = View | UnavailableView
 
-export type RunTaskViewInput = {
+/** 单次任务窗口顺序；显示偏好拥有选择，统一查询拥有执行。 */
+export const TASK_WINDOW_ORDER_BY_VALUES = [
+	'smart',
+	'manual',
+	'priority',
+	'status',
+	'dueAt',
+	'plannedAt',
+	'statusChangedAt',
+	'createdAt',
+	'updatedAt',
+	'completedAt',
+	'canceledAt',
+] as const
+export const TASK_WINDOW_ORDER_DIRECTION_VALUES = ['asc', 'desc'] as const
+export const TASK_WINDOW_COMPLETED_ORDER_VALUES = ['recency', 'natural'] as const
+export type TaskWindowOrder = {
+	orderBy: (typeof TASK_WINDOW_ORDER_BY_VALUES)[number]
+	orderDirection: (typeof TASK_WINDOW_ORDER_DIRECTION_VALUES)[number]
+	completedOrder: (typeof TASK_WINDOW_COMPLETED_ORDER_VALUES)[number]
+}
+
+export type TaskQueryWindow = {
+	order: TaskWindowOrder
+	/** 分页会话内固定的本地日历日期 YYYY-MM-DD。 */
+	dateBasis: string
+	cursor?: string | null
+}
+
+export type RunTaskViewInput = TaskQueryWindow & {
 	scope: Scope
 	viewId: string
 	/** Filter Draft 存在时完整替换 View.filters。 */
 	filters?: FilterQuery
-	cursor?: string | null
 }
 
 /** Default View、Saved View 与计数消费者共用的成员资格定义。 */
@@ -52,9 +80,7 @@ export type TaskQueryDefinition = {
 	filters: FilterQuery
 }
 
-export type RunTaskQueryInput = TaskQueryDefinition & {
-	cursor?: string | null
-}
+export type RunTaskQueryInput = TaskQueryDefinition & TaskQueryWindow
 
 export type CountTaskQueryInput = TaskQueryDefinition
 

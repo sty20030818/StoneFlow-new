@@ -179,3 +179,8 @@ function sortValues(field: FilterField, values: string[]): string[] {
 export function isFilterDateValue(value: string): value is FilterDateValue {
 	return DATE_VALUE_SET.has(value)
 }
+
+/** 查询缓存只比较条件含义；编辑 ID 不属于成员资格。 */
+export function getFilterQueryKey(query: FilterQuery) {
+	return normalizeFilterQuery(query).clauses.map(({ field, op, values }) => ({ field, op, values }))
+}

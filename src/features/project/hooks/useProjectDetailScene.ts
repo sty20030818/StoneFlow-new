@@ -11,7 +11,11 @@ import {
 	useCurrentShellRoute,
 } from '@/app/navigation'
 import { useDangerConfirm } from '@/features/danger-confirm'
-import { useTaskDisplayOptions, type TaskDisplayPageKey } from '@/features/display-options'
+import {
+	normalizeTaskWindowOrder,
+	useTaskDisplayOptions,
+	type TaskDisplayPageKey,
+} from '@/features/display-options'
 import { useListFilterSession, useRegisterFilterCommandAdapter } from '@/features/filter'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useDialogStore } from '@/features/shell-dialogs'
@@ -23,6 +27,7 @@ import {
 	useDefaultTaskViewSelection,
 } from '@/features/task-workspace'
 import { useViewSaveFlow } from '@/features/view'
+import { useLocalDateBasis } from '@/shared/query/useLocalDateBasis'
 import { EMPTY_FILTER_QUERY } from '@/shared/types'
 import type { Scope, TaskViewContext } from '@/shared/types'
 
@@ -68,6 +73,7 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 	const viewSelection = useDefaultTaskViewSelection(defaultViews)
 
 	const display = useTaskDisplayOptions(PROJECT_DETAIL_DISPLAY_PAGE_KEY)
+	const dateBasis = useLocalDateBasis()
 	const filterSession = useListFilterSession({ base: EMPTY_FILTER_QUERY })
 
 	useRegisterFilterCommandAdapter({ session: filterSession })
@@ -78,11 +84,20 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 			context,
 			baseViewKey: viewSelection.selected.baseViewKey,
 			filters: filterSession.effective,
+			order: normalizeTaskWindowOrder(display.options),
+			dateBasis,
 		}),
-		[context, filterSession.effective, scope, viewSelection.selected.baseViewKey],
+		[
+			context,
+			filterSession.effective,
+			scope,
+			viewSelection.selected.baseViewKey,
+			display.options,
+			dateBasis,
+		],
 	)
 
-	const taskList = useTaskQueryData(queryInput)
+	const taskList = useTaskQueryData(queryInput, display.status !== 'loading')
 	const projectMoveOptions = useMemo(
 		() =>
 			project
@@ -142,7 +157,16 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 		canOverwrite: false,
 		onSave: async (input: { mode: 'create' | 'overwrite'; name?: string }) => {
 			if (input.mode !== 'create' || !input.name?.trim()) return
-			await saveFlow.submit({ mode: 'create', input: { ...queryInput, name: input.name.trim() } })
+			await saveFlow.submit({
+				mode: 'create',
+				input: {
+					scope: queryInput.scope,
+					context: queryInput.context,
+					baseViewKey: queryInput.baseViewKey,
+					filters: queryInput.filters,
+					name: input.name.trim(),
+				},
+			})
 		},
 	}
 

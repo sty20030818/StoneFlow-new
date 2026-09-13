@@ -9,7 +9,7 @@ import {
 	RouterProvider,
 	useMatch,
 } from '@tanstack/react-router'
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 
 import { parseShellRoute, ShellRouteProvider } from '@/app/navigation'
 import { BulkActionProvider } from '@/features/bulk-action'
@@ -130,6 +130,7 @@ it.each([PROJECT_PATH, SAVED_PATH])(
 		)
 		expect(screen.queryByText('当前项目没有任务')).not.toBeInTheDocument()
 		expect(screen.queryByText('当前视图无匹配任务')).not.toBeInTheDocument()
+		await waitFor(() => expect(backend.requests).toHaveLength(1))
 		await act(async () => first.reject(new Error('首屏读取中断')))
 		expect(await screen.findByRole('alert')).toHaveTextContent('读取任务失败')
 		expect(screen.queryByRole('button', { name: '调整筛选' })).not.toBeInTheDocument()
@@ -178,6 +179,78 @@ it.each([`${PROJECT_PATH}?v=all`, SAVED_PATH])(
 		expect(screen.queryByText('当前项目没有任务')).not.toBeInTheDocument()
 		expect(screen.queryByText('当前视图无匹配任务')).not.toBeInTheDocument()
 		expect(backend.requests).toHaveLength(1)
+	},
+)
+
+it.each([PROJECT_PATH, SAVED_PATH])(
+	'%s 排序面板改变全部匹配任务的首屏，重新进入恢复本机偏好',
+	async (path) => {
+		const backend = installBackend()
+		backend.items = Array.from({ length: 152 }, (_, index) => ({
+			...task(`task-${index}`, index === 151 ? '第 152 条最高优先级任务' : `普通任务 ${index}`),
+			priority: index === 151 ? (4 as const) : (0 as const),
+		}))
+		backend.read = async (query, cursor) => {
+			if (cursor) throw new Error('本测试仅验证排序首屏')
+			const items =
+				query.order.orderBy === 'priority'
+					? backend.items.toSorted((a, b) =>
+							query.order.orderDirection === 'desc'
+								? b.priority - a.priority
+								: a.priority - b.priority,
+						)
+					: backend.items
+			return page(items.slice(0, 150), 'next', items.length)
+		}
+		const first = await renderWorkspace(path)
+		expect(await screen.findByText('普通任务 0')).toBeVisible()
+		expect(screen.queryByText('第 152 条最高优先级任务')).not.toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: '显示选项' }))
+		const panel = await screen.findByRole('dialog', { name: '显示选项' })
+		fireEvent.click(within(panel).getByRole('button', { name: /排序$/ }))
+		fireEvent.click(await screen.findByRole('option', { name: '优先级' }))
+		// project manual 的固定方向被归一为 asc；Saved smart 的本机 desc 在选数值排序时继续有效。
+		const toDesc = screen.queryByRole('button', { name: '切换为降序' })
+		if (toDesc) fireEvent.click(toDesc)
+		await waitFor(() =>
+			expect(backend.requests.at(-1)?.query.order).toEqual({
+				orderBy: 'priority',
+				orderDirection: 'desc',
+				completedOrder: 'recency',
+			}),
+		)
+		fireEvent.keyDown(panel, { key: 'Escape' })
+		expect(await screen.findByText('第 152 条最高优先级任务')).toBeVisible()
+		const lastRead = backend.requests.length
+		first.unmount()
+		await renderWorkspace(path)
+		expect(await screen.findByText('第 152 条最高优先级任务')).toBeVisible()
+		expect(backend.requests.slice(lastRead)).toHaveLength(1)
+		expect(backend.requests.at(-1)?.query.order).toMatchObject({
+			orderBy: 'priority',
+			orderDirection: 'desc',
+		})
+		expect(backend.requests.every(({ cursor }) => cursor === null)).toBe(true)
+	},
+)
+
+it.each([PROJECT_PATH, SAVED_PATH])(
+	'%s 旧 cursor 失败可以从首屏恢复，不重试旧游标',
+	async (path) => {
+		const backend = installBackend()
+		backend.read = async (_query, cursor) => {
+			if (cursor) throw new Error('分页游标版本不受支持，请从首屏重新加载')
+			return backend.requests.length === 1
+				? page([task('old-first', '旧窗口首屏')], 'legacy-cursor', 2)
+				: page([task('new-first', '重新读取的新首屏')], null, 1)
+		}
+		await renderWorkspace(path)
+		expect(await screen.findByText('旧窗口首屏')).toBeVisible()
+		expect(await screen.findByText('分页游标版本不受支持，请从首屏重新加载')).toBeVisible()
+		pressEnter(screen.getByRole('button', { name: '从头加载' }))
+		expect(await screen.findByText('重新读取的新首屏')).toBeVisible()
+		expect(screen.queryByText('旧窗口首屏')).not.toBeInTheDocument()
+		expect(backend.requests.map(({ cursor }) => cursor)).toEqual([null, 'legacy-cursor', null])
 	},
 )
 
@@ -267,7 +340,12 @@ function installBackend() {
 				case 'run_task_view': {
 					const query =
 						command === 'run_task_view'
-							? { ...view, filters: (input.filters as FilterQuery) ?? view.filters }
+							? {
+									...view,
+									filters: (input.filters as FilterQuery) ?? view.filters,
+									order: input.order as RunTaskQueryInput['order'],
+									dateBasis: input.dateBasis as string,
+								}
 							: (input as RunTaskQueryInput)
 					const cursor = input.cursor as string | null
 					backend.requests.push({ query, cursor })
@@ -302,7 +380,7 @@ async function renderWorkspace(initialEntry: string) {
 		]),
 		history: createMemoryHistory({ initialEntries: [initialEntry] }),
 	})
-	render(
+	const rendered = render(
 		<QueryClientProvider client={queryClient}>
 			<RouterProvider router={router} />
 		</QueryClientProvider>,
@@ -310,7 +388,7 @@ async function renderWorkspace(initialEntry: string) {
 	await act(async () => {
 		await router.load()
 	})
-	return { router, queryClient }
+	return { router, queryClient, unmount: rendered.unmount }
 }
 
 function WorkspaceProviders({ children }: { children: ReactNode }) {

@@ -83,11 +83,10 @@ pub struct TaskProjectRecord {
     pub deleted_at: Option<String>,
 }
 
-/// Task 查询 keyset 游标（与 ORDER BY position, id 一致）。
+/// Task 查询 keyset 元组；与 TaskQueryOrder::terms 一一对应。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TaskQueryCursor {
-    pub position: i64,
-    pub id: String,
+    pub values: super::TaskOrderTuple,
 }
 
 /// 创建时的归属（无 All；list 用 {@link TaskPlacementQuery}）。

@@ -6,7 +6,6 @@ import type { TaskListItem } from '@/shared/types'
 import {
 	applyTaskDisplayOptionsToTasks,
 	createTaskDisplayApplyContext,
-	getTaskUrgencyBucket,
 	resolveTaskDateBucket,
 } from './index'
 
@@ -36,7 +35,7 @@ function createTask(
 }
 
 describe('task-display adapters', () => {
-	it('smart 排序优先 doing，再比较紧迫度和优先级', () => {
+	it('smart 投影保留统一查询返回顺序，不对已加载窗口再排序', () => {
 		const tasks = [
 			createTask({
 				id: 'todo-later',
@@ -68,13 +67,13 @@ describe('task-display adapters', () => {
 		})
 
 		expect(result.orderedItems.map((task) => task.id)).toEqual([
+			'todo-later',
 			'doing-today',
 			'todo-overdue',
-			'todo-later',
 		])
 	})
 
-	it('project-detail 的 manual 模式会保留 updatedAt 倒序兜底', () => {
+	it('manual 投影不因元数据更新时间改变仓储位置顺序', () => {
 		const tasks = [
 			createTask({
 				id: 'older',
@@ -94,7 +93,7 @@ describe('task-display adapters', () => {
 			context: createTaskDisplayApplyContext('task:project-detail'),
 		})
 
-		expect(result.orderedItems.map((task) => task.id)).toEqual(['newer', 'older'])
+		expect(result.orderedItems.map((task) => task.id)).toEqual(['older', 'newer'])
 	})
 
 	it('priority 分组会输出 customSections，并保持组内排序', () => {
@@ -145,7 +144,7 @@ describe('task-display adapters', () => {
 		expect(result.boardPatch.statusOrder).toEqual(['doing', 'todo', 'waiting', 'done', 'canceled'])
 	})
 
-	it('completed 页面按 completedAt 倒序', () => {
+	it('完成项投影同样只保留统一查询返回顺序', () => {
 		const tasks = [
 			createTask({
 				id: 'old-completed',
@@ -167,22 +166,11 @@ describe('task-display adapters', () => {
 			context: createTaskDisplayApplyContext('task:completed'),
 		})
 
-		expect(result.orderedItems.map((task) => task.id)).toEqual(['new-completed', 'old-completed'])
+		expect(result.orderedItems.map((task) => task.id)).toEqual(['old-completed', 'new-completed'])
 	})
 
 	it('日期 bucket 能区分 none 与 later', () => {
 		expect(resolveTaskDateBucket(null)).toBe('none')
 		expect(resolveTaskDateBucket('2099-06-30T10:00:00.000Z')).toBe('later')
-	})
-
-	it('smart urgency bucket 会识别无日期任务', () => {
-		expect(
-			getTaskUrgencyBucket(
-				createTask({
-					id: 'none',
-					title: 'No date',
-				}),
-			),
-		).toBe('none')
 	})
 })

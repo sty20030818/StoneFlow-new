@@ -1,6 +1,6 @@
 //! View 查询定义及其持久化读模型。
 
-use crate::task::TaskQueryCursor;
+use crate::task::{TaskQueryCursor, TaskQueryOrder};
 use serde::{Deserialize, Serialize};
 use stoneflow_domain::{ViewEntityKind, WorkStatus};
 
@@ -62,7 +62,8 @@ pub struct ViewTaskRecord {
 }
 
 /// Storage 执行本地日历筛选所需的 UTC 半开区间边界。
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ViewDateBoundaries {
     pub today_start: String,
     pub tomorrow_start: String,
@@ -78,6 +79,7 @@ pub struct ViewTaskQuery {
     pub base_view_key: TaskViewBaseKey,
     pub filters: FilterQueryValue,
     pub dates: ViewDateBoundaries,
+    pub order: TaskQueryOrder,
     pub limit: u32,
     pub cursor: Option<TaskQueryCursor>,
 }

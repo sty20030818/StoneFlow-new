@@ -21,6 +21,7 @@ import { TICKET_13_SAMPLES } from './samples/ticket-13/shellSettingsDesktopScene
 import { TICKET_14_SAMPLES } from './samples/ticket-14/candidateStyleArchitectureSamples'
 import { CREATE_DIALOG_SAMPLES } from './samples/createDialogSamples'
 import { VIEW_MANAGEMENT_SAMPLES } from './samples/viewManagementSamples'
+import { DISPLAY_ORDERING_SAMPLES } from './samples/displayOrderingSamples'
 
 export type UiLabViewId = 'stoneflow' | 'heroui'
 export type UiLabCoverage =
@@ -51,6 +52,7 @@ export type UiLabReviewBatchId =
 	| 'batch-14'
 	| 'batch-15'
 	| 'batch-16'
+	| 'batch-17'
 
 export type UiLabReviewEntry = {
 	sampleId: string
@@ -174,6 +176,7 @@ const UI_LAB_REVIEW_UNITS: readonly UiLabReviewUnitInput[] = [
 	...TICKET_14_SAMPLES,
 	...CREATE_DIALOG_SAMPLES,
 	...VIEW_MANAGEMENT_SAMPLES,
+	...DISPLAY_ORDERING_SAMPLES,
 	{
 		id: 'stoneflow-main-launcher-real-app',
 		name: 'Main / Launcher 原生窗口验收',
@@ -666,6 +669,17 @@ export const UI_LAB_REVIEW_BATCHES: readonly UiLabReviewBatch[] = [
 		title: '保存视图管理恢复',
 		objective: '核对重命名和删除的失败恢复、等待、会话隔离与窄窗口长文本可达性。',
 		entries: VIEW_MANAGEMENT_SAMPLES.map(({ id }) => ({
+			sampleId: id,
+			role: 'target' as const,
+			status: 'pending' as const,
+		})),
+	},
+	{
+		id: 'batch-17',
+		label: '第十七批',
+		title: '任务显示顺序',
+		objective: '核对生产 Display 面板的排序方向、完成项语义、键盘和窄窗口布局。',
+		entries: DISPLAY_ORDERING_SAMPLES.map(({ id }) => ({
 			sampleId: id,
 			role: 'target' as const,
 			status: 'pending' as const,

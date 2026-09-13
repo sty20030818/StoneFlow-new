@@ -17,6 +17,15 @@ vi.mock('@tauri-apps/api/core', () => ({
 
 const mockedInvoke = vi.mocked(invoke)
 
+const windowInput = {
+	order: {
+		orderBy: 'priority' as const,
+		orderDirection: 'desc' as const,
+		completedOrder: 'natural' as const,
+	},
+	dateBasis: '2026-09-13',
+}
+
 describe('tasks api', () => {
 	afterEach(() => {
 		mockedInvoke.mockReset()
@@ -43,6 +52,7 @@ describe('tasks api', () => {
 		}
 
 		await runTaskQuery({
+			...windowInput,
 			scope: { type: 'space', spaceId: 'space-1' },
 			context: { kind: 'all' },
 			baseViewKey: 'active',
@@ -51,6 +61,7 @@ describe('tasks api', () => {
 
 		expect(mockedInvoke).toHaveBeenCalledWith('run_task_query', {
 			input: {
+				...windowInput,
 				scope: { type: 'space', spaceId: 'space-1' },
 				context: { kind: 'all' },
 				baseViewKey: 'active',
@@ -85,6 +96,7 @@ describe('tasks api', () => {
 
 		await expect(
 			runTaskQuery({
+				...windowInput,
 				scope: { type: 'all' },
 				context: { kind: 'all' },
 				baseViewKey: 'all',

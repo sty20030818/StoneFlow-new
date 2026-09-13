@@ -2,9 +2,23 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 
-import type { RunTaskQueryResult, TaskListItem, TaskViewBaseKey } from '@/shared/types'
+import type {
+	RunTaskQueryInput,
+	RunTaskQueryResult,
+	TaskListItem,
+	TaskViewBaseKey,
+} from '@/shared/types'
 
 import { useTaskBoardPagination, useTaskQueryData } from './useTaskData'
+
+const windowInput = {
+	order: {
+		orderBy: 'priority' as const,
+		orderDirection: 'desc' as const,
+		completedOrder: 'natural' as const,
+	},
+	dateBasis: '2026-09-13',
+}
 
 const runTaskQueryMock = vi.hoisted(() => vi.fn())
 
@@ -90,6 +104,7 @@ describe('useTaskQueryData', () => {
 		const { result, rerender } = renderHook(
 			({ baseViewKey }: { baseViewKey: TaskViewBaseKey }) =>
 				useTaskQueryData({
+					...windowInput,
 					scope: { type: 'all' },
 					context: { kind: 'all' },
 					baseViewKey,
@@ -124,6 +139,7 @@ describe('useTaskQueryData', () => {
 		const { result, rerender } = renderHook(
 			({ baseViewKey }: { baseViewKey: TaskViewBaseKey }) =>
 				useTaskQueryData({
+					...windowInput,
 					scope: { type: 'all' },
 					context: { kind: 'all' },
 					baseViewKey,
@@ -144,6 +160,58 @@ describe('useTaskQueryData', () => {
 		expect(result.current.status).toBe('ready')
 	})
 
+	it.each(['order', 'dateBasis'] as const)(
+		'切换 %s 从新首屏开始，慢旧续页不能拼入新结果',
+		async (change) => {
+			let resolvePrevious!: (page: RunTaskQueryResult) => void
+			const pending = new Promise<RunTaskQueryResult>((resolve) => {
+				resolvePrevious = resolve
+			})
+			runTaskQueryMock.mockImplementation(({ cursor, order, dateBasis }) => {
+				if (cursor) return pending
+				return Promise.resolve(
+					page(
+						createTask(
+							order.orderDirection === 'asc' || dateBasis === '2026-09-14' ? 'new' : 'old',
+							'任务',
+						),
+						'cursor',
+					),
+				)
+			})
+			const input: RunTaskQueryInput = {
+				...windowInput,
+				scope: { type: 'all' as const },
+				context: { kind: 'all' as const },
+				baseViewKey: 'all' as const,
+				filters: { clauses: [] },
+			}
+			const { result, rerender } = renderHook((window) => useTaskQueryData(window), {
+				initialProps: input,
+				wrapper: createQueryWrapper(),
+			})
+			await waitFor(() => expect(result.current.items[0]?.id).toBe('old'))
+			act(() => {
+				if ('fetchNextPage' in result.current.pagination)
+					void result.current.pagination.fetchNextPage()
+			})
+			await waitFor(() => expect(runTaskQueryMock).toHaveBeenCalledTimes(2))
+			rerender(
+				change === 'order'
+					? { ...input, order: { ...input.order, orderDirection: 'asc' } }
+					: { ...input, dateBasis: '2026-09-14' },
+			)
+			await waitFor(() => expect(result.current.items[0]?.id).toBe('new'))
+			await act(async () => resolvePrevious(page(createTask('old-more', '旧续页'))))
+			expect(result.current.items.map(({ id }) => id)).toEqual(['new'])
+			expect(runTaskQueryMock.mock.calls.map(([value]) => value.cursor)).toEqual([
+				null,
+				'cursor',
+				null,
+			])
+		},
+	)
+
 	it('同一查询后台刷新保留已有结果', async () => {
 		let resolveRefetch!: (page: RunTaskQueryResult) => void
 		const refresh = new Promise<RunTaskQueryResult>((resolve) => {
@@ -155,6 +223,7 @@ describe('useTaskQueryData', () => {
 		const { result } = renderHook(
 			() =>
 				useTaskQueryData({
+					...windowInput,
 					scope: { type: 'all' },
 					context: { kind: 'all' },
 					baseViewKey: 'active',

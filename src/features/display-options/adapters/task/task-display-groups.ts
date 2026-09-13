@@ -5,7 +5,6 @@ import type { TaskListItem } from '@/shared/types'
 
 import type { ResolvedTaskDisplayOptions } from '@/features/display-options/core'
 
-import { createTaskDisplayComparator } from './task-display-compare'
 import type {
 	TaskDateBucketKey,
 	TaskDisplayApplyContext,
@@ -24,7 +23,7 @@ export function buildTaskDisplaySections(
 			{
 				key: 'all',
 				label: '全部任务',
-				tasks: sortTasks(items, options, context),
+				tasks: items,
 			},
 		]
 	}
@@ -34,13 +33,12 @@ export function buildTaskDisplaySections(
 		options.groupBy,
 		context.includeEmptySections ?? false,
 	)
-	const compare = createTaskDisplayComparator(options, { pageKey: context.pageKey })
 
 	return descriptor.groups
 		.map((group) => {
-			const groupTasks = items
-				.filter((task) => resolveTaskGroupValue(task, options.groupBy) === group.value)
-				.sort(compare)
+			const groupTasks = items.filter(
+				(task) => resolveTaskGroupValue(task, options.groupBy) === group.value,
+			)
 
 			if (groupTasks.length === 0 && !(context.includeEmptySections ?? false)) {
 				return null
@@ -156,14 +154,6 @@ export function resolveTaskDateBucket(value: string | null): TaskDateBucketKey {
 	}
 
 	return 'later'
-}
-
-function sortTasks(
-	items: TaskListItem[],
-	options: ResolvedTaskDisplayOptions,
-	context: TaskDisplayApplyContext,
-) {
-	return items.toSorted(createTaskDisplayComparator(options, { pageKey: context.pageKey }))
 }
 
 function buildProjectGroups(items: TaskListItem[], includeEmpty: boolean): TaskGroupDefinition[] {

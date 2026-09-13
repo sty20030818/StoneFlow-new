@@ -1,3 +1,4 @@
+import type { TaskWindowOrder } from '@/shared/types'
 import { getTaskDisplayPageCapabilities } from './task-display-capabilities'
 import { getTaskDisplaySystemDefaults } from './task-display-defaults'
 import type { TaskDisplayPageKey } from './display-page-key'
@@ -211,4 +212,14 @@ function normalizeChoice<T extends string>(value: T, allowed: readonly T[], fall
 
 function getFallbackValue<T extends string>(preferred: T, allowed: readonly T[]): T {
 	return allowed.includes(preferred) ? preferred : allowed[0]
+}
+
+/** 只投影会改变窗口的排序意图；固定顺序不产生无效方向变体。 */
+export function normalizeTaskWindowOrder(options: TaskWindowOrder): TaskWindowOrder {
+	return {
+		orderBy: options.orderBy,
+		orderDirection:
+			options.orderBy === 'manual' || options.orderBy === 'smart' ? 'asc' : options.orderDirection,
+		completedOrder: options.completedOrder,
+	}
 }

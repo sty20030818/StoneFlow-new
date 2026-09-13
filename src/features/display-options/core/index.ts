@@ -17,6 +17,7 @@ export { BASE_TASK_DISPLAY_OPTIONS, getTaskDisplaySystemDefaults } from './task-
 export {
 	mergeTaskDisplayPreferences,
 	normalizeTaskDisplayPreference,
+	normalizeTaskWindowOrder,
 	resolveTaskDisplayOptions,
 	type ResolveTaskDisplayOptionsInput,
 } from './task-display-normalize'

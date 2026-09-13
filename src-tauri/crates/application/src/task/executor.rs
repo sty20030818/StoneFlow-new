@@ -1,31 +1,114 @@
 //! Task 查询 cursor 与 Activity 动作推断。
 
+use serde::{Deserialize, Serialize};
 use stoneflow_domain::WorkStatus;
 
 use crate::{
     activity::{ActivityAction, ActivityChangeInput},
-    task::types::{TaskQueryCursor, TaskRecord},
+    task::{order::invalid_cursor, TaskOrderTuple, TaskQueryCursor, TaskQueryOrder, TaskRecord},
+    view::{
+        FilterQueryValue, TaskScopeInput, TaskViewBaseKey, TaskViewContext, ViewDateBoundaries,
+        ViewTaskRecord,
+    },
     ApplicationError,
 };
 
-pub(crate) fn encode_task_query_cursor(position: i64, id: &str) -> String {
-    format!("{position}\u{1f}{id}")
+/// cursor 只绑定影响成员与顺序的值，筛选条款 ID 不参与身份。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct TaskQueryIdentity {
+    scope: TaskScopeInput,
+    context: TaskViewContext,
+    base_view_key: TaskViewBaseKey,
+    filters: FilterQueryValue,
+    order: TaskQueryOrder,
+    date_basis: String,
 }
 
-pub(crate) fn decode_task_query_cursor(raw: &str) -> Result<TaskQueryCursor, ApplicationError> {
-    let (position_raw, id) = raw
-        .split_once('\u{1f}')
-        .ok_or_else(|| ApplicationError::validation("列表 cursor 无效"))?;
-    let position = position_raw
-        .parse::<i64>()
-        .map_err(|_| ApplicationError::validation("列表 cursor 无效"))?;
-    if id.is_empty() {
-        return Err(ApplicationError::validation("列表 cursor 无效"));
+impl TaskQueryIdentity {
+    pub(crate) fn new(
+        scope: &TaskScopeInput,
+        context: &TaskViewContext,
+        base_view_key: TaskViewBaseKey,
+        filters: &FilterQueryValue,
+        order: TaskQueryOrder,
+        date_basis: &str,
+    ) -> Self {
+        let mut filters = filters.clone();
+        for clause in &mut filters.clauses {
+            clause.id.clear();
+            clause.values.sort();
+            clause.values.dedup();
+        }
+        filters.clauses.sort_by(|left, right| {
+            (&left.field, &left.op, &left.values).cmp(&(&right.field, &right.op, &right.values))
+        });
+        filters.clauses.dedup();
+        Self {
+            scope: scope.clone(),
+            context: context.clone(),
+            base_view_key,
+            filters,
+            order: order.normalized(),
+            date_basis: date_basis.to_owned(),
+        }
     }
-    Ok(TaskQueryCursor {
-        position,
-        id: id.to_owned(),
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct TaskCursorPayload {
+    version: u8,
+    query: TaskQueryIdentity,
+    dates: ViewDateBoundaries,
+    values: TaskOrderTuple,
+}
+
+pub(crate) fn encode_task_query_cursor(
+    query: &TaskQueryIdentity,
+    dates: &ViewDateBoundaries,
+    task: &ViewTaskRecord,
+) -> Result<String, ApplicationError> {
+    let values = query.order.tuple(task);
+    query.order.validate_tuple(&values)?;
+    serde_json::to_string(&TaskCursorPayload {
+        version: 1,
+        query: query.clone(),
+        dates: dates.clone(),
+        values,
     })
+    .map_err(|_| ApplicationError::internal("无法生成列表 cursor"))
+}
+
+pub(crate) fn decode_task_query_cursor(
+    raw: &str,
+    query: &TaskQueryIdentity,
+) -> Result<(TaskQueryCursor, ViewDateBoundaries), ApplicationError> {
+    let payload: TaskCursorPayload = serde_json::from_str(raw).map_err(|_| invalid_cursor())?;
+    if payload.version != 1 || &payload.query != query {
+        return Err(invalid_cursor());
+    }
+    query.order.validate_tuple(&payload.values)?;
+    let dates = [
+        &payload.dates.today_start,
+        &payload.dates.tomorrow_start,
+        &payload.dates.day_after_tomorrow_start,
+        &payload.dates.next_week_start,
+    ]
+    .map(|date| chrono::DateTime::parse_from_rfc3339(date).map_err(|_| invalid_cursor()));
+    let [today, tomorrow, day_after, next_week] = dates;
+    let (today, tomorrow, day_after, next_week) = (today?, tomorrow?, day_after?, next_week?);
+    if !(today < tomorrow && tomorrow < day_after && today < next_week)
+        || next_week.signed_duration_since(today) > chrono::Duration::days(8)
+    {
+        return Err(invalid_cursor());
+    }
+    Ok((
+        TaskQueryCursor {
+            values: payload.values,
+        },
+        payload.dates,
+    ))
 }
 
 pub(crate) fn status_key(status: WorkStatus) -> &'static str {
@@ -95,21 +178,5 @@ pub(crate) fn build_update_summary(action: ActivityAction, title: &str) -> Strin
         ActivityAction::TaskRemindUpdated => format!("更新任务提醒时间「{title}」"),
         ActivityAction::TaskNoteUpdated => format!("更新任务备注「{title}」"),
         _ => format!("更新任务「{title}」"),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{decode_task_query_cursor, encode_task_query_cursor};
-
-    #[test]
-    fn task_query_cursor_codec_rejects_invalid_input_and_round_trips() {
-        assert!(decode_task_query_cursor("invalid").is_err());
-        assert!(decode_task_query_cursor("100\u{1f}").is_err());
-
-        let encoded = encode_task_query_cursor(100, "task-1");
-        let decoded = decode_task_query_cursor(&encoded).expect("valid cursor");
-        assert_eq!(decoded.position, 100);
-        assert_eq!(decoded.id, "task-1");
     }
 }

@@ -1,3 +1,4 @@
+import { normalizeTaskWindowOrder } from '@/features/display-options'
 import { infiniteQueryOptions, useInfiniteQuery, useQuery } from '@tanstack/react-query'
 
 import { listViews, runTaskView } from '../api/views'
@@ -27,6 +28,8 @@ export function taskViewRunInfiniteQueryOptions(input: RunTaskViewInput) {
 	const keyInput: RunTaskViewInput = {
 		scope: input.scope,
 		viewId: input.viewId,
+		order: normalizeTaskWindowOrder(input.order),
+		dateBasis: input.dateBasis,
 		...(input.filters ? { filters: input.filters } : {}),
 	}
 	return infiniteQueryOptions({
@@ -47,6 +50,8 @@ export function useTaskViewRunInfiniteQuery(input: RunTaskViewInput | null) {
 			input ?? {
 				scope: { type: 'all' },
 				viewId: '',
+				order: { orderBy: 'smart', orderDirection: 'asc', completedOrder: 'natural' },
+				dateBasis: '',
 			},
 		),
 		enabled: Boolean(input),

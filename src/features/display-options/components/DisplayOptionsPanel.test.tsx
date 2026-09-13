@@ -24,7 +24,7 @@ describe('DisplayOptionsPanel', () => {
 		render(
 			<DisplayOptionsPanel
 				actions={actions}
-				options={{ ...BASE_TASK_DISPLAY_OPTIONS, orderDirection: 'asc' }}
+				options={{ ...BASE_TASK_DISPLAY_OPTIONS, orderBy: 'priority', orderDirection: 'asc' }}
 				pageKey='task:all'
 				status='ready'
 			/>,
@@ -39,14 +39,14 @@ describe('DisplayOptionsPanel', () => {
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('切换为降序')
 
 		fireEvent.click(trigger)
-		expect(actions.setOrdering).toHaveBeenCalledWith('smart', 'desc')
+		expect(actions.setOrdering).toHaveBeenCalledWith('priority', 'desc')
 	})
 
 	it('读取偏好期间说明排序方向不可用的原因', async () => {
 		render(
 			<DisplayOptionsPanel
 				actions={actions}
-				options={{ ...BASE_TASK_DISPLAY_OPTIONS, orderDirection: 'asc' }}
+				options={{ ...BASE_TASK_DISPLAY_OPTIONS, orderBy: 'priority', orderDirection: 'asc' }}
 				pageKey='task:all'
 				status='loading'
 			/>,
@@ -56,6 +56,19 @@ describe('DisplayOptionsPanel', () => {
 		fireEvent.keyDown(document, { key: 'Tab' })
 		act(() => trigger.focus())
 		expect(await screen.findByRole('tooltip')).toHaveTextContent('切换为降序正在读取显示偏好')
+	})
+
+	it.each(['smart', 'manual'] as const)('%s 没有无效方向控件，完成项意图明确', (orderBy) => {
+		render(
+			<DisplayOptionsPanel
+				actions={actions}
+				options={{ ...BASE_TASK_DISPLAY_OPTIONS, orderBy }}
+				pageKey='task:project-detail'
+				status='ready'
+			/>,
+		)
+		expect(screen.queryByRole('button', { name: /切换为[升降]序/ })).not.toBeInTheDocument()
+		expect(screen.getByRole('switch', { name: '已完成置底，最近优先' })).toBeInTheDocument()
 	})
 
 	it('开关与属性变更会即时写入显示偏好', () => {

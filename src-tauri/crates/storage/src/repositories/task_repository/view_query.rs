@@ -1,7 +1,7 @@
 //! Default View 与 Saved View 共用的 Task SQL 查询。
 
 use sea_orm::{
-    sea_query::Expr, ColumnTrait, Condition, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder,
+    sea_query::Expr, ColumnTrait, Condition, EntityTrait, ExprTrait, PaginatorTrait, QueryFilter,
     QuerySelect, Select,
 };
 use stoneflow_application::view::{
@@ -9,7 +9,7 @@ use stoneflow_application::view::{
     TaskViewContext, ViewDateBoundaries, ViewTaskQuery,
 };
 
-use super::TaskRepository;
+use super::{view_date::sqlite_date_expression, view_order::apply_view_task_order, TaskRepository};
 use crate::{
     entities::{common::WorkStatus as StorageWorkStatus, task, task::Entity as Task},
     error::StorageError,
@@ -21,25 +21,14 @@ impl TaskRepository {
         &self,
         definition: &ViewTaskQuery,
     ) -> Result<Vec<task::Model>, StorageError> {
-        let mut query = apply_view_task_filters(Task::find(), definition)?;
-        if let Some(cursor) = &definition.cursor {
-            query = query.filter(
-                Condition::any()
-                    .add(task::Column::Position.gt(cursor.position))
-                    .add(
-                        Condition::all()
-                            .add(task::Column::Position.eq(cursor.position))
-                            .add(task::Column::Id.gt(cursor.id.as_str())),
-                    ),
-            );
-        }
-        query
-            .order_by_asc(task::Column::Position)
-            .order_by_asc(task::Column::Id)
-            .limit(u64::from(definition.limit))
-            .all(&self.db)
-            .await
-            .map_err(Into::into)
+        apply_view_task_order(
+            apply_view_task_filters(Task::find(), definition)?,
+            definition,
+        )?
+        .limit(u64::from(definition.limit))
+        .all(&self.db)
+        .await
+        .map_err(Into::into)
     }
 
     /// 与 `list_for_view` 完全相同的过滤条件，不含 cursor/window。
@@ -297,29 +286,22 @@ fn sqlite_date_range_complement(
 ) -> Condition {
     Condition::any()
         .add(column.is_null())
-        .add(Expr::cust_with_values(
-            format!("julianday({column_name}) < julianday(?)"),
-            [from],
-        ))
-        .add(Expr::cust_with_values(
-            format!("julianday({column_name}) >= julianday(?)"),
-            [to],
-        ))
+        .add(sqlite_date_before(column_name, from))
+        .add(sqlite_date_at_or_after(column_name, to))
 }
 
 fn sqlite_date_range(column: &str, from: &str, to: &str) -> sea_orm::sea_query::SimpleExpr {
-    Expr::cust_with_values(
-        format!("julianday({column}) >= julianday(?) AND julianday({column}) < julianday(?)"),
-        [from, to],
-    )
+    sqlite_date_at_or_after(column, from).and(sqlite_date_before(column, to))
 }
 
 fn sqlite_date_before(column: &str, value: &str) -> sea_orm::sea_query::SimpleExpr {
-    Expr::cust_with_values(format!("julianday({column}) < julianday(?)"), [value])
+    sqlite_date_expression(Expr::cust(column.to_owned()))
+        .lt(sqlite_date_expression(Expr::val(value)))
 }
 
 fn sqlite_date_at_or_after(column: &str, value: &str) -> sea_orm::sea_query::SimpleExpr {
-    Expr::cust_with_values(format!("julianday({column}) >= julianday(?)"), [value])
+    sqlite_date_expression(Expr::cust(column.to_owned()))
+        .gte(sqlite_date_expression(Expr::val(value)))
 }
 
 fn storage_status_from_str(value: &str) -> Option<StorageWorkStatus> {
@@ -335,10 +317,21 @@ fn storage_status_from_str(value: &str) -> Option<StorageWorkStatus> {
 
 #[cfg(test)]
 mod tests {
+    fn manual_order() -> TaskQueryOrder {
+        TaskQueryOrder {
+            order_by: TaskOrderBy::Manual,
+            order_direction: TaskOrderDirection::Asc,
+            completed_order: TaskCompletedOrder::Natural,
+        }
+    }
+
     use sea_orm::ConnectionTrait;
     use serde::Deserialize;
     use stoneflow_application::{
-        task::TaskQueryCursor,
+        task::{
+            TaskCompletedOrder, TaskOrderBy, TaskOrderDirection, TaskOrderValue, TaskQueryCursor,
+            TaskQueryOrder,
+        },
         view::{FilterQueryValue, TaskScopeInput},
     };
     use stoneflow_domain::WorkStatus;
@@ -457,6 +450,7 @@ mod tests {
                     context: TaskViewContext::All,
                     base_view_key: TaskViewBaseKey::All,
                     filters,
+                    order: manual_order(),
                     dates: ViewDateBoundaries {
                         today_start: "2026-08-22T00:00:00+08:00".to_owned(),
                         tomorrow_start: "2026-08-23T00:00:00+08:00".to_owned(),
@@ -513,6 +507,7 @@ mod tests {
                         values: values.into_iter().map(str::to_owned).collect(),
                     }],
                 },
+                order: manual_order(),
                 dates: ViewDateBoundaries {
                     today_start: "2026-08-22T00:00:00+08:00".to_owned(),
                     tomorrow_start: "2026-08-23T00:00:00+08:00".to_owned(),
@@ -705,6 +700,7 @@ mod tests {
                     },
                 ],
             },
+            order: manual_order(),
             dates: ViewDateBoundaries {
                 today_start: "2026-08-22T00:00:00+08:00".to_owned(),
                 tomorrow_start: "2026-08-23T00:00:00+08:00".to_owned(),
@@ -728,8 +724,10 @@ mod tests {
         let second_page = repository
             .list_for_view(&ViewTaskQuery {
                 cursor: Some(TaskQueryCursor {
-                    position: first_page[0].position,
-                    id: first_page[0].id.clone(),
+                    values: vec![
+                        Some(TaskOrderValue::Integer(first_page[0].position)),
+                        Some(TaskOrderValue::Text(first_page[0].id.clone())),
+                    ],
                 }),
                 ..query.clone()
             })

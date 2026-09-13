@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from '@tanstack/react-router'
-import { hashKey, useQuery } from '@tanstack/react-query'
+import { hashKey, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useLocalDateBasis } from '@/shared/query/useLocalDateBasis'
 
 import {
 	openProjectDetail,
@@ -10,7 +11,11 @@ import {
 	resolveShellRouteScope,
 	useCurrentShellRoute,
 } from '@/app/navigation'
-import { createTaskDisplayViewPageKey, useTaskDisplayOptions } from '@/features/display-options'
+import {
+	createTaskDisplayViewPageKey,
+	normalizeTaskWindowOrder,
+	useTaskDisplayOptions,
+} from '@/features/display-options'
 import { useListFilterSession, useRegisterFilterCommandAdapter } from '@/features/filter'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { projectDetailQueryOptions, useProjectOptions } from '@/features/project'
@@ -128,6 +133,7 @@ export function useSavedViewLibraryScene() {
 }
 
 export function useSavedViewWorkspaceScene() {
+	const queryClient = useQueryClient()
 	const shellRoute = useCurrentShellRoute()
 	const scope = resolveShellRouteScope(shellRoute)
 	const spaceId = shellRoute.spaceId
@@ -157,6 +163,7 @@ export function useSavedViewWorkspaceScene() {
 		: { options: [], defaultKey: 'incomplete' as const }
 	const displayPageKey = createTaskDisplayViewPageKey(activeView?.id ?? 'missing')
 	const display = useTaskDisplayOptions(displayPageKey)
+	const dateBasis = useLocalDateBasis()
 	const viewDefinitionPending = viewsQuery.isLoading || viewsQuery.isPending
 	const filterSession = useListFilterSession({
 		base: viewDefinitionPending ? null : (runnableView?.filters ?? EMPTY_FILTER_QUERY),
@@ -172,20 +179,26 @@ export function useSavedViewWorkspaceScene() {
 	const openCreateTask = () => openTaskCreateDialog(workspaceContext.createDraft)
 	useRegisterFilterCommandAdapter({ session: filterSession })
 
-	const taskRunInput = runnableView
-		? {
-				scope,
-				viewId: runnableView.id,
-				...(filterSession.dirty ? { filters: filterSession.temp } : {}),
-			}
-		: null
+	const taskRunInput =
+		runnableView && display.status !== 'loading'
+			? {
+					scope,
+					viewId: runnableView.id,
+					order: normalizeTaskWindowOrder(display.options),
+					dateBasis,
+					...(filterSession.dirty ? { filters: filterSession.temp } : {}),
+				}
+			: null
 	const taskRunQuery = useTaskViewRunInfiniteQuery(taskRunInput)
 	const items = useMemo(
 		() => flattenTaskViewPages(taskRunQuery.data?.pages),
 		[taskRunQuery.data?.pages],
 	)
 	const boardStatus =
-		viewsQuery.isLoading || viewsQuery.isPending || (runnableView && taskRunQuery.isPending)
+		viewsQuery.isLoading ||
+		viewsQuery.isPending ||
+		display.status === 'loading' ||
+		(runnableView && taskRunQuery.isPending)
 			? 'loading'
 			: runnableView && taskRunQuery.isLoadingError
 				? 'error'
@@ -198,6 +211,13 @@ export function useSavedViewWorkspaceScene() {
 		sourceKey: taskRunInput
 			? hashKey(taskViewRunInfiniteQueryOptions(taskRunInput).queryKey)
 			: 'saved-view:none',
+		restartFromFirstPage: async () => {
+			if (taskRunInput)
+				await queryClient.resetQueries({
+					queryKey: taskViewRunInfiniteQueryOptions(taskRunInput).queryKey,
+					exact: true,
+				})
+		},
 		loadedPageCount: taskRunQuery.data?.pages.length ?? 0,
 		fetchNextPage: taskRunQuery.fetchNextPage,
 		hasNextPage: taskRunQuery.isPlaceholderData ? false : taskRunQuery.hasNextPage,

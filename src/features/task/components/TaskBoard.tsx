@@ -83,6 +83,7 @@ export type TaskBoardPagination = TaskBoardPaginationSource &
 				state: 'error'
 				error: string
 				fetchNextPage: () => Promise<unknown>
+				restartFromFirstPage?: () => Promise<unknown>
 		  }
 	)
 
@@ -975,6 +976,16 @@ function TaskBoardPaginationSentinel({
 					<Button onPress={onFetchNextPage} size='sm' type='button' variant='danger-soft'>
 						重试
 					</Button>
+					{pagination.restartFromFirstPage ? (
+						<Button
+							onPress={() => void pagination.restartFromFirstPage?.()}
+							size='sm'
+							type='button'
+							variant='secondary'
+						>
+							从头加载
+						</Button>
+					) : null}
 				</div>
 			)
 		case 'exhausted':

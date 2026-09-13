@@ -4,7 +4,7 @@
 import { useCallback, useMemo } from 'react'
 
 import { resolveBreadcrumb, resolveShellRouteScope, useCurrentShellRoute } from '@/app/navigation'
-import { useTaskDisplayOptions } from '@/features/display-options'
+import { normalizeTaskWindowOrder, useTaskDisplayOptions } from '@/features/display-options'
 import { useListFilterSession, useRegisterFilterCommandAdapter } from '@/features/filter'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useProjectOptions } from '@/features/project'
@@ -16,6 +16,7 @@ import {
 	useDefaultTaskViewSelection,
 } from '@/features/task-workspace'
 import { useViewSaveFlow } from '@/features/view'
+import { useLocalDateBasis } from '@/shared/query/useLocalDateBasis'
 import { EMPTY_FILTER_QUERY, type TaskViewContext } from '@/shared/types'
 
 import { useTaskCollectionScene } from './useTaskCollectionScene'
@@ -45,6 +46,7 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 	const activeDetail = useEntityDetailController().activeDetail
 	const display = useTaskDisplayOptions(config.displayPageKey)
+	const dateBasis = useLocalDateBasis()
 	const filterSession = useListFilterSession({ base: EMPTY_FILTER_QUERY })
 	const projectOptions = useProjectOptions(scope)
 	const { spaces } = useSpaces()
@@ -57,11 +59,20 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 			context,
 			baseViewKey: viewSelection.selected.baseViewKey,
 			filters: filterSession.effective,
+			order: normalizeTaskWindowOrder(display.options),
+			dateBasis,
 		}),
-		[context, filterSession.effective, scope, viewSelection.selected.baseViewKey],
+		[
+			context,
+			filterSession.effective,
+			scope,
+			viewSelection.selected.baseViewKey,
+			display.options,
+			dateBasis,
+		],
 	)
 
-	const taskList = useTaskQueryData(queryInput)
+	const taskList = useTaskQueryData(queryInput, display.status !== 'loading')
 	const breadcrumbItems = useMemo(() => resolveBreadcrumb({ route: shellRoute }), [shellRoute])
 	const openCreate = useCallback(() => {
 		openTaskCreateDialog(config.createDraft)
@@ -110,7 +121,16 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 		canOverwrite: false,
 		onSave: async (input: { mode: 'create' | 'overwrite'; name?: string }) => {
 			if (input.mode !== 'create' || !input.name?.trim()) return
-			await saveFlow.submit({ mode: 'create', input: { ...queryInput, name: input.name.trim() } })
+			await saveFlow.submit({
+				mode: 'create',
+				input: {
+					scope: queryInput.scope,
+					context: queryInput.context,
+					baseViewKey: queryInput.baseViewKey,
+					filters: queryInput.filters,
+					name: input.name.trim(),
+				},
+			})
 		},
 	}
 

@@ -261,6 +261,14 @@ fn map_project_lookup(project: crate::entities::project::Model) -> ViewProjectLo
 
 #[cfg(test)]
 mod tests {
+    fn manual_order() -> TaskQueryOrder {
+        TaskQueryOrder {
+            order_by: TaskOrderBy::Manual,
+            order_direction: TaskOrderDirection::Asc,
+            completed_order: TaskCompletedOrder::Natural,
+        }
+    }
+
     use sea_orm::{
         ActiveModelTrait, ActiveValue::Set, ColumnTrait, ConnectionTrait, EntityTrait,
         PaginatorTrait, QueryFilter,
@@ -268,7 +276,10 @@ mod tests {
     use serde_json::json;
     use stoneflow_application::{
         operation::OutboxPayload,
-        task::TaskQueryCursor,
+        task::{
+            TaskCompletedOrder, TaskOrderBy, TaskOrderDirection, TaskOrderValue, TaskQueryCursor,
+            TaskQueryOrder,
+        },
         view::{
             codec::{EMPTY_SORT_JSON, NO_GROUP_JSON},
             CreateViewInput, FilterQueryValue, ListViewsInput, RunTaskViewInput, TaskScopeInput,
@@ -386,6 +397,8 @@ mod tests {
         ] {
             assert!(service
                 .run_task_view(RunTaskViewInput {
+                    order: manual_order(),
+                    date_basis: "2026-09-13".to_owned(),
                     scope: row_scope,
                     view_id: id.clone(),
                     filters: None,
@@ -498,6 +511,8 @@ mod tests {
             .contains("项目范围已变化"));
         assert!(service
             .run_task_view(RunTaskViewInput {
+                order: manual_order(),
+                date_basis: "2026-09-13".to_owned(),
                 scope: scoped.scope.clone(),
                 view_id: scoped.id.clone(),
                 filters: None,
@@ -535,6 +550,8 @@ mod tests {
         assert_eq!(
             service
                 .run_task_view(RunTaskViewInput {
+                    order: manual_order(),
+                    date_basis: "2026-09-13".to_owned(),
                     scope: all.scope.clone(),
                     view_id: all.id.clone(),
                     filters: None,
@@ -556,6 +573,8 @@ mod tests {
             .is_none());
         assert!(service
             .run_task_view(RunTaskViewInput {
+                order: manual_order(),
+                date_basis: "2026-09-13".to_owned(),
                 scope: scoped.scope,
                 view_id: scoped.id,
                 filters: None,
@@ -593,6 +612,8 @@ mod tests {
                 .is_err());
             assert!(service
                 .run_task_view(RunTaskViewInput {
+                    order: manual_order(),
+                    date_basis: "2026-09-13".to_owned(),
                     scope: view.scope.clone(),
                     view_id: view.id.clone(),
                     filters: None,
@@ -809,6 +830,7 @@ mod tests {
             context: TaskViewContext::All,
             base_view_key: TaskViewBaseKey::All,
             filters: FilterQueryValue::default(),
+            order: manual_order(),
             dates: ViewDateBoundaries {
                 today_start: "2026-08-22T00:00:00+08:00".to_owned(),
                 tomorrow_start: "2026-08-23T00:00:00+08:00".to_owned(),
@@ -828,8 +850,10 @@ mod tests {
             adapter
                 .run_query(ViewTaskQuery {
                     cursor: Some(TaskQueryCursor {
-                        position: 0,
-                        id: "cursor".to_owned(),
+                        values: vec![
+                            Some(TaskOrderValue::Integer(0)),
+                            Some(TaskOrderValue::Text("cursor".to_owned()))
+                        ],
                     }),
                     ..query
                 })

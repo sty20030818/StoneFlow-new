@@ -48,6 +48,8 @@ export async function runTaskQuery(input: RunTaskQueryInput): Promise<RunTaskQue
 			context: input.context,
 			baseViewKey: input.baseViewKey,
 			filters: input.filters,
+			order: input.order,
+			dateBasis: input.dateBasis,
 			cursor: input.cursor ?? null,
 		},
 	})

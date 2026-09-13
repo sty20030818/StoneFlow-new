@@ -782,6 +782,7 @@ const EXPORTED_COMPONENT_CONSUMERS: Readonly<Record<string, readonly string[]>> 
 	],
 	'stoneflow-component-display-options-popover': [
 		'src/features/display-options/components/DisplayOptionsButton.tsx',
+		'src/ui-lab/samples/displayOrderingSamples.tsx',
 	],
 	'stoneflow-component-empty-hint': ['src/features/launcher/results/LauncherResults.tsx'],
 	'stoneflow-component-entity-detail-drawer-host': ['src/layout/ShellMain.tsx'],

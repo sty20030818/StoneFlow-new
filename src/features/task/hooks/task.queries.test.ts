@@ -1,0 +1,63 @@
+import { QueryClient, hashKey } from '@tanstack/react-query'
+import type { RunTaskQueryInput } from '@/shared/types'
+import { taskQueryInfiniteQueryOptions } from './task.queries'
+const { runMock } = vi.hoisted(() => ({ runMock: vi.fn() }))
+vi.mock('@/features/task/api/tasks', () => ({
+	countTaskQuery: vi.fn(),
+	getTaskDetail: vi.fn(),
+	runTaskQuery: runMock,
+}))
+
+const input: RunTaskQueryInput = {
+	scope: { type: 'all' },
+	context: { kind: 'all' },
+	baseViewKey: 'active',
+	filters: { clauses: [{ id: 'a', field: 'status', op: 'is_not', values: ['done', 'canceled'] }] },
+	order: { orderBy: 'priority', orderDirection: 'desc', completedOrder: 'natural' },
+	dateBasis: '2026-09-13',
+}
+
+it('Default View key 只含成员、有效排序和日期，排除编辑 ID、显隐和折叠', () => {
+	const key = (value: RunTaskQueryInput) => hashKey(taskQueryInfiniteQueryOptions(value).queryKey)
+	const renamed = {
+		...input,
+		filters: {
+			clauses: [{ ...input.filters!.clauses[0], id: 'other', values: ['canceled', 'done'] }],
+		},
+		visibleProperties: [],
+		collapsedGroups: ['status:todo'],
+	}
+	expect(key(renamed)).toBe(key(input))
+	expect(key({ ...input, dateBasis: '2026-09-14' })).not.toBe(key(input))
+	expect(key({ ...input, order: { ...input.order, orderDirection: 'asc' } })).not.toBe(key(input))
+	expect(key({ ...input, order: { ...input.order, completedOrder: 'recency' } })).not.toBe(
+		key(input),
+	)
+	for (const orderBy of ['manual', 'smart'] as const) {
+		const fixed = { ...input, order: { ...input.order, orderBy, orderDirection: 'desc' as const } }
+		expect(key(fixed)).toBe(key({ ...fixed, order: { ...fixed.order, orderDirection: 'asc' } }))
+	}
+})
+
+it('Default View 首屏与续页发送同一排序和日期', async () => {
+	runMock.mockReset().mockImplementation(({ cursor }: { cursor: string | null }) =>
+		Promise.resolve({
+			items: [],
+			totalCount: cursor ? null : 2,
+			nextCursor: cursor ? null : 'next',
+		}),
+	)
+	const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+	await client.fetchInfiniteQuery({ ...taskQueryInfiniteQueryOptions(input), pages: 2 })
+	expect(
+		runMock.mock.calls.map(([value]) => ({
+			order: value.order,
+			dateBasis: value.dateBasis,
+			cursor: value.cursor,
+		})),
+	).toEqual([
+		{ order: input.order, dateBasis: input.dateBasis, cursor: null },
+		{ order: input.order, dateBasis: input.dateBasis, cursor: 'next' },
+	])
+	client.clear()
+})

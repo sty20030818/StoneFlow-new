@@ -42,6 +42,23 @@ describe('UiLabApp', () => {
 		})
 	})
 
+	it('显示顺序样例使用生产浮层并只修改本地受控状态', async () => {
+		const entry = UI_LAB_CATALOG.find((item) => item.id === 'stoneflow-display-ordering')
+		if (!entry || !('Preview' in entry) || !entry.Preview) throw new Error('缺少显示顺序样例')
+		const Preview = entry.Preview
+		const stored = Object.entries(localStorage)
+		render(<Preview />)
+		fireEvent.click(screen.getByRole('button', { name: '显示选项' }))
+		const panel = await screen.findByRole('dialog', { name: '显示选项' })
+		expect(within(panel).queryByRole('button', { name: /切换为[升降]序/ })).not.toBeInTheDocument()
+		fireEvent.click(within(panel).getByRole('button', { name: '手动顺序 排序' }))
+		fireEvent.click(await screen.findByRole('option', { name: '优先级' }))
+		fireEvent.click(within(panel).getByRole('button', { name: '切换为降序' }))
+		expect(within(panel).getByRole('button', { name: '切换为升序' })).toBeInTheDocument()
+		expect(within(panel).getByRole('switch', { name: '已完成置底，最近优先' })).toBeInTheDocument()
+		expect(Object.entries(localStorage)).toEqual(stored)
+	})
+
 	it('每个审查单元只属于一个批次，总账条目无需进入批次', () => {
 		const entries = UI_LAB_REVIEW_BATCHES.flatMap((batch) => batch.entries)
 		const catalogIds = UI_LAB_CATALOG.map((entry) => entry.id)

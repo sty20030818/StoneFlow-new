@@ -33,6 +33,9 @@ export type {
 	RunTaskQueryResult,
 	RunTaskViewInput,
 	RunTaskViewResult,
+	TaskWindowOrder,
+	TaskQueryWindow,
+	TaskQueryDefinition,
 	TaskViewBaseKey,
 	TaskViewContext,
 	UpdateViewInput,
@@ -54,3 +57,9 @@ export {
 	FILTER_OP_VALUES,
 	FILTER_PROJECT_NONE_VALUE,
 } from './filterQuery'
+
+export {
+	TASK_WINDOW_ORDER_BY_VALUES,
+	TASK_WINDOW_ORDER_DIRECTION_VALUES,
+	TASK_WINDOW_COMPLETED_ORDER_VALUES,
+} from './view'

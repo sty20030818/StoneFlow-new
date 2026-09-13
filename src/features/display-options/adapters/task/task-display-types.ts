@@ -33,13 +33,7 @@ export type TaskDisplayApplyResult = {
 	boardPatch: TaskDisplayBoardPatch
 }
 
-export type TaskDisplayComparatorContext = {
-	pageKey: TaskDisplayPageKey
-}
-
 export type TaskDateBucketKey = 'overdue' | 'today' | 'tomorrow' | 'this-week' | 'later' | 'none'
-
-export type TaskDisplayStatusRank = Record<TaskStatus, number>
 
 export type TaskGroupDefinition = {
 	key: string

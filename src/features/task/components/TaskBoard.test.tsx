@@ -223,8 +223,9 @@ describe('TaskBoard', () => {
 		expect(onRetry).toHaveBeenCalledOnce()
 	})
 
-	it('续页失败时停止自动加载，只允许用户原位重试', () => {
+	it('续页失败时停止自动加载，支持原位重试与从首屏恢复', async () => {
 		const onFetchNextPage = vi.fn(async () => undefined)
+		const restartFromFirstPage = vi.fn(async () => undefined)
 		const { container } = renderTaskBoard(
 			<TaskBoardHarness
 				onEmptyAction={() => undefined}
@@ -237,6 +238,7 @@ describe('TaskBoard', () => {
 					state: 'error',
 					error: '加载下一页失败',
 					fetchNextPage: onFetchNextPage,
+					restartFromFirstPage,
 				}}
 				pendingTaskId={null}
 				status='ready'
@@ -250,7 +252,9 @@ describe('TaskBoard', () => {
 		)
 		expect(screen.queryByRole('alert')).not.toBeInTheDocument()
 		fireEvent.click(screen.getByRole('button', { name: '重试' }))
-		return waitFor(() => expect(onFetchNextPage).toHaveBeenCalledOnce())
+		await waitFor(() => expect(onFetchNextPage).toHaveBeenCalledOnce())
+		fireEvent.click(screen.getByRole('button', { name: '从头加载' }))
+		await waitFor(() => expect(restartFromFirstPage).toHaveBeenCalledOnce())
 	})
 
 	it('sentinel 进入只发起一个续页请求，in-flight 与 append 不会连续追页', async () => {

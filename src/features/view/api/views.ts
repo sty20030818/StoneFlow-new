@@ -60,6 +60,8 @@ export async function runTaskView(input: RunTaskViewInput): Promise<RunTaskViewR
 			scope: toScopePayload(input.scope),
 			viewId: input.viewId,
 			filters: input.filters ? toFiltersPayload(input.filters) : undefined,
+			order: input.order,
+			dateBasis: input.dateBasis,
 			cursor: input.cursor ?? null,
 		},
 	})

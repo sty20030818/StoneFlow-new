@@ -77,7 +77,10 @@ const SOURCES = [
 		baseViewKey: 'all',
 	},
 ] satisfies Array<
-	{ name: string; path: string; defaultPath: string } & Omit<RunTaskQueryInput, 'filters'>
+	{ name: string; path: string; defaultPath: string } & Omit<
+		RunTaskQueryInput,
+		'filters' | 'order' | 'dateBasis'
+	>
 >
 
 const TASKS: TaskListItem[] = ['project-1', null].flatMap((projectId) =>
@@ -421,7 +424,12 @@ function installBackend() {
 					const view = backend.records.find((record) => record.id === run.viewId)!
 					return {
 						view: structuredClone(view),
-						...queryTasks({ ...view, filters: run.filters ?? view.filters }),
+						...queryTasks({
+							...view,
+							filters: run.filters ?? view.filters,
+							order: run.order,
+							dateBasis: run.dateBasis,
+						}),
 					}
 				}
 				case 'create_view': {

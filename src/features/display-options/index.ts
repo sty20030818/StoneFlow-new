@@ -16,7 +16,11 @@ export type {
 	TaskDisplayPropertyKey,
 } from './core'
 
-export { createTaskDisplayViewPageKey, getTaskDisplayTimestampProperty } from './core'
+export {
+	createTaskDisplayViewPageKey,
+	getTaskDisplayTimestampProperty,
+	normalizeTaskWindowOrder,
+} from './core'
 
 // ── Model hooks ─────────────────────────────────────────────────────────────
 
@@ -40,3 +44,6 @@ export { DisplayOptionsButton } from './components'
 export { registerDisplayCommands } from './commands/registerDisplayCommands'
 
 export { emitDisplayUiEvent, subscribeDisplayUiEvent } from './model/displayUiEvents'
+
+/** 受控显示面板浮层；UI Lab 以本地回调检查生产交互。 */
+export { DisplayOptionsPopover } from './components/DisplayOptionsPopover'
