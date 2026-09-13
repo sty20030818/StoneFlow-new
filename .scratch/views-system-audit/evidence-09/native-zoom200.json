@@ -1,0 +1,184 @@
+{
+	"recordedDate": "2026-09-14",
+	"scope": "隔离 Tauri 主窗口在真实 WebView 页面缩放 2.0 下的代表性布局与键盘恢复验收。",
+	"build": {
+		"testOnly": true,
+		"purpose": "隔离 Debug 构建以主窗口 set_zoom(2.0) 验收现有前端 200% 页面布局；未引入产品缩放功能。",
+		"startedAt": "2026-09-13T16:52:07.162763+00:00",
+		"sourceCommit": "51da806317dbe32c017bfa13749e65db8b9125aa",
+		"repositoryHeadAtBuild": "11c5aa42462012daaaf8c66c277e7decad9403e9",
+		"productSourceUnchangedSinceSourceCommit": true,
+		"cleanroom": "/private/tmp/stoneflow-views-acceptance-fc8a9de6",
+		"baselineMainMatchesRepository": true,
+		"frontendMatchesRepository": true,
+		"frontendTrackedNonMarkdownFileCount": 877,
+		"frontendSourceSha256": "bef2b8ff0e3de11f583b89f3ed097ad0aab2514fd7a65cf359c97971ac1cb376",
+		"existingDocumentationDifferences": ["src/features/task/ARCHITECTURE.md"],
+		"sourcePatch": "--- repository/src-tauri/crates/runtime/src/window/main.rs\n+++ cleanroom/src-tauri/crates/runtime/src/window/main.rs\n@@ -62,6 +62,7 @@\n     let window_builder = window_builder.decorations(false);\n \n     let window = window_builder.build()?;\n+    window.set_zoom(2.0)?;\n \n     // 所有平台都先居中；Windows 有状态时再覆盖为上次的位置。\n     if let Err(error) = window.center() {\n",
+		"mainBeforeSha256": "b7c31828b6bd197960ab5b059dbb55400e21f32fdb82fae0ee654b461f6fe5e9",
+		"mainAfterSha256": "9a9f163485d3f920fdfa6d2336403e8c24f1a7c6c74b880fba7d052144b59635",
+		"acceptanceConfig": {
+			"productName": "StoneFlow Views Acceptance",
+			"identifier": "com.stonefish.stoneflow.views-acceptance",
+			"bundle": {
+				"createUpdaterArtifacts": false
+			}
+		},
+		"acceptanceConfigSha256": "796343b2ba02af836cb0f4bf0a1c62a7f80972f9a5c1204b68ebf5177afd922a",
+		"baseTauriConfigSha256": "ba31e5e4524cb887f5fc5eee54daf0059e724ca9fa87b77071e1d7d0197f9983",
+		"tauriVersion": "2.11.5",
+		"zoomScaleFactor": 2.0,
+		"command": [
+			"bun",
+			"run",
+			"tauri",
+			"build",
+			"--debug",
+			"--bundles",
+			"app",
+			"--no-sign",
+			"--config",
+			"/private/tmp/stoneflow-views-acceptance-fc8a9de6/acceptance-config.json"
+		],
+		"environmentKeys": [
+			"CARGO_TARGET_DIR",
+			"HOME",
+			"LANG",
+			"LC_ALL",
+			"PATH",
+			"TMPDIR"
+		],
+		"envLocalAbsent": true,
+		"launched": false,
+		"databaseAccessed": false,
+		"backup100PercentBundle": "/private/tmp/stoneflow-ticket09-native-100pct/StoneFlow Views Acceptance.app",
+		"backupExecutableSha256": "929b87f8e345362adfb3f289a7d4dd6fd3651ddcd234dd620568674b6a59a648",
+		"artifact": "/Users/stonefish/Desktop/StoneFlow/src-tauri/target/debug/bundle/macos/StoneFlow Views Acceptance.app",
+		"log": "/private/tmp/stoneflow-ticket09-native-zoom200-build.log",
+		"status": "built",
+		"finishedAt": "2026-09-13T16:52:22.541200+00:00",
+		"exitCode": 0,
+		"repositoryMainUnchanged": true,
+		"builtIdentifier": "com.stonefish.stoneflow.views-acceptance",
+		"artifactExecutableSha256": "5f0220f3a5a67bef65374f9e94740473ce47f73f12d615102731b29e5fbe5ab3"
+	},
+	"runtime": {
+		"launched": true,
+		"pid": 49333,
+		"urlScheme": "tauri://localhost",
+		"identifier": "com.stonefish.stoneflow.views-acceptance",
+		"syncRemote": "未配置",
+		"productionDataAccessed": false,
+		"appExitedAfterProbe": true
+	},
+	"screenshots": {
+		"editor": {
+			"path": "zoom200-editor.jpg",
+			"sha256": "029067f73f1ed6507d60b8aedbc386f43a462ab062a6c01fe0347f11e434df82",
+			"imagePixels": [1112, 768]
+		},
+		"error": {
+			"path": "zoom200-error.jpg",
+			"sha256": "2f2b8e92d142f9e3520c2eb502d596755442bee17ffba1f452a375581a2dd835",
+			"imagePixels": [1112, 768]
+		}
+	},
+	"observations": [
+		"打开长名称 Saved View 的编辑弹窗，标题、说明、名称、关闭、取消及保存均在窗口内可见。",
+		"通过键盘选中名称并清空后，保存按钮禁用；Escape 取消，没有保存空名称，焦点回到视图操作。没有据此声称错误朗读通过。",
+		"切换所有空间，打开坏 scope 视图；关闭导航抽屉后，不可用标题、错误详情、返回及重试在 200% 下完整可见。",
+		"视图操作菜单 Escape 关闭后，Tab 到返回，Tab 到重试；Return 激活重试，出现加载指示，完成后保留明确错误与重试焦点。"
+	],
+	"keyboard": {
+		"returnFocus": "Window: \"StoneFlow\", App: StoneFlow Views Acceptance.\n0 standard window StoneFlow, Secondary Actions: Raise\n\t1 scroll area\n\t\t2 HTML content Description: stoneflow, URL: tauri://localhost/#/all/views/09000000-0000-4000-8004-000000000005\n\t\t\t3 container\n\t\t\t\t4 button 展开侧边栏\n\t\t\t\t5 search text field (settable) 全局搜索, Placeholder: 搜索任务、项目...\n\t\t\t\t\t6 text 搜索任务、项目...\n\t\t\t\t7 pop up button 应用菜单\n\t\t\t8 container\n\t\t\t\t9 container 当前位置\n\t\t\t\t\t10 link 视图, Value: tauri://localhost/#/all/views\n\t\t\t\t\t11 text 09｜损坏 scope 待恢复\n\t\t\t\t12 pop up button 视图操作\n\t\t\t\t13 heading 保存视图暂不可用, Value: 3\n\t\t\t\t\t14 text 保存视图暂不可用\n\t\t\t\t15 text 验证失败: View 定义无效\n\t\t\t\t16 button 返回保存视图\n\t\t\t\t17 button 重试读取\n\t\t\t18 container\n\t\t\t\t19 container 同步未配置远端，请到设置中配置\n\t\t\t\t\t20 text 未配置\n\t\t\t\t\t21 button (disabled) 立即同步\n\t\t\t\t22 container 版本 0.2.0\n\t\t\t\t\t23 text v0.2.0\n\t\t\t24 text 视图操作\n\t25 close button\n\t26 full screen button Help: this button also has an action to zoom the window, Secondary Actions: zoom the window\n\t27 minimize button\n28 menu bar\n\t29 StoneFlow Views Acceptance\n\t30 File\n\t31 Edit\n\t32 View\n\t33 Window\n\t34 Help\n\nThe focused UI element is 16 button 返回保存视图",
+		"retryFocus": "Window: \"StoneFlow\", App: StoneFlow Views Acceptance.\n0 standard window StoneFlow, Secondary Actions: Raise\n\t1 scroll area\n\t\t2 HTML content Description: stoneflow, URL: tauri://localhost/#/all/views/09000000-0000-4000-8004-000000000005\n\t\t\t3 container\n\t\t\t\t4 button 展开侧边栏\n\t\t\t\t5 search text field (settable) 全局搜索, Placeholder: 搜索任务、项目...\n\t\t\t\t\t6 text 搜索任务、项目...\n\t\t\t\t7 pop up button 应用菜单\n\t\t\t8 container\n\t\t\t\t9 container 当前位置\n\t\t\t\t\t10 link 视图, Value: tauri://localhost/#/all/views\n\t\t\t\t\t11 text 09｜损坏 scope 待恢复\n\t\t\t\t12 pop up button 视图操作\n\t\t\t\t13 heading 保存视图暂不可用, Value: 3\n\t\t\t\t\t14 text 保存视图暂不可用\n\t\t\t\t15 text 验证失败: View 定义无效\n\t\t\t\t16 button 返回保存视图\n\t\t\t\t17 button 重试读取\n\t\t\t18 container\n\t\t\t\t19 container 同步未配置远端，请到设置中配置\n\t\t\t\t\t20 text 未配置\n\t\t\t\t\t21 button (disabled) 立即同步\n\t\t\t\t22 container 版本 0.2.0\n\t\t\t\t\t23 text v0.2.0\n\t\t\t24 text 视图操作\n\t25 close button\n\t26 full screen button Help: this button also has an action to zoom the window, Secondary Actions: zoom the window\n\t27 minimize button\n28 menu bar\n\t29 StoneFlow Views Acceptance\n\t30 File\n\t31 Edit\n\t32 View\n\t33 Window\n\t34 Help\n\nThe focused UI element is 17 button 重试读取",
+		"retrySettled": "Window: \"StoneFlow\", App: StoneFlow Views Acceptance.\n0 standard window StoneFlow, Secondary Actions: Raise\n\t1 scroll area\n\t\t2 HTML content Description: stoneflow, URL: tauri://localhost/#/all/views/09000000-0000-4000-8004-000000000005\n\t\t\t3 container\n\t\t\t\t4 button 展开侧边栏\n\t\t\t\t5 search text field (settable) 全局搜索, Placeholder: 搜索任务、项目...\n\t\t\t\t\t6 text 搜索任务、项目...\n\t\t\t\t7 pop up button 应用菜单\n\t\t\t8 container\n\t\t\t\t9 container 当前位置\n\t\t\t\t\t10 link 视图, Value: tauri://localhost/#/all/views\n\t\t\t\t\t11 text 09｜损坏 scope 待恢复\n\t\t\t\t12 pop up button 视图操作\n\t\t\t\t13 heading 保存视图暂不可用, Value: 3\n\t\t\t\t\t14 text 保存视图暂不可用\n\t\t\t\t15 text 验证失败: View 定义无效\n\t\t\t\t16 button 返回保存视图\n\t\t\t\t17 button 重试读取\n\t\t\t18 container\n\t\t\t\t19 container 同步未配置远端，请到设置中配置\n\t\t\t\t\t20 text 未配置\n\t\t\t\t\t21 button (disabled) 立即同步\n\t\t\t\t22 container 版本 0.2.0\n\t\t\t\t\t23 text v0.2.0\n\t\t\t24 text 视图操作\n\t25 close button\n\t26 full screen button Help: this button also has an action to zoom the window, Secondary Actions: zoom the window\n\t27 minimize button\n28 menu bar\n\t29 StoneFlow Views Acceptance\n\t30 File\n\t31 Edit\n\t32 View\n\t33 Window\n\t34 Help\n\nThe focused UI element is 17 button 重试读取"
+	},
+	"voiceOver": {
+		"status": "awaiting-human-confirmation",
+		"initialState": "off",
+		"enabledDuringProbe": true,
+		"processObserved": 47949,
+		"captionPanelWasAlreadyEnabled": true,
+		"readWindowShortcut": "Control+Option+Shift+W",
+		"shortcutSource": "https://support.apple.com/en-ie/guide/voiceover/cpvokys03/mac",
+		"captureLimitation": "CUA 两次选择 VoiceOver 应用超时，现有工具没有可读取其字幕或音频的入口；不能从进程或产品 AX 推断实际朗读。",
+		"humanQuestionSent": true,
+		"restoredState": "off",
+		"restorationEvidence": "51 转换 若要开关“旁白”，请在按住Command键的同时快速按下触控ID三次。, Value: off, ID: AX_VOICEOVER_ENABLED"
+	},
+	"checks": {
+		"realWebViewZoom200": true,
+		"productionMainUnchanged": true,
+		"frontendMatchesRepository": true,
+		"longNameEditorControlsVisible": true,
+		"errorAndRecoveryControlsVisible": true,
+		"keyboardRetryMaintainsErrorAndFocus": true,
+		"voiceOverSettingRestored": true
+	},
+	"limits": [
+		"仅隔离构建增加 window.set_zoom(2.0) 一行用于验收；没有增加产品缩放功能。",
+		"这两张截图和键盘流程证明代表性放大布局，不代表所有屏幕、辅助技术或真实设备同步。",
+		"VoiceOver 实际错误朗读仍待人工确认。"
+	],
+	"restoration": {
+		"restoredAt": "2026-09-13T17:03:49.120170+00:00",
+		"testOnly": true,
+		"sourceManifest": "/private/tmp/stoneflow-ticket09-native-zoom200-manifest.json",
+		"processPrecondition": {
+			"exitedPid": 49333,
+			"verification": "根 agent 已通过退出及 ps 确认；本次没有启动进程。"
+		},
+		"saved200Percent": {
+			"path": "/private/tmp/stoneflow-ticket09-native-zoom200/StoneFlow Views Acceptance.app",
+			"identifier": "com.stonefish.stoneflow.views-acceptance",
+			"executableSha256": "5f0220f3a5a67bef65374f9e94740473ce47f73f12d615102731b29e5fbe5ab3",
+			"contentTreeSha256": "a4cf9ec293e2568e43eb76dbf5bd61773c0719d397e602fb6239c7b72ae3e7a9",
+			"fileCount": 3
+		},
+		"restored100Percent": {
+			"path": "/Users/stonefish/Desktop/StoneFlow/src-tauri/target/debug/bundle/macos/StoneFlow Views Acceptance.app",
+			"identifier": "com.stonefish.stoneflow.views-acceptance",
+			"executableSha256": "929b87f8e345362adfb3f289a7d4dd6fd3651ddcd234dd620568674b6a59a648",
+			"contentTreeSha256": "3603c617c6949136aa8a8b5358dfec3bd5c7b65d55ae50913320fb5cfab9b748",
+			"fileCount": 3
+		},
+		"retained100PercentBackup": {
+			"path": "/private/tmp/stoneflow-ticket09-native-100pct/StoneFlow Views Acceptance.app",
+			"identifier": "com.stonefish.stoneflow.views-acceptance",
+			"executableSha256": "929b87f8e345362adfb3f289a7d4dd6fd3651ddcd234dd620568674b6a59a648",
+			"contentTreeSha256": "3603c617c6949136aa8a8b5358dfec3bd5c7b65d55ae50913320fb5cfab9b748",
+			"fileCount": 3
+		},
+		"cleanroomSource": {
+			"path": "/private/tmp/stoneflow-views-acceptance-fc8a9de6/src-tauri/crates/runtime/src/window/main.rs",
+			"beforeSha256": "9a9f163485d3f920fdfa6d2336403e8c24f1a7c6c74b880fba7d052144b59635",
+			"afterSha256": "b7c31828b6bd197960ab5b059dbb55400e21f32fdb82fae0ee654b461f6fe5e9",
+			"removedExactlyOneLine": "    window.set_zoom(2.0)?;",
+			"matchesRepositoryMain": true,
+			"repositoryMainUnchanged": true
+		},
+		"checks": {
+			"bothBundleIdentifiersExact": true,
+			"bothExecutablesMatchRecordedHashes": true,
+			"saved200ContentTreeUnchanged": true,
+			"restored100ContentTreeMatchesBackup": true,
+			"temporaryRestoreStageAbsent": true,
+			"singleZoomTestLineRemoved": true,
+			"cleanroomMainMatchesRepository": true
+		},
+		"appLaunched": false,
+		"databaseAccessed": false,
+		"productionAppAccessed": false
+	},
+	"humanVerificationHandoff": {
+		"identifier": "com.stonefish.stoneflow.views-acceptance",
+		"zoomScaleFactor": 1.0,
+		"pid": 56531,
+		"url": "tauri://localhost/#/all/views/09000000-0000-4000-8004-000000000005",
+		"visibleError": "验证失败: View 定义无效",
+		"syncRemote": "未配置",
+		"voiceOver": "已恢复 off；人工确认时自行启用",
+		"launch": "白名单环境启动恢复后的 100% 隔离包；未写入用户数据。"
+	}
+}

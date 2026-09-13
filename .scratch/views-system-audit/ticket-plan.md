@@ -32,7 +32,7 @@
 
 本次基线为 ef38c0b5，此前 9 个界面文件已由用户提交，当前 index 为空；后续 Agent 改动保持未暂存。
 
-01 当前为 `implemented-awaiting-acceptance`，详见 [实施与验证记录](./01-verification.md)。当前版本实现及自动检查已通过，原生验收和旧版兼容/历史远端恢复决策仍待闭合；02 当前为 `implemented-awaiting-acceptance`，详见 [02 实施与验证记录](./02-verification.md)；03 当前为 `implemented-awaiting-acceptance`，见 [03 实施与验证记录](./03-verification.md)；04 当前为 `implemented-awaiting-acceptance`，见 [04 验证记录](./04-verification.md)；05 当前为 `implemented-awaiting-acceptance`，见 [05 验证记录](./05-verification.md)；06 当前为 `implemented-awaiting-acceptance`，见 [06 验证记录](./06-verification.md)；07 当前为 `implemented-awaiting-acceptance`，见 [07 验证记录](./07-verification.md)；08 当前为 `implemented-awaiting-acceptance`，见 [08 验证记录](./08-verification.md)；09 当前为 `implemented-awaiting-acceptance`。
+01 当前为 `implemented-awaiting-acceptance`，详见 [实施与验证记录](./01-verification.md)。当前版本实现及规定的 SQLite／协议往返已通过；真实设备未验、旧版混写未承诺支持及历史云端不自动修复为验证与发布边界，不另加为本包完成前提。02 当前为 `implemented-awaiting-acceptance`，详见 [02 实施与验证记录](./02-verification.md)；03 当前为 `implemented-awaiting-acceptance`，见 [03 实施与验证记录](./03-verification.md)；04 当前为 `implemented-awaiting-acceptance`，见 [04 验证记录](./04-verification.md)；05 当前为 `implemented-awaiting-acceptance`，见 [05 验证记录](./05-verification.md)；06 当前为 `implemented-awaiting-acceptance`，见 [06 验证记录](./06-verification.md)；07 当前为 `implemented-awaiting-acceptance`，见 [07 验证记录](./07-verification.md)；08 当前为 `implemented-awaiting-acceptance`，见 [08 验证记录](./08-verification.md)；09 当前为 `implemented-awaiting-acceptance`。
 
 2026-09-13：用户确认提交当前结果并继续下一票。01 与既有规格/tickets 已提交为 `70bbca2d`；02 的后续改动保持未暂存，验收记录独立追加。
 
@@ -55,4 +55,4 @@
 
 2026-09-13：08 已提交为 `fc8a9de6`，提交后工作区干净；09 开始整体验收与冗余清理。
 
-2026-09-14：09 已补齐跨票回归、消费者清理、三类来源的原生保存／切换、Saved 编辑与 337 项分页验收；发现并修复 sticky 错标题，新构建已回验。实现与验证记录随本票提交；剩余兼容／历史数据决策、实际设备同步及读屏／缩放验收见 [09 记录](./09-verification.md)，未提前归档。
+2026-09-14：09 已补齐跨票回归、消费者清理、三类来源的原生保存／切换、Saved 编辑与 337 项分页验收；发现并修复 sticky 错标题，新构建已回验。后续真实 200% 缩放亦已完成，当前仅实际错误朗读待确认，见 [09 记录](./09-verification.md)。真实双设备同步、0.2.0 混写支持决策及历史云端自动修复策略不是批准规格的包完成前提，按实际限制单独记录；状态不变，未提前归档。

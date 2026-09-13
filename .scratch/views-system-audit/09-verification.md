@@ -1,16 +1,17 @@
 # 09 验证记录
 
-更新日期：2026-09-14。状态：`implemented-awaiting-acceptance`。对应 [09 ticket](./issues/09-views-system-acceptance.md)、[父规格](./spec.md)与 [47 条故事覆盖表](./09-coverage.md)。实现与证据随本票提交；未覆盖的验收和历史策略继续保留，未将整个工作包结案归档。
+更新日期：2026-09-14。状态：`implemented-awaiting-acceptance`。对应 [09 ticket](./issues/09-views-system-acceptance.md)、[父规格](./spec.md)与 [47 条故事覆盖表](./09-coverage.md)。实现与证据随本票提交；当前仅余实际错误朗读待确认。真实设备未验、旧版混写未承诺支持及历史云端不自动修复另记为验证与发布边界，不作为额外完成前提；未将整个工作包结案归档。
 
 ## 当前结论与版本边界
 
-隔离原生主窗口已证明项目、独立事项、所有任务保存后能恢复默认查询；Saved View 的另存、覆盖、恢复和空 Draft 也已操作。项目与 Saved 的完整 AX 窗口序列经连续拼接、只读库 ID 映射，确认同一查询下 337 个唯一任务及完整顺序一致；项目已选数量保持 38。尾页 sticky 已修复并原生复测通过，窄窗编辑、键盘保存／取消／重试及焦点恢复已有具体记录。VoiceOver、200% 缩放、真实设备同步及历史策略仍未闭合。
+隔离原生主窗口已证明项目、独立事项、所有任务保存后能恢复默认查询；Saved View 的另存、覆盖、恢复和空 Draft 也已操作。项目与 Saved 的完整 AX 窗口序列经连续拼接、只读库 ID 映射，确认同一查询下 337 个唯一任务及完整顺序一致；项目已选数量保持 38。尾页 sticky 已修复并原生复测通过，窄窗编辑、键盘保存／取消／重试及焦点恢复已有具体记录。真实 WebView 200% 缩放的代表性布局与重试已验，实际 VoiceOver 错误朗读仍待确认。
 
 | 层面 | 本轮证据 | 能证明的范围 |
 | --- | --- | --- |
 | 构建与运行 | 首轮为 `fc8a9de6`；最终 `StoneFlow Views Acceptance.app` 加入 09 当前源码，[manifest](./evidence-09/build-source.json)的 8 个改动路径已与工作树核对一致；[新构建日志](/tmp/stoneflow-ticket09-native-fixed-build.log)记录 beforeBuild 通过、Rust 构建 49.22 秒、成功生成 bundle | 新构建包含 sticky 修复；原生 UI 使用 `tauri://localhost`。界面仍显示版本 0.2.0，版本字符串不代替源码来源 |
 | 原生交互 | 仓内保存[项目结果](./evidence-09/project-all.jpg)、[分组计数](./evidence-09/group-counts.jpg)、[sticky 修复前](./evidence-09/sticky-before.jpg)／[修复后](./evidence-09/sticky-after.jpg)、[窄窗弹窗](./evidence-09/narrow-editor.jpg)五张实际 JPEG；临时 AX 文本编号 00–96 补充过程 | 实际 Tauri 主窗口的操作、可见成员、计数、URL、选中项和部分焦点；不以文件编号推断每次操作成功 |
 | 原生增量验证 | 基于 `51da8063` 的[顺序证据](./evidence-09/native-order.json)与[键盘证据](./evidence-09/native-keyboard.json)，包含原生查询选项、逐窗口任务、前后 AX 和独立只读映射 | 证明这一组查询设置下两入口的完整实际顺序，以及具体键盘操作；不把 AX 比较称为人眼逐 ID 验收，也不替代读屏与真实设备同步 |
+| 真实 200% 缩放 | [隔离构建与恢复记录](./evidence-09/native-zoom200.json)、[长名称编辑](./evidence-09/zoom200-editor.jpg)和[错误恢复界面](./evidence-09/zoom200-error.jpg)两张 JPEG；只在隔离构建添加 `window.set_zoom(2.0)` 测试行，前端与 `51da8063` 产品源码一致 | 实际 WebView 2.0 缩放下代表性控件可见、键盘重试可达；不是缩小窗口模拟，也没有新增产品缩放功能或代签读屏 |
 | 本地持久化 | [首轮证明](./evidence-09/database-save.json)的 31 项检查与[最终证明](./evidence-09/database-edit.json)的 22 项检查均为 true | 对独立测试库已有 View／Outbox 的只读核验；不是额外执行一次 CRUD，也不证明远端上传或其他设备接收 |
 | 自动回归 | 09 新增真实菜单保存两条、原始非法 filters 恢复一条、sticky 两条，并运行最终根检查 | 真实组件／Router／API adapter 与测试 IPC、临时 SQLite／协议夹具各自的验证范围，不能替代原生或跨设备 |
 
@@ -38,10 +39,13 @@
 | 原生窄窗、长名称与编辑键盘 | 系统 Left 窗口操作后截图为 736×863；长名称视图仍显示正确的 1 个任务，编辑弹窗全部控件可见。Tab 明确到达关闭、取消、保存按钮；Escape 关闭后焦点回到“视图操作” | `87-native-narrow.txt`–`90-native-narrow-tab.txt`、`93-native-narrow-cancel-focus.txt`–`95-native-narrow-cancel-return.txt`；[窄窗编辑截图](./evidence-09/narrow-editor.jpg)。92 的 AX 未明确标记名称框焦点，不将其列为已确认 |
 | 原生完整成员与顺序比较 | 两入口均为同 Space／项目、all 基线、空附加条件，使用优先级主组、状态子组、优先级降序、recency 与显示空组开启。Project 29 个窗口、最小重叠 7；Saved 42 个窗口、最小重叠 6。拼接后各 337 个唯一名称映射为 337 个唯一实际 ID，完整 ID 顺序相同，恰好覆盖目标项目全部可见任务 | [native-order.json](./evidence-09/native-order.json)。从首行开始用 Down 前进，每 12 步读完整 AX；Saved 已加载 150 的尾行用 Page Down 触达分页入口，继续到 300、337。独立复核重算窗口拼接、来源 URL 与只读库映射；显示属性开关差异不影响成员和排序 |
 | 原生键盘保存与重试 | 编辑原项目 View：Tab 经关闭／名称／取消到保存，粘贴完整名称后 Return 保存；新名称为“09｜项目待执行｜键盘保存验收”，同 ID 仍显示两个待执行任务，焦点回视图操作。坏 scope 详情通过 Escape、Tab、Return 激活重试，等待与完成后均保留重试按钮焦点，定义仍明确不可用 | [native-keyboard.json](./evidence-09/native-keyboard.json)保留保存按钮焦点、保存后结果，以及重试前／中／后的 AX；证明实际键盘重读，不声称坏定义恢复成功或 VoiceOver 朗读通过 |
+| 真实 200% 编辑与错误恢复 | 长名称编辑的标题、名称、关闭／取消／保存均在窗口内可见；清空名称后保存禁用，Escape 取消并归焦。坏 scope 标题、详情、返回／重试均完整可见；Tab 到返回再到重试，Return 激活加载，完成后保留错误及重试焦点 | [native-zoom200.json](./evidence-09/native-zoom200.json)、[编辑截图](./evidence-09/zoom200-editor.jpg)、[错误截图](./evidence-09/zoom200-error.jpg)。同步未配置远端，未访问正式数据；不声称坏定义恢复成功或所有屏幕组合通过 |
 
 窄窗测试结束后已通过 Window → Return to Previous Size 恢复窗口尺寸，过程补充记录为 `96-native-window-restored.txt`。
 
 后续完整顺序与键盘增量验收也已结束，恢复普通窗口、测试 Space1 与有效视图；没有继续操作原生数据。
+
+随后 200% 隔离验收已结束并退出应用。测试包保存在临时目录，原构建目标恢复为备份的 100% 包，隔离源码唯一 `set_zoom(2.0)` 测试行已移除；[恢复记录](./evidence-09/native-zoom200.json)包含独立核验的 bundle 标识、二进制与源码 hash。VoiceOver 开关与进程曾成功启用，但 CUA 无法取得字幕或音频；已询问用户实际听音并恢复系统开关 OFF，尚不声明朗读通过。
 
 原生完整顺序证据来自键盘操作、连续重叠的完整 AX 窗口序列与隔离库只读 ID 映射，不是仅看计数或抽查可见行。它证明记录中的这一组设置；其他排序组合仍由 [05](./05-verification.md)–[08](./08-verification.md) 的 SQLite 与真实页面矩阵证明，不将一次原生比较扩张为全部组合通过。
 
@@ -49,7 +53,7 @@
 
 - **sticky 尾页标题错误已修复并复测。** [修复前](./evidence-09/sticky-before.jpg)在已取消尾页仍显示“等待中 22”；[useTaskBoardSticky](../../src/features/task/hooks/useTaskBoardSticky.ts)现在以同一个 reconcile 在每次 layout commit 校正标题，同组滚动继续通过 RAF 更新相邻标题推挤。两条[真实 virtualizer 回归](../../src/features/task/hooks/useTaskBoardSticky.test.tsx)先红后绿，包含冻结 RAF 场景；新构建[相同尾页](./evidence-09/sticky-after.jpg)标题已正确。测试 fixture 直接读取未 memo 的真实 API，仅该行有带解释的 `react/incompatible-library` 免除；没有新增依赖。
 - **clean Filter 菜单不能仅凭 AX 下结论。** 打开／关闭后 URL、结果未变，但当前 CUA 对菜单的 AX 读取未暴露完整条件 header；不能据此声称 header 缺失或读屏通过。已有 [04](./04-verification.md)的组件／浏览器完整条件证据继续有效。
-- **VoiceOver 与 200% 缩放待验。** 当前 CUA 可见的原生 View 菜单只有 Toggle Full Screen；全屏、736×863 窄窗或已有 UI Lab 检查不能替代真实 200% 缩放。键盘保存／取消／重试、归焦和列表导航按上述具体记录计入。
+- **VoiceOver 实际错误朗读待确认。** 最初 CUA 可见的 View 菜单只有 Toggle Full Screen，故没有将全屏或窄窗当作缩放；随后隔离 WebView `set_zoom(2.0)` 的实际 200% 证据已补齐。产品 AX、VoiceOver 进程与系统开关仍不能证明实际读出。
 - `57-saved-scroll-page-two.txt` 与 `58-saved-scroll-second-page.txt` 的滚动尝试没有成功，不作为续页证据；采用 64／65 的明确计数变化。`63-saved-page-two-loaded.png` 只有 140×172 的 Stage Manager 缩略图，不用于布局、清晰度或全窗口判断。
 - 依[父规格](./spec.md)的页面流程接缝，创建／覆盖／删除失败、导航失败和迟到请求由 01／02 的真实页面故障注入回归证明；不额外要求在原生制造同一故障。原生坏定义“重试仍不可用”只证明该键盘读取交互，不能改写为故障恢复成功；错误朗读仍未验。
 
@@ -70,13 +74,18 @@ sticky 修复及测试类型修正后，主任务实际运行并复核：
 
 以上自动结果包含 sticky 最终修复与测试，原生修复证据来自同一源码 manifest 的新构建；以后若继续修改，再按影响补充检查。
 
-本次增量只更新验收记录与两份原生证据，未修改生产代码。主任务重算窗口拼接、337 个唯一 ID 映射、两入口顺序及键盘焦点断言均通过；根 `format:check` 为 953 文件通过，`git diff --check` 通过。未重复运行上表已通过的代码测试。
+提交 `11c5aa42` 的增量只更新验收记录与两份原生证据，未修改生产代码。主任务重算窗口拼接、337 个唯一 ID 映射、两入口顺序及键盘焦点断言均通过；根 `format:check` 为 953 文件通过，`git diff --check` 通过。未重复运行上表已通过的代码测试。
 
-## 仍需闭合
+本轮补充 200% 验收与范围更正同样未修改产品源码。独立复核两张截图、7 项探针断言、7 项恢复断言、截图 hash 和 167 个本地链接均通过；根 `format:check` 为 954 文件通过，`git diff --check` 通过。100% 隔离窗口已重新停在坏 scope 错误页供人工听音，VoiceOver 保持原始 OFF 状态；实际朗读仍未确认。
 
-1. VoiceOver 与真实 200% 缩放；其余现场项目按[覆盖表](./09-coverage.md)核对，不把已有页面故障注入另扩为原生故障门槛。
-2. 实际远端与真实设备同步。本轮本地协议记录数为 0；已读取的 delete 证据是待同步 Outbox tombstone，不是远端或其他设备的删除确认。
-3. **旧版混用策略待用户答复**：是否所有写入设备统一升级，或需要支持 0.2.0 与新版混用。
-4. **历史远端完整定义来源与恢复策略待用户答复**：缺少完整记录时现行行为是明确失败、不推进 cursor；本机 hydrate 不会凭空恢复远端丢失字段。新版同步夹具通过不代表历史自动修复。
+## 本包剩余验收
 
-后两项沿用 [01](./01-verification.md)与 [03](./03-verification.md)的已有边界。本记录不授权额外远端写入或扩张兼容范围。09 实现与证据随本票提交，状态保持 `implemented-awaiting-acceptance`，整个工作包尚未结案归档。
+实际 VoiceOver 错误朗读仍待用户确认；故事 45／父规格第 186 行与 09 键盘／视觉复合项、整包完成项保持未勾选。其余功能、架构、原始现场及 200% 缩放已按[覆盖表](./09-coverage.md)核对，不增加原生故障注入或产品不支持的项目移动操作。
+
+## 发布与兼容边界
+
+- **实际远端与真实设备同步未验证。** 本轮本地协议记录数为 0；delete 证据是待同步 Outbox tombstone，不是远端或其他设备的删除确认。V01 指定的 SQLite／Outbox／真实投影往返已通过；后续发布若开展双设备验证，应另记实际版本与接收结果。
+- **本包未承诺 0.2.0 与新版混写支持。** 旧版 generation 行为的风险保留，若要支持混写须另行确认迁移与冲突恢复范围；不把这一后续决定挂作当前包完成前提。
+- **历史云端缺少完整定义不自动修复。** 现行行为是明确失败、不推进 cursor；本机 hydrate 不会凭空恢复远端丢失字段。新版同步夹具通过不代表历史自动修复，额外远端恢复须另行授权。
+
+以上沿用 [01](./01-verification.md)与 [03](./03-verification.md)的事实边界。[父规格](./spec.md)第 185 行要求分开记录证据，第 193 行明确 V01 的 SQLite／Outbox／真实投影判据，第 108／109 行允许完整定义不足时明确失败，第 214 行排除远端协议改造和未核对历史数据清理；它们不要求以双设备通过、混写支持决策或云端自动修复作为本包完成前提。状态保持 `implemented-awaiting-acceptance`，等待实际错误朗读确认，未结案归档。
