@@ -210,6 +210,7 @@ function toBaseViewKey(value: unknown): View['baseViewKey'] {
 function toTaskQueryItem(value: Record<string, unknown>): RunTaskViewResult['items'][number] {
 	return {
 		group: value.group as RunTaskViewResult['items'][number]['group'],
+		subGroup: value.subGroup as RunTaskViewResult['items'][number]['subGroup'],
 		id: String(value.id),
 		spaceId: String(value.spaceId),
 		spaceName: String(value.spaceName),

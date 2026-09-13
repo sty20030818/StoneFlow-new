@@ -20,6 +20,35 @@ describe('DisplayOptionsPanel', () => {
 		vi.clearAllMocks()
 	})
 
+	it('没有主分组时子分组显示不分组且不可选择', () => {
+		render(
+			<DisplayOptionsPanel
+				actions={actions}
+				options={{ ...BASE_TASK_DISPLAY_OPTIONS, groupBy: 'none', subGroupBy: 'none' }}
+				pageKey='task:all'
+				status='ready'
+			/>,
+		)
+		expect(screen.getByRole('button', { name: '不分组 子分组' })).toBeDisabled()
+	})
+
+	it('子分组只提供页面允许且不同于主组的维度', async () => {
+		render(
+			<DisplayOptionsPanel
+				actions={actions}
+				options={{ ...BASE_TASK_DISPLAY_OPTIONS, groupBy: 'status' }}
+				pageKey='task:project-detail'
+				status='ready'
+			/>,
+		)
+		fireEvent.click(screen.getByRole('button', { name: '不分组 子分组' }))
+		expect(await screen.findByRole('option', { name: '不分组' })).toBeInTheDocument()
+		expect(screen.queryByRole('option', { name: '状态' })).not.toBeInTheDocument()
+		expect(screen.queryByRole('option', { name: '项目' })).not.toBeInTheDocument()
+		fireEvent.click(screen.getByRole('option', { name: '优先级' }))
+		expect(actions.setSubGrouping).toHaveBeenCalledWith('priority')
+	})
+
 	it('排序方向按钮显示动作提示并执行方向切换', async () => {
 		render(
 			<DisplayOptionsPanel

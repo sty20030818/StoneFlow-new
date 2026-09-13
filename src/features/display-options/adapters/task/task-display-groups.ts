@@ -1,24 +1,35 @@
 import { formatTaskPriorityLabel, formatTaskStatusLabel } from '@/features/task/presentation'
 import type { TaskQueryGroup, TaskQueryItem } from '@/shared/types'
 
-import type { TaskDisplaySection } from './task-display-types'
+import type { TaskDisplayLeafSection, TaskDisplaySection } from './task-display-types'
 
 /** 按统一查询的组序合并已加载成员，不重新分类或排序。 */
 export function buildTaskDisplaySections(items: TaskQueryItem[]): TaskDisplaySection[] {
 	const sections = new Map<string, TaskDisplaySection>()
+	const children = new Map<string, TaskDisplayLeafSection>()
 	for (const task of items) {
 		const descriptor = describeTaskQueryGroup(task.group)
-		const section = sections.get(descriptor.key)
-		if (section) {
-			section.tasks.push(task)
-		} else {
-			sections.set(descriptor.key, { ...descriptor, tasks: [task] })
+		let section = sections.get(descriptor.key)
+		if (!section) {
+			section = { ...descriptor, tasks: [] }
+			sections.set(descriptor.key, section)
 		}
+		section.tasks.push(task)
+		if (task.subGroup.kind === 'none') continue
+		const subDescriptor = describeTaskQueryGroup(task.subGroup)
+		const key = JSON.stringify([descriptor.key, subDescriptor.key])
+		let child = children.get(key)
+		if (!child) {
+			child = { ...subDescriptor, key, tasks: [] }
+			children.set(key, child)
+			;(section.children ??= []).push(child)
+		}
+		child.tasks.push(task)
 	}
 	return [...sections.values()]
 }
 
-function describeTaskQueryGroup(group: TaskQueryGroup): Omit<TaskDisplaySection, 'tasks'> {
+function describeTaskQueryGroup(group: TaskQueryGroup): Omit<TaskDisplayLeafSection, 'tasks'> {
 	switch (group.kind) {
 		case 'none':
 			return { key: 'all', label: '全部任务' }

@@ -31,6 +31,35 @@ describe('useTaskDisplayOptions', () => {
 		expect(localStorage.getItem('stoneflow.display-options.task:task:all')).not.toBeNull()
 	})
 
+	it('子分组重挂载后恢复，设为默认只保存当前有效主子路径', async () => {
+		const first = renderWithQueryClient(() => useTaskDisplayOptions('task:all'))
+		await waitFor(() => expect(first.result.current.status).toBe('ready'))
+		await act(async () => {
+			await first.result.current.actions.applyPartial({ groupBy: 'priority', subGroupBy: 'status' })
+		})
+		first.unmount()
+
+		const restored = renderWithQueryClient(() => useTaskDisplayOptions('task:all'))
+		await waitFor(() =>
+			expect(restored.result.current.options).toMatchObject({
+				groupBy: 'priority',
+				subGroupBy: 'status',
+			}),
+		)
+		await act(async () => {
+			await restored.result.current.actions.setGrouping('none')
+		})
+		expect(restored.result.current.options.subGroupBy).toBe('none')
+		await act(async () => {
+			await restored.result.current.actions.setAsDefault()
+		})
+		restored.unmount()
+
+		const asDefault = renderWithQueryClient(() => useTaskDisplayOptions('task:all'))
+		await waitFor(() => expect(asDefault.result.current.status).toBe('ready'))
+		expect(asDefault.result.current.options).toMatchObject({ groupBy: 'none', subGroupBy: 'none' })
+	})
+
 	it('resetToDefault 会清空 personal override', async () => {
 		const { result } = renderWithQueryClient(() => useTaskDisplayOptions('task:all'))
 

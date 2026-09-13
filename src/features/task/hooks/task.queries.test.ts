@@ -15,6 +15,7 @@ const input: RunTaskQueryInput = {
 	filters: { clauses: [{ id: 'a', field: 'status', op: 'is_not', values: ['done', 'canceled'] }] },
 	order: {
 		groupBy: 'priority',
+		subGroupBy: 'project',
 		orderBy: 'priority',
 		orderDirection: 'desc',
 		completedOrder: 'natural',
@@ -29,12 +30,17 @@ it('Default View key 只含成员、有效排序和日期，排除编辑 ID、�
 		filters: {
 			clauses: [{ ...input.filters!.clauses[0], id: 'other', values: ['canceled', 'done'] }],
 		},
-		order: { ...input.order, subGroupBy: 'project', showEmptyGroups: true },
+		order: { ...input.order, showEmptyGroups: true },
 		visibleProperties: [],
 		collapsedGroups: ['status:todo'],
 	}
 	expect(key(renamed)).toBe(key(input))
 	expect(key({ ...input, order: { ...input.order, groupBy: 'status' } })).not.toBe(key(input))
+	expect(key({ ...input, order: { ...input.order, subGroupBy: 'status' } })).not.toBe(key(input))
+	for (const groupBy of ['none', 'project'] as const) {
+		const invalid = { ...input, order: { ...input.order, groupBy } }
+		expect(key(invalid)).toBe(key({ ...invalid, order: { ...invalid.order, subGroupBy: 'none' } }))
+	}
 	expect(key({ ...input, dateBasis: '2026-09-14' })).not.toBe(key(input))
 	expect(key({ ...input, order: { ...input.order, orderDirection: 'asc' } })).not.toBe(key(input))
 	expect(key({ ...input, order: { ...input.order, completedOrder: 'recency' } })).not.toBe(

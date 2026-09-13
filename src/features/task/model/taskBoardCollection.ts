@@ -7,6 +7,7 @@ export type TaskBoardCollection = Readonly<{
 	flatIndexByKey: ReadonlyMap<string, number>
 	rowOrdinalByKey: ReadonlyMap<string, number>
 	rowKeysByGroupKey: ReadonlyMap<string, ReadonlySet<string>>
+	rowLeafGroupKeyByKey: ReadonlyMap<string, string>
 }>
 
 /**
@@ -23,6 +24,8 @@ export function buildTaskBoardCollection({
 	const flatIndexByKey = new Map<string, number>()
 	const rowOrdinalByKey = new Map<string, number>()
 	const rowKeysByGroupKey = new Map<string, Set<string>>()
+	const rowLeafGroupKeyByKey = new Map<string, string>()
+	let leafGroupKey: string | null = null
 
 	for (const [index, item] of flatItems.entries()) {
 		if (flatIndexByKey.has(item.key)) {
@@ -32,10 +35,12 @@ export function buildTaskBoardCollection({
 
 		if (item.kind === 'header') {
 			rowKeysByGroupKey.set(item.key, new Set(item.tasks.map((task) => task.id)))
+			leafGroupKey = item.key
 			continue
 		}
 
 		navigableKeys.push(item.key)
+		if (leafGroupKey) rowLeafGroupKeyByKey.set(item.key, leafGroupKey)
 		rowOrdinalByKey.set(item.key, navigableKeys.length)
 	}
 
@@ -44,5 +49,6 @@ export function buildTaskBoardCollection({
 		flatIndexByKey,
 		rowOrdinalByKey,
 		rowKeysByGroupKey,
+		rowLeafGroupKeyByKey,
 	}
 }

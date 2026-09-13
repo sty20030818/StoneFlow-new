@@ -71,12 +71,12 @@ pub(crate) fn encode_task_query_cursor(
     query: &TaskQueryIdentity,
     dates: &ViewDateBoundaries,
     task: &ViewTaskRecord,
-    group: &TaskQueryGroup,
+    groups: [&TaskQueryGroup; 2],
 ) -> Result<String, ApplicationError> {
-    let values = query.order.tuple(task, group);
+    let values = query.order.tuple(task, groups);
     query.order.validate_tuple(&values)?;
     serde_json::to_string(&TaskCursorPayload {
-        version: 2,
+        version: 3,
         query: query.clone(),
         dates: dates.clone(),
         values,
@@ -89,7 +89,7 @@ pub(crate) fn decode_task_query_cursor(
     query: &TaskQueryIdentity,
 ) -> Result<(TaskQueryCursor, ViewDateBoundaries), ApplicationError> {
     let payload: TaskCursorPayload = serde_json::from_str(raw).map_err(|_| invalid_cursor())?;
-    if payload.version != 2 || &payload.query != query {
+    if payload.version != 3 || &payload.query != query {
         return Err(invalid_cursor());
     }
     query.order.validate_tuple(&payload.values)?;

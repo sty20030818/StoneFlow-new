@@ -13,7 +13,8 @@ import { useTaskBoardPagination, useTaskQueryData } from './useTaskData'
 
 const windowInput = {
 	order: {
-		groupBy: 'none' as const,
+		groupBy: 'priority' as const,
+		subGroupBy: 'none' as const,
 		orderBy: 'priority' as const,
 		orderDirection: 'desc' as const,
 		completedOrder: 'natural' as const,
@@ -161,7 +162,7 @@ describe('useTaskQueryData', () => {
 		expect(result.current.status).toBe('ready')
 	})
 
-	it.each(['order', 'dateBasis', 'groupBy'] as const)(
+	it.each(['order', 'dateBasis', 'groupBy', 'subGroupBy'] as const)(
 		'切换 %s 从新首屏开始，慢旧续页不能拼入新结果',
 		async (change) => {
 			let resolvePrevious!: (page: RunTaskQueryResult) => void
@@ -175,7 +176,8 @@ describe('useTaskQueryData', () => {
 						createTask(
 							order.orderDirection === 'asc' ||
 								dateBasis === '2026-09-14' ||
-								order.groupBy === 'status'
+								order.groupBy === 'status' ||
+								order.subGroupBy === 'status'
 								? 'new'
 								: 'old',
 							'任务',
@@ -206,7 +208,9 @@ describe('useTaskQueryData', () => {
 					? { ...input, order: { ...input.order, orderDirection: 'asc' } }
 					: change === 'groupBy'
 						? { ...input, order: { ...input.order, groupBy: 'status' } }
-						: { ...input, dateBasis: '2026-09-14' },
+						: change === 'subGroupBy'
+							? { ...input, order: { ...input.order, subGroupBy: 'status' } }
+							: { ...input, dateBasis: '2026-09-14' },
 			)
 			await waitFor(() => expect(result.current.items[0]?.id).toBe('new'))
 			await act(async () => resolvePrevious(page(createTask('old-more', '旧续页'))))
@@ -270,6 +274,7 @@ function page(item: TaskQueryItem, nextCursor: string | null = null): RunTaskQue
 function createTask(id: string, title: string): TaskQueryItem {
 	return {
 		group: { kind: 'none' },
+		subGroup: { kind: 'none' },
 		id,
 		title,
 		spaceId: 'space-1',

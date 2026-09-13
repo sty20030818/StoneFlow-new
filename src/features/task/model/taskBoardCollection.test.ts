@@ -19,6 +19,65 @@ const TASKS = [
 const ELIGIBLE_KEYS = TASKS.map((task) => task.id)
 
 describe('taskBoardCollection', () => {
+	it('两级组只展平叶任务，父折叠隐藏后代且成员与叶选择边界保持唯一', () => {
+		const childA = JSON.stringify(['priority:4', 'status:todo'])
+		const sibling = JSON.stringify(['priority:4', 'status:doing'])
+		const childB = JSON.stringify(['priority:1', 'status:todo'])
+		const sections = [
+			{
+				key: 'priority:4',
+				label: '紧急',
+				tasks: TASKS.slice(0, 2),
+				children: [
+					{ key: childA, label: '待执行', tasks: [TASKS[0]!] },
+					{ key: sibling, label: '进行中', tasks: [TASKS[1]!] },
+				],
+			},
+			{
+				key: 'priority:1',
+				label: '低',
+				tasks: TASKS.slice(2),
+				children: [{ key: childB, label: '待执行', tasks: [TASKS[2]!] }],
+			},
+		]
+		const flat = buildTaskBoardFlatItems({ sections })
+		const collection = buildTaskBoardCollection({ flatItems: flat, eligibleKeys: ELIGIBLE_KEYS })
+		expect(flat.map((item) => item.key)).toEqual([
+			'h:priority:4',
+			`h:${childA}`,
+			'todo-a',
+			`h:${sibling}`,
+			'todo-b',
+			'h:priority:1',
+			`h:${childB}`,
+			'doing-c',
+		])
+		expect([...collection.rowLeafGroupKeyByKey]).toEqual([
+			['todo-a', `h:${childA}`],
+			['todo-b', `h:${sibling}`],
+			['doing-c', `h:${childB}`],
+		])
+		expect(collection.rowKeysByGroupKey.get('h:priority:4')).toEqual(new Set(['todo-a', 'todo-b']))
+		expect(collection.rowKeysByGroupKey.get(`h:${childA}`)).toEqual(new Set(['todo-a']))
+		expect(flat[1]).toMatchObject({ parentKey: 'h:priority:4', parentLabel: '紧急' })
+		const folded = buildTaskBoardFlatItems({
+			sections,
+			collapsedGroupKeys: ['h:priority:4', `h:${childA}`],
+		})
+		expect(folded.map((item) => item.key)).toEqual([
+			'h:priority:4',
+			'h:priority:1',
+			`h:${childB}`,
+			'doing-c',
+		])
+		const reopened = buildTaskBoardFlatItems({ sections, collapsedGroupKeys: [`h:${childA}`] })
+		expect(reopened.filter((item) => item.kind === 'row').map((item) => item.key)).toEqual([
+			'todo-b',
+			'doing-c',
+		])
+		expect(reopened.filter((item) => item.kind === 'header')).toHaveLength(5)
+	})
+
 	it('从 flatItems 派生唯一 projection、全部 flat index 与 header 分组', () => {
 		const collection = buildCollection(TASKS, ['todo', 'doing'])
 

@@ -133,6 +133,7 @@ pub struct CountTaskQueryInput {
 #[serde(rename_all = "camelCase")]
 pub struct TaskViewItemDto {
     pub group: TaskQueryGroup,
+    pub sub_group: TaskQueryGroup,
     pub id: String,
     pub space_id: String,
     pub space_name: String,
@@ -597,6 +598,11 @@ where
                         &dates,
                         project_name.map(String::as_str),
                     )?,
+                    sub_group: order.sub_group_by.resolve(
+                        task,
+                        &dates,
+                        project_name.map(String::as_str),
+                    )?,
                     id: task.id.clone(),
                     space_id: task.space_id.clone(),
                     space_name: space.name.clone(),
@@ -626,7 +632,14 @@ where
             page_tasks
                 .last()
                 .zip(items.last())
-                .map(|(task, item)| encode_task_query_cursor(&identity, &dates, task, &item.group))
+                .map(|(task, item)| {
+                    encode_task_query_cursor(
+                        &identity,
+                        &dates,
+                        task,
+                        [&item.group, &item.sub_group],
+                    )
+                })
                 .transpose()?
         } else {
             None
@@ -654,6 +667,7 @@ where
                 dates: build_date_boundaries(stoneflow_domain::today_local_date())?,
                 order: TaskQueryOrder {
                     group_by: TaskGroupBy::None,
+                    sub_group_by: TaskGroupBy::None,
                     order_by: TaskOrderBy::Manual,
                     order_direction: TaskOrderDirection::Asc,
                     completed_order: TaskCompletedOrder::Natural,
@@ -793,8 +807,17 @@ mod tests {
     use serde_json::json;
 
     #[test]
+    fn secondary_group_is_part_of_the_required_window_order() {
+        let order = json!({"groupBy": "due", "subGroupBy": "scheduled", "orderBy": "smart", "orderDirection": "asc", "completedOrder": "recency"});
+        assert!(serde_json::from_value::<TaskQueryOrder>(order.clone()).is_ok());
+        let mut missing = order;
+        missing.as_object_mut().unwrap().remove("subGroupBy");
+        assert!(serde_json::from_value::<TaskQueryOrder>(missing).is_err());
+    }
+
+    #[test]
     fn primary_group_is_part_of_the_required_window_order() {
-        let order = json!({"groupBy": "status", "orderBy": "smart", "orderDirection": "asc", "completedOrder": "recency"});
+        let order = json!({"groupBy": "status", "subGroupBy": "none", "orderBy": "smart", "orderDirection": "asc", "completedOrder": "recency"});
         assert!(serde_json::from_value::<TaskQueryOrder>(order.clone()).is_ok());
         let mut missing = order;
         missing.as_object_mut().unwrap().remove("groupBy");
@@ -808,7 +831,7 @@ mod tests {
             "context": { "kind": "all" },
             "baseViewKey": "all",
             "filters": { "clauses": [] },
-            "order": { "groupBy": "none", "orderBy": "smart", "orderDirection": "asc", "completedOrder": "natural" },
+            "order": { "groupBy": "none", "subGroupBy": "none", "orderBy": "smart", "orderDirection": "asc", "completedOrder": "natural" },
             "dateBasis": "2026-09-13"
         });
         assert!(serde_json::from_value::<RunTaskQueryInput>(query.clone()).is_ok());

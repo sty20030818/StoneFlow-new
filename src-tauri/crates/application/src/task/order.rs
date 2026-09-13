@@ -40,6 +40,7 @@ pub enum TaskCompletedOrder {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct TaskQueryOrder {
     pub group_by: TaskGroupBy,
+    pub sub_group_by: TaskGroupBy,
     pub order_by: TaskOrderBy,
     pub order_direction: TaskOrderDirection,
     pub completed_order: TaskCompletedOrder,
@@ -93,6 +94,9 @@ pub type TaskOrderTuple = Vec<Option<TaskOrderValue>>;
 
 impl TaskQueryOrder {
     pub fn normalized(mut self) -> Self {
+        if self.group_by == TaskGroupBy::None || self.group_by == self.sub_group_by {
+            self.sub_group_by = TaskGroupBy::None;
+        }
         if matches!(self.order_by, TaskOrderBy::Smart | TaskOrderBy::Manual) {
             self.order_direction = TaskOrderDirection::Asc;
         }
@@ -100,6 +104,7 @@ impl TaskQueryOrder {
     }
 
     pub fn terms(self) -> Vec<TaskOrderTerm> {
+        let order = self.normalized();
         use TaskOrderDirection::{Asc, Desc};
         use TaskOrderField as Field;
         let ordinary = match self.order_by {
@@ -131,20 +136,20 @@ impl TaskQueryOrder {
                 terms
             }
         };
-        let group = match self.group_by {
-            TaskGroupBy::None => vec![],
-            TaskGroupBy::Status => vec![(Field::Status, Asc)],
-            TaskGroupBy::Priority => vec![(Field::Priority, Desc)],
-            TaskGroupBy::Project => vec![
-                (Field::ProjectMissing, Asc),
-                (Field::ProjectName, Asc),
-                (Field::ProjectId, Asc),
-            ],
-            TaskGroupBy::Due => vec![(Field::DueBucket, Asc)],
-            TaskGroupBy::Scheduled => vec![(Field::PlannedBucket, Asc)],
-        };
-        let mut terms = group
+        let mut terms = [order.group_by, order.sub_group_by]
             .into_iter()
+            .flat_map(|group_by| match group_by {
+                TaskGroupBy::None => vec![],
+                TaskGroupBy::Status => vec![(Field::Status, Asc)],
+                TaskGroupBy::Priority => vec![(Field::Priority, Desc)],
+                TaskGroupBy::Project => vec![
+                    (Field::ProjectMissing, Asc),
+                    (Field::ProjectName, Asc),
+                    (Field::ProjectId, Asc),
+                ],
+                TaskGroupBy::Due => vec![(Field::DueBucket, Asc)],
+                TaskGroupBy::Scheduled => vec![(Field::PlannedBucket, Asc)],
+            })
             .map(|(field, direction)| TaskOrderTerm {
                 field,
                 direction,
@@ -183,10 +188,10 @@ impl TaskQueryOrder {
         terms
     }
 
-    pub fn tuple(self, task: &ViewTaskRecord, group: &TaskQueryGroup) -> TaskOrderTuple {
+    pub fn tuple(self, task: &ViewTaskRecord, groups: [&TaskQueryGroup; 2]) -> TaskOrderTuple {
         self.terms()
             .iter()
-            .map(|term| term.value(task, group))
+            .map(|term| term.value(task, groups))
             .collect()
     }
 
@@ -278,7 +283,7 @@ impl TaskOrderTerm {
         self.partition != TaskOrderPartition::All || self.field.is_nullable()
     }
 
-    fn value(self, task: &ViewTaskRecord, group: &TaskQueryGroup) -> Option<TaskOrderValue> {
+    fn value(self, task: &ViewTaskRecord, groups: [&TaskQueryGroup; 2]) -> Option<TaskOrderValue> {
         let done = task.status == WorkStatus::Done;
         if matches!(self.partition, TaskOrderPartition::Done) && !done
             || matches!(self.partition, TaskOrderPartition::NotDone) && done
@@ -289,18 +294,21 @@ impl TaskOrderTerm {
         Some(match self.field {
             TaskOrderField::ProjectMissing => Integer(i64::from(task.project_id.is_none())),
             TaskOrderField::ProjectId => Text(task.project_id.clone()?),
-            TaskOrderField::ProjectName => match group {
+            TaskOrderField::ProjectName => groups.iter().find_map(|group| match group {
                 TaskQueryGroup::Project { project_name, .. } => {
-                    Text(project_name.clone().unwrap_or_default())
+                    Some(Text(project_name.clone().unwrap_or_default()))
                 }
-                _ => return None,
-            },
-            TaskOrderField::DueBucket | TaskOrderField::PlannedBucket => match group {
-                TaskQueryGroup::Due { bucket } | TaskQueryGroup::Scheduled { bucket } => {
-                    Integer(bucket.rank())
-                }
-                _ => return None,
-            },
+                _ => None,
+            })?,
+            TaskOrderField::DueBucket | TaskOrderField::PlannedBucket => {
+                groups.iter().find_map(|group| match (self.field, group) {
+                    (TaskOrderField::DueBucket, TaskQueryGroup::Due { bucket })
+                    | (TaskOrderField::PlannedBucket, TaskQueryGroup::Scheduled { bucket }) => {
+                        Some(Integer(bucket.rank()))
+                    }
+                    _ => None,
+                })?
+            }
             TaskOrderField::IsDone => Integer(i64::from(done)),
             TaskOrderField::Position => Integer(task.position),
             TaskOrderField::Status => Integer(match task.status {
@@ -369,6 +377,7 @@ mod tests {
     fn order(order_by: TaskOrderBy, completed_order: TaskCompletedOrder) -> TaskQueryOrder {
         TaskQueryOrder {
             group_by: TaskGroupBy::None,
+            sub_group_by: TaskGroupBy::None,
             order_by,
             order_direction: TaskOrderDirection::Asc,
             completed_order,
@@ -403,6 +412,99 @@ mod tests {
     }
 
     #[test]
+    fn subgroups_normalize_before_query_identity_and_order_prefixes() {
+        for group_by in [
+            TaskGroupBy::None,
+            TaskGroupBy::Status,
+            TaskGroupBy::Priority,
+            TaskGroupBy::Project,
+            TaskGroupBy::Due,
+            TaskGroupBy::Scheduled,
+        ] {
+            let baseline = TaskQueryOrder {
+                group_by,
+                ..order(TaskOrderBy::Manual, TaskCompletedOrder::Recency)
+            };
+            for sub_group_by in [TaskGroupBy::None, group_by] {
+                let candidate = TaskQueryOrder {
+                    sub_group_by,
+                    ..baseline
+                };
+                assert_eq!(candidate.normalized(), baseline);
+                assert_eq!(candidate.terms(), baseline.terms());
+                assert_eq!(
+                    identity(&FilterQueryValue::default(), candidate, "2026-09-13"),
+                    identity(&FilterQueryValue::default(), baseline, "2026-09-13")
+                );
+            }
+            let without_parent = TaskQueryOrder {
+                group_by: TaskGroupBy::None,
+                sub_group_by: group_by,
+                ..baseline
+            };
+            assert_eq!(without_parent.normalized().sub_group_by, TaskGroupBy::None);
+        }
+    }
+
+    #[test]
+    fn due_and_scheduled_prefixes_keep_distinct_buckets_before_leaf_recency() {
+        use crate::task::TaskDateBucket;
+        let task = task();
+        let due = TaskGroupBy::Due.resolve(&task, &dates(), None).unwrap();
+        let scheduled = TaskGroupBy::Scheduled
+            .resolve(&task, &dates(), None)
+            .unwrap();
+        assert_eq!(
+            due,
+            TaskQueryGroup::Due {
+                bucket: TaskDateBucket::Later
+            }
+        );
+        assert_eq!(
+            scheduled,
+            TaskQueryGroup::Scheduled {
+                bucket: TaskDateBucket::Tomorrow
+            }
+        );
+        for (group_by, sub_group_by, groups, expected) in [
+            (
+                TaskGroupBy::Due,
+                TaskGroupBy::Scheduled,
+                [&due, &scheduled],
+                [4, 2],
+            ),
+            (
+                TaskGroupBy::Scheduled,
+                TaskGroupBy::Due,
+                [&scheduled, &due],
+                [2, 4],
+            ),
+        ] {
+            let order = TaskQueryOrder {
+                group_by,
+                sub_group_by,
+                ..order(TaskOrderBy::Manual, TaskCompletedOrder::Recency)
+            };
+            let values = order.tuple(&task, groups);
+            assert_eq!(
+                values[..3],
+                [
+                    Some(TaskOrderValue::Integer(expected[0])),
+                    Some(TaskOrderValue::Integer(expected[1])),
+                    Some(TaskOrderValue::Integer(0)),
+                ]
+            );
+            order.validate_tuple(&values).unwrap();
+            let query = identity(&FilterQueryValue::default(), order, "2026-09-13");
+            let cursor = encode_task_query_cursor(&query, &dates(), &task, groups).unwrap();
+            assert_eq!(
+                decode_task_query_cursor(&cursor, &query).unwrap().0.values,
+                values
+            );
+        }
+    }
+
+    #[test]
     fn all_supported_orders_produce_complete_valid_tuples_for_nulls_and_done_partitions() {
         for order_by in [
             TaskOrderBy::Smart,
@@ -431,7 +533,12 @@ mod tests {
                             task.due_at = date.clone();
                             task.planned_at = date;
                             order
-                                .validate_tuple(&order.tuple(&task, &TaskQueryGroup::None))
+                                .validate_tuple(
+                                    &order.tuple(
+                                        &task,
+                                        [&TaskQueryGroup::None, &TaskQueryGroup::None],
+                                    ),
+                                )
                                 .unwrap();
                         }
                     }
@@ -444,22 +551,34 @@ mod tests {
     fn manual_ignores_metadata_and_recency_overrides_only_done_positions() {
         let mut original = task();
         let manual = order(TaskOrderBy::Manual, TaskCompletedOrder::Natural);
-        let before = manual.tuple(&original, &TaskQueryGroup::None);
+        let before = manual.tuple(&original, [&TaskQueryGroup::None, &TaskQueryGroup::None]);
         original.updated_at = "2026-09-13T12:00:00Z".to_owned();
         original.title = "Edited".to_owned();
         original.priority = 1;
-        assert_eq!(manual.tuple(&original, &TaskQueryGroup::None), before);
+        assert_eq!(
+            manual.tuple(&original, [&TaskQueryGroup::None, &TaskQueryGroup::None]),
+            before
+        );
         original.position += 1;
-        assert_ne!(manual.tuple(&original, &TaskQueryGroup::None), before);
+        assert_ne!(
+            manual.tuple(&original, [&TaskQueryGroup::None, &TaskQueryGroup::None]),
+            before
+        );
 
         let recency = order(TaskOrderBy::Manual, TaskCompletedOrder::Recency);
         original.status = WorkStatus::Done;
         original.completed_at = Some("2026-09-13T09:00:00Z".to_owned());
-        let completed = recency.tuple(&original, &TaskQueryGroup::None);
+        let completed = recency.tuple(&original, [&TaskQueryGroup::None, &TaskQueryGroup::None]);
         original.position += 100;
         original.updated_at = "2026-09-13T14:00:00Z".to_owned();
-        assert_eq!(recency.tuple(&original, &TaskQueryGroup::None), completed);
-        assert_ne!(manual.tuple(&original, &TaskQueryGroup::None), before);
+        assert_eq!(
+            recency.tuple(&original, [&TaskQueryGroup::None, &TaskQueryGroup::None]),
+            completed
+        );
+        assert_ne!(
+            manual.tuple(&original, [&TaskQueryGroup::None, &TaskQueryGroup::None]),
+            before
+        );
     }
 
     #[test]
@@ -467,7 +586,7 @@ mod tests {
         let smart = order(TaskOrderBy::Smart, TaskCompletedOrder::Natural);
         let mut task = task();
         assert_eq!(
-            smart.tuple(&task, &TaskQueryGroup::None),
+            smart.tuple(&task, [&TaskQueryGroup::None, &TaskQueryGroup::None]),
             vec![
                 Some(TaskOrderValue::Integer(1)),
                 Some(TaskOrderValue::Text(task.due_at.clone().unwrap())),
@@ -479,7 +598,7 @@ mod tests {
         );
         task.due_at = None;
         assert_eq!(
-            smart.tuple(&task, &TaskQueryGroup::None)[1],
+            smart.tuple(&task, [&TaskQueryGroup::None, &TaskQueryGroup::None])[1],
             task.planned_at.map(TaskOrderValue::Text)
         );
         assert_eq!(
@@ -504,15 +623,23 @@ mod tests {
         };
         let order = order(TaskOrderBy::Priority, TaskCompletedOrder::Natural);
         let query = identity(&filters, order, "2026-09-13");
-        let encoded =
-            encode_task_query_cursor(&query, &dates(), &task(), &TaskQueryGroup::None).unwrap();
+        let encoded = encode_task_query_cursor(
+            &query,
+            &dates(),
+            &task(),
+            [&TaskQueryGroup::None, &TaskQueryGroup::None],
+        )
+        .unwrap();
         let mut equivalent = filters.clone();
         equivalent.clauses[0].id = "new-id".to_owned();
         equivalent.clauses[0].values.reverse();
         equivalent.clauses.push(equivalent.clauses[0].clone());
         let equivalent = identity(&equivalent, order, "2026-09-13");
         let (cursor, actual_dates) = decode_task_query_cursor(&encoded, &equivalent).unwrap();
-        assert_eq!(cursor.values, order.tuple(&task(), &TaskQueryGroup::None));
+        assert_eq!(
+            cursor.values,
+            order.tuple(&task(), [&TaskQueryGroup::None, &TaskQueryGroup::None])
+        );
         assert_eq!(actual_dates, dates());
         for wrong_query in [
             identity(&FilterQueryValue::default(), order, "2026-09-13"),
@@ -534,6 +661,7 @@ mod tests {
         let payload: serde_json::Value = serde_json::from_str(&encoded).unwrap();
         for (field, value) in [
             ("version", serde_json::json!(1)),
+            ("version", serde_json::json!(2)),
             ("values", serde_json::json!([4, null, "task-1"])),
             ("values", serde_json::json!([4, "bad-date", "task-1"])),
             ("values", serde_json::json!([4, "2026-09-02T00:00:00Z"])),

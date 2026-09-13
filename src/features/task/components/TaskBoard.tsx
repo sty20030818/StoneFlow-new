@@ -107,7 +107,7 @@ export type TaskBoardProps = {
 	onEmptyAction: () => void
 	onRetry: () => void | Promise<unknown>
 	onSectionOpenChange: (groupKey: string, open: boolean) => void
-	onCollapseAll: () => void
+	onCollapseAll: (restoreGroupKey: string) => void
 	onExpandAll: () => void
 	onUpdateTaskPriority: (task: TaskListItem, priority: TaskPriorityValue) => Promise<void>
 	onUpdateTaskStatus: (task: TaskListItem, status: TaskStatus) => Promise<void>
@@ -370,12 +370,21 @@ export function TaskBoard({
 			createCollectionFocusBridge({
 				requestScroll: (key) => scrollToCollectionKeyRef.current(key),
 			}),
-		[],
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- sourceKey 决定待挂载焦点请求的窗口归属
+		[pagination.sourceKey],
 	)
 	const requestVisibleFocus = useCallback(
-		(intent: CollectionFocusIntent<string, string>) =>
-			focusBridge.requestFocus(intent, { ensureVisible: true }),
-		[focusBridge],
+		(intent: CollectionFocusIntent<string, string>) => {
+			// 当前 sticky 按钮已可见；其余组先进入虚拟范围，再由既有 bridge 等待挂载。
+			if (
+				intent.type === 'group-trigger' &&
+				(!stickyStuck || flatItems[stickyActiveIndex]?.key !== intent.groupKey)
+			) {
+				scrollToCollectionKey(intent.groupKey)
+			}
+			focusBridge.requestFocus(intent, { ensureVisible: true })
+		},
+		[flatItems, focusBridge, scrollToCollectionKey, stickyActiveIndex, stickyStuck],
 	)
 	const focusCollectionStateKey = collectionInteraction.focusKey
 	const navigableTaskKeys = collectionInteraction.projection.navigableKeys
@@ -453,12 +462,13 @@ export function TaskBoard({
 	)
 	const isRangeStepWithinGroup = useCallback(
 		(fromKey: string, toKey: string) => {
-			for (const groupKeys of boardCollection.rowKeysByGroupKey.values()) {
-				if (groupKeys.has(fromKey)) return groupKeys.has(toKey)
-			}
-			return false
+			const fromGroupKey = boardCollection.rowLeafGroupKeyByKey.get(fromKey)
+			return (
+				fromGroupKey !== undefined &&
+				fromGroupKey === boardCollection.rowLeafGroupKeyByKey.get(toKey)
+			)
 		},
-		[boardCollection.rowKeysByGroupKey],
+		[boardCollection.rowLeafGroupKeyByKey],
 	)
 	const toggleRangeStep = collectionInteraction.toggleRangeStep
 	const toggleBoardRangeStep = useCallback(
@@ -676,7 +686,10 @@ export function TaskBoard({
 		appendAnchorRef.current = null
 	}, [])
 
-	useLayoutEffect(() => resetPaginationSession(), [pagination.sourceKey, resetPaginationSession])
+	useLayoutEffect(() => {
+		resetPaginationSession()
+		groupReentryRef.current = null
+	}, [pagination.sourceKey, resetPaginationSession])
 
 	useEffect(() => {
 		if (!sentinelMounted) {
@@ -766,19 +779,22 @@ export function TaskBoard({
 	const renderHeader = (
 		item: Extract<TaskBoardFlatItem, { kind: 'header' }>,
 		registerTrigger: boolean,
+		isSticky = false,
 	) => (
 		<TaskGroupHeader
 			count={item.count}
 			createProjectId={createProjectId}
 			groupKey={item.key}
+			isSticky={isSticky}
 			label={item.label}
-			onCollapseAll={onCollapseAll}
+			onCollapseAll={() => onCollapseAll(item.parentKey ?? item.key)}
 			onExpandAll={onExpandAll}
 			onGroupTriggerBlur={handleGroupTriggerBlur}
 			onOpenChange={(open) => onSectionOpenChange(item.key, open)}
 			onSetSectionSelection={setSectionSelection}
 			open={item.open}
 			openTaskCreateDialog={openTaskCreateDialog}
+			parentLabel={item.parentLabel}
 			registerGroupTrigger={registerTrigger ? focusBridge.registerGroupTrigger : undefined}
 			selectedTaskIdSet={selectedTaskIdSet}
 			status={item.status}
@@ -849,7 +865,7 @@ export function TaskBoard({
 									backfaceVisibility: 'hidden',
 								}}
 							>
-								{renderHeader(stickyHeader, stickyStuck)}
+								{renderHeader(stickyHeader, stickyStuck, true)}
 							</div>
 						</div>
 					</div>
@@ -1127,7 +1143,9 @@ const TaskBoardGridRow = memo(function TaskBoardGridRow({
 function TaskGroupHeader({
 	status,
 	groupKey,
+	isSticky,
 	label,
+	parentLabel,
 	count,
 	open,
 	createProjectId,
@@ -1143,7 +1161,9 @@ function TaskGroupHeader({
 }: {
 	status?: TaskStatus
 	groupKey: string
+	isSticky: boolean
 	label: string
+	parentLabel: string | null
 	count: number
 	open: boolean
 	createProjectId: string | null
@@ -1157,6 +1177,8 @@ function TaskGroupHeader({
 	tasks: readonly TaskListItem[]
 	openTaskCreateDialog: (draft?: { projectId?: string | null; status?: TaskStatus }) => void
 }) {
+	const accessibleLabel = parentLabel === null ? label : `${parentLabel} › ${label}`
+	const visibleLabel = isSticky ? accessibleLabel : label
 	const sectionIds = useMemo(() => tasks.map((t) => t.id), [tasks])
 	const [contextMenuOpen, setContextMenuOpen] = useState(false)
 	const [toggleTooltipOpen, setToggleTooltipOpen] = useState(false)
@@ -1199,13 +1221,13 @@ function TaskGroupHeader({
 	const toggleAction = (
 		<ActionTooltip
 			isOpen={toggleTooltipOpen && !contextMenuOpen}
-			label={open ? `折叠 ${label}` : `展开 ${label}`}
+			label={open ? `折叠 ${accessibleLabel}` : `展开 ${accessibleLabel}`}
 			onOpenChange={(nextOpen) => setToggleTooltipOpen(nextOpen && !contextMenuOpen)}
 		>
 			<Button
 				ref={groupTriggerRef}
 				aria-expanded={open}
-				aria-label={open ? `折叠 ${label}` : `展开 ${label}`}
+				aria-label={open ? `折叠 ${accessibleLabel}` : `展开 ${accessibleLabel}`}
 				data-collection-group-key={groupKey}
 				isIconOnly
 				onBlur={() => onGroupTriggerBlur(groupKey)}
@@ -1229,11 +1251,11 @@ function TaskGroupHeader({
 	const createAction = status ? (
 		<ActionTooltip
 			isOpen={createTooltipOpen && !contextMenuOpen}
-			label={`在 ${label} 中创建任务`}
+			label={`在 ${accessibleLabel} 中创建任务`}
 			onOpenChange={(nextOpen) => setCreateTooltipOpen(nextOpen && !contextMenuOpen)}
 		>
 			<Button
-				aria-label={`在 ${label} 中创建任务`}
+				aria-label={`在 ${accessibleLabel} 中创建任务`}
 				isIconOnly
 				onPress={() => {
 					setCreateTooltipOpen(false)
@@ -1253,10 +1275,15 @@ function TaskGroupHeader({
 			icon={status ? <TaskStatusIndicator status={status} /> : undefined}
 			label={
 				contextMenuOpen ? (
-					<span className='min-w-0 truncate'>{label}</span>
+					<span className={cn('min-w-0 truncate', parentLabel !== null && !isSticky && 'ps-4')}>
+						{visibleLabel}
+					</span>
 				) : (
-					<OverflowTooltip className='min-w-0' content={label}>
-						{label}
+					<OverflowTooltip
+						className={cn('min-w-0', parentLabel !== null && !isSticky && 'ps-4')}
+						content={accessibleLabel}
+					>
+						{visibleLabel}
 					</OverflowTooltip>
 				)
 			}

@@ -32,7 +32,7 @@
 
 本次基线为 ef38c0b5，此前 9 个界面文件已由用户提交，当前 index 为空；后续 Agent 改动保持未暂存。
 
-01 当前为 `implemented-awaiting-acceptance`，详见 [实施与验证记录](./01-verification.md)。当前版本实现及自动检查已通过，原生验收和旧版兼容/历史远端恢复决策仍待闭合；02 当前为 `implemented-awaiting-acceptance`，详见 [02 实施与验证记录](./02-verification.md)；03 当前为 `implemented-awaiting-acceptance`，见 [03 实施与验证记录](./03-verification.md)；04 当前为 `implemented-awaiting-acceptance`，见 [04 验证记录](./04-verification.md)；05 当前为 `implemented-awaiting-acceptance`，见 [05 验证记录](./05-verification.md)；06 当前为 `implemented-awaiting-acceptance`，见 [06 验证记录](./06-verification.md)；07–09 未开始。
+01 当前为 `implemented-awaiting-acceptance`，详见 [实施与验证记录](./01-verification.md)。当前版本实现及自动检查已通过，原生验收和旧版兼容/历史远端恢复决策仍待闭合；02 当前为 `implemented-awaiting-acceptance`，详见 [02 实施与验证记录](./02-verification.md)；03 当前为 `implemented-awaiting-acceptance`，见 [03 实施与验证记录](./03-verification.md)；04 当前为 `implemented-awaiting-acceptance`，见 [04 验证记录](./04-verification.md)；05 当前为 `implemented-awaiting-acceptance`，见 [05 验证记录](./05-verification.md)；06 当前为 `implemented-awaiting-acceptance`，见 [06 验证记录](./06-verification.md)；07 当前为 `implemented-awaiting-acceptance`，见 [07 验证记录](./07-verification.md)；08–09 未开始。
 
 2026-09-13：用户确认提交当前结果并继续下一票。01 与既有规格/tickets 已提交为 `70bbca2d`；02 的后续改动保持未暂存，验收记录独立追加。
 
@@ -48,3 +48,5 @@
 
 
 2026-09-13：用户授权提交并继续下一票。05 已提交为 `ca0d9655`，提交后工作区干净；06 主分组统一排序、折叠与选择已实施并通过本地验证，保持未暂存，未推送。下一张实现票为 07“子分组贯通分页与层级交互”。
+
+2026-09-13：用户授权各 ticket 验证后逐个提交并继续，最终汇总和归档；不包含推送或发布。06 已提交为 `276f427f`，提交后工作区干净；07 子分组已实施并闭合跨窗口待挂载焦点竞争，验证后提交，再继续 08。

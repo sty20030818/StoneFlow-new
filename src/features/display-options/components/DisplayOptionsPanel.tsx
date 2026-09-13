@@ -87,6 +87,9 @@ export function DisplayOptionsPanel({
 	const isPending = status === 'loading'
 	const isErrored = status === 'error'
 	const supportsSubGrouping = capabilities.allowedSubGroupBy.some((item) => item !== 'none')
+	const allowedSubGroupBy = capabilities.allowedSubGroupBy.filter(
+		(groupBy) => groupBy === 'none' || groupBy !== options.groupBy,
+	)
 	const canToggleShowEmptyGroups =
 		capabilities.supportsShowEmptyGroups && options.groupBy !== 'none'
 	const canToggleOrderDirection = options.orderBy !== 'manual' && options.orderBy !== 'smart'
@@ -118,11 +121,11 @@ export function DisplayOptionsPanel({
 					<DisplayOptionRow label='子分组'>
 						<CompactSelect
 							ariaLabel='子分组'
-							disabled={isPending}
+							disabled={isPending || options.groupBy === 'none'}
 							onValueChange={(value) =>
 								void actions.setSubGrouping(value as ResolvedTaskDisplayOptions['subGroupBy'])
 							}
-							options={capabilities.allowedSubGroupBy.map((groupBy) => ({
+							options={allowedSubGroupBy.map((groupBy) => ({
 								value: groupBy,
 								label: GROUP_LABELS[groupBy],
 							}))}

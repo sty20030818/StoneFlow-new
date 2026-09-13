@@ -52,6 +52,7 @@ export function useTaskViewRunInfiniteQuery(input: RunTaskViewInput | null) {
 				viewId: '',
 				order: {
 					groupBy: 'none',
+					subGroupBy: 'none',
 					orderBy: 'smart',
 					orderDirection: 'asc',
 					completedOrder: 'natural',

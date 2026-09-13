@@ -222,6 +222,7 @@ it.each([PROJECT_PATH, SAVED_PATH])(
 		await waitFor(() =>
 			expect(backend.requests.at(-1)?.query.order).toEqual({
 				groupBy: 'status',
+				subGroupBy: 'none',
 				orderBy: 'priority',
 				orderDirection: 'desc',
 				completedOrder: 'recency',
@@ -368,10 +369,142 @@ it.each([
 	},
 )
 
-async function chooseGrouping(current: string, next: string) {
+it('两级组在真实页面保持父子折叠、已加载选择、叶组键盘边界与跨页恢复', async () => {
+	const backend = installBackend()
+	backend.items = [
+		{ ...task('urgent-doing-a', '紧急进行中 A', 'doing'), priority: 4 },
+		{ ...task('urgent-doing-b', '紧急进行中 B', 'doing'), priority: 4 },
+		{ ...task('urgent-todo', '紧急待执行', 'todo'), priority: 4 },
+		{ ...task('urgent-done', '紧急已完成', 'done'), priority: 4 },
+		{ ...task('low-doing', '低优先级进行中', 'doing'), priority: 1 },
+		{ ...task('low-todo', '低优先级待执行', 'todo'), priority: 1 },
+	]
+	const next = deferred<RunTaskQueryResult>()
+	let failed = false
+	let exhausted = false
+	backend.read = async (query, cursor) => {
+		const items = backend.items.map((item): TaskQueryItem => ({
+			...item,
+			group:
+				query.order.groupBy === 'priority'
+					? { kind: 'priority', priority: item.priority }
+					: { kind: 'status', status: item.status },
+			subGroup:
+				query.order.subGroupBy === 'status'
+					? { kind: 'status', status: item.status }
+					: { kind: 'none' },
+		}))
+		if (exhausted || query.order.subGroupBy !== 'status') return page(items, null, 6)
+		if (!cursor) return page(items.slice(0, 1), 'child-next', 6)
+		if (!failed) return next.promise
+		return page(items.slice(1), null, null)
+	}
+	const workspace = await renderWorkspace(`${PROJECT_PATH}?v=all`, <WorkspacePreview />)
+	await screen.findByText('紧急进行中 A')
+	await chooseGrouping('状态', '优先级')
+	await chooseGrouping('不分组', '状态', '子分组')
+	await waitFor(() => expect(backend.requests.at(-1)?.cursor).toBe('child-next'))
+	const child = await screen.findByRole('button', { name: '折叠 紧急 › 进行中' })
+	fireEvent.click(child)
+	fireEvent.contextMenu(child.closest('[data-board-section-header]')!)
+	fireEvent.click(await screen.findByRole('menuitem', { name: '选中全部' }))
+	failed = true
+	await act(async () => next.reject(new Error('子组续页失败')))
+	expect(await screen.findByText('子组续页失败')).toBeVisible()
+	pressEnter(screen.getByRole('button', { name: '重试' }))
+	expect(await screen.findByRole('row', { name: '打开任务 低优先级进行中' })).toHaveAttribute(
+		'aria-selected',
+		'false',
+	)
+	expect(screen.getAllByRole('button', { name: '展开 紧急 › 进行中' })).toHaveLength(1)
+	expect(screen.queryByRole('row', { name: '打开任务 紧急进行中 B' })).not.toBeInTheDocument()
+	fireEvent.click(screen.getByRole('button', { name: '展开 紧急 › 进行中' }))
+	expect(screen.getByRole('row', { name: '打开任务 紧急进行中 A' })).toHaveAttribute(
+		'aria-selected',
+		'true',
+	)
+	expect(screen.getByRole('row', { name: '打开任务 紧急进行中 B' })).toHaveAttribute(
+		'aria-selected',
+		'false',
+	)
+	fireEvent.contextMenu(
+		screen.getByRole('button', { name: '折叠 紧急' }).closest('[data-board-section-header]')!,
+	)
+	fireEvent.click(await screen.findByRole('menuitem', { name: '选中全部' }))
+	for (const title of ['紧急进行中 A', '紧急进行中 B', '紧急待执行', '紧急已完成']) {
+		expect(screen.getByRole('row', { name: `打开任务 ${title}` })).toHaveAttribute(
+			'aria-selected',
+			'true',
+		)
+	}
+	expect(screen.getByRole('row', { name: '打开任务 低优先级进行中' })).toHaveAttribute(
+		'aria-selected',
+		'false',
+	)
+	const grid = screen.getByRole('grid')
+	act(() => grid.focus())
+	fireEvent.keyDown(grid, { key: 'Home' })
+	fireEvent.keyDown(document.activeElement!, { key: 'ArrowDown' })
+	const anchor = screen.getByRole('row', { name: '打开任务 紧急进行中 B' })
+	await waitFor(() => expect(anchor).toHaveFocus())
+	fireEvent.keyDown(anchor, { key: 'ArrowDown', shiftKey: true })
+	expect(anchor).toHaveFocus()
+	fireEvent.click(screen.getByRole('button', { name: '键盘预览当前任务' }))
+	expect(await screen.findByLabelText('任务预览')).toHaveTextContent('紧急进行中 B')
+	fireEvent.click(screen.getByRole('button', { name: '关闭预览' }))
+	expect(anchor).toHaveFocus()
+	expect(anchor).not.toHaveAttribute('data-focus-suppressed')
+	fireEvent.click(screen.getByRole('button', { name: '折叠 紧急 › 进行中' }))
+	fireEvent.click(screen.getByRole('button', { name: '折叠 紧急' }))
+	expect(screen.queryByRole('button', { name: '展开 紧急 › 进行中' })).not.toBeInTheDocument()
+	expect(screen.getByRole('row', { name: '打开任务 低优先级进行中' })).toBeVisible()
+	fireEvent.click(screen.getByRole('button', { name: '展开 紧急' }))
+	expect(screen.getByRole('button', { name: '展开 紧急 › 进行中' })).toHaveAttribute(
+		'aria-expanded',
+		'false',
+	)
+	expect(screen.getByRole('row', { name: '打开任务 紧急待执行' })).toBeVisible()
+	expect(
+		backend.requests
+			.filter(({ query }) => query.order.subGroupBy === 'status')
+			.map(({ cursor }) => cursor),
+	).toEqual([null, 'child-next', 'child-next'])
+
+	exhausted = true
+	await chooseGrouping('状态', '不分组', '子分组')
+	expect(await screen.findByRole('row', { name: '打开任务 紧急进行中 A' })).toBeVisible()
+	await chooseGrouping('不分组', '状态', '子分组')
+	await screen.findByRole('button', { name: '展开 紧急 › 进行中' })
+	workspace.unmount()
+	// 清掉内存后从真实本机存储重建折叠偏好，不能仅由 Provider 重挂载证明持久化。
+	const storageKey = useShellPreferenceStore.persist.getOptions().name
+	if (!storageKey) throw new Error('折叠偏好缺少持久化存储键')
+	const persisted = localStorage.getItem(storageKey)
+	expect(persisted).not.toBeNull()
+	act(() => useShellPreferenceStore.setState({ taskBoardCollapsedGroups: {} }))
+	localStorage.setItem(storageKey, persisted!)
+	await act(async () => useShellPreferenceStore.persist.rehydrate())
+	await renderWorkspace(`${PROJECT_PATH}?v=all`)
+	const restored = await screen.findByRole('button', { name: '展开 紧急 › 进行中' })
+	expect(screen.queryByRole('row', { name: '打开任务 紧急进行中 A' })).not.toBeInTheDocument()
+	// 尚未聚焦任何任务，从子菜单折叠全部也必须把焦点恢复到仍可见的父组。
+	fireEvent.click(restored)
+	fireEvent.contextMenu(restored.closest('[data-board-section-header]')!)
+	fireEvent.click(await screen.findByRole('menuitem', { name: '折叠全部' }))
+	await waitFor(() => expect(screen.getByRole('button', { name: '展开 紧急' })).toHaveFocus())
+	expect(screen.queryAllByRole('row')).toHaveLength(0)
+	fireEvent.contextMenu(
+		screen.getByRole('button', { name: '展开 紧急' }).closest('[data-board-section-header]')!,
+	)
+	fireEvent.click(await screen.findByRole('menuitem', { name: '展开全部' }))
+	expect(screen.getByRole('row', { name: '打开任务 紧急进行中 A' })).toBeVisible()
+	expect(screen.getByRole('row', { name: '打开任务 低优先级待执行' })).toBeVisible()
+})
+
+async function chooseGrouping(current: string, next: string, dimension = '分组') {
 	fireEvent.click(screen.getByRole('button', { name: '显示选项' }))
 	const panel = await screen.findByRole('dialog', { name: '显示选项' })
-	fireEvent.click(within(panel).getByRole('button', { name: `${current} 分组` }))
+	fireEvent.click(within(panel).getByRole('button', { name: `${current} ${dimension}` }))
 	fireEvent.click(await screen.findByRole('option', { name: next }))
 	fireEvent.keyDown(panel, { key: 'Escape' })
 	await waitFor(() =>
@@ -391,6 +524,7 @@ function task(
 ): TaskQueryItem {
 	return {
 		group: { kind: 'status', status },
+		subGroup: { kind: 'none' },
 		id,
 		title,
 		status,

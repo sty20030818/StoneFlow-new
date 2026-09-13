@@ -73,7 +73,11 @@ const EMPTY_COLLAPSED_GROUP_KEYS: readonly string[] = []
  */
 export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 	const display = input.display
-	const collapseKey = JSON.stringify([input.source.collapseScopeKey, display.options.groupBy])
+	const collapseKey = JSON.stringify([
+		input.source.collapseScopeKey,
+		display.options.groupBy,
+		display.options.subGroupBy,
+	])
 	const collapsedGroupKeys = useShellPreferenceStore(
 		(state) => state.taskBoardCollapsedGroups[collapseKey] ?? EMPTY_COLLAPSED_GROUP_KEYS,
 	)
@@ -240,27 +244,38 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 		},
 		[applyCollapsedGroups, collapsedGroupKeys],
 	)
-	const handleCollapseAll = useCallback(() => {
-		const focusedKey = selection.interaction.focusedKey
-		let focusedGroupKey: string | null = null
-		if (focusedKey) {
-			for (const [groupKey, rowKeys] of collection.rowKeysByGroupKey) {
-				if (rowKeys.has(focusedKey)) {
-					focusedGroupKey = groupKey
-					break
+	const handleCollapseAll = useCallback(
+		(restoreGroupKey: string) => {
+			const allGroups = buildCollectionForCollapsedGroups([]).rowKeysByGroupKey
+			const focusedKey = selection.interaction.focusedKey
+			let focusedGroupKey: string | null = null
+			if (focusedKey) {
+				for (const [groupKey, rowKeys] of allGroups) {
+					if (rowKeys.has(focusedKey)) {
+						focusedGroupKey = groupKey
+						break
+					}
 				}
 			}
-		}
-		applyCollapsedGroups(
-			[...new Set([...collapsedGroupKeys, ...collection.rowKeysByGroupKey.keys()])],
-			focusedGroupKey,
-		)
-	}, [
-		applyCollapsedGroups,
-		collapsedGroupKeys,
-		collection.rowKeysByGroupKey,
-		selection.interaction.focusedKey,
-	])
+			applyCollapsedGroups(
+				[...new Set([...collapsedGroupKeys, ...allGroups.keys()])],
+				focusedGroupKey,
+			)
+			// 全部折叠后没有可导航行；即使先前未聚焦任务，也要回到菜单所属的可见父组。
+			setFocusIntent({
+				type: 'group-trigger',
+				groupKey: restoreGroupKey,
+				reentry: { type: 'root' },
+			})
+		},
+		[
+			applyCollapsedGroups,
+			collapsedGroupKeys,
+			buildCollectionForCollapsedGroups,
+			setFocusIntent,
+			selection.interaction.focusedKey,
+		],
+	)
 	const handleExpandAll = useCallback(() => {
 		applyCollapsedGroups([], null)
 	}, [applyCollapsedGroups])

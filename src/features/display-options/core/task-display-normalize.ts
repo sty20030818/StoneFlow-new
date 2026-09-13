@@ -51,15 +51,14 @@ export function resolveTaskDisplayOptions({
 		getFallbackValue(defaults.groupBy, capabilities.allowedGroupBy),
 	)
 
-	let subGroupBy: TaskDisplayGroupBy = normalizeChoice<TaskDisplayGroupBy>(
-		merged.subGroupBy ?? defaults.subGroupBy,
-		capabilities.allowedSubGroupBy,
-		getFallbackValue(defaults.subGroupBy, capabilities.allowedSubGroupBy),
+	const subGroupBy = normalizeSubGrouping(
+		groupBy,
+		normalizeChoice<TaskDisplayGroupBy>(
+			merged.subGroupBy ?? defaults.subGroupBy,
+			capabilities.allowedSubGroupBy,
+			getFallbackValue(defaults.subGroupBy, capabilities.allowedSubGroupBy),
+		),
 	)
-
-	if (subGroupBy === groupBy) {
-		subGroupBy = 'none'
-	}
 
 	const orderBy: TaskDisplayOrderBy = normalizeChoice<TaskDisplayOrderBy>(
 		merged.orderBy ?? defaults.orderBy,
@@ -218,9 +217,17 @@ function getFallbackValue<T extends string>(preferred: T, allowed: readonly T[])
 export function normalizeTaskWindowOrder(options: TaskWindowOrder): TaskWindowOrder {
 	return {
 		groupBy: options.groupBy,
+		subGroupBy: normalizeSubGrouping(options.groupBy, options.subGroupBy),
 		orderBy: options.orderBy,
 		orderDirection:
 			options.orderBy === 'manual' || options.orderBy === 'smart' ? 'asc' : options.orderDirection,
 		completedOrder: options.completedOrder,
 	}
+}
+
+function normalizeSubGrouping(
+	groupBy: TaskDisplayGroupBy,
+	subGroupBy: TaskDisplayGroupBy,
+): TaskDisplayGroupBy {
+	return groupBy === 'none' || subGroupBy === groupBy ? 'none' : subGroupBy
 }

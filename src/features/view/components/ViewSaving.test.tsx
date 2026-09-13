@@ -473,6 +473,7 @@ function queryTasks(query: RunTaskQueryInput) {
 		items: structuredClone(items).map((task) => ({
 			...task,
 			group: { kind: 'status', status: task.status },
+			subGroup: { kind: 'none' },
 		})),
 		totalCount: items.length,
 		nextCursor: null,

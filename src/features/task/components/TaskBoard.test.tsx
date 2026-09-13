@@ -31,6 +31,7 @@ import { focusTaskBoardTaskId } from '@/features/task/components/taskBoardFocus'
 import {
 	buildTaskBoardItemOffsets,
 	buildTaskBoardFlatItems,
+	measureTaskBoardFlatSize,
 } from '@/features/task/model/taskBoardModel'
 import { buildTaskBoardCollection } from '@/features/task/model/taskBoardCollection'
 import type { TaskDisplaySection } from '@/features/display-options'
@@ -224,9 +225,159 @@ describe('TaskBoard', () => {
 		)
 	})
 
+	it('父子组按完整路径折叠与选择，同名子组独立且父组展开保留子组折叠', async () => {
+		const tasks = [
+			createTask({ id: 'high-doing', title: '紧急进行中', priority: 4, status: 'doing' }),
+			createTask({ id: 'high-todo', title: '紧急待执行', priority: 4 }),
+			createTask({ id: 'low-todo', title: '低优先级待执行', priority: 1 }),
+		]
+		const sections = priorityStatusSectionFixture(tasks)
+		function NestedGroupProbe() {
+			const [collapsedGroupKeys, setCollapsedGroupKeys] = useState<readonly string[]>([])
+			return (
+				<TaskBoardHarness
+					tasks={tasks}
+					sections={sections}
+					collapsedGroupKeys={collapsedGroupKeys}
+					onSectionOpenChange={(groupKey, open) =>
+						setCollapsedGroupKeys((current) =>
+							open ? current.filter((key) => key !== groupKey) : [...current, groupKey],
+						)
+					}
+					onEmptyAction={() => undefined}
+					onToggleTaskStatus={async () => undefined}
+					onUpdateTaskPriority={async () => undefined}
+					onUpdateTaskStatus={async () => undefined}
+					pendingTaskId={null}
+				/>
+			)
+		}
+		renderTaskBoard(<NestedGroupProbe />)
+		fireEvent.click(screen.getByRole('button', { name: '折叠 紧急 › 待执行' }))
+		expect(screen.queryByRole('row', { name: '打开任务 紧急待执行' })).not.toBeInTheDocument()
+		expect(screen.getByRole('row', { name: '打开任务 低优先级待执行' })).toHaveAttribute(
+			'aria-rowindex',
+			'2',
+		)
+		fireEvent.contextMenu(
+			screen.getByRole('button', { name: '折叠 紧急' }).closest('[data-board-section-header]')!,
+		)
+		fireEvent.click(await screen.findByRole('menuitem', { name: '选中全部' }))
+		await waitFor(() =>
+			expect(screen.getByTestId('selected-keys')).toHaveTextContent(/^high-doing,high-todo$/),
+		)
+		expect(screen.getByRole('row', { name: '打开任务 低优先级待执行' })).toHaveAttribute(
+			'aria-selected',
+			'false',
+		)
+		fireEvent.click(screen.getByRole('button', { name: '折叠 紧急' }))
+		expect(screen.queryByRole('button', { name: '展开 紧急 › 待执行' })).not.toBeInTheDocument()
+		expect(screen.queryByRole('row', { name: '打开任务 紧急进行中' })).not.toBeInTheDocument()
+		expect(screen.getByRole('row', { name: '打开任务 低优先级待执行' })).toHaveAttribute(
+			'aria-rowindex',
+			'1',
+		)
+		fireEvent.click(screen.getByRole('button', { name: '展开 紧急' }))
+		const childTrigger = screen.getByRole('button', { name: '展开 紧急 › 待执行' })
+		expect(childTrigger).toHaveAttribute('aria-expanded', 'false')
+		fireEvent.contextMenu(childTrigger.closest('[data-board-section-header]')!)
+		fireEvent.click(await screen.findByRole('menuitem', { name: '取消选中全部' }))
+		await waitFor(() =>
+			expect(screen.getByTestId('selected-keys')).toHaveTextContent(/^high-doing$/),
+		)
+		await waitFor(() => expect(childTrigger).toHaveFocus())
+		fireEvent.click(childTrigger)
+		expect(screen.getByRole('row', { name: '打开任务 紧急待执行' })).toHaveAttribute(
+			'aria-selected',
+			'false',
+		)
+	})
+
+	it('Shift 范围选择停在兄弟叶组边界，状态子组创建只使用自身动作元数据', async () => {
+		const tasks = [
+			createTask({ id: 'high-doing', title: '紧急进行中', priority: 4, status: 'doing' }),
+			createTask({ id: 'high-todo', title: '紧急待执行', priority: 4 }),
+		]
+		useDialogStore.setState(useDialogStore.getInitialState())
+		try {
+			renderTaskBoard(
+				<TaskBoardHarness
+					tasks={tasks}
+					sections={priorityStatusSectionFixture(tasks)}
+					createProjectId='project-alpha'
+					onEmptyAction={() => undefined}
+					onToggleTaskStatus={async () => undefined}
+					onUpdateTaskPriority={async () => undefined}
+					onUpdateTaskStatus={async () => undefined}
+					pendingTaskId={null}
+				/>,
+			)
+			const firstRow = screen.getByRole('row', { name: '打开任务 紧急进行中' })
+			act(() => firstRow.focus())
+			fireEvent.keyDown(firstRow, { key: 'ArrowDown', shiftKey: true })
+			fireEvent.keyDown(firstRow, { key: 'ArrowDown', shiftKey: true })
+			await waitFor(() => expect(firstRow).toHaveFocus())
+			expect(screen.getByTestId('selected-keys')).toHaveTextContent(/^high-doing$/)
+			expect(screen.queryByRole('button', { name: '在 紧急 中创建任务' })).not.toBeInTheDocument()
+			fireEvent.click(screen.getByRole('button', { name: '在 紧急 › 进行中 中创建任务' }))
+			expect(useDialogStore.getState().taskCreateDraft).toMatchObject({
+				projectId: 'project-alpha',
+				status: 'doing',
+			})
+		} finally {
+			act(() => useDialogStore.getState().closeTaskCreateDialog())
+		}
+	})
+
+	it('没有任务焦点时从子组菜单折叠全部，显式恢复父组按钮', async () => {
+		const tasks = [createTask({ id: 'high-todo', title: '紧急待执行', priority: 4 })]
+		const sections = priorityStatusSectionFixture(tasks)
+		const onCollapseAll = vi.fn()
+		function CollapseAllProbe() {
+			const [collapsedGroupKeys, setCollapsedGroupKeys] = useState<readonly string[]>([])
+			const [focusIntent, setFocusIntent] = useState<CollectionFocusIntent<string, string> | null>(
+				null,
+			)
+			return (
+				<TaskBoardHarness
+					tasks={tasks}
+					sections={sections}
+					collapsedGroupKeys={collapsedGroupKeys}
+					focusIntent={focusIntent}
+					onFocusIntentConsumed={() => setFocusIntent(null)}
+					onCollapseAll={(restoreGroupKey) => {
+						onCollapseAll(restoreGroupKey)
+						setCollapsedGroupKeys(['h:priority:4'])
+						setFocusIntent({
+							type: 'group-trigger',
+							groupKey: restoreGroupKey,
+							reentry: { type: 'root' },
+						})
+					}}
+					onEmptyAction={() => undefined}
+					onToggleTaskStatus={async () => undefined}
+					onUpdateTaskPriority={async () => undefined}
+					onUpdateTaskStatus={async () => undefined}
+					pendingTaskId={null}
+				/>
+			)
+		}
+		renderTaskBoard(<CollapseAllProbe />)
+		expect(screen.getByTestId('focused-key')).toHaveTextContent('none')
+		fireEvent.contextMenu(
+			screen
+				.getByRole('button', { name: '折叠 紧急 › 待执行' })
+				.closest('[data-board-section-header]')!,
+		)
+		fireEvent.click(await screen.findByRole('menuitem', { name: '折叠全部' }))
+		expect(onCollapseAll).toHaveBeenCalledWith('h:priority:4')
+		expect(screen.queryByRole('button', { name: '折叠 紧急 › 待执行' })).not.toBeInTheDocument()
+		await waitFor(() => expect(screen.getByRole('button', { name: '展开 紧急' })).toHaveFocus())
+	})
+
 	it('创建动作使用状态元数据预填项目与状态，不从非状态标签推断动作', () => {
 		const tasks = [
-			createTask({ id: 'task-a', title: '任务 A', status: 'doing' }),
+			createTask({ id: 'task-a', title: '任务 A', status: 'doing', priority: 4 }),
 			createTask({ id: 'task-b', title: '任务 B' }),
 		]
 		useDialogStore.setState(useDialogStore.getInitialState())
@@ -235,7 +386,19 @@ describe('TaskBoard', () => {
 				<TaskBoardHarness
 					tasks={tasks}
 					sections={[
-						{ key: 'status:doing', label: '处理队列', status: 'doing', tasks: tasks.slice(0, 1) },
+						{
+							key: 'status:doing',
+							label: '处理队列',
+							status: 'doing',
+							tasks: tasks.slice(0, 1),
+							children: [
+								{
+									key: JSON.stringify(['status:doing', 'priority:4']),
+									label: '紧急',
+									tasks: tasks.slice(0, 1),
+								},
+							],
+						},
 						{ key: 'project:todo', label: '待执行', tasks: tasks.slice(1) },
 					]}
 					createProjectId='project-alpha'
@@ -248,6 +411,10 @@ describe('TaskBoard', () => {
 			)
 			expect(screen.getByRole('button', { name: '折叠 待执行' })).toBeInTheDocument()
 			expect(screen.queryByRole('button', { name: '在 待执行 中创建任务' })).not.toBeInTheDocument()
+			expect(screen.getByRole('button', { name: '折叠 处理队列 › 紧急' })).toBeInTheDocument()
+			expect(
+				screen.queryByRole('button', { name: '在 处理队列 › 紧急 中创建任务' }),
+			).not.toBeInTheDocument()
 			fireEvent.click(screen.getByRole('button', { name: '在 处理队列 中创建任务' }))
 			expect(useDialogStore.getState()).toMatchObject({
 				createDialogType: 'task',
@@ -991,7 +1158,7 @@ describe('TaskBoard', () => {
 			expect(screen.getByTestId('focused-key')).toHaveTextContent('task-2')
 		})
 	})
-	it('离屏与 overscan 已挂载 key 都先滚进 sticky-safe 可见区再聚焦', async () => {
+	it('两级组内行与离屏父组都先滚进 sticky-safe 可见区再聚焦', async () => {
 		vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(
 			function (this: HTMLElement) {
 				return this.dataset.scrollContainer === 'true' ? 720 : 0
@@ -1017,32 +1184,56 @@ describe('TaskBoard', () => {
 			value: scrollTo,
 		})
 		const tasks = Array.from({ length: 100 }, (_, index) =>
-			createTask({ id: `task-${index}`, title: `任务 ${index}` }),
+			createTask({ id: `task-${index}`, title: `任务 ${index}`, priority: 4 }),
 		)
+		const sections = priorityStatusSectionFixture(tasks)
 		const flatItems = buildTaskBoardFlatItems({
-			sections: statusSectionFixture(tasks),
+			sections,
 		})
 		const itemOffsets = buildTaskBoardItemOffsets(flatItems)
-		try {
-			renderTaskBoard(
-				<AppScrollArea>
-					<TaskBoardHarness
-						onEmptyAction={() => undefined}
-						onToggleTaskStatus={async () => undefined}
-						onUpdateTaskPriority={async () => undefined}
-						onUpdateTaskStatus={async () => undefined}
-						pendingTaskId={null}
-						status='ready'
-						tasks={tasks}
-					/>
-				</AppScrollArea>,
+		function FocusProbe() {
+			const [focusIntent, setFocusIntent] = useState<CollectionFocusIntent<string, string> | null>(
+				null,
 			)
+			return (
+				<>
+					<button
+						type='button'
+						onClick={() =>
+							setFocusIntent({
+								type: 'group-trigger',
+								groupKey: 'h:priority:4',
+								reentry: { type: 'root' },
+							})
+						}
+					>
+						恢复离屏父组焦点
+					</button>
+					<AppScrollArea>
+						<TaskBoardHarness
+							sections={sections}
+							focusIntent={focusIntent}
+							onFocusIntentConsumed={() => setFocusIntent(null)}
+							onEmptyAction={() => undefined}
+							onToggleTaskStatus={async () => undefined}
+							onUpdateTaskPriority={async () => undefined}
+							onUpdateTaskStatus={async () => undefined}
+							pendingTaskId={null}
+							status='ready'
+							tasks={tasks}
+						/>
+					</AppScrollArea>
+				</>
+			)
+		}
+		try {
+			renderTaskBoard(<FocusProbe />)
 
 			const viewport = document.querySelector<HTMLElement>('[data-scroll-container="true"]')
 			if (!viewport) throw new Error('TaskBoard scroll viewport 未挂载')
 			Object.defineProperties(viewport, {
 				clientHeight: { configurable: true, value: 720 },
-				scrollHeight: { configurable: true, value: 4_684 },
+				scrollHeight: { configurable: true, value: measureTaskBoardFlatSize(flatItems) },
 			})
 			await waitFor(() => expect(scrollTo).toHaveBeenCalled())
 			await act(async () => {
@@ -1129,6 +1320,20 @@ describe('TaskBoard', () => {
 					}),
 				).toHaveFocus(),
 			)
+			expect(screen.queryByRole('button', { name: '折叠 紧急' })).not.toBeInTheDocument()
+			if (!stickyHeader) throw new Error('两级任务组缺少 sticky header')
+			expect(
+				within(stickyHeader).getByText('紧急 › 待执行').closest('[data-board-section-header]'),
+			).toHaveStyle({ height: '36px' })
+			expect(screen.getAllByRole('button', { name: '折叠 紧急 › 待执行' })).toHaveLength(1)
+			scrollTo.mockClear()
+			pendingScrollEvents.length = 0
+			fireEvent.click(screen.getByRole('button', { name: '恢复离屏父组焦点' }))
+			await act(async () => {
+				await Promise.all(pendingScrollEvents)
+			})
+			expect(scrollTo).toHaveBeenCalledWith({ top: 0 })
+			await waitFor(() => expect(screen.getByRole('button', { name: '折叠 紧急' })).toHaveFocus())
 		} finally {
 			if (originalScrollTo) {
 				Object.defineProperty(HTMLElement.prototype, 'scrollTo', originalScrollTo)
@@ -1137,6 +1342,135 @@ describe('TaskBoard', () => {
 			}
 		}
 	})
+
+	it.each([
+		{ name: '任务行', intent: { type: 'item', key: 'late-task' } },
+		{
+			name: '分组按钮',
+			intent: {
+				type: 'group-trigger',
+				groupKey: 'h:priority:1',
+				reentry: { type: 'item', key: 'late-task' },
+			},
+		},
+	] satisfies Array<{ name: string; intent: CollectionFocusIntent<string, string> }>)(
+		'$name：旧窗口待挂载焦点请求不能在新窗口兑现',
+		async ({ intent }) => {
+			vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(
+				function (this: HTMLElement) {
+					return this.dataset.scrollContainer === 'true' ? 720 : 0
+				},
+			)
+			vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(
+				function (this: HTMLElement) {
+					return this.dataset.scrollContainer === 'true' ? 960 : 0
+				},
+			)
+			const originalScrollTo = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollTo')
+			// 模拟平台尚未分发请求后的 scroll 事件，目标仍未进入真实虚拟挂载范围。
+			const scrollTo = vi.fn()
+			Object.defineProperty(HTMLElement.prototype, 'scrollTo', {
+				configurable: true,
+				value: scrollTo,
+			})
+			const target = createTask({ id: 'late-task', title: '延后挂载任务', priority: 1 })
+			const oldTasks = [
+				...Array.from({ length: 80 }, (_, index) =>
+					createTask({
+						id: `old-${index}`,
+						title: `旧窗口任务 ${index}`,
+						priority: index < 40 ? 4 : 2,
+					}),
+				),
+				target,
+			]
+			const oldSections: TaskDisplaySection[] = [
+				{ key: 'priority:4', label: '紧急', tasks: oldTasks.slice(0, 40) },
+				{ key: 'priority:2', label: '普通', tasks: oldTasks.slice(40, 80) },
+				{ key: 'priority:1', label: '低', tasks: [target] },
+			]
+			const consumed = vi.fn()
+			function WindowProbe() {
+				const [phase, setPhase] = useState<'old' | 'loading' | 'ready'>('old')
+				const [focusIntent, setFocusIntent] = useState<CollectionFocusIntent<
+					string,
+					string
+				> | null>(null)
+				const tasks = phase === 'old' ? oldTasks : phase === 'ready' ? [target] : []
+				return (
+					<>
+						<button type='button' onClick={() => setFocusIntent(intent)}>
+							请求旧窗口焦点
+						</button>
+						<button
+							type='button'
+							onClick={() => {
+								setFocusIntent(null)
+								setPhase('loading')
+							}}
+						>
+							切换新窗口
+						</button>
+						<button type='button' onClick={() => setPhase('ready')}>
+							新窗口返回
+						</button>
+						<AppScrollArea>
+							<TaskBoardHarness
+								tasks={tasks}
+								sections={
+									phase === 'old' ? oldSections : [{ key: 'priority:1', label: '低', tasks }]
+								}
+								status={phase === 'loading' ? 'loading' : 'ready'}
+								pagination={{
+									sourceKey: phase === 'old' ? 'old-window' : 'new-window',
+									loadedPageCount: 1,
+									state: 'exhausted',
+								}}
+								focusIntent={focusIntent}
+								onFocusIntentConsumed={(current) => {
+									consumed(current)
+									setFocusIntent(null)
+								}}
+								onEmptyAction={() => undefined}
+								onToggleTaskStatus={async () => undefined}
+								onUpdateTaskPriority={async () => undefined}
+								onUpdateTaskStatus={async () => undefined}
+								pendingTaskId={null}
+							/>
+						</AppScrollArea>
+					</>
+				)
+			}
+			try {
+				renderTaskBoard(<WindowProbe />)
+				expect(screen.queryByRole('row', { name: '打开任务 延后挂载任务' })).not.toBeInTheDocument()
+				expect(screen.queryByRole('button', { name: '折叠 低' })).not.toBeInTheDocument()
+				scrollTo.mockClear()
+				fireEvent.click(screen.getByRole('button', { name: '请求旧窗口焦点' }))
+				expect(consumed).toHaveBeenCalledWith(intent)
+				expect(scrollTo).toHaveBeenCalled()
+				expect(screen.queryByRole('row', { name: '打开任务 延后挂载任务' })).not.toBeInTheDocument()
+				fireEvent.click(screen.getByRole('button', { name: '切换新窗口' }))
+				expect(screen.getByRole('region', { name: '正在读取任务' })).toBeInTheDocument()
+				const returnButton = screen.getByRole('button', { name: '新窗口返回' })
+				act(() => returnButton.focus())
+				fireEvent.click(returnButton)
+				expect(
+					await screen.findByRole('row', { name: '打开任务 延后挂载任务' }),
+				).toBeInTheDocument()
+				expect(screen.getByRole('button', { name: '折叠 低' })).toBeInTheDocument()
+				expect(returnButton).toHaveFocus()
+				const groupTrigger = screen.getByRole('button', { name: '折叠 低' })
+				act(() => groupTrigger.focus())
+				fireEvent.keyDown(groupTrigger, { key: 'ArrowDown' })
+				expect(groupTrigger).toHaveFocus()
+			} finally {
+				if (originalScrollTo)
+					Object.defineProperty(HTMLElement.prototype, 'scrollTo', originalScrollTo)
+				else Reflect.deleteProperty(HTMLElement.prototype, 'scrollTo')
+			}
+		},
+	)
 
 	it('最后一项删除后 stable id 失效时聚焦空态主操作', async () => {
 		function EmptyFallbackProbe() {
@@ -1280,6 +1614,7 @@ type TaskBoardHarnessProps = Omit<
 	focusIntent?: CollectionFocusIntent<string, string> | null
 	onFocusIntentConsumed?: (intent: CollectionFocusIntent<string, string>) => void
 	onSectionOpenChange?: TaskBoardProps['onSectionOpenChange']
+	onCollapseAll?: TaskBoardProps['onCollapseAll']
 	pagination?: TaskBoardPagination
 	onRetry?: TaskBoardProps['onRetry']
 	collapsedGroupKeys?: readonly string[]
@@ -1291,6 +1626,7 @@ function TaskBoardHarness({
 	focusIntent = null,
 	onFocusIntentConsumed = () => undefined,
 	onSectionOpenChange = () => undefined,
+	onCollapseAll = () => undefined,
 	pagination = { sourceKey: 'test', loadedPageCount: 1, state: 'exhausted' },
 	onRetry = () => undefined,
 	collapsedGroupKeys = [],
@@ -1328,7 +1664,7 @@ function TaskBoardHarness({
 				collectionInteraction={collectionInteraction}
 				flatItems={flatItems}
 				focusIntent={focusIntent}
-				onCollapseAll={() => undefined}
+				onCollapseAll={onCollapseAll}
 				onExpandAll={() => undefined}
 				onFocusIntentConsumed={onFocusIntentConsumed}
 				pagination={pagination}
@@ -1379,4 +1715,17 @@ function statusSectionFixture(tasks: TaskListItem[]): TaskDisplaySection[] {
 			tasks: tasks.filter((task) => task.status === status),
 		}),
 	)
+}
+
+function priorityStatusSectionFixture(tasks: TaskListItem[]): TaskDisplaySection[] {
+	return [
+		{ key: 'priority:4', label: '紧急', tasks: tasks.filter((task) => task.priority === 4) },
+		{ key: 'priority:1', label: '低', tasks: tasks.filter((task) => task.priority === 1) },
+	].map((parent) => ({
+		...parent,
+		children: statusSectionFixture(parent.tasks).map((child) => ({
+			...child,
+			key: JSON.stringify([parent.key, child.key]),
+		})),
+	}))
 }

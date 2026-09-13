@@ -5,6 +5,7 @@ import {
 	getTaskDisplayPageKind,
 	isTaskDisplayPageKey,
 	normalizeTaskDisplayPreference,
+	normalizeTaskWindowOrder,
 	resolveTaskDisplayOptions,
 } from './index'
 
@@ -23,6 +24,24 @@ describe('display-page-key', () => {
 })
 
 describe('resolveTaskDisplayOptions', () => {
+	it.each([
+		{ groupBy: 'none', subGroupBy: 'status', expected: 'none' },
+		{ groupBy: 'status', subGroupBy: 'status', expected: 'none' },
+		{ groupBy: 'priority', subGroupBy: 'status', expected: 'status' },
+	] as const)(
+		'面板与执行使用相同的有效主子路径：$groupBy / $subGroupBy',
+		({ groupBy, subGroupBy, expected }) => {
+			const options = resolveTaskDisplayOptions({
+				pageKey: 'task:all',
+				personalOverride: { groupBy, subGroupBy },
+			})
+			expect(options.subGroupBy).toBe(expected)
+			expect(normalizeTaskWindowOrder({ ...options, groupBy, subGroupBy }).subGroupBy).toBe(
+				expected,
+			)
+		},
+	)
+
 	it('返回 task:all 的系统默认值', () => {
 		expect(resolveTaskDisplayOptions({ pageKey: 'task:all' })).toEqual({
 			groupBy: 'status',

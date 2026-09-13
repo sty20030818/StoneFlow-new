@@ -6,6 +6,7 @@ vi.mock('@tauri-apps/api/core', () => ({ invoke: invokeMock }))
 const windowInput = {
 	order: {
 		groupBy: 'priority' as const,
+		subGroupBy: 'due' as const,
 		orderBy: 'priority' as const,
 		orderDirection: 'desc' as const,
 		completedOrder: 'natural' as const,
@@ -32,9 +33,15 @@ beforeEach(() => invokeMock.mockReset())
 
 it('保存视图返回查询产生的分组身份，不在 IPC 适配时丢失', async () => {
 	const group = { kind: 'due', bucket: 'today' }
-	invokeMock.mockResolvedValue({ view: record, items: [{ id: 'task-1', group }], totalCount: 1 })
+	const subGroup = { kind: 'status', status: 'todo' }
+	invokeMock.mockResolvedValue({
+		view: record,
+		items: [{ id: 'task-1', group, subGroup }],
+		totalCount: 1,
+	})
 	const result = await runTaskView({ scope: definition.scope, viewId: record.id, ...windowInput })
 	expect(result.items[0].group).toEqual(group)
+	expect(result.items[0].subGroup).toEqual(subGroup)
 })
 
 it('没有可信身份的列表响应报读取失败，不生成无法清理的记录', async () => {

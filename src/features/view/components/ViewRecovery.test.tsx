@@ -329,6 +329,7 @@ function unavailableView(id: string, name: string, scope: Scope | null, definiti
 function projectTask(title: string): TaskQueryItem {
 	return {
 		group: { kind: 'status', status: 'todo' },
+		subGroup: { kind: 'none' },
 		id: 'project-task',
 		title,
 		spaceId: 'space-1',

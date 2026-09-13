@@ -250,6 +250,7 @@ async fn every_global_order_pages_through_real_sqlite_without_duplicates_or_omis
             for completed_order in [TaskCompletedOrder::Natural, TaskCompletedOrder::Recency] {
                 let order = TaskQueryOrder {
                     group_by: TaskGroupBy::None,
+                    sub_group_by: TaskGroupBy::None,
                     order_by,
                     order_direction,
                     completed_order,
@@ -306,6 +307,7 @@ async fn saved_view_uses_same_order_and_manual_ignores_metadata_updates_except_e
     let tasks = build_task_service(database.connection().clone());
     let order = TaskQueryOrder {
         group_by: TaskGroupBy::None,
+        sub_group_by: TaskGroupBy::None,
         order_by: TaskOrderBy::Manual,
         order_direction: TaskOrderDirection::Asc,
         completed_order: TaskCompletedOrder::Natural,
@@ -411,6 +413,7 @@ async fn date_membership_and_count_do_not_round_last_microseconds_into_tomorrow(
         filters: FilterQueryValue::default(),
         order: TaskQueryOrder {
             group_by: TaskGroupBy::None,
+            sub_group_by: TaskGroupBy::None,
             order_by: TaskOrderBy::DueAt,
             order_direction: TaskOrderDirection::Asc,
             completed_order: TaskCompletedOrder::Natural,
@@ -617,6 +620,7 @@ async fn primary_groups_and_row_identities_share_stable_windows_and_leaf_recency
             for completed_order in [TaskCompletedOrder::Natural, TaskCompletedOrder::Recency] {
                 let order = TaskQueryOrder {
                     group_by,
+                    sub_group_by: TaskGroupBy::None,
                     order_by,
                     order_direction,
                     completed_order,
@@ -689,6 +693,7 @@ async fn grouping_changes_invalidate_cursors_and_saved_view_returns_the_same_gro
         date_basis: "2026-09-10".to_owned(),
         ..input(TaskQueryOrder {
             group_by: TaskGroupBy::Project,
+            sub_group_by: TaskGroupBy::None,
             order_by: TaskOrderBy::Priority,
             order_direction: TaskOrderDirection::Desc,
             completed_order: TaskCompletedOrder::Recency,
@@ -730,4 +735,273 @@ async fn grouping_changes_invalidate_cursors_and_saved_view_returns_the_same_gro
         })
         .await
         .is_err());
+}
+
+async fn nested_fixture() -> (TestDatabase, Vec<CreateTaskRecord>, HashMap<String, String>) {
+    let (database, mut rows, projects) = grouped_fixture().await;
+    let moments = rows
+        .iter()
+        .take(7)
+        .map(|row| row.due_at.clone())
+        .collect::<Vec<_>>();
+    let repository = TaskRepository::new(database.connection().clone());
+    // 主、子维度必须能相互交叉；不能让项目和两个日期字段使用同一个循环。
+    for (index, row) in rows.iter_mut().enumerate() {
+        row.due_at = moments[(index / 7) % 7].clone();
+        row.planned_at = moments[(index / 49) % 7].clone();
+        repository
+            .update(
+                database.connection(),
+                &row.id,
+                UpdateTaskPatch {
+                    due_at: Some(row.due_at.clone()),
+                    planned_at: Some(row.planned_at.clone()),
+                    ..Default::default()
+                },
+                &row.updated_at,
+            )
+            .await
+            .unwrap();
+    }
+    (database, rows, projects)
+}
+
+#[tokio::test]
+async fn every_nested_group_pair_pages_in_product_order_with_distinct_leaf_identities() {
+    let (database, rows, projects) = nested_fixture().await;
+    let service = build_view_service(database.connection().clone());
+    let dimensions = [
+        TaskGroupBy::Status,
+        TaskGroupBy::Priority,
+        TaskGroupBy::Project,
+        TaskGroupBy::Due,
+        TaskGroupBy::Scheduled,
+    ];
+    for group_by in dimensions {
+        for sub_group_by in dimensions {
+            if group_by == sub_group_by {
+                continue;
+            }
+            for (order_by, order_direction) in [
+                (TaskOrderBy::Manual, TaskOrderDirection::Asc),
+                (TaskOrderBy::Smart, TaskOrderDirection::Asc),
+                (TaskOrderBy::Priority, TaskOrderDirection::Desc),
+                (TaskOrderBy::DueAt, TaskOrderDirection::Desc),
+            ] {
+                for completed_order in [TaskCompletedOrder::Natural, TaskCompletedOrder::Recency] {
+                    let order = TaskQueryOrder {
+                        group_by,
+                        sub_group_by,
+                        order_by,
+                        order_direction,
+                        completed_order,
+                    };
+                    let mut expected = rows.iter().collect::<Vec<_>>();
+                    expected.sort_by(|left, right| {
+                        compare_group(
+                            &expected_group(left, group_by, &projects),
+                            &expected_group(right, group_by, &projects),
+                        )
+                        .then_with(|| {
+                            compare_group(
+                                &expected_group(left, sub_group_by, &projects),
+                                &expected_group(right, sub_group_by, &projects),
+                            )
+                        })
+                        .then_with(|| compare(left, right, order))
+                    });
+                    let mut query = RunTaskQueryInput {
+                        date_basis: "2026-09-10".to_owned(),
+                        ..input(order)
+                    };
+                    let mut actual = Vec::new();
+                    let mut visited_paths = HashSet::new();
+                    let mut last_path = None;
+                    let mut crossed_leaf_page = false;
+                    for page_index in 0..3 {
+                        let page = service.run_task_query(query.clone()).await.unwrap();
+                        assert_eq!(page.total_count, (page_index == 0).then_some(337));
+                        assert_eq!(page.items.len(), if page_index < 2 { 150 } else { 37 });
+                        if page_index > 0
+                            && page.items.first().is_some_and(|item| {
+                                last_path.as_ref()
+                                    == Some(&(item.group.clone(), item.sub_group.clone()))
+                            })
+                        {
+                            crossed_leaf_page = true;
+                        }
+                        for item in &page.items {
+                            let expected_row = expected[actual.len()];
+                            assert_eq!(item.id, expected_row.id, "{order:?}, page {page_index}");
+                            let path = (item.group.clone(), item.sub_group.clone());
+                            assert_eq!(
+                                path,
+                                (
+                                    expected_group(expected_row, group_by, &projects),
+                                    expected_group(expected_row, sub_group_by, &projects)
+                                ),
+                                "{order:?}"
+                            );
+                            if last_path.as_ref() != Some(&path) {
+                                assert!(
+                                    visited_paths.insert(serde_json::to_string(&path).unwrap()),
+                                    "{order:?}: 后页回到了之前的叶组"
+                                );
+                                last_path = Some(path);
+                            }
+                            actual.push(item.id.clone());
+                        }
+                        query.cursor = page.next_cursor;
+                        assert_eq!(query.cursor.is_some(), page_index < 2);
+                    }
+                    assert!(crossed_leaf_page, "{order:?}: 夹具必须覆盖同子组跨页");
+                    assert_eq!(actual.iter().collect::<HashSet<_>>().len(), 337);
+                }
+            }
+        }
+    }
+}
+
+#[tokio::test]
+async fn nested_cursors_bind_effective_paths_and_saved_views_share_every_page() {
+    let (database, _, _) = nested_fixture().await;
+    let service = build_view_service(database.connection().clone());
+    let query = RunTaskQueryInput {
+        date_basis: "2026-09-10".to_owned(),
+        ..input(TaskQueryOrder {
+            group_by: TaskGroupBy::Priority,
+            sub_group_by: TaskGroupBy::Project,
+            order_by: TaskOrderBy::DueAt,
+            order_direction: TaskOrderDirection::Desc,
+            completed_order: TaskCompletedOrder::Recency,
+        })
+    };
+    let view = service
+        .create_view(CreateViewInput {
+            name: "两级分组".to_owned(),
+            scope: query.scope.clone(),
+            context: query.context.clone(),
+            base_view_key: query.base_view_key,
+            filters: query.filters.clone(),
+        })
+        .await
+        .unwrap();
+    let saved_input = RunTaskViewInput {
+        scope: query.scope.clone(),
+        view_id: view.id,
+        filters: None,
+        order: query.order,
+        date_basis: query.date_basis.clone(),
+        cursor: None,
+    };
+    let first = service.run_task_query(query.clone()).await.unwrap();
+    assert_eq!(
+        serde_json::from_str::<serde_json::Value>(first.next_cursor.as_deref().unwrap()).unwrap()
+            ["version"],
+        3
+    );
+    let mut paged = query.clone();
+    for page_index in 0..3 {
+        let page = service.run_task_query(paged.clone()).await.unwrap();
+        let saved = service
+            .run_task_view(RunTaskViewInput {
+                cursor: paged.cursor.clone(),
+                ..saved_input.clone()
+            })
+            .await
+            .unwrap();
+        assert_eq!(saved.items, page.items);
+        assert_eq!(saved.next_cursor, page.next_cursor);
+        assert_eq!(saved.total_count, page.total_count);
+        paged.cursor = page.next_cursor;
+        assert_eq!(paged.cursor.is_some(), page_index < 2);
+    }
+    for sub_group_by in [
+        TaskGroupBy::None,
+        TaskGroupBy::Status,
+        TaskGroupBy::Due,
+        TaskGroupBy::Scheduled,
+    ] {
+        let order = TaskQueryOrder {
+            sub_group_by,
+            ..query.order
+        };
+        assert!(service
+            .run_task_query(RunTaskQueryInput {
+                order,
+                cursor: first.next_cursor.clone(),
+                ..query.clone()
+            })
+            .await
+            .is_err());
+        assert!(service
+            .run_task_view(RunTaskViewInput {
+                order,
+                cursor: first.next_cursor.clone(),
+                ..saved_input.clone()
+            })
+            .await
+            .is_err());
+    }
+    for version in [1, 2] {
+        let mut old: serde_json::Value =
+            serde_json::from_str(first.next_cursor.as_deref().unwrap()).unwrap();
+        old["version"] = serde_json::json!(version);
+        assert!(service
+            .run_task_query(RunTaskQueryInput {
+                cursor: Some(old.to_string()),
+                ..query.clone()
+            })
+            .await
+            .is_err());
+        assert!(service
+            .run_task_view(RunTaskViewInput {
+                cursor: Some(old.to_string()),
+                ..saved_input.clone()
+            })
+            .await
+            .is_err());
+    }
+    for (group_by, sub_group_by) in [
+        (TaskGroupBy::None, TaskGroupBy::Project),
+        (TaskGroupBy::Priority, TaskGroupBy::Priority),
+    ] {
+        let canonical = RunTaskQueryInput {
+            order: TaskQueryOrder {
+                group_by,
+                sub_group_by: TaskGroupBy::None,
+                ..query.order
+            },
+            ..query.clone()
+        };
+        let effective = RunTaskQueryInput {
+            order: TaskQueryOrder {
+                sub_group_by,
+                ..canonical.order
+            },
+            ..canonical.clone()
+        };
+        let canonical_first = service.run_task_query(canonical.clone()).await.unwrap();
+        let effective_first = service.run_task_query(effective.clone()).await.unwrap();
+        assert_eq!(canonical_first, effective_first);
+        assert!(effective_first
+            .items
+            .iter()
+            .all(|item| item.sub_group == TaskQueryGroup::None));
+        let canonical_next = service
+            .run_task_query(RunTaskQueryInput {
+                cursor: canonical_first.next_cursor.clone(),
+                ..canonical
+            })
+            .await
+            .unwrap();
+        let effective_next = service
+            .run_task_query(RunTaskQueryInput {
+                cursor: canonical_first.next_cursor,
+                ..effective
+            })
+            .await
+            .unwrap();
+        assert_eq!(canonical_next, effective_next);
+    }
 }

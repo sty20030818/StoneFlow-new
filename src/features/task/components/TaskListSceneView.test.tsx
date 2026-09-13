@@ -345,6 +345,7 @@ function createTask(
 		projectName: null,
 		status: overrides.status ?? 'todo',
 		group: overrides.group ?? { kind: 'status', status: overrides.status ?? 'todo' },
+		subGroup: overrides.subGroup ?? { kind: 'none' },
 		statusChangedAt: '2026-08-17T08:00:00.000Z',
 		priority: 0,
 		dueAt: null,

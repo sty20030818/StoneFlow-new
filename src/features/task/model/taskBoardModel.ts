@@ -20,6 +20,8 @@ export type TaskBoardFlatHeader = {
 	label: string
 	count: number
 	status?: TaskStatus
+	parentKey: string | null
+	parentLabel: string | null
 	open: boolean
 	/** 当前组的全部已加载成员，折叠只影响行的可见性。 */
 	tasks: readonly TaskListItem[]
@@ -45,8 +47,8 @@ export function buildTaskBoardFlatItems({
 }: BuildTaskBoardFlatItemsInput): TaskBoardFlatItem[] {
 	const items: TaskBoardFlatItem[] = []
 	const collapsed = new Set(collapsedGroupKeys)
-	for (const section of sections) {
-		if (section.tasks.length === 0) continue
+	const appendHeader = (section: TaskDisplaySection, parent: TaskDisplaySection | null) => {
+		if (section.tasks.length === 0) return false
 		const key = `h:${section.key}`
 		const open = !collapsed.has(key)
 		items.push({
@@ -55,10 +57,21 @@ export function buildTaskBoardFlatItems({
 			label: section.label,
 			count: section.tasks.length,
 			status: section.status,
+			parentKey: parent ? `h:${parent.key}` : null,
+			parentLabel: parent?.label ?? null,
 			open,
 			tasks: section.tasks,
 		})
-		if (open) {
+		return open
+	}
+	for (const section of sections) {
+		if (!appendHeader(section, null)) continue
+		if (section.children) {
+			for (const child of section.children) {
+				if (!appendHeader(child, section)) continue
+				for (const task of child.tasks) items.push({ kind: 'row', key: task.id, task })
+			}
+		} else {
 			for (const task of section.tasks) items.push({ kind: 'row', key: task.id, task })
 		}
 	}

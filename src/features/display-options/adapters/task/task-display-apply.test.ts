@@ -10,6 +10,7 @@ function createTask(
 ): TaskQueryItem {
 	return {
 		group: overrides.group ?? { kind: 'none' },
+		subGroup: overrides.subGroup ?? { kind: 'none' },
 		id: overrides.id,
 		title: overrides.title,
 		spaceId: overrides.spaceId ?? 'space-1',
@@ -32,6 +33,92 @@ function createTask(
 }
 
 describe('task-display adapters', () => {
+	it('跨页子组按完整父路径合并，保留每个叶组的输入顺序与唯一选择顺序', () => {
+		const groupA = { kind: 'project', projectId: 'a', projectName: '同名项目' } as const
+		const groupB = { kind: 'project', projectId: 'b', projectName: '同名项目' } as const
+		const today = { kind: 'due', bucket: 'today' } as const
+		const later = { kind: 'due', bucket: 'later' } as const
+		const page1 = [
+			createTask({
+				id: 'a-open',
+				title: 'A',
+				group: groupA,
+				subGroup: today,
+				dueAt: '2000-01-01T00:00:00Z',
+			}),
+		]
+		const page2 = [
+			createTask({ id: 'a-done', title: 'B', group: groupA, subGroup: today, status: 'done' }),
+			createTask({ id: 'a-later', title: 'C', group: groupA, subGroup: later }),
+			createTask({ id: 'b-today', title: 'D', group: groupB, subGroup: today }),
+		]
+		const result = applyTaskDisplayOptionsToTasks({
+			items: [...page1, ...page2],
+			options: resolveTaskDisplayOptions({
+				pageKey: 'task:all',
+				personalOverride: { groupBy: 'project', subGroupBy: 'due' },
+			}),
+		})
+		expect(
+			result.sections.map(({ key, label, tasks, children }) => ({
+				key,
+				label,
+				ids: tasks.map(({ id }) => id),
+				children: children?.map(({ key, label, tasks }) => ({
+					key,
+					label,
+					ids: tasks.map(({ id }) => id),
+				})),
+			})),
+		).toEqual([
+			{
+				key: 'project:id:a',
+				label: '同名项目',
+				ids: ['a-open', 'a-done', 'a-later'],
+				children: [
+					{
+						key: JSON.stringify(['project:id:a', 'due:today']),
+						label: '今天',
+						ids: ['a-open', 'a-done'],
+					},
+					{ key: JSON.stringify(['project:id:a', 'due:later']), label: '更晚', ids: ['a-later'] },
+				],
+			},
+			{
+				key: 'project:id:b',
+				label: '同名项目',
+				ids: ['b-today'],
+				children: [
+					{ key: JSON.stringify(['project:id:b', 'due:today']), label: '今天', ids: ['b-today'] },
+				],
+			},
+		])
+		expect(result.selectionOrderIds).toEqual(['a-open', 'a-done', 'a-later', 'b-today'])
+	})
+
+	it('状态动作元数据只属于自身为状态的层级', () => {
+		const tasks = [
+			createTask({
+				id: 'a',
+				title: 'A',
+				group: { kind: 'priority', priority: 4 },
+				subGroup: { kind: 'status', status: 'doing' },
+			}),
+		]
+		const result = applyTaskDisplayOptionsToTasks({
+			items: tasks,
+			options: resolveTaskDisplayOptions({
+				pageKey: 'task:all',
+				personalOverride: { groupBy: 'priority', subGroupBy: 'status' },
+			}),
+		})
+		expect(result.sections[0].status).toBeUndefined()
+		expect(result.sections[0].children?.[0]).toMatchObject({
+			status: 'doing',
+			label: '进行中',
+			tasks,
+		})
+	})
 	it('smart 投影保留统一查询返回顺序，不对已加载窗口再排序', () => {
 		const tasks = [
 			createTask({

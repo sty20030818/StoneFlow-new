@@ -64,6 +64,7 @@ export const TASK_WINDOW_ORDER_DIRECTION_VALUES = ['asc', 'desc'] as const
 export const TASK_WINDOW_COMPLETED_ORDER_VALUES = ['recency', 'natural'] as const
 export type TaskWindowOrder = {
 	groupBy: TaskWindowGroupBy
+	subGroupBy: TaskWindowGroupBy
 	orderBy: (typeof TASK_WINDOW_ORDER_BY_VALUES)[number]
 	orderDirection: (typeof TASK_WINDOW_ORDER_DIRECTION_VALUES)[number]
 	completedOrder: (typeof TASK_WINDOW_COMPLETED_ORDER_VALUES)[number]
@@ -107,7 +108,10 @@ export type TaskQueryGroup =
 	  }
 
 /** 仅任务查询窗口携带组身份，不改变详情和其他任务消费者的 DTO。 */
-export type TaskQueryItem = TaskListItem & { group: TaskQueryGroup }
+export type TaskQueryItem = TaskListItem & {
+	group: TaskQueryGroup
+	subGroup: TaskQueryGroup
+}
 
 export type RunTaskQueryResult = {
 	items: TaskQueryItem[]

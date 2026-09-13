@@ -320,6 +320,7 @@ mod tests {
     fn manual_order() -> TaskQueryOrder {
         TaskQueryOrder {
             group_by: TaskGroupBy::None,
+            sub_group_by: TaskGroupBy::None,
             order_by: TaskOrderBy::Manual,
             order_direction: TaskOrderDirection::Asc,
             completed_order: TaskCompletedOrder::Natural,
