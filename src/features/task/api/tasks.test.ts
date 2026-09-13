@@ -33,8 +33,61 @@ describe('tasks api', () => {
 		mockedInvoke.mockReset()
 	})
 
+	it('首屏透传完整摘要，续页明确返回 null', async () => {
+		const groupSummary = [
+			{
+				group: { kind: 'priority', priority: 4 },
+				totalCount: 0,
+				subGroups: [{ group: { kind: 'status', status: 'doing' }, totalCount: 0 }],
+			},
+		]
+		const input = {
+			...windowInput,
+			scope: { type: 'all' as const },
+			context: { kind: 'all' as const },
+			baseViewKey: 'all' as const,
+			filters: { clauses: [] },
+		}
+		mockedInvoke.mockResolvedValueOnce({ items: [], totalCount: 0, nextCursor: null, groupSummary })
+		expect((await runTaskQuery(input)).groupSummary).toEqual(groupSummary)
+		mockedInvoke.mockResolvedValueOnce({
+			items: [],
+			totalCount: null,
+			nextCursor: null,
+			groupSummary: null,
+		})
+		expect((await runTaskQuery({ ...input, cursor: 'next' })).groupSummary).toBeNull()
+	})
+
+	it.each([
+		{ cursor: null, groupSummary: undefined },
+		{ cursor: null, groupSummary: null },
+		{ cursor: 'next', groupSummary: undefined },
+		{ cursor: 'next', groupSummary: [] },
+	])(
+		'摘要缺失或不符合首屏/续页合同须报错：$cursor / $groupSummary',
+		async ({ cursor, groupSummary }) => {
+			mockedInvoke.mockResolvedValue({
+				items: [],
+				totalCount: cursor ? null : 0,
+				nextCursor: null,
+				groupSummary,
+			})
+			await expect(
+				runTaskQuery({
+					...windowInput,
+					scope: { type: 'all' },
+					context: { kind: 'all' },
+					baseViewKey: 'all',
+					filters: { clauses: [] },
+					cursor,
+				}),
+			).rejects.toThrow('groupSummary')
+		},
+	)
+
 	it('通用查询完整保留 due、planned、多项目与 is_not', async () => {
-		mockedInvoke.mockResolvedValue({ items: [], nextCursor: null, totalCount: 0 })
+		mockedInvoke.mockResolvedValue({ items: [], nextCursor: null, totalCount: 0, groupSummary: [] })
 		const filters = {
 			clauses: [
 				{ id: 'due', field: 'due' as const, op: 'is' as const, values: ['today'] },
@@ -94,7 +147,12 @@ describe('tasks api', () => {
 	})
 
 	it('续页允许省略 totalCount', async () => {
-		mockedInvoke.mockResolvedValue({ items: [], nextCursor: null, totalCount: null })
+		mockedInvoke.mockResolvedValue({
+			items: [],
+			nextCursor: null,
+			totalCount: null,
+			groupSummary: null,
+		})
 
 		await expect(
 			runTaskQuery({

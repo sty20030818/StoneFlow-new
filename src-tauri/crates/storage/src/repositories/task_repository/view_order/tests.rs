@@ -429,14 +429,18 @@ async fn date_membership_and_count_do_not_round_last_microseconds_into_tomorrow(
     };
     assert_eq!(repository.count_for_view(&query).await.unwrap(), 1);
     assert_eq!(
-        repository.list_for_view(&query).await.unwrap()[0].id,
+        repository
+            .list_for_view(repository.connection(), &query)
+            .await
+            .unwrap()[0]
+            .id,
         rows[0].id
     );
     query.base_view_key = TaskViewBaseKey::Upcoming;
     assert_eq!(repository.count_for_view(&query).await.unwrap(), 2);
     assert_eq!(
         repository
-            .list_for_view(&query)
+            .list_for_view(repository.connection(), &query)
             .await
             .unwrap()
             .iter()
@@ -448,7 +452,7 @@ async fn date_membership_and_count_do_not_round_last_microseconds_into_tomorrow(
     query.filters = serde_json::from_value(serde_json::json!({"clauses":[{"id":"date", "field":"due", "op":"is_not", "values":["today"]}]})).unwrap();
     assert_eq!(repository.count_for_view(&query).await.unwrap(), 336);
     assert!(repository
-        .list_for_view(&query)
+        .list_for_view(repository.connection(), &query)
         .await
         .unwrap()
         .iter()
@@ -648,6 +652,7 @@ async fn primary_groups_and_row_identities_share_stable_windows_and_leaf_recency
                 for page_index in 0..3 {
                     let page = service.run_task_query(query.clone()).await.unwrap();
                     assert_eq!(page.total_count, (page_index == 0).then_some(337));
+                    assert_eq!(page.group_summary.is_some(), page_index == 0);
                     if page_index > 0
                         && page
                             .items
@@ -720,6 +725,7 @@ async fn grouping_changes_invalidate_cursors_and_saved_view_returns_the_same_gro
     };
     let saved = service.run_task_view(saved_input.clone()).await.unwrap();
     assert_eq!(saved.items, first.items);
+    assert_eq!(saved.group_summary, first.group_summary);
     assert_eq!(saved.next_cursor, first.next_cursor);
     let mut changed = query.clone();
     changed.order.group_by = TaskGroupBy::Status;
@@ -821,6 +827,7 @@ async fn every_nested_group_pair_pages_in_product_order_with_distinct_leaf_ident
                     for page_index in 0..3 {
                         let page = service.run_task_query(query.clone()).await.unwrap();
                         assert_eq!(page.total_count, (page_index == 0).then_some(337));
+                        assert_eq!(page.group_summary.is_some(), page_index == 0);
                         assert_eq!(page.items.len(), if page_index < 2 { 150 } else { 37 });
                         if page_index > 0
                             && page.items.first().is_some_and(|item| {
@@ -1005,3 +1012,5 @@ async fn nested_cursors_bind_effective_paths_and_saved_views_share_every_page() 
         assert_eq!(canonical_next, effective_next);
     }
 }
+
+mod summary;

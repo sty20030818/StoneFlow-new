@@ -35,7 +35,11 @@ describe('useTaskDisplayOptions', () => {
 		const first = renderWithQueryClient(() => useTaskDisplayOptions('task:all'))
 		await waitFor(() => expect(first.result.current.status).toBe('ready'))
 		await act(async () => {
-			await first.result.current.actions.applyPartial({ groupBy: 'priority', subGroupBy: 'status' })
+			await first.result.current.actions.applyPartial({
+				groupBy: 'priority',
+				subGroupBy: 'status',
+				showEmptyGroups: true,
+			})
 		})
 		first.unmount()
 
@@ -44,6 +48,7 @@ describe('useTaskDisplayOptions', () => {
 			expect(restored.result.current.options).toMatchObject({
 				groupBy: 'priority',
 				subGroupBy: 'status',
+				showEmptyGroups: true,
 			}),
 		)
 		await act(async () => {
@@ -57,7 +62,11 @@ describe('useTaskDisplayOptions', () => {
 
 		const asDefault = renderWithQueryClient(() => useTaskDisplayOptions('task:all'))
 		await waitFor(() => expect(asDefault.result.current.status).toBe('ready'))
-		expect(asDefault.result.current.options).toMatchObject({ groupBy: 'none', subGroupBy: 'none' })
+		expect(asDefault.result.current.options).toMatchObject({
+			groupBy: 'none',
+			subGroupBy: 'none',
+			showEmptyGroups: true,
+		})
 	})
 
 	it('resetToDefault 会清空 personal override', async () => {

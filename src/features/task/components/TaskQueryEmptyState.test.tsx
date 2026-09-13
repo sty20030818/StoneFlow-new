@@ -1,5 +1,5 @@
 import { Suspense, type ReactNode } from 'react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider, type InfiniteData } from '@tanstack/react-query'
 import {
 	createMemoryHistory,
 	createRootRoute,
@@ -14,6 +14,10 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { parseShellRoute, ShellRouteProvider } from '@/app/navigation'
 import { BulkActionProvider } from '@/features/bulk-action'
 import { DangerConfirmProvider } from '@/features/danger-confirm'
+import {
+	createTaskDisplayViewPageKey,
+	updateTaskDisplayPreference,
+} from '@/features/display-options'
 import { encodeFilterQueryToSearchParam } from '@/features/filter'
 import { ProjectPage } from '@/features/project'
 import { CommandSelectionProvider } from '@/features/selection'
@@ -23,6 +27,7 @@ import type {
 	FilterQuery,
 	RunTaskQueryInput,
 	RunTaskQueryResult,
+	TaskQueryGroupSummary,
 	TaskQueryItem,
 	View,
 } from '@/shared/types'
@@ -157,7 +162,11 @@ it.each([PROJECT_PATH, SAVED_PATH])(
 	async (path) => {
 		const backend = installBackend()
 		backend.read = async (_query, cursor) => {
-			if (cursor === null) return page([task('first', '首屏已有任务')], 'next', 2)
+			if (cursor === null)
+				return page([task('first', '首屏已有任务')], 'next', 2, [
+					task('first', '首屏已有任务'),
+					task('second', '续页恢复的任务'),
+				])
 			if (backend.requests.length === 2) throw new Error('续页读取中断')
 			return page([task('second', '续页恢复的任务')], null, null)
 		}
@@ -207,7 +216,7 @@ it.each([PROJECT_PATH, SAVED_PATH])(
 								: a.priority - b.priority,
 						)
 					: backend.items
-			return page(items.slice(0, 150), 'next', items.length)
+			return page(items.slice(0, 150), 'next', items.length, items)
 		}
 		const first = await renderWorkspace(path)
 		expect(await screen.findByText('普通任务 0')).toBeVisible()
@@ -250,7 +259,10 @@ it.each([PROJECT_PATH, SAVED_PATH])(
 		backend.read = async (_query, cursor) => {
 			if (cursor) throw new Error('分页游标版本不受支持，请从首屏重新加载')
 			return backend.requests.length === 1
-				? page([task('old-first', '旧窗口首屏')], 'legacy-cursor', 2)
+				? page([task('old-first', '旧窗口首屏')], 'legacy-cursor', 2, [
+						task('old-first', '旧窗口首屏'),
+						task('old-next', '旧窗口未加载任务'),
+					])
 				: page([task('new-first', '重新读取的新首屏')], null, 1)
 		}
 		await renderWorkspace(path)
@@ -286,7 +298,7 @@ it.each([
 						: { kind: 'status', status: item.status },
 			}))
 			if (restarted || query.order.groupBy !== groupBy) return page(items, null, 3)
-			if (!cursor) return page(items.slice(0, 1), 'same-group-next', 3)
+			if (!cursor) return page(items.slice(0, 1), 'same-group-next', 3, items)
 			if (!failed) return next.promise
 			return page(items.slice(1), null, null)
 		}
@@ -298,7 +310,7 @@ it.each([
 		fireEvent.click(trigger)
 		expect(screen.queryByRole('row', { name: '打开任务 同组首屏任务' })).not.toBeInTheDocument()
 		fireEvent.contextMenu(trigger.closest('[data-board-section-header]')!)
-		fireEvent.click(await screen.findByRole('menuitem', { name: '选中全部' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: '选中已加载任务' }))
 		await waitFor(() => expect(trigger).toHaveFocus())
 		failed = true
 		await act(async () => next.reject(new Error('分组续页读取中断')))
@@ -395,7 +407,7 @@ it('两级组在真实页面保持父子折叠、已加载选择、叶组键盘�
 					: { kind: 'none' },
 		}))
 		if (exhausted || query.order.subGroupBy !== 'status') return page(items, null, 6)
-		if (!cursor) return page(items.slice(0, 1), 'child-next', 6)
+		if (!cursor) return page(items.slice(0, 1), 'child-next', 6, items)
 		if (!failed) return next.promise
 		return page(items.slice(1), null, null)
 	}
@@ -407,7 +419,7 @@ it('两级组在真实页面保持父子折叠、已加载选择、叶组键盘�
 	const child = await screen.findByRole('button', { name: '折叠 紧急 › 进行中' })
 	fireEvent.click(child)
 	fireEvent.contextMenu(child.closest('[data-board-section-header]')!)
-	fireEvent.click(await screen.findByRole('menuitem', { name: '选中全部' }))
+	fireEvent.click(await screen.findByRole('menuitem', { name: '选中已加载任务' }))
 	failed = true
 	await act(async () => next.reject(new Error('子组续页失败')))
 	expect(await screen.findByText('子组续页失败')).toBeVisible()
@@ -501,6 +513,212 @@ it('两级组在真实页面保持父子折叠、已加载选择、叶组键盘�
 	expect(screen.getByRole('row', { name: '打开任务 低优先级待执行' })).toBeVisible()
 })
 
+it.each([`${PROJECT_PATH}?v=all`, SAVED_PATH])(
+	'%s 精确空组不冒充未加载组，三页合并保持数量、选择与唯一 sentinel',
+	async (path) => {
+		const backend = installBackend()
+		backend.view.filters = { clauses: [] }
+		const allItems = [
+			...Array.from({ length: 151 }, (_, index) => ({
+				...task(`urgent-${index}`, `紧急进行中 ${index}`, 'doing'),
+				priority: 4 as const,
+			})),
+			...Array.from({ length: 36 }, (_, index) => ({
+				...task(`todo-${index}`, `紧急待执行 ${index}`, 'todo'),
+				priority: 4 as const,
+			})),
+			...Array.from({ length: 150 }, (_, index) => ({
+				...task(`low-${index}`, `低优先级 ${index}`, 'doing'),
+				priority: 1 as const,
+			})),
+		].map((item): TaskQueryItem => ({
+			...item,
+			group: { kind: 'priority', priority: item.priority },
+			subGroup: { kind: 'status', status: item.status },
+		}))
+		backend.items = allItems
+		const groupSummary: TaskQueryGroupSummary[] = (
+			[
+				[4, 187, 151, 36],
+				[3, 0, 0, 0],
+				[2, 0, 0, 0],
+				[1, 150, 150, 0],
+				[0, 0, 0, 0],
+			] as const
+		).map(([priority, totalCount, doing, todo]) => ({
+			group: { kind: 'priority', priority },
+			totalCount,
+			subGroups: [
+				{ group: { kind: 'status', status: 'doing' }, totalCount: doing },
+				{ group: { kind: 'status', status: 'todo' }, totalCount: todo },
+				{ group: { kind: 'status', status: 'waiting' }, totalCount: 0 },
+				{ group: { kind: 'status', status: 'done' }, totalCount: 0 },
+				{ group: { kind: 'status', status: 'canceled' }, totalCount: 0 },
+			],
+		}))
+		const second = deferred<RunTaskQueryResult>()
+		const third = deferred<RunTaskQueryResult>()
+		backend.read = async (_query, cursor) => {
+			if (cursor === null)
+				return {
+					items: allItems.slice(0, 150),
+					nextCursor: 'page-2',
+					totalCount: 337,
+					groupSummary,
+				}
+			if (cursor === 'page-2') return second.promise
+			if (cursor === 'page-3') return third.promise
+			throw new Error('不应出现其他游标')
+		}
+		await updateTaskDisplayPreference({
+			pageKey: path === SAVED_PATH ? createTaskDisplayViewPageKey('saved') : 'task:project-detail',
+			personal: { groupBy: 'priority', subGroupBy: 'status', showEmptyGroups: false },
+		})
+		const { queryClient } = await renderWorkspace(path)
+		await screen.findByRole('row', { name: '打开任务 紧急进行中 0' })
+		const windows = queryClient.getQueryCache().findAll({
+			type: 'active',
+			predicate: ({ state }) =>
+				Boolean(state.data && typeof state.data === 'object' && 'pages' in state.data),
+		})
+		expect(windows).toHaveLength(1)
+		const key = windows[0]!.queryKey
+		const loadedIds = () =>
+			queryClient
+				.getQueryData<InfiniteData<RunTaskQueryResult>>(key)!
+				.pages.flatMap(({ items }) => items.map(({ id }) => id))
+		expect(loadedIds()).toEqual(allItems.slice(0, 150).map(({ id }) => id))
+		expect(
+			screen.getByRole('button', { name: '折叠 紧急' }).closest('[data-board-section-header]'),
+		).toHaveTextContent('187 · 已加载 150')
+		fireEvent.click(screen.getByRole('button', { name: '折叠 紧急 › 进行中' }))
+		await waitFor(() =>
+			expect(backend.requests.map(({ cursor }) => cursor)).toEqual([null, 'page-2']),
+		)
+		const reads = backend.requests.length
+		await toggleEmptyGroups()
+		expect(await screen.findByRole('button', { name: '折叠 高' })).toBeVisible()
+		expect(screen.getByRole('button', { name: '折叠 紧急 › 等待中' })).toBeVisible()
+		// 同一个父组的待执行和另一个非空父组尚未到达，都不能以零标题提前出现。
+		expect(screen.queryByRole('button', { name: '折叠 紧急 › 待执行' })).not.toBeInTheDocument()
+		expect(screen.queryByRole('button', { name: '折叠 低' })).not.toBeInTheDocument()
+		expect(document.querySelectorAll('[data-scroll-container="true"]')).toHaveLength(1)
+		expect(screen.getAllByRole('status')).toHaveLength(1)
+		expect(backend.requests).toHaveLength(reads)
+		expect(loadedIds()).toEqual(allItems.slice(0, 150).map(({ id }) => id))
+		fireEvent.contextMenu(
+			screen.getByRole('button', { name: '折叠 紧急' }).closest('[data-board-section-header]')!,
+		)
+		fireEvent.click(await screen.findByRole('menuitem', { name: '选中已加载任务' }))
+		await toggleEmptyGroups()
+		await waitFor(() =>
+			expect(screen.queryByRole('button', { name: '折叠 高' })).not.toBeInTheDocument(),
+		)
+		expect(backend.requests).toHaveLength(reads)
+		await act(async () =>
+			second.resolve({
+				items: allItems.slice(150, 300),
+				nextCursor: 'page-3',
+				totalCount: null,
+				groupSummary: null,
+			}),
+		)
+		expect(await screen.findByRole('row', { name: '打开任务 紧急待执行 0' })).toHaveAttribute(
+			'aria-selected',
+			'false',
+		)
+		expect(screen.getAllByRole('button', { name: '展开 紧急 › 进行中' })).toHaveLength(1)
+		expect(loadedIds()).toEqual(allItems.slice(0, 300).map(({ id }) => id))
+		fireEvent.contextMenu(
+			screen.getByRole('button', { name: '折叠 紧急' }).closest('[data-board-section-header]')!,
+		)
+		fireEvent.click(await screen.findByRole('menuitem', { name: '折叠全部' }))
+		await waitFor(() =>
+			expect(backend.requests.map(({ cursor }) => cursor)).toEqual([null, 'page-2', 'page-3']),
+		)
+		await act(async () =>
+			third.resolve({
+				items: allItems.slice(300),
+				nextCursor: null,
+				totalCount: null,
+				groupSummary: null,
+			}),
+		)
+		expect(loadedIds()).toEqual(allItems.map(({ id }) => id))
+		expect(new Set(loadedIds()).size).toBe(337)
+		expect(
+			screen.getByRole('button', { name: '展开 紧急' }).closest('[data-board-section-header]'),
+		).not.toHaveTextContent('已加载')
+		expect(
+			screen.getByRole('button', { name: '展开 低' }).closest('[data-board-section-header]'),
+		).toHaveTextContent('150')
+		expect(
+			queryClient
+				.getQueryData<InfiniteData<RunTaskQueryResult>>(key)!
+				.pages.map(({ totalCount }) => totalCount),
+		).toEqual([337, null, null])
+		expect(screen.queryByText('加载更多任务')).not.toBeInTheDocument()
+		await toggleEmptyGroups()
+		expect(await screen.findByRole('button', { name: '折叠 高' })).toBeVisible()
+		expect(loadedIds()).toEqual(allItems.map(({ id }) => id))
+		expect(backend.requests).toHaveLength(3)
+	},
+)
+
+it.each([
+	{ path: `${PROJECT_PATH}?v=all`, empty: '当前项目没有任务' },
+	{ path: '/all/tasks?v=all', empty: '当前没有任务' },
+	{ path: '/space-1/standalone?v=all', empty: '当前没有独立事项' },
+	{ path: SAVED_PATH, empty: '当前视图无匹配任务' },
+])('$path 零任务结果可显示真实空组，关闭后恢复正确整页空态', async ({ path, empty }) => {
+	const backend = installBackend()
+	backend.items = []
+	backend.view.filters = { clauses: [] }
+	backend.read = async () => ({
+		items: [],
+		nextCursor: null,
+		totalCount: 0,
+		groupSummary: (['doing', 'todo', 'waiting', 'done', 'canceled'] as const).map((status) => ({
+			group: { kind: 'status', status },
+			totalCount: 0,
+			subGroups: [],
+		})),
+	})
+	const workspace = await renderWorkspace(path)
+	expect(await screen.findByText(empty)).toBeVisible()
+	await toggleEmptyGroups()
+	const zero = await screen.findByRole('button', { name: '折叠 进行中' })
+	expect(screen.queryByText(empty)).not.toBeInTheDocument()
+	expect(screen.queryAllByRole('row')).toHaveLength(0)
+	expect(zero.closest('[data-board-section-header]')).toHaveTextContent('0')
+	fireEvent.contextMenu(zero.closest('[data-board-section-header]')!)
+	expect(await screen.findByRole('menuitem', { name: '选中全部' })).toHaveAttribute(
+		'aria-disabled',
+		'true',
+	)
+	fireEvent.keyDown(screen.getByRole('menu', { name: '进行中 0' }), { key: 'Escape' })
+	await waitFor(() => expect(zero).toHaveFocus())
+	expect(backend.requests).toHaveLength(1)
+	// 重新创建 Router/QueryClient，证明空组开关来自本机偏好而非旧组件内存。
+	workspace.unmount()
+	await renderWorkspace(path)
+	expect(await screen.findByRole('button', { name: '折叠 进行中' })).toBeVisible()
+	await toggleEmptyGroups()
+	expect(await screen.findByText(empty)).toBeVisible()
+	expect(screen.queryByRole('button', { name: '折叠 进行中' })).not.toBeInTheDocument()
+	expect(backend.requests).toHaveLength(2)
+})
+
+async function toggleEmptyGroups() {
+	fireEvent.click(screen.getByRole('button', { name: '显示选项' }))
+	const panel = await screen.findByRole('dialog', { name: '显示选项' })
+	fireEvent.click(within(panel).getByRole('switch', { name: '显示空分组' }))
+	fireEvent.keyDown(panel, { key: 'Escape' })
+	await waitFor(() =>
+		expect(screen.queryByRole('dialog', { name: '显示选项' })).not.toBeInTheDocument(),
+	)
+}
+
 async function chooseGrouping(current: string, next: string, dimension = '分组') {
 	fireEvent.click(screen.getByRole('button', { name: '显示选项' }))
 	const panel = await screen.findByRole('dialog', { name: '显示选项' })
@@ -550,8 +768,38 @@ function page(
 	items: TaskQueryItem[],
 	nextCursor: string | null,
 	totalCount: number | null,
+	allItems: TaskQueryItem[] = items,
 ): RunTaskQueryResult {
-	return { items, nextCursor, totalCount }
+	return {
+		items,
+		nextCursor,
+		totalCount,
+		groupSummary: totalCount === null ? null : summarize(allItems),
+	}
+}
+
+/** 旧页面场景提供完整夹具成员；空候选场景另用显式摘要，不调用生产分组逻辑。 */
+function summarize(items: TaskQueryItem[]): TaskQueryGroupSummary[] {
+	const groups = new Map<string, TaskQueryGroupSummary>()
+	for (const item of items) {
+		const key = JSON.stringify(item.group)
+		let summary = groups.get(key)
+		if (!summary) {
+			summary = { group: item.group, totalCount: 0, subGroups: [] }
+			groups.set(key, summary)
+		}
+		summary.totalCount += 1
+		if (item.subGroup.kind === 'none') continue
+		let sub = summary.subGroups.find(
+			({ group }) => JSON.stringify(group) === JSON.stringify(item.subGroup),
+		)
+		if (!sub) {
+			sub = { group: item.subGroup, totalCount: 0 }
+			summary.subGroups.push(sub)
+		}
+		sub.totalCount += 1
+	}
+	return [...groups.values()]
 }
 
 function installBackend() {
@@ -567,6 +815,7 @@ function installBackend() {
 		updatedAt: TIME,
 	}
 	const backend = {
+		view,
 		items: [
 			task('other', '已有其他状态任务', 'doing'),
 			{ ...task('standalone', '已有独立事项', 'doing'), projectId: null, projectName: null },

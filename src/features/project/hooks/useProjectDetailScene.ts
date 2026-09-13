@@ -109,6 +109,7 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 	const taskCollection = useTaskCollectionScene({
 		source: {
 			items: project ? taskList.items : [],
+			groupSummary: project ? taskList.groupSummary : null,
 			status: project ? taskList.status : 'ready',
 			onRetry: taskList.refetch,
 			collapseScopeKey: JSON.stringify([scope, context, queryInput.baseViewKey]),

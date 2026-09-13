@@ -1,35 +1,62 @@
 import { formatTaskPriorityLabel, formatTaskStatusLabel } from '@/features/task/presentation'
-import type { TaskQueryGroup, TaskQueryItem } from '@/shared/types'
+import type { TaskQueryGroup, TaskQueryGroupSummary, TaskQueryItem } from '@/shared/types'
 
 import type { TaskDisplayLeafSection, TaskDisplaySection } from './task-display-types'
 
-/** 按统一查询的组序合并已加载成员，不重新分类或排序。 */
-export function buildTaskDisplaySections(items: TaskQueryItem[]): TaskDisplaySection[] {
-	const sections = new Map<string, TaskDisplaySection>()
-	const children = new Map<string, TaskDisplayLeafSection>()
+/** 摘要拥有候选和组序；窗口项只贡献已加载成员。 */
+export function buildTaskDisplaySections(
+	items: TaskQueryItem[],
+	groupSummary: TaskQueryGroupSummary[] | null,
+	showEmptyGroups: boolean,
+): TaskDisplaySection[] {
+	if (groupSummary === null) return []
+	const members = new Map<string, TaskQueryItem[]>()
 	for (const task of items) {
-		const descriptor = describeTaskQueryGroup(task.group)
-		let section = sections.get(descriptor.key)
-		if (!section) {
-			section = { ...descriptor, tasks: [] }
-			sections.set(descriptor.key, section)
+		const parentKey = describeTaskQueryGroup(task.group).key
+		const keys = [parentKey]
+		if (task.subGroup.kind !== 'none') {
+			keys.push(JSON.stringify([parentKey, describeTaskQueryGroup(task.subGroup).key]))
 		}
-		section.tasks.push(task)
-		if (task.subGroup.kind === 'none') continue
-		const subDescriptor = describeTaskQueryGroup(task.subGroup)
-		const key = JSON.stringify([descriptor.key, subDescriptor.key])
-		let child = children.get(key)
-		if (!child) {
-			child = { ...subDescriptor, key, tasks: [] }
-			children.set(key, child)
-			;(section.children ??= []).push(child)
+		for (const key of keys) {
+			const tasks = members.get(key)
+			if (tasks) tasks.push(task)
+			else members.set(key, [task])
 		}
-		child.tasks.push(task)
 	}
-	return [...sections.values()]
+
+	const sections: TaskDisplaySection[] = []
+	for (const summary of groupSummary) {
+		const descriptor = describeTaskQueryGroup(summary.group)
+		const tasks = members.get(descriptor.key) ?? []
+		if (
+			tasks.length === 0 &&
+			!(showEmptyGroups && summary.group.kind !== 'none' && summary.totalCount === 0)
+		)
+			continue
+		const section: TaskDisplaySection = { ...descriptor, totalCount: summary.totalCount, tasks }
+		if (summary.subGroups.length > 0) {
+			section.children = []
+			for (const subSummary of summary.subGroups) {
+				const child = describeTaskQueryGroup(subSummary.group)
+				const key = JSON.stringify([descriptor.key, child.key])
+				const childTasks = members.get(key) ?? []
+				if (childTasks.length === 0 && !(showEmptyGroups && subSummary.totalCount === 0)) continue
+				section.children.push({
+					...child,
+					key,
+					totalCount: subSummary.totalCount,
+					tasks: childTasks,
+				})
+			}
+		}
+		sections.push(section)
+	}
+	return sections
 }
 
-function describeTaskQueryGroup(group: TaskQueryGroup): Omit<TaskDisplayLeafSection, 'tasks'> {
+function describeTaskQueryGroup(
+	group: TaskQueryGroup,
+): Pick<TaskDisplayLeafSection, 'key' | 'label' | 'status'> {
 	switch (group.kind) {
 		case 'none':
 			return { key: 'all', label: '全部任务' }

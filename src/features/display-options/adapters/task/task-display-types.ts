@@ -8,6 +8,7 @@ import type {
 export type TaskDisplayLeafSection = {
 	key: string
 	label: string
+	totalCount: number
 	tasks: TaskListItem[]
 	/** 仅状态组的创建预填等领域动作使用，不充当通用组身份。 */
 	status?: TaskStatus

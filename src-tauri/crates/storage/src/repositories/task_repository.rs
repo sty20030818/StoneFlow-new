@@ -15,6 +15,7 @@ use crate::{
 };
 
 mod view_date;
+mod view_groups;
 mod view_order;
 mod view_query;
 

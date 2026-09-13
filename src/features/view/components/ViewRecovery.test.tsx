@@ -401,6 +401,13 @@ function installBackend() {
 					return {
 						view,
 						items: backend.tasks,
+						groupSummary: [
+							{
+								group: { kind: 'status', status: 'todo' },
+								totalCount: backend.tasks.length,
+								subGroups: [],
+							},
+						],
 						totalCount: backend.tasks.length,
 						nextCursor: null,
 					}

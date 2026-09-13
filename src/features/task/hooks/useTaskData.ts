@@ -93,6 +93,7 @@ export function useTaskQueryData(input: RunTaskQueryInput, enabled = true) {
 	)
 	// 总数必须来自首屏服务端 totalCount；pages 未就绪时为 undefined（禁止 ?? 0 与「零条」混淆）
 	const totalCount = query.data?.pages[0]?.totalCount
+	const groupSummary = query.data?.pages[0]?.groupSummary ?? null
 	const status: QueryLoadStatus = query.isLoadingError
 		? 'error'
 		: query.isLoading || query.isPending
@@ -112,6 +113,7 @@ export function useTaskQueryData(input: RunTaskQueryInput, enabled = true) {
 
 	return {
 		items,
+		groupSummary,
 		pagination,
 		status,
 		error: query.error instanceof Error ? query.error.message : null,

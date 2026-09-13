@@ -1,6 +1,6 @@
 //! View 查询定义及其持久化读模型。
 
-use crate::task::{TaskQueryCursor, TaskQueryOrder};
+use crate::task::{TaskGroupSummary, TaskQueryCursor, TaskQueryOrder};
 use serde::{Deserialize, Serialize};
 use stoneflow_domain::{ViewEntityKind, WorkStatus};
 
@@ -87,6 +87,8 @@ pub struct ViewTaskQuery {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ViewTaskPage {
     pub items: Vec<ViewTaskRecord>,
+    pub projects: Vec<ViewProjectLookupRecord>,
+    pub group_summary: Option<Vec<TaskGroupSummary>>,
     /// 仅首屏计算；续页无需重复 COUNT。
     pub total_count: Option<u64>,
 }

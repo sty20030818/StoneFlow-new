@@ -52,6 +52,7 @@ it('Saved View 首屏与续页发送同一排序和日期', async () => {
 		Promise.resolve({
 			items: [],
 			totalCount: cursor ? null : 2,
+			groupSummary: cursor ? null : [],
 			nextCursor: cursor ? null : 'next',
 		}),
 	)

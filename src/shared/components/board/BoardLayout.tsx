@@ -64,7 +64,7 @@ export function BoardRowSlot({
 
 type BoardSectionHeaderProps = Omit<ComponentProps<'div'>, 'children'> & {
 	label: ReactNode
-	count: number
+	count: ReactNode
 	selectedCount?: number
 	leading?: ReactNode
 	icon?: ReactNode

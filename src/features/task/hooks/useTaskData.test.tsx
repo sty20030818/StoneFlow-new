@@ -9,6 +9,8 @@ import type {
 	TaskViewBaseKey,
 } from '@/shared/types'
 
+import { normalizeTaskWindowOrder, useTaskDisplayOptions } from '@/features/display-options'
+
 import { useTaskBoardPagination, useTaskQueryData } from './useTaskData'
 
 const windowInput = {
@@ -91,6 +93,64 @@ describe('useTaskBoardPagination', () => {
 
 describe('useTaskQueryData', () => {
 	afterEach(() => runTaskQueryMock.mockReset())
+
+	it('只使用首屏摘要，真实空组偏好写入不重取窗口或被续页 null 覆盖', async () => {
+		localStorage.clear()
+		const group = { kind: 'status', status: 'todo' } as const
+		const groupSummary = [{ group, totalCount: 2, subGroups: [] }]
+		runTaskQueryMock
+			.mockResolvedValueOnce({
+				items: [{ ...createTask('first', '首屏'), group }],
+				totalCount: 2,
+				nextCursor: 'next',
+				groupSummary,
+			})
+			.mockResolvedValueOnce({
+				items: [{ ...createTask('second', '续页'), group }],
+				totalCount: null,
+				nextCursor: null,
+				groupSummary: null,
+			})
+		const input: RunTaskQueryInput = {
+			...windowInput,
+			scope: { type: 'all' },
+			context: { kind: 'all' },
+			baseViewKey: 'all',
+			filters: { clauses: [] },
+		}
+		const { result } = renderHook(
+			() => {
+				const display = useTaskDisplayOptions('task:all')
+				const query = useTaskQueryData(
+					{ ...input, order: normalizeTaskWindowOrder(display.options) },
+					display.status !== 'loading',
+				)
+				return { display, query }
+			},
+			{ wrapper: createQueryWrapper() },
+		)
+		expect(result.current.query.groupSummary).toBeNull()
+		await waitFor(() => expect(result.current.query.status).toBe('ready'))
+		expect(result.current.query.groupSummary).toEqual(groupSummary)
+		const sourceKey = result.current.query.pagination.sourceKey
+		await act(async () => {
+			await result.current.display.actions.applyPartial({ showEmptyGroups: true })
+		})
+		expect(result.current.display.options.showEmptyGroups).toBe(true)
+		expect(result.current.query.pagination.sourceKey).toBe(sourceKey)
+		expect(result.current.query.groupSummary).toEqual(groupSummary)
+		expect(runTaskQueryMock).toHaveBeenCalledOnce()
+		await act(async () => {
+			if ('fetchNextPage' in result.current.query.pagination)
+				await result.current.query.pagination.fetchNextPage()
+		})
+		await waitFor(() =>
+			expect(result.current.query.items.map(({ id }) => id)).toEqual(['first', 'second']),
+		)
+		expect(result.current.query.groupSummary).toEqual(groupSummary)
+		expect(result.current.query.pagination.totalCount).toBe(2)
+		expect(runTaskQueryMock).toHaveBeenCalledTimes(2)
+	})
 
 	it('切换查询时进入加载态，旧任务和总数不能成为新来源的就绪结果', async () => {
 		let resolveNext: ((page: RunTaskQueryResult) => void) | undefined
@@ -268,7 +328,12 @@ function createQueryWrapper() {
 }
 
 function page(item: TaskQueryItem, nextCursor: string | null = null): RunTaskQueryResult {
-	return { items: [item], nextCursor, totalCount: nextCursor ? 2 : 1 }
+	return {
+		items: [item],
+		nextCursor,
+		totalCount: nextCursor ? 2 : 1,
+		groupSummary: [{ group: { kind: 'none' }, totalCount: nextCursor ? 2 : 1, subGroups: [] }],
+	}
 }
 
 function createTask(id: string, title: string): TaskQueryItem {

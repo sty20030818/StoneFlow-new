@@ -5,7 +5,10 @@ use sea_orm::{
     Condition, ExprTrait, Order, QueryFilter, QueryOrder, Select,
 };
 use stoneflow_application::{
-    task::{TaskOrderDirection, TaskOrderField, TaskOrderPartition, TaskOrderTerm, TaskOrderValue},
+    task::{
+        TaskOrderDirection, TaskOrderField, TaskOrderPartition, TaskOrderTerm, TaskOrderValue,
+        TASK_GROUP_STATUS_ORDER,
+    },
     view::{ViewDateBoundaries, ViewTaskQuery},
 };
 
@@ -61,7 +64,7 @@ pub(super) fn apply_view_task_order(
     Ok(query)
 }
 
-fn order_expression(term: TaskOrderTerm, dates: &ViewDateBoundaries) -> SimpleExpr {
+pub(super) fn order_expression(term: TaskOrderTerm, dates: &ViewDateBoundaries) -> SimpleExpr {
     if matches!(
         term.field,
         TaskOrderField::DueBucket | TaskOrderField::PlannedBucket
@@ -75,6 +78,7 @@ fn order_expression(term: TaskOrderTerm, dates: &ViewDateBoundaries) -> SimpleEx
             dates,
         );
     }
+    let status_sql;
     let field = match term.field {
         TaskOrderField::ProjectMissing => "project_id IS NULL",
         TaskOrderField::ProjectName => "COALESCE((SELECT name FROM projects WHERE projects.id = tasks.project_id), '') COLLATE BINARY",
@@ -82,7 +86,10 @@ fn order_expression(term: TaskOrderTerm, dates: &ViewDateBoundaries) -> SimpleEx
         TaskOrderField::DueBucket | TaskOrderField::PlannedBucket => unreachable!(),
         TaskOrderField::IsDone => "status = 'done'",
         TaskOrderField::Position => "position",
-        TaskOrderField::Status => "CASE status WHEN 'doing' THEN 0 WHEN 'todo' THEN 1 WHEN 'waiting' THEN 2 WHEN 'done' THEN 3 WHEN 'canceled' THEN 4 END",
+        TaskOrderField::Status => {
+            status_sql = format!("CASE status {} END", TASK_GROUP_STATUS_ORDER.iter().enumerate().map(|(rank, status)| format!("WHEN '{}' THEN {rank}", status.as_str())).collect::<Vec<_>>().join(" "));
+            &status_sql
+        },
         TaskOrderField::Priority => "priority",
         TaskOrderField::EffectiveAt => "COALESCE(due_at, planned_at)",
         TaskOrderField::DueAt => "due_at",

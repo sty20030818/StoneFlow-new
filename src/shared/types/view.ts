@@ -113,8 +113,17 @@ export type TaskQueryItem = TaskListItem & {
 	subGroup: TaskQueryGroup
 }
 
+/** 首屏按窗口顺序返回完整候选；数量描述匹配结果，不代表任务已加载。 */
+export type TaskQueryGroupSummary = {
+	group: TaskQueryGroup
+	totalCount: number
+	subGroups: Array<{ group: TaskQueryGroup; totalCount: number }>
+}
+
 export type RunTaskQueryResult = {
 	items: TaskQueryItem[]
+	/** 首屏为有序摘要；续页明确为 null。 */
+	groupSummary: TaskQueryGroupSummary[] | null
 	/** 仅首屏存在；续页为 null。 */
 	totalCount: number | null
 	nextCursor: string | null
@@ -123,6 +132,8 @@ export type RunTaskQueryResult = {
 export type RunTaskViewResult = {
 	view: View
 	items: TaskQueryItem[]
+	/** 首屏为有序摘要；续页明确为 null。 */
+	groupSummary: TaskQueryGroupSummary[] | null
 	/** 仅首屏存在；续页为 null。 */
 	totalCount: number | null
 	nextCursor: string | null

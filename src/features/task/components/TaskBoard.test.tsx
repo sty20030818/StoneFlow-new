@@ -135,8 +135,8 @@ describe('TaskBoard', () => {
 				<TaskBoardHarness
 					tasks={tasks}
 					sections={[
-						{ key: 'priority:4', label: '紧急', tasks: tasks.slice(0, 2) },
-						{ key: 'priority:1', label: '低', tasks: tasks.slice(2) },
+						{ key: 'priority:4', label: '紧急', tasks: tasks.slice(0, 2), totalCount: 2 },
+						{ key: 'priority:1', label: '低', tasks: tasks.slice(2), totalCount: 1 },
 					]}
 					collapsedGroupKeys={collapsedGroupKeys}
 					onSectionOpenChange={(groupKey, open) => {
@@ -195,8 +195,21 @@ describe('TaskBoard', () => {
 					</button>
 					<TaskBoardHarness
 						tasks={loadedTasks}
-						sections={[{ key: 'project:alpha', label: '项目甲', tasks: loadedTasks }]}
-						selectedTaskIds={['project-a', 'project-b']}
+						sections={[
+							{ key: 'project:alpha', label: '项目甲', tasks: loadedTasks, totalCount: 3 },
+						]}
+						selectedTaskIds={['project-a']}
+						pagination={
+							loadedCount === 3
+								? { sourceKey: 'append', loadedPageCount: 2, totalCount: 3, state: 'exhausted' }
+								: {
+										sourceKey: 'append',
+										loadedPageCount: 1,
+										totalCount: 3,
+										state: 'loading',
+										fetchNextPage: async () => undefined,
+									}
+						}
 						onEmptyAction={() => undefined}
 						onToggleTaskStatus={async () => undefined}
 						onUpdateTaskPriority={async () => undefined}
@@ -206,10 +219,45 @@ describe('TaskBoard', () => {
 				</>
 			)
 		}
-		renderTaskBoard(<AppendProbe />)
+		const { container } = renderTaskBoard(<AppendProbe />)
+		const initialTrigger = screen.getByRole('button', { name: '折叠 项目甲' })
+		expect(initialTrigger).toHaveAccessibleDescription('项目甲，共 3 个任务，已加载 2 个')
+		const initialHeader = initialTrigger.closest('[data-board-section-header]')!
+		expect(
+			initialHeader.querySelector('[data-board-section-header-slot="count"]'),
+		).toHaveTextContent('3 · 已加载 2')
+		const initialExtent = Number(
+			container.querySelector('[data-task-board-extent]')?.getAttribute('data-task-board-extent'),
+		)
+		expect(initialExtent).toBe(
+			COLLECTION_SECTION_HEADER_STRIDE + 2 * COLLECTION_ROW_STRIDE + COLLECTION_ROW_HEIGHT,
+		)
+		expect(container.querySelectorAll('[data-task-board-sentinel]')).toHaveLength(1)
+		expect(screen.getAllByRole('row')).toHaveLength(2)
 		expect(screen.queryByRole('row', { name: '打开任务 项目任务 C' })).not.toBeInTheDocument()
+		fireEvent.contextMenu(initialHeader)
+		fireEvent.click(await screen.findByRole('menuitem', { name: '选中已加载任务' }))
+		await waitFor(() =>
+			expect(screen.getByTestId('selected-keys')).toHaveTextContent(/^project-a,project-b$/),
+		)
+		fireEvent.contextMenu(initialHeader)
+		expect(await screen.findByRole('menuitem', { name: '取消选中已加载任务' })).toBeInTheDocument()
+		fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' })
+		await waitFor(() => expect(initialTrigger).toHaveFocus())
 		fireEvent.click(screen.getByRole('button', { name: '追加下一页' }))
 		expect(screen.getAllByRole('button', { name: '折叠 项目甲' })).toHaveLength(1)
+		const completeTrigger = screen.getByRole('button', { name: '折叠 项目甲' })
+		expect(completeTrigger).toHaveAccessibleDescription('项目甲，共 3 个任务，已加载 3 个')
+		expect(
+			completeTrigger
+				.closest('[data-board-section-header]')
+				?.querySelector('[data-board-section-header-slot="count"]'),
+		).toHaveTextContent(/^3$/)
+		expect(container.querySelector('[data-task-board-extent]')).toHaveAttribute(
+			'data-task-board-extent',
+			String(initialExtent),
+		)
+		expect(container.querySelectorAll('[data-task-board-sentinel]')).toHaveLength(0)
 		expect(screen.getByRole('row', { name: '打开任务 项目任务 C' })).toHaveAttribute(
 			'aria-selected',
 			'false',
@@ -223,6 +271,103 @@ describe('TaskBoard', () => {
 				'project-a,project-b,project-c',
 			),
 		)
+	})
+
+	it('零成员父子组保留真实标题与状态创建，禁用选择且折叠全部恢复父按钮', async () => {
+		const parentKey = 'h:priority:4'
+		const childKey = `h:${JSON.stringify(['priority:4', 'status:todo'])}`
+		const collapseAll = vi.fn()
+		function EmptyGroupsProbe() {
+			const [collapsedGroupKeys, setCollapsedGroupKeys] = useState<readonly string[]>([])
+			const [focusIntent, setFocusIntent] = useState<CollectionFocusIntent<string, string> | null>(
+				null,
+			)
+			return (
+				<TaskBoardHarness
+					tasks={[]}
+					sections={[
+						{
+							key: 'priority:4',
+							label: '紧急',
+							tasks: [],
+							totalCount: 0,
+							children: [
+								{
+									key: JSON.stringify(['priority:4', 'status:todo']),
+									label: '待执行',
+									status: 'todo',
+									tasks: [],
+									totalCount: 0,
+								},
+							],
+						},
+					]}
+					collapsedGroupKeys={collapsedGroupKeys}
+					focusIntent={focusIntent}
+					onFocusIntentConsumed={() => setFocusIntent(null)}
+					onSectionOpenChange={(key, open) =>
+						setCollapsedGroupKeys((current) =>
+							open ? current.filter((value) => value !== key) : [...current, key],
+						)
+					}
+					onCollapseAll={(restoreGroupKey) => {
+						collapseAll(restoreGroupKey)
+						setCollapsedGroupKeys([parentKey, childKey])
+						setFocusIntent({
+							type: 'group-trigger',
+							groupKey: restoreGroupKey,
+							reentry: { type: 'root' },
+						})
+					}}
+					createProjectId='project-alpha'
+					emptyTitle='当前没有任务'
+					onEmptyAction={() => undefined}
+					onToggleTaskStatus={async () => undefined}
+					onUpdateTaskPriority={async () => undefined}
+					onUpdateTaskStatus={async () => undefined}
+					pendingTaskId={null}
+				/>
+			)
+		}
+		useDialogStore.setState(useDialogStore.getInitialState())
+		try {
+			const { container } = renderTaskBoard(<EmptyGroupsProbe />)
+			expect(screen.queryByText('当前没有任务')).not.toBeInTheDocument()
+			expect(screen.queryAllByRole('row')).toHaveLength(0)
+			const childTrigger = screen.getByRole('button', { name: '折叠 紧急 › 待执行' })
+			expect(childTrigger).toHaveAccessibleDescription('紧急 › 待执行，共 0 个任务，已加载 0 个')
+			expect(container.querySelector('[data-task-board-extent]')).toHaveAttribute(
+				'data-task-board-extent',
+				String(COLLECTION_SECTION_HEADER_STRIDE + COLLECTION_SECTION_HEADER_HEIGHT),
+			)
+			fireEvent.contextMenu(childTrigger.closest('[data-board-section-header]')!)
+			const selectAll = await screen.findByRole('menuitem', { name: '选中全部' })
+			expect(selectAll).toHaveAttribute('aria-disabled', 'true')
+			fireEvent.click(selectAll)
+			expect(screen.getByTestId('selected-keys')).toHaveTextContent(/^none$/)
+			fireEvent.click(screen.getByRole('menuitem', { name: '折叠该分区' }))
+			await waitFor(() =>
+				expect(screen.getByRole('button', { name: '展开 紧急 › 待执行' })).toHaveFocus(),
+			)
+			fireEvent.click(screen.getByRole('button', { name: '展开 紧急 › 待执行' }))
+			fireEvent.contextMenu(
+				screen
+					.getByRole('button', { name: '折叠 紧急 › 待执行' })
+					.closest('[data-board-section-header]')!,
+			)
+			fireEvent.click(await screen.findByRole('menuitem', { name: '折叠全部' }))
+			expect(collapseAll).toHaveBeenCalledWith(parentKey)
+			await waitFor(() => expect(screen.getByRole('button', { name: '展开 紧急' })).toHaveFocus())
+			expect(screen.queryByRole('button', { name: '展开 紧急 › 待执行' })).not.toBeInTheDocument()
+			fireEvent.click(screen.getByRole('button', { name: '展开 紧急' }))
+			fireEvent.click(screen.getByRole('button', { name: '在 紧急 › 待执行 中创建任务' }))
+			expect(useDialogStore.getState().taskCreateDraft).toEqual({
+				projectId: 'project-alpha',
+				status: 'todo',
+			})
+		} finally {
+			useDialogStore.setState(useDialogStore.getInitialState())
+		}
 	})
 
 	it('父子组按完整路径折叠与选择，同名子组独立且父组展开保留子组折叠', async () => {
@@ -391,15 +536,17 @@ describe('TaskBoard', () => {
 							label: '处理队列',
 							status: 'doing',
 							tasks: tasks.slice(0, 1),
+							totalCount: 1,
 							children: [
 								{
 									key: JSON.stringify(['status:doing', 'priority:4']),
 									label: '紧急',
 									tasks: tasks.slice(0, 1),
+									totalCount: 1,
 								},
 							],
 						},
-						{ key: 'project:todo', label: '待执行', tasks: tasks.slice(1) },
+						{ key: 'project:todo', label: '待执行', tasks: tasks.slice(1), totalCount: 1 },
 					]}
 					createProjectId='project-alpha'
 					onEmptyAction={() => undefined}
@@ -1385,9 +1532,9 @@ describe('TaskBoard', () => {
 				target,
 			]
 			const oldSections: TaskDisplaySection[] = [
-				{ key: 'priority:4', label: '紧急', tasks: oldTasks.slice(0, 40) },
-				{ key: 'priority:2', label: '普通', tasks: oldTasks.slice(40, 80) },
-				{ key: 'priority:1', label: '低', tasks: [target] },
+				{ key: 'priority:4', label: '紧急', tasks: oldTasks.slice(0, 40), totalCount: 40 },
+				{ key: 'priority:2', label: '普通', tasks: oldTasks.slice(40, 80), totalCount: 40 },
+				{ key: 'priority:1', label: '低', tasks: [target], totalCount: 1 },
 			]
 			const consumed = vi.fn()
 			function WindowProbe() {
@@ -1418,7 +1565,9 @@ describe('TaskBoard', () => {
 							<TaskBoardHarness
 								tasks={tasks}
 								sections={
-									phase === 'old' ? oldSections : [{ key: 'priority:1', label: '低', tasks }]
+									phase === 'old'
+										? oldSections
+										: [{ key: 'priority:1', label: '低', tasks, totalCount: 1 }]
 								}
 								status={phase === 'loading' ? 'loading' : 'ready'}
 								pagination={{
@@ -1707,25 +1856,32 @@ function createTask(
 
 /** renderer 夹具显式给定组顺序；真实分组规则由 Display/SQL 测试验证。 */
 function statusSectionFixture(tasks: TaskListItem[]): TaskDisplaySection[] {
-	return (['doing', 'waiting', 'todo', 'done', 'canceled'] satisfies TaskStatus[]).map(
-		(status) => ({
-			key: `status:${status}`,
-			label: formatTaskStatusLabel(status),
-			status,
-			tasks: tasks.filter((task) => task.status === status),
-		}),
-	)
+	return (['doing', 'waiting', 'todo', 'done', 'canceled'] satisfies TaskStatus[])
+		.map((status) => {
+			const members = tasks.filter((task) => task.status === status)
+			return {
+				key: `status:${status}`,
+				label: formatTaskStatusLabel(status),
+				status,
+				tasks: members,
+				totalCount: members.length,
+			}
+		})
+		.filter((section) => section.tasks.length > 0)
 }
 
 function priorityStatusSectionFixture(tasks: TaskListItem[]): TaskDisplaySection[] {
 	return [
 		{ key: 'priority:4', label: '紧急', tasks: tasks.filter((task) => task.priority === 4) },
 		{ key: 'priority:1', label: '低', tasks: tasks.filter((task) => task.priority === 1) },
-	].map((parent) => ({
-		...parent,
-		children: statusSectionFixture(parent.tasks).map((child) => ({
-			...child,
-			key: JSON.stringify([parent.key, child.key]),
-		})),
-	}))
+	]
+		.filter((parent) => parent.tasks.length > 0)
+		.map((parent) => ({
+			...parent,
+			totalCount: parent.tasks.length,
+			children: statusSectionFixture(parent.tasks).map((child) => ({
+				...child,
+				key: JSON.stringify([parent.key, child.key]),
+			})),
+		}))
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { resolveTaskDisplayOptions } from '@/features/display-options/core'
-import type { TaskQueryItem } from '@/shared/types'
+import type { TaskQueryGroupSummary, TaskQueryItem } from '@/shared/types'
 
 import { applyTaskDisplayOptionsToTasks } from './index'
 
@@ -33,6 +33,109 @@ function createTask(
 }
 
 describe('task-display adapters', () => {
+	it('空组开关只补真实零候选，已加载数与总数分开且未到达非空父子保持隐藏', () => {
+		const group = { kind: 'priority', priority: 4 } as const
+		const doing = { kind: 'status', status: 'doing' } as const
+		const todo = { kind: 'status', status: 'todo' } as const
+		const done = { kind: 'status', status: 'done' } as const
+		const groupSummary: TaskQueryGroupSummary[] = [
+			{
+				group,
+				totalCount: 4,
+				subGroups: [
+					{ group: doing, totalCount: 2 },
+					{ group: todo, totalCount: 0 },
+					{ group: done, totalCount: 2 },
+				],
+			},
+			{
+				group: { kind: 'priority', priority: 3 },
+				totalCount: 0,
+				subGroups: [
+					{ group: doing, totalCount: 0 },
+					{ group: todo, totalCount: 0 },
+				],
+			},
+			{
+				group: { kind: 'priority', priority: 1 },
+				totalCount: 10,
+				subGroups: [
+					{ group: doing, totalCount: 10 },
+					{ group: todo, totalCount: 0 },
+				],
+			},
+		]
+		const tasks = [createTask({ id: 'first', title: '首屏任务', group, subGroup: doing })]
+		const options = resolveTaskDisplayOptions({
+			pageKey: 'task:all',
+			personalOverride: { groupBy: 'priority', subGroupBy: 'status' },
+		})
+		const project = (showEmptyGroups: boolean, items = tasks) =>
+			applyTaskDisplayOptionsToTasks({
+				items,
+				groupSummary,
+				options: { ...options, showEmptyGroups },
+			})
+		const closed = project(false)
+		expect(closed.sections.map(({ key }) => key)).toEqual(['priority:4'])
+		expect(closed.sections[0]).toMatchObject({ totalCount: 4, tasks })
+		expect(
+			closed.sections[0].children?.map(({ label, totalCount, tasks }) => [
+				label,
+				totalCount,
+				tasks.length,
+			]),
+		).toEqual([['进行中', 2, 1]])
+		const opened = project(true)
+		expect(opened.sections.map(({ key }) => key)).toEqual(['priority:4', 'priority:3'])
+		expect(
+			opened.sections[0].children?.map(({ label, totalCount, tasks }) => [
+				label,
+				totalCount,
+				tasks.length,
+			]),
+		).toEqual([
+			['进行中', 2, 1],
+			['待执行', 0, 0],
+		])
+		expect(opened.sections[1].children?.map(({ label }) => label)).toEqual(['进行中', '待执行'])
+		expect(opened.orderedItems).toBe(tasks)
+		expect(opened.selectionOrderIds).toEqual(closed.selectionOrderIds)
+
+		const appended = project(true, [
+			...tasks,
+			createTask({ id: 'second', title: '续页任务', group, subGroup: doing }),
+			createTask({ id: 'done', title: '已完成', group, subGroup: done }),
+		])
+		expect(
+			appended.sections[0].children?.map(({ label, totalCount, tasks }) => [
+				label,
+				totalCount,
+				tasks.length,
+			]),
+		).toEqual([
+			['进行中', 2, 2],
+			['待执行', 0, 0],
+			['已完成', 2, 1],
+		])
+		expect(appended.selectionOrderIds).toEqual(['first', 'second', 'done'])
+	})
+
+	it('没有摘要不能推断零组，不分组的真实零结果保留整页空态', () => {
+		const options = resolveTaskDisplayOptions({
+			pageKey: 'task:all',
+			personalOverride: { groupBy: 'none', showEmptyGroups: true },
+		})
+		for (const groupSummary of [
+			null,
+			[{ group: { kind: 'none' as const }, totalCount: 0, subGroups: [] }],
+		]) {
+			expect(applyTaskDisplayOptionsToTasks({ items: [], groupSummary, options }).sections).toEqual(
+				[],
+			)
+		}
+	})
+
 	it('跨页子组按完整父路径合并，保留每个叶组的输入顺序与唯一选择顺序', () => {
 		const groupA = { kind: 'project', projectId: 'a', projectName: '同名项目' } as const
 		const groupB = { kind: 'project', projectId: 'b', projectName: '同名项目' } as const
@@ -53,6 +156,17 @@ describe('task-display adapters', () => {
 			createTask({ id: 'b-today', title: 'D', group: groupB, subGroup: today }),
 		]
 		const result = applyTaskDisplayOptionsToTasks({
+			groupSummary: [
+				{
+					group: groupA,
+					totalCount: 3,
+					subGroups: [
+						{ group: today, totalCount: 2 },
+						{ group: later, totalCount: 1 },
+					],
+				},
+				{ group: groupB, totalCount: 1, subGroups: [{ group: today, totalCount: 1 }] },
+			],
 			items: [...page1, ...page2],
 			options: resolveTaskDisplayOptions({
 				pageKey: 'task:all',
@@ -106,6 +220,13 @@ describe('task-display adapters', () => {
 			}),
 		]
 		const result = applyTaskDisplayOptionsToTasks({
+			groupSummary: [
+				{
+					group: { kind: 'priority', priority: 4 },
+					totalCount: 1,
+					subGroups: [{ group: { kind: 'status', status: 'doing' }, totalCount: 1 }],
+				},
+			],
 			items: tasks,
 			options: resolveTaskDisplayOptions({
 				pageKey: 'task:all',
@@ -145,6 +266,7 @@ describe('task-display adapters', () => {
 		]
 
 		const result = applyTaskDisplayOptionsToTasks({
+			groupSummary: [{ group: { kind: 'none' }, totalCount: 3, subGroups: [] }],
 			items: tasks,
 			options: resolveTaskDisplayOptions({ pageKey: 'task:all' }),
 		})
@@ -171,6 +293,7 @@ describe('task-display adapters', () => {
 		]
 
 		const result = applyTaskDisplayOptionsToTasks({
+			groupSummary: [{ group: { kind: 'none' }, totalCount: 2, subGroups: [] }],
 			items: tasks,
 			options: resolveTaskDisplayOptions({ pageKey: 'task:project-detail' }),
 		})
@@ -204,6 +327,10 @@ describe('task-display adapters', () => {
 			},
 		})
 		const result = applyTaskDisplayOptionsToTasks({
+			groupSummary: [
+				{ group: { kind: 'priority', priority: 4 }, totalCount: 1, subGroups: [] },
+				{ group: { kind: 'priority', priority: 2 }, totalCount: 1, subGroups: [] },
+			],
 			items: tasks,
 			options,
 		})
@@ -222,12 +349,13 @@ describe('task-display adapters', () => {
 			}),
 		]
 		const result = applyTaskDisplayOptionsToTasks({
+			groupSummary: [{ group: { kind: 'status', status: 'doing' }, totalCount: 1, subGroups: [] }],
 			items: tasks,
 			options: resolveTaskDisplayOptions({ pageKey: 'task:all' }),
 		})
 
 		expect(result.sections).toEqual([
-			{ key: 'status:doing', label: '进行中', status: 'doing', tasks },
+			{ key: 'status:doing', label: '进行中', status: 'doing', tasks, totalCount: 1 },
 		])
 	})
 
@@ -248,6 +376,7 @@ describe('task-display adapters', () => {
 		]
 
 		const result = applyTaskDisplayOptionsToTasks({
+			groupSummary: [{ group: { kind: 'none' }, totalCount: 2, subGroups: [] }],
 			items: tasks,
 			options: resolveTaskDisplayOptions({ pageKey: 'task:completed' }),
 		})
@@ -265,13 +394,14 @@ describe('task-display adapters', () => {
 			}),
 		]
 		const result = applyTaskDisplayOptionsToTasks({
+			groupSummary: [{ group: { kind: 'due', bucket: 'today' }, totalCount: 1, subGroups: [] }],
 			items: tasks,
 			options: resolveTaskDisplayOptions({
 				pageKey: 'task:all',
 				personalOverride: { groupBy: 'due' },
 			}),
 		})
-		expect(result.sections).toEqual([{ key: 'due:today', label: '今天', tasks }])
+		expect(result.sections).toEqual([{ key: 'due:today', label: '今天', tasks, totalCount: 1 }])
 	})
 
 	it('同一主组跨页合并，项目 key 不依赖标签且不再按 locale 重排', () => {
@@ -298,6 +428,23 @@ describe('task-display adapters', () => {
 			}),
 		]
 		const result = applyTaskDisplayOptionsToTasks({
+			groupSummary: [
+				{
+					group: { kind: 'project', projectId: 'p1', projectName: 'Z 项目' },
+					totalCount: 2,
+					subGroups: [],
+				},
+				{
+					group: { kind: 'project', projectId: 'p2', projectName: 'a 项目' },
+					totalCount: 1,
+					subGroups: [],
+				},
+				{
+					group: { kind: 'project', projectId: null, projectName: null },
+					totalCount: 1,
+					subGroups: [],
+				},
+			],
 			items: tasks,
 			options: resolveTaskDisplayOptions({
 				pageKey: 'task:all',

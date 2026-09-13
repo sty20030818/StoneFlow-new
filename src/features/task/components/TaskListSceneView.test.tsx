@@ -193,6 +193,11 @@ function TaskCollectionProjectionHarness({ tasks }: { tasks: TaskQueryItem[] }) 
 		pagination: { sourceKey: 'projection-test', loadedPageCount: 1, state: 'exhausted' },
 		source: {
 			items: tasks,
+			groupSummary: (['doing', 'todo'] as const).map((status) => ({
+				group: { kind: 'status' as const, status },
+				totalCount: tasks.filter((task) => task.status === status).length,
+				subGroups: [],
+			})),
 			collapseScopeKey: 'test-owner',
 			status: 'ready',
 			onRetry: () => undefined,
@@ -229,6 +234,11 @@ function TaskCollectionOwnerHarness({
 		pagination: { sourceKey, loadedPageCount: 1, state: 'exhausted' },
 		source: {
 			items: tasks,
+			groupSummary: (['doing', 'todo'] as const).map((status) => ({
+				group: { kind: 'status' as const, status },
+				totalCount: tasks.filter((task) => task.status === status).length,
+				subGroups: [],
+			})),
 			collapseScopeKey: 'test-owner',
 			status: 'ready',
 			onRetry: () => undefined,

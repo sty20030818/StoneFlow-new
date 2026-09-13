@@ -19,7 +19,7 @@ import {
 } from '@/features/selection'
 import type { ProjectOption } from '@/features/project'
 import { useShellPreferenceStore } from '@/features/shell-dialogs'
-import type { Space, TaskListItem, TaskQueryItem } from '@/shared/types'
+import type { Space, TaskListItem, TaskQueryGroupSummary, TaskQueryItem } from '@/shared/types'
 import { useEventSubscription } from '@/shared/events'
 
 import type { TaskBoardPagination, TaskBoardProps } from '../components/TaskBoard'
@@ -34,6 +34,7 @@ import { useTaskSelection } from './useTaskSelection'
 
 type TaskCollectionSource = {
 	items: TaskQueryItem[]
+	groupSummary: TaskQueryGroupSummary[] | null
 	collapseScopeKey: string
 	status: NonNullable<TaskBoardProps['status']>
 	onRetry: TaskBoardProps['onRetry']
@@ -103,9 +104,10 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 		() =>
 			applyTaskDisplayOptionsToTasks({
 				items: input.source.items,
+				groupSummary: input.source.groupSummary,
 				options: display.options,
 			}),
-		[display.options, input.source.items],
+		[display.options, input.source.items, input.source.groupSummary],
 	)
 	const flatItems = useMemo(
 		() => buildTaskBoardFlatItems({ sections: displayResult.sections, collapsedGroupKeys }),

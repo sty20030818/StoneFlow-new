@@ -53,6 +53,7 @@ export async function runTaskView(input: RunTaskViewInput): Promise<RunTaskViewR
 	const result = await invoke<{
 		view: Record<string, unknown>
 		items: Array<Record<string, unknown>>
+		groupSummary: RunTaskViewResult['groupSummary']
 		totalCount?: number | null
 		nextCursor?: string | null
 	}>('run_task_view', {
@@ -71,9 +72,13 @@ export async function runTaskView(input: RunTaskViewInput): Promise<RunTaskViewR
 	if (result.totalCount != null && typeof result.totalCount !== 'number') {
 		throw new Error('run_task_view 响应包含无效 totalCount')
 	}
+	if (input.cursor == null ? !Array.isArray(result.groupSummary) : result.groupSummary !== null) {
+		throw new Error('run_task_view 响应缺少有效 groupSummary')
+	}
 	return {
 		view: toView(result.view),
 		items: result.items.map(toTaskQueryItem),
+		groupSummary: result.groupSummary,
 		totalCount: result.totalCount ?? null,
 		nextCursor: result.nextCursor ?? null,
 	}

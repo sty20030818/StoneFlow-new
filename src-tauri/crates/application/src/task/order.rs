@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 use stoneflow_domain::WorkStatus;
 
-use super::{TaskGroupBy, TaskQueryGroup};
+use super::{task_status_rank, TaskGroupBy, TaskQueryGroup};
 use crate::{view::ViewTaskRecord, ApplicationError};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -92,6 +92,34 @@ pub enum TaskOrderValue {
 
 pub type TaskOrderTuple = Vec<Option<TaskOrderValue>>;
 
+impl TaskGroupBy {
+    /// 排序与精确聚合共用分组键，避免日期桶和项目身份另起规则。
+    pub fn order_terms(self) -> Vec<TaskOrderTerm> {
+        use TaskOrderDirection::{Asc, Desc};
+        use TaskOrderField as Field;
+        let fields = match self {
+            Self::None => vec![],
+            Self::Status => vec![(Field::Status, Asc)],
+            Self::Priority => vec![(Field::Priority, Desc)],
+            Self::Project => vec![
+                (Field::ProjectMissing, Asc),
+                (Field::ProjectName, Asc),
+                (Field::ProjectId, Asc),
+            ],
+            Self::Due => vec![(Field::DueBucket, Asc)],
+            Self::Scheduled => vec![(Field::PlannedBucket, Asc)],
+        };
+        fields
+            .into_iter()
+            .map(|(field, direction)| TaskOrderTerm {
+                field,
+                direction,
+                partition: TaskOrderPartition::All,
+            })
+            .collect()
+    }
+}
+
 impl TaskQueryOrder {
     pub fn normalized(mut self) -> Self {
         if self.group_by == TaskGroupBy::None || self.group_by == self.sub_group_by {
@@ -138,23 +166,7 @@ impl TaskQueryOrder {
         };
         let mut terms = [order.group_by, order.sub_group_by]
             .into_iter()
-            .flat_map(|group_by| match group_by {
-                TaskGroupBy::None => vec![],
-                TaskGroupBy::Status => vec![(Field::Status, Asc)],
-                TaskGroupBy::Priority => vec![(Field::Priority, Desc)],
-                TaskGroupBy::Project => vec![
-                    (Field::ProjectMissing, Asc),
-                    (Field::ProjectName, Asc),
-                    (Field::ProjectId, Asc),
-                ],
-                TaskGroupBy::Due => vec![(Field::DueBucket, Asc)],
-                TaskGroupBy::Scheduled => vec![(Field::PlannedBucket, Asc)],
-            })
-            .map(|(field, direction)| TaskOrderTerm {
-                field,
-                direction,
-                partition: TaskOrderPartition::All,
-            })
+            .flat_map(TaskGroupBy::order_terms)
             .collect::<Vec<_>>();
         let partition = if self.completed_order == TaskCompletedOrder::Recency {
             terms.push(TaskOrderTerm {
@@ -311,13 +323,7 @@ impl TaskOrderTerm {
             }
             TaskOrderField::IsDone => Integer(i64::from(done)),
             TaskOrderField::Position => Integer(task.position),
-            TaskOrderField::Status => Integer(match task.status {
-                WorkStatus::Doing => 0,
-                WorkStatus::Todo => 1,
-                WorkStatus::Waiting => 2,
-                WorkStatus::Done => 3,
-                WorkStatus::Canceled => 4,
-            }),
+            TaskOrderField::Status => Integer(task_status_rank(task.status)),
             TaskOrderField::Priority => Integer(i64::from(task.priority)),
             TaskOrderField::EffectiveAt => {
                 Text(task.due_at.as_ref().or(task.planned_at.as_ref())?.clone())

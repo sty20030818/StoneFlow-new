@@ -59,8 +59,12 @@ export async function runTaskQuery(input: RunTaskQueryInput): Promise<RunTaskQue
 	if (page.totalCount != null && typeof page.totalCount !== 'number') {
 		throw new Error('run_task_query 响应包含无效 totalCount')
 	}
+	if (input.cursor == null ? !Array.isArray(page.groupSummary) : page.groupSummary !== null) {
+		throw new Error('run_task_query 响应缺少有效 groupSummary')
+	}
 	return {
 		items: page.items,
+		groupSummary: page.groupSummary,
 		nextCursor: page.nextCursor ?? null,
 		totalCount: page.totalCount ?? null,
 	}

@@ -4,6 +4,8 @@ import { CheckCheckIcon, ChevronsDownUpIcon, ChevronsUpDownIcon, XIcon } from 'l
 type BoardSectionContextMenuProps = {
 	open: boolean
 	selectedAll: boolean
+	selectionDisabled?: boolean
+	selectionScope?: 'all' | 'loaded'
 	onCollapse: () => void
 	onExpand: () => void
 	onCollapseAll: () => void
@@ -15,6 +17,8 @@ type BoardSectionContextMenuProps = {
 export function BoardSectionContextMenu({
 	open,
 	selectedAll,
+	selectionDisabled = false,
+	selectionScope = 'all',
 	onCollapse,
 	onExpand,
 	onCollapseAll,
@@ -22,6 +26,8 @@ export function BoardSectionContextMenu({
 	onSelectAll,
 	onDeselectAll,
 }: BoardSectionContextMenuProps) {
+	const selectLabel = selectionScope === 'loaded' ? '选中已加载任务' : '选中全部'
+	const deselectLabel = selectionScope === 'loaded' ? '取消选中已加载任务' : '取消选中全部'
 	return (
 		<ContextMenu.Popover className='w-52'>
 			<ContextMenu.Menu aria-label='分区操作'>
@@ -54,20 +60,22 @@ export function BoardSectionContextMenu({
 				{selectedAll ? (
 					<ContextMenu.Item
 						id='toggle-section-selection'
+						isDisabled={selectionDisabled}
 						onAction={onDeselectAll}
-						textValue='取消选中全部'
+						textValue={deselectLabel}
 					>
 						<XIcon />
-						取消选中全部
+						{deselectLabel}
 					</ContextMenu.Item>
 				) : (
 					<ContextMenu.Item
 						id='toggle-section-selection'
+						isDisabled={selectionDisabled}
 						onAction={onSelectAll}
-						textValue='选中全部'
+						textValue={selectLabel}
 					>
 						<CheckCheckIcon />
-						选中全部
+						{selectLabel}
 					</ContextMenu.Item>
 				)}
 			</ContextMenu.Menu>

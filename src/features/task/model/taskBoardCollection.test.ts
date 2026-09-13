@@ -27,17 +27,19 @@ describe('taskBoardCollection', () => {
 			{
 				key: 'priority:4',
 				label: '紧急',
+				totalCount: 2,
 				tasks: TASKS.slice(0, 2),
 				children: [
-					{ key: childA, label: '待执行', tasks: [TASKS[0]!] },
-					{ key: sibling, label: '进行中', tasks: [TASKS[1]!] },
+					{ key: childA, label: '待执行', totalCount: 1, tasks: [TASKS[0]!] },
+					{ key: sibling, label: '进行中', totalCount: 1, tasks: [TASKS[1]!] },
 				],
 			},
 			{
 				key: 'priority:1',
 				label: '低',
+				totalCount: 1,
 				tasks: TASKS.slice(2),
-				children: [{ key: childB, label: '待执行', tasks: [TASKS[2]!] }],
+				children: [{ key: childB, label: '待执行', totalCount: 1, tasks: [TASKS[2]!] }],
 			},
 		]
 		const flat = buildTaskBoardFlatItems({ sections })
@@ -171,8 +173,8 @@ describe('taskBoardCollection', () => {
 	it('拒绝重复 flat key，避免 virtual index 静默覆盖', () => {
 		const duplicateHeaders = buildTaskBoardFlatItems({
 			sections: [
-				{ key: 'same', label: '第一组', tasks: [TASKS[0]!] },
-				{ key: 'same', label: '第二组', tasks: [TASKS[1]!] },
+				{ key: 'same', label: '第一组', totalCount: 1, tasks: [TASKS[0]!] },
+				{ key: 'same', label: '第二组', totalCount: 1, tasks: [TASKS[1]!] },
 			],
 		})
 
@@ -189,12 +191,15 @@ function buildCollection(tasks: readonly TaskListItem[], openSections: readonly 
 	return buildTaskBoardCollection({
 		eligibleKeys: tasks.map((task) => task.id),
 		flatItems: buildTaskBoardFlatItems({
-			sections: STATUS_ORDER.map((status) => ({
-				key: `status:${status}`,
-				label: status,
-				status,
-				tasks: tasks.filter((task) => task.status === status),
-			})),
+			sections: STATUS_ORDER.filter((status) => tasks.some((task) => task.status === status)).map(
+				(status) => ({
+					key: `status:${status}`,
+					label: status,
+					totalCount: tasks.filter((task) => task.status === status).length,
+					status,
+					tasks: tasks.filter((task) => task.status === status),
+				}),
+			),
 			collapsedGroupKeys: STATUS_ORDER.filter((status) => !openSections.includes(status)).map(
 				(status) => `h:status:${status}`,
 			),

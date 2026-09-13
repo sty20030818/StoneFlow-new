@@ -162,6 +162,7 @@ pub struct RunTaskViewOutput {
     /// 过滤+排序后的总数（窗口前）。
     /// 首屏为精确总数；续页为 null，避免重复 COUNT。
     pub total_count: Option<u64>,
+    pub group_summary: Option<Vec<crate::task::TaskGroupSummary>>,
     /// 下一页 opaque keyset cursor；无更多则为 null。
     pub next_cursor: Option<String>,
 }
@@ -172,6 +173,7 @@ pub struct RunTaskQueryOutput {
     pub items: Vec<TaskViewItemDto>,
     /// 首屏为精确总数；续页为 null，避免重复 COUNT。
     pub total_count: Option<u64>,
+    pub group_summary: Option<Vec<crate::task::TaskGroupSummary>>,
     pub next_cursor: Option<String>,
 }
 
@@ -481,6 +483,7 @@ where
             view,
             items: result.items,
             total_count: result.total_count,
+            group_summary: result.group_summary,
             next_cursor: result.next_cursor,
         })
     }
@@ -565,12 +568,6 @@ where
             .collect::<HashSet<_>>()
             .into_iter()
             .collect::<Vec<_>>();
-        let project_ids = page_tasks
-            .iter()
-            .filter_map(|task| task.project_id.clone())
-            .collect::<HashSet<_>>()
-            .into_iter()
-            .collect::<Vec<_>>();
         let spaces = self
             .lookup_reader
             .list_spaces_by_ids(&space_ids)
@@ -578,10 +575,8 @@ where
             .into_iter()
             .map(|space| (space.id.clone(), space))
             .collect::<HashMap<_, _>>();
-        let projects = self
-            .lookup_reader
-            .list_projects_by_ids(&project_ids)
-            .await?
+        let projects = page
+            .projects
             .into_iter()
             .map(|project| (project.id, project.name))
             .collect::<HashMap<_, _>>();
@@ -647,6 +642,7 @@ where
         Ok(RunTaskQueryOutput {
             items,
             total_count: page.total_count,
+            group_summary: page.group_summary,
             next_cursor,
         })
     }

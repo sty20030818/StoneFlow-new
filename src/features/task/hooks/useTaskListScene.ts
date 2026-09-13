@@ -88,6 +88,7 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 	const taskCollection = useTaskCollectionScene({
 		source: {
 			items: taskList.items,
+			groupSummary: taskList.groupSummary,
 			status: taskList.status,
 			onRetry: taskList.refetch,
 			collapseScopeKey: JSON.stringify([scope, context, queryInput.baseViewKey]),

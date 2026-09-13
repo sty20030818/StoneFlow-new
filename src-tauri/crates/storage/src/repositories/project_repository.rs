@@ -16,7 +16,10 @@ use crate::{
     },
     error::StorageError,
 };
-use stoneflow_application::operation::{SyncEntityKind, TombstoneRecord};
+use stoneflow_application::{
+    operation::{SyncEntityKind, TombstoneRecord},
+    view::{TaskScopeInput, TaskScopeKind, TaskViewContext},
+};
 
 use super::TombstoneRepository;
 
@@ -78,12 +81,49 @@ impl ProjectRepository {
 
     /// 按 id 批量读取 Project；空切片直接返回，避免无效 `IN ()`。
     pub async fn list_by_ids(&self, ids: &[String]) -> Result<Vec<project::Model>, StorageError> {
+        self.list_by_ids_in_connection(&self.db, ids).await
+    }
+
+    pub async fn list_by_ids_in_connection(
+        &self,
+        connection: &impl ConnectionTrait,
+        ids: &[String],
+    ) -> Result<Vec<project::Model>, StorageError> {
         if ids.is_empty() {
             return Ok(Vec::new());
         }
         Project::find()
             .filter(project::Column::Id.is_in(ids.iter().cloned()))
-            .all(&self.db)
+            .all(connection)
+            .await
+            .map_err(Into::into)
+    }
+
+    /// 项目空组候选仅取有效上下文目录，不按当前 Task 筛选裁剪。
+    pub async fn view_group_candidates(
+        &self,
+        connection: &impl ConnectionTrait,
+        scope: &TaskScopeInput,
+        context: &TaskViewContext,
+    ) -> Result<Vec<(String, String)>, StorageError> {
+        if matches!(context, TaskViewContext::Standalone) {
+            return Ok(vec![]);
+        }
+        let mut query = Project::find()
+            .select_only()
+            .columns([project::Column::Id, project::Column::Name])
+            .filter(project::Column::ArchivedAt.is_null())
+            .filter(project::Column::DeletedAt.is_null());
+        if scope.kind == TaskScopeKind::Space {
+            query = query
+                .filter(project::Column::SpaceId.eq(scope.space_id.as_deref().unwrap_or_default()));
+        }
+        if let TaskViewContext::Project { project_id } = context {
+            query = query.filter(project::Column::Id.eq(project_id.as_str()));
+        }
+        query
+            .into_tuple::<(String, String)>()
+            .all(connection)
             .await
             .map_err(Into::into)
     }

@@ -48,14 +48,13 @@ export function buildTaskBoardFlatItems({
 	const items: TaskBoardFlatItem[] = []
 	const collapsed = new Set(collapsedGroupKeys)
 	const appendHeader = (section: TaskDisplaySection, parent: TaskDisplaySection | null) => {
-		if (section.tasks.length === 0) return false
 		const key = `h:${section.key}`
 		const open = !collapsed.has(key)
 		items.push({
 			kind: 'header',
 			key,
 			label: section.label,
-			count: section.tasks.length,
+			count: section.totalCount,
 			status: section.status,
 			parentKey: parent ? `h:${parent.key}` : null,
 			parentLabel: parent?.label ?? null,

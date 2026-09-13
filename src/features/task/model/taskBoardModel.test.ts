@@ -52,12 +52,15 @@ function buildFixture({
 	statusOrder?: TaskStatus[]
 }) {
 	return buildTaskBoardFlatItems({
-		sections: statusOrder.map((status) => ({
-			key: `status:${status}`,
-			label: status,
-			status,
-			tasks: tasks.filter((item) => item.status === status),
-		})),
+		sections: statusOrder
+			.filter((status) => tasks.some((item) => item.status === status))
+			.map((status) => ({
+				key: `status:${status}`,
+				label: status,
+				totalCount: tasks.filter((item) => item.status === status).length,
+				status,
+				tasks: tasks.filter((item) => item.status === status),
+			})),
 		collapsedGroupKeys: statusOrder
 			.filter((status) => !openSections.includes(status))
 			.map((status) => `h:status:${status}`),
@@ -65,6 +68,52 @@ function buildFixture({
 }
 
 describe('taskBoardModel', () => {
+	it('精确数量不生成任务高度，零成员父子组仍保留稳定 header 与折叠几何', () => {
+		const loaded = task({ id: 'loaded', title: '首屏任务', status: 'doing' })
+		const childKey = JSON.stringify(['priority:4', 'status:doing'])
+		const emptyChildKey = JSON.stringify(['priority:4', 'status:todo'])
+		const sections = [
+			{
+				key: 'priority:4',
+				label: '紧急',
+				totalCount: 337,
+				tasks: [loaded],
+				children: [
+					{ key: childKey, label: '进行中', totalCount: 337, tasks: [loaded] },
+					{ key: emptyChildKey, label: '待执行', totalCount: 0, tasks: [] },
+				],
+			},
+			{ key: 'priority:3', label: '高', totalCount: 0, tasks: [] },
+		]
+		const flat = buildTaskBoardFlatItems({ sections })
+		expect(flat.map(({ key }) => key)).toEqual([
+			'h:priority:4',
+			`h:${childKey}`,
+			'loaded',
+			`h:${emptyChildKey}`,
+			'h:priority:3',
+		])
+		expect(
+			flat
+				.filter((item) => item.kind === 'header')
+				.map(({ count, tasks }) => [count, tasks.length]),
+		).toEqual([
+			[337, 1],
+			[337, 1],
+			[0, 0],
+			[0, 0],
+		])
+		expect(measureTaskBoardFlatSize(flat)).toBe(4 * 36 + 44 + 4 * 2)
+		expect(buildTaskBoardVirtualLayout(flat, true)).toMatchObject({
+			virtualCount: 6,
+			sentinelIndex: 5,
+			contentHeightPx: 242,
+		})
+		const collapsed = buildTaskBoardFlatItems({ sections, collapsedGroupKeys: ['h:priority:4'] })
+		expect(collapsed.map(({ key }) => key)).toEqual(['h:priority:4', 'h:priority:3'])
+		expect(measureTaskBoardFlatSize(collapsed)).toBe(74)
+	})
+
 	it('几何锁定批准的 TaskBoard 密度', () => {
 		expect(COLLECTION_ROW_HEIGHT).toBe(44)
 		expect(COLLECTION_SECTION_HEADER_HEIGHT).toBe(36)

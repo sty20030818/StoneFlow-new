@@ -1,8 +1,8 @@
 //! Default View 与 Saved View 共用的 Task SQL 查询。
 
 use sea_orm::{
-    sea_query::Expr, ColumnTrait, Condition, EntityTrait, ExprTrait, PaginatorTrait, QueryFilter,
-    QuerySelect, Select,
+    sea_query::Expr, ColumnTrait, Condition, ConnectionTrait, EntityTrait, ExprTrait,
+    PaginatorTrait, QueryFilter, QuerySelect, Select,
 };
 use stoneflow_application::view::{
     filter_query::validate_filter_query, FilterClauseValue, TaskScopeKind, TaskViewBaseKey,
@@ -19,6 +19,7 @@ impl TaskRepository {
     /// Default/Saved View 共用的完整 SQL 查询；只返回当前窗口。
     pub async fn list_for_view(
         &self,
+        connection: &impl ConnectionTrait,
         definition: &ViewTaskQuery,
     ) -> Result<Vec<task::Model>, StorageError> {
         apply_view_task_order(
@@ -26,7 +27,7 @@ impl TaskRepository {
             definition,
         )?
         .limit(u64::from(definition.limit))
-        .all(&self.db)
+        .all(connection)
         .await
         .map_err(Into::into)
     }
@@ -34,13 +35,15 @@ impl TaskRepository {
     /// 与 `list_for_view` 完全相同的过滤条件，不含 cursor/window。
     pub async fn count_for_view(&self, definition: &ViewTaskQuery) -> Result<u64, StorageError> {
         apply_view_task_filters(Task::find(), definition)?
+            .select_only()
+            .column(task::Column::Id)
             .count(&self.db)
             .await
             .map_err(Into::into)
     }
 }
 
-fn apply_view_task_filters(
+pub(super) fn apply_view_task_filters(
     mut query: Select<Task>,
     definition: &ViewTaskQuery,
 ) -> Result<Select<Task>, StorageError> {
@@ -462,7 +465,10 @@ mod tests {
                     limit: 10,
                     cursor: None,
                 };
-                let items = repository.list_for_view(&query).await.unwrap();
+                let items = repository
+                    .list_for_view(repository.connection(), &query)
+                    .await
+                    .unwrap();
                 assert_eq!(
                     items.into_iter().map(|task| task.id).collect::<Vec<_>>(),
                     case.expected_task_ids,
@@ -471,6 +477,18 @@ mod tests {
                 );
                 assert_eq!(
                     repository.count_for_view(&query).await.unwrap(),
+                    case.expected_task_ids.len() as u64,
+                    "{}",
+                    case.name
+                );
+                assert_eq!(
+                    repository
+                        .group_counts_for_view(repository.connection(), &query)
+                        .await
+                        .unwrap()
+                        .iter()
+                        .map(|group| group.total_count)
+                        .sum::<u64>(),
                     case.expected_task_ids.len() as u64,
                     "{}",
                     case.name
@@ -520,7 +538,10 @@ mod tests {
                 cursor: None,
             };
             assert!(
-                repository.list_for_view(&query).await.is_err(),
+                repository
+                    .list_for_view(repository.connection(), &query)
+                    .await
+                    .is_err(),
                 "list accepted {field}/{op}"
             );
             assert!(
@@ -714,7 +735,10 @@ mod tests {
         };
 
         assert_eq!(repository.count_for_view(&query).await.unwrap(), 2);
-        let first_page = repository.list_for_view(&query).await.unwrap();
+        let first_page = repository
+            .list_for_view(repository.connection(), &query)
+            .await
+            .unwrap();
         assert_eq!(
             first_page
                 .iter()
@@ -724,15 +748,18 @@ mod tests {
         );
 
         let second_page = repository
-            .list_for_view(&ViewTaskQuery {
-                cursor: Some(TaskQueryCursor {
-                    values: vec![
-                        Some(TaskOrderValue::Integer(first_page[0].position)),
-                        Some(TaskOrderValue::Text(first_page[0].id.clone())),
-                    ],
-                }),
-                ..query.clone()
-            })
+            .list_for_view(
+                repository.connection(),
+                &ViewTaskQuery {
+                    cursor: Some(TaskQueryCursor {
+                        values: vec![
+                            Some(TaskOrderValue::Integer(first_page[0].position)),
+                            Some(TaskOrderValue::Text(first_page[0].id.clone())),
+                        ],
+                    }),
+                    ..query.clone()
+                },
+            )
             .await
             .unwrap();
         assert_eq!(
@@ -756,7 +783,10 @@ mod tests {
             cursor: None,
             ..query.clone()
         };
-        let date_is_not_items = repository.list_for_view(&date_is_not_query).await.unwrap();
+        let date_is_not_items = repository
+            .list_for_view(repository.connection(), &date_is_not_query)
+            .await
+            .unwrap();
         assert_eq!(
             date_is_not_items
                 .iter()
@@ -778,7 +808,10 @@ mod tests {
             cursor: None,
             ..query.clone()
         };
-        let future_items = repository.list_for_view(&future_query).await.unwrap();
+        let future_items = repository
+            .list_for_view(repository.connection(), &future_query)
+            .await
+            .unwrap();
         assert_eq!(
             future_items
                 .iter()
@@ -800,7 +833,10 @@ mod tests {
             cursor: None,
             ..query
         };
-        let not_future_items = repository.list_for_view(&not_future_query).await.unwrap();
+        let not_future_items = repository
+            .list_for_view(repository.connection(), &not_future_query)
+            .await
+            .unwrap();
         assert_eq!(
             not_future_items
                 .iter()

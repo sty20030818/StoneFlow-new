@@ -1,8 +1,11 @@
 //! View port 实现与 application service 工厂。
 
+use std::collections::HashSet;
+
 use sea_orm::{DatabaseConnection, DatabaseTransaction, TransactionTrait};
 use stoneflow_application::{
     operation::OutboxEnqueueRecord,
+    task::{build_task_group_summary, TaskGroupBy},
     view::{
         CreateViewPersistenceRecord, UpdateViewPatch, ViewLookupReader, ViewPersistence,
         ViewProjectLookupRecord, ViewRecord, ViewService, ViewSpaceLookupRecord, ViewTaskPage,
@@ -167,19 +170,42 @@ impl ViewTaskReader for ViewPersistenceAdapter {
         &self,
         query: stoneflow_application::view::ViewTaskQuery,
     ) -> Result<ViewTaskPage, ApplicationError> {
-        let total_count = if query.cursor.is_none() {
-            Some(
-                self.tasks
-                    .count_for_view(&query)
+        // 仅本次响应保持一致读取；跨页不保留数据库事务或快照。
+        let connection = self
+            .tasks
+            .connection()
+            .begin()
+            .await
+            .map_err(from_display)?;
+        let group_summary = if query.cursor.is_none() {
+            let counts = self
+                .tasks
+                .group_counts_for_view(&connection, &query)
+                .await
+                .map_err(from_display)?;
+            let projects = if query.order.group_by == TaskGroupBy::Project {
+                self.projects
+                    .view_group_candidates(&connection, &query.scope, &query.context)
                     .await
-                    .map_err(from_display)?,
-            )
+                    .map_err(from_display)?
+            } else {
+                vec![]
+            };
+            Some(build_task_group_summary(
+                query.order,
+                counts,
+                projects,
+                &query.context,
+            ))
         } else {
             None
         };
+        let total_count = group_summary
+            .as_ref()
+            .map(|groups| groups.iter().map(|group| group.total_count).sum());
         let items = self
             .tasks
-            .list_for_view(&query)
+            .list_for_view(&connection, &query)
             .await
             .map(|tasks| {
                 tasks
@@ -201,10 +227,30 @@ impl ViewTaskReader for ViewPersistenceAdapter {
                         created_at: task.created_at,
                         updated_at: task.updated_at,
                     })
-                    .collect()
+                    .collect::<Vec<_>>()
             })
             .map_err(from_display)?;
-        Ok(ViewTaskPage { items, total_count })
+        let project_ids = items
+            .iter()
+            .filter_map(|item| item.project_id.clone())
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .collect::<Vec<_>>();
+        let projects = self
+            .projects
+            .list_by_ids_in_connection(&connection, &project_ids)
+            .await
+            .map_err(from_display)?
+            .into_iter()
+            .map(map_project_lookup)
+            .collect();
+        connection.commit().await.map_err(from_display)?;
+        Ok(ViewTaskPage {
+            items,
+            total_count,
+            projects,
+            group_summary,
+        })
     }
 
     async fn count_query(

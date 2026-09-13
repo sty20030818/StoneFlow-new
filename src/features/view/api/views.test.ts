@@ -31,12 +31,53 @@ const record = {
 
 beforeEach(() => invokeMock.mockReset())
 
+it('首屏透传完整摘要，续页明确返回 null', async () => {
+	const groupSummary = [
+		{
+			group: { kind: 'priority', priority: 4 },
+			totalCount: 0,
+			subGroups: [{ group: { kind: 'due', bucket: 'today' }, totalCount: 0 }],
+		},
+	]
+	const input = { ...windowInput, scope: definition.scope, viewId: record.id }
+	invokeMock.mockResolvedValueOnce({ view: record, items: [], totalCount: 0, groupSummary })
+	expect((await runTaskView(input)).groupSummary).toEqual(groupSummary)
+	invokeMock.mockResolvedValueOnce({
+		view: record,
+		items: [],
+		totalCount: null,
+		groupSummary: null,
+	})
+	expect((await runTaskView({ ...input, cursor: 'next' })).groupSummary).toBeNull()
+})
+
+it.each([
+	{ cursor: null, groupSummary: undefined },
+	{ cursor: null, groupSummary: null },
+	{ cursor: 'next', groupSummary: undefined },
+	{ cursor: 'next', groupSummary: [] },
+])(
+	'摘要缺失或不符合首屏/续页合同须报错：$cursor / $groupSummary',
+	async ({ cursor, groupSummary }) => {
+		invokeMock.mockResolvedValue({
+			view: record,
+			items: [],
+			totalCount: cursor ? null : 0,
+			groupSummary,
+		})
+		await expect(
+			runTaskView({ ...windowInput, scope: definition.scope, viewId: record.id, cursor }),
+		).rejects.toThrow('groupSummary')
+	},
+)
+
 it('保存视图返回查询产生的分组身份，不在 IPC 适配时丢失', async () => {
 	const group = { kind: 'due', bucket: 'today' }
 	const subGroup = { kind: 'status', status: 'todo' }
 	invokeMock.mockResolvedValue({
 		view: record,
 		items: [{ id: 'task-1', group, subGroup }],
+		groupSummary: [{ group, totalCount: 1, subGroups: [{ group: subGroup, totalCount: 1 }] }],
 		totalCount: 1,
 	})
 	const result = await runTaskView({ scope: definition.scope, viewId: record.id, ...windowInput })
@@ -56,6 +97,7 @@ it('写入和运行响应不得把不可用定义当成功或空筛选', async (
 	await expect(updateView({ viewId: record.id, name: '新名称' })).rejects.toThrow('项目范围已变化')
 	invokeMock.mockResolvedValue({
 		view: { ...record, filters: undefined },
+		groupSummary: [],
 		items: [],
 		totalCount: 0,
 	})
@@ -84,7 +126,7 @@ it('非法筛选沿用逐条不可用恢复，正常记录保留，非法写入�
 })
 
 it('运行保存视图将当前窗口排序与日期透传 IPC，不写入 View 定义', async () => {
-	invokeMock.mockResolvedValue({ view: record, items: [], totalCount: 0 })
+	invokeMock.mockResolvedValue({ view: record, items: [], totalCount: 0, groupSummary: [] })
 	await runTaskView({ scope: definition.scope, viewId: record.id, ...windowInput })
 	expect(invokeMock).toHaveBeenCalledWith('run_task_view', {
 		input: {

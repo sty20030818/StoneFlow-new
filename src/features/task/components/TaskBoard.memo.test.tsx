@@ -65,7 +65,9 @@ const TASKS: TaskListItem[] = [BASE_TASK, { ...BASE_TASK, id: 'task-2', title: '
 const TASK_BY_ID = indexTasksById(TASKS)
 const TASK_IDS = TASKS.map((task) => task.id)
 const FLAT_ITEMS = buildTaskBoardFlatItems({
-	sections: [{ key: 'status:todo', label: '待执行', status: 'todo', tasks: TASKS }],
+	sections: [
+		{ key: 'status:todo', label: '待执行', status: 'todo', tasks: TASKS, totalCount: TASKS.length },
+	],
 })
 const BOARD_COLLECTION = buildTaskBoardCollection({ eligibleKeys: TASK_IDS, flatItems: FLAT_ITEMS })
 const PAGINATION: TaskBoardPagination = {

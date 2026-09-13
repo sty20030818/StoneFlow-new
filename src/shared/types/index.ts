@@ -37,6 +37,7 @@ export type {
 	TaskWindowGroupBy,
 	TaskQueryGroup,
 	TaskQueryItem,
+	TaskQueryGroupSummary,
 	TaskQueryWindow,
 	TaskQueryDefinition,
 	TaskViewBaseKey,

@@ -32,6 +32,7 @@ it('详情删除的迟到成功只移除旧 View，不把用户从新详情拉�
 					return {
 						view: records.find((view) => view.id === args!.input!.viewId),
 						items: [],
+						groupSummary: [],
 						totalCount: 0,
 						nextCursor: null,
 					}

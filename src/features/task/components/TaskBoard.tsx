@@ -2,6 +2,7 @@ import {
 	memo,
 	useCallback,
 	useEffect,
+	useId,
 	useLayoutEffect,
 	useMemo,
 	useRef,
@@ -763,7 +764,7 @@ export function TaskBoard({
 		)
 	}
 
-	if (status === 'ready' && tasks.length === 0 && emptyTitle) {
+	if (status === 'ready' && flatItems.length === 0 && emptyTitle) {
 		return (
 			<TaskBoardEmptyState
 				actionRef={emptyActionRef}
@@ -1179,6 +1180,9 @@ function TaskGroupHeader({
 }) {
 	const accessibleLabel = parentLabel === null ? label : `${parentLabel} › ${label}`
 	const visibleLabel = isSticky ? accessibleLabel : label
+	const countDescriptionId = useId()
+	const partiallyLoaded = tasks.length < count
+	const countLabel = partiallyLoaded ? `${count} · 已加载 ${tasks.length}` : count
 	const sectionIds = useMemo(() => tasks.map((t) => t.id), [tasks])
 	const [contextMenuOpen, setContextMenuOpen] = useState(false)
 	const [toggleTooltipOpen, setToggleTooltipOpen] = useState(false)
@@ -1226,6 +1230,7 @@ function TaskGroupHeader({
 		>
 			<Button
 				ref={groupTriggerRef}
+				aria-describedby={countDescriptionId}
 				aria-expanded={open}
 				aria-label={open ? `折叠 ${accessibleLabel}` : `展开 ${accessibleLabel}`}
 				data-collection-group-key={groupKey}
@@ -1271,7 +1276,7 @@ function TaskGroupHeader({
 	) : null
 	const headerContent = (
 		<BoardSectionHeader
-			count={count}
+			count={countLabel}
 			icon={status ? <TaskStatusIndicator status={status} /> : undefined}
 			label={
 				contextMenuOpen ? (
@@ -1296,6 +1301,9 @@ function TaskGroupHeader({
 
 	return (
 		<div data-board-section='true' data-state={open ? 'open' : 'closed'}>
+			<span id={countDescriptionId} className='sr-only'>
+				{`${accessibleLabel}，共 ${count} 个任务，已加载 ${tasks.length} 个`}
+			</span>
 			<ContextMenu
 				onOpenChange={(nextOpen) => {
 					setContextMenuOpen(nextOpen)
@@ -1325,6 +1333,8 @@ function TaskGroupHeader({
 					onSelectAll={handleSelectAll}
 					open={open}
 					selectedAll={sectionIds.length > 0 && selectedCount === sectionIds.length}
+					selectionDisabled={sectionIds.length === 0}
+					selectionScope={partiallyLoaded ? 'loaded' : 'all'}
 				/>
 			</ContextMenu>
 		</div>

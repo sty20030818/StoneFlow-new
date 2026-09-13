@@ -476,6 +476,11 @@ function queryTasks(query: RunTaskQueryInput) {
 			subGroup: { kind: 'none' },
 		})),
 		totalCount: items.length,
+		groupSummary: (['doing', 'todo', 'waiting', 'done', 'canceled'] as const).map((status) => ({
+			group: { kind: 'status', status },
+			totalCount: items.filter((item) => item.status === status).length,
+			subGroups: [],
+		})),
 		nextCursor: null,
 	}
 }

@@ -229,6 +229,7 @@ export function useSavedViewWorkspaceScene() {
 	const taskCollection = useTaskCollectionScene({
 		source: {
 			items,
+			groupSummary: taskRunQuery.data?.pages[0]?.groupSummary ?? null,
 			status: boardStatus,
 			onRetry: taskRunQuery.refetch,
 			collapseScopeKey: JSON.stringify([scope, viewId]),

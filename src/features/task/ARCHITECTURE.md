@@ -99,6 +99,8 @@ src/features/task/
 
 任务查询窗口中的 `TaskQueryItem.group/subGroup` 是两级组身份真源；Display 将同路径的已加载成员合并为唯一 `TaskDisplaySection[]`，主组的可选 `children` 只包含一层叶组，保留查询顺序。子组 key 为 `JSON.stringify([parent.key, subGroup.key])`，同名子组不共享身份。`buildTaskBoardFlatItems({ sections, collapsedGroupKeys })` 只展平这份投影，不按状态重新分组、不另排任务。header 的稳定 key 为 `h:${section.key}`，`parentKey/parentLabel` 为 null 表示主级，非 null 表示子级；不另存深度。`header.tasks` 对父组保留全部已加载后代，对子组只保留本组成员。父折叠移除全部后代 header/row，子折叠仅移除自身行，不清除子组已有折叠偏好。
 
+Display section 的 `totalCount` 来自当前查询路径的精确摘要，model 直接写入 `header.count`；已加载数只读 `header.tasks.length`。现有 Chip 计数槽在部分加载时显示“总数 · 已加载 N”，完整加载与真实空组只显示总数；折叠按钮的可访问描述包含完整父子路径、总数与已加载数。Board 保留投影中的零成员 header，仅在 `flatItems` 也为空时显示整页空态，不新增占位任务或按摘要总数制造像素。空组仍可折叠；状态组仍能用自身元数据创建任务。菜单在没有已加载成员时禁用选择，部分加载时通过 `selectionScope='loaded'` 明确显示“选中已加载任务／取消选中已加载任务”，其他 Board 消费者保持默认文案。续页沿同 key 更新计数与已加载选择范围，继续复用单个 viewport、sentinel 与固定标题几何。
+
 父子组共用 `TaskGroupHeader` 和 `onSectionOpenChange(groupKey, open)`，回调传完整 header key。组菜单只增删对应 header 的已加载成员，保留其他组的选择；共享 `BoardSectionContextMenu.selectedAll` 表示非空组的全部成员均已选中，因此单成员组可取消，部分选中的组仍可补选全部。`taskBoardCollection` 从同一 header 构建组成员映射，并为当前可导航任务提供 `rowLeafGroupKeyByKey`；Shift 范围选择以叶组为边界，不因父组同时拥有后代而跨越兄弟子组。`status` 仅作为当前组状态图标与创建预填的可选元数据，不从标签推断、不向非状态子组合成状态。状态创建动作同时保留页面传入的 `createProjectId`。
 
 折叠偏好由 `useTaskCollectionScene` 按来源身份与有效 `groupBy/subGroupBy` 组合键读取 `useShellPreferenceStore.taskBoardCollapsedGroups`，值为完整 header key 数组，默认全部展开。本机持久化在重新打开页面后恢复；Default View 来源包含 scope、context 与 baseViewKey，Saved View 来源包含 scope 与 viewId。排序、筛选与日期基准不产生另一份折叠偏好，切换来源或主子分组配置不会串用其他组的状态。
