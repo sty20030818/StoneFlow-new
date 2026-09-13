@@ -9,12 +9,12 @@ import {
 	RouterProvider,
 	useMatch,
 } from '@tanstack/react-router'
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 
 import { parseShellRoute, ShellRouteProvider } from '@/app/navigation'
 import { BulkActionProvider } from '@/features/bulk-action'
 import { DangerConfirmProvider } from '@/features/danger-confirm'
-import { encodeFilterQueryToSearchParam } from '@/features/filter'
+import { decodeFilterQueryFromSearchParam, encodeFilterQueryToSearchParam } from '@/features/filter'
 import { ProjectPage } from '@/features/project'
 import { CommandSelectionProvider } from '@/features/selection'
 import { useShellPreferenceStore } from '@/features/shell-dialogs'
@@ -123,6 +123,116 @@ beforeEach(() => {
 	useShellPreferenceStore.setState({
 		taskBoardCollapsedGroups: {},
 	})
+})
+
+it.each([
+	{ op: 'is', label: '是', statuses: ['todo'], name: '菜单创建的待执行' },
+	{ op: 'is_not', label: '不是', statuses: ['doing', 'waiting'], name: '菜单创建的排除待执行' },
+])('项目未完成从干净菜单编辑 $label 待执行，保存后返回默认视图不残留筛选', async (testCase) => {
+	const backend = installBackend()
+	const context = { kind: 'project', projectId: 'project-1' } as const
+	const scope = { type: 'space', spaceId: 'space-1' } as const
+	const { router } = await renderWorkspace('/space-1/projects/project-1')
+	await expectTasks(context, ['todo', 'doing', 'waiting'])
+	expect(screen.getByRole('radio', { name: '未完成' })).toBeChecked()
+	expect(router.state.location.search).toEqual({})
+	expect(backend.queries.at(-1)).toMatchObject({
+		scope,
+		context,
+		baseViewKey: 'active',
+		filters: { clauses: [] },
+	})
+	expect(screen.queryByRole('button', { name: '保存' })).not.toBeInTheDocument()
+
+	fireEvent.click(screen.getByRole('button', { name: '筛选' }))
+	expect(await screen.findByText('无附加筛选条件')).toBeVisible()
+	fireEvent.keyDown(screen.getByRole('menuitem', { name: '状态' }), { key: 'ArrowRight' })
+	fireEvent.click(await screen.findByRole('menuitemcheckbox', { name: '待执行' }))
+	await expectTasks(context, ['todo'])
+	expect(backend.queries.at(-1)?.filters).toEqual({
+		clauses: [{ id: expect.any(String), field: 'status', op: 'is', values: ['todo'] }],
+	})
+
+	if (testCase.op === 'is_not') {
+		fireEvent.click(screen.getByRole('button', { name: '筛选' }))
+		const conditions = await screen.findByRole('region', { name: '当前筛选条件' })
+		fireEvent.click(within(conditions).getByRole('button', { name: '筛选运算符' }))
+		fireEvent.click(await screen.findByRole('menuitemradio', { name: '不是' }))
+		fireEvent.keyDown(screen.getByRole('searchbox', { name: '筛选字段' }), { key: 'Escape' })
+	}
+	await expectTasks(context, testCase.statuses)
+	const expectedFilters = {
+		clauses: [{ id: expect.any(String), field: 'status', op: testCase.op, values: ['todo'] }],
+	}
+	expect(backend.queries.at(-1)).toMatchObject({
+		scope,
+		context,
+		baseViewKey: 'active',
+		filters: expectedFilters,
+	})
+	const draft = router.state.location.search as { f?: string }
+	expect(decodeFilterQueryFromSearchParam(draft.f ?? null)).toEqual(expectedFilters)
+	expect(screen.getByRole('radio', { name: '未完成' })).toBeChecked()
+	expect(screen.getByRole('button', { name: '筛选运算符' })).toHaveTextContent(
+		new RegExp(`^${testCase.label}$`),
+	)
+	expect(screen.getByRole('button', { name: '筛选值 待执行' })).toBeVisible()
+
+	const name = await openSave(testCase.name)
+	fireEvent.submit(name.closest('form')!)
+	await waitFor(() => expect(router.state.location.pathname).toBe('/space-1/views/created-1'))
+	expect(router.state.location.search).toEqual({})
+	expect(await screen.findByRole('radio', { name: testCase.name })).toBeChecked()
+	await expectTasks(context, testCase.statuses)
+	expect(backend.creates).toEqual([
+		{ name: testCase.name, scope, context, baseViewKey: 'active', filters: expectedFilters },
+	])
+	expect(backend.updates).toHaveLength(0)
+	expect(backend.runs.at(-1)).toMatchObject({ scope, viewId: 'created-1' })
+	expect(backend.runs.at(-1)?.filters).toBeUndefined()
+	expect(screen.queryByRole('button', { name: '保存' })).not.toBeInTheDocument()
+	fireEvent.click(screen.getByRole('button', { name: '筛选' }))
+	const savedConditions = await screen.findByRole('region', { name: '当前筛选条件' })
+	expect(within(savedConditions).getByRole('button', { name: '筛选运算符' })).toHaveTextContent(
+		new RegExp(`^${testCase.label}$`),
+	)
+	expect(within(savedConditions).getByRole('button', { name: '筛选值 待执行' })).toBeVisible()
+	fireEvent.keyDown(screen.getByRole('searchbox', { name: '筛选字段' }), { key: 'Escape' })
+	await waitFor(() =>
+		expect(screen.queryByRole('searchbox', { name: '筛选字段' })).not.toBeInTheDocument(),
+	)
+
+	for (const target of [
+		{ label: '未完成', baseViewKey: 'active', statuses: ['todo', 'doing', 'waiting'], search: {} },
+		{
+			label: '全部',
+			baseViewKey: 'all',
+			statuses: ['todo', 'doing', 'waiting', 'done'],
+			search: { v: 'all' },
+		},
+	]) {
+		fireEvent.click(screen.getByRole('radio', { name: target.label }))
+		await expectTasks(context, target.statuses)
+		expect(router.state.location.pathname).toBe('/space-1/projects/project-1')
+		expect(router.state.location.search).toEqual(target.search)
+		expect(screen.getByRole('radio', { name: target.label })).toBeChecked()
+		expect(backend.queries.at(-1)).toMatchObject({
+			scope,
+			context,
+			baseViewKey: target.baseViewKey,
+			filters: { clauses: [] },
+		})
+		expect(screen.queryByRole('button', { name: '恢复' })).not.toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: '筛选' }))
+		expect(await screen.findByText('无附加筛选条件')).toBeVisible()
+		fireEvent.keyDown(screen.getByRole('searchbox', { name: '筛选字段' }), { key: 'Escape' })
+		await waitFor(() =>
+			expect(screen.queryByRole('searchbox', { name: '筛选字段' })).not.toBeInTheDocument(),
+		)
+	}
+	expect(backend.records.find((view) => view.id === 'created-1')?.filters).toEqual(expectedFilters)
+	expect(backend.creates).toHaveLength(1)
+	expect(backend.updates).toHaveLength(0)
 })
 
 it.each(SOURCES)(
@@ -457,7 +567,7 @@ function installBackend() {
 	return backend
 }
 
-// 夹具仅解释本票使用的 status is 条件；其他筛选须另加明确夹具，避免静默忽略。
+// 夹具仅解释本票使用的 status 条件；其他筛选须另加明确夹具，避免静默忽略。
 function queryTasks(query: RunTaskQueryInput) {
 	const items = TASKS.filter((task) => {
 		if (query.scope.type === 'space' && task.spaceId !== query.scope.spaceId) return false
@@ -465,8 +575,9 @@ function queryTasks(query: RunTaskQueryInput) {
 		if (query.context.kind === 'standalone' && task.projectId !== null) return false
 		if (query.baseViewKey === 'active' && task.status === 'done') return false
 		return query.filters.clauses.every((clause) => {
-			if (clause.field !== 'status' || clause.op !== 'is') throw new Error('夹具只支持 status is')
-			return clause.values.includes(task.status)
+			if (clause.field !== 'status') throw new Error('夹具只支持 status')
+			const matches = clause.values.includes(task.status)
+			return clause.op === 'is' ? matches : !matches
 		})
 	})
 	return {

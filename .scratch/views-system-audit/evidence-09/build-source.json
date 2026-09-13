@@ -1,0 +1,13 @@
+{
+	"base": "fc8a9de6",
+	"files": {
+		"src/features/project-overview/ARCHITECTURE.md": "b00a299e156b2ef42e0cd8922aab1e1e0bdbdd9ce021f9c6232050bb5ad76bea",
+		"src/features/task/hooks/useTaskBoardSticky.ts": "7783c5c15b941aad390d5f789db9384dcf302c3f8ac46e9cffed0c24ade92673",
+		"src/features/view/ARCHITECTURE.md": "a21df092ffc8e46d54ff845aa4d0ae97483005c53cd21b4102a5ebfc2466d924",
+		"src/features/view/components/ViewRecovery.test.tsx": "e02d9c08e49248057d45c6a9d60297ab02e23a93425c31aa6ac9d4794a5ee07d",
+		"src/features/view/components/ViewSaving.test.tsx": "329ff64103903fc094e35103b37d43eea1fa44aeca410e911df6f386acbf1579",
+		"src/features/view/hooks/index.ts": null,
+		"src/features/view/index.ts": "c1e680d79d4e7a00030c7b416f2e6fe35b0ecc2079ebd3c0b26b587019cfcc25",
+		"src/features/task/hooks/useTaskBoardSticky.test.tsx": "783343a36515be1850b2472bbb9129ff3f5a0b75626d036a42e0a41458e74a39"
+	}
+}

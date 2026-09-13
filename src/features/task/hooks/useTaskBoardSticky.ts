@@ -1,5 +1,5 @@
 /**
- * Board 分区 sticky 顶替：scroll 帧写 DOM；index 变才 setState。
+ * Board 分区 sticky 顶替：列表提交时同步标题，scroll 帧更新同组推挤。
  * 换分区时禁止先把旧标题 transform 置 0（会闪）。
  */
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
@@ -32,72 +32,48 @@ export function useTaskBoardSticky({
 	const stickyRenderedIndexRef = useRef(0)
 	const stickyStuckRef = useRef(false)
 	const [stickyActiveIndex, setStickyActiveIndex] = useState(0)
-	const [stickyStuck, setStickyStuck] = useState(true)
+	const [stickyStuck, setStickyStuck] = useState(false)
 
-	const applyStickyDom = useCallback(
-		(scrollTop: number, forceTransform = false) => {
-			const layout = buildTaskBoardStickyPush({
-				stickyIndexes: stickyMetaRef.current.stickyIndexes,
-				itemOffsets: stickyMetaRef.current.itemOffsets,
-				scrollTop,
-			})
-			if (!layout) {
-				return null
-			}
-			const contentReady =
-				forceTransform || layout.activeStickyIndex === stickyRenderedIndexRef.current
-			const layer = stickyPushLayerRef.current
-			if (layer && contentReady) {
-				layer.style.transform = `translate3d(0, ${layout.pushOffset}px, 0)`
-			}
-			const shell = stickyShellRef.current
-			if (shell) {
-				shell.style.visibility = layout.stuck ? 'visible' : 'hidden'
-				shell.style.pointerEvents = layout.stuck ? 'auto' : 'none'
-			}
-			return layout
-		},
-		[stickyMetaRef],
-	)
+	const reconcileSticky = useCallback(() => {
+		if (!enabled) return
+		const layout = buildTaskBoardStickyPush({
+			stickyIndexes: stickyMetaRef.current.stickyIndexes,
+			itemOffsets: stickyMetaRef.current.itemOffsets,
+			scrollTop: scrollViewport?.scrollTop ?? 0,
+		})
+		if (!layout) return
+		if (layout.activeStickyIndex !== stickyActiveIndexRef.current) {
+			stickyActiveIndexRef.current = layout.activeStickyIndex
+			setStickyActiveIndex(layout.activeStickyIndex)
+		}
+		if (layout.stuck !== stickyStuckRef.current) {
+			stickyStuckRef.current = layout.stuck
+			setStickyStuck(layout.stuck)
+		}
+		const layer = stickyPushLayerRef.current
+		if (layer && layout.activeStickyIndex === stickyRenderedIndexRef.current) {
+			layer.style.transform = `translate3d(0, ${layout.pushOffset}px, 0)`
+		}
+		const shell = stickyShellRef.current
+		if (shell) {
+			shell.style.visibility = layout.stuck ? 'visible' : 'hidden'
+			shell.style.pointerEvents = layout.stuck ? 'auto' : 'none'
+		}
+	}, [enabled, scrollViewport, stickyMetaRef])
+
+	useLayoutEffect(() => {
+		stickyRenderedIndexRef.current = stickyActiveIndex
+		// 虚拟行可先于 scroll RAF 同步提交；此时标题必须按同一 viewport 校正。
+		reconcileSticky()
+	})
 
 	useEffect(() => {
-		if (!enabled) {
-			return
-		}
 		const scrollEl = scrollViewport
-		const readTop = () => scrollEl?.scrollTop ?? 0
+		if (!enabled || !scrollEl) return
 		let raf = 0
 		const apply = () => {
 			raf = 0
-			const scrollTop = readTop()
-			const layout = buildTaskBoardStickyPush({
-				stickyIndexes: stickyMetaRef.current.stickyIndexes,
-				itemOffsets: stickyMetaRef.current.itemOffsets,
-				scrollTop,
-			})
-			if (!layout) {
-				return
-			}
-			const indexChanged = layout.activeStickyIndex !== stickyActiveIndexRef.current
-			if (indexChanged) {
-				stickyActiveIndexRef.current = layout.activeStickyIndex
-				setStickyActiveIndex(layout.activeStickyIndex)
-			} else {
-				applyStickyDom(scrollTop, false)
-			}
-			if (layout.stuck !== stickyStuckRef.current) {
-				stickyStuckRef.current = layout.stuck
-				setStickyStuck(layout.stuck)
-				const shell = stickyShellRef.current
-				if (shell) {
-					shell.style.visibility = layout.stuck ? 'visible' : 'hidden'
-					shell.style.pointerEvents = layout.stuck ? 'auto' : 'none'
-				}
-			}
-		}
-		apply()
-		if (!scrollEl) {
-			return
+			reconcileSticky()
 		}
 		const onScroll = () => {
 			if (raf !== 0) return
@@ -108,15 +84,7 @@ export function useTaskBoardSticky({
 			scrollEl.removeEventListener('scroll', onScroll)
 			if (raf !== 0) cancelAnimationFrame(raf)
 		}
-	}, [applyStickyDom, enabled, scrollViewport, stickyIndexes, itemOffsets, stickyMetaRef])
-
-	const stickyHeaderKey = stickyIndexes.length > 0 ? `sticky:${stickyActiveIndex}` : 'sticky:none'
-
-	useLayoutEffect(() => {
-		stickyRenderedIndexRef.current = stickyActiveIndex
-		const scrollTop = scrollViewport?.scrollTop ?? 0
-		applyStickyDom(scrollTop, true)
-	}, [applyStickyDom, stickyActiveIndex, stickyStuck, stickyHeaderKey, scrollViewport])
+	}, [enabled, scrollViewport, reconcileSticky])
 
 	const nextStickyIndex = (() => {
 		const pos = stickyIndexes.indexOf(stickyActiveIndex)

@@ -1,0 +1,293 @@
+{
+	"observedAt": "2026-09-13T15:40:10.299997+00:00",
+	"database": "/Users/stonefish/Library/Application Support/com.stonefish.stoneflow.views-acceptance/stoneflow.sqlite3",
+	"readOnly": true,
+	"boundary": "仅独立测试库合成数据；未核验外部同步或正式数据。",
+	"views": [
+		{
+			"record": {
+				"id": "01a09b68-f43f-7053-9c8c-44ca5dcf302e",
+				"name": "09",
+				"entity_kind": "task",
+				"position": 7144,
+				"generation": 1,
+				"created_at": "2026-09-13T15:35:41.886664+00:00",
+				"updated_at": "2026-09-13T15:35:41.886664+00:00"
+			},
+			"scope": {
+				"type": "space",
+				"spaceId": "09000000-0000-4000-8001-000000000001"
+			},
+			"definition": {
+				"baseViewKey": "active",
+				"context": {
+					"kind": "project",
+					"projectId": "09000000-0000-4000-8002-000000000001"
+				},
+				"filters": {
+					"clauses": [
+						{
+							"id": "8fcabba9-252d-4176-997f-0afdf8f960bf",
+							"field": "status",
+							"op": "is",
+							"values": ["todo"]
+						}
+					]
+				}
+			},
+			"sort": [],
+			"groupBy": "none",
+			"todoMemberCount": 2,
+			"createOutbox": [
+				{
+					"id": "01a09b68-f441-7693-899d-617ae354c620",
+					"operation_id": "01a09b68-f441-7693-899d-6181420dac3f",
+					"entity_type": "view",
+					"entity_id": "01a09b68-f43f-7053-9c8c-44ca5dcf302e",
+					"generation": 1,
+					"operation_type": "upsert",
+					"created_at": "2026-09-13T15:35:41.886664+00:00",
+					"payload": {
+						"kind": "patch",
+						"fields": {
+							"created_at": "2026-09-13T15:35:41.886664+00:00",
+							"entity_kind": "task",
+							"filters": {
+								"baseViewKey": "active",
+								"context": {
+									"kind": "project",
+									"projectId": "09000000-0000-4000-8002-000000000001"
+								},
+								"filters": {
+									"clauses": [
+										{
+											"field": "status",
+											"id": "8fcabba9-252d-4176-997f-0afdf8f960bf",
+											"op": "is",
+											"values": ["todo"]
+										}
+									]
+								}
+							},
+							"group_by": "none",
+							"name": "09",
+							"position": 7144,
+							"scope": {
+								"spaceId": "09000000-0000-4000-8001-000000000001",
+								"type": "space"
+							},
+							"sort": [],
+							"updated_at": "2026-09-13T15:35:41.886664+00:00"
+						}
+					},
+					"matchesPersistedDefinition": true
+				}
+			],
+			"checks": {
+				"scope": true,
+				"context": true,
+				"baseViewKey": true,
+				"oneTodoClause": true,
+				"canonicalDisplayFields": true,
+				"generation": true,
+				"oneCreateOutbox": true,
+				"outboxMatchesDefinition": true,
+				"todoMemberCount": true
+			}
+		},
+		{
+			"record": {
+				"id": "01a09b6a-6d35-7692-8a23-4edb11fd6687",
+				"name": "09｜原生独立事项待执行",
+				"entity_kind": "task",
+				"position": 8144,
+				"generation": 1,
+				"created_at": "2026-09-13T15:37:18.389048+00:00",
+				"updated_at": "2026-09-13T15:37:18.389048+00:00"
+			},
+			"scope": {
+				"type": "space",
+				"spaceId": "09000000-0000-4000-8001-000000000001"
+			},
+			"definition": {
+				"baseViewKey": "active",
+				"context": {
+					"kind": "standalone"
+				},
+				"filters": {
+					"clauses": [
+						{
+							"id": "1aa5527e-4393-4943-8ed0-61f21afd8529",
+							"field": "status",
+							"op": "is",
+							"values": ["todo"]
+						}
+					]
+				}
+			},
+			"sort": [],
+			"groupBy": "none",
+			"todoMemberCount": 1,
+			"createOutbox": [
+				{
+					"id": "01a09b6a-6d38-7ae1-8646-6c689e43f0f4",
+					"operation_id": "01a09b6a-6d38-7ae1-8646-6c71c990ed0f",
+					"entity_type": "view",
+					"entity_id": "01a09b6a-6d35-7692-8a23-4edb11fd6687",
+					"generation": 1,
+					"operation_type": "upsert",
+					"created_at": "2026-09-13T15:37:18.389048+00:00",
+					"payload": {
+						"kind": "patch",
+						"fields": {
+							"created_at": "2026-09-13T15:37:18.389048+00:00",
+							"entity_kind": "task",
+							"filters": {
+								"baseViewKey": "active",
+								"context": {
+									"kind": "standalone"
+								},
+								"filters": {
+									"clauses": [
+										{
+											"field": "status",
+											"id": "1aa5527e-4393-4943-8ed0-61f21afd8529",
+											"op": "is",
+											"values": ["todo"]
+										}
+									]
+								}
+							},
+							"group_by": "none",
+							"name": "09｜原生独立事项待执行",
+							"position": 8144,
+							"scope": {
+								"spaceId": "09000000-0000-4000-8001-000000000001",
+								"type": "space"
+							},
+							"sort": [],
+							"updated_at": "2026-09-13T15:37:18.389048+00:00"
+						}
+					},
+					"matchesPersistedDefinition": true
+				}
+			],
+			"checks": {
+				"scope": true,
+				"context": true,
+				"baseViewKey": true,
+				"oneTodoClause": true,
+				"canonicalDisplayFields": true,
+				"generation": true,
+				"oneCreateOutbox": true,
+				"outboxMatchesDefinition": true,
+				"todoMemberCount": true
+			}
+		},
+		{
+			"record": {
+				"id": "01a09b6b-451b-7f53-9b6e-ac7745f6ea0c",
+				"name": "09｜原生所有任务待执行",
+				"entity_kind": "task",
+				"position": 9144,
+				"generation": 1,
+				"created_at": "2026-09-13T15:38:13.659251+00:00",
+				"updated_at": "2026-09-13T15:38:13.659251+00:00"
+			},
+			"scope": {
+				"type": "space",
+				"spaceId": "09000000-0000-4000-8001-000000000001"
+			},
+			"definition": {
+				"baseViewKey": "active",
+				"context": {
+					"kind": "all"
+				},
+				"filters": {
+					"clauses": [
+						{
+							"id": "b4c660bd-c145-4f61-84c3-e74698195ad2",
+							"field": "status",
+							"op": "is",
+							"values": ["todo"]
+						}
+					]
+				}
+			},
+			"sort": [],
+			"groupBy": "none",
+			"todoMemberCount": 71,
+			"createOutbox": [
+				{
+					"id": "01a09b6b-451c-7371-81dc-fd925f3a840c",
+					"operation_id": "01a09b6b-451c-7371-81dc-fdaab503362e",
+					"entity_type": "view",
+					"entity_id": "01a09b6b-451b-7f53-9b6e-ac7745f6ea0c",
+					"generation": 1,
+					"operation_type": "upsert",
+					"created_at": "2026-09-13T15:38:13.659251+00:00",
+					"payload": {
+						"kind": "patch",
+						"fields": {
+							"created_at": "2026-09-13T15:38:13.659251+00:00",
+							"entity_kind": "task",
+							"filters": {
+								"baseViewKey": "active",
+								"context": {
+									"kind": "all"
+								},
+								"filters": {
+									"clauses": [
+										{
+											"field": "status",
+											"id": "b4c660bd-c145-4f61-84c3-e74698195ad2",
+											"op": "is",
+											"values": ["todo"]
+										}
+									]
+								}
+							},
+							"group_by": "none",
+							"name": "09｜原生所有任务待执行",
+							"position": 9144,
+							"scope": {
+								"spaceId": "09000000-0000-4000-8001-000000000001",
+								"type": "space"
+							},
+							"sort": [],
+							"updated_at": "2026-09-13T15:38:13.659251+00:00"
+						}
+					},
+					"matchesPersistedDefinition": true
+				}
+			],
+			"checks": {
+				"scope": true,
+				"context": true,
+				"baseViewKey": true,
+				"oneTodoClause": true,
+				"canonicalDisplayFields": true,
+				"generation": true,
+				"oneCreateOutbox": true,
+				"outboxMatchesDefinition": true,
+				"todoMemberCount": true
+			}
+		}
+	],
+	"legacyNoneRepair": {
+		"id": "09000000-0000-4000-8004-000000000006",
+		"name": "09｜旧 none 可读修复",
+		"group_by_json": "\"none\"",
+		"generation": 1,
+		"created_at": "2026-09-12T16:00:00Z",
+		"updated_at": "2026-09-12T16:00:00Z",
+		"viewOutboxCount": 0,
+		"checks": {
+			"canonicalNone": true,
+			"generationUnchanged": true,
+			"timestampUnchanged": true,
+			"noOutboxForReadRepair": true
+		}
+	},
+	"nameBoundary": "第一个原生新建View实际名称为09；中文typeText未完整输入，此记录不作为名称编辑验收。"
+}

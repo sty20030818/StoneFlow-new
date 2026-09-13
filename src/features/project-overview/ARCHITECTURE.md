@@ -51,7 +51,6 @@ src/features/project-overview/
 | 协作 | 方向 |
 |------|------|
 | project | overview 数据 + mutations + command selection |
-| view | `useViewsQuery('project')` 侧栏视图轨 |
 | selection / command | 页编排持有 collection，行与右键消费 Command projection |
 | bulk-action / shell-dialogs | Command Runtime 统一执行与危险确认 |
 | page-frame | `CollectionBody` 提供集合页唯一真实 viewport；普通内容 `Body` 不参与 |

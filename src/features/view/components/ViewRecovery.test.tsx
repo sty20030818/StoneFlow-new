@@ -146,6 +146,56 @@ it('混合坏记录按原范围隔离；范围未知只在所有空间可达且�
 	expect(backend.reads).toContainEqual({ type: 'space', spaceId: 'space-2' })
 })
 
+it('原始非法筛选经真实适配器隔离为不可用视图，按 ID 删除后正常视图仍可执行', async () => {
+	const backend = installBackend()
+	const valid = validView()
+	const invalid = validView({
+		id: 'invalid-filter',
+		name: '原始筛选损坏的视图',
+		filters: {
+			clauses: [
+				{ id: 'exclude-status', field: 'status', op: 'is_not', values: ['done', 'unknown'] },
+			],
+		},
+	})
+	// IPC 只返回原始 filters，不预先构造 definitionError；异常分类由生产 adapter 完成。
+	backend.records = [valid, invalid]
+	backend.tasks = [projectTask('正常视图仍可查询的任务')]
+	const { router } = await renderRecovery('/all/views')
+	const invalidRow = await screen.findByRole('row', { name: /原始筛选损坏的视图/ })
+	const validRow = screen.getByRole('row', { name: /正常视图/ })
+	const reason = within(invalidRow).getByText(/筛选条件无效/).textContent!
+	expect(invalidRow).toHaveTextContent('暂不可用')
+	expect(validRow).not.toHaveTextContent('暂不可用')
+	expect(backend.records).toEqual([valid, invalid])
+
+	pressEnter(invalidRow)
+	await waitFor(() => expect(router.state.location.pathname).toBe('/all/views/invalid-filter'))
+	expect(await screen.findByText('保存视图暂不可用')).toBeVisible()
+	expect(screen.getByText(/筛选条件无效/).textContent).toBe(reason.replace('暂不可用 · ', ''))
+	expect(screen.queryByText('当前视图无匹配任务')).not.toBeInTheDocument()
+	expect(screen.queryByRole('button', { name: '保存' })).not.toBeInTheDocument()
+	expect(screen.queryByRole('button', { name: '覆盖当前' })).not.toBeInTheDocument()
+	expect(backend.runs).toEqual([])
+	pressEnter(screen.getByRole('button', { name: '返回保存视图' }))
+	await waitFor(() => expect(router.state.location.pathname).toBe('/all/views'))
+	const returnedRow = await screen.findByRole('row', { name: /原始筛选损坏的视图/ })
+	pressEnter(within(returnedRow).getByRole('button', { name: '视图操作' }))
+	const deleteAction = await screen.findByRole('menuitem', { name: '删除保存视图' })
+	expect(screen.queryByRole('menuitem', { name: '编辑保存视图' })).not.toBeInTheDocument()
+	pressEnter(deleteAction)
+	await waitFor(() =>
+		expect(screen.queryByRole('row', { name: /原始筛选损坏的视图/ })).not.toBeInTheDocument(),
+	)
+	expect(backend.deletes).toEqual(['invalid-filter'])
+	expect(backend.records).toEqual([valid])
+	expect(backend.writes).toEqual([])
+	pressEnter(screen.getByRole('row', { name: /正常视图/ }))
+	expect(await screen.findByText('正常视图仍可查询的任务')).toBeVisible()
+	expect(router.state.location.pathname).toBe('/all/views/valid')
+	expect(backend.runs).toEqual(['valid'])
+})
+
 it('未知 scope 坏行按 ID 删除；失败保留身份与错误，键盘重试后只移除该行', async () => {
 	const backend = installBackend()
 	backend.records.push(unavailableView('bad-id', '需要删除的坏记录', null, '范围无法识别'))

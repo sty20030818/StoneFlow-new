@@ -1,6 +1,6 @@
 # task · 任务域
 
-> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-09-13
+> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-09-14
 
 ---
 
@@ -105,7 +105,7 @@ Display section 的 `totalCount` 来自当前查询路径的精确摘要，model
 
 折叠偏好由 `useTaskCollectionScene` 按来源身份与有效 `groupBy/subGroupBy` 组合键读取 `useShellPreferenceStore.taskBoardCollapsedGroups`，值为完整 header key 数组，默认全部展开。本机持久化在重新打开页面后恢复；Default View 来源包含 scope、context 与 baseViewKey，Saved View 来源包含 scope 与 viewId。排序、筛选与日期基准不产生另一份折叠偏好，切换来源或主子分组配置不会串用其他组的状态。
 
-层级标题继续使用共享槽与单行 `36px` 几何，正常子标题仅缩进 label，子标题吸顶时显示“父组 › 子组”；按钮与创建动作的可访问名称始终包含父名称。只保留一条 active/next sticky 顶替链，不叠两层吸顶。`onCollapseAll(restoreGroupKey)` 接收菜单所在组的主级 key，由场景所有者折叠全部父子组并输出一次父按钮焦点意图，即使此前没有任务焦点也能恢复。Board 对非当前 sticky 的组焦点目标先请求滚动，再由既有 focus bridge 等待标题挂载；当前 sticky 按钮不跳回其原始列表位置。
+层级标题继续使用共享槽与单行 `36px` 几何，正常子标题仅缩进 label，子标题吸顶时显示“父组 › 子组”；按钮与创建动作的可访问名称始终包含父名称。只保留一条 active/next sticky 顶替链，不叠两层吸顶。`useTaskBoardSticky` 在每次布局提交时读取实际 viewport 校正标题，同组推挤仍由滚动帧更新，避免虚拟行已换组而标题等待另一帧；新标题提交前保留旧标题偏移。`onCollapseAll(restoreGroupKey)` 接收菜单所在组的主级 key，由场景所有者折叠全部父子组并输出一次父按钮焦点意图，即使此前没有任务焦点也能恢复。Board 对非当前 sticky 的组焦点目标先请求滚动，再由既有 focus bridge 等待标题挂载；当前 sticky 按钮不跳回其原始列表位置。
 
 删除批次和待消费焦点意图绑定完整 `pagination.sourceKey`；切换查询窗口时丢弃旧批次，首次渲染就不向新 Board 暴露旧意图。Board 的 DOM 焦点桥同样按该 key 重建，并清除旧分组按钮的行重入目标；已消费但仍等待虚拟节点挂载的请求不能在新窗口兑现。该临时恢复身份包含查询条件，与保留本机折叠偏好的来源身份分开。
 

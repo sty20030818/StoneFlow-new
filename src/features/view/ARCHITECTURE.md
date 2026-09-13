@@ -89,7 +89,6 @@ src/features/view/
 | 页面 | `ViewsPage`、`SavedViewPage` |
 | 管理交互 | `ViewEditorDialog`、`ViewSaveDialog`、`ViewActionsMenu`（UI Lab 复用生产组件） |
 | 保存用例 | `useViewSaveFlow`（Default 场景与 Saved 场景共用） |
-| 数据 | `useViewsQuery` |
 | Search | `parseViewSearch`（仅 `f`） |
 
 ---

@@ -9,9 +9,6 @@
 
 // ── Hooks ───────────────────────────────────────────────────────────────────
 
-/** 视图列表 Query（project-overview 侧栏等）。 */
-export { useViewsQuery } from './hooks'
-
 /** URL search → 仅 `f`（临时 FilterQuery）。 */
 export { parseViewSearch } from './api/viewSearch'
 

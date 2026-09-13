@@ -79,7 +79,7 @@ UI Lab 实际交互：搜索 View，打开 ViewEditorDialog 与 Collection Pages
 - `bun run test:run src/features/filter/core src/features/filter/model/useListFilterSession.test.tsx src/features/task-workspace/model src/features/task/hooks/useTaskData.test.tsx src/features/view/hooks src/features/display-options`：14 文件、59 项通过。
 - `bun run test:run src/features/view/components/ViewsPage.test.tsx src/features/view/components/ViewEditorDialog.test.tsx src/features/view/components/ViewActionsMenu.test.tsx src/features/filter/components/FilterBar.test.tsx`：4 文件、19 项通过。
 - `cargo test --manifest-path src-tauri/Cargo.toml -p stoneflow-application -p stoneflow-storage view --lib`：13 项通过，其中 1 项是名称匹配到的 Project overview。
-- `bun run test:run --config .scratch/views-system-audit/vitest.config.ts`：2 项隔离探针通过，直接组合生产 Router search parser、两个会话 hooks 和 PageFrame Toolbar；不包含数据库与真实项目场景装配。
+- 初始审计的 2 项隔离探针曾组合 Router search parser、会话 hooks 与 PageFrame Toolbar，不包含数据库与真实项目场景装配。09 已由正式页面回归替代并删除临时测试和配置；以各票验证记录为准。
 - 两次直接调用生产 Display adapter 的纯函数探针，确认 V06/V07；它们记录现状，不把错误行为当作正确契约。
 - SQLite 使用 `mode=ro`、`query_only=ON`，只读视图结构与聚合计数；没有输出任务正文或凭据，没有写回。
 - 原有暂存区 SHA-256：`47699297f88d52c25ec63b5315c8d8482318bfc994eb902f5e4c4f468c28c053`；收尾须保持一致。

@@ -1,0 +1,299 @@
+{
+	"observedAt": "2026-09-13T15:58:33.336902+00:00",
+	"database": "/Users/stonefish/Library/Application Support/com.stonefish.stoneflow.views-acceptance/stoneflow.sqlite3",
+	"readOnly": true,
+	"scope": "仅独立测试库合成数据，已读本地View和Outbox；未执行PostgreSQL上传/下载，不作为远端或跨设备同步验收。",
+	"copyAndOverwrite": {
+		"copy": {
+			"id": "01a09b6f-cee6-7931-8772-8b877fa1c481",
+			"name": "09｜独立事项排除待执行｜原生长名称另存验证",
+			"position": 10144,
+			"generation": 1,
+			"created_at": "2026-09-13T15:43:11.078720+00:00",
+			"updated_at": "2026-09-13T15:44:33.450699+00:00",
+			"scope": {
+				"type": "space",
+				"spaceId": "09000000-0000-4000-8001-000000000001"
+			},
+			"definition": {
+				"baseViewKey": "active",
+				"context": {
+					"kind": "standalone"
+				},
+				"filters": {
+					"clauses": [
+						{
+							"id": "1aa5527e-4393-4943-8ed0-61f21afd8529",
+							"field": "status",
+							"op": "is_not",
+							"values": ["todo"]
+						},
+						{
+							"id": "79a25727-38d3-4b96-a5ac-0417fab946b8",
+							"field": "priority",
+							"op": "is",
+							"values": ["1"]
+						}
+					]
+				}
+			},
+			"sort": [],
+			"groupBy": "none"
+		},
+		"original": {
+			"id": "01a09b6a-6d35-7692-8a23-4edb11fd6687",
+			"name": "09｜原生独立事项待执行",
+			"position": 8144,
+			"generation": 1,
+			"created_at": "2026-09-13T15:37:18.389048+00:00",
+			"updated_at": "2026-09-13T15:37:18.389048+00:00",
+			"scope": {
+				"type": "space",
+				"spaceId": "09000000-0000-4000-8001-000000000001"
+			},
+			"definition": {
+				"baseViewKey": "active",
+				"context": {
+					"kind": "standalone"
+				},
+				"filters": {
+					"clauses": [
+						{
+							"id": "1aa5527e-4393-4943-8ed0-61f21afd8529",
+							"field": "status",
+							"op": "is",
+							"values": ["todo"]
+						}
+					]
+				}
+			},
+			"sort": [],
+			"groupBy": "none"
+		},
+		"copyOutbox": [
+			{
+				"id": "01a09b6f-cee8-7172-90d8-41e5a3edec4f",
+				"operation_id": "01a09b6f-cee8-7172-90d8-41f4ddd4c19d",
+				"entity_type": "view",
+				"entity_id": "01a09b6f-cee6-7931-8772-8b877fa1c481",
+				"generation": 1,
+				"operation_type": "upsert",
+				"created_at": "2026-09-13T15:43:11.078720+00:00",
+				"payload": {
+					"kind": "patch",
+					"fields": {
+						"created_at": "2026-09-13T15:43:11.078720+00:00",
+						"entity_kind": "task",
+						"filters": {
+							"baseViewKey": "active",
+							"context": {
+								"kind": "standalone"
+							},
+							"filters": {
+								"clauses": [
+									{
+										"field": "status",
+										"id": "1aa5527e-4393-4943-8ed0-61f21afd8529",
+										"op": "is_not",
+										"values": ["todo"]
+									}
+								]
+							}
+						},
+						"group_by": "none",
+						"name": "09｜独立事项排除待执行｜原生长名称另存验证",
+						"position": 10144,
+						"scope": {
+							"spaceId": "09000000-0000-4000-8001-000000000001",
+							"type": "space"
+						},
+						"sort": [],
+						"updated_at": "2026-09-13T15:43:11.078720+00:00"
+					}
+				}
+			},
+			{
+				"id": "01a09b71-10ab-7050-af42-400dcb8c7c12",
+				"operation_id": "01a09b71-10ab-7050-af42-4010246b3c82",
+				"entity_type": "view",
+				"entity_id": "01a09b6f-cee6-7931-8772-8b877fa1c481",
+				"generation": 1,
+				"operation_type": "patch",
+				"created_at": "2026-09-13T15:44:33.450699+00:00",
+				"payload": {
+					"kind": "patch",
+					"fields": {
+						"filters": {
+							"baseViewKey": "active",
+							"context": {
+								"kind": "standalone"
+							},
+							"filters": {
+								"clauses": [
+									{
+										"field": "status",
+										"id": "1aa5527e-4393-4943-8ed0-61f21afd8529",
+										"op": "is_not",
+										"values": ["todo"]
+									},
+									{
+										"field": "priority",
+										"id": "79a25727-38d3-4b96-a5ac-0417fab946b8",
+										"op": "is",
+										"values": ["1"]
+									}
+								]
+							}
+						},
+						"updated_at": "2026-09-13T15:44:33.450699+00:00"
+					}
+				}
+			}
+		],
+		"originalOutbox": [
+			{
+				"id": "01a09b6a-6d38-7ae1-8646-6c689e43f0f4",
+				"operation_id": "01a09b6a-6d38-7ae1-8646-6c71c990ed0f",
+				"entity_type": "view",
+				"entity_id": "01a09b6a-6d35-7692-8a23-4edb11fd6687",
+				"generation": 1,
+				"operation_type": "upsert",
+				"created_at": "2026-09-13T15:37:18.389048+00:00",
+				"payload": {
+					"kind": "patch",
+					"fields": {
+						"created_at": "2026-09-13T15:37:18.389048+00:00",
+						"entity_kind": "task",
+						"filters": {
+							"baseViewKey": "active",
+							"context": {
+								"kind": "standalone"
+							},
+							"filters": {
+								"clauses": [
+									{
+										"field": "status",
+										"id": "1aa5527e-4393-4943-8ed0-61f21afd8529",
+										"op": "is",
+										"values": ["todo"]
+									}
+								]
+							}
+						},
+						"group_by": "none",
+						"name": "09｜原生独立事项待执行",
+						"position": 8144,
+						"scope": {
+							"spaceId": "09000000-0000-4000-8001-000000000001",
+							"type": "space"
+						},
+						"sort": [],
+						"updated_at": "2026-09-13T15:37:18.389048+00:00"
+					}
+				}
+			}
+		],
+		"checks": {
+			"newIdDistinctFromOriginal": true,
+			"finalSemanticFilters": true,
+			"originalTodoUnchanged": true,
+			"sameScopeContextBase": true,
+			"copyHasCreateThenOverwriteSameId": true,
+			"copyCreateHasCompleteFields": true,
+			"copyCreateWasOnlyNegativeStatus": true,
+			"overwriteOnlyChangedDefinitionAndTimestamp": true,
+			"ordinaryEditsKeepGeneration": true,
+			"originalOnlyCreation": true,
+			"originalMatchesEarlierSnapshot": true
+		}
+	},
+	"badFiltersDeletion": {
+		"id": "09000000-0000-4000-8004-000000000004",
+		"outbox": [
+			{
+				"id": "01a09b71-e55c-7002-86f6-730feeb6b629",
+				"operation_id": "01a09b71-e55c-7002-86f6-73114e52d59b",
+				"entity_type": "view",
+				"entity_id": "09000000-0000-4000-8004-000000000004",
+				"generation": 2,
+				"operation_type": "delete",
+				"created_at": "2026-09-13T15:45:27.900200+00:00",
+				"payload": {
+					"kind": "tombstone",
+					"deleted_at": "2026-09-13T15:45:27.900200+00:00"
+				}
+			}
+		],
+		"checks": {
+			"rowDeleted": true,
+			"oneDeleteOutbox": true,
+			"generationAdvancedTo2": true,
+			"tombstonePayload": true
+		}
+	},
+	"legacyReadRepairThenRename": {
+		"record": {
+			"id": "09000000-0000-4000-8004-000000000006",
+			"name": "09｜旧格式恢复后已重命名",
+			"position": 6144,
+			"generation": 1,
+			"created_at": "2026-09-12T16:00:00Z",
+			"updated_at": "2026-09-13T15:45:54.620208+00:00",
+			"scope": {
+				"type": "space",
+				"spaceId": "09000000-0000-4000-8001-000000000001"
+			},
+			"definition": {
+				"baseViewKey": "all",
+				"context": {
+					"kind": "standalone"
+				},
+				"filters": {
+					"clauses": []
+				}
+			},
+			"sort": [],
+			"groupBy": "none"
+		},
+		"outbox": [
+			{
+				"id": "01a09b72-4dbc-7740-afdb-1cd1ad7c766d",
+				"operation_id": "01a09b72-4dbc-7740-afdb-1ce31a7e9a67",
+				"entity_type": "view",
+				"entity_id": "09000000-0000-4000-8004-000000000006",
+				"generation": 1,
+				"operation_type": "patch",
+				"created_at": "2026-09-13T15:45:54.620208+00:00",
+				"payload": {
+					"kind": "patch",
+					"fields": {
+						"name": "09｜旧格式恢复后已重命名",
+						"updated_at": "2026-09-13T15:45:54.620208+00:00"
+					}
+				}
+			}
+		],
+		"checks": {
+			"nameChanged": true,
+			"canonicalNoneRetained": true,
+			"sameGeneration": true,
+			"originalCreatedAtRetained": true,
+			"onlyRenamePatch": true,
+			"patchMatchesName": true,
+			"readRepairPreviouslyHadNoOutbox": true
+		}
+	},
+	"localProtocolEntityCounts": {
+		"01a09b6f-cee6-7931-8772-8b877fa1c481": 0,
+		"01a09b6a-6d35-7692-8a23-4edb11fd6687": 0,
+		"09000000-0000-4000-8004-000000000004": 0,
+		"09000000-0000-4000-8004-000000000006": 0
+	},
+	"localTombstoneTableCounts": {
+		"01a09b6f-cee6-7931-8772-8b877fa1c481": 0,
+		"01a09b6a-6d35-7692-8a23-4edb11fd6687": 0,
+		"09000000-0000-4000-8004-000000000004": 0,
+		"09000000-0000-4000-8004-000000000006": 0
+	},
+	"protocolBoundary": "同步未配置，sync_protocol_entities与tombstones均无这些ID；删除协议证据是generation=2的Outbox tombstone，重命名/覆盖是generation=1的差量patch。"
+}
