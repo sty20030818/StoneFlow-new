@@ -10,13 +10,9 @@ type SyncConfigDialogProps = {
 	open: boolean
 	configSource: SyncConfigSource
 	databaseUrl: string
-	legacyRemoteAdoptionRequired: boolean
-	legacyRemoteReason: string | null
-	redactedRemoteUrl: string | null
 	/** 仅表示「正在保存本弹窗」，不要绑全局同步中（否则会误禁用） */
 	saving?: boolean
 	onClose: () => void
-	onAdoptLegacyRemote: () => Promise<void>
 	onSave: (input: SyncDatabaseConfigInput) => Promise<void>
 	onRebind: (input: SyncDatabaseConfigInput) => Promise<void>
 	onDatabaseUrlChange: (value: string) => void
@@ -38,12 +34,8 @@ function SyncConfigDialogSession({
 	open,
 	configSource,
 	databaseUrl,
-	legacyRemoteAdoptionRequired,
-	legacyRemoteReason,
-	redactedRemoteUrl,
 	saving: savingExternal = false,
 	onClose,
-	onAdoptLegacyRemote,
 	onSave,
 	onRebind,
 	onDatabaseUrlChange,
@@ -52,12 +44,10 @@ function SyncConfigDialogSession({
 	const [saving, setSaving] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 	const [rebindRequired, setRebindRequired] = useState(false)
-	const [editingReplacement, setEditingReplacement] = useState(false)
 	const descriptionId = useId()
 	const configIncomplete = databaseUrl.trim().length === 0
 	const busy = saving || savingExternal
 	const environmentManaged = configSource === 'environment'
-	const showingLegacyAdoption = legacyRemoteAdoptionRequired && !editingReplacement
 
 	async function handleSave() {
 		if (busy || configIncomplete) return
@@ -95,24 +85,6 @@ function SyncConfigDialogSession({
 			onClose()
 		} catch (rebindError) {
 			setError(normalizeTauriError(rebindError, '重新绑定远端失败'))
-		} finally {
-			setSaving(false)
-		}
-	}
-
-	async function handleAdoptLegacyRemote() {
-		if (busy || !showingLegacyAdoption) return
-
-		setError(null)
-		setSaving(true)
-		try {
-			await onAdoptLegacyRemote()
-			successToastIdRef.current = toast.success('已沿用当前远端', {
-				description: '本机数据与待上传变更均已保留，正在后台继续同步。',
-			})
-			onClose()
-		} catch (adoptionError) {
-			setError(normalizeTauriError(adoptionError, '沿用当前远端失败'))
 		} finally {
 			setSaving(false)
 		}
@@ -166,53 +138,19 @@ function SyncConfigDialogSession({
 							<div className='flex items-center gap-2'>
 								<CloudIcon aria-hidden className='size-4 shrink-0 text-muted' />
 								<Modal.Heading>
-									{showingLegacyAdoption
-										? '确认沿用当前远端'
-										: environmentManaged
-											? '开发同步配置'
-											: '配置云端副本'}
+									{environmentManaged ? '开发同步配置' : '配置云端副本'}
 								</Modal.Heading>
 							</div>
 							<p className='text-sm leading-6 text-muted' id={descriptionId}>
-								{showingLegacyAdoption
-									? '请确认当前配置仍指向此前使用的同一个远端。'
-									: environmentManaged
-										? '开发构建只读取项目根目录 .env.local，不会写入系统钥匙串。'
-										: '粘贴 Neon 或自建 Postgres 连接串。保存时会验证连接并确认远端实例身份。'}
+								{environmentManaged
+									? '开发构建只读取项目根目录 .env.local，不会写入系统钥匙串。'
+									: '粘贴 Neon 或自建 Postgres 连接串。保存时会验证连接并确认远端实例身份。'}
 							</p>
 						</div>
 					</Modal.Header>
 
 					<Modal.Body>
-						{showingLegacyAdoption ? (
-							<>
-								<Alert status='warning'>
-									<Alert.Indicator />
-									<Alert.Content>
-										<Alert.Title>只补齐当前远端身份</Alert.Title>
-										<Alert.Description>
-											{legacyRemoteReason ? `${legacyRemoteReason} ` : null}
-											确认后不会清空本机数据、同步位置或待上传变更。若当前配置已改为另一套远端，旧同步位置可能跳过或混入历史变更，请先取消并检查配置。
-										</Alert.Description>
-									</Alert.Content>
-								</Alert>
-								<div className='rounded-lg border border-separator bg-surface-secondary px-3 py-2'>
-									<p className='text-xs text-muted'>当前已配置远端（已脱敏）</p>
-									<p className='mt-1 break-all text-sm text-foreground' data-code-field='true'>
-										{redactedRemoteUrl ?? '安全地址不可用，请取消并检查当前配置'}
-									</p>
-								</div>
-								{error ? (
-									<Alert role='alert' status='danger'>
-										<Alert.Indicator />
-										<Alert.Content>
-											<Alert.Title>沿用失败</Alert.Title>
-											<Alert.Description>{error}</Alert.Description>
-										</Alert.Content>
-									</Alert>
-								) : null}
-							</>
-						) : environmentManaged ? (
+						{environmentManaged ? (
 							<Alert status='warning'>
 								<Alert.Indicator />
 								<Alert.Content>
@@ -267,34 +205,9 @@ function SyncConfigDialogSession({
 
 					<Modal.Footer>
 						<Button isDisabled={busy} onPress={onClose} type='button' variant='ghost'>
-							{environmentManaged && !showingLegacyAdoption ? '关闭' : '取消'}
+							{environmentManaged ? '关闭' : '取消'}
 						</Button>
-						{showingLegacyAdoption ? (
-							<>
-								{!environmentManaged ? (
-									<Button
-										isDisabled={busy}
-										onPress={() => {
-											setError(null)
-											setRebindRequired(false)
-											setEditingReplacement(true)
-										}}
-										type='button'
-										variant='secondary'
-									>
-										改用其他远端
-									</Button>
-								) : null}
-								<Button
-									isDisabled={busy || !redactedRemoteUrl}
-									isPending={busy}
-									onPress={() => void handleAdoptLegacyRemote()}
-									type='button'
-								>
-									确认沿用当前远端
-								</Button>
-							</>
-						) : !environmentManaged ? (
+						{!environmentManaged ? (
 							<Button
 								isDisabled={busy || configIncomplete}
 								isPending={busy}

@@ -76,10 +76,6 @@ function SettingsSyncSceneFixture() {
 			<SyncConfigDialog
 				configSource='system_keychain'
 				databaseUrl={databaseUrl}
-				legacyRemoteAdoptionRequired={false}
-				legacyRemoteReason={null}
-				redactedRemoteUrl={null}
-				onAdoptLegacyRemote={async () => undefined}
 				onClose={() => setOpen(false)}
 				onDatabaseUrlChange={setDatabaseUrl}
 				onRebind={async () => undefined}

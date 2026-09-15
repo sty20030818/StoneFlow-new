@@ -29,8 +29,8 @@ Save
 `scope/context/baseViewKey`。Default View 是页面内代码定义的选项，不是 View 实体。
 不存在 System View 兼容实体。
 
-`filters_json` 的旧扁平形状只在 Rust 存储解码边界读取：可无损表达的条件转换为
-`FilterQuery`；当前模型无法表达的旧条件显式失败，禁止近似后返回错误结果。
+`filters_json` 只接受完整的 `{ baseViewKey, context, filters }` 当前定义。空值、旧扁平形状、
+缺字段或未知字段明确失败，不转换为默认查询。View 存储和同步均无 sort/group 呈现字段。
 Library 的 `ViewListItem` 区分有效 `View` 与 `UnavailableView`；后者仅保留身份、排序、时间、
 可空 scope 和 `definitionError`，不提供 `context/baseViewKey/filters`。API facade 逐条隔离定义错误，
 无法恢复身份或元数据时仍报读取失败。已知 scope 精确匹配原 Library，未知 scope 只在 all Library

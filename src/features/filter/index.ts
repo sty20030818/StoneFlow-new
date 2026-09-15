@@ -8,7 +8,6 @@
 // ── 领域核 ────────────────────────────────────────────────
 export {
 	createFilterClause,
-	createFilterClauseId,
 	decodeFilterQueryFromSearchParam,
 	EMPTY_FILTER_QUERY,
 	encodeFilterQueryToSearchParam,
@@ -19,7 +18,6 @@ export {
 	FILTER_SEARCH_PARAM_KEY,
 	filterQueriesEqual,
 	getFilterQueryKey,
-	isFilterDateValue,
 	isFilterQueryEmpty,
 	normalizeFilterQuery,
 	type FilterClause,

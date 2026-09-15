@@ -8,8 +8,8 @@ use crate::app::error::AppError;
 
 use super::{
     binding::{
-        adopt_legacy_remote_identity, ensure_remote_binding, expected_remote_identity_for_io,
-        read_remote_binding, verify_remote_binding, RemoteBindingState, SERVER_SEQ_CURSOR_SCOPE,
+        ensure_remote_binding, expected_remote_identity_for_io, verify_remote_binding,
+        RemoteBindingState, SERVER_SEQ_CURSOR_SCOPE,
     },
     config::{
         ensure_remote_config_writable, load_remote_config, load_sync_policy, save_remote_config,
@@ -170,43 +170,6 @@ pub async fn configure_sync(
     sync_state.mark_dirty().await;
     refresh_local_replica_state(sync_state, database).await?;
     Ok(sync_state.snapshot().await)
-}
-
-/// 用户显式确认沿用运行态当前配置的远端，只为旧同步游标补齐远端身份。
-pub async fn adopt_legacy_sync_remote(
-    app_handle: &tauri::AppHandle,
-    database: &DatabaseRuntimeState,
-    sync_state: &SyncRuntimeState,
-) -> Result<(), AppError> {
-    let _guard = sync_state.lock_execution().await;
-    let remote_config = sync_state
-        .remote_config()
-        .await
-        .ok_or_else(|| AppError::validation("云同步尚未配置远端，无法沿用"))?;
-    let binding = read_remote_binding(database.connection()).await?;
-    let local_cursor = binding
-        .server_seq
-        .ok_or_else(|| AppError::conflict("当前本机没有待确认的旧同步游标，无需沿用远端"))?;
-    if local_cursor < 0 {
-        return Err(AppError::validation("本机同步游标无效，拒绝沿用远端"));
-    }
-    let probe = stoneflow_sync::adopt_legacy_remote(
-        &to_cloud_config(&remote_config, binding.remote_instance_id.as_deref()),
-        local_cursor,
-    )
-    .await
-    .map_err(map_sync_error)?;
-
-    adopt_legacy_remote_identity(
-        database,
-        &probe.remote_instance_id,
-        probe.latest_server_seq.unwrap_or(0),
-    )
-    .await?;
-    refresh_local_replica_state(sync_state, database).await?;
-    sync_state.mark_dirty().await;
-    emit_sync_status_changed(app_handle, "legacy_remote_adopted");
-    Ok(())
 }
 
 /// 用户明确确认后重新绑定远端；pending outbox 会在写钥匙串和重置本地副本前阻断。
@@ -671,9 +634,6 @@ async fn ensure_sync_allowed(
             let _ = database;
             Ok(())
         }
-        SyncReplicaState::LegacyBindingRequired => Err(AppError::validation(
-            "本机保留了旧同步位置，但尚未绑定远端身份；请先确认沿用当前已配置远端。",
-        )),
         SyncReplicaState::Diverged => Err(AppError::validation(
             "当前设备的本地副本状态异常，已暂停普通同步，请先完成诊断或恢复。",
         )),

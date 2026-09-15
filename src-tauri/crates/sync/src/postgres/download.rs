@@ -13,7 +13,7 @@ use crate::{
     SyncMutation, Tombstone,
 };
 
-/// 与现 PROTOCOL_PULL_PAGE_SIZE 对齐。
+/// 同步门面每次下载的增量条数。
 pub const DOWNLOAD_PAGE_SIZE: i64 = 200;
 
 /// 按同步位置拉增量；位置过期返回 `CursorExpired`。

@@ -142,6 +142,10 @@ pub fn apply_mutation(
     mutation: &SyncMutation,
     server_seq: i64,
 ) -> ApplyOutcome {
+    // 版本迁移可能移除 patch 的全部旧字段；保留其序号和 ack，但不改变代际或删除状态。
+    if matches!(mutation, SyncMutation::Patch { patch } if patch.fields.is_empty()) {
+        return ApplyOutcome::IgnoredStale;
+    }
     let entity = mutation.entity();
     if replica
         .tombstone
@@ -258,6 +262,46 @@ mod tests {
                     .collect(),
             },
         }
+    }
+
+    #[test]
+    fn empty_patch_preserves_existing_and_cold_replicas() {
+        let mut existing = ReplicaEntity::default();
+        apply_mutation(&mut existing, &patch(&[("title", json!("keep"))]), 10);
+        let mut newer = entity();
+        newer.generation = 2;
+        let empty = SyncMutation::Patch {
+            patch: EntityPatch {
+                entity: newer,
+                fields: BTreeMap::new(),
+            },
+        };
+        for mut replica in [existing, ReplicaEntity::default()] {
+            let before = replica.clone();
+            assert_eq!(
+                apply_mutation(&mut replica, &empty, 20),
+                ApplyOutcome::IgnoredStale
+            );
+            assert_eq!(replica, before);
+        }
+    }
+
+    #[test]
+    fn empty_patch_can_be_acknowledged_after_permanent_deletion() {
+        let mut replica = ReplicaEntity {
+            snapshot: None,
+            tombstone: Some(Tombstone {
+                entity: entity(),
+                deletion_seq: 10,
+                deleted_at: "2026-09-15T00:00:00Z".to_owned(),
+            }),
+        };
+        let before = replica.clone();
+        assert_eq!(
+            apply_mutation(&mut replica, &patch(&[]), 20),
+            ApplyOutcome::IgnoredStale
+        );
+        assert_eq!(replica, before);
     }
 
     #[test]

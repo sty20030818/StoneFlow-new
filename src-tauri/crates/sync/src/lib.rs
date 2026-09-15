@@ -11,16 +11,14 @@ mod protocol;
 mod types;
 
 pub use error::{SyncError, SyncErrorKind};
-pub use postgres::{DOWNLOAD_PAGE_SIZE, PROTOCOL_SCHEMA_VERSION};
+use postgres::DOWNLOAD_PAGE_SIZE;
+pub use postgres::PROTOCOL_SCHEMA_VERSION;
 pub use protocol::{
     apply_mutation, ApplyOutcome, Baseline, EntityIdentity, EntityPatch, EntitySnapshot,
     LifecycleState, ReplicaEntity, SequencedMutation, SyncCursor, SyncEntityKind, SyncMutation,
     SyncOperation, Tombstone,
 };
-pub use types::{PushResult, SyncCloudConfig, UploadResult};
-
-/// 与旧 pull 分页常量同值，供 runtime 对照。
-pub const PROTOCOL_PULL_PAGE_SIZE: i64 = DOWNLOAD_PAGE_SIZE;
+pub use types::{SyncCloudConfig, UploadResult};
 
 /// 上传一批 operations（逐条事务；整批非单事务）。
 pub async fn upload_operations(
@@ -55,14 +53,6 @@ pub async fn health(config: &SyncCloudConfig) -> Result<SyncProbeOutput, SyncErr
     let mut conn = postgres::connect_ready(config).await?;
     let probe = postgres::health(&mut conn).await?;
     Ok(probe)
-}
-
-/// 用户明确确认后沿用旧远端；先校验远端游标，兼容 v1 时再迁移协议。
-pub async fn adopt_legacy_remote(
-    config: &SyncCloudConfig,
-    minimum_server_seq: i64,
-) -> Result<SyncProbeOutput, SyncError> {
-    postgres::adopt_legacy(config, minimum_server_seq).await
 }
 
 /// 云端只读诊断。

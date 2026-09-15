@@ -182,7 +182,7 @@ function SessionProbe() {
 				{location.pathname}
 				{location.searchStr}
 			</output>
-			<button onClick={() => session.setTemp(BASE_QUERY)} type='button'>
+			<button onClick={() => session.replaceEffective(BASE_QUERY)} type='button'>
 				写入 base
 			</button>
 			<button onClick={() => session.clearTemp()} type='button'>

@@ -4,10 +4,8 @@
  */
 export {
 	createFilterClause,
-	createFilterClauseId,
 	filterQueriesEqual,
 	getFilterQueryKey,
-	isFilterDateValue,
 	isFilterQueryEmpty,
 	normalizeFilterQuery,
 } from './normalize'

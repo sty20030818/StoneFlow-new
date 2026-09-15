@@ -11,7 +11,6 @@ import {
 	EMPTY_FILTER_QUERY,
 	FILTER_SEARCH_PARAM_KEY,
 	filterQueriesEqual,
-	isFilterQueryEmpty,
 	normalizeFilterQuery,
 	decodeFilterQueryFromSearchParam,
 	encodeFilterQueryToSearchParam,
@@ -31,11 +30,9 @@ export type ListFilterSession = {
 	effective: FilterQuery
 	/** URL 上存在与 base 语义不同的完整 draft */
 	dirty: boolean
-	isEmpty: boolean
-	setTemp: (query: FilterQuery) => void
 	/** 清空 URL 临时筛选（恢复 base） */
 	clearTemp: () => void
-	/** 用 effective 作为新 temp 写入（编辑 chip 时） */
+	/** 写入完整筛选快照；与 base 等价时删除 URL draft。 */
 	replaceEffective: (query: FilterQuery) => void
 }
 
@@ -56,7 +53,6 @@ export function useListFilterSession(options: UseListFilterSessionOptions = {}):
 
 	const dirty = draft !== null && !filterQueriesEqual(draft, base)
 	const effective = dirty ? draft : base
-	const isEmpty = isFilterQueryEmpty(effective)
 
 	const writeDraft = useCallback(
 		(encoded: string | null) => {
@@ -77,7 +73,7 @@ export function useListFilterSession(options: UseListFilterSessionOptions = {}):
 		[currentEncoded, isCurrent, navigate],
 	)
 
-	const setTemp = useCallback(
+	const replaceEffective = useCallback(
 		(query: FilterQuery) => {
 			const next = normalizeFilterQuery(query)
 			if (filterQueriesEqual(next, base)) {
@@ -92,20 +88,11 @@ export function useListFilterSession(options: UseListFilterSessionOptions = {}):
 
 	const clearTemp = useCallback(() => writeDraft(null), [writeDraft])
 
-	const replaceEffective = useCallback(
-		(query: FilterQuery) => {
-			setTemp(query)
-		},
-		[setTemp],
-	)
-
 	return {
 		base,
 		temp,
 		effective,
 		dirty,
-		isEmpty,
-		setTemp,
 		clearTemp,
 		replaceEffective,
 	}

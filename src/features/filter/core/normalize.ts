@@ -1,11 +1,9 @@
 import {
-	EMPTY_FILTER_QUERY,
 	FILTER_DATE_VALUE_VALUES,
 	FILTER_FIELD_VALUES,
 	FILTER_OP_VALUES,
 	FILTER_PROJECT_NONE_VALUE,
 	type FilterClause,
-	type FilterDateValue,
 	type FilterField,
 	type FilterOp,
 	type FilterQuery,
@@ -20,9 +18,9 @@ const PRIORITY_SET = new Set(['0', '1', '2', '3', '4'])
 const FIELD_ORDER = new Map(FILTER_FIELD_VALUES.map((field, index) => [field, index]))
 
 /** 条件间保持 AND；只做条内去重、相同条件去重和稳定排序。非法定义明确失败。 */
-export function normalizeFilterQuery(query: FilterQuery | null | undefined): FilterQuery {
-	if (query == null) return EMPTY_FILTER_QUERY
+export function normalizeFilterQuery(query: FilterQuery): FilterQuery {
 	if (
+		query == null ||
 		typeof query !== 'object' ||
 		Array.isArray(query) ||
 		!Array.isArray(query.clauses) ||
@@ -59,14 +57,11 @@ export function normalizeFilterQuery(query: FilterQuery | null | undefined): Fil
 	}
 }
 
-export function isFilterQueryEmpty(query: FilterQuery | null | undefined): boolean {
+export function isFilterQueryEmpty(query: FilterQuery): boolean {
 	return normalizeFilterQuery(query).clauses.length === 0
 }
 
-export function filterQueriesEqual(
-	left: FilterQuery | null | undefined,
-	right: FilterQuery | null | undefined,
-): boolean {
+export function filterQueriesEqual(left: FilterQuery, right: FilterQuery): boolean {
 	const a = normalizeFilterQuery(left)
 	const b = normalizeFilterQuery(right)
 	if (a.clauses.length !== b.clauses.length) {
@@ -91,7 +86,7 @@ export function filterQueriesEqual(
 }
 
 /** 生成 clause id（浏览器 / Bun 均有 randomUUID） */
-export function createFilterClauseId(): string {
+function createFilterClauseId(): string {
 	if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
 		return crypto.randomUUID()
 	}
@@ -174,10 +169,6 @@ function sortValues(field: FilterField, values: string[]): string[] {
 		return values.toSorted((a, b) => (rank.get(a) ?? 99) - (rank.get(b) ?? 99))
 	}
 	return values.toSorted(compareText)
-}
-
-export function isFilterDateValue(value: string): value is FilterDateValue {
-	return DATE_VALUE_SET.has(value)
 }
 
 /** 查询缓存只比较条件含义；编辑 ID 不属于成员资格。 */

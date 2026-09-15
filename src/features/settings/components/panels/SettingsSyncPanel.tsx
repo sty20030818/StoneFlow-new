@@ -5,7 +5,6 @@ import { listen } from '@tauri-apps/api/event'
 import { SettingsIcon } from 'lucide-react'
 
 import {
-	adoptLegacySyncRemote,
 	configureSync,
 	formatReplicaState,
 	getSyncDiagnostics,
@@ -236,22 +235,6 @@ export function SettingsSyncPanel() {
 
 	function handleRebindSyncConfig(input: SyncDatabaseConfigInput) {
 		return persistSyncConfig(rebindSync, input)
-	}
-
-	async function handleAdoptLegacyRemote() {
-		setSyncSaving(true)
-		setSyncStatusMessage(null)
-		setSyncDiagnosticsMessage(null)
-		try {
-			await adoptLegacySyncRemote()
-			if (mountedRef.current) {
-				await refreshSyncStatus({ silent: true, syncUrlDraft: false })
-			}
-		} finally {
-			if (mountedRef.current) {
-				setSyncSaving(false)
-			}
-		}
 	}
 
 	async function handleRunSync() {
@@ -668,10 +651,6 @@ export function SettingsSyncPanel() {
 			<SyncConfigDialog
 				configSource={syncStatus?.configSource ?? 'system_keychain'}
 				databaseUrl={databaseUrl}
-				legacyRemoteAdoptionRequired={replicaState === 'legacy_binding_required'}
-				legacyRemoteReason={syncStatus?.replicaReason ?? null}
-				redactedRemoteUrl={syncStatus?.remoteUrl ?? null}
-				onAdoptLegacyRemote={handleAdoptLegacyRemote}
 				onClose={() => setSyncConfigDialogOpen(false)}
 				onDatabaseUrlChange={setDatabaseUrl}
 				onRebind={handleRebindSyncConfig}

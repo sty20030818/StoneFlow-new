@@ -14,7 +14,7 @@ use crate::{
     view::{
         codec::{
             decode_record_definition, from_json, to_json, validate_definition, validate_scope,
-            view_sync_fields, StoredTaskViewDefinition, EMPTY_SORT_JSON, NO_GROUP_JSON,
+            view_sync_fields, StoredTaskViewDefinition,
         },
         CreateViewPersistenceRecord, FilterQueryValue, TaskScopeInput, TaskScopeKind,
         TaskViewBaseKey, TaskViewContext, UpdateViewPatch, ViewDateBoundaries,
@@ -345,8 +345,6 @@ where
                     entity_kind: ViewEntityKind::Task,
                     scope_json: to_json(&input.scope)?,
                     filters_json: to_json(&definition)?,
-                    sort_json: EMPTY_SORT_JSON.to_owned(),
-                    group_by_json: Some(NO_GROUP_JSON.to_owned()),
                     position: self.persistence.next_position(&connection).await?,
                     created_at: now.clone(),
                     updated_at: now.clone(),
@@ -387,7 +385,7 @@ where
         let now = now_utc().to_rfc3339();
         self.validate_project_in_connection(&connection, &scope, &definition.context)
             .await?;
-        // sort/group 已退出产品契约；旧列只写空值，Saved View 定义统一进 filters_json。
+        // Saved View 始终保存完整查询定义。
         let record = self
             .persistence
             .update(
@@ -401,8 +399,6 @@ where
                         .transpose()?,
                     scope_json: Some(to_json(&scope)?),
                     filters_json: Some(to_json(&definition)?),
-                    sort_json: Some(EMPTY_SORT_JSON.to_owned()),
-                    group_by_json: Some(Some(NO_GROUP_JSON.to_owned())),
                     position: None,
                     updated_at: Some(now.clone()),
                 },
@@ -725,7 +721,7 @@ fn decode_view(record: ViewRecord) -> Result<ViewDto, ApplicationError> {
     })
 }
 
-/// Library 必须隔离单行旧定义错误，让用户仍可删除并重建该 Saved View。
+/// Library 必须隔离单行损坏定义，让用户仍可删除并重建该 Saved View。
 fn unavailable_view(
     record: ViewRecord,
     scope: Option<TaskScopeInput>,
@@ -898,20 +894,7 @@ mod tests {
     }
 
     #[test]
-    fn legacy_filters_should_decode_only_at_storage_boundary() {
-        let decoded = decode_stored_definition(
-            r#"{"clauses":[{"id":"1","field":"status","op":"is","values":["todo"]}]}"#,
-        )
-        .unwrap();
-
-        assert_eq!(
-            (decoded.base_view_key, decoded.context),
-            (TaskViewBaseKey::All, TaskViewContext::All)
-        );
-    }
-
-    #[test]
-    fn malformed_new_definition_should_not_fall_back_to_legacy_filters() {
+    fn incomplete_stored_definition_is_rejected() {
         let missing_context = r#"{"baseViewKey":"all","filters":{"clauses":[]}}"#;
 
         assert!(decode_stored_definition(missing_context).is_err());

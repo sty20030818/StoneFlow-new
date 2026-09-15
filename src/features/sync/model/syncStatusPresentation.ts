@@ -58,7 +58,6 @@ export function getSyncReplicaTone(state: SyncReplicaState): SyncReplicaTone {
 	const dotClassNameByState: Record<SyncReplicaState, string> = {
 		ready: 'bg-success-on-surface',
 		baseline_required: 'bg-warning-on-surface',
-		legacy_binding_required: 'bg-warning-on-surface',
 		diverged: 'bg-danger-on-surface',
 		uninitialized: 'bg-default',
 	}
@@ -74,7 +73,6 @@ function getSyncReplicaColor(state: SyncReplicaState): SyncToneColor {
 		case 'ready':
 			return 'success'
 		case 'baseline_required':
-		case 'legacy_binding_required':
 			return 'warning'
 		case 'diverged':
 			return 'danger'
@@ -85,7 +83,7 @@ function getSyncReplicaColor(state: SyncReplicaState): SyncToneColor {
 
 /** 普通同步需要阻断、转入恢复流程的副本状态。 */
 export function isSyncReplicaRecoveryRequired(state: SyncReplicaState) {
-	return state === 'legacy_binding_required' || state === 'diverged'
+	return state === 'diverged'
 }
 
 export function formatSyncStatus(status: SyncStatus) {
@@ -113,8 +111,6 @@ export function formatReplicaState(state: SyncReplicaState) {
 			return '可正常同步'
 		case 'baseline_required':
 			return '缺少基线'
-		case 'legacy_binding_required':
-			return '待确认远端'
 		case 'diverged':
 			return '状态异常'
 		case 'uninitialized':

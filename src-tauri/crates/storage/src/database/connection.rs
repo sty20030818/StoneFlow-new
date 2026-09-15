@@ -1,6 +1,6 @@
 //! SQLite 连接与基础检查。
 //!
-//! PRAGMA 通过 sqlx SqliteConnectOptions 配置，确保连接池内每条物理连接一致。
+//! 连接级 PRAGMA 配置到每条物理连接；持久 journal_mode 只在基线准入后设置。
 
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -8,6 +8,7 @@ use std::time::Duration;
 use sea_orm::{
     sqlx::sqlite::{SqliteJournalMode, SqliteSynchronous},
     ConnectOptions, ConnectionTrait, Database, DatabaseConnection, DbBackend, Statement,
+    TransactionTrait,
 };
 
 use crate::error::StorageError;
@@ -66,14 +67,31 @@ async fn connect_sqlite_with_options(
     options.idle_timeout(Duration::from_secs(60));
     options.sqlx_logging(false);
     // 每条物理连接建立时生效，而不是只配置池里的第一条连接。
-    options.map_sqlx_sqlite_opts(move |opts| {
+    options.map_sqlx_sqlite_opts(|opts| {
         opts.foreign_keys(true)
-            .journal_mode(journal_mode)
             .synchronous(SqliteSynchronous::Full)
             .busy_timeout(SQLITE_BUSY_TIMEOUT)
     });
 
-    Database::connect(options).await.map_err(StorageError::from)
+    let connection = Database::connect(options)
+        .await
+        .map_err(StorageError::from)?;
+    // 默认 DEFERRED 事务让 schema、ledger 与列读取处于同一快照，避免并发升级造成混读。
+    let admission = connection.begin().await?;
+    if let Err(error) = crate::migration::validate_database(&admission).await {
+        admission.rollback().await?;
+        connection.close().await?;
+        return Err(StorageError::from(error));
+    }
+    admission.commit().await?;
+    // WAL 是数据库持久模式；准入后设置，后续物理连接默认继承，不提前改旧库。
+    connection
+        .execute_raw(Statement::from_string(
+            DbBackend::Sqlite,
+            format!("PRAGMA journal_mode = {journal_mode:?}"),
+        ))
+        .await?;
+    Ok(connection)
 }
 
 /// 执行最小 smoke query，确认连接可用。

@@ -7,12 +7,7 @@ export type SyncStatus =
 	| 'offline_pending'
 	| 'error'
 	| 'needs_attention'
-export type SyncReplicaState =
-	| 'uninitialized'
-	| 'ready'
-	| 'baseline_required'
-	| 'legacy_binding_required'
-	| 'diverged'
+export type SyncReplicaState = 'uninitialized' | 'ready' | 'baseline_required' | 'diverged'
 export type SyncPolicyMode = 'interval' | 'on_write' | 'manual'
 export type SyncCredentialState = 'missing' | 'available' | 'unavailable'
 export type SyncConfigSource = 'environment' | 'system_keychain'
@@ -84,14 +79,6 @@ export function getSyncDiagnostics() {
  */
 export function configureSync(input: SyncDatabaseConfigInput) {
 	return invoke<SyncStatusPayload>('configure_sync', { input })
-}
-
-/**
- * 用户确认沿用当前已加载的远端，为旧同步位置补齐实例身份。
- * 命令不接收连接串，也不返回远端配置。
- */
-export function adoptLegacySyncRemote() {
-	return invoke<void>('adopt_legacy_sync_remote')
 }
 
 /**

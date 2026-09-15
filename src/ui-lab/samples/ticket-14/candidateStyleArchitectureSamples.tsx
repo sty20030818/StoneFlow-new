@@ -7,7 +7,6 @@ import {
 	FilterBar,
 	ListFilterUiProvider,
 	PageFilterButton,
-	isFilterQueryEmpty,
 	type FilterQuery,
 	type ListFilterUiValue,
 } from '@/features/filter'
@@ -107,8 +106,6 @@ function SearchablePropertyMenuCurrentPreview() {
 				temp: effective,
 				effective,
 				dirty: !filterQueriesEqual(effective, FILTER_PREVIEW_BASE),
-				isEmpty: isFilterQueryEmpty(effective),
-				setTemp: (query) => setEffective(query),
 				clearTemp: () => setEffective(FILTER_PREVIEW_BASE),
 				replaceEffective: (query) => setEffective(query),
 			},

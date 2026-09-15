@@ -8,15 +8,11 @@ use stoneflow_domain::{validate_project_id, ViewEntityKind};
 
 use crate::{
     view::{
-        filter_query::{parse_filters_json, validate_filter_query},
-        FilterQueryValue, TaskScopeInput, TaskScopeKind, TaskViewBaseKey, TaskViewContext,
-        ViewRecord,
+        filter_query::validate_filter_query, FilterQueryValue, TaskScopeInput, TaskScopeKind,
+        TaskViewBaseKey, TaskViewContext, ViewRecord,
     },
     ApplicationError,
 };
-
-pub const EMPTY_SORT_JSON: &str = "[]";
-pub const NO_GROUP_JSON: &str = "\"none\"";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -26,7 +22,7 @@ pub(super) struct StoredTaskViewDefinition {
     pub filters: FilterQueryValue,
 }
 
-/// 协议保留既有字段形状；已退出业务的 sort/group 不参与定义校验。
+/// 同步仅承载 View 的持久化定义与实体元数据。
 pub fn view_sync_fields(record: &ViewRecord) -> Result<Map<String, Value>, ApplicationError> {
     let (scope, definition) = decode_record_definition(record)?;
     protocol_fields(record, json!(scope), json!(definition))
@@ -60,8 +56,6 @@ fn protocol_fields(
         ("entity_kind".to_owned(), json!(record.entity_kind)),
         ("scope".to_owned(), scope),
         ("filters".to_owned(), definition),
-        ("sort".to_owned(), json!([])),
-        ("group_by".to_owned(), json!("none")),
         ("position".to_owned(), json!(record.position)),
         ("created_at".to_owned(), json!(record.created_at)),
         ("updated_at".to_owned(), json!(record.updated_at)),
@@ -74,14 +68,22 @@ pub fn view_record_from_sync_fields(
     generation: i64,
     fields: &BTreeMap<String, Value>,
 ) -> Result<ViewRecord, ApplicationError> {
+    for key in fields.keys() {
+        if !matches!(
+            key.as_str(),
+            "name" | "entity_kind" | "scope" | "filters" | "position" | "created_at" | "updated_at"
+        ) {
+            return Err(ApplicationError::validation(format!(
+                "View 包含未知同步字段 {key}"
+            )));
+        }
+    }
     let mut record = ViewRecord {
         id: id.to_owned(),
         name: required_sync_field(fields, "name")?,
         entity_kind: required_sync_field(fields, "entity_kind")?,
         scope_json: to_json(&required_sync_field::<Value>(fields, "scope")?)?,
         filters_json: to_json(&required_sync_field::<Value>(fields, "filters")?)?,
-        sort_json: EMPTY_SORT_JSON.to_owned(),
-        group_by_json: Some(NO_GROUP_JSON.to_owned()),
         position: required_sync_field(fields, "position")?,
         generation,
         created_at: required_sync_field(fields, "created_at")?,
@@ -171,32 +173,7 @@ pub(super) fn validate_scope(scope: &TaskScopeInput) -> Result<(), ApplicationEr
 pub(super) fn decode_stored_definition(
     value: &str,
 ) -> Result<StoredTaskViewDefinition, ApplicationError> {
-    let trimmed = value.trim();
-    if trimmed.is_empty() || trimmed == "null" {
-        return Ok(StoredTaskViewDefinition {
-            base_view_key: TaskViewBaseKey::All,
-            context: TaskViewContext::All,
-            filters: FilterQueryValue::default(),
-        });
-    }
-    let json: Value = serde_json::from_str(trimmed)
-        .map_err(|_| ApplicationError::validation("View filters 定义无效"))?;
-    let is_definition = json.as_object().is_some_and(|object| {
-        object.contains_key("baseViewKey")
-            || object.contains_key("context")
-            || object.contains_key("filters")
-    });
-    if is_definition {
-        return serde_json::from_value(json)
-            .map_err(|_| ApplicationError::validation("Saved View 定义无效"));
-    }
-
-    // 唯一兼容边界：旧 filters_json 仍按原筛选形状读取，随后进入新定义。
-    Ok(StoredTaskViewDefinition {
-        base_view_key: TaskViewBaseKey::All,
-        context: TaskViewContext::All,
-        filters: parse_filters_json(value)?,
-    })
+    from_json(value)
 }
 
 pub(super) fn to_json<T: Serialize>(value: &T) -> Result<String, ApplicationError> {
@@ -219,8 +196,6 @@ mod tests {
             entity_kind: ViewEntityKind::Task,
             scope_json: r#"{"type":"all","spaceId":null}"#.to_owned(),
             filters_json: r#"{"baseViewKey":"active","context":{"kind":"standalone"},"filters":{"clauses":[{"id":"status-1","field":"status","op":"is","values":["todo"]}]}}"#.to_owned(),
-            sort_json: EMPTY_SORT_JSON.to_owned(),
-            group_by_json: Some(NO_GROUP_JSON.to_owned()),
             position: 1024,
             generation: 3,
             created_at: "2026-08-22T00:00:00Z".to_owned(),
@@ -236,46 +211,33 @@ mod tests {
             view_record_from_sync_fields(&original.id, original.generation, &fields).unwrap();
 
         assert_eq!(restored, original);
-        assert_eq!(restored.group_by_json.as_deref(), Some(r#""none""#));
     }
 
     #[test]
-    fn obsolete_display_columns_do_not_block_current_definition() {
-        for group_by_json in [None, Some("none"), Some(r#""none""#), Some("unknown")] {
-            let mut original = record();
-            original.sort_json = "obsolete-sort".to_owned();
-            original.group_by_json = group_by_json.map(str::to_owned);
-
-            let fields = view_sync_fields(&original).unwrap();
-            assert_eq!(fields["sort"], json!([]));
-            assert_eq!(fields["group_by"], json!("none"));
-            let restored = view_record_from_sync_fields(
-                &original.id,
-                original.generation,
-                &fields.into_iter().collect(),
-            )
-            .unwrap();
-            assert_eq!(restored.sort_json, EMPTY_SORT_JSON);
-            assert_eq!(restored.group_by_json.as_deref(), Some(NO_GROUP_JSON));
-            assert_eq!(restored.filters_json, original.filters_json);
+    fn stored_definition_rejects_legacy_and_implicit_empty_shapes() {
+        for value in [
+            "",
+            "null",
+            "{}",
+            r#"{"clauses":[]}"#,
+            r#"{"status":["todo"]}"#,
+        ] {
+            assert!(decode_stored_definition(value).is_err(), "{value}");
         }
     }
 
     #[test]
-    fn downloaded_obsolete_fields_are_canonical_json_text() {
+    fn protocol_rejects_obsolete_and_unknown_fields() {
         let original = record();
-        let mut fields: BTreeMap<_, _> = view_sync_fields(&original).unwrap().into_iter().collect();
-        for group in [
-            Value::Null,
-            json!("none"),
-            json!(r#""none""#),
-            json!({"old": true}),
-        ] {
-            fields.insert("group_by".to_owned(), group);
-            fields.insert("sort".to_owned(), json!("obsolete-sort"));
-            let restored = view_record_from_sync_fields("view-1", 3, &fields).unwrap();
-            assert_eq!(restored.sort_json, EMPTY_SORT_JSON);
-            assert_eq!(restored.group_by_json.as_deref(), Some(NO_GROUP_JSON));
+        let current = view_sync_fields(&original).unwrap();
+        assert_eq!(current.len(), 7);
+        for key in ["sort", "group_by", "unknown"] {
+            let mut fields: BTreeMap<_, _> = current.clone().into_iter().collect();
+            fields.insert(key.to_owned(), Value::Null);
+            assert!(
+                view_record_from_sync_fields("view-1", 3, &fields).is_err(),
+                "{key}"
+            );
         }
     }
 

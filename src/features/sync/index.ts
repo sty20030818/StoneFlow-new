@@ -24,7 +24,6 @@ export {
 	getSyncStatus,
 	getSyncDiagnostics,
 	configureSync,
-	adoptLegacySyncRemote,
 	rebindSync,
 	updateSyncPolicy,
 	runSync,

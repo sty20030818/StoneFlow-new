@@ -177,8 +177,6 @@ function createFilterUiValue() {
 			temp: query,
 			effective: query,
 			dirty: true,
-			isEmpty: false,
-			setTemp: vi.fn(),
 			clearTemp: vi.fn(),
 			replaceEffective: vi.fn(),
 		},

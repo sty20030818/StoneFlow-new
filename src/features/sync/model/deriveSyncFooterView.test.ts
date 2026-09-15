@@ -51,7 +51,7 @@ describe('deriveSyncFooterView', () => {
 		expect(view.tone.color).toBe('warning')
 	})
 
-	it('旧同步位置待确认时使用明确文案并阻断普通同步', () => {
+	it('绑定损坏时显示异常并阻断普通同步', () => {
 		const view = deriveSyncFooterView({
 			displayedStatus: 'needs_attention',
 			loading: false,
@@ -60,12 +60,12 @@ describe('deriveSyncFooterView', () => {
 			statusPayload: {
 				credentialState: 'available',
 				hasRemoteConfig: true,
-				replicaState: 'legacy_binding_required',
+				replicaState: 'diverged',
 			},
 		})
-		expect(view.label).toBe('待确认远端')
+		expect(view.label).toBe('状态异常')
 		expect(view.actionDisabled).toBe(true)
-		expect(view.tone.color).toBe('warning')
+		expect(view.tone.color).toBe('danger')
 	})
 
 	it('running：busy + 同步中 label on action', () => {

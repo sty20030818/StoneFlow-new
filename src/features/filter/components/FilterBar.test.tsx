@@ -116,8 +116,6 @@ function renderFilterBar({ onSave }: { onSave?: () => void } = {}) {
 						temp: query,
 						effective: query,
 						dirty: query.clauses.length > 0,
-						isEmpty: query.clauses.length === 0,
-						setTemp: setQuery,
 						replaceEffective: (next) => {
 							replaceEffective(next)
 							setQuery(next)

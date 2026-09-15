@@ -1,7 +1,6 @@
 import { invoke } from '@tauri-apps/api/core'
 
 import {
-	adoptLegacySyncRemote,
 	configureSync,
 	getSyncDiagnostics,
 	getSyncStatus,
@@ -122,14 +121,6 @@ describe('sync api', () => {
 				databaseUrl: 'postgresql://user:secret@db.example.com:5432/sf',
 			},
 		})
-	})
-
-	it('沿用当前远端时调用无参数命令且不回显配置', async () => {
-		mockedInvoke.mockResolvedValue(undefined)
-
-		await adoptLegacySyncRemote()
-
-		expect(mockedInvoke).toHaveBeenCalledWith('adopt_legacy_sync_remote')
 	})
 
 	it('手动同步时调用 run_sync', async () => {

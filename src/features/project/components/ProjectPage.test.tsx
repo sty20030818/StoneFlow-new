@@ -26,8 +26,6 @@ vi.mock('../hooks/useProjectDetailScene', () => ({
 				temp: EMPTY_FILTER_QUERY,
 				effective: EMPTY_FILTER_QUERY,
 				dirty: false,
-				isEmpty: true,
-				setTemp: vi.fn(),
 				clearTemp: vi.fn(),
 				replaceEffective: vi.fn(),
 			},

@@ -9,17 +9,10 @@ import type { FilterQuery } from './types'
 /** 列表路由 search 中临时筛选的参数名 */
 export const FILTER_SEARCH_PARAM_KEY = 'f' as const
 
-/**
- * 编码为 search 参数值。null 表示无 draft；空查询也是有效的完整 draft。
- */
-export function encodeFilterQueryToSearchParam(
-	query: FilterQuery | null | undefined,
-): string | null {
-	if (query == null) {
-		return null
-	}
+/** 编码完整 draft；空查询也有效。移除 draft 由列表会话删除参数。 */
+export function encodeFilterQueryToSearchParam(query: FilterQuery): string {
 	const normalized = normalizeFilterQuery(query)
-	// 序列化时不依赖 id 稳定性：用 field/op/values 即可 round-trip 语义
+	// 同时保留编辑身份与查询语义。
 	const payload = {
 		v: 1 as const,
 		c: normalized.clauses.map((clause) => ({

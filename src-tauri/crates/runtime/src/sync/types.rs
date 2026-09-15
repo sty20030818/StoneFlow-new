@@ -43,7 +43,6 @@ pub enum SyncReplicaState {
     Uninitialized,
     Ready,
     BaselineRequired,
-    LegacyBindingRequired,
     Diverged,
 }
 

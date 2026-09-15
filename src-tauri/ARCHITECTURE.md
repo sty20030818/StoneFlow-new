@@ -14,7 +14,7 @@ StoneFlow 当前是一个单 binary 的 Tauri 桌面应用：
 1. 只有一个生产 binary：`stoneflow`
 2. 主窗口和 Launcher 浮窗由同一个 Tauri Core 管理
 3. 业务规则在 `domain` / `application`
-4. 持久化在 `storage`（含 entities 与单一 baseline migration）
+4. 持久化在 `storage`（含 entities、当前 baseline 与后续前向 migration）
 5. 同步在同进程 `sync` library
 6. Tauri 壳层、IPC、窗口、shortcut、tray 在 `runtime` / `platform`
 
@@ -73,7 +73,7 @@ src-tauri/
 
 已移除：独立 schema / migration workspace crate、`sync-worker` sidecar、`runtime/services` 过渡层。仓库中若仍有旧空目录，不代表正式 crate；workspace 以 `Cargo.toml` 的 members 为准。
 
-`runtime` 仅作 composition / transport；业务用例经 `AppState` 调用 `application`，ports 由 `storage::adapters` 实现。本地 schema 为**单一 baseline 迁移**，不支持旧库在线升级。
+`runtime` 仅作 composition / transport；业务用例经 `AppState` 调用 `application`，ports 由 `storage::adapters` 实现。本地 schema 当前基线为 `m20260915_000001_baseline`，后续追加 SeaORM 前向迁移；旧账本和旧备份不能由最新代码直接打开。
 
 **Task 归属：** write `TaskWritePlacementKind` = `project` \| `standalone`；list `TaskPlacementQuery` = `All` \| `Project` \| `Standalone`。无 Inbox / `inbox_at`。独立事项 = `project_id IS NULL`。Launcher 初始态直出 application DTO（与 tasks 薄 transport 一致）。
 
@@ -178,7 +178,7 @@ src-tauri/
 
 `storage::entities` 只放 SeaORM entity / relation / 表结构映射。
 
-`storage::migration` 只维护当前数据库的单一 baseline migration；不承担旧库在线升级。
+`storage::migration` 维护当前 baseline 与后续有序前向迁移，保留事务回滚和数据库准入校验；已退役的旧基线与旧 View 格式不再提供转换入口。当前 Mac 账本维护和其他设备重建边界见 [ADR-0004](../Documents/01-架构/adr/ADR-0004-single-view-contract-and-sync-v3.md)。
 
 二者都不应该承载产品业务语义。
 
@@ -488,7 +488,7 @@ cargo fmt --manifest-path src-tauri/Cargo.toml
 4. 是 entity / relation 吗？
    放 `storage::entities`
 5. 是 schema 版本变更吗？
-   当前不新增增量迁移；修改 `storage::migration` 的 baseline，并同步评估数据重建边界
+   在 `storage::migration` 当前基线之后追加前向迁移，同步验证数据、同步协议与恢复边界；不修改已执行迁移的语义
 6. 是 Tauri command、窗口、state、shortcut、event、service adapter 吗？
    放 `runtime`
 7. 是 OS-specific 窗口能力吗？

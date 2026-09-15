@@ -54,10 +54,7 @@ impl SyncRuntimeState {
                 SyncCredentialState::Unavailable => SyncStatusKind::NeedsAttention,
                 SyncCredentialState::Available
                     if has_remote_config
-                        && matches!(
-                            guard.replica_state,
-                            SyncReplicaState::LegacyBindingRequired | SyncReplicaState::Diverged
-                        ) =>
+                        && matches!(guard.replica_state, SyncReplicaState::Diverged) =>
                 {
                     SyncStatusKind::NeedsAttention
                 }
@@ -628,7 +625,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn legacy_binding_required_should_not_report_synced() {
+    async fn diverged_replica_should_not_report_synced() {
         let state = SyncRuntimeState::default();
         state
             .set_remote_config(Some(SyncRemoteConfig {
@@ -637,18 +634,15 @@ mod tests {
             .await;
         state
             .set_replica_state(
-                SyncReplicaState::LegacyBindingRequired,
-                Some("needs confirmation".to_owned()),
+                SyncReplicaState::Diverged,
+                Some("binding is incomplete".to_owned()),
                 None,
             )
             .await;
 
         let payload = state.snapshot().await;
         assert_eq!(payload.status, SyncStatusKind::NeedsAttention);
-        assert_eq!(
-            payload.replica_state,
-            SyncReplicaState::LegacyBindingRequired
-        );
+        assert_eq!(payload.replica_state, SyncReplicaState::Diverged);
     }
 
     #[tokio::test]

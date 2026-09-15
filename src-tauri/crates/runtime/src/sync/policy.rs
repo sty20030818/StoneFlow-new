@@ -83,11 +83,6 @@ impl SyncPolicy {
             SyncPolicyMode::Interval | SyncPolicyMode::Manual => None,
         }
     }
-
-    /// 兼容旧调用名。
-    pub fn next_sync_at(&self, now: DateTime<Utc>) -> Option<DateTime<Utc>> {
-        self.next_interval_at(now)
-    }
 }
 
 #[cfg(test)]

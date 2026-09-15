@@ -699,10 +699,10 @@ async fn apply_page(
         let entity = change.mutation.entity();
         let mut replica = load_replica(&transaction, entity).await?;
         let outcome = apply_mutation(&mut replica, &change.mutation, change.server_seq);
-        persist_replica(&transaction, &replica).await?;
         if !matches!(outcome, stoneflow_sync::ApplyOutcome::Applied) {
             continue;
         }
+        persist_replica(&transaction, &replica).await?;
         materialize_applied_mutation(
             &transaction,
             &change.mutation,
@@ -884,7 +884,7 @@ async fn materialize_document(
         SyncEntityKind::Project => execute_materialize(transaction, "INSERT INTO projects(id,space_id,name,description,status,priority,planned_at,due_at,remind_at,status_changed_at,completed_at,position,generation,archived_at,deleted_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET space_id=excluded.space_id,name=excluded.name,description=excluded.description,status=excluded.status,priority=excluded.priority,planned_at=excluded.planned_at,due_at=excluded.due_at,remind_at=excluded.remind_at,status_changed_at=excluded.status_changed_at,completed_at=excluded.completed_at,position=excluded.position,generation=excluded.generation,archived_at=excluded.archived_at,deleted_at=excluded.deleted_at,updated_at=excluded.updated_at", project_values(snapshot, archived_at, deleted_at)?).await,
         SyncEntityKind::Task => execute_materialize(transaction, "INSERT INTO tasks(id,space_id,project_id,title,note,status,priority,planned_at,due_at,remind_at,status_changed_at,completed_at,position,generation,archived_at,deleted_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET space_id=excluded.space_id,project_id=excluded.project_id,title=excluded.title,note=excluded.note,status=excluded.status,priority=excluded.priority,planned_at=excluded.planned_at,due_at=excluded.due_at,remind_at=excluded.remind_at,status_changed_at=excluded.status_changed_at,completed_at=excluded.completed_at,position=excluded.position,generation=excluded.generation,archived_at=excluded.archived_at,deleted_at=excluded.deleted_at,updated_at=excluded.updated_at", task_values(snapshot, archived_at, deleted_at)?).await,
         SyncEntityKind::TaskLink => execute_materialize(transaction, "INSERT INTO task_links(id,task_id,title,url,position,created_at,updated_at) VALUES (?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET task_id=excluded.task_id,title=excluded.title,url=excluded.url,position=excluded.position,updated_at=excluded.updated_at", vec![snapshot.entity.entity_id.clone().into(), required_string(fields,"task_id")?.into(), required_string(fields,"title")?.into(), required_string(fields,"url")?.into(), required_i64(fields,"position")?.into(), required_string(fields,"created_at")?.into(), required_string(fields,"updated_at")?.into()]).await,
-        SyncEntityKind::View => execute_materialize(transaction, "INSERT INTO views(id,name,entity_kind,scope_json,filters_json,sort_json,group_by_json,position,generation,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,entity_kind=excluded.entity_kind,scope_json=excluded.scope_json,filters_json=excluded.filters_json,sort_json=excluded.sort_json,group_by_json=excluded.group_by_json,position=excluded.position,generation=excluded.generation,updated_at=excluded.updated_at", view_values(snapshot)?).await,
+        SyncEntityKind::View => execute_materialize(transaction, "INSERT INTO views(id,name,entity_kind,scope_json,filters_json,position,generation,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,entity_kind=excluded.entity_kind,scope_json=excluded.scope_json,filters_json=excluded.filters_json,position=excluded.position,generation=excluded.generation,updated_at=excluded.updated_at", view_values(snapshot)?).await,
     }
 }
 
@@ -1103,6 +1103,10 @@ async fn hydrate_missing_fields_from_business(
             let Some(row) = View::find_by_id(&id).one(transaction).await? else {
                 return Ok(false);
             };
+            // 残缺补丁只属于同一实体代际，不能用已结束代际的定义拼出新实体。
+            if row.generation != snapshot.entity.generation {
+                return Ok(false);
+            }
             for (key, value) in view_sync_fields_preserving_definition(&map_view(row))? {
                 snapshot.fields.entry(key).or_insert(value);
             }
@@ -1596,8 +1600,6 @@ fn view_values(snapshot: &EntitySnapshot) -> Result<Vec<sea_orm::Value>, AppErro
             .into(),
         record.scope_json.into(),
         record.filters_json.into(),
-        record.sort_json.into(),
-        record.group_by_json.into(),
         record.position.into(),
         record.generation.into(),
         record.created_at.into(),
@@ -1722,11 +1724,12 @@ mod tests {
                 DatabaseBackend::Sqlite,
                 r#"
                 INSERT INTO views(
-                    id, name, entity_kind, scope_json, filters_json, sort_json,
-                    group_by_json, position, generation, created_at, updated_at
+                    id, name, entity_kind, scope_json, filters_json,
+                    position, generation, created_at, updated_at
                 ) VALUES (
-                    'local-view', 'Local', 'task', '{}', '[]', '[]',
-                    NULL, 0, 1, 'now', 'now'
+                    'local-view', 'Local', 'task', '{"type":"all"}',
+                    '{"baseViewKey":"all","context":{"kind":"all"},"filters":{"clauses":[]}}',
+                    0, 1, 'now', 'now'
                 )
                 "#,
             ))

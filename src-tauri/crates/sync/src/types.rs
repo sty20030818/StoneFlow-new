@@ -9,10 +9,7 @@ pub struct SyncCloudConfig {
 
 /// 上传 operation 的结果。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct PushResult {
+pub struct UploadResult {
     pub committed_seq: i64,
     pub was_already_applied: bool,
 }
-
-/// 门面白话名。
-pub type UploadResult = PushResult;

@@ -109,8 +109,6 @@ impl ViewPersistence for ViewPersistenceAdapter {
                     entity_kind: record.entity_kind,
                     scope_json: record.scope_json,
                     filters_json: record.filters_json,
-                    sort_json: record.sort_json,
-                    group_by_json: record.group_by_json,
                     position: record.position,
                     created_at: record.created_at,
                     updated_at: record.updated_at,
@@ -134,8 +132,6 @@ impl ViewPersistence for ViewPersistenceAdapter {
                     name: patch.name,
                     scope_json: patch.scope_json,
                     filters_json: patch.filters_json,
-                    sort_json: patch.sort_json,
-                    group_by_json: patch.group_by_json,
                     position: patch.position,
                     updated_at: patch.updated_at.unwrap_or_default(),
                 },
@@ -329,7 +325,6 @@ mod tests {
             TaskQueryCursor, TaskQueryOrder,
         },
         view::{
-            codec::{EMPTY_SORT_JSON, NO_GROUP_JSON},
             CreateViewInput, FilterQueryValue, ListViewsInput, RunTaskViewInput, TaskScopeInput,
             TaskScopeKind, TaskViewBaseKey, TaskViewContext, UpdateViewInput, ViewDateBoundaries,
             ViewTaskQuery,
@@ -747,7 +742,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn view_edits_keep_generation_and_emit_only_changed_fields_after_legacy_repair() {
+    async fn view_edits_keep_generation_and_emit_only_changed_fields() {
         let database = TestDatabase::bootstrap_in_memory().await.unwrap();
         let connection = database.connection();
         let service = build_view_service(connection.clone());
@@ -771,11 +766,6 @@ mod tests {
             .await
             .unwrap()
             .unwrap();
-        let mut legacy: crate::entities::view::ActiveModel = original.clone().into();
-        legacy.sort_json = Set("obsolete-sort".to_owned());
-        legacy.group_by_json = Set(Some("none".to_owned()));
-        legacy.update(connection).await.unwrap();
-
         let renamed = service
             .update_view(UpdateViewInput {
                 view_id: created.id.clone(),
@@ -839,8 +829,6 @@ mod tests {
             .await
             .unwrap()
             .unwrap();
-        assert_eq!(stored.sort_json, EMPTY_SORT_JSON);
-        assert_eq!(stored.group_by_json.as_deref(), Some(NO_GROUP_JSON));
         assert_eq!(stored.generation, original.generation);
         assert_eq!(stored.created_at, original.created_at);
         service.delete_view(&created.id).await.unwrap();

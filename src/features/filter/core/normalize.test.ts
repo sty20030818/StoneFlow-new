@@ -10,9 +10,7 @@ import { EMPTY_FILTER_QUERY, type FilterQuery } from './types'
 import semanticCases from '../../../../tests/fixtures/filter-query-semantics.json'
 
 describe('normalizeFilterQuery', () => {
-	it('只有缺失查询或显式空 clauses 表示 empty', () => {
-		expect(normalizeFilterQuery(null)).toEqual(EMPTY_FILTER_QUERY)
-		expect(normalizeFilterQuery(undefined)).toEqual(EMPTY_FILTER_QUERY)
+	it('只有显式空 clauses 表示 empty', () => {
 		expect(normalizeFilterQuery({ clauses: [] })).toEqual(EMPTY_FILTER_QUERY)
 		expect(() =>
 			normalizeFilterQuery({ clauses: [{ id: '1', field: 'status', op: 'is', values: [] }] }),
@@ -21,6 +19,8 @@ describe('normalizeFilterQuery', () => {
 
 	it('非法字段、操作符、值和不完整结构明确失败', () => {
 		const bad = [
+			null,
+			undefined,
 			{ clauses: [{ id: 'a', field: 'status', op: 'is', values: ['todo', 'not-a-status'] }] },
 			{ clauses: [{ id: 'b', field: 'assignee', op: 'is', values: ['x'] }] },
 			{ clauses: [{ id: 'c', field: 'priority', op: 'includes', values: ['1'] }] },

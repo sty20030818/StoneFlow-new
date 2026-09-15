@@ -21,7 +21,7 @@ mod tests;
 use sqlx::postgres::PgConnection;
 use sqlx::Connection;
 
-use crate::{SyncCloudConfig, SyncError, SyncProbeOutput};
+use crate::{SyncCloudConfig, SyncError};
 
 use error_map::{map_connect_error, map_sqlx_error};
 
@@ -32,7 +32,21 @@ pub async fn connect(config: &SyncCloudConfig) -> Result<PgConnection, SyncError
     }
     // sqlx 不识别 Neon 的 channel_binding 参数，去掉以免噪音日志。
     let url = strip_unsupported_pg_params(&config.database_url);
-    PgConnection::connect(&url).await.map_err(map_connect_error)
+    let mut conn = PgConnection::connect(&url)
+        .await
+        .map_err(map_connect_error)?;
+    // 身份、schema 门禁与业务 SQL 必须解析到同一个 schema，禁止沿 search_path 回落到另一副本。
+    let schema: Option<String> = sqlx::query_scalar("SELECT current_schema()")
+        .fetch_one(&mut conn)
+        .await
+        .map_err(|error| map_sqlx_error("读取 同步 schema", error))?;
+    let schema = schema.ok_or_else(|| SyncError::schema("连接未指向可用的同步 schema"))?;
+    sqlx::query("SELECT set_config('search_path', quote_ident($1), false)")
+        .bind(schema)
+        .execute(&mut conn)
+        .await
+        .map_err(|error| map_sqlx_error("固定 同步 schema", error))?;
+    Ok(conn)
 }
 
 fn strip_unsupported_pg_params(url: &str) -> String {
@@ -64,70 +78,6 @@ pub async fn connect_ready(config: &SyncCloudConfig) -> Result<PgConnection, Syn
         verify_expected_identity(&mut conn, expected).await?;
     }
     Ok(conn)
-}
-
-/// 用户明确确认旧绑定后沿用远端；校验失败不提交任何远端写入。
-pub async fn adopt_legacy(
-    config: &SyncCloudConfig,
-    minimum_server_seq: i64,
-) -> Result<SyncProbeOutput, SyncError> {
-    if minimum_server_seq < 0 {
-        return Err(SyncError::validation("本机同步游标无效，拒绝沿用远端"));
-    }
-    let mut conn = connect(config).await?;
-    let mut transaction = conn
-        .begin()
-        .await
-        .map_err(|error| map_sqlx_error("开始 旧远端确认事务", error))?;
-    sqlx::query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
-        .execute(&mut *transaction)
-        .await
-        .map_err(|error| map_sqlx_error("固定 旧远端确认快照", error))?;
-    let schema_version = schema::read_schema_version(&mut transaction).await?;
-    let latest_server_seq = health::read_latest_server_seq(&mut transaction).await?;
-    if latest_server_seq.unwrap_or(0) < minimum_server_seq {
-        return Err(SyncError::validation(format!(
-            "远端最新序号低于本机同步游标 {minimum_server_seq}，拒绝沿用"
-        )));
-    }
-
-    match schema_version {
-        1 => {
-            if config.expected_instance_id.is_some() {
-                return Err(SyncError::validation(
-                    "旧版远端不能匹配既有实例身份，拒绝沿用",
-                ));
-            }
-            schema::ensure_ready_in_transaction(&mut transaction).await?;
-        }
-        PROTOCOL_SCHEMA_VERSION => {}
-        _ => {
-            return Err(SyncError::schema(format!(
-                "云端 schema 版本不兼容: 当前 {schema_version}，需要 {PROTOCOL_SCHEMA_VERSION}"
-            )));
-        }
-    }
-
-    let remote_instance_id = schema::read_instance_id(&mut transaction).await?;
-    if config
-        .expected_instance_id
-        .as_deref()
-        .is_some_and(|expected| expected != remote_instance_id)
-    {
-        return Err(SyncError::validation(
-            "远端实例身份与本机绑定不一致，已拒绝继续读写",
-        ));
-    }
-
-    transaction
-        .commit()
-        .await
-        .map_err(|error| map_sqlx_error("提交 旧远端确认事务", error))?;
-    Ok(SyncProbeOutput {
-        remote_instance_id,
-        latest_server_seq,
-        schema_version: Some(PROTOCOL_SCHEMA_VERSION),
-    })
 }
 
 async fn verify_expected_identity(
@@ -164,8 +114,15 @@ pub mod test_support {
             .filter(|url| !url.trim().is_empty())
     }
 
-    /// 在共享实例上建独立 schema，避免互相踩表。
     pub async fn open_isolated_cloud() -> Result<(SyncCloudConfig, String, String), SyncError> {
+        let (config, schema, base) = open_empty_cloud().await?;
+        let mut conn = super::connect(&config).await?;
+        ensure_ready(&mut conn).await?;
+        Ok((config, schema, base))
+    }
+
+    /// 在共享实例上建空的独立 schema，避免互相踩表。
+    pub async fn open_empty_cloud() -> Result<(SyncCloudConfig, String, String), SyncError> {
         let base = base_database_url().ok_or_else(|| {
             SyncError::internal(
                 "集成测需要 STONEFLOW_SYNC_DATABASE_URL 或 DATABASE_URL（Postgres）",
@@ -198,9 +155,6 @@ pub mod test_support {
             database_url,
             expected_instance_id: None,
         };
-        let mut conn = super::connect(&config).await?;
-        ensure_ready(&mut conn).await?;
-        drop(conn);
         Ok((config, schema, base))
     }
 

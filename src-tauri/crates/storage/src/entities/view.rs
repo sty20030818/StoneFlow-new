@@ -13,8 +13,6 @@ pub struct Model {
     pub entity_kind: ViewEntityKind,
     pub scope_json: String,
     pub filters_json: String,
-    pub sort_json: String,
-    pub group_by_json: Option<String>,
     pub position: i64,
     pub generation: i64,
     pub created_at: String,

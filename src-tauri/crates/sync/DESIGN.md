@@ -35,18 +35,19 @@ runtime 调度
 
 远端以设备 ID 与 operation ID 识别 operation，重复执行同一 operation 不应产生重复业务效果。
 
-每次 upload / download 都携带本机已绑定的 `expected_instance_id`，在 schema 维护前后核对实际 identity。连接串指向另一实例或连接期间远端被替换时，本轮在远端业务读写前失败。
+连接建立后固定 `search_path` 到首个有效 schema，身份检查、初始化与全部业务 SQL 不回落到其它 schema。每次 upload / download 都携带本机已绑定的 `expected_instance_id`，在 schema 校验前后核对实际 identity。连接串指向另一实例或连接期间远端被替换时，本轮在远端业务读写前失败。上传事务持有 schema 记录共享锁并重验版本；该版本门禁不因旧迁移退役而删除。
 
 ### 副本基线
 
 - 首次副本可从远端 baseline 初始化。
 - cursor 过期时，runtime 以同一份 baseline 原子替换本地同步副本。
 - baseline 仅是首次或恢复路径；正常同步始终走增量 pull。
+- 退役旧本地迁移后，其他设备升级当前代码、保留完整本地备份，再重建本地并从同一云端 v3 全量恢复。未同步内容、本机设置和活动历史不在云端恢复范围，不能以全量恢复替代本地备份；切换约束见 [ADR-0004](../../../Documents/01-架构/adr/ADR-0004-single-view-contract-and-sync-v3.md)。
 
 ### 远端身份与重新绑定
 
-- 协议 schema v2 在远端 `sync_schema` 持久化生成 `instance_id`；v1 首次握手原位补齐，不以 URL、sequence 或本机随机值充当远端身份。
-- 本地 identity 与 server cursor 同属 `sync_cursors`，任何推进 cursor 的事务都同时写入 identity。相同 identity 才允许继续普通同步；不同 identity 或无法证明来源的旧 cursor 进入 `needs_attention`。
+- 协议 schema v3 在远端 `sync_schema` 持久化生成 `instance_id`；只初始化空同步 schema，v1/v2 和残缺 schema 拒绝接入。v2 到 v3 专用迁移 API 与工具已退役；本次不改变已有云端 v3 的 instance_id、generation、序号或 acks。
+- 本地 identity 与 server cursor 同属 `sync_cursors`，任何推进 cursor 的事务都同时写入 identity。相同 identity 才允许继续普通同步；不同 identity 或无法证明来源的 cursor 进入 `needs_attention`。
 - 普通 configure 只验证和绑定，不承担切换数据集。未绑定状态下本机与远端同时已有数据也拒绝静默合并。
 - 显式 rebind 在下载候选 baseline 后开启 SQLite `IMMEDIATE` 事务，并在事务内再次确认 Outbox 为零。有待上传变更时不改钥匙串、本地绑定或业务副本。
 - 非空候选远端在用户确认后成为新的本机 baseline；空远端保留本机业务，清除旧远端专属位置，并等待 origin seed。两条路径都不会静默清空 Outbox。
@@ -58,7 +59,7 @@ runtime 调度
 | `outbox` | 本地待推送的业务 operation 条目；远端确认后才删除 |
 | `sync_cursors` / `sync_devices` | 本机设备标识、远端 `instance_id`、`server_seq` 与恢复标记 |
 | `sync_protocol_entities` | 本地字段版本与 tombstone 的最小协议副本 |
-| 远端 `sync_schema` v2 | 协议版本与稳定 `instance_id` |
+| 远端 `sync_schema` v3 | 协议版本与稳定 `instance_id` |
 | 其余远端 `sync_*` 表 | 远端 snapshot、tombstone、operation 去重与有序 change log |
 
 状态向上层暴露为 disabled、syncing、synced、offline_pending、error 或 needs_attention；副本状态包括 uninitialized、ready、baseline_required 和 diverged。
@@ -111,6 +112,6 @@ cargo check --manifest-path src-tauri/Cargo.toml --workspace
 ## 实现状态
 
 - 传输面：用户 Postgres（sqlx）；无 libsql / Turso。
-- 单设备路径：上传、下载、全量基线、origin seed / adopt、协议预热与语义物化已落地。
+- 单设备路径：上传、下载、全量基线、origin seed、协议预热与语义物化已落地。
 - 双设备与性能证据：延期，不在本设计文档展开。
-- 远端身份 v2、普通配置 fail closed、显式 rebind、逐成功 round 事件与结构化安全地址已落地；真实 PostgreSQL 合约测试仍依赖外部测试库，桌面/WebView 行为仍归统一产品验收。
+- 远端身份 v3、普通配置 fail closed、显式 rebind、逐成功 round 事件与结构化安全地址已落地；真实 PostgreSQL 合约测试仍依赖外部测试库，桌面/WebView 行为仍归统一产品验收。

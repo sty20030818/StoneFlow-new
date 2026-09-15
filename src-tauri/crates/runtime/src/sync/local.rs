@@ -42,9 +42,9 @@ pub async fn inspect_local_replica(
         && !has_non_empty_cursor(&remote_instance_id)
     {
         (
-            SyncReplicaState::LegacyBindingRequired,
+            SyncReplicaState::Diverged,
             Some(
-                "本机保留了旧同步位置，但还没有远端身份；请确认沿用当前已配置远端后再同步。"
+                "本机同步绑定已损坏：已有同步位置但缺少远端身份。普通同步已暂停，请使用“重新绑定远端”重新建立绑定。"
                     .to_owned(),
             ),
         )
@@ -233,7 +233,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn legacy_cursor_without_remote_identity_should_require_explicit_adoption() {
+    async fn cursor_without_remote_identity_should_require_rebind() {
         let database = TestDatabase::bootstrap_in_memory()
             .await
             .expect("test database should bootstrap");
@@ -245,13 +245,16 @@ mod tests {
                 [SERVER_SEQ_CURSOR_SCOPE.into()],
             ))
             .await
-            .expect("legacy cursor should insert");
+            .expect("cursor should insert");
 
         let snapshot = inspect_local_replica(&database, true)
             .await
             .expect("replica state should load");
 
-        assert_eq!(snapshot.state, SyncReplicaState::LegacyBindingRequired);
-        assert!(snapshot.reason.is_some());
+        assert_eq!(snapshot.state, SyncReplicaState::Diverged);
+        assert!(snapshot
+            .reason
+            .as_deref()
+            .is_some_and(|reason| reason.contains("重新绑定")));
     }
 }

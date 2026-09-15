@@ -9,7 +9,6 @@ describe('FilterQuery URL codec', () => {
 		const encoded = encodeFilterQueryToSearchParam(EMPTY_FILTER_QUERY)
 		expect(encoded).toBeTruthy()
 		expect(decodeFilterQueryFromSearchParam(encoded)).toEqual(EMPTY_FILTER_QUERY)
-		expect(encodeFilterQueryToSearchParam(null)).toBeNull()
 		expect(decodeFilterQueryFromSearchParam(null)).toBeNull()
 	})
 
@@ -25,7 +24,7 @@ describe('FilterQuery URL codec', () => {
 		expect(encoded).not.toMatch(/[+/=]/)
 
 		const decoded = decodeFilterQueryFromSearchParam(encoded)
-		expect(filterQueriesEqual(decoded, query)).toBe(true)
+		expect(filterQueriesEqual(decoded!, query)).toBe(true)
 		// id 应尽量保留
 		expect(decoded!.clauses.some((c) => c.id === 'id-p' || c.id === 'id-s')).toBe(true)
 	})

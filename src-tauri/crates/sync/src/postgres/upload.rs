@@ -9,20 +9,20 @@ use sqlx::{Connection, PgConnection, Postgres, Row, Transaction};
 use super::error_map::{is_unique_violation, map_sqlx_error};
 use super::labels::{entity_kind_label, lifecycle_label, mutation_kind_label, parse_lifecycle};
 use crate::{
-    apply_mutation, ApplyOutcome, EntityIdentity, EntitySnapshot, PushResult, ReplicaEntity,
-    SyncError, SyncMutation, SyncOperation, Tombstone,
+    apply_mutation, ApplyOutcome, EntityIdentity, EntitySnapshot, ReplicaEntity, SyncError,
+    SyncMutation, SyncOperation, Tombstone, UploadResult,
 };
 
 /// 原子上传一个 operation（幂等键 device_id + operation_id）。
 pub async fn upload_operation(
     conn: &mut PgConnection,
     operation: &SyncOperation,
-) -> Result<PushResult, SyncError> {
+) -> Result<UploadResult, SyncError> {
     match upload_operation_once(conn, operation).await {
         Ok(result) => Ok(result),
         Err(error) if is_duplicate_ack_error(&error) => {
             let committed_seq = find_ack(conn, operation).await?.ok_or(error)?;
-            Ok(PushResult {
+            Ok(UploadResult {
                 committed_seq,
                 was_already_applied: true,
             })
@@ -34,7 +34,7 @@ pub async fn upload_operation(
 async fn upload_operation_once(
     conn: &mut PgConnection,
     operation: &SyncOperation,
-) -> Result<PushResult, SyncError> {
+) -> Result<UploadResult, SyncError> {
     if operation.mutations.is_empty() {
         return Err(SyncError::validation(
             "同步 operation 至少需要一个 mutation",
@@ -46,11 +46,13 @@ async fn upload_operation_once(
         .await
         .map_err(|error| map_sqlx_error("开启 上传事务", error))?;
 
+    super::schema::lock_current_version(&mut tx).await?;
+
     if let Some(committed_seq) = find_ack_in_tx(&mut tx, operation).await? {
         tx.commit()
             .await
             .map_err(|error| map_sqlx_error("提交 幂等读取事务", error))?;
-        return Ok(PushResult {
+        return Ok(UploadResult {
             committed_seq,
             was_already_applied: true,
         });
@@ -61,7 +63,8 @@ async fn upload_operation_once(
         let server_seq = reserve_change(&mut tx, operation, mutation).await?;
         let mutation = assign_tombstone_sequence(mutation, server_seq);
         let mut replica = load_replica(&mut tx, mutation.entity()).await?;
-        if apply_mutation(&mut replica, &mutation, server_seq) == ApplyOutcome::IgnoredByTombstone {
+        let outcome = apply_mutation(&mut replica, &mutation, server_seq);
+        if outcome == ApplyOutcome::IgnoredByTombstone {
             return Err(SyncError::protocol(format!(
                 "entity-gone: {}:{} generation={}",
                 entity_kind_label(mutation.entity()),
@@ -69,7 +72,9 @@ async fn upload_operation_once(
                 mutation.entity().generation
             )));
         }
-        persist_replica(&mut tx, mutation.entity(), &replica).await?;
+        if outcome == ApplyOutcome::Applied {
+            persist_replica(&mut tx, mutation.entity(), &replica).await?;
+        }
         write_change_payload(&mut tx, server_seq, &mutation).await?;
         committed_seq = server_seq;
     }
@@ -100,7 +105,7 @@ async fn upload_operation_once(
         .await
         .map_err(|error| map_sqlx_error("提交 上传事务", error))?;
 
-    Ok(PushResult {
+    Ok(UploadResult {
         committed_seq,
         was_already_applied: false,
     })
