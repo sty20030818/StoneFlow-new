@@ -6,7 +6,6 @@ import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 import {
 	applyTaskDisplayOptionsToTasks,
-	type TaskDisplayPageKey,
 	type UseTaskDisplayOptionsResult,
 } from '@/features/display-options'
 import {
@@ -49,7 +48,6 @@ type PendingTaskDeleteBatch = {
 
 export type TaskCollectionSceneInput = {
 	source: TaskCollectionSource
-	displayPageKey: TaskDisplayPageKey
 	/** scene 已订阅的 display；避免 collection 再 hook 一次 */
 	display: UseTaskDisplayOptionsResult
 	fallbackSubtitle: string | ((task: TaskListItem) => string)
@@ -378,7 +376,5 @@ export function useTaskCollectionScene(input: TaskCollectionSceneInput) {
 
 	return {
 		boardProps,
-		display,
-		displayPageKey: input.displayPageKey,
 	}
 }

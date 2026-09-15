@@ -152,7 +152,7 @@ export function ViewEditorDialog({
 					<ActionTooltip label='关闭'>
 						<Button
 							aria-label='关闭保存视图编辑窗口'
-							className='absolute end-3 top-3'
+							className='absolute inset-e-3 top-3'
 							isIconOnly
 							size='sm'
 							slot='close'

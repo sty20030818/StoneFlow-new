@@ -114,7 +114,6 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 			onRetry: taskList.refetch,
 			collapseScopeKey: JSON.stringify([scope, context, queryInput.baseViewKey]),
 		},
-		displayPageKey: PROJECT_DETAIL_DISPLAY_PAGE_KEY,
 		display,
 		fallbackSubtitle: project?.name ?? '当前项目',
 		activeTaskId,

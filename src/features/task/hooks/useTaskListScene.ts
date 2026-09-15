@@ -93,7 +93,6 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 			onRetry: taskList.refetch,
 			collapseScopeKey: JSON.stringify([scope, context, queryInput.baseViewKey]),
 		},
-		displayPageKey: config.displayPageKey,
 		display,
 		fallbackSubtitle,
 		activeTaskId: activeDetail?.kind === 'task' ? activeDetail.id : null,

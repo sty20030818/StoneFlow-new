@@ -1,9 +1,6 @@
 import type { TaskListItem, TaskStatus } from '@/shared/types'
 
-import type {
-	ResolvedTaskDisplayOptions,
-	TaskDisplayPropertyKey,
-} from '@/features/display-options/core'
+import type { TaskDisplayPropertyKey } from '@/features/display-options/core'
 
 export type TaskDisplayLeafSection = {
 	key: string
@@ -20,7 +17,6 @@ export type TaskDisplaySection = TaskDisplayLeafSection & {
 }
 
 export type TaskDisplayApplyResult = {
-	options: ResolvedTaskDisplayOptions
 	orderedItems: TaskListItem[]
 	selectionOrderIds: string[]
 	sections: TaskDisplaySection[]

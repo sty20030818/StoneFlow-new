@@ -234,7 +234,6 @@ export function useSavedViewWorkspaceScene() {
 			onRetry: taskRunQuery.refetch,
 			collapseScopeKey: JSON.stringify([scope, viewId]),
 		},
-		displayPageKey,
 		display,
 		fallbackSubtitle:
 			runnableView?.context.kind === 'standalone'

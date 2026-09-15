@@ -13,7 +13,7 @@
 export { parseViewSearch } from './api/viewSearch'
 
 /** 保存用例：当前查询快照、返回身份、导航与失败恢复。 */
-export { useViewSaveFlow, type ViewSaveCommand, type ViewSaveFlow } from './hooks/useViewSaveFlow'
+export { useViewSaveFlow, type ViewSaveFlow } from './hooks/useViewSaveFlow'
 
 // ── UI ──────────────────────────────────────────────────────────────────────
 
