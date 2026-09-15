@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** implemented-awaiting-acceptance
+**Status:** implemented; archived; remaining acceptance transferred
 
 **实施与证据：** [01 验证记录](../01-verification.md)。当前版本实现及规定的 SQLite／协议往返已通过，代表性原生操作见 [09 记录](../09-verification.md)。真实设备同步未验、0.2.0 混写未承诺支持、历史云端不自动修复分别保留为验证与发布边界，不作为本包完成前提；整体错误朗读仍待确认，状态不变。
 

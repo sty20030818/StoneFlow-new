@@ -1,8 +1,8 @@
 # Views 系统修复与执行契约收敛
 
-**Status:** ready-for-agent
+2026-09-14：按用户本次 `.scratch` 清理与归档要求，沿用仓库既有实施归档、产品验收分开记录的方式。工程实现与已取得证据随包保留；未完成的人工／原生项目已逐项交接[统一产品验收](../../unified-product-acceptance/spec.md)，没有记为通过。下文保留原始问题、判据和历史执行记录；后续验收发现问题另建修复包。
 
-**Labels:** ready-for-agent
+**Status:** implemented; archived; remaining acceptance transferred
 
 **日期：** 2026-09-13
 

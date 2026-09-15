@@ -1,6 +1,8 @@
 # Views tickets 执行计划
 
-**Status:** approved
+2026-09-14 归档补记：本文件以下保留归档前的验收快照。实际错误朗读仍未通过，已移交[统一产品验收](../../unified-product-acceptance/spec.md)。图片链接改指向[历史截图定位](./evidence-09/screenshots.md)，原图已从当前目录清理；结构化记录继续保留。
+
+**Status:** implemented; archived; remaining acceptance transferred
 
 父规格：Views 系统修复与执行契约收敛。拆分已获用户确认；以下 9 张 ticket 已发布为本地 issues，并标记 ready-for-agent。父规格保持不变。
 

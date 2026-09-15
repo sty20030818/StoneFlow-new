@@ -40,6 +40,16 @@
 - [ ] 在隔离 Git/R2 与签名配置中完成 macOS 签名更新包的检查、下载、断网安装、失败重试和完成 marker 验证，不推进生产 Pointer。
 - [ ] 在隔离环境完成 Windows 后继 Beta 直接发布与更新场景，不补发旧平台版本、不推进生产 Pointer。
 
+## 2026-09-14 实施包归档交接
+
+按用户本次清理与归档 `.scratch` 的要求，[Views 系统](../archive/views-system-audit/spec.md)与[创建弹窗](../archive/create-dialog-workspace/spec.md)的实施文档移入 archive；沿用本工作包既有的工程实施与真实产品验收分开记录方式。原判据、历史结果和未勾选项均保留，以下项目没有执行通过，不因归档而完成。
+
+- [ ] **Views 实际错误朗读。** 在真实 Tauri 打开不可用 Saved View，确认 VoiceOver 读出不可用说明及具体错误，并能辨识返回与重试操作；记录实际结果。键盘保存／取消／重试、归焦及代表性 200% WebView 布局已有[独立证据](../archive/views-system-audit/09-verification.md)，不能代替实际朗读。最近证据针对 `51da8063` 产品源码；其后的依赖或界面修改须按影响复验。
+- [ ] **创建弹窗原生输入与叠层。** 验证真实 Main 的 C／N P、完整 Command 宿主、中文 IME 选词不误提交、逐层 Escape、日期返回焦点与 Task 放大切换；保持文本、Space／Project、日期、一次性创建更多及成功导航语义。已有[创建组合记录](../archive/create-dialog-workspace/issues/02-editor-surface-and-date-properties.md)仅证明记录中的浏览器和自动化范围。
+- [ ] **创建弹窗视觉与辅助显示。** 在其他 Accent、系统强制颜色、窄窗及长描述下检查透明输入各状态、可访问名称／光标／错误、单滚动、属性及底栏可达；强制颜色下焦点应可辨识。原票的四个混合验收项保持未勾选，UI Lab 批次状态不由本次归档修改。
+
+本次只移交明确未完成的验收。真实双设备同步、0.2.0 混写支持及历史云端缺字段自动修复继续按 Views 原记录的发布／兼容边界处理，未执行远端写入或改变协议支持策略。
+
 ## 证据边界
 
 - 自动化、Debug App 抽查和静态扫描只能作为准备证据，不能替代对应真实设备或签名包步骤。

@@ -4,7 +4,7 @@
 
 **Blocked by:** 04 — 筛选条件可准确检查和修改。
 
-**Status:** implemented-awaiting-acceptance
+**Status:** implemented; archived; remaining acceptance transferred
 
 **覆盖：** V07、V06 的完成项排序、AR2 的任务总序；用户故事 32–36、41、42。
 

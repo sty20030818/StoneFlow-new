@@ -73,14 +73,16 @@
 	},
 	"screenshots": {
 		"editor": {
-			"path": "zoom200-editor.jpg",
 			"sha256": "029067f73f1ed6507d60b8aedbc386f43a462ab062a6c01fe0347f11e434df82",
-			"imagePixels": [1112, 768]
+			"imagePixels": [1112, 768],
+			"gitCommit": "0bab2405cdaedeae912b259796cce2761672e25f",
+			"gitPath": ".scratch/views-system-audit/evidence-09/zoom200-editor.jpg"
 		},
 		"error": {
-			"path": "zoom200-error.jpg",
 			"sha256": "2f2b8e92d142f9e3520c2eb502d596755442bee17ffba1f452a375581a2dd835",
-			"imagePixels": [1112, 768]
+			"imagePixels": [1112, 768],
+			"gitCommit": "0bab2405cdaedeae912b259796cce2761672e25f",
+			"gitPath": ".scratch/views-system-audit/evidence-09/zoom200-error.jpg"
 		}
 	},
 	"observations": [

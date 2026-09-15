@@ -4,7 +4,7 @@
 
 **Blocked by:** 05 — 完整结果排序与稳定分页。
 
-**Status:** implemented-awaiting-acceptance
+**Status:** implemented; archived; remaining acceptance transferred
 
 实现与本地验证见 [06 验证记录](../06-verification.md)；09 原生现场验收独立保留。
 

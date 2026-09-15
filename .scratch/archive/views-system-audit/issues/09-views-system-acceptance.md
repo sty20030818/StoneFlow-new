@@ -4,7 +4,7 @@
 
 **Blocked by:** 02 — 保存后打开新 View，切换时恢复正确查询；03 — 无效 View 单条隔离并提供恢复入口；08 — 准确显示空组与分组数量。
 
-**Status:** implemented-awaiting-acceptance
+**Status:** implemented; archived; remaining acceptance transferred
 
 **覆盖：** 全部 V01–V10、AR1–AR4 的整合；用户故事 45–47 及原始现场。
 

@@ -4,7 +4,7 @@
 
 **Blocked by:** 01: 创建归属与提交反馈收口。先使用任务 01 确定的 Header / 表单组合和归属合同，再实现视觉与日期交互，不为旧接线保留临时兼容层。
 
-**Status:** implemented-awaiting-manual-acceptance
+**Status:** implemented; archived; remaining acceptance transferred
 
 - [x] Task 与 Project 继续共用既有创建外壳和内容槽位，不另建第三套 Composer、通用表单引擎或平行基础控件库。
 - [x] 普通创建弹窗实际圆角为 24px、白色浮层，桌面最大宽度 768px 并采用偏上方定位；窄窗保留安全边距，短窗口不因固定留白遮挡操作区。

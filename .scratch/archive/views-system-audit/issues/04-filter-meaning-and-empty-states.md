@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** implemented-awaiting-acceptance
+**Status:** implemented; archived; remaining acceptance transferred
 
 **覆盖：** V05、V10；用户故事 20–24、43、44。
 

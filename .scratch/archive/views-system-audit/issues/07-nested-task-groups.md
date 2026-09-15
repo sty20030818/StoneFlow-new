@@ -4,7 +4,7 @@
 
 **Blocked by:** 06 — 主分组统一排序、折叠与选择。
 
-**Status:** implemented-awaiting-acceptance
+**Status:** implemented; archived; remaining acceptance transferred
 
 **覆盖：** V06 的子分组、AR2 的两级窗口、AR3 的层级投影；用户故事 37–39、47。
 

@@ -4,7 +4,7 @@
 
 **Blocked by:** 01 — 同步后的 View 仍可编辑和删除。
 
-**Status:** implemented-awaiting-acceptance
+**Status:** implemented; archived; remaining acceptance transferred
 
 **覆盖：** V03、V08、V09；用户故事 18、19、27–31。
 

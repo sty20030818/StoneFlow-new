@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** implemented-awaiting-acceptance
+**Status:** implemented; archived; remaining acceptance transferred
 
 **实施与证据：** [02 验证记录](../02-verification.md)保留本票实施与自动／浏览器证据；[09 验证记录](../09-verification.md)已补实际 Tauri 原始项目链及独立事项、所有任务、Saved View 的代表性操作。项目保存后返回未完成恢复 6 项，全部恢复 8 项；整包剩余验收继续由 09 汇总。
 

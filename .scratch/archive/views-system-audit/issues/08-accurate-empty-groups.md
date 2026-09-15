@@ -4,7 +4,7 @@
 
 **Blocked by:** 07 — 子分组贯通分页与层级交互。
 
-**Status:** implemented-awaiting-acceptance
+**Status:** implemented; archived; remaining acceptance transferred
 
 **覆盖：** V06 的空分组、AR2/AR3 的摘要与投影一致性；用户故事 36、40、47。
 

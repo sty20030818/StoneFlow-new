@@ -4,7 +4,7 @@
 
 **Blocked by:** 无（可立即开始）。
 
-**Status:** complete
+**Status:** implemented; archived; remaining acceptance transferred
 
 - [x] 应用内 C、Project 创建及已有鼠标入口继续使用同一共享创建路径，保留入口提供的 Project / 状态预填和等待项目选项就绪的挂载行为。
 - [x] 每次创建会话只有一份权威归属状态；Header、属性选择和创建 payload 同源，不保留 Shell 与表单双副本或双向 effect 同步。
