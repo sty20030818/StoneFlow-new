@@ -45,16 +45,16 @@ beforeEach(() => {
 	eventListeners.clear()
 	localStorage.clear()
 	// jsdom 无布局，仅为真实 TaskBoard 提供 viewport 几何。
-	vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(
-		function (this: HTMLElement) {
-			return this.dataset.scrollContainer === 'true' ? 960 : 0
-		},
-	)
-	vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(
-		function (this: HTMLElement) {
-			return this.dataset.scrollContainer === 'true' ? 1200 : 0
-		},
-	)
+	vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(function (
+		this: HTMLElement,
+	) {
+		return this.dataset.scrollContainer === 'true' ? 960 : 0
+	})
+	vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(function (
+		this: HTMLElement,
+	) {
+		return this.dataset.scrollContainer === 'true' ? 1200 : 0
+	})
 })
 
 it('混合坏记录按原范围隔离；范围未知只在所有空间可达且不能运行、重命名或覆盖', async () => {

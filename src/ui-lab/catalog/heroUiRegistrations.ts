@@ -1,6 +1,6 @@
 export const HEROUI_PACKAGES = {
-	oss: { name: '@heroui/react', version: '3.2.5' },
-	pro: { name: '@heroui-pro/react', version: '1.0.0-beta.9' },
+	oss: { name: '@heroui/react', version: '3.2.6' },
+	pro: { name: '@heroui-pro/react', version: '1.0.0-beta.10' },
 } as const
 
 export type HeroUIPackageName = (typeof HEROUI_PACKAGES)[keyof typeof HEROUI_PACKAGES]['name']
@@ -25,6 +25,7 @@ const OSS_COMPONENT_SUBPATHS = [
 	'alert-dialog',
 	'autocomplete',
 	'avatar',
+	'avatar-group',
 	'badge',
 	'breadcrumbs',
 	'button',

@@ -59,21 +59,21 @@ beforeEach(() => {
 	invokeMock.mockReset()
 	localStorage.clear()
 	// jsdom 仅补真实虚拟列表所需 viewport 几何，不替换页面、scene 或 TaskBoard。
-	vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(
-		function (this: HTMLElement) {
-			return this.dataset.scrollContainer === 'true' ? 960 : 0
-		},
-	)
-	vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(
-		function (this: HTMLElement) {
-			return this.dataset.scrollContainer === 'true' ? 1200 : 0
-		},
-	)
-	vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockImplementation(
-		function (this: HTMLElement) {
-			return this.dataset.scrollContainer === 'true' ? 960 : 0
-		},
-	)
+	vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(function (
+		this: HTMLElement,
+	) {
+		return this.dataset.scrollContainer === 'true' ? 960 : 0
+	})
+	vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(function (
+		this: HTMLElement,
+	) {
+		return this.dataset.scrollContainer === 'true' ? 1200 : 0
+	})
+	vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockImplementation(function (
+		this: HTMLElement,
+	) {
+		return this.dataset.scrollContainer === 'true' ? 960 : 0
+	})
 	useShellPreferenceStore.setState({
 		taskBoardCollapsedGroups: {},
 	})

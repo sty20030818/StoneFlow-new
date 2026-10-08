@@ -110,16 +110,16 @@ beforeEach(() => {
 	invokeMock.mockReset()
 	localStorage.clear()
 	// jsdom 没有布局；为真实虚拟列表提供固定测试 viewport，不替换 TaskBoard。
-	vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(
-		function (this: HTMLElement) {
-			return this.dataset.scrollContainer === 'true' ? 960 : 0
-		},
-	)
-	vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(
-		function (this: HTMLElement) {
-			return this.dataset.scrollContainer === 'true' ? 1200 : 0
-		},
-	)
+	vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(function (
+		this: HTMLElement,
+	) {
+		return this.dataset.scrollContainer === 'true' ? 960 : 0
+	})
+	vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(function (
+		this: HTMLElement,
+	) {
+		return this.dataset.scrollContainer === 'true' ? 1200 : 0
+	})
 	useShellPreferenceStore.setState({
 		taskBoardCollapsedGroups: {},
 	})

@@ -885,16 +885,16 @@ describe('TaskBoard', () => {
 	})
 
 	it('普通变更不提前消费续页锚点，真实页追加后才补偿滚动位置', async () => {
-		vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(
-			function (this: HTMLElement) {
-				return this.dataset.scrollContainer === 'true' ? 200 : 0
-			},
-		)
-		vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(
-			function (this: HTMLElement) {
-				return this.dataset.scrollContainer === 'true' ? 960 : 0
-			},
-		)
+		vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(function (
+			this: HTMLElement,
+		) {
+			return this.dataset.scrollContainer === 'true' ? 200 : 0
+		})
+		vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(function (
+			this: HTMLElement,
+		) {
+			return this.dataset.scrollContainer === 'true' ? 960 : 0
+		})
 		const originalScrollTo = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollTo')
 		const pendingScrollEvents: Promise<void>[] = []
 		const scrollTo = vi.fn(function (this: HTMLElement, options: ScrollToOptions) {
@@ -1306,16 +1306,16 @@ describe('TaskBoard', () => {
 		})
 	})
 	it('两级组内行与离屏父组都先滚进 sticky-safe 可见区再聚焦', async () => {
-		vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(
-			function (this: HTMLElement) {
-				return this.dataset.scrollContainer === 'true' ? 720 : 0
-			},
-		)
-		vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(
-			function (this: HTMLElement) {
-				return this.dataset.scrollContainer === 'true' ? 960 : 0
-			},
-		)
+		vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(function (
+			this: HTMLElement,
+		) {
+			return this.dataset.scrollContainer === 'true' ? 720 : 0
+		})
+		vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(function (
+			this: HTMLElement,
+		) {
+			return this.dataset.scrollContainer === 'true' ? 960 : 0
+		})
 		const originalScrollTo = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollTo')
 		const pendingScrollEvents: Promise<void>[] = []
 		const scrollTo = vi.fn(function (this: HTMLElement, options: ScrollToOptions) {
@@ -1503,16 +1503,16 @@ describe('TaskBoard', () => {
 	] satisfies Array<{ name: string; intent: CollectionFocusIntent<string, string> }>)(
 		'$name：旧窗口待挂载焦点请求不能在新窗口兑现',
 		async ({ intent }) => {
-			vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(
-				function (this: HTMLElement) {
-					return this.dataset.scrollContainer === 'true' ? 720 : 0
-				},
-			)
-			vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(
-				function (this: HTMLElement) {
-					return this.dataset.scrollContainer === 'true' ? 960 : 0
-				},
-			)
+			vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(function (
+				this: HTMLElement,
+			) {
+				return this.dataset.scrollContainer === 'true' ? 720 : 0
+			})
+			vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(function (
+				this: HTMLElement,
+			) {
+				return this.dataset.scrollContainer === 'true' ? 960 : 0
+			})
 			const originalScrollTo = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollTo')
 			// 模拟平台尚未分发请求后的 scroll 事件，目标仍未进入真实虚拟挂载范围。
 			const scrollTo = vi.fn()

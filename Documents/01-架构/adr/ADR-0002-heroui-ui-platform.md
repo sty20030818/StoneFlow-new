@@ -68,3 +68,7 @@ StoneFlow 曾同时存在 Radix/shadcn primitive、平行 base、纯 class patte
 - [任务 TASKS](../../98-归档/02-已完成重构/2026-08-12-heroui-ui-interaction-system-refactor/TASKS.md)
 - [系统设计](../A2-系统设计.md)
 - [界面系统](../A3-界面系统.md)
+
+## 本地依赖获取补充（2026-10-08）
+
+用户授权本次通过第三方 `hpsetup@4.7.1` 在本机获取 HeroUI Pro `1.0.0-beta.10` 组件产物，并按已确认地址使用安装 Key。这项授权仅用于本次本地安装，不改变 CI、正式发布的官方凭据与安装策略，不把工具加入项目依赖，也不扩大 Bun 信任配置；凭据不得进入仓库、日志、renderer 或构建产物。只补齐真实消费者所需 peers，安装后仍核对实际版本、公开 exports、可加载性并运行相关测试与构建；这些检查不证明第三方产物与官方 archive 逐字节一致。

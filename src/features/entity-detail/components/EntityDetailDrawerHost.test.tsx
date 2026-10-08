@@ -146,7 +146,7 @@ describe('EntityDetailDrawerHost', () => {
 		const panel = aside.closest<HTMLElement>('[data-panel]')!
 		const exit = Promise.withResolvers<void>()
 		Object.defineProperty(panel, 'getAnimations', {
-			value: () => [{ finished: exit.promise }],
+			value: () => [{ finished: exit.promise, playState: 'running' }],
 		})
 
 		view.rerender(createHost({ open: false, activeDetail: null }))
@@ -309,7 +309,7 @@ describe('EntityDetailDrawerHost', () => {
 		const content = dialog.closest<HTMLElement>('[data-slot="sheet-content"]')!
 		const exit = Promise.withResolvers<void>()
 		Object.defineProperty(content, 'getAnimations', {
-			value: () => [{ finished: exit.promise }],
+			value: () => [{ finished: exit.promise, playState: 'running' }],
 		})
 
 		view.rerender(createHost({ isCompact: true, open: false, activeDetail: null }))
@@ -408,14 +408,20 @@ function installPanelMotion(panel: HTMLElement) {
 	let active: Animation | null = null
 	const animate = vi.fn((_keyframes: Keyframe[], _options: KeyframeAnimationOptions) => {
 		const completion = Promise.withResolvers<Animation>()
+		let playState: AnimationPlayState = 'running'
 		const animation = {
 			finished: completion.promise,
 			onfinish: null,
+			get playState() {
+				return playState
+			},
 			cancel: vi.fn(() => {
+				playState = 'idle'
 				if (active === animation) active = null
 				completion.reject(new DOMException('取消动画', 'AbortError'))
 			}),
 			finish: vi.fn(() => {
+				playState = 'finished'
 				completion.resolve(animation)
 				queueMicrotask(() => {
 					animation.onfinish?.call(animation, new Event('finish') as AnimationPlaybackEvent)
