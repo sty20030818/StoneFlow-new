@@ -27,11 +27,6 @@ export { TaskBoard, type TaskBoardPagination, type TaskBoardProps } from './comp
 export { focusTaskBoardTaskId } from './components/taskBoardFocus'
 
 /**
- * 壳层「新建任务」对话框内容。
- */
-export { TaskCreateContent } from './components/TaskCreateContent'
-
-/**
  * 打开目标 path 与壳层 detail 开关判定。
  *
  * 命令 / open intent 只调这里，不在 layout 维护打开规则。

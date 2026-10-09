@@ -51,7 +51,9 @@ src/layout/
 └── …
 ```
 
-`ShellOverlays` 只订阅轻量 open intent，并挂各 feature 的 lazy host；创建表单集中在按需加载的 `ShellCreationOverlays`。关闭状态不得提前实例化 Markdown 解析、完整更新对话框或创建表单图，也不为所有 Dialog 建立通用 loader abstraction。
+`ShellOverlays` 只订阅轻量 open intent，并挂各 feature 的 lazy host；创建表单集中在按需加载的 `ShellCreationOverlays`，通过 Task / Project 的 `create` 窄入口导入，主 facade 不再回导创建内容。关闭状态不得提前实例化 Markdown 解析、完整更新对话框或创建表单图，也不为所有 Dialog 建立通用 loader abstraction。
+
+Space / View 编辑器的真实 HeroUI Modal 外壳同步挂载，较重表单首次打开才加载；pending 与 ready 共用 RAC 的 Escape、遮罩、焦点与退场生命周期。命令菜单及快捷键帮助保持同步入口，不新增应用级弹窗层级注册器。
 
 **创建归属与组合：** Shell 只提供打开意图、初始化 Space 与任务放大状态，不保存创建会话内的归属副本。Task / Project 各自的 RHF 表单是会话归属、输入与提交的唯一事实源；`ShellCreationOverlays` 通过 `renderHeader` 组合槽提供 `CreateDialogHeader`，由领域表单直接传入当前 Space、选择动作与 pending 状态。`CreateDialogShell` 只持有 Modal 容器、可访问标题和关闭行为，Header 不通过 effect、Portal 或另一份 store 同步表单；领域仍不得反向导入 Layout。
 

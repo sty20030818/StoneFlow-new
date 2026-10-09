@@ -112,7 +112,7 @@ src/
 
 ### 4.4 `features/` · 能力切片
 
-内部分层见 CONVENTIONS §2.4。跨模块只经 `. | contract | page`。
+内部分层见 CONVENTIONS §2.4。跨模块只经已存在的 `. | api | contract | create | page | presentation | shortcut-contribution`。Task / Project 的 `create` 入口仅由 lazy `ShellCreationOverlays` 消费，创建表单不回导主 facade。
 
 ### 4.5 `shared/` · 共享
 

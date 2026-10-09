@@ -32,7 +32,7 @@ describe('SpaceEditorDialog', () => {
 		const onSubmit = vi.fn(async () => undefined)
 		render(<SpaceEditorDialog mode='create' open onClose={onClose} onSubmit={onSubmit} />)
 		const first = screen.getByRole('button', { name: '关闭 Space 编辑窗口' })
-		const last = screen.getByRole('button', { name: '取消' })
+		const last = await screen.findByRole('button', { name: '取消' })
 		await act(async () => last.focus())
 		fireEvent.keyDown(last, { key: 'Tab' })
 		expect(first).toHaveFocus()
@@ -42,7 +42,7 @@ describe('SpaceEditorDialog', () => {
 		expect(onSubmit).not.toHaveBeenCalled()
 	})
 
-	it('新建弹窗可以稳定渲染', () => {
+	it('新建弹窗可以稳定渲染', async () => {
 		render(
 			<SpaceEditorDialog
 				mode='create'
@@ -53,6 +53,7 @@ describe('SpaceEditorDialog', () => {
 		)
 
 		expect(screen.getByRole('dialog', { name: '新建 Space' })).toBeInTheDocument()
+		await screen.findByRole('textbox', { name: '名称' })
 		expect(screen.getByRole('button', { name: /图标/ })).toBeInTheDocument()
 		expect(screen.getByRole('listbox', { name: '颜色' })).toBeInTheDocument()
 		expect(
@@ -92,8 +93,9 @@ describe('SpaceEditorDialog', () => {
 				space={mode === 'edit' ? SPACE_FIXTURE : null}
 			/>,
 		)
+		const input = await screen.findByRole('textbox', { name: '名称' })
 		await act(async () => {
-			fireEvent.change(screen.getByRole('textbox', { name: '名称' }), {
+			fireEvent.change(input, {
 				target: { value: '未提交的空间' },
 			})
 		})
@@ -118,7 +120,7 @@ describe('SpaceEditorDialog', () => {
 				space={SPACE_FIXTURE}
 			/>,
 		)
-		fireEvent.click(screen.getByRole('button', { name: '保存变更' }))
+		fireEvent.click(await screen.findByRole('button', { name: '保存变更' }))
 
 		await waitFor(() =>
 			expect(screen.getByRole('button', { name: '关闭 Space 编辑窗口' })).toBeDisabled(),
@@ -141,7 +143,7 @@ describe('SpaceEditorDialog', () => {
 		const onSubmit = vi.fn(async () => undefined)
 		render(<SpaceEditorDialog mode='create' open onClose={() => undefined} onSubmit={onSubmit} />)
 
-		fireEvent.change(screen.getByRole('textbox', { name: '名称' }), {
+		fireEvent.change(await screen.findByRole('textbox', { name: '名称' }), {
 			target: { value: '工作' },
 		})
 		const slateOption = screen.getByRole('option', { name: '石板灰' })
@@ -173,7 +175,7 @@ describe('SpaceEditorDialog', () => {
 		})
 		const backdrop = screen.getByRole('dialog').closest('.modal__backdrop')
 		expect(backdrop).not.toBeNull()
-		fireEvent.change(screen.getByRole('textbox', { name: '名称' }), {
+		fireEvent.change(await screen.findByRole('textbox', { name: '名称' }), {
 			target: { value: '未保存草稿' },
 		})
 		view.rerender(<SpaceEditorDialog {...props} open space={SPACE_FIXTURE} />)
@@ -185,7 +187,7 @@ describe('SpaceEditorDialog', () => {
 		expect(screen.getByRole('option', { name: '绿色' })).toHaveAttribute('aria-selected', 'true')
 		expect(screen.getByRole('dialog').closest('.modal__backdrop')).toBe(backdrop)
 
-		fireEvent.change(screen.getByRole('textbox', { name: '名称' }), {
+		fireEvent.change(await screen.findByRole('textbox', { name: '名称' }), {
 			target: { value: '另一份草稿' },
 		})
 		view.rerender(<SpaceEditorDialog {...props} open={false} space={nextSpace} />)
@@ -205,8 +207,11 @@ describe('SpaceEditorDialog', () => {
 			/>,
 		)
 
-		expect(screen.getByRole('option', { name: '蓝色' })).toHaveAttribute('aria-selected', 'true')
-		fireEvent.click(screen.getByRole('button', { name: '保存变更' }))
+		expect(await screen.findByRole('option', { name: '蓝色' })).toHaveAttribute(
+			'aria-selected',
+			'true',
+		)
+		fireEvent.click(await screen.findByRole('button', { name: '保存变更' }))
 
 		await waitFor(() =>
 			expect(onSubmit).toHaveBeenCalledWith({
@@ -229,7 +234,7 @@ describe('SpaceEditorDialog', () => {
 			</SubmitRegistryProvider>,
 		)
 
-		const input = screen.getByLabelText('名称')
+		const input = await screen.findByLabelText('名称')
 		fireEvent.change(input, { target: { value: '工作' } })
 
 		await waitFor(() => {

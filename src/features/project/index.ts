@@ -2,7 +2,7 @@
  * project 域对外公共面（`@/features/project`）。
  *
  * @remarks
- * 外模块只能：`import { … } from '@/features/project'`。
+ * 外模块使用主入口；壳创建表单使用 `@/features/project/create`。
  * 禁止深路径进 api/hooks/model/components/bulk。
  * `project-overview` 是独立 scene，勿与本包路径混淆。
  */
@@ -44,9 +44,6 @@ export { ProjectPage } from './components/ProjectPage'
 
 /** 概览 / lifecycle 风格项目看板。 */
 export { ProjectBoard, type ProjectBoardProps } from './components/ProjectBoard'
-
-/** 壳层新建项目对话框内容。 */
-export { ProjectCreateContent } from './components/ProjectCreateContent'
 
 /** 项目行适配器（overview 列表复用）。 */
 export { ProjectRowAdapter } from './components/ProjectRowAdapter'

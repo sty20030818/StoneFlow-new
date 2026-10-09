@@ -1,6 +1,6 @@
 # task · 任务域
 
-> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-09-14
+> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-10-08
 
 ---
 
@@ -29,7 +29,8 @@
   → shortcuts/useTaskRowCommandShortcuts（只做按键匹配与目标投影）
 ```
 
-跨模块只使用稳定入口：完整 facade 走 `@/features/task`，IO 窄入口走 `@/features/task/api`，placement 纯契约走 `@/features/task/contract`，文案与指示器走 `@/features/task/presentation`。
+跨模块只使用稳定入口：完整 facade 走 `@/features/task`，IO 窄入口走 `@/features/task/api`，placement 纯契约走 `@/features/task/contract`，文案与指示器走 `@/features/task/presentation`，壳创建表单走 `@/features/task/create`。
+`TaskCreateContent` 仅由已有 lazy `ShellCreationOverlays` 消费，不由主入口导出，避免列表、详情与命令消费者提前加载创建表单。`create.ts` 不另加异步壳，真实创建 Modal 与表单一起进入既有按需组合。
 **禁止** `features/task` → `@/layout/**`。
 
 ---
@@ -40,6 +41,7 @@
 src/features/task/
 ├── ARCHITECTURE.md
 ├── index.ts                 # 主 public
+├── create.ts                # 壳创建表单窄入口（已有 lazy 创建组合消费）
 ├── contract.ts              # placement 窄契约（避主 barrel 环）
 ├── presentation.ts          # 文案与纯展示指示器窄契约
 ├── api/                     # IO only（唯一 invoke）；index.ts 是跨 feature 窄入口
@@ -65,7 +67,7 @@ src/features/task/
 | 类 | 示例 |
 |----|------|
 | 列表 | `TaskListSceneView` · `TaskBoard` · `useTaskCollectionScene` |
-| 创建 | `TaskCreateContent` · `taskCreateSchema` · `toTaskCreateInput` |
+| 创建 | `TaskCreateContent`（`./create`）· `taskCreateSchema` · `toTaskCreateInput` |
 | 打开策略 | `resolveCommandOpenTargetPath` · `resolveShellDetailState` |
 | 筛选 | `useTaskPageFilterController` |
 | 命令选中 | `buildTaskCommandSelection` |

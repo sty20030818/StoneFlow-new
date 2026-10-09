@@ -173,6 +173,24 @@ import { privateTask } from '@/features/task/model/private-task'
 		})
 	})
 
+	test('创建组合通过窄 create 入口消费表单，仍拒绝表单实现深路径', () => {
+		const violations = scanFeatureBoundarySources([
+			{
+				path: 'src/layout/overlays/ShellCreationOverlays.tsx',
+				source: `
+import { TaskCreateContent } from '@/features/task/create'
+import { ProjectCreateContent } from '@/features/project/create'
+import { privateTask } from '@/features/task/components/TaskCreateContent'
+import { privateProject } from '@/features/project/components/ProjectCreateContent'
+`,
+			},
+		])
+		expect(violations.map(({ feature, ruleId }) => ({ feature, ruleId }))).toEqual([
+			{ feature: 'task', ruleId: 'feature-deep-import' },
+			{ feature: 'project', ruleId: 'feature-deep-import' },
+		])
+	})
+
 	test('拒绝生产代码静态或动态反向依赖 UI Lab', () => {
 		const violations = scanFeatureBoundarySources([
 			{

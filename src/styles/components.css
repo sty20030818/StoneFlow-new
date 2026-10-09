@@ -13,14 +13,6 @@
 		line-height: 1.25rem;
 	}
 
-	/* RAC 按钮以自身可见焦点状态为准，避免浏览器把浮层返回焦点误画成键盘 ring。 */
-	[data-theme="stoneflow-light"]
-		:is(.button, .toggle-button, .close-button)[data-rac]:focus-visible:not(
-			[data-focus-visible="true"]
-		) {
-		@apply ring-0 ring-offset-0;
-	}
-
 	/* Pro 发布的是已编译 CSS；这些焦点 recipe 同样消费全局宽度，不改颜色或交互状态。 */
 	[data-theme="stoneflow-light"] .cell-select .cell-select__trigger:focus-visible:not(:focus),
 	[data-theme="stoneflow-light"] .cell-select .cell-select__trigger[data-focus-visible="true"],

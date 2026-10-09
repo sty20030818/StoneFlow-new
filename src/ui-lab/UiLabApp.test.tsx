@@ -400,7 +400,7 @@ describe('UiLabApp', () => {
 		const firstRender = render(<UiLabApp />)
 		fireEvent.click(screen.getByRole('button', { name: 'HeroUI' }))
 		const search = screen.getByRole('searchbox', { name: '搜索目录' })
-		fireEvent.change(search, { target: { value: 'SpaceEditorDialog.tsx' } })
+		fireEvent.change(search, { target: { value: 'SpaceEditorForm.tsx' } })
 		fireEvent.click(screen.getByRole('button', { name: 'HeroUI ColorSwatchPicker' }))
 		firstRender.unmount()
 
@@ -657,7 +657,7 @@ describe('UiLabApp', () => {
 		fireEvent.click(screen.getByRole('button', { name: '打开 Space Editor' }))
 		expect(await screen.findByRole('dialog', { name: '新建 Space' })).toBeInTheDocument()
 
-		fireEvent.change(screen.getByRole('textbox', { name: '名称' }), {
+		fireEvent.change(await screen.findByRole('textbox', { name: '名称' }), {
 			target: { value: '审查空间' },
 		})
 		fireEvent.click(screen.getByRole('button', { name: '创建 Space' }))
@@ -1304,19 +1304,19 @@ describe('UiLabApp', () => {
 			'HeroUI ColorSwatchPicker',
 			'swatch',
 			`${HEROUI_PACKAGES.oss.name}@${HEROUI_PACKAGES.oss.version}`,
-			'SpaceEditorDialog.tsx',
+			'SpaceEditorForm.tsx',
 		]) {
 			fireEvent.change(search, { target: { value: ledgerQuery } })
 			expect(screen.getByRole('button', { name: 'HeroUI ColorSwatchPicker' })).toBeInTheDocument()
 			fireEvent.click(screen.getByRole('button', { name: '清空搜索' }))
 		}
 
-		fireEvent.change(search, { target: { value: 'SpaceEditorDialog.tsx' } })
+		fireEvent.change(search, { target: { value: 'SpaceEditorForm.tsx' } })
 		fireEvent.click(screen.getByRole('button', { name: 'HeroUI ColorSwatchPicker' }))
 		expandComponentInfo()
 		expect(screen.getByRole('heading', { name: 'HeroUI ColorSwatchPicker' })).toBeInTheDocument()
 		expect(screen.getByText('由产品组合覆盖')).toBeVisible()
-		expect(screen.getByText('src/features/space/components/SpaceEditorDialog.tsx')).toBeVisible()
+		expect(screen.getByText('src/features/space/components/SpaceEditorForm.tsx')).toBeVisible()
 		expect(screen.getByText('生产组合（见消费位置）')).toBeVisible()
 		expect(screen.getByText('Keep')).toBeVisible()
 		expect(document.querySelectorAll('[data-ui-lab-preview-root]')).toHaveLength(0)

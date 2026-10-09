@@ -30,24 +30,24 @@ export type BundleBudgetReport = {
 	assets: readonly { path: string; bytes: number; budgetBytes: number }[]
 }
 
-// 2026-10-08 依赖升级后 production 基线：
-// Main 1,730,864 / 535,941 B，单文件 652,291 / 188,228 B（raw / gzip）。
-// Launcher 586,783 / 184,785 B，单文件 269,636 / 85,087 B。
-// 复核初始依赖图后仅调整 Main 总量，保留约 0.5% / 0.8% 余量；超出后必须再次复核。
+// 2026-10-08 按需表单与兼容目标对齐后的 production 基线（Safari 17 / Chrome 111 较大值）：
+// Main 1,605,489 / 504,870 B，单文件 552,556 / 160,035 B（raw / gzip）。
+// Launcher 577,263 / 185,373 B，单文件 218,766 / 68,270 B。
+// Main 保留约 3%–5% 余量；Launcher 总量预算不变、单文件预算收紧，超出后必须复核依赖图。
 const ENTRY_BUDGETS: readonly EntryBudget[] = [
 	{
 		htmlFile: 'index.html',
-		totalRawBytes: 1_740_000,
-		totalGzipBytes: 540_000,
-		maxInitialRawBytes: 730_000,
-		maxInitialGzipBytes: 215_000,
+		totalRawBytes: 1_660_000,
+		totalGzipBytes: 525_000,
+		maxInitialRawBytes: 580_000,
+		maxInitialGzipBytes: 165_000,
 	},
 	{
 		htmlFile: 'launcher.html',
 		totalRawBytes: 600_000,
 		totalGzipBytes: 190_000,
-		maxInitialRawBytes: 300_000,
-		maxInitialGzipBytes: 95_000,
+		maxInitialRawBytes: 230_000,
+		maxInitialGzipBytes: 72_000,
 	},
 ]
 

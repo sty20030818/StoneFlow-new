@@ -258,8 +258,9 @@ const OSS_PRODUCTION_USAGE = [
 		['Alert', 'Button', 'Card', 'Description', 'Disclosure', 'Label', 'NumberField'],
 	],
 	['src/features/settings/components/settingsShared.tsx', ['Card']],
+	['src/features/space/components/SpaceEditorDialog.tsx', ['Button', 'Modal']],
 	[
-		'src/features/space/components/SpaceEditorDialog.tsx',
+		'src/features/space/components/SpaceEditorForm.tsx',
 		['Alert', 'Button', 'ColorSwatchPicker', 'Input', 'Label', 'ListBox', 'Modal', 'Select'],
 	],
 	[
@@ -318,8 +319,9 @@ const OSS_PRODUCTION_USAGE = [
 		'src/features/view/components/ViewSaveDialog.tsx',
 		['Alert', 'Button', 'Input', 'Label', 'Modal'],
 	],
+	['src/features/view/components/ViewEditorDialog.tsx', ['Button', 'Modal']],
 	[
-		'src/features/view/components/ViewEditorDialog.tsx',
+		'src/features/view/components/ViewEditorDialogContent.tsx',
 		[
 			'Alert',
 			'Button',

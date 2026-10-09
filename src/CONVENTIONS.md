@@ -195,7 +195,7 @@ export function resolveCommandOpenTargetPath(/* ... */) {}
 
 ### 2.3 Import 与 barrel
 
-- **跨 feature**：只允许 `@/features/<name>`、`/contract`、`/page`。
+- **跨 feature**：只允许已有的 `@/features/<name>`、`/api`、`/contract`、`/create`、`/page`、`/presentation`、`/shortcut-contribution`。Task / Project 的 `/create` 仅暴露已有 lazy 创建组合消费的表单，不回导主入口。
 - **feature 内**：优先直接 import 具体文件。
 - **禁止**：为「方便」新建无意义聚合目录；禁止只剩转发的兼容层目录。
 - 主 `index.ts`：**显式 export 清单**，禁止 `export *` 扫整树撑大 public。

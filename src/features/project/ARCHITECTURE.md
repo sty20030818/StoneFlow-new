@@ -1,6 +1,6 @@
 # project · 项目域
 
-> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-09-02
+> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-10-08
 
 ---
 
@@ -24,7 +24,8 @@
   → commands/registerProjectCommands
 ```
 
-跨模块 **只** `import { … } from '@/features/project'`。
+跨模块使用 `@/features/project` 主入口；壳创建表单使用 `@/features/project/create`。
+`ProjectCreateContent` 仅由已有 lazy `ShellCreationOverlays` 消费，不由主入口导出，避免侧栏、详情与命令消费者提前加载创建表单。`create.ts` 不另加异步壳，真实创建 Modal 与表单一起进入既有按需组合。
 **禁止** `features/project` → `@/layout/**`。
 `project-overview` 是独立薄 scene，勿与本包混淆、勿深路径进本包内部。
 
@@ -36,6 +37,7 @@
 src/features/project/
 ├── ARCHITECTURE.md
 ├── index.ts                 # 主 public
+├── create.ts                # 壳创建表单窄入口（已有 lazy 创建组合消费）
 ├── api/                     # IO only（唯一 invoke）
 ├── hooks/
 │   ├── project.keys|queries|mutations
@@ -58,7 +60,8 @@ src/features/project/
 
 | 类 | 示例 |
 |----|------|
-| 页面 / UI | `ProjectPage` · `ProjectBoard` · `ProjectRowAdapter` · `ProjectCreateContent` |
+| 页面 / UI | `ProjectPage` · `ProjectBoard` · `ProjectRowAdapter` |
+| 创建 | `ProjectCreateContent`（`./create`） |
 | 数据 hooks | `useProjectOptions` · `useProjectSidebarData` · `useProjectOverviewData` |
 | Query | `projectDetailQueryOptions` · `useProjectSidebarQuery` |
 | 变更 | `useComplete/Reopen/Archive/DeleteProjectMutation`（外消费者） |

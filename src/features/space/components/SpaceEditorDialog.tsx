@@ -1,34 +1,15 @@
-import {
-	Alert,
-	Button,
-	ColorSwatchPicker,
-	Input,
-	Label,
-	ListBox,
-	Modal,
-	Select,
-} from '@heroui/react'
+import { Button, Modal } from '@heroui/react'
 import { LayersIcon, XIcon } from 'lucide-react'
-import { useCallback, useId, useState } from 'react'
-import { FormProvider, useController } from 'react-hook-form'
+import { lazy, Suspense, useCallback, useId, useRef, useState } from 'react'
 
-import {
-	getSpaceColorOption,
-	getSpaceColorKeyByValue,
-	getSpaceIconOption,
-	getSpaceVisual,
-	isSpaceColorKey,
-	SPACE_COLOR_OPTIONS,
-	SPACE_ICON_OPTIONS,
-} from '../model/spaceVisuals'
-import type { Space } from '@/shared/types'
-import { normalizeSubmitError, useZodForm } from '@/shared/form'
-import { useSubmitTargetFromForm } from '@/features/submit'
 import { ActionTooltip, DisabledActionTooltip } from '@/shared/components/tooltip'
-import { cn } from '@/shared/lib/utils'
-import { buildSpaceEditorDefaultValues, spaceEditorSchema } from './SpaceEditorDialog.form'
+import type { Space } from '@/shared/types'
 
-type SpaceEditorDialogProps = {
+const LazySpaceEditorForm = lazy(async () => ({
+	default: (await import('./SpaceEditorForm')).SpaceEditorForm,
+}))
+
+export type SpaceEditorDialogProps = {
 	open: boolean
 	mode: 'create' | 'edit'
 	space?: Space | null
@@ -36,89 +17,42 @@ type SpaceEditorDialogProps = {
 	onSubmit: (input: { name: string; iconKey: string; colorKey: string }) => Promise<void>
 }
 
-/**
- * Space 创建 / 编辑弹窗，只承载最小字段输入。
- */
+/** Space 创建 / 编辑窗口同步管理焦点与退出，表单按需加载。 */
 export function SpaceEditorDialog(props: SpaceEditorDialogProps) {
 	const { open, mode, space = null, onClose } = props
-	const [session, setSession] = useState({ open, mode, space, key: 0 })
-	if (session.open !== open || (open && (session.space !== space || session.mode !== mode))) {
-		setSession({ open, mode, space, key: session.key + (open ? 1 : 0) })
-	}
-
-	return (
-		<Modal.Backdrop isOpen={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-			<Modal.Container placement='center' size='lg'>
-				<SpaceEditorForm key={session.key} {...props} />
-			</Modal.Container>
-		</Modal.Backdrop>
-	)
-}
-
-function SpaceEditorForm({ open, mode, space = null, onClose, onSubmit }: SpaceEditorDialogProps) {
-	const form = useZodForm({
-		schema: spaceEditorSchema,
-		defaultValues: buildSpaceEditorDefaultValues(space ?? {}),
-	})
-	const { field: nameField } = useController({ control: form.control, name: 'name' })
-	const { field: iconKeyField } = useController({ control: form.control, name: 'iconKey' })
-	const { field: colorKeyField } = useController({ control: form.control, name: 'colorKey' })
-	const [submitting, setSubmitting] = useState(false)
-	const [error, setError] = useState<string | null>(null)
-	const name = nameField.value
-	const iconKey = iconKeyField.value
-	const colorKey = colorKeyField.value
-	const selectedIconOption = getSpaceIconOption(iconKey)
-	const selectedColorOption = getSpaceColorOption(colorKey)
-	const previewVisual = getSpaceVisual({ iconKey, colorKey })
-	const PreviewIcon = previewVisual.icon
-	const SelectedIcon = selectedIconOption.icon
 	const descriptionId = useId()
-
-	const handleSubmit = useCallback(async () => {
-		const isValid = await form.trigger()
-		if (!isValid) {
-			return
+	// 同步 form 保留原生提交与 Header/Body 相邻 recipe；校验仍由异步表单拥有。
+	const submitForm = useRef<(() => Promise<void>) | null>(null)
+	const onSubmitReady = useCallback((submit: () => Promise<void>) => {
+		submitForm.current = submit
+		return () => {
+			if (submitForm.current === submit) submitForm.current = null
 		}
-
-		const values = form.getValues()
-		setSubmitting(true)
-		setError(null)
-		try {
-			await onSubmit({
-				name: values.name.trim(),
-				iconKey: values.iconKey,
-				colorKey: values.colorKey,
-			})
-			onClose()
-		} catch (error) {
-			setError(normalizeSubmitError(error, 'Space 保存失败'))
-		} finally {
-			setSubmitting(false)
-		}
-	}, [form, onClose, onSubmit])
-
-	useSubmitTargetFromForm({
-		id: open
-			? mode === 'create'
-				? 'space-editor:create'
-				: `space-editor:${space?.id ?? 'edit'}`
-			: null,
-		title: mode === 'create' ? '创建 Space' : '保存 Space',
-		priority: 100,
-		context: { source: 'space-editor' as const },
-		form,
-		canSubmit:
-			nameField.value.trim().length > 0 &&
-			iconKeyField.value.trim().length > 0 &&
-			isSpaceColorKey(colorKeyField.value),
-		isSubmitting: submitting,
-		submit: handleSubmit,
-	})
+	}, [])
+	const [session, setSession] = useState({ open, mode, space, key: 0, submitting: false })
+	if (session.open !== open || (open && (session.space !== space || session.mode !== mode))) {
+		setSession({
+			open,
+			mode,
+			space,
+			key: session.key + (open ? 1 : 0),
+			submitting: open ? false : session.submitting,
+		})
+	}
+	const onSubmittingChange = useCallback(
+		(submitting: boolean) => {
+			setSession((current) =>
+				current.key === session.key && current.submitting !== submitting
+					? { ...current, submitting }
+					: current,
+			)
+		},
+		[session.key],
+	)
 	const closeButton = (
 		<Button
 			aria-label='关闭 Space 编辑窗口'
-			isDisabled={submitting}
+			isDisabled={session.submitting}
 			isIconOnly
 			size='sm'
 			slot='close'
@@ -130,168 +64,67 @@ function SpaceEditorForm({ open, mode, space = null, onClose, onSubmit }: SpaceE
 	)
 
 	return (
-		<Modal.Dialog
-			aria-describedby={descriptionId}
-			className='overflow-hidden'
-			render={(dialogProps) => (
-				<section
-					{...dialogProps}
-					onKeyDown={(event) => {
-						if (event.key === 'Tab') return
-						if (event.key !== 'Escape' || event.defaultPrevented) event.stopPropagation()
-					}}
-				/>
-			)}
-		>
-			<div className='absolute end-3 top-3'>
-				{submitting ? (
-					<DisabledActionTooltip label='关闭' reason='正在保存，请稍后关闭'>
-						{closeButton}
-					</DisabledActionTooltip>
-				) : (
-					<ActionTooltip label='关闭'>{closeButton}</ActionTooltip>
-				)}
-			</div>
-			<FormProvider {...form}>
-				<form
-					onSubmit={(event) => {
-						event.preventDefault()
-						void handleSubmit()
-					}}
+		<Modal.Backdrop isOpen={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+			<Modal.Container placement='center' size='lg'>
+				<Modal.Dialog
+					aria-describedby={descriptionId}
+					className='overflow-hidden'
+					render={(dialogProps) => (
+						<section
+							{...dialogProps}
+							onKeyDown={(event) => {
+								if (event.key === 'Tab') return
+								if (event.key !== 'Escape' || event.defaultPrevented) event.stopPropagation()
+							}}
+						/>
+					)}
 				>
-					<Modal.Header>
-						<div className='flex flex-col gap-3 ps-2 pe-10'>
-							<div className='flex items-center gap-2'>
-								<LayersIcon aria-hidden className='size-4 shrink-0 text-muted' />
-								<Modal.Heading>{mode === 'create' ? '新建 Space' : '编辑 Space'}</Modal.Heading>
-							</div>
-							<p className='text-sm text-muted' id={descriptionId}>
-								Space 只承载顶级上下文。设置名称、图标和颜色即可。
-							</p>
-						</div>
-					</Modal.Header>
-
-					<Modal.Body>
-						<div className='flex items-center gap-3 rounded-xl border border-separator bg-surface-secondary px-4 py-3'>
-							<span
-								className={cn(
-									'flex size-10 shrink-0 items-center justify-center rounded-xl text-white',
-									previewVisual.iconBadgeClassName,
-								)}
-							>
-								<PreviewIcon className='size-5 text-white' />
-							</span>
-							<div className='min-w-0'>
-								<p className='truncate text-sm font-medium text-foreground'>
-									{name.trim() || 'Space 预览'}
-								</p>
-								<p className='text-xs text-muted'>
-									{selectedIconOption.label} · {selectedColorOption.label}
+					<div className='absolute end-3 top-3'>
+						{session.submitting ? (
+							<DisabledActionTooltip label='关闭' reason='正在保存，请稍后关闭'>
+								{closeButton}
+							</DisabledActionTooltip>
+						) : (
+							<ActionTooltip label='关闭'>{closeButton}</ActionTooltip>
+						)}
+					</div>
+					<form
+						onSubmit={(event) => {
+							event.preventDefault()
+							void submitForm.current?.()
+						}}
+					>
+						<Modal.Header>
+							<div className='flex flex-col gap-3 ps-2 pe-10'>
+								<div className='flex items-center gap-2'>
+									<LayersIcon aria-hidden className='size-4 shrink-0 text-muted' />
+									<Modal.Heading>{mode === 'create' ? '新建 Space' : '编辑 Space'}</Modal.Heading>
+								</div>
+								<p className='text-sm text-muted' id={descriptionId}>
+									Space 只承载顶级上下文。设置名称、图标和颜色即可。
 								</p>
 							</div>
-						</div>
-
-						<div className='mt-4 grid gap-1.5'>
-							<Label htmlFor='space-editor-name'>名称</Label>
-							<Input
-								autoFocus
-								disabled={submitting}
-								fullWidth
-								id='space-editor-name'
-								onBlur={nameField.onBlur}
-								onChange={nameField.onChange}
-								placeholder='例如：个人 / 工作 / 学习'
-								value={nameField.value}
-							/>
-						</div>
-
-						<div className='mt-4 grid gap-4 sm:grid-cols-2'>
-							<Select
-								isDisabled={submitting}
-								onChange={(key) => typeof key === 'string' && iconKeyField.onChange(key)}
-								value={iconKey}
-							>
-								<Label>图标</Label>
-								<Select.Trigger>
-									<Select.Value>
-										<div className='flex min-w-0 items-center gap-2'>
-											<SelectedIcon
-												className={cn('size-4 shrink-0', previewVisual.iconClassName)}
-											/>
-											<span className='truncate'>{selectedIconOption.label}</span>
-										</div>
-									</Select.Value>
-									<Select.Indicator />
-								</Select.Trigger>
-								<Select.Popover>
-									<ListBox>
-										{SPACE_ICON_OPTIONS.map((option) => (
-											<ListBox.Item id={option.value} key={option.value} textValue={option.label}>
-												<div className='flex items-center gap-2'>
-													<option.icon className='size-4 shrink-0 text-muted' />
-													<span>{option.label}</span>
-												</div>
-												<ListBox.ItemIndicator />
-											</ListBox.Item>
-										))}
-									</ListBox>
-								</Select.Popover>
-							</Select>
-
-							<div className='grid content-start gap-1.5'>
-								<Label>颜色</Label>
-								<ColorSwatchPicker
-									aria-label='颜色'
-									onChange={(value) => {
-										const nextColorKey = getSpaceColorKeyByValue(value.toString('hex'))
-										if (nextColorKey) colorKeyField.onChange(nextColorKey)
-									}}
-									value={selectedColorOption.colorValue}
-								>
-									{SPACE_COLOR_OPTIONS.map((option) => (
-										<ColorSwatchPicker.Item
-											aria-label={option.label}
-											color={option.colorValue}
-											isDisabled={submitting}
-											key={option.value}
-										>
-											<ColorSwatchPicker.Swatch />
-											<ColorSwatchPicker.Indicator />
-										</ColorSwatchPicker.Item>
-									))}
-								</ColorSwatchPicker>
-							</div>
-						</div>
-
-						{error ? (
-							<Alert role='alert' status='danger'>
-								<Alert.Indicator />
-								<Alert.Content>
-									<Alert.Title>保存失败</Alert.Title>
-									<Alert.Description>{error}</Alert.Description>
-								</Alert.Content>
-							</Alert>
-						) : null}
-					</Modal.Body>
-
-					<Modal.Footer>
-						<Button isDisabled={submitting} onPress={onClose} type='button' variant='ghost'>
-							取消
-						</Button>
-						<Button
-							isDisabled={
-								submitting ||
-								nameField.value.trim().length === 0 ||
-								iconKeyField.value.trim().length === 0 ||
-								!isSpaceColorKey(colorKeyField.value)
+						</Modal.Header>
+						<Suspense
+							fallback={
+								<Modal.Body>
+									<p className='text-sm text-muted' role='status'>
+										正在加载编辑内容…
+									</p>
+								</Modal.Body>
 							}
-							type='submit'
 						>
-							{mode === 'create' ? '创建 Space' : '保存变更'}
-						</Button>
-					</Modal.Footer>
-				</form>
-			</FormProvider>
-		</Modal.Dialog>
+							<LazySpaceEditorForm
+								key={session.key}
+								{...props}
+								onSubmitReady={onSubmitReady}
+								onSubmittingChange={onSubmittingChange}
+								submitting={session.submitting}
+							/>
+						</Suspense>
+					</form>
+				</Modal.Dialog>
+			</Modal.Container>
+		</Modal.Backdrop>
 	)
 }

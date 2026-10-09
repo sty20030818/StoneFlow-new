@@ -1,6 +1,6 @@
 # space · 空间域
 
-> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-09-07
+> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-10-08
 
 ---
 
@@ -42,10 +42,12 @@ src/features/space/
 ├── hooks/                   # keys · queries · mutations · useSpaces
 ├── model/spaceVisuals.ts
 └── components/
-    └── SpaceEditorDialog · SpaceEditorDialog.form
+    └── SpaceEditorDialog · SpaceEditorForm · SpaceEditorDialog.form
 ```
 
 无独立「Space 列表页」：管理入口在侧栏 Dialog + settings 默认空间。
+
+`SpaceEditorDialog` 同步保留 HeroUI Modal 外壳、标题与关闭入口，首次打开即拥有遮罩、Escape、焦点循环与关闭回焦；`SpaceEditorForm` 按需加载字段、校验和提交内容。同步 `form` 节点保留 Header/Body 的上游相邻间距与原生提交，内部表单到达后注册提交回调、卸载时清理。表单到达时沿用名称字段的 autofocus，关闭不等待加载，退出由原 Modal 管理；会话 key 只重置表单，外壳不重挂载。提交状态由窗口会话持有，表单与关闭入口读取同一状态。
 
 ---
 

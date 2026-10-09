@@ -51,7 +51,7 @@ export default defineConfig({
 	},
 	envPrefix: ['VITE_', 'TAURI_ENV_*'],
 	build: {
-		target: process.env.TAURI_ENV_PLATFORM == 'windows' ? 'chrome105' : 'safari13',
+		target: process.env.TAURI_ENV_PLATFORM == 'windows' ? 'chrome111' : 'safari17',
 		sourcemap: !!process.env.TAURI_ENV_DEBUG,
 		// 只固定已确认的跨入口共享图，其余依赖交给 Rolldown 按真实入口切分。
 		rolldownOptions: {

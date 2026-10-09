@@ -10,6 +10,27 @@ import { ViewEditorDialog } from './ViewEditorDialog'
 import { buildViewEditorDefaultValues, toCreateViewDraft } from './ViewEditorDialog.form'
 
 describe('ViewEditorDialog', () => {
+	it('同步标题与延迟表单保留同一 form 内的 Header / Body / Footer 相邻关系', async () => {
+		render(
+			<ViewEditorDialog
+				flow={makeFlow()}
+				view={null}
+				projects={buildProjects()}
+				onCreate={vi.fn()}
+				onUpdate={vi.fn()}
+			/>,
+		)
+		const input = await screen.findByRole('textbox', { name: '名称' })
+		const form = input.closest('form')
+		const header = screen.getByRole('heading', { name: '新建保存视图' }).closest('.modal__header')
+		const body = input.closest('.modal__body')
+		const footer = screen.getByRole('button', { name: '取消' }).closest('.modal__footer')
+		expect(form).toHaveClass('flex', 'min-h-0', 'flex-col')
+		expect(header?.closest('form')).toBe(form)
+		expect(header?.nextElementSibling).toBe(body)
+		expect(body?.nextElementSibling).toBe(footer)
+	})
+
 	it.each(['保存按钮', '名称输入'] as const)(
 		'等待和失败保留%s焦点，使用 flow 错误与重试',
 		async (entry) => {
@@ -23,7 +44,7 @@ describe('ViewEditorDialog', () => {
 				onUpdate,
 			}
 			const { rerender } = render(<ViewEditorDialog {...props} flow={flow} />)
-			const input = screen.getByRole('textbox', { name: '名称' })
+			const input = await screen.findByRole('textbox', { name: '名称' })
 			fireEvent.change(input, { target: { value: '需要保留的输入' } })
 			const save = screen.getByRole('button', { name: '保存视图' })
 			const focused = entry === '保存按钮' ? save : input
@@ -67,6 +88,7 @@ describe('ViewEditorDialog', () => {
 			onUpdate: vi.fn(async () => undefined),
 		}
 		const { rerender } = render(<ViewEditorDialog {...props} flow={flow} />)
+		await screen.findByRole('textbox', { name: '名称' })
 		await act(async () => {
 			fireEvent.change(screen.getByRole('textbox', { name: '名称' }), {
 				target: { value: '未提交的旧输入' },
@@ -93,7 +115,7 @@ describe('ViewEditorDialog', () => {
 			onUpdate: vi.fn(async () => undefined),
 		}
 		const { rerender } = render(<ViewEditorDialog {...props} flow={flow} />)
-		const name = screen.getByRole('textbox', { name: '名称' })
+		const name = await screen.findByRole('textbox', { name: '名称' })
 		fireEvent.change(name, { target: { value: '创建的视图' } })
 		fireEvent.submit(name.closest('form')!)
 		await waitFor(() => expect(onCreate).toHaveBeenCalledOnce())
@@ -133,6 +155,7 @@ describe('ViewEditorDialog', () => {
 				view={null}
 			/>,
 		)
+		await screen.findByRole('textbox', { name: '名称' })
 		const first = screen.getByRole('button', { name: '关闭保存视图编辑窗口' })
 		const last = screen.getByRole('button', { name: '取消' })
 		await act(async () => last.focus())
@@ -160,7 +183,7 @@ describe('ViewEditorDialog', () => {
 			</SubmitRegistryProvider>,
 		)
 		expect(screen.getByTestId('active-target')).toHaveTextContent('none')
-		fireEvent.change(screen.getByLabelText('名称'), { target: { value: '我的视图' } })
+		fireEvent.change(await screen.findByLabelText('名称'), { target: { value: '我的视图' } })
 		await waitFor(() =>
 			expect(screen.getByTestId('active-target')).toHaveTextContent('view-editor:create'),
 		)

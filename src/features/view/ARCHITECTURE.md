@@ -48,6 +48,7 @@ Library 的 `ViewListItem` 区分有效 `View` 与 `UnavailableView`；后者仅
 创建、另存、覆盖与重命名统一由 `useViewSaveFlow` 持有 mutation、提交锁、错误与会话有效性。
 场景提供提交时的完整定义；覆盖只交付当前有效 View 的 ID 与 filters，重命名只交付 ID 与名称。
 `ViewSaveDialog` / `ViewEditorDialog` 只持有表单输入、组合业务流程状态与交互组件。
+`ViewEditorDialog` 同步拥有真实 HeroUI Modal、原 `form` 容器、标题与关闭按钮，首次打开才加载域内 `ViewEditorDialogContent` 的 RHF / schema / 字段与提交 UI。Header / Body / Footer 保持同一 flex form 内的相邻 DOM，让原 Modal recipe 继续拥有间距与滚动。内容通过清理式引用回交真实 submit handler，卸载后清空，不镜像表单或提交状态。pending 与 ready 共用原 RAC 关层、焦点与退场机制，关闭后迟到内容不挂载；不另建弹窗 registry。内容继续直接读取当前 `ViewSaveFlow`，会话、错误、提交锁与取消有效性仍只有原 flow 一个 owner。
 保存成功后用实际返回 ID 打开无 Draft 的目标 URL；打开失败保留 saved ID，重试只打开、不再次创建。
 失败保留输入与来源 Draft；关闭、换来源或开启新会话后，旧请求仍完成 mutation 及缓存失效，
 但不得导航、清理新 Draft、关闭新弹窗或展示旧错误。弹窗置于工作区 overlays，避免 FilterBar
@@ -77,7 +78,7 @@ src/features/view/
 └── components/
     ├── ViewsPage · SavedViewPage
     ├── ViewActionsMenu
-    └── ViewEditorDialog · ViewSaveDialog · form
+    └── ViewEditorDialog（同步 Modal）· ViewEditorDialogContent（按需表单）· ViewSaveDialog · form
 ```
 
 ---
